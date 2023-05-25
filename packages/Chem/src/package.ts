@@ -730,8 +730,8 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
   ): Promise<void> {
-  if (table.rowCount > 500)
-    grok.shell.info('Structural Alerts detection will take a while to run.');
+  if (table.rowCount > 1000)
+    grok.shell.info('Structural Alerts detection will take a while to run');
 
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
     'Dandee': dandee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
