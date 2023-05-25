@@ -6,6 +6,8 @@ import {_package, sequenceSpaceTopMenu} from '../package';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 enum EMBED_COL_NAMES {
   X = 'Embed_X',
@@ -63,7 +65,7 @@ export async function demoSequenceSpace(
     })) as DG.ScatterPlotViewer;
   } else {
     resSpaceViewer = (await sequenceSpaceTopMenu(df, df.getCol(colName),
-      'UMAP', StringMetricsNames.Levenshtein, true)) as DG.ScatterPlotViewer;
+      DimReductionMethods.UMAP, MmDistanceFunctionsNames.LEVENSHTEIN, true)) as DG.ScatterPlotViewer;
   }
   view.dockManager.dock(resSpaceViewer!, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
   return resSpaceViewer;

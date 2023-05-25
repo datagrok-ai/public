@@ -10,7 +10,7 @@ import {
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpaceByFingerprints, getSequenceSpace} from './analysis/sequence-space';
-import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {ISequenceSpaceParams, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid,
   createPropPanelElement,
@@ -349,8 +349,8 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //input: bool plotEmbeddings = true
 //input: object options {optional: true}
 //editor: Bio:SequenceSpaceEditor
-export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames | StringMetricsNames = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions
+export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
+  similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions
 ): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
@@ -362,10 +362,10 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, macroMolecule);
 
-  const chemSpaceParams = {
+  const chemSpaceParams: ISequenceSpaceParams = {
     seqCol: withoutEmptyValues.col(macroMolecule.name)!,
     methodName: methodName,
-    similarityMetric: similarityMetric as BitArrayMetricsNames | MmDistanceFunctionsNames,
+    similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames,
     options: options
   };

@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
 import {readDataframe} from './utils';
 import {_testSequenceSpaceReturnsResult} from './sequence-space-utils';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 category('sequenceSpace', async () => {
   let testFastaDf: DG.DataFrame;
@@ -15,7 +16,7 @@ category('sequenceSpace', async () => {
   test('sequenceSpaceOpens', async () => {
     testFastaDf = await readDataframe('tests/sample_MSA_data.csv');
     testFastaTableView = grok.shell.addTableView(testFastaDf);
-    await _testSequenceSpaceReturnsResult(testFastaDf, 'UMAP', 'MSA');
+    await _testSequenceSpaceReturnsResult(testFastaDf, DimReductionMethods.UMAP, 'MSA');
     grok.shell.closeTable(testFastaDf);
     testFastaTableView.close();
   }, {skipReason: 'GROK-12775'});
@@ -23,7 +24,7 @@ category('sequenceSpace', async () => {
   test('sequenceSpaceWithEmptyRows', async () => {
     testHelmWithEmptyRows = await readDataframe('tests/sample_MSA_data_empty_vals.csv');
     testHelmWithEmptyRowsTableView = grok.shell.addTableView(testHelmWithEmptyRows);
-    await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, 'UMAP', 'MSA');
+    await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, DimReductionMethods.UMAP, 'MSA');
     grok.shell.closeTable(testHelmWithEmptyRows);
     testHelmWithEmptyRowsTableView.close();
   }, {skipReason: 'GROK-12775'});
