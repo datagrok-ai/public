@@ -5,10 +5,6 @@ import ch.qos.logback.core.AppenderBase;
 import serialization.DataFrame;
 import serialization.DateTimeColumn;
 import serialization.StringColumn;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 public class DataFrameAppender extends AppenderBase<ILoggingEvent> {
     private static final int EVENT_TIME_INDEX = 0;
@@ -16,7 +12,6 @@ public class DataFrameAppender extends AppenderBase<ILoggingEvent> {
     private static final int EVENT_LEVEL_INDEX = 2;
     private static final int EVENT_MESSAGE_INDEX = 3;
     private static final String COMPONENT_NAME = "GrokConnect";
-    private static final String DATE_FORMAT = "MM/dd/yyyy HH:mm:ss.SSS";
     private final DataFrame logs;
 
     public DataFrameAppender() {
@@ -47,10 +42,5 @@ public class DataFrameAppender extends AppenderBase<ILoggingEvent> {
 
     public DataFrame getLog() {
         return logs;
-    }
-
-    private String getFormattedDate(long timeStamp) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timeStamp), ZoneId.of("UTC"))
-                .format(DateTimeFormatter.ofPattern(DATE_FORMAT));
     }
 }
