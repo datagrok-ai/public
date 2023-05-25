@@ -115,6 +115,7 @@ export function _TreeViewer() {
 //tags: viewer
 //output: viewer result
 //meta.icon: icons/wordcloud-viewer.svg
+//meta.toolbox: true
 export function _WordCloudViewer() {
   return new WordCloudViewer();
 }
