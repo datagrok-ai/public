@@ -388,6 +388,7 @@ export async function _filtersDemo() {
 export async function _tableLinkingDemo() {
   const TABLE1_PATH = 'files/demog.csv';
   const TABLE2_PATH = 'files/demog-types.csv';
+  const HELP_URL = '/help/explore/link-tables';
 
   const demog = await grok.data.loadTable(`${_package.webRoot}/${TABLE1_PATH}`);
 	const demogTypes = await grok.data.loadTable(`${_package.webRoot}/${TABLE2_PATH}`);
@@ -398,4 +399,9 @@ export async function _tableLinkingDemo() {
 	demogTableView.dockManager.dock(demogTypesTableView.root, DG.DOCK_TYPE.RIGHT, demogTableView.dockManager.rootNode, 'demog-types', 0.5);
 	grok.data.linkTables(demogTypes, demog, ['sex', 'race'], ['sex', 'race'],
 		[DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
+
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.syncCurrentObject = false;
+  grok.shell.windows.help.showHelp(HELP_URL);
 }
