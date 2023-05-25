@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.80",
+  "version": "3.3.81",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2803,6 +2803,19 @@
         "directory": "packages/KetcherSketcher"
       },
       "category": "Cheminformatics"
+    },
+    "lib-tests": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Automated tests for libraries",
+      "repository": {
+        "type": "git",
+        "url": "git@github.com:datagrok-ai/public.git",
+        "directory": "packages/LibTests"
+      }
     }
   }
 }
