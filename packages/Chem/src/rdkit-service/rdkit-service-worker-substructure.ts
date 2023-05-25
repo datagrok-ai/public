@@ -33,7 +33,6 @@ function validateMol(mol: RDMol | null, molString: string) : void {
 }
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
-
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
@@ -51,7 +50,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           mol.is_qmol = molSafe.isQMol;
           this._rdKitMols[i] = mol;
         } else
-        malformed++;        
+          malformed++;
       }
     }
     return malformed;
@@ -59,8 +58,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   getQMol(molString: string) : RDMol | null {
     let mol = null;
-    try { mol = this._rdKitModule.get_qmol(molString); }
-    catch(e) {
+    try {mol = this._rdKitModule.get_qmol(molString);} catch (e) {
       if (mol !== null)
         mol.delete();
       return null;
@@ -80,11 +78,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
         queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
       else {
-        const molTmp = getMolSafe(queryMolString, {"mergeQueryHs":true, "kekulize": true}, this._rdKitModule).mol;
+        const molTmp = getMolSafe(queryMolString, {'mergeQueryHs': true, 'kekulize': true}, this._rdKitModule).mol;
         if (molTmp !== null) {
           let molBlockAroma: string | null;
-          try { molBlockAroma = molTmp!.get_aromatic_form(); }
-          catch(e) { // looks like we get here when the molecule is already aromatic, so we just re-assign the block
+          try {molBlockAroma = molTmp!.get_aromatic_form();} catch (e) {
+            // looks like we get here when the molecule is already aromatic, so we just re-assign the block
             molBlockAroma = queryMolString;
           }
 
@@ -93,8 +91,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
         queryMol = this.getQMol(queryMolString);
       }
-    }
-    else { // not a molblock
+    } else { // not a molblock
       queryMol = this.getQMol(queryMolString);
       if (queryMol !== null) {
         const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
@@ -103,36 +100,37 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (match === '{}') {
             queryMol.delete(); //remove mol object previously stored in queryMol
             queryMol = mol;
-          }
-          else
+          } else
             mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
-        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol; // possibly get rid of fall-over in future
+        // possibly get rid of fall-over in future
+        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol;
       }
     }
 
     if (queryMol !== null) {
-        if (bitset) {
-          for (let i = 0; i < bitset.length; ++i) {
-            try { //get_substruct_match can potentially throw an exception, need to catch
-              if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+      if (bitset) {
+        for (let i = 0; i < bitset.length; ++i) {
+          try { //get_substruct_match can potentially throw an exception, need to catch
+            // Is patternFP iff?
+            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
               matches.push(i);
-            } catch {
-              continue;
-            }
-          }
-        } else {
-          for (let i = 0; i < this._rdKitMols!.length; ++i) {
-            try {
-              if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
-              matches.push(i);
-            } catch {
-              continue;
-            }
+          } catch {
+            continue;
           }
         }
-        queryMol.delete();
+      } else {
+        for (let i = 0; i < this._rdKitMols!.length; ++i) {
+          try {
+            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+              matches.push(i);
+          } catch {
+            continue;
+          }
+        }
+      }
+      queryMol.delete();
     } else
       throw new Error('Chem | Search pattern cannot be set');
 
@@ -159,16 +157,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         if (targetNotation === MolNotation.MolBlock) {
           if (!mol.has_coords())
             mol.set_new_coords();
-         result = mol.get_molblock();
-        }
-        else if (targetNotation === MolNotation.Smiles)
+          result = mol.get_molblock();
+        } else if (targetNotation === MolNotation.Smiles)
           result = mol.get_smiles();
         else if (targetNotation === MolNotation.V3KMolBlock)
           result = mol.get_v3Kmolblock();
         else if (targetNotation === MolNotation.Smarts)
           result = mol.get_smarts();
       }
-     results[i] = result;
+      results[i] = result;
     }
 
     console.log('Finished Worker ' + results.length);

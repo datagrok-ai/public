@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {sequenceSpaceTopMenu} from '../package';
+import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 export async function _testSequenceSpaceReturnsResult(df: DG.DataFrame, algorithm: string, colName: string) {
   // await grok.data.detectSemanticTypes(df);
@@ -10,6 +11,6 @@ export async function _testSequenceSpaceReturnsResult(df: DG.DataFrame, algorith
   if (semType)
     col.semType = semType;
 
-  const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, 'Levenshtein', true);
+  const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true);
   expect(sp != null, true);
 }

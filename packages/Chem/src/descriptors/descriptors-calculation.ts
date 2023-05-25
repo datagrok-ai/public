@@ -4,9 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import {getDescriptorsPy} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import { _package } from '../package';
-import { addCopyIcon } from '../utils/ui-utils';
-import { MESSAGE_MALFORMED } from '../constants';
+import {_package} from '../package';
+import {addCopyIcon} from '../utils/ui-utils';
+import {MESSAGE_MALFORMED} from '../constants';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -35,7 +35,7 @@ export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFra
 /** Calculates descriptors for single entry*/
 export function getDescriptorsSingle(smiles: string): DG.Widget {
   const rdKitModule = getRdKitModule();
-  smiles = _convertMolNotation(smiles, 'unknown', DG.UNITS.Molecule.SMILES, rdKitModule);
+  smiles = _convertMolNotation(smiles, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, rdKitModule);
   if (smiles === MESSAGE_MALFORMED)
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   const molecule = DG.chem.isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
@@ -60,7 +60,7 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
         removeChildren(result);
         const map: { [_: string]: any } = {};
         for (const descriptor of selected)
-          map[descriptor] = table.col(descriptor).get(0); 
+          map[descriptor] = table.col(descriptor).get(0);
         result.appendChild(ui.tableFromMap(map));
       });
     });
@@ -135,7 +135,7 @@ export function getDescriptorsApp(): void {
 function openDescriptorsDialog(selected: any, onOK: any): void {
   _package.files.readAsText('constants/descriptors_const.json').then((res) => {
     descriptors = JSON.parse(res);
-  })
+  });
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
 
@@ -167,12 +167,12 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
 
     group.checkBox!.onchange = (_e) => {
       countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
-      if (group.checked) 
+      if (group.checked)
         selectedDescriptors[group.text] = group.text;
       group.items.filter((i) => {
-        if (i.checked) 
+        if (i.checked)
           selectedDescriptors[i.text] = group.text;
-      })
+      });
     };
 
     for (const descriptor of descriptors[groupName]['descriptors']) {
@@ -182,7 +182,7 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
 
       item.checkBox!.onchange = (_e) => {
         countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
-        if (item.checked) 
+        if (item.checked)
           selectedDescriptors[item.text] = groupName;
       };
     }
@@ -191,26 +191,26 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
   }
 
   const saveInputHistory = (): any => {
-    let resultHistory: { [_: string]: any } = {};
+    const resultHistory: { [_: string]: any } = {};
     const descriptorNames = Object.keys(selectedDescriptors);
-    for (const descriptorName of descriptorNames) 
+    for (const descriptorName of descriptorNames)
       resultHistory[descriptorName] = selectedDescriptors[descriptorName];
     return resultHistory;
-  }
+  };
 
   const loadInputHistory = (history: any): void => {
     checkAll(false);
     const keys: string[] = Object.keys(history);
     for (const key of keys) {
-      groups[history[key]].items.filter(function (i: any) {
-        if (i.text === key) 
+      groups[history[key]].items.filter(function(i: any) {
+        if (i.text === key)
           i.checked = true;
-      })
+      });
       if (key === history[key])
         groups[history[key]].checked = true;
     }
     countLabel.textContent = `${keys.length} checked`;
-  }
+  };
 
   ui.dialog('Chem Descriptors')
     .add(ui.divH([selectAll, selectNone, countLabel]))
@@ -219,7 +219,7 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
     .show()
     .history(
       () => saveInputHistory(),
-      (x) => loadInputHistory(x) 
+      (x) => loadInputHistory(x),
     );
 }
 

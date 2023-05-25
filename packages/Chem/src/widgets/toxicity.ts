@@ -43,7 +43,7 @@ export function getRisks(molStr: string): {[index: string]: string} {
 export function toxicityWidget(molStr: string): DG.Widget {
   const rdKitModule = getRdKitModule();
   try {
-    molStr = _convertMolNotation(molStr, 'unknown', 'smiles', rdKitModule);
+    molStr = _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
