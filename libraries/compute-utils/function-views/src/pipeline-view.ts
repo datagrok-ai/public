@@ -99,7 +99,9 @@ export class PipelineView extends ComputationView {
           t.name = name;
           sheet.getImages().forEach((image) => {
             //@ts-ignore
-            exportWorkbook.addImage(temp.getImage(image.imageId));
+            const newImageId = exportWorkbook.addImage(temp.getImage(image.imageId));
+
+            t.addImage(newImageId, image.range);
           });
         });
       };
