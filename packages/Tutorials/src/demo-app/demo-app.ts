@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {sortFunctionsByHierarchy} from './utils';
+import {sortFunctionsByHierarchy, getParentCategoryName} from './utils';
 import {DEMO_APP_HIERARCHY} from './const';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
@@ -257,21 +257,8 @@ export class DemoView extends DG.ViewBase {
 
     return root;
   }
-  
-
-  // TODO: pause on exceptions in browser and vscode, check PowerGrid problem
-
-  // TODO: demos: FileManager: show files in folder with demo, show molecules table
-  // TODO: demos: Table linking: make custom view with 2 grids and link them with the proper API (filter in one table will set uo the second table)
-  // TODO: demos: Grid customizations (in PowerGrid): have to add some sparklines, also add frozen columns (check in PowerGrid)
 
   // TODO: add demoScript node to class
-
-  // TODO: start demo scripts only by double click or enter, then create button to start it
-  // TODO: also create view of 'starting the demo script'
-  // TODO: reset scaling in network diagram viewer (miss simulation property)
-  // TODO: change color of last breadcrumbs element to --grey-6
-  // TODO: make autotests using meta.demoPath (search for it)
 
   nodeView(viewName: string, path: string): void {
     this._initWindowOptions();
@@ -468,9 +455,13 @@ export class DemoView extends DG.ViewBase {
       }
       else if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase())) {
         item.classList.remove('hidden');
-        // if (!DIRECTIONS.includes(this.searchInput.value.toLowerCase())) {
+        let parentCategoryName = getParentCategoryName(item.innerText);
+        while (parentCategoryName !== '') {
+          const parentCategory = this.tree.root.querySelector(`[data-name="${parentCategoryName}"]`);
+          parentCategory?.classList.remove('hidden');
 
-        // }
+          parentCategoryName = getParentCategoryName(parentCategoryName);
+        }
       }
       else
         item.classList.add('hidden');
