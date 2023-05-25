@@ -16,7 +16,7 @@ category('Viewers', () => {
     'Globe': 'GROK-13113',
     'Timelines': 'GROK-13113',
     'Radar': 'GROK-13113',
-    'Word Cloud Viewer': 'GROK-13113',
+    'Word cloud': 'GROK-13113',
     'Tree': 'GROK-12569',
   };
   for (const v of viewers) {

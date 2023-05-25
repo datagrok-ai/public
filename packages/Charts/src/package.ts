@@ -110,7 +110,7 @@ export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: Word Cloud Viewer
+//name: Word cloud
 //description: Creates a word cloud viewer
 //tags: viewer
 //output: viewer result
@@ -189,5 +189,5 @@ export async function _treeViewerDemo() {
 //meta.demoPath: Visualization | General | Word Cloud
 //test: _wordCloudViewerDemo() //wait: 200
 export async function _wordCloudViewerDemo() {
-  await viewerDemo('WordCloudViewer', {drawOutOfBound: false});
+  await viewerDemo(DG.VIEWER.WORD_CLOUD, {drawOutOfBound: false});
 }
