@@ -13,10 +13,10 @@ import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
-import { chem } from 'datagrok-api/dg';
-import { _convertMolNotation } from '../utils/convert-notation-utils';
-import { getRdKitModule } from '../package';
-import { MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT } from '../constants';
+import {chem} from 'datagrok-api/dg';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {getRdKitModule} from '../package';
+import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT} from '../constants';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
@@ -40,14 +40,16 @@ export class SubstructureFilter extends DG.Filter {
   syncEvent = false;
   filterId: number;
   tableName: string = '';
-  errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`, 'chem-substructure-limit');
+  errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`,
+    'chem-substructure-limit');
   sketcherType = DG.chem.currentSketcherType;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   get filterSummary(): string {
-    return _convertMolNotation(this.sketcher.getMolFile(), DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+    return _convertMolNotation(this.sketcher.getMolFile(), DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
+      getRdKitModule());
   }
 
   get isFiltering(): boolean {
@@ -67,13 +69,17 @@ export class SubstructureFilter extends DG.Filter {
     this.calculating = false;
     this.root.appendChild(this.sketcher.root);
     this.root.appendChild(this.loader);
-    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => { {
-      this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
-      this.updateExternalSketcher();
-    } }));
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
+      {
+        this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
+        this.updateExternalSketcher();
+      }
+    }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
-        if (this.sketcher.sketcher?.isInitialized) //setting syncEvent to true only if base sketcher is initialized. If base sketcher is initialized, it will fire onChange event
+        /* setting syncEvent to true only if base sketcher is initialized.
+        If base sketcher is initialized, it will fire onChange event */
+        if (this.sketcher.sketcher?.isInitialized)
           this.syncEvent = true;
         this.bitset = state.bitset!;
         this.sketcher.setMolFile(state.molblock!);
@@ -83,13 +89,14 @@ export class SubstructureFilter extends DG.Filter {
     this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         if (this.sketcher.sketcher?.isInitialized) {
-          if (DG.chem.currentSketcherType !== this.sketcherType && this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
+          if (DG.chem.currentSketcherType !== this.sketcherType &&
+              this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
             this.sketcherType = DG.chem.currentSketcherType;
             this.sketcher.sketcherType = DG.chem.currentSketcherType;
           }
         }
       }
-    }))
+    }));
   }
 
   get _debounceTime(): number {
@@ -110,7 +117,7 @@ export class SubstructureFilter extends DG.Filter {
         this.sketcher.root.children[0].classList.add('chem-hide-filter');
         this.sketcher.root.append(this.errorDiv);
         return;
-      })
+      });
     }
     super.attach(dataFrame);
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -131,7 +138,6 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => {
       this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
     });
-
   }
 
   refresh() {
@@ -164,18 +170,18 @@ export class SubstructureFilter extends DG.Filter {
 
   /** Override to load filter state. */
   applyState(state: any): void {
-      super.applyState(state);
-      this.active = state.active ?? true;
-      if (this.column?.temp['chem-scaffold-filter'])
-        state.molBlock = this.column?.temp['chem-scaffold-filter'];
-      if (state.molBlock) {
-        this.sketcher.setMolFile(state.molBlock);
-        this.updateExternalSketcher();
-      }
+    super.applyState(state);
+    this.active = state.active ?? true;
+    if (this.column?.temp['chem-scaffold-filter'])
+      state.molBlock = this.column?.temp['chem-scaffold-filter'];
+    if (state.molBlock) {
+      this.sketcher.setMolFile(state.molBlock);
+      this.updateExternalSketcher();
+    }
 
-      const that = this;
-      if (state.molBlock)
-        setTimeout(function() {that._onSketchChanged();}, 1000);
+    const that = this;
+    if (state.molBlock)
+      setTimeout(function() {that._onSketchChanged();}, 1000);
   }
 
   /**
@@ -205,7 +211,8 @@ export class SubstructureFilter extends DG.Filter {
         this.bitset = bitset;
         this.calculating = false;
         grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.sketcher.getMolFile(), colName: this.columnName, filterId: this.filterId, tableName: this.tableName});
+          molblock: this.sketcher.getMolFile(), colName: this.columnName,
+          filterId: this.filterId, tableName: this.tableName});
         this.dataFrame?.rows.requestFilter();
       } finally {
         this.calculating = false;
@@ -215,8 +222,8 @@ export class SubstructureFilter extends DG.Filter {
 
   async getFilterBitset(): Promise<DG.BitSet | null> {
     const smarts = await this.sketcher.getSmarts();
-        if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
-          return null;
+    if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
+      return null;
     return await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts!);
   }
 
@@ -224,5 +231,4 @@ export class SubstructureFilter extends DG.Filter {
     if (this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL)
       this.sketcher.updateExtSketcherContent(); //updating image in minimized sketcher panel
   }
-
 }

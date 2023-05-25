@@ -43,9 +43,8 @@ export async function getSdfStringAsync(structureColumn: DG.Column): Promise<str
   const convertedOther = [];
   for (const col of table.columns) {
     if (col !== structureColumn) {
-      if (col.semType === DG.SEMTYPE.MOLECULE) {
+      if (col.semType === DG.SEMTYPE.MOLECULE)
         convertedOther.push(await geMolNotationConversions(col, DG.chem.Notation.Smiles));
-      }
     }
   }
   let result = '';
@@ -76,7 +75,8 @@ export function getSdfString(
   for (let i = 0; i < table.rowCount; i++) {
     const molecule: string = structureColumn.get(i);
     const mol = DG.chem.isMolBlock(molecule) ? molecule :
-      _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
+      _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock,
+        chemCommonRdKit.getRdKitModule());
     result += `${mol}\n`;
 
     // properties

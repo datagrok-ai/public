@@ -22,22 +22,23 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   Statistics: 'files/demog.csv',
   'Correlation plot': 'sensors/eeg.csv',
   Calendar: 'files/demog.csv',
-  Grid: 'files/demog.csv',
+  Grid: 'files/smiles.csv',
   Markup: 'files/demog.csv',
   'Tile Viewer': 'chem/sar_small.csv',
   Form: 'files/sar-small.csv',
   'Shape Map': 'geo/us_2016_election_by_county.csv',
   'Pivot table': 'files/demog.csv',
-  Map: 'geo/earthquakes.csv',
+  Filters: 'files/filters.csv',
 };
 
 const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
   'Trellis plot': 'trellis-plot-viewer-layout.json',
   Form: 'form-viewer-layout.json',
+  Grid: 'grid-layout.json',
+  Filters: 'filters-layout.json',
 };
 
-const MARKUP_CONTENT = `
-# What's Markdown?
+const MARKUP_CONTENT = `# What's Markdown?
 
 ## Table name: #{t.name}
 
@@ -51,8 +52,7 @@ const MARKUP_CONTENT = `
 
 ## Current column: #{t.currentCol}
 
-## Current cell: #{t.currentCell}
-`;
+## Current cell: #{t.currentCell}`;
 
 
 async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
@@ -70,7 +70,7 @@ async function loadViewerDemoLayout(tableView: DG.TableView, viewerName: string)
 }
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
-  const df = ['Line chart', 'Network diagram', 'Correlation plot', 'Tile Viewer', 'Shape Map', 'Map'].includes(viewerName) ?
+  const df = ['Line chart', 'Network diagram', 'Correlation plot', 'Tile Viewer', 'Shape Map'].includes(viewerName) ?
     await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]) :
     await grok.data.loadTable(`${_package.webRoot}/${VIEWER_TABLES_PATH[viewerName]}`);
 
@@ -80,7 +80,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   grok.shell.windows.showHelp = true;
   grok.shell.windows.help.syncCurrentObject = false;
 
-  if (['Form', 'Trellis plot'].includes(viewerName)) {
+  if (['Form', 'Trellis plot', 'Grid', 'Filters'].includes(viewerName)) {
     if (viewerName === DG.VIEWER.FORM) {
       DG.debounce(df.onSemanticTypeDetected, 800).subscribe(async (_) => {
         await loadViewerDemoLayout(tableView, viewerName);
@@ -92,7 +92,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     return;
   }
   
-  if (['Tile Viewer', 'Map'].includes(viewerName)) {
+  if (viewerName === DG.VIEWER.TILE_VIEWER) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
       grok.shell.windows.help.showHelp(viewer.helpUrl);

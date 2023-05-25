@@ -1,6 +1,5 @@
 // OCL requires same kind of loading as we do for RdKit
 // Therefore, this cannot be currently used from WebWorkers
-import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
 import * as DG from 'datagrok-api/dg';
@@ -33,11 +32,9 @@ export function renderDescription(description: OCL.IParameterizedString[]): HTML
 }
 
 function _molToCanvas(mol: OCL.Molecule, width = 200, height = 100): HTMLCanvasElement {
-  const r = window.devicePixelRatio;
   const canvas = ui.canvas(width, height);
   canvas!.style.width = width.toString() + 'px';
   canvas!.style.height = height.toString() + 'px';
-
 
   if (mol !== null)
     OCL.StructureView.drawMolecule(canvas, mol);

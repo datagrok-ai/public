@@ -84,7 +84,7 @@ category('cell panel', async () => {
 
   //TODO: Check if image is returned; Visual test required
   test('structure3d-widget', async () => {
-    for (const mol of molFormats) 
+    for (const mol of molFormats)
       structure3dWidget(mol);
   });
 

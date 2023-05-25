@@ -26,7 +26,7 @@ export class PackagesView extends UaView {
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Packages',
       queryName: 'PackagesUsage',
-      viewerFunction: (t: DG.DataFrame) => {
+      processDataFrame: (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
           PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Packages');
         });
@@ -57,6 +57,9 @@ export class PackagesView extends UaView {
           PackagesView.getAuditPane(cp, filter);
           grok.shell.o = cp.root;
         });
+        return t;
+      },
+      createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'package',

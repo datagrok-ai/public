@@ -21,7 +21,7 @@ export async function heatmapDemo() {
 
     const rootNode = tv.dockManager.rootNode;
     const extraViewerNode = tv.dockManager.dock(
-      tv.addViewer(DG.VIEWER.SCATTER_PLOT), DG.DOCK_TYPE.DOWN, rootNode, DG.VIEWER.SCATTER_PLOT, 0.3
+      tv.addViewer(DG.VIEWER.SCATTER_PLOT), DG.DOCK_TYPE.DOWN, rootNode, DG.VIEWER.SCATTER_PLOT, 0.25
     );
     tv.dockManager.dock(
       tv.addViewer(DG.VIEWER.HISTOGRAM), DG.DOCK_TYPE.RIGHT, extraViewerNode, DG.VIEWER.HISTOGRAM, 0.5

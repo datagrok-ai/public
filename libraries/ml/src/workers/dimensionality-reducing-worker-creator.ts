@@ -1,5 +1,5 @@
 import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
-import {ValidTypes} from '../typed-metrics';
+import {ValidTypes} from '../typed-metrics/typed-metrics';
 
 /**
  * A worker to perform dimensionality reduction.
