@@ -20,7 +20,7 @@ import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-o
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
-import { AvailableMetricsTypes, BitArrayMetricsNames, StringMetricsNames, VectorMetricsNames } from './consts';
+import { DistanceMetricsSubjects, BitArrayMetricsNames, StringMetricsNames, VectorMetricsNames } from './consts';
 
 
 export const vectorDistanceMetricsMethods: { [name: string]: (x: Vector, y: Vector) => number } = {
@@ -49,15 +49,15 @@ export const bitArrayDistanceMetricsMethods: { [name: string]: (x: BitArray, y: 
 };
 
 export const AvailableMetrics = {
-  [AvailableMetricsTypes.Vector]: {
+  [DistanceMetricsSubjects.Vector]: {
     [VectorMetricsNames.Euclidean]: vectorDistanceMetricsMethods[VectorMetricsNames.Euclidean],
   },
-  [AvailableMetricsTypes.String]: {
+  [DistanceMetricsSubjects.String]: {
     [StringMetricsNames.Levenshtein]: stringDistanceMetricsMethods[StringMetricsNames.Levenshtein],
     [StringMetricsNames.JaroWinkler]: stringDistanceMetricsMethods[StringMetricsNames.JaroWinkler],
     [StringMetricsNames.Manhattan]: stringDistanceMetricsMethods[StringMetricsNames.Manhattan],
   },
-  [AvailableMetricsTypes.BitArray]: {
+  [DistanceMetricsSubjects.BitArray]: {
     [BitArrayMetricsNames.Tanimoto]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Tanimoto],
     [BitArrayMetricsNames.Dice]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Dice],
     [BitArrayMetricsNames.Asymmetric]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Asymmetric],
@@ -69,7 +69,7 @@ export const AvailableMetrics = {
     [BitArrayMetricsNames.Russel]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Russel],
     [BitArrayMetricsNames.Sokal]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Sokal],
   },
-  [AvailableMetricsTypes.MacroMolecule]: { // optional args are needed for macromolecule functions which initialize them
+  [DistanceMetricsSubjects.MacroMolecule]: { // optional args are needed for macromolecule functions which initialize them
     [MmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[MmDistanceFunctionsNames.HAMMING],
     [MmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[MmDistanceFunctionsNames.LEVENSHTEIN],
     [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
@@ -85,9 +85,9 @@ export const MetricToDataType: StringDictionary = Object.keys(AvailableMetrics)
   }, {});
 
 export type AvailableDataTypes = keyof typeof AvailableMetrics;
-export type VectorMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.Vector];
-export type StringMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.String];
-export type BitArrayMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.BitArray];
+export type VectorMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.Vector];
+export type StringMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.String];
+export type BitArrayMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.BitArray];
 export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics | MmDistanceFunctionsNames;
 
 export type ValidTypes =
@@ -108,7 +108,7 @@ export function isVectorMetric(name: KnownMetrics) {
 }
 
 export function isMacroMoleculeMetric(name: KnownMetrics) {
-  return MetricToDataType[name] == AvailableMetricsTypes.MacroMolecule.toString();
+  return MetricToDataType[name] == DistanceMetricsSubjects.MacroMolecule.toString();
 }
 
 /** Manhattan distance between two sequences (match - 0, mismatch - 1) normalized for length. */

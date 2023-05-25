@@ -2,7 +2,7 @@ export {
     StringMetricsNames,
     VectorMetricsNames,
     BitArrayMetricsNames,
-    AvailableMetricsTypes
+    DistanceMetricsSubjects
 } from './consts';
 
 export {

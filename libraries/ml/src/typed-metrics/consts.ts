@@ -23,7 +23,7 @@ export enum StringMetricsNames {
     Euclidean = 'Euclidean',
   }
 
-  export enum AvailableMetricsTypes {
+  export enum DistanceMetricsSubjects {
     Vector = 'Vector',
     String = 'String',
     BitArray = 'BitArray',
