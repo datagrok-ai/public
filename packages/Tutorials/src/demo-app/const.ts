@@ -61,10 +61,13 @@ export const DEMO_APP_HIERARCHY = {
 				{
 					name: 'Databases',
 				},
+				{
+					name: 'Table Linking',
+				},
 			]
 		},
 		{
-			name: 'Viewers',
+			name: 'Visualization',
 			children: [
 				{
 					name: 'Data flow and hierarchy',

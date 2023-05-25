@@ -21,6 +21,7 @@ export class AggregationTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/transform/aggregate-rows';
 
   protected async _run() {
+    grok.shell.windows.showToolbox = false;
     this.header.textContent = this.name;
     this.title('Aggregation');
 
@@ -113,12 +114,16 @@ export class AggregationTutorial extends Tutorial {
       '{"#type":"GroupAggregation","aggType":"key","colName":"SEX"},{"#type":"GroupAggregation",' +
       '"aggType":"pivot","colName":"DIS_POP"},{"#type":"GroupAggregation","aggType":"avg","colName":"WEIGHT"}]';
 
+    const historyStr = window.localStorage['grok-aggregation-history'];
+    const initialParamsLen = historyStr ? JSON.parse(historyStr).length : 0;
+
     await this.action('Save parameters', interval(1000).pipe(filter(() => {
         const historyStr = window.localStorage['grok-aggregation-history'];
         if (!historyStr)
           return false;
         const history = JSON.parse(historyStr);
-        return JSON.stringify(history[history.length - 1]) === serializedParams;
+        return history.length > initialParamsLen &&
+          JSON.stringify(history[history.length - 1]) === serializedParams;
       })), $('i.grok-icon.fa-history.d4-command-bar-icon')[0],
       'Click on the history icon and select <b>Save parameters</b> from the menu. Note that parameters are ' +
       'also saved automatically when you click "OK" to add the aggregated dataframe to the workspace. This ' +

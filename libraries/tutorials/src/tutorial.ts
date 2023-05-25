@@ -228,6 +228,7 @@ export abstract class Tutorial extends DG.Widget {
     }, `Copy the tutorial link`);
 
     closeTutorial.style.minWidth = '30px';
+    this.header.textContent = this.name;
     this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
     this.headerDiv.append(closeTutorial);
   }
