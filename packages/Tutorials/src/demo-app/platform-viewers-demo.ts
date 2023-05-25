@@ -40,19 +40,24 @@ const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
 
 const MARKUP_CONTENT = `# What's Markdown?
 
-## Table name: #{t.name}
+Markdown is a lightweight [markup language](https://en.wikipedia.org/wiki/Markdown)
+used to create formatted text.
 
-## Row count: #{t.rowCount}
+The **Markup viewer** allows you to display text using Markdown notation. 
+You can edit the text using the properties panel of the viewer (press F4).
 
-## Selected: #{t.selection.trueCount}
+# Dynamic properties:
 
-## Filtered: #{t.filter.trueCount}
+The text in the **Markup viewer** can include dynamic properties 
+that automatically update when the data changes.
 
-## Current row: #{t.currentRow}
-
-## Current column: #{t.currentCol}
-
-## Current cell: #{t.currentCell}`;
+* Table name: **#{t.name}**
+* Row count: **#{t.rowCount}**
+* Selected: **#{t.selection.trueCount}**
+* Filtered: **#{t.filter.trueCount}**
+* Current row: **#{t.currentRow}**
+* Current column: **#{t.currentCol}**
+* Current cell value: **#{t.currentCell}**`;
 
 
 async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
