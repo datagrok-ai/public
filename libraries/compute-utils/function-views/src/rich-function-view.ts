@@ -14,7 +14,7 @@ import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getDataFrame, getFuncRunLabel, getPropViewers} from './shared/utils';
+import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -712,7 +712,7 @@ export class RichFunctionView extends FunctionView {
       const visibleTitle = dfInput.options.caption || dfInput.name;
       const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT));
 
-      const currentDf = getDataFrame(lastCall, dfInput.name, DIRECTION.INPUT);
+      const currentDf = lastCall.inputs[dfInput.name];
       dfToSheet(currentDfSheet, currentDf);
     });
 
@@ -729,7 +729,7 @@ export class RichFunctionView extends FunctionView {
       const visibleTitle = dfOutput.options.caption || dfOutput.name;
       const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
 
-      const currentDf = getDataFrame(lastCall, dfOutput.name, DIRECTION.OUTPUT);
+      const currentDf = lastCall.outputs[dfOutput.name];
       dfToSheet(currentDfSheet, currentDf);
     });
 
@@ -757,7 +757,7 @@ export class RichFunctionView extends FunctionView {
 
           const dfInput = dfInputs.find((input) => input.name === inputParam.name)!;
           const visibleTitle = dfInput!.options.caption || inputParam.name;
-          const currentDf = getDataFrame(lastCall, dfInput.name, DIRECTION.INPUT);
+          const currentDf = lastCall.inputs[dfInput.name];
 
           for (const [index, viewer] of nonGridViewers.entries()) {
             await plotToSheet(
@@ -783,7 +783,7 @@ export class RichFunctionView extends FunctionView {
 
           const dfOutput = dfOutputs.find((output) => output.name === outputParam.property.name)!;
           const visibleTitle = dfOutput.options.caption || outputParam.property.name;
-          const currentDf = getDataFrame(lastCall, dfOutput.name, DIRECTION.OUTPUT);
+          const currentDf = lastCall.outputs[dfOutput.name];
 
           for (const [index, viewer] of nonGridViewers.entries()) {
             if (viewer.type === DG.VIEWER.STATISTICS) {
