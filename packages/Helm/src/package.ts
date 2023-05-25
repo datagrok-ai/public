@@ -10,7 +10,7 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {findMonomers} from './utils';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import { NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export const _package = new DG.Package();
 let monomerLib: IMonomerLib | null = null;
@@ -64,13 +64,13 @@ function rewriteLibraries() {
       if (monomer.rgroups.length > 0) {
         webEditorMonomer.rs = monomer.rgroups.length;
         const at = {};
-        monomer.rgroups.forEach(it => {
+        monomer.rgroups.forEach((it) => {
           at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
         });
         webEditorMonomer.at = at;
-      } else if (monomer.data[SMILES] != null) {
-        webEditorMonomer.rs = Object.keys(getRS(monomer.data[SMILES].toString())).length;
-        webEditorMonomer.at = getRS(monomer.data[SMILES].toString());
+      } else if (monomer[SMILES] != null) {
+        webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
+        webEditorMonomer.at = getRS(monomer[SMILES].toString());
       } else {
         isBroken = true;
       }
