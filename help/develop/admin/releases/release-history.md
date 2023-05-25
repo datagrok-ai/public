@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.0](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.1](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.12](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -18,6 +18,19 @@ title: "Release History"
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../deploy/docker-compose.md)
+
+
+## 2023-05-25 1.15.1
+
+### Addressed Issues
+
+* null 
+* (Bug) GROK-13109: Databases | Mysql, MariaDB: Get top 100 on some tables throws an error 
+* (Bug) GROK-13157: Can't load table without initial permissions 
+* (Bug) GROK-13132: Scatterplot legend BUG 
+* (Enhancement) [#1378](https://github.com/datagrok-ai/public/issues/1505502360): PC Plot: context menu harmonization 
+* (Bug) [#1929](https://github.com/datagrok-ai/public/issues/1711696753): Viewers do not support hex colours set in categorical colouring 
+* GROK-13136: Release notes v. 1.15.0 
 
 
 ## 2023-05-17 1.15.0
