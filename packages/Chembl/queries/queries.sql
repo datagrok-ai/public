@@ -180,9 +180,9 @@ select count(from_id) from src10src11
 --friendlyName: Search | FRAC classification
 --connection: Chembl 
 --input: string level1 {category: FRAC; choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
---input: string level2 {category: FRAC; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
---input: string level3 {category: FRAC; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
---input: string level4 {category: FRAC; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+--input: string level2 {category: FRAC; nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
+--input: string level3 {category: FRAC; nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
+--input: string level4 {category: FRAC; nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
 SELECT * 
 FROM compound_structures s
 INNER JOIN molecule_frac_classification m 
