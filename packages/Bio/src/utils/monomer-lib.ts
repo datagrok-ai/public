@@ -6,10 +6,16 @@ import {Observable, Subject} from 'rxjs';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
   createJsonMonomerLibFromSdf,
-  expectedMonomerData,
   IMonomerLibHelper
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
+const HELM_REQUIRED_FIELDS_ARRAY = [
+  REQ.SYMBOL, REQ.NAME, REQ.MOLFILE, REQ.AUTHOR, REQ.ID,
+  REQ.RGROUPS, REQ.SMILES, REQ.POLYMER_TYPE, REQ.MONOMER_TYPE, REQ.CREATE_DATE
+] as const;
+
+const HELM_OPTIONAL_FIELDS_ARRAY = [OPT.NATURAL_ANALOG, OPT.META] as const;
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
 export const LIB_PATH = 'System:AppData/Bio/libraries/';
@@ -41,10 +47,10 @@ export async function setUserLibSetting(value: LibSettings): Promise<void> {
 }
 
 export class MonomerLib implements IMonomerLib {
-  private _monomers: { [type: string]: { [name: string]: Monomer } } = {};
+  private _monomers: { [type: string]: { [monomerName: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
 
-  constructor(monomers: { [type: string]: { [name: string]: Monomer } }) {
+  constructor(monomers: { [type: string]: { [monomerName: string]: Monomer } }) {
     this._monomers = monomers;
   }
 
@@ -59,11 +65,11 @@ export class MonomerLib implements IMonomerLib {
     return Object.keys(this._monomers);
   }
 
-  getMonomerMolsByType(type: string): { [symbol: string]: string } {
-    const res: { [symbol: string]: string } = {};
+  getMonomerMolsByType(type: string): { [monomerName: string]: string } {
+    const res: { [monomerName: string]: string } = {};
 
-    Object.keys(this._monomers[type]).forEach((monomerSymbol) => {
-      res[monomerSymbol] = this._monomers[type][monomerSymbol].molfile;
+    Object.keys(this._monomers[type]).forEach((monomerName) => {
+      res[monomerName] = this._monomers[type][monomerName].molfile;
     });
 
     return res;
@@ -163,32 +169,14 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       data = JSON.parse(file);
     }
 
-    const monomers: { [type: string]: { [name: string]: Monomer } } = {};
+    const monomers: { [type: string]: { [symbol: string]: Monomer } } = {};
     const types: string[] = [];
-    //group monomers by their type
     data.forEach((monomer) => {
-      const monomerAdd: Monomer = {
-        'symbol': monomer['symbol'],
-        'name': monomer['name'],
-        'naturalAnalog': monomer['naturalAnalog'],
-        'molfile': monomer['molfile'],
-        'rgroups': monomer['rgroups'],
-        'polymerType': monomer['polymerType'],
-        'monomerType': monomer['monomerType'],
-        'data': {}
-      };
-
-      Object.keys(monomer).forEach((prop) => {
-        if (!expectedMonomerData.includes(prop))
-          monomerAdd.data[prop] = monomer[prop];
-      });
-
-      if (!types.includes(monomer['polymerType'])) {
-        monomers[monomer['polymerType']] = {};
-        types.push(monomer['polymerType']);
+      if (!types.includes(monomer[REQ.POLYMER_TYPE])) {
+        monomers[monomer[REQ.POLYMER_TYPE]] = {};
+        types.push(monomer[REQ.POLYMER_TYPE]);
       }
-
-      monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
+      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomer as Monomer;
     });
 
     return new MonomerLib(monomers);
