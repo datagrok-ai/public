@@ -24,14 +24,13 @@ See also:
 
 ### Addressed Issues
 
-* (Bug) GROK-13109: Databases | Mysql, MariaDB: Get top 100 on some tables throws an error 
-* (Bug) GROK-13157: Can't load table without initial permissions 
-* (Bug) GROK-13132: Fixed scatter plot legend
-* (Enhancement) [#1378](https://github.com/datagrok-ai/public/issues/1505502360): PC Plot: context menu harmonization 
-* (Bug) [#1929](https://github.com/datagrok-ai/public/issues/1711696753): Viewers do not support hex colours set in categorical colouring 
-* (Bug) [#1208](https://github.com/datagrok-ai/public/issues/1208): Default tooltip is unexpectedly reset on duplicating a v
-* (Bug) GROK-13126: Grid | Layouts: colorcoding is applied from the previous layout
-
+* (Bug) GROK-13109: Databases | Mysql, MariaDB: Get top 100 on some tables throws an error.
+* (Bug) GROK-13157: Can't load table without initial permissions.
+* (Bug) GROK-13132: Fixed scatter plot legend.
+* (Enhancement) [#1378](https://github.com/datagrok-ai/public/issues/1378): PC Plot: context menu harmonization.
+* (Bug) [#1929](https://github.com/datagrok-ai/public/issues/1929): Viewers do not support hex colours set in categorical colouring.
+* (Bug) [#1208](https://github.com/datagrok-ai/public/issues/1208): Default tooltip is unexpectedly reset on duplicating a view.
+* (Bug) GROK-13126: Grid | Layouts: colorcoding is applied from the previous layout.
 
 ## 2023-05-17 1.15.0
 
