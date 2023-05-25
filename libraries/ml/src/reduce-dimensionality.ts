@@ -9,9 +9,9 @@ import {
   Matrix,
 } from '@datagrok-libraries/utils/src/type-declarations';
 import {
-  calcDistanceMatrix,
   transposeMatrix,
   assert,
+  calcNormalizedDistanceMatrix,
 } from '@datagrok-libraries/utils/src/vector-operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics/typed-metrics';
@@ -101,7 +101,7 @@ class TSNEReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
   public transform(): { [key: string]: Matrix } {
-    const distance = calcDistanceMatrix(this.data, this.distanceFn);
+    const distance = calcNormalizedDistanceMatrix(this.data, this.distanceFn);
     this.reducer.initDataDist(distance);
 
     for (let i = 0; i < this.iterations; ++i) {
@@ -123,7 +123,7 @@ class UMAPReducer extends Reducer {
   protected reducer: umj.UMAP;
   protected distanceFn: Function;
   protected vectors: number[][];
-
+  protected distanceMatrix: Matrix;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -135,11 +135,13 @@ class UMAPReducer extends Reducer {
     assert('distanceFn' in options);
 
     this.distanceFn = options.distanceFn!;
-    this.vectors = [];
+    this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
+    this.distanceMatrix = Array(this.data.length).fill(0).map(() => new Float32Array(this.data.length).fill(0));
     options.distanceFn = this._encodedDistance.bind(this);
     if (this.data.length < 15)
       options.nNeighbors = this.data.length - 1;
     this.reducer = new umj.UMAP(options);
+    // this.reducer.distanceFn = this._encodedDistance.bind(this);
   }
 
   /**
@@ -152,7 +154,7 @@ class UMAPReducer extends Reducer {
    * @memberof UMAPReducer
    */
   protected _encodedDistance(a: number[], b: number[]): number {
-    return this.distanceFn(this.data[a[0]], this.data[b[0]]);
+    return this.distanceMatrix[a[0]][b[0]];
   }
 
   /**
@@ -172,15 +174,14 @@ class UMAPReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding.
    */
   public transform(): { [key: string]: Matrix } {
-    this._encode();
-
+    this.distanceMatrix = calcNormalizedDistanceMatrix(this.data, this.distanceFn as DistanceMetric);
     const embedding = this.reducer.fit(this.vectors);
 
     function arrayCast2Coordinates(data: number[][]): Coordinates {
       return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));
     }
 
-    return {embedding: arrayCast2Coordinates(embedding)};
+    return {embedding: arrayCast2Coordinates(embedding), distance: this.distanceMatrix};
   }
 }
 
