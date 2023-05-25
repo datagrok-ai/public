@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {chemSpace} from '../analysis/chem-space';
+import {chemSpace, runChemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
 import {chemSpaceTopMenu} from '../package';
@@ -31,8 +31,8 @@ category('top menu chem space', async () => {
   });
 
   test('chemSpaceOpens.smiles', async () => {
-    if (DG.Test.isInBenchmark) await _testChemSpaceReturnsResult(await readDataframe('smiles.csv'), 'canonical_smiles');
-    else await _testChemSpaceReturnsResult(smallDf, 'smiles');
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_100K.zip") : smallDf;
+    await _testChemSpaceReturnsResult(df, 'smiles');
   });
 
   test('chemSpaceOpens.molV2000', async () => {
@@ -77,7 +77,7 @@ async function _testChemSpaceReturnsResult(df: DG.DataFrame, col: string) {
   await grok.data.detectSemanticTypes(df);
   const tv = grok.shell.addTableView(df);
   try {
-    const sp = await chemSpaceTopMenu(df, df.getCol(col), DimReductionMethods.UMAP,
+    const sp = await runChemSpace(df, df.getCol(col), DimReductionMethods.UMAP,
       BitArrayMetricsNames.Tanimoto, true, {});
     expect(sp != null, true);
   } finally {tv.close();}

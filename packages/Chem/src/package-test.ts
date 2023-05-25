@@ -28,6 +28,7 @@ import './tests/viewers';
 import './tests/mol2-importer-tests';
 import './tests/chemical-table-parsing';
 import './tests/is-smarts-tests';
+import './tests/fingerprints';
 
 export const _package = new DG.Package();
 export {tests};

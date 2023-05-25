@@ -46,7 +46,7 @@ import {getSimilaritiesMarix} from './utils/similarity-utils';
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
-import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
+import {chemSpace, getEmbeddingColsNames, runChemSpace} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 
 //file importers
@@ -499,41 +499,18 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
 
-  const runChemSpace = async (): Promise<DG.Viewer | undefined> => {
-    const embedColsNames = getEmbeddingColsNames(table);
-
-    const chemSpaceParams = {
-      seqCol: molecules,
-      methodName: methodName,
-      similarityMetric: similarityMetric as BitArrayMetrics,
-      embedAxesNames: [embedColsNames[0], embedColsNames[1]],
-      options: options,
-    };
-    const chemSpaceRes = await chemSpace(chemSpaceParams);
-    const embeddings = chemSpaceRes.coordinates;
-
-    for (const col of embeddings)
-      table.columns.add(col);
-
-    if (plotEmbeddings) {
-      return grok.shell
-        .tableView(table.name)
-        .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
-    }
-  };
-
   if (table.rowCount > fastRowCount) {
     ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        const res = await runChemSpace();
+        const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options);
         progressBar.close();
         return res;
       })
       .show();
   } else
-    return await runChemSpace();
+    return await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options)
 }
 
 
