@@ -1245,7 +1245,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * [Chord viewer](https://github.com/datagrok-ai/public/tree/master/packages/Charts#chord):
   * Added viewer redrawing on filtering.
   * Fixed the selection functionality.
-* [Radar viewer](../../../visualize/viewers/radar-viewer.md):
+* [Radar viewer](../../../visualize/viewers/radar.md):
   * Fixed changing color issue: synchronized the color of percentiles on the legend and **Context Pane**.
 
 #### [MLB](https://github.com/datagrok-ai/public/tree/master/packages/MolecularLiabilityBrowser#readme)
