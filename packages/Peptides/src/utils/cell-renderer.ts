@@ -21,7 +21,7 @@ export function setAARRenderer(col: DG.Column, alphabet: string): void {
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
-  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs,
+  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs | null = null,
   twoColorMode: boolean = false): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal: number = positionStats[currentAAR].pValue;
@@ -58,7 +58,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   canvasContext.closePath();
 
   canvasContext.fill();
-  if (substitutionsInfo.size > 0) {
+  if (substitutionsInfo !== null && substitutionsInfo.size > 0) {
     canvasContext.textBaseline = 'middle';
     canvasContext.textAlign = 'center';
     canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);

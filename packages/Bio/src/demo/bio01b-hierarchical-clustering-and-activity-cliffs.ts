@@ -12,6 +12,7 @@ import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
@@ -23,7 +24,7 @@ export async function demoBio01bUI() {
   let view: DG.TableView;
   let activityCliffsViewer: DG.ScatterPlotViewer;
 
-  const dimRedMethod: string = 'UMAP';
+  const dimRedMethod: DimReductionMethods = DimReductionMethods.UMAP;
   const idRows: { [id: number]: number } = {};
 
   try {

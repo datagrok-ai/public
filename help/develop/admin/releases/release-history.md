@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.0](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.1](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.12](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -19,6 +19,18 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../deploy/docker-compose.md)
 
+
+## 2023-05-25 1.15.1
+
+### Addressed Issues
+
+* (Bug) GROK-13109: Databases | Mysql, MariaDB: Get top 100 on some tables throws an error.
+* (Bug) GROK-13157: Can't load table without initial permissions.
+* (Bug) GROK-13132: Fixed scatter plot legend.
+* (Enhancement) [#1378](https://github.com/datagrok-ai/public/issues/1378): PC Plot: context menu harmonization.
+* (Bug) [#1929](https://github.com/datagrok-ai/public/issues/1929): Viewers do not support hex colours set in categorical colouring.
+* (Bug) [#1208](https://github.com/datagrok-ai/public/issues/1208): Default tooltip is unexpectedly reset on duplicating a view.
+* (Bug) GROK-13126: Grid | Layouts: colorcoding is applied from the previous layout.
 
 ## 2023-05-17 1.15.0
 
@@ -1232,7 +1244,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * [Chord viewer](https://github.com/datagrok-ai/public/tree/master/packages/Charts#chord):
   * Added viewer redrawing on filtering.
   * Fixed the selection functionality.
-* [Radar viewer](../../../visualize/viewers/radar-viewer.md):
+* [Radar viewer](../../../visualize/viewers/radar.md):
   * Fixed changing color issue: synchronized the color of percentiles on the legend and **Context Pane**.
 
 #### [MLB](https://github.com/datagrok-ai/public/tree/master/packages/MolecularLiabilityBrowser#readme)

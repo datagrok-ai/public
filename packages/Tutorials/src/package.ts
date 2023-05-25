@@ -12,7 +12,7 @@ import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
-import { DemoAppWidget } from './demo-app/widget';
+import {DemoAppWidget} from './demo-app/widget';
 
 export const _package = new DG.Package();
 
@@ -379,4 +379,29 @@ export async function _pivotTableDemo() {
 //test: _filtersDemo() //wait: 2000
 export async function _filtersDemo() {
   await viewerDemo(DG.VIEWER.FILTERS);
+}
+
+//name: tableLinkingDemo
+//description: Table linking is based on the key columns. The link type determines which records should be synchronized between the datasets (current record, filter, selection, and mouse-over record).
+//meta.demoPath: Data Access | Table Linking
+//test: _tableLinkingDemo() //wait: 2000
+export async function _tableLinkingDemo() {
+  const TABLE1_PATH = 'files/demog.csv';
+  const TABLE2_PATH = 'files/demog-types.csv';
+  const HELP_URL = '/help/explore/link-tables';
+
+  const demog = await grok.data.loadTable(`${_package.webRoot}/${TABLE1_PATH}`);
+	const demogTypes = await grok.data.loadTable(`${_package.webRoot}/${TABLE2_PATH}`);
+	
+	const demogTypesTableView = grok.shell.addTableView(demogTypes);
+	const demogTableView = grok.shell.addTableView(demog);
+
+	demogTableView.dockManager.dock(demogTypesTableView.root, DG.DOCK_TYPE.RIGHT, demogTableView.dockManager.rootNode, 'demog-types', 0.5);
+	grok.data.linkTables(demogTypes, demog, ['sex', 'race'], ['sex', 'race'],
+		[DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
+
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.syncCurrentObject = false;
+  grok.shell.windows.help.showHelp(HELP_URL);
 }

@@ -83,15 +83,15 @@ export class RdKitService {
       });
   }
 
-  
+
   async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Uint8Array[]> {
     const t = this;
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
         t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
-        (data: Array<Uint8Array | null>[][]) => {
-          return ([] as Array<Uint8Array | null>[]).concat(...data);
-        }) :
+      (data: Array<Uint8Array | null>[][]) => {
+        return ([] as Array<Uint8Array | null>[]).concat(...data);
+      }) :
       await this._doParallel(
         (i: number, _: number) => {
           return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules);
@@ -110,9 +110,9 @@ export class RdKitService {
         return t.parallelWorkers[i].convertMolNotation(targetNotation);
       },
       (data: any) => {
-        for (let k = 0; k < data.length; ++k) {
+        for (let k = 0; k < data.length; ++k)
           data[k] = data[k].map((a: number) => a + t.segmentLength * k);
-        }
+
         return [].concat(...data);
       });
   }

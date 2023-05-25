@@ -33,7 +33,7 @@ category('Core', () => {
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
+    simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
@@ -53,7 +53,7 @@ category('Core', () => {
     complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     complexAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
     complexAlignedSeqCol.setTag(C.TAGS.SEPARATOR, '/');
-    complexScaledCol = scaleActivity(complexActivityCol, '-lg');
+    complexScaledCol = scaleActivity(complexActivityCol, C.SCALING_METHODS.MINUS_LG);
 
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
@@ -72,7 +72,7 @@ category('Core', () => {
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
+    simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
@@ -104,7 +104,7 @@ category('Core', () => {
   test('Cluster stats - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k_2.d42'))[0];
     const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, 'none');
+    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     const clustersCol = df.getCol('Cluster');
     const sequenceCol = df.getCol('HELM');
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -119,7 +119,7 @@ category('Core', () => {
   test('Monomer Position stats - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
     const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, 'none');
+    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     const clustersCol = df.getCol('Cluster');
     const sequenceCol = df.getCol('HELM');
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -134,7 +134,7 @@ category('Core', () => {
   test('Analysis start - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
     const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, 'none');
+    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     const clustersCol = df.getCol('Cluster');
     const sequenceCol = df.getCol('HELM');
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;

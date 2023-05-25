@@ -72,8 +72,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
-    'Scaling', 'none', ['none', 'lg', '-lg'],
-    async (currentMethod: string): Promise<void> => {
+    'Scaling', C.SCALING_METHODS.NONE, Object.values(C.SCALING_METHODS),
+    async (currentMethod: C.SCALING_METHODS): Promise<void> => {
       scaledCol = scaleActivity(activityColumnChoice.value!, currentMethod);
 
       const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
@@ -87,7 +87,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
       });
       histogramHost.lastChild?.remove();
       histogramHost.appendChild(hist.root);
-    });
+    }) as DG.InputBase<C.SCALING_METHODS | null>;
   activityScalingMethod.setTooltip('Function to apply for each value in activity column');
 
   const activityScalingMethodState = (): void => {
@@ -101,23 +101,27 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
-  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
+  const targetColumnChoice = ui.columnInput('Target', df, null, () => {
+    if (targetColumnChoice.value?.type !== DG.COLUMN_TYPE.STRING) {
+      grok.shell.warning('Target column should be of string type');
+      targetColumnChoice.value = null;
+    }
+  });
+  targetColumnChoice.nullable = true;
+
+  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];
   if (seqColInput !== null)
     inputsList.splice(0, 0, seqColInput);
 
-  const bitsetChanged = df.filter.onChanged.subscribe(() => {
-    activityScalingMethodState();
-  });
+  const bitsetChanged = df.filter.onChanged.subscribe(() => activityScalingMethodState());
 
   const startAnalysisCallback = async (): Promise<boolean> => {
     const sequencesCol = col ?? seqColInput!.value;
+    bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.stringValue as C.SCALING_METHODS ?? C.SCALING_METHODS.NONE);
-      if (model != null) {
-        bitsetChanged.unsubscribe();
-        return true;
-      }
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value);
+      return model != null;
     }
     return false;
   };
@@ -151,7 +155,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
   clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
-): Promise<PeptidesModel | null> {
+  targetColumn: DG.Column<string> | null = null): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT ||
@@ -174,6 +178,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       minActivityDelta: 0,
       showDendrogram: false,
     };
+    if (targetColumn !== null)
+      settings.targetColumnName = targetColumn.name;
+
     if (clustersColumn) {
       const clusterCol = newDf.getCol(clustersColumn.name);
       if (clusterCol.type != DG.COLUMN_TYPE.STRING)
