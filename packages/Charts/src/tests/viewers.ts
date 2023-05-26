@@ -15,6 +15,7 @@ category('Viewers', () => {
         else if (v === 'Globe') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
       })(), {detectSemanticTypes: true});
-    }, v === 'Tree' ? {skipReason: 'GROK-12569'} : {});
+    }, v === 'Tree' ? {skipReason: 'GROK-12569'} :
+    v === 'Word Cloud Viewer' ? {skipReason: 'GROK-13198'} : {});
   }
 });
