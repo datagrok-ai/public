@@ -137,8 +137,8 @@ public class DataFrame {
         return Objects.hash(name, rowCount, columns, tags);
     }
 
-    public int memoryInBytes() {
-        int sum = 0;
+    public long memoryInBytes() {
+        long sum = 0;
         for (Column col : columns)
             sum += col.memoryInBytes();
         return sum;

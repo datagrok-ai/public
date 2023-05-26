@@ -451,10 +451,6 @@ public abstract class JdbcDataProvider extends DataProvider {
             throw new QueryCancelledByUser();
         }
 
-        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
-        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
         try {
             int columnCount = columns.size();
 
@@ -475,8 +471,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
 
             int rowCount = 0;
-            int size = 0;
-            while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next() && (size < 100)  ) {
+            while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
@@ -651,32 +646,16 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                 }
 
-                if (rowCount % 10 == 0) {
-                    if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
-                        DataFrame dataFrame = new DataFrame();
-                        dataFrame.addColumns(columns);
+                if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
+                    queryLogger.debug("Query was canceled");
+                    DataFrame dataFrame = new DataFrame();
+                    dataFrame.addColumns(columns);
 
-                        resultSet.close();
-                        providerManager.getQueryMonitor().removeResultSet(queryRun.id);
-                        return dataFrame;
-                    }
-                    if (rowCount % 100 == 0) {
-                        size = 0;
-                        for (Column column : columns)
-                            size += column.memoryInBytes();
-                        size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
-
-                        if (size > 5) {
-                            DataFrame dataFrame = new DataFrame();
-                            dataFrame.addColumns(columns);
-                            return dataFrame;
-                        }
-
-                        if (rowCount % 1000 == 0 && memoryLimit > 0 && size > memoryLimit)
-                            throw new SQLException("Too large query result: " +
-                                size + " > " + memoryLimit + " MB");
-                    }
+                    resultSet.close();
+                    providerManager.getQueryMonitor().removeResultSet(queryRun.id);
+                    return dataFrame;
                 }
+
             }
 
             if (outputCsv != null) {

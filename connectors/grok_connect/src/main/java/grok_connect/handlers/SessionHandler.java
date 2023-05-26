@@ -17,7 +17,6 @@ import org.slf4j.Logger;
 import serialization.DataFrame;
 
 public class SessionHandler {
-    private static final int rowsPerChunk = 10000;
     private static final String COMPLETED = "COMPLETED_OK";
     private static final String MESSAGE_START = "QUERY";
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
@@ -73,13 +72,13 @@ public class SessionHandler {
             queryManager.initResultSet();
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
-                dataFrame = queryManager.getSubDF(100);
+                dataFrame = queryManager.getSubDF();
             } else {
                 dataFrame = new DataFrame();
             }
         } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
             logger.debug("Received message that starts with {}", SIZE_RECIEVED_MESSAGE);
-            fdf = threadPool.submit(() -> queryManager.getSubDF(rowsPerChunk));
+            fdf = threadPool.submit(() -> queryManager.getSubDF());
             logger.debug("Sending bytes");
             session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
             return;
