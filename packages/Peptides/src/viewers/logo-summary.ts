@@ -81,7 +81,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
-    if (property.name == 'membersRatioThreshold')
+    if (property.name === 'membersRatioThreshold')
       this.updateFilter();
     this.render();
   }
@@ -227,11 +227,11 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.viewerGrid.props.rowHeight = 55;
     this.viewerGrid.onCellPrepare((cell) => {
       const currentRowIdx = cell.tableRowIndex;
-      if (!cell.isTableCell || currentRowIdx == null || currentRowIdx == -1)
+      if (!cell.isTableCell || currentRowIdx === null || currentRowIdx === -1)
         return;
 
       const height = cell.bounds.height;
-      if (cell.tableColumn?.name == C.LST_COLUMN_NAMES.WEB_LOGO) {
+      if (cell.tableColumn?.name === C.LST_COLUMN_NAMES.WEB_LOGO) {
         const webLogoTable = this.webLogoDfPlot[currentRowIdx];
         const webLogoTableRowCount = webLogoTable.rowCount;
         const webLogoTablePepCol = webLogoTable.getCol(pepCol.name);
@@ -248,7 +248,7 @@ export class LogoSummaryTable extends DG.JsViewer {
           .fromType('WebLogo', {positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
             maxHeight: 1000, minHeight: height - 2, positionWidth: positionWidth})
           .then((viewer) => cell.element = viewer.root);
-      } else if (cell.tableColumn?.name == C.LST_COLUMN_NAMES.DISTRIBUTION) {
+      } else if (cell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {
         const viewerRoot = this.distributionDfPlot[currentRowIdx].plot.histogram({
           filteringEnabled: false,
           valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
@@ -269,7 +269,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     });
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const cell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (!cell || !cell.isTableCell || cell.tableColumn?.name != clustersColName)
+      if (!cell || !cell.isTableCell || cell.tableColumn?.name !== clustersColName)
         return;
 
       summaryTable.currentRowIdx = -1;
@@ -370,13 +370,13 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     for (let i = 0; i < viewerDfColsLength; ++i) {
       const col = viewerDfCols.byIndex(i);
-      newClusterVals[i] = col.name == this.model.settings.clustersColumnName! ? newClusterName :
-        col.name == C.LST_COLUMN_NAMES.MEMBERS ? selection.trueCount :
-          col.name == C.LST_COLUMN_NAMES.WEB_LOGO ? null :
-            col.name == C.LST_COLUMN_NAMES.DISTRIBUTION ? null :
-              col.name == C.LST_COLUMN_NAMES.MEAN_DIFFERENCE ? stats.meanDifference:
-                col.name == C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue:
-                  col.name == C.LST_COLUMN_NAMES.RATIO ? stats.ratio:
+      newClusterVals[i] = col.name === this.model.settings.clustersColumnName! ? newClusterName :
+        col.name === C.LST_COLUMN_NAMES.MEMBERS ? selection.trueCount :
+          col.name === C.LST_COLUMN_NAMES.WEB_LOGO ? null :
+            col.name === C.LST_COLUMN_NAMES.DISTRIBUTION ? null :
+              col.name === C.LST_COLUMN_NAMES.MEAN_DIFFERENCE ? stats.meanDifference:
+                col.name === C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue:
+                  col.name === C.LST_COLUMN_NAMES.RATIO ? stats.ratio:
                     col.name in aggregatedValues ? aggregatedValues[col.name] :
         console.warn(`PeptidesLSTWarn: value for column ${col.name} is undefined`)! || null;
     }
@@ -392,7 +392,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     // Names of the clusters to remove
     const clustNames = lss.filter((cluster) => dfCols.contains(cluster));
-    if (clustNames.length == 0)
+    if (clustNames.length === 0)
       return grok.shell.warning('Only custom clusters can be removed');
 
     const viewerDf = this.viewerGrid.dataFrame;
@@ -423,7 +423,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const activityColData = activityCol.getRawData();
 
 
-    if (clustType == CLUSTER_TYPE.ORIGINAL) {
+    if (clustType === CLUSTER_TYPE.ORIGINAL) {
       const origClustCol = filteredDf.getCol(this.model.settings.clustersColumnName!);
       const origClustColData = origClustCol.getRawData();
       const origClustColCategories = origClustCol.categories;

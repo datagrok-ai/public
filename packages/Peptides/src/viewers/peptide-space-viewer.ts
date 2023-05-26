@@ -47,7 +47,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
   async onPropertyChanged(property: DG.Property | null): Promise<void> {
     super.onPropertyChanged(property);
-    if (this.prevProps[property?.name as 'method' | 'measure' | 'cyclesCount' ?? ''] == property?.get(this))
+    if (this.prevProps[property?.name as 'method' | 'measure' | 'cyclesCount' ?? ''] === property?.get(this))
       return;
 
     if (this.model)
@@ -90,7 +90,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
         viewerRoot.addEventListener('mousemove', (ev) => {
           const idx = scatterPlot.hitTest(ev.offsetX, ev.offsetY);
-          if (idx != -1) {
+          if (idx !== -1) {
             const table = ui.tableFromMap({
               'Activity': colorCol.get(idx),
               'Sequence': alignedSeqCol.get(idx),

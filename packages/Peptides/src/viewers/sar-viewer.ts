@@ -94,7 +94,7 @@ export class MonomerPosition extends DG.JsViewer {
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (!gridCell?.isTableCell || gridCell?.tableColumn?.name == C.COLUMNS_NAMES.MONOMER)
+      if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
         return;
 
       const position = gridCell!.tableColumn!.name;
@@ -112,7 +112,7 @@ export class MonomerPosition extends DG.JsViewer {
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
-      if (this.name == VIEWER_TYPE.MONOMER_POSITION) {
+      if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
         const mutationCliffsMode = ui.boolInput('', this.mode === MONOMER_POSITION_MODE.MUTATION_CLIFFS);
         mutationCliffsMode.root.addEventListener('click', () => {
           invariantMapMode.value = false;
@@ -212,7 +212,7 @@ export class MostPotentResiduesViewer extends DG.JsViewer {
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (!gridCell?.isTableCell || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
+      if (!gridCell?.isTableCell || gridCell!.tableColumn!.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return;
 
       const tableRowIdx = gridCell!.tableRowIndex!;
@@ -269,7 +269,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
 
   const tableColName = cell.tableColumn?.name;
   const tableRowIndex = cell.tableRowIndex!;
-  if (!cell.isTableCell || renderColNames.indexOf(tableColName!) == -1) {
+  if (!cell.isTableCell || renderColNames.indexOf(tableColName!) === -1) {
     canvasContext.restore();
     return;
   }
@@ -318,11 +318,11 @@ export function showTooltip(cell: DG.GridCell, x: number, y: number, model: Pept
   const tableColName = tableCol?.name;
   const tableRowIndex = cell.tableRowIndex;
 
-  if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex != null) {
+  if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex !== null) {
     const table = cell.grid.table;
     const currentAAR = table.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
 
-    if (tableCol.semType == C.SEM_TYPES.MONOMER)
+    if (tableCol.semType === C.SEM_TYPES.MONOMER)
       model.showMonomerTooltip(currentAAR, x, y);
     else if (renderColNames.includes(tableColName!)) {
       const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :

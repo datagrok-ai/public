@@ -39,7 +39,7 @@ category('Core', () => {
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true);
 
-    if (model != null)
+    if (model !== null)
       model.monomerPositionSelection = {'11': ['D']};
   });
 
@@ -59,7 +59,7 @@ category('Core', () => {
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true);
 
-    if (model != null)
+    if (model !== null)
       model.monomerPositionSelection = {'13': ['-']};
   });
 

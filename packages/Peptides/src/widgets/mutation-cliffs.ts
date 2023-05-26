@@ -76,7 +76,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
 
   const aminoToInput = ui.stringInput('Mutated to:', '', () => {
     const substitutedToAar = aminoToInput.stringValue;
-    if (substitutedToAar != '')
+    if (substitutedToAar !== '')
       substTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else
       substTable.filter.setAll(true);

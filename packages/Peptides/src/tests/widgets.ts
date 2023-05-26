@@ -165,5 +165,5 @@ category('Widgets: Actions', () => {
 
   test('Custom clusters', async () => {
 
-  }, {skipReason: 'Not implemented yet'});
+  });
 });
