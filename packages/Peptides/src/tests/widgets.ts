@@ -10,6 +10,7 @@ import {SCALING_METHODS} from '../utils/constants';
 import {PANES_INPUTS, SETTINGS_PANES, getSettingsDialog} from '../widgets/settings';
 import {getDistributionWidget} from '../widgets/distribution';
 import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
+import {TEST_COLUMN_NAMES} from './utils';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -21,12 +22,12 @@ category('Widgets: Settings', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
       SCALING_METHODS.NONE);
     if (tempModel === null)
@@ -62,12 +63,12 @@ category('Widgets: Distribution panel', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
       SCALING_METHODS.NONE);
     if (tempModel === null)
@@ -94,12 +95,12 @@ category('Widgets: Mutation cliffs', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
       SCALING_METHODS.NONE);
     if (tempModel === null)
@@ -125,11 +126,7 @@ category('Widgets: Actions', () => {
 
   }, {skipReason: 'Not implemented yet'});
 
-  test('New cluster', async () => {
-
-  });
-
-  test('Remove cluster', async () => {
+  test('Custom clusters', async () => {
 
   }, {skipReason: 'Not implemented yet'});
 });

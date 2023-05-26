@@ -8,6 +8,7 @@ import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {LogoSummaryTable} from '../viewers/logo-summary';
+import {TEST_COLUMN_NAMES} from './utils';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;
@@ -22,12 +23,12 @@ category('Model: Settings', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
       SCALING_METHODS.NONE);
     if (tempModel === null)
