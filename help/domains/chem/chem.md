@@ -5,62 +5,47 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-:::caution note
+## Requirements
 
-<details>
-<summary> To access the cheminformatics functionality, install these
-packages </summary>
+To access the cheminformatics functionality, install these
+packages using a [Package Manager](https://public.datagrok.ai/packages) (on the **Sidebar**, click **Manage** > **Packages**):
 
 * Required. [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem).
-* Required. One of available molecular sketchers. [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/Ketcher) is installed by default.
-
-  :::note
-
-  Some packages may require an active commercial license to use.
-
-  :::
-
-* Optional. [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl): In-memory structure search in ChEMBL database .
-* Optional. Strusture search on webservices:
-
-  :::danger important
-
-  Installing these packages may result in data transmission to a public webservice.
-
-  :::
-
+* Optional. Sketchers: The Chem package includes a built-in OpenChemLib Sketcher, but you can use your favorite sketcher, such as
+  [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/Ketcher) ([Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)), MarvinJS (commercial license), or ChemDraw (commercial license).
+* Optional. [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl): Integration with the ChEMBL database deployed on your premises.
+* Optional. [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for the chemical building blocks.
+* Optional. [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
+* Optional. [DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank): Integration with DrugBank (information on 11,300 drugs is included with the plugin).
+* Optional. Integration with external webservices (**these packages transmit your data to external services**):
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
-  * [DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank)
 
-To see the full list of available packages, see the Cheminformatics section in [Manage > Packages](https://public.datagrok.ai/packages).
-
-</details>
-
-:::
+## Overview
 
 Datagrok provides an intuitive interface and a wide range of tools for working
 with chemical data:
 
-* **Data access**
-  * Ability to access and query data from [any data
-    source](../../access/access.md/#data-sources).
-  * [Data governance](../../govern/).
-* Comprehensive set of **data transformation tools**, including chemical tools like [structure curation](#curation) and [dataset mutation](#mutation).
-* **Data visualization and exploration**
-  * 2D and 3D molecular representations and support for [popular data formats](#supported-data-formats).
-  * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers), including a powerful,
-    [chemically-aware spreadsheet](#chemically-aware-spreadsheet).
-  * Customizable [chemical info panes](#chemical-scripts) with infomation about molecules and context actions.
-  * [Exact, substructure, and similarity/diversity searches](#structure-search). Molecular [sketchers](#sketching-and-filtering).
-  * Structure analysis using [R-groups decomposition](#r-groups-analysis) and [scaffold tree](#scaffold-tree-analysis).  
-  * Interactive exploration of [SAR data](#structure-relationship-analysis) and [ADME/Tox properties](#admetox).
+* Data visualization and exploration
+  * Automatic detection of chemical structures upon [data import](../../access/access.md).
+  * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules.
+  * Multiple molecular [sketchers](#sketching-and-filtering).
+  * Working with multiple formats, such as SMILES, SMARTS, InChI,InChiKey, SDF, PDB, MOL2 and others.
+  * Flexible and fast [chemically-aware spreadsheet](#chemically-aware-spreadsheet).
+  * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers).
+  * Customizable [chemical info panes](#chemical-scripts) with information about molecules and context actions.
+  * [Exact, substructure, and similarity/diversity searches](#structure-search).
+  * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
+  * SAR: [activity cliffs](#structure-relationship-analysis)
+  * [ADME/Tox calculators](#admetox).
+  * Property and descriptor calculators.
   * Flexible reporting and sharing options, including [dynamic
     dashboards](../../access/databases.mdx/#sharing-query-results).
-* [**QSAR and QSPR modeling support**](#qsar-and-qspr-modeling)
+* [QSAR and QSPR modeling support](#qsar-and-qspr-modeling)
   * Train, assess, execute, deploy, reuse, and incorporate custom predictive
     models that accept molecular structures as their input.
-* [**Extensible environment**](#customizing-and-extending-the-platform)
+* Common utilities, such as [identifier conversion](#molecule-identifier-conversions), [structure curation](#curation), and [dataset mutation](#mutation).
+* [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [functions and scripts](#chemical-scripts).
   * Ability to create custom plugins and fit-for-purpose applications.
 
@@ -68,41 +53,20 @@ with chemical data:
 
 Datagrok provides a single, unified access point for organizations, allowing you to connect to various machine readable sources, such as [file storages](../../access/file-shares.mdx), [databases](../../access/databases.mdx), or [webservices](../../access/open-api.md).  You can use the Datagrok UI to connect directly to any of the [30+ supported data sources](../../access/supported-connectors.md), retrieve data, and securely share data with others.
 
-:::note developers
-
-You can [create custom connectors](../../access/create-custom-connectors.md) and connect to data [programmatically](../../develop/how-to/access-data.md).
-
-:::
-
-Chemical queries against data sources require a chemical cartridge, such as [RDKit Postgres cartridge](https://www.rdkit.org/docs/Cartridge.html) or [JChem cartridge](https://docs.chemaxon.com/display/docs/JChem+Cartridge), which allows molecule-specific operations like substructure and similarity searches to be integrated into SQL queries using SQL syntax.
-
-To query a proprietary database, a chemical cartridge must be installed on the Datagrok server. To search public databases, such as ChEMBL or PubChem, you can use the following packages that automatically create a [data connection](../../access/access.md#data-connection) with a preinstalled chemical cartridge:
-
-* Run in-memory queries on a client-accessible copy of the ChEMBL database (requires an installation of the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package).
-* Query public webservices directly (requires package installation; for available packages, see the **Cheminformatics** section in [Manage > Packages](https://public.datagrok.ai/packages)).
-
-  :::danger important
-
-  Using these packages may result in data transmission to the associated webservices.
-
-  :::
-
+Chemical queries against data sources require a chemical cartridge, such as [RDKit Postgres cartridge](https://www.rdkit.org/docs/Cartridge.html) or [JChem cartridge](https://docs.chemaxon.com/display/docs/JChem+Cartridge), which allows molecule-specific operations like substructure and similarity searches to be integrated into SQL queries using SQL syntax. 
 Once you've created the query, it functions as a [regular Datagrok query](../../access/access.md#data-query), allowing you to run it, share it with others, and more.
 
 <details>
-<summary> Example: Running substructure search against ChEMBL </summary>
+<summary> Example: Substructure search in a database </summary>
 
-To run an in-memory query against the ChEMBL database, follow these steps:
-
-1. [Run](../../access/databases.mdx#running-queries) a [parameterized data query](../../access/databases.mdx#parameterized-queries) with input paramters that specify a semantic type. Here's an example:
+To create a chemically-aware query, use the SQL syntax specific to your cartridge. [Annotate parameters](../../access/databases.mdx#parameterized-queries) like you would for a function. Here is an example of querying ChEMBL on Postgres with the RDKit cartridge installed:
 
   ```sql
   --input: string pattern {semType: Substructure}
   select molregno,m as smiles from rdk.mols where m@>@pattern::qmol
   ```
 
-1. Datagrok generates a parameter dialogw where you can draw or paste the desired substructure and specify other parameters.
-1. Click **Run**. The query returns a dataframe with all matching substructures.
+After creating a query, you can share it with others. To run a query, sketch the substructure and click OK. Datagrok then retrieves the data and opens it in a spreadsheet.
 
 ![DB Substructure and Similarity Search](../../uploads/gifs/db-substructure-similarity-search.gif "DB Substructure and Similarity Search")
 
@@ -110,126 +74,54 @@ To run an in-memory query against the ChEMBL database, follow these steps:
 
 To learn more about querying data and data access in general, see the [Access](../../access/access.md) section of our documentation.
 
-### Supported data formats
+## Exploring chemical data
 
-Datagrok supports most popular data formats, such as SMILES, SMARTS, InChI,InChiKey, SDF, PDB, MOL2 and other [file formats](../../access/supported-formats.md), molecular fingerprints (such as MACCS,ECFP, FCFP, and others), molecular descriptors, and graph-based representations. To restore MOL files for subsequent processing, the platform uses SMILES. For chemical reactions, the platform uses the modified strings of [SMIRKS notation](https://www.daylight.com/dayhtml/doc/theory/theory.smirks.html).
+Datagrok automatically detects molecules when you open a dataset, and makes available molecule-specific context actions. For example, when you open a CSV file with a column containing molecules in the SMILES format, the following happens:
 
-<!--Thanks to the highly optimized database memory use, we are capable of working with huge volumes of data.-->
+* Data is parsed, and the semantic type _molecule_ is assigned to the corresponding column.
+* Molecules are automatically rendered in the spreadsheet.
+* Column tooltip now shows most diverse molecules in your dataset.
+* Default column filter is now a sketcher-driven substructure search.
+* A top menu item labeled **Chem** appears.
+* When you click a molecule, the **Context Panel** on the right shows molecule-specific _info panes_, such as **Toxicity** or **Drug Likeness**.
 
-#### Molecule identifier conversions
+_Info panes_ show additional information for the current object. They are highly dynamic, and could be extended with functions developed in any language supported by the platform. To learn more about info panes, see [Info Panels](../../discover/info-panels.md).
 
-Datagrok supports conversion of various molecule identifiers, including proprietary identifiers, allowing you to work with muliple data sources and tools. For example, you can convert a SMILES string to an InChI and vice versa.
+The following info panes are shown by default for the current molecule:
 
-<img alt="Molecule identifier conversions" src={require('./molecule-identifier-conversions.gif').default} width="800px"/> 
+* **Gasteiger Partial Charges**: Shows a 2D representation with partial charges highlighted.
+* **Descriptors**: Shows [descriptors](descriptors.md). 
+* **Properties**: Shows physicochemical properties, such as molecular weight, LogP, and others.
+* [**Drug Likeness**](info-panels/drug-likeness.md): Shows the score indicating the likelihood of a molecule being a drug, along with the interpretation of how different substructure fragments contribute to the score.
+* [**Structural Alerts**](info-panels/structural-alerts.md): Shows toxicity-related structural alerts.
+* [**Toxicity**](info-panels/toxicity-risks.md): Predicts mutagenicity, tumorigenicity, irritating effects, and reproductive effects using [openchemlib calculations](https://github.com/Actelion/openchemlib).
+* **Identifiers**: Shows [all known identifiers](#molecule-identifier-conversions) for the selected structure.
+* **3D Structure**: Shows a 3D molecular representation.
+* **2D Structure**: Shows a 2D molecular representation.
+* **Databases**: Performs substracture and similarity searches for the selected sctructure against all connected data sources.
 
-<details>
-<summary>How to use</summary>
+The following info panes are shown by default for the current molecular column/dataset:
 
-For indiviual molecules, the coversion happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available identifiers in the **Identifiers** info pane (**Context Panel** > **Structure** > **Identifiers**). 
+* **Most Diverse Structures**
+* **Rendering**: options for how molecules should be rendered in a cell:
+  * **Show structures**: Render a molecule, or show its textual representation
+  * **Scaffold**: Aligned to a particular scaffold
+  * **Scaffold column**: Aligned to a scaffold defined in the specified column
+  * **Highlight from column**: Highlight the scaffold
+  * **Regenerate coords**: Force regeneration for atom coordinates, even if the molecule is defined as a MOLBLOCK
+  * **Filter type**: Type of the filter for that column (skether, or categorical)
 
-To perfrom conversion on the column, use the **Actions** info pane:
+<!--:::tip
 
-1. Select the SMILES column by clicking its header. The **Context Panel** updates with available actions.
-1. In the **Context Panel**, expand the **Actions** info pane and select **Chem | Map Identifiers**. A dialog opens.
-1. In the dialog, select the source for the conversion and the desired output from the list of options.
-1. Click **OK**. A new column containing InChI is added to the dataframe.
+You can search for functionality using the smart search
+(press Alt+Q) [NOT APPLICABLE ANYMORE?].
 
-</details>
+::: -->
 
-<details>
-<summary> Supported data sources </summary>
-
-|             |            |             |        |
-|-------------|------------|-------------|--------|
-|actor        | drugbank   | lipidmaps   | pubchem|
-|atlas        | drugcentral| mcule       | pubchem_dotf|
-|bindingdb    | emolecules | metabolights| pubchem_tpharma|
-|brenda       | fdasrs     | molport     | recon|
-|carotenoiddb | gtopdb     | nih_ncc     | rhea|
-|chebi        | hmdb       | nikkaji     | selleck|
-|chembl       | ibm        | nmrshiftdb2 | surechembl|
-|chemicalbook | kegg_ligand| pdb         | zinc|
-|comptox      | lincs      | pharmgkb    | |
-
-</details>
-
-:::note developers
-
-To run programmatically, use the `#{x.ChemMapIdentifiers}` function.
-
-:::
-
-## Data transformation
-
-Datagrok offers [multiple ways to transform and enrich your data](../../transform/data-wrangling.md). For example, you can link tables, extract values, or add metadata to annotate your dataset with experimental conditions or assay results<!--need a link out to how to add metadata-->. You can also use [chemical scripts](#chemical-scripts) to execute operations on chemical data, including calculation of fingerprints and descriptors, toxicity prediction, and more. 
-
-### Curation
-
-Datagrok supports [chemical structure curation](https://pubs.acs.org/doi/10.1021/ci100176x), including kekulization, normalization, reionization,  neutralization, tautomerization, and the selection of the main component.
+Some info panes are interactive and can be customized from the UI.
 
 <details>
-<summary> How to use </summary>
-
-To perform chemical structure curation:
-
-1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Curate**.
-1. In the **CurateChemStructures** dialog, select from the available options and click **OK**. This action adds a new column containing curated structures.
-
-  :::note
-
-  You can choose specific options to perform various tasks, such as detecting pairs of graphs representing the same structure under certain conditions.<!--what does this mean? Is it removing duplicates?--> If no options are selected, the tools sanitize the input data and standardize chemotypes without altering them.
-
-  :::
-
-<img alt="Curation" src={require('./chem_curation_demo.gif').default} width="800px"/>
-
-</details>
-
-### Mutation
-
-You can mutate molecules by adding atoms or bonds, or removing bonds.
-
-<details>
-<summary> How to use </summary>
-
-To perform chemical structure mutation:
-
-1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Mutate**.
-1. In the **Mutate** dialog, draw or paste the desired structure and set other parameters, including the number of mutated molecules. Each mutation step can have randomized mutation mechanisms and places (select the **Randomize** checkbox).
-1. Click **OK** to execute. A new table with mutated structures opens.
-
-<img alt="Mutation" src={require('./mutate.gif').default} width="800px"/>
-
-</details>
-
-## Chemical scripts
-
-Datagrok provides a wide range of scripts to manipulate chemical data. The scripts can be written in any programming language and are implemented as [Datagrok functions](../../datagrok/functions/functions.md) that take a molecule as input. These chemical functions can be integrated in larger scripts and workflows accross the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
-
-<Tabs>
-<TabItem value="script" label="Script" default>
-
-![Gasteiger partial charges script](img/script-gasteiger-part-charges-0.png)
-
-</TabItem>
-<TabItem value="script-output" label="Script output">
-
-![Gasteiger partial charges script output](img/script-output-gasteiger-part-charges-0.png)
-
-</TabItem>
-<TabItem value="script-output-in-info-pane" label="Script output in info pane">
-
-![Script-based info pane](img/script-output-info-pane-0.png)
-</TabItem>
-
-</Tabs>
-
-In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0) is used to calculate Gasteiger partial charges and generate a visual representation of the results. When you run the script, Datagrok autogenerates a parameter input dialog, which can be exposed to users as a [standalone application](../../develop/how-to/create-package.md). However, in this particular example, the script is implemented within a UI component known as an [info pane](../../discover/info-panels.md), which dynamically updates as you browse the dataset.
-
-:::tip
-
-<details>
-<summary> Some info panes are interactive and can be customized from the UI</summary>
+<summary>How to customize</summary>
 
 To reveal available options, expand the info pane and hover over its top:
 
@@ -240,98 +132,48 @@ To reveal available options, expand the info pane and hover over its top:
 
 [GIF]
 
-</details>
-
 To learn how to customize and extend the platform programmatically, see the [Develop](../../develop/) section of our documentation.
 
-:::
+</details>
 
-<details>
-<summary> Default chemical info panes and actions for the current value </summary>
-
-* **Context actions**
+* **Context actions for a current value**
   * Sketch
   * Use as filter
   * Sort by similarity
   * Copy as SMILES, SMARTS, MOLFILE V2000, MOLFILE V3000
-* **Info Panes**
-  * **Gasteiger Partial Charges**: Shows a 2D representation with partial charges highlighted.
-  * **Descriptors**: Shows [descriptors](descriptors.md). These descriptors are shown by default:
-    * FractionCSP3
-    * HeavyAtomCount
-    * NHOHCount
 
-    To change, click the **Select** button.
-  * **Properties**: Shows physicochemical properties, such as molecular weight, LogP, and others.
-  * [**Drug Likeness**](info-panels/drug-likeness.md): Shows the score indicating the likelihood of a molecule being a drug, along with the interpretation of how different substructure fragments contribute to the score.
-  * [**Structural Alerts**](info-panels/structural-alerts.md): Shows drug specific structural alerts which could lead to severe toxicity in most cases.
-  * [**Toxicity**](info-panels/toxicity-risks.md): Predicts mutagenicity, tumorigenicity, irritating effects, and reproductive effects using [openchemlib calculations](https://github.com/Actelion/openchemlib).
-  * **Identifiers**: Shows [all known identifiers](#molecule-identifier-conversions) for the selected structure.
-  * **3D Structure**: Shows a 3D molecular representation.
-  * **2D Structure**: Shows a 2D molecular representation.
-  * **Databases**: Performs substracture and similarity searches for the selected sctructure against all connected data sources.
-
-</details>
-
-<details>
-<summary> Default chemical info panes and actions for the current molecular column/dataset </summary>
-
-* **Context actions**
-  * **Filter/Sketch**: Use [a skether](#molecule-sketcher) to filter or edit/add molecules.
-  * **Calculate descriptors**: Calculates specified [descriptors](descriptors.md) and adds a column for each.
-  * **Calculate fingerprints**: Calculates specified [fingerprints](fingerprints.md) and adds a column for each.
-  * **Convert identifiers**: Converts molecule identifiers from one type to another and adds a column for each. 
+* **Context actions for a current column**
+  * **Filter**: Use [a skether](#molecule-sketcher) to filter.
+  * **Calculate descriptors**: Calculates specified [descriptors](descriptors.md).
+  * **Calculate fingerprints**: Calculates specified [fingerprints](fingerprints.md).
+  * **Convert identifiers**: Converts molecule identifiers. 
   * [**Mutate**](#mutation): Mutates chemical structure and creates a new dataset based on the results.
   * [**Curate**](#curation): Curates chemical structures.
-  * **Similarity search**: Shows N most similar structures in a dataset.
+  * **Similarity search**: Shows N most similar molecules to the current one.
   * **Diversity search**: Shows N most diverse structures in a dataset.
   * [**Chemical space**](#similarity-analysis-using-distance-based-dimensionality-reduction-algorithms): Visualizes molecular similarity using a scatterplot.
-  * [**Elemental analsyis**](#elemental-analysis): Analyzes the elemental composition of a molecular structure and visualize the results using a radar viewer.
-  * [**Scaffol tree**](#scaffold-tree-analysis): Generates a tree hierarchy based on scaffolds.
-  * [**R-group analysis**](#r-groups-analysis): Decomposes a set of molecules into a core and R-groups (ligands at certain attachment positions), and visualizes the results using a trellis plot.
-  * **Activity cliffs**: Identifies and visualizes pairs of molecules that have similar structures but different levels of activity using a scatterplot.
-  * **ADME/Tox prediction**: Predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties for chemical structures.
-* **Info panes**
-  * **Most Diverse Structures**: Finds most diverse structures in the current column and shows them in the column's info pane.
-  * **Rendering**: [ADD DESCRIPTION]
+  * [**Elemental analsyis**](#elemental-analysis): Analyzes the elemental composition and visualizes the results using a radar viewer.
+  * [**Scaffold tree**](#scaffold-tree-analysis): Generates a molecule hierarchy.
+  * [**R-group analysis**](#r-groups-analysis): Decomposes a set of molecules into a core and R-groups, and visualizes the results using a trellis plot.
+  * **Activity cliffs**: Identifies and visualizes pairs of molecules that have similar structures but different levels of activity.
+  * **ADME/Tox prediction**: Predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties.
 
-</details>
 
-<!--:::tip
+### Chemically aware spreadsheet
 
-You can search for functionality using the smart search
-(press Alt+Q) [NOT APPLICABLE ANYMORE?].
-
-::: -->
-
-Datagrok automatically detects any molecule-associated type accross various [entities](../../datagrok/objects.md), such as scripts, queries, database tables, tooltips, and others. Once detected, the relevant functions are executed accordingly. For example, when you open a TXT file containing SMILES, the following happens:
-
-* The data is loaded using a chemical spreadsheet.
-* SMILES are automatically rendered in 2D.
-* A context menu item labeled **Chem** appears.
-* The **Context Panel** shows relevant info panes with chemical information and actions.
-
-To view the chemical sripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
+The spreadsheet lets you [visualize](#exploring-chemical-data), [edit](#sketching-and-filtering), and efficiently work with chemical structures. Additionally, you can add new columns with calculated values or visualizations from info panes or context actions. The features also include the ability to interactively filter rows, color-code columns, pin rows or columns, set edit permissions, and more. For more information on how to use the grid viewer, see the [grid documentation](../../visualize/viewers/grid.md) or this [grid tutorial](ADD LINK).
 
 [GIF]
 
-:::note
+### Chemically aware viewers
 
-For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical functions](functions/chem-functions.md).
-
-To learn more about scripting, see [Scripting](../../compute/scripting.md).
-
-:::
-
-## Chemically aware viewers
-
-Datagrok viewers are chemically aware and can recognize and display chemical data. These viewers were built from the ground up to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers without duplication. This design makes the viewers optimized to handle large datasets, interactive, and synchronized. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis. All viewers share a consistent look and feel and usage patterns.
+Datagrok viewers recognize and display chemical data. These viewers were built from the ground up to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers without duplication. This design makes the viewers optimized to handle large datasets, interactive, and synchronized. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis. All viewers share a consistent look and feel and usage patterns.
 
 [GIF]
 
 :::note developers
 
-You can [add custom viewers](../../develop/how-to/custom-views.md). Depending on your needs, viewers can be implemented in various UI elements, such as standalone visualizations, info panes, cell renderers, or widgets to support multiple use cases accross the platform.
+You can [develop custom viewers](../../develop/how-to/develop-custom-viewer.md).
 
 :::
 
@@ -339,21 +181,17 @@ Key viewers for analysis of chemical data include a chemically aware spreadsheet
 
 To learn how to use viewers to explore chemical data, see [this cheminformatics tutorial](ADD LINK). To learn about viewers and visualizations in general, see the [Visualize](../../visualize/) section of our documentation. 
 
-### Chemically aware spreadsheet
 
-The _grid_ viewer includes all features expected from a chemical spreadsheet, such as the ability to input, edit, and display chemical structures. You can draw chemical structures manually or enter the structure's identifier, such as SMILES or InChI (see [Sketching and filtering](#sketching-and-filtering)). Text notations are presented in 2D by default but can be changed by right-clicking the column header and selecting the **Renderer** > **As Text** checkbox. Additionally, you can add new columns with calculated values or visualizations from info panes or context actions. The features also include the ability to set permissions for columns, color-code columns, pin rows, and more. For more information on how to use the grid viewer, see the [grid documentation](../../visualize/viewers/grid.md) or this [grid tutorial](ADD LINK).
-
-[GIF]
 
 ## Structure search
 
-Datagrok provides several structure search options, including exact, substructure, similarity, and SMARTS searches. You can use structure searches to filter your dataset or [query a database](#data-access). 
+Datagrok provides several structure search options, including exact, substructure, and similarity searches. You can use structure searches to filter your dataset or [query a database](#data-access). 
 
 To filter a dataset, use a sketcher. You can draw a substructure manually or use the search bar to find the exact structure by entering SMARTS strings or its identifier, such as SMILES or InChI. After applying the filter, Datagrok highlights the queried substructures in the filtered subset. For more information on sketching and filtering, see [Sketching and filtering](#sketching-and-filtering).
 
 ### Similarity and diversity search
 
-Datagrok offers two analytical tools to help you analyze a collection of molecules based on molecular similarity: _similarity search_ and _diversity search_ (**Menu Ribbon** > **Chem** > **Search**.). Similarity search finds structures similar to the reference molecule, while diversity search shows N different classes of compounds present in the dataset. Both tools use different distance metrics to fingerprints and rely on descriptors.  
+Datagrok offers two analytical tools to help you analyze a collection of molecules based on molecular similarity: _similarity search_ and _diversity search_ (**Menu Ribbon** > **Chem** > **Search**.). Similarity search finds structures similar to the reference molecule, while diversity search shows N different classes of compounds present in the dataset. Both tools are based on fingerprints, with the customizable distance metric.
 
 Both similarity search and diversity search are implemented as _viewers_<!--add link when we have an article on this-->, which means they are interactive and synchronized with other viewers, such as the chemical spreadsheet or info panes. This allows you to zoom in on the area of interest and perform common operations like filtering or selection.
 
@@ -362,10 +200,10 @@ Both similarity search and diversity search are implemented as _viewers_<!--add 
 <details>
 <summary>How to use</summary>
 
-By default, similarity search finds structures similar to the selected molecule. To change the reference molecule, you have several options:
+By default, similarity search finds structures similar to the current molecule. To change the reference molecule, you have several options:
 
-1. Select the desired molecule directly in the spreadsheet or within the similarity or diversity viewers.
-1. Draw it manually or paste using sketcher. To access the sketcher, right-click any molecule tile within the similarity or diversity viewers and select **Sketch**. Alternatively, in the top left corner of a molecule tile, click the **Edit** icon.
+1. Click the molecule in the spreadsheet, or within the similarity or diversity viewers.
+1. Sketch it by clicking the "Edit" icon on top of the reference molecule.
 
   ![similarity_search_sketch_target](img/similarity_search_sketch_target.gif)
 
@@ -390,7 +228,7 @@ You can customize each molecule tile in the similarity and diversity viewers to 
 
 #### Similarity analysis using distance-based dimensionality reduction algorithms
 
-Datagrok provides scripts for distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/), to support similarity analysis. These algorithms use molecular fingerprints to convert cross-similarities into 2D or 3D coordinates, making it possible to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. Datagrok uses a [scatterplot viewer](../../visualize/viewers/3d-scatter-plot.md) to implement the scripts.
+Datagrok provides scripts for distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use molecular fingerprints to convert cross-similarities into 2D or 3D coordinates, making it possible to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. Results are visualized on the interactive [scatter plot](../../visualize/viewers/3d-scatter-plot.md).
 
 [GIF]
 
@@ -403,17 +241,11 @@ Datagrok provides scripts for distance-based dimensionality reduction algorithms
 
 </details>
 
-:::tip
-
-To focus on the cluster of interest, select it in the scatterplot, then navigate to the **Menu Ribbon** and select **Selection** > **Extract row selection**. This opens a dataframe with the subset of the selected structures.
-
-:::
-
 ### Sketching and filtering
 
 :::note
 
-Datagrok provides integrations with various sketchers, but their availability depends on their licensing options. Some sketchers require a commercial license from the vendor before they can be used in Datagrok. To use these sketchers, you must enter the license activation code. 
+Datagrok provides integrations with various sketchers, but their availability depends on their licensing options. Some sketchers require a commercial license from the vendor before they can be used in Datagrok. To use these sketchers, you must go to the sketcher plugin settings and provide a path to the license server. 
 
 <details>
 <summary> How to activate </summary>
@@ -606,7 +438,7 @@ Scaffold tree is a viewer, which means it can be shared or saved as part of a [l
 <details>
 <summary>How to use</summary>
 
-To access, in the **Menu Ribbon** select **Chem** > **Scaffold Tree**. 
+To access, in the **Menu Ribbon** select **Chem** > **Analyze** > **Scaffold Tree**. 
 The scaffold tree hierarchy is generated automatically, but you can also sketch it manually or modify the automatically generated tree.
 
 :::note
@@ -660,7 +492,7 @@ To highlight rows matching a particular scaffold, hover the mouse over the scaff
 
 ### Elemental analysis
 
-**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualize the results in a [radar viewer](../../visualize/viewers/radar-viewer.md), which provides a visual representation of the elemental composition of the analyzed structure. Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure. The angle of the point represents the electronegativity of the element.
+**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualize the results in a [radar viewer](../../visualize/viewers/radar.md), which provides a visual representation of the elemental composition of the analyzed structure. Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure. The angle of the point represents the electronegativity of the element.
 
 [GIF]
 
@@ -786,6 +618,120 @@ You can use the Datagrok's the `Chem: TwoComponentReaction` script to apply spec
    1. Choose whether to combine the reactants from two sets, or sequentially, and whether to randomize, by checking or clearing the Matrix Expansion and Randomize checkboxes.
    1. Set other paramters, such as seed, the number of maximum random reactions.
    1. Click **OK** to execute.
+
+</details>
+
+## Chemical scripts
+
+Chem package comes with a number of scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated in larger scripts and workflows accross the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
+
+<Tabs>
+<TabItem value="script" label="Script" default>
+
+![Gasteiger partial charges script](img/script-gasteiger-part-charges-0.png)
+
+</TabItem>
+<TabItem value="script-output" label="Script output">
+
+![Gasteiger partial charges script output](img/script-output-gasteiger-part-charges-0.png)
+
+</TabItem>
+<TabItem value="script-output-in-info-pane" label="Script output in info pane">
+
+![Script-based info pane](img/script-output-info-pane-0.png)
+</TabItem>
+
+</Tabs>
+
+In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0) is used to calculate Gasteiger partial charges and generate a visual representation of the results. When you run the script, Datagrok autogenerates a parameter input dialog, which can be exposed to users as a [standalone application](../../develop/how-to/create-package.md). However, in this particular example, the script is implemented within a UI component known as an [info pane](../../discover/info-panels.md), which dynamically updates as you browse the dataset.
+
+To view the chemical sripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
+
+:::note
+
+For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical functions](functions/chem-functions.md).
+
+To learn more about scripting, see [Scripting](../../compute/scripting.md).
+
+:::
+
+## Utilities
+
+Datagrok offers [multiple ways to transform and enrich your data](../../transform/data-wrangling.md). For example, you can link tables, extract values, or add metadata to annotate your dataset with experimental conditions or assay results<!--need a link out to how to add metadata-->. You can also use [chemical scripts](#chemical-scripts) to execute operations on chemical data, including calculation of fingerprints and descriptors, toxicity prediction, and more. 
+
+### Molecule identifier conversions
+
+Datagrok supports conversion of various molecule identifiers, including proprietary identifiers, allowing you to work with muliple data sources and tools. For example, you can convert a SMILES string to an InChI and vice versa.
+
+[GIF]
+
+<details>
+<summary>How to use</summary>
+
+For indiviual molecules, the coversion happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available identifiers in the **Identifiers** info pane (**Context Panel** > **Structure** > **Identifiers**). 
+
+To perfrom conversion on the column, use the **Actions** info pane:
+
+1. Select the SMILES column by clicking its header. The **Context Panel** updates with available actions.
+1. In the **Context Panel**, expand the **Actions** info pane and select **Chem | Map Identifiers**. A dialog opens.
+1. In the dialog, select the source for the conversion and the desired output from the list of options.
+1. Click **OK**. A new column containing InChI is added to the dataframe.
+
+</details>
+
+<details>
+<summary> Supported data sources </summary>
+
+|             |            |             |        |
+|-------------|------------|-------------|--------|
+|actor        | drugbank   | lipidmaps   | pubchem|
+|atlas        | drugcentral| mcule       | pubchem_dotf|
+|bindingdb    | emolecules | metabolights| pubchem_tpharma|
+|brenda       | fdasrs     | molport     | recon|
+|carotenoiddb | gtopdb     | nih_ncc     | rhea|
+|chebi        | hmdb       | nikkaji     | selleck|
+|chembl       | ibm        | nmrshiftdb2 | surechembl|
+|chemicalbook | kegg_ligand| pdb         | zinc|
+|comptox      | lincs      | pharmgkb    | |
+
+</details>
+
+:::note developers
+
+To run programmatically, use the `#{x.ChemMapIdentifiers}` function.
+
+:::
+
+### Curation
+
+Datagrok supports [chemical structure curation](https://pubs.acs.org/doi/10.1021/ci100176x), including kekulization, normalization, reionization,  neutralization, tautomerization, and the selection of the main component.
+
+<details>
+<summary> How to use </summary>
+
+To perform chemical structure curation:
+
+1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Curate**.
+1. In the **CurateChemStructures** dialog, select from the available options and click **OK**. This action adds a new column containing curated structures.
+
+![Curation](chem_curation_demo.gif "Curation")<!--replace with new UI-->
+
+</details>
+
+### Mutation
+
+You can generate a dataset based on preferred structure.
+
+<details>
+<summary> How to use </summary>
+
+To perform chemical structure mutation:
+
+1. Navigate to **Menu Ribbon** > **Chem** > **Transform** > **Mutate**.
+1. In the **Mutate** dialog, draw or paste the desired structure and set other parameters, including the number of mutated molecules. Each mutation step can have randomized mutation mechanisms and places (select the **Randomize** checkbox).
+1. Click **OK** to execute. A new table with mutated structures opens.
+
+[GIF]
 
 </details>
 
