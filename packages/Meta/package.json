@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.82",
+  "version": "3.3.83",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1197,6 +1197,9 @@
           "datagrok-api": "^1.14.0"
         },
         "1.7.3": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.4": {
           "datagrok-api": "^1.14.0"
         }
       },
@@ -2818,6 +2821,19 @@
         "type": "git",
         "url": "git@github.com:datagrok-ai/public.git",
         "directory": "packages/LibTests"
+      }
+    },
+    "cvm-tests": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Automated CVM tests",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/CVMTests"
       }
     }
   }
