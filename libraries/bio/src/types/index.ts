@@ -27,10 +27,10 @@ export type Monomer = {
   [OPT.META]?: {[property: string]: any}};
 
 export interface IMonomerLib {
-  getMonomer(monomerType: string, monomerName: string): Monomer | null;
-  getMonomerMolsByType(type: string): {[symbol: string]: string} | null;
-  getMonomerNamesByType(type: string): string[];
-  getTypes(): string[];
+  getMonomer(polymerType: string, monomerSymbol: string): Monomer | null;
+  getMonomerMolsByPolymerType(polymerType: string): {[monomerSymbol: string]: string} | null;
+  getMonomerSymbolsByType(polymerType: string): string[];
+  getPolymerTypes(): string[];
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 }

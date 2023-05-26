@@ -206,27 +206,23 @@ function getFormattedMonomerLib(
   monomerLib: IMonomerLib, polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
 ): Map<string, any> {
   const map = new Map<string, any>();
-  for (const monomerType of monomerLib.getTypes()) {
-    for (const monomerName of monomerLib.getMonomerNamesByType(monomerType)) {
-      const it: Monomer = monomerLib.getMonomer(monomerType, monomerName)!;
-      if (it[HELM_FIELDS.POLYMER_TYPE] === polymerType) {
-        if (
-          polymerType === HELM_POLYMER_TYPE.RNA &&
-          (it[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH ||
-            alphabet === ALPHABET.DNA && it[HELM_FIELDS.SYMBOL] === DEOXYRIBOSE ||
-            alphabet === ALPHABET.RNA && it[HELM_FIELDS.SYMBOL] === RIBOSE ||
-            it[HELM_FIELDS.SYMBOL] === PHOSPHATE) ||
-          polymerType === HELM_POLYMER_TYPE.PEPTIDE &&
-          it[HELM_FIELDS.MONOMER_TYPE] !== HELM_MONOMER_TYPE.BRANCH
-        ) {
-          const monomerObject: { [key: string]: any } = {};
-          HELM_CORE_FIELDS.forEach((field) => {
-            //@ts-ignore
-            monomerObject[field] = it[field];
-          });
-          map.set(it[HELM_FIELDS.SYMBOL], monomerObject);
-        }
-      }
+  for (const monomerSymbol of monomerLib.getMonomerSymbolsByType(polymerType)) {
+    const it: Monomer = monomerLib.getMonomer(polymerType, monomerSymbol)!;
+    if (
+      polymerType === HELM_POLYMER_TYPE.RNA &&
+      (it[HELM_FIELDS.MONOMER_TYPE] === HELM_MONOMER_TYPE.BRANCH ||
+        alphabet === ALPHABET.DNA && it[HELM_FIELDS.SYMBOL] === DEOXYRIBOSE ||
+        alphabet === ALPHABET.RNA && it[HELM_FIELDS.SYMBOL] === RIBOSE ||
+        it[HELM_FIELDS.SYMBOL] === PHOSPHATE) ||
+      polymerType === HELM_POLYMER_TYPE.PEPTIDE &&
+      it[HELM_FIELDS.MONOMER_TYPE] !== HELM_MONOMER_TYPE.BRANCH
+    ) {
+      const monomerObject: { [key: string]: any } = {};
+      HELM_CORE_FIELDS.forEach((field) => {
+        //@ts-ignore
+        monomerObject[field] = it[field];
+      });
+      map.set(it[HELM_FIELDS.SYMBOL], monomerObject);
     }
   }
   return map;

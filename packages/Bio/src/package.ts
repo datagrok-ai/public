@@ -94,7 +94,7 @@ export async function initBio() {
   const logPs: number[] = [];
   const module = await grok.functions.call('Chem:getRdKitModule');
 
-  const series = monomerLib!.getMonomerMolsByType('PEPTIDE')!;
+  const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
   Object.keys(series).forEach((symbol) => {
     monomers.push(symbol);
     const block = series[symbol].replaceAll('#R', 'O ');
