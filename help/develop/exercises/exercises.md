@@ -22,12 +22,13 @@ predictive models, integration with the external utilities, data augmentation, a
   * [Scripting with client functions](#scripting-with-client-functions)
 * [Composing functions](#exercise-3-composing-functions)
 * [Querying databases](#exercise-4-querying-databases)
-* [Creating a scripting viewer](#exercise-5-creating-a-scripting-viewer)
-* [Transforming dataframes](#exercise-6-transforming-dataframes)
-* [Custom cell renderers](#exercise-7-custom-cell-renderers)
+* [Reading files](#exercise-5-reading-files)
+* [Creating a scripting viewer](#exercise-6-creating-a-scripting-viewer)
+* [Transforming dataframes](#exercise-7-transforming-dataframes)
+* [Custom cell renderers](#exercise-8-custom-cell-renderers)
 <!-- * [Accessing Web services with OpenAPI](#exercise-7-accessing-web-services-with-openapi) -->
-* [Creating an info panel with a REST web service](#exercise-8-creating-an-info-panel-with-a-rest-web-service)
-* [Enhancing Datagrok with dialog-based functions](#exercise-9-enhancing-datagrok-with-dialog-based-functions)
+* [Creating an info panel with a REST web service](#exercise-9-creating-an-info-panel-with-a-rest-web-service)
+* [Enhancing Datagrok with dialog-based functions](#exercise-10-enhancing-datagrok-with-dialog-based-functions)
 
 <!---
 * Creating an application
@@ -494,7 +495,7 @@ from our server.
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
     (see examples in the article [Parameterized Queries](../../access/databases#parameterized-queries)).
 
-## Exercise X: Reading files
+## Exercise 5: Reading files
 
 *Prerequisites:* basic TypeScript/JavaScript knowledge
 
@@ -566,10 +567,40 @@ from our server.
    </details>
 
 1. Now let's see how to load external files by URL. Run a code snippet:
-   <https://public.datagrok.ai/js/samples/data-access/external/stock-prices>. We will use the method
-   `grok.data.loadTable` in the next step.
+   <https://public.datagrok.ai/js/samples/data-access/external/stock-prices>. We will see another application of  the
+   `grok.data.loadTable` method in one of the next steps.
+1. Create a folder `files` in your package. Download the demographics dataset
+   <https://public.datagrok.ai/f/System.DemoFiles/demog.csv> and
+   <https://public.datagrok.ai/f/System.DemoFiles/cars.csv>. Add these files to the new folder. Also, put several files
+   with another extension there, e.g. <https://public.datagrok.ai/files/system.demofiles/chem/mol/aspirin.mol>.
+1. Write a function that works with files distributed with your package. It should add all *tables* from the `files`
+   folder to the workspace:
 
-## Exercise 5: Creating a scripting viewer
+   ```ts
+   //name: Add Tables
+   export async function addTables(): Promise<void> {
+      // Recursively list package files
+      const files = await _package.files.list('', true);
+
+      // Filter files by extension
+      const csvFiles = files.filter((f) => f.extension === 'csv');
+
+      // Load every table and add a view for it
+      for (const file of csvFiles) {
+         const df = await _package.files.readCsv(file.path);
+         grok.shell.addTableView(df);
+         // Alternative ways to read a table are:
+         // const df = await grok.data.loadTable(`${_package.webRoot}${file.path}`);
+         // const df = await grok.data.files.openTable(`System:AppData/${_package.name}/${file.fileName}`);
+      }
+   }
+   ```
+
+1. Publish your package. Find your files in the files browser: open `Data > Files > App Data > <PackageName>`. Don't
+   open the files from the UI, though. Call the `addTables` function in order to test your code. This is how you can work
+   with package files in your applications.
+
+## Exercise 6: Creating a scripting viewer
 
 *Prerequisites:* basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
@@ -625,7 +656,7 @@ Viewers | Python | Scatter Plot`.
     occurred within all of these sequences. As you may notice, `numpy` and `matplotlib` are already available for your
     Python scripting in Datagrok. Reuse them to finish this exercise.
 
-## Exercise 6: Transforming dataframes
+## Exercise 7: Transforming dataframes
 
 *Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#exercise-1-semantic-types).
@@ -674,7 +705,7 @@ Viewers | Python | Scatter Plot`.
 
 <!--- TODO: add linked dataframes demo here --->
 
-## Exercise 7: Custom cell renderers
+## Exercise 8: Custom cell renderers
 
 *You will learn:* render cells by semantic types.
 
@@ -779,7 +810,7 @@ the [`Web Services`](https://public.datagrok.ai/webservices) section of the Data
 
 -->
 
-## Exercise 8: Creating an info panel with a REST web service
+## Exercise 9: Creating an info panel with a REST web service
 
 We will use the ENA REST API to output sequences and associated data in the info panel, based on the ENA sequence ID
 contained in a currently selected grid cell.
@@ -830,7 +861,7 @@ contained in a currently selected grid cell.
 external domain from your web page, whereas CORS prevents you from querying anything outside a reach of your web page's
 domain. Thus Datagrok provides a proxy facility in the neat `fetchProxy` wrapper.
 
-## Exercise 9: Enhancing Datagrok with dialog-based functions
+## Exercise 10: Enhancing Datagrok with dialog-based functions
 
 In the previous exercises we've learned how the Datagrok function inputs are offered in a dialog window automatically
 once you run the function. In this exercise we find how to expand these dialogs with the behaviour beyond simple
