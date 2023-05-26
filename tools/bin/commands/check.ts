@@ -3,7 +3,7 @@ import path from 'path';
 import walk from 'ignore-walk';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
-import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../validators/interfaces';
+import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../utils/interfaces';
 import { PackageFile } from '../utils/interfaces';
 
 

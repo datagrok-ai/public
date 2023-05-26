@@ -11,16 +11,44 @@ import {PickingInfo} from '@deck.gl/core/typed';
 export type NodeStyleType = { [propName: string]: any };
 export type StylesType = { [nodeName: string]: NodeStyleType };
 
-export interface INglGlViewer extends IViewer {
-  get nwkDf(): DG.DataFrame;
+export enum RepresentationType {
+  Cartoon = 'cartoon',
+  Backbone = 'backbone',
+  BallAndStick = 'ball+stick',
+  Licorice = 'licorice',
+  Hyperball = 'hyperball',
+  Surface = 'surface'
+}
 
-  set nwkDf(value: DG.DataFrame);
+export const NglPropsDefault = new class {
+  // -- Data --
+  pdb: string | null = null;
+  pdbTag: string | null = null;
+  ligandColumnName: string | null = null;
 
-  setProps(updater: { [propName: string]: any }): void;
+  // -- Style --
+  representation: RepresentationType = RepresentationType.Cartoon;
 
-  get onAfterRender(): Observable<{ gl: WebGLRenderingContext }>;
+  // -- Behaviour --
 
-  get onHover(): Observable<{ info: PickingInfo, event: MjolnirPointerEvent }>;
+  showSelectedRowsLigands: boolean = false;
+  showCurrentRowLigand: boolean = true;
+  showMouseOverRowLigand: boolean = true;
+}();
+
+
+export type NglProps = Required<typeof NglPropsDefault>;
+
+export interface INglViewer extends IViewer {
+  setOptions(options: Partial<NglProps>): void;
+
+  get onAfterBuildView(): Observable<void>;
+}
+
+declare module 'datagrok-api/dg' {
+  interface DataFramePlotHelper {
+    fromType(viewerType: 'NGL', options: Partial<NglProps>): Promise<DG.Viewer & INglViewer>;
+  }
 }
 
 

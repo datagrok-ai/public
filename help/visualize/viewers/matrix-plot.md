@@ -6,9 +6,10 @@ Use Matrix Plot to assess the relationship among many pairs of columns at the sa
 
 General:
 
-|             |              |
-|-------------|--------------|
-| Right click | Context menu |
+|             |                     |
+|-------------|---------------------|
+| Right click | Context menu        |
+| Alt+F       | Show in full screen |
 
 ![Matrix Plot](../../uploads/viewers/matrix-plot.png "Matrix Plot")
 

@@ -23,7 +23,7 @@ export const viewerTypesMapping: {[key: string]: string} = {
   ['pcplot']: DG.VIEWER.PC_PLOT,
   ['piechart']: DG.VIEWER.PIE_CHART,
   ['scatterplot']: DG.VIEWER.SCATTER_PLOT,
-  ['scatterplot3d']: DG.VIEWER.SCATTER_PLOT_3D,
+  ['3dscatterplot']: DG.VIEWER.SCATTER_PLOT_3D,
   ['shapemap']: DG.VIEWER.SHAPE_MAP,
   ['statistics']: DG.VIEWER.STATISTICS,
   ['tileviewer']: DG.VIEWER.TILE_VIEWER,
@@ -37,3 +37,9 @@ export const CARD_VIEW_TYPE = 'JsCardView' as const;
 export const SCRIPTS_VIEW_TYPE = 'scripts' as const;
 export const FUNCTIONS_VIEW_TYPE = 'functions' as const;
 export const VIEWER_PATH = 'viewer' as const;
+export enum DIRECTION {
+  INPUT = 'Input',
+  OUTPUT = 'Output'
+};
+
+export const EXPERIMENTAL_TAG = 'experimental';

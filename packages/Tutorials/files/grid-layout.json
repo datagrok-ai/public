@@ -1,0 +1,166 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 1391,
+      "height": 913,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1391,
+          "height": 913,
+          "element": {
+            "id": "7cff2f80-ed50-11ed-d528-217b30084cc5",
+            "type": "Grid",
+            "look": {
+              "#type": "GridLook",
+              "showAddNewRowIcon": true,
+              "addNewRowOnLastRowEdit": true,
+              "rowHeight": 100,
+              "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
+              "columns": [
+                {
+                  "width": 36,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header"
+                },
+                {
+                  "width": 200,
+                  "columnName": "smiles",
+                  "cellType": "Molecule"
+                },
+                {
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "width": 78,
+                  "columnName": "NOCount",
+                  "cellType": "number",
+                  "colorCodingType": "Conditional",
+                  "colorCodingConditional": {
+                    "0 - 6.25": "#73aff5",
+                    "6.25 - 12.50": "#ffa500",
+                    "12.50 - 18.75": "#ff5140",
+                    "18.75 - 25": "#50af28"
+                  }
+                },
+                {
+                  "isColorCoded": true,
+                  "width": 96,
+                  "columnName": "ExactMolWt",
+                  "customFormat": "0.0000000",
+                  "cellType": "number",
+                  "format": "two digits after comma",
+                  "colorCodingType": "Linear"
+                },
+                {
+                  "isColorCoded": true,
+                  "width": 96,
+                  "columnName": "MolWt",
+                  "customFormat": "0.0000000",
+                  "cellType": "number",
+                  "format": "two digits after comma",
+                  "colorCodingType": "Linear"
+                },
+                {
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "width": 86,
+                  "columnName": "RingCount",
+                  "cellType": "number",
+                  "colorCodingType": "Conditional",
+                  "colorCodingConditional": {
+                    "1 - 2": "#73aff5",
+                    "2 - 3": "#ffa500",
+                    "3 - 4": "#ff5140",
+                    "4 - 5": "#50af28"
+                  }
+                },
+                {
+                  "width": 80,
+                  "customName": "radar",
+                  "cellType": "radar",
+                  "settings": {
+                    "columnNames": [
+                      "NOCount",
+                      "ExactMolWt",
+                      "MolWt",
+                      "RingCount"
+                    ]
+                  }
+                },
+                {
+                  "width": 80,
+                  "customName": "piechart",
+                  "cellType": "piechart",
+                  "settings": {
+                    "columnNames": [
+                      "NOCount",
+                      "ExactMolWt",
+                      "MolWt",
+                      "RingCount"
+                    ],
+                    "style": "Radius"
+                  }
+                },
+                {
+                  "width": 80,
+                  "customName": "barchart",
+                  "cellType": "barchart",
+                  "settings": {
+                    "columnNames": [
+                      "NOCount",
+                      "ExactMolWt",
+                      "MolWt",
+                      "RingCount"
+                    ],
+                    "globalScale": false,
+                    "colorCode": false
+                  }
+                },
+                {
+                  "width": 80,
+                  "customName": "sparkline",
+                  "cellType": "sparkline",
+                  "settings": {
+                    "columnNames": [
+                      "NOCount",
+                      "ExactMolWt",
+                      "MolWt",
+                      "RingCount"
+                    ],
+                    "globalScale": false,
+                    "colorCode": true
+                  }
+                },
+                {
+                  "width": 169,
+                  "customName": "html",
+                  "customFormat": "<div style=\"display:flex; flex-direction:column; padding: 5px\">\n\t\t<div>\n\t\t\t<div>MolWt: <b>#{t.row[MolWt]}</b></div>\n\t\t\t<div>ExactMolWt: <b>#{t.row[ExactMolWt]}</b></div>\n\t\t\t<div>NOCount: <b>#{t.row[NOCount]}</b></div>\n\t\t\t<div>RingCount: <b>#{t.row[RingCount]}</b></div>\n\t\t</div>\n\t</div>",
+                  "cellType": "html"
+                }
+              ]
+            },
+            "title": "Grid",
+            "default": true
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "542bad90-ed50-11ed-95ea-cd45ed478f85",
+    "tableName": "Table"
+  },
+  "name": "Table",
+  "friendlyName": "Table",
+  "author": {
+    "id": "fb93def0-7820-11ed-a90e-d5cadbc9618b"
+  },
+  "createdOn": "2023-05-26T16:36:39.159Z"
+}

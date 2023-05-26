@@ -3,7 +3,7 @@ title: "Cheminformatics"
 ---
 
 These programming exercises are designed to introduce developers to the Datagrok platform cheminformatics capabilities.
-The exercises are based on your knowledge obtained in [exercises](exercises.mdx).
+The exercises are based on your knowledge obtained in [exercises](exercises.md).
 
 ## Table of contents
 

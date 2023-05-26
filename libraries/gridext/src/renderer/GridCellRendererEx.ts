@@ -1,12 +1,20 @@
 import * as DG from 'datagrok-api/dg';
-import {PinnedColumn} from "../pinned/PinnedColumn";
 import * as GridUtils from '../utils/GridUtils';
+import {PinnedColumn} from "../pinned/PinnedColumn";
 import {RendererUIManager} from '../renderer/RendererUIManager';
 import {TooltipManager} from "../tooltip/TooltipManager";
 
 export class GridCellRendererEx extends DG.GridCellRenderer { // temporary to address a bug of importing during tests | extends DG.GridCellRenderer {
   constructor() {
     super();
+  }
+
+  getPreferredWidth(cell: DG.GridCell) : number | null {
+    return this.defaultWidth;
+  }
+
+  getPreferredHeight(cell: DG.GridCell) : number | null {
+    return this.defaultHeight;
   }
 
   onMouseDownEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
@@ -45,11 +53,19 @@ export class GridCellRendererEx extends DG.GridCellRenderer { // temporary to ad
     if (r === null)
       GridUtils.setGridColumnRenderer(cellGrid.gridColumn, this);
 
-    if (!RendererUIManager.isRegistered(cellGrid.grid))
-      RendererUIManager.register(cellGrid.grid);
+    let grid = null;
+    try {grid = cellGrid.grid;}
+    catch(e) {
+      grid = null;
+    }
 
-    if (!TooltipManager.isRegisted(cellGrid.grid))
-      TooltipManager.register(cellGrid.grid)
+    if (grid !== null) {
+      if (!RendererUIManager.isRegistered(grid))
+        RendererUIManager.register(grid);
+
+      if (!TooltipManager.isRegisted(grid))
+        TooltipManager.register(grid)
+    }
   }
 
   tooltip(cell: DG.GridCell) : HTMLElement | null{

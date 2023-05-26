@@ -1,12 +1,15 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS, MODE} from '../utils/const';
-import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from '../utils/macromolecule';
-// import {UnitsHandler} from '../utils/units-handler';
+import {ALPHABET, NOTATION, TAGS} from '../utils/macromolecule/consts';
+import {SplitterFunc} from '../utils/macromolecule/types';
+import {getSplitter} from '../utils/macromolecule/utils';
 import {NotationConverter} from '../utils/notation-converter';
-import {Monomer} from '../types';
+import {IMonomerLib, Monomer} from '../types';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {UnitsHandler} from '../utils/units-handler';
 
 // interface for typed arrays, like Float32Array and Uint32Array
 interface ITypedArray {
@@ -34,7 +37,7 @@ const V3K_BEGIN_BOND_BLOCK = 'M  V30 BEGIN BOND\n';
 const V3K_END_BOND_BLOCK = 'M  V30 END BOND\n';
 const V3K_BOND_CONFIG = ' CFG=';
 const V3K_BEGIN_DATA_LINE = 'M  V30 ';
-const V3K_END = 'M  END\n';
+const V3K_END = 'M  END';
 
 const PRECISION_FACTOR = 10_000; // HELMCoreLibrary has 4 significant digits after decimal point in atom coordinates
 
@@ -125,43 +128,43 @@ type NumberWrapper = {
 
 /** Convert Macromolecule column into Molecule column storing molfile V3000 with the help of a monomer library  */
 export async function _toAtomicLevel(
-  df: DG.DataFrame, macroMolCol: DG.Column<string>, monomersLibList: any[]
-): Promise<void> {
+  df: DG.DataFrame, seqCol: DG.Column<string>, monomerLib: IMonomerLib
+): Promise<{ col: DG.Column | null, warnings: string [] }> {
   // todo: remove this from the library
   if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
-    grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
-    return;
+    const msg: string = 'Transformation to atomic level requires the package "Chem" installed.';
+    return {col: null, warnings: [msg]};
   }
 
-  if (macroMolCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
-    grok.shell.warning(
-      `Only the ${DG.SEMTYPE.MACROMOLECULE} columns can be converted to atomic
-      level, the chosen column has semType ${macroMolCol.semType}`
-    );
-    return;
+  if (seqCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
+    const msg: string = `Only the ${DG.SEMTYPE.MACROMOLECULE} columns can be converted to atomic level, ` +
+      `the chosen column has semType '${seqCol.semType}'`;
+    return {col: null, warnings: [msg]};
   }
+
+  let srcCol: DG.Column<string> = seqCol;
+  const seqUh = new UnitsHandler(seqCol);
 
   // convert 'helm' to 'separator' units
-  if (macroMolCol.getTag(DG.TAGS.UNITS) === NOTATION.HELM) {
-    const converter = new NotationConverter(macroMolCol);
-    const separator = '/';
-    macroMolCol = converter.convert(NOTATION.SEPARATOR, separator);
+  if (seqUh.isHelm()) {
+    const converter = new NotationConverter(seqCol);
+    srcCol = converter.convert(NOTATION.SEPARATOR, '.');
+    srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
 
-  const alphabet = macroMolCol.getTag(TAGS.alphabet);
+  const srcUh = new UnitsHandler(srcCol);
+  const alphabet = srcUh.alphabet;
 
   // determine the polymer type according to HELM specifications
-  let polymerType;
+  let polymerType: HELM_POLYMER_TYPE;
   // todo: an exception from dart comes before this check if the alphabet is UN
   if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN) {
     polymerType = HELM_POLYMER_TYPE.PEPTIDE;
   } else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA) {
     polymerType = HELM_POLYMER_TYPE.RNA;
   } else {
-    grok.shell.warning(
-      `Unexpected column's '${macroMolCol.name}' alphabet '${alphabet}'.`
-    );
-    return;
+    const msg: string = `Unexpected column's '${srcCol.name}' alphabet '${alphabet}'.`;
+    return {col: null, warnings: [msg]};
   }
 
   // work in standard mode, where, as in HELMCoreLibrary:
@@ -170,36 +173,46 @@ export async function _toAtomicLevel(
   // - the library provides molfiles in format V2000
   const mode = MODE.STANDARD;
 
-  const monomerSequencesArray: string[][] = getMonomerSequencesArray(macroMolCol);
-  const monomersDict = await getMonomersDictFromLib(monomerSequencesArray, monomersLibList, polymerType, alphabet);
-  const columnLength = macroMolCol.length;
-  const reconstructed: string[] = new Array(columnLength);
-  for (let row = 0; row < columnLength; ++row) {
-    const monomerSeq = monomerSequencesArray[row];
-    reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet, polymerType, mode);
-    // console.log(reconstructed[row]);
+  const monomerSequencesArray: string[][] = getMonomerSequencesArray(srcCol);
+  const monomersDict = await getMonomersDictFromLib(monomerSequencesArray, monomerLib, polymerType, alphabet);
+  const srcColLength = srcCol.length;
+
+  const molfileList: string[] = new Array<string>(srcColLength);
+  const molfileWarningList = new Array<string>(0);
+  for (let rowI = 0; rowI < srcColLength; ++rowI) {
+    try {
+      const monomerSeq = monomerSequencesArray[rowI];
+      molfileList[rowI] = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet, polymerType, mode);
+    } catch (err: any) {
+      const errMsg: string = err instanceof Error ? err.message : err.toString();
+      const msg: string = `Cannot get molfile of row #${rowI}: ${errMsg}.`;
+      molfileWarningList.push(msg);
+    }
   }
 
-  // exclude name collisions
-  const name = 'molfile(' + macroMolCol.name + ')';
-  const newColName = df.columns.getUnusedName(name);
-  const newCol = DG.Column.fromStrings(newColName, reconstructed);
+  if (molfileWarningList.length > 0.05 * srcColLength)
+    throw new Error('Too many errors getting molfiles.');
 
-  newCol.semType = DG.SEMTYPE.MOLECULE;
-  newCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.MOLBLOCK);
-  df.columns.add(newCol, true);
-  await grok.data.detectSemanticTypes(df);
+  // exclude name collisions
+  const name = `molfile(${srcCol.name})`;
+  const resColName = df.columns.getUnusedName(name);
+  const resCol = DG.Column.fromStrings(resColName, molfileList);
+  resCol.semType = DG.SEMTYPE.MOLECULE;
+  resCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.MOLBLOCK);
+
+  return {col: resCol, warnings: molfileWarningList};
 }
 
 /** Get a mapping of peptide symbols to HELM monomer library
  * objects with selected fields.
  */
 function getFormattedMonomerLib(
-  monomersLibList: any[], polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
+  monomerLib: IMonomerLib, polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
 ): Map<string, any> {
   const map = new Map<string, any>();
-  monomersLibList.forEach(
-    (it) => {
+  for (const monomerType of monomerLib.getTypes()) {
+    for (const monomerName of monomerLib.getMonomerNamesByType(monomerType)) {
+      const it: Monomer = monomerLib.getMonomer(monomerType, monomerName)!;
       if (it[HELM_FIELDS.POLYMER_TYPE] === polymerType) {
         if (
           polymerType === HELM_POLYMER_TYPE.RNA &&
@@ -212,12 +225,14 @@ function getFormattedMonomerLib(
         ) {
           const monomerObject: { [key: string]: any } = {};
           HELM_CORE_FIELDS.forEach((field) => {
+            //@ts-ignore
             monomerObject[field] = it[field];
           });
           map.set(it[HELM_FIELDS.SYMBOL], monomerObject);
         }
       }
-    });
+    }
+  }
   return map;
 }
 
@@ -234,7 +249,7 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
   for (let row = 0; row < columnLength; ++row) {
     const macroMolecule = macroMolCol.get(row);
     // todo: handle the exception case when macroMolecule is null
-    result[row] = macroMolecule ? splitterFunc(macroMolecule) : [];
+    result[row] = macroMolecule ? splitterFunc(macroMolecule).filter((monomerCode) => monomerCode !== '') : [];
   }
   return result;
 }
@@ -243,10 +258,10 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
  * transformation from molfile V2000 to V3000 takes place,
  * with the help of async function call from Chem (RdKit module) */
 async function getMonomersDictFromLib(
-  monomerSequencesArray: string[][], monomersLibList: any[], polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
+  monomerSequencesArray: string[][], monomerLib: IMonomerLib, polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
 ): Promise<Map<string, MolGraph>> {
   // todo: exception - no gaps, no empty string monomers
-  const formattedMonomerLib = getFormattedMonomerLib(monomersLibList, polymerType, alphabet);
+  const formattedMonomerLib = getFormattedMonomerLib(monomerLib, polymerType, alphabet);
   const monomersDict = new Map<string, MolGraph>();
 
   const moduleRdkit = await grok.functions.call('Chem:getRdKitModule');
@@ -264,8 +279,8 @@ async function getMonomersDictFromLib(
       addMonomerToDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType, pointerToBranchAngle);
   }
 
-  for (let row = 0; row < monomerSequencesArray.length; ++row) {
-    const monomerSeq: string[] = monomerSequencesArray[row];
+  for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
+    const monomerSeq: string[] = monomerSequencesArray[rowI];
     for (const sym of monomerSeq) {
       if (sym === '') continue; // Skip gap/empty monomer for MSA
       try {
@@ -274,7 +289,7 @@ async function getMonomersDictFromLib(
       } catch (err: any) {
         const errTxt = errorToConsole(err);
         console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n` + errTxt);
-        const errMsg = `can't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
+        const errMsg = `Сan't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
         throw new Error(errMsg);
       }
     }
@@ -292,7 +307,7 @@ function getAngleBetweenSugarBranchAndOY(molGraph: MolGraph): number {
   const xShift = x[rNode] - x[terminalNode];
   const yShift = y[rNode] - y[terminalNode];
 
-  return Math.atan(yShift/xShift) + Math.PI/2;
+  return Math.atan(yShift / xShift) + Math.PI / 2;
 }
 
 /** Get a mapping of monomer symbols to MolGraph objects from a map whose keys
@@ -869,7 +884,7 @@ function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
   const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
 
   // rotate the centered graph so that P-O is on OX
-  rotateCenteredGraph(monomer.atoms, Math.PI/2 - angle);
+  rotateCenteredGraph(monomer.atoms, Math.PI / 2 - angle);
 }
 
 /** Adjust a backbone graph so that nodeOne is at origin and nodeTwo is at OX.
@@ -903,7 +918,7 @@ function adjustSugarMonomerGraph(monomer: MolGraph, pointerToBranchAngle: Number
   const angle = findAngleWithOY(x[rotatedNode], y[rotatedNode]);
 
   // rotate the centered graph so that the rotated node in on OX
-  rotateCenteredGraph(monomer.atoms, 3 * Math.PI/2 - angle);
+  rotateCenteredGraph(monomer.atoms, 3 * Math.PI / 2 - angle);
 
   pointerToBranchAngle.value = getAngleBetweenSugarBranchAndOY(monomer);
 
@@ -944,15 +959,15 @@ function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberW
   const bondLength = getEuclideanDistance(p1, p2);
   if (bondLength != 1) {
     for (let i = 0; i < x.length; ++i) {
-      x[i] = keepPrecision(x[i]/bondLength);
-      y[i] = keepPrecision(y[i]/bondLength);
+      x[i] = keepPrecision(x[i] / bondLength);
+      y[i] = keepPrecision(y[i] / bondLength);
     }
   }
 }
 
 function getEuclideanDistance(p1: Point, p2: Point): number {
   return keepPrecision(Math.sqrt(
-    (p1.x - p2.x)**2 + (p1.y - p2.y)**2
+    (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
   ));
 }
 
@@ -1112,9 +1127,10 @@ function monomerSeqToMolfile(
   monomerSeq: string[], monomersDict: Map<string, MolGraph>,
   alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE, mode: MODE
 ): string {
-  if (monomerSeq.length === 0)
-    return '';
+  if (monomerSeq.length === 0) {
     // throw new Error('monomerSeq is empty');
+    return '';
+  }
 
   // define atom and bond counts, taking into account the bond type
   const getAtomAndBondCounts = (mode === MODE.STANDARD) ?

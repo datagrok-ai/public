@@ -299,12 +299,10 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('datetime column', async () => {
     const t = grok.data.testData('demog');
     const c = t.columns.byName('started');
-    c.set(1, dayjs('2022-01-01'));
+    c.set(1, dayjs.utc('2022-01-01'));
     expect(c.get(1).valueOf(), 1640995200000);
     c.set(1, null);
     expect(c.get(1), null);
-    const v = grok.shell.addTableView(t);
-    v.close();
   });
 
   test('hash', async () => {

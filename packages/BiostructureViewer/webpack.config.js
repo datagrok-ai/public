@@ -23,7 +23,7 @@ module.exports = {
   },
   module: {
     rules: [
-      /* {test: /\.js$/, enforce: 'pre', use: ['source-map-loader']}, */
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, loader: 'ts-loader', exclude: /node_modules/},
       {
         test: /\.(html|ico)$/,

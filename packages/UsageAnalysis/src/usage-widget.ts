@@ -8,11 +8,11 @@ export class UsageWidget extends DG.Widget {
   caption: string;
   order: string;
 
-  constructor(header: HTMLDivElement) {
+  constructor() {
     const uniqueUsersDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const userEventsDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const userErrorsDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
-    const link = ui.link('Open Usage Analysis', () => usageAnalysisApp());
+    const link = ui.link('Open Usage Analysis', () => grok.functions.eval('UsageAnalysis:usageAnalysisApp()'));
     const linkDiv = ui.box( ui.div([link],
       {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', paddingRight: '8px'}}), {style: {maxHeight: '40px'}});
     super(ui.box(ui.splitV([linkDiv, uniqueUsersDiv, userEventsDiv, userErrorsDiv], {classes: 'ua-widget'})));

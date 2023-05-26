@@ -1,54 +1,55 @@
 {
-	"name": "@datagrok/ui-tests",
-	"friendlyName": "UI Tests",
-	"version": "0.0.1",
-	"author": {
-    "name": "Alexander Paramonov",
-    "email": "aparamonov@datagrok.ai"
+  "name": "@datagrok/ui-tests",
+  "friendlyName": "UI Tests",
+  "version": "1.0.2",
+  "author": {
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
   },
-	"description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
-	"dependencies": {
-		"datagrok-api": "latest",
-		"cash-dom": "latest",
-		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
-	},
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest"
-	},
-	"scripts": {
-		"link-all": "",
-		"debug-uitests": "webpack && grok publish",
-		"release-uitests": "webpack && grok publish --release",
-		"build-uitests": "webpack",
-		"build": "webpack",
-		"debug-uitests-dev": "webpack && grok publish dev",
-		"release-uitests-dev": "webpack && grok publish dev --release",
-		"debug-uitests-public": "webpack && grok publish public",
-		"release-uitests-public": "webpack && grok publish public --release",
-		"debug-uitests-release": "webpack && grok publish release",
-		"release-uitests-release": "webpack && grok publish release --release",
-		"debug-uitests-test": "webpack && grok publish test",
-		"release-uitests-test": "webpack && grok publish test --release",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/UITests"
-	}
+  "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.0.7",
+    "cash-dom": "latest",
+    "datagrok-api": "latest",
+    "dayjs": "latest"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-uitests": "webpack && grok publish",
+    "release-uitests": "webpack && grok publish --release",
+    "build-uitests": "webpack",
+    "build": "webpack",
+    "debug-uitests-dev": "webpack && grok publish dev",
+    "release-uitests-dev": "webpack && grok publish dev --release",
+    "debug-uitests-public": "webpack && grok publish public",
+    "release-uitests-public": "webpack && grok publish public --release",
+    "debug-uitests-release": "webpack && grok publish release",
+    "release-uitests-release": "webpack && grok publish release --release",
+    "debug-uitests-test": "webpack && grok publish test",
+    "release-uitests-test": "webpack && grok publish test --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/UITests"
+  }
 }

@@ -9,7 +9,6 @@ two tags: `cellRenderer` and `cellRenderer-<type>` (specify the cell type here).
 
 The following example defines a cell renderer for summary column visualized as bar chart. This is real code from the
 ["PowerGrid" public package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/src/package.ts).
-Be careful, there should be no spaces between the comment starting slash characters and the attribute name.
 
 ```typescript
 //name: piechartCellRender
@@ -22,7 +21,27 @@ export function piechartCellRenderer() {
 }
 ```
 
-Renderer class derived from DG.GridCellRender must implement `name` and `cellType` properties, the main drawing
+:::tip
+
+If you are on version `^4.10.x` of `datagrok-tools`, you can use class decorators to register cell renderers:
+
+```ts
+@grok.functions.decorators.grokCellRenderer({
+  cellType: 'piechart',
+  virtual: true,
+})
+export class PieChartCellRenderer extends DG.GridCellRenderer {
+  /* PieChartCellRenderer contents */
+}
+```
+
+This is equivalent to adding a function to `package.ts`. There is no need to add anything other than the class itself.
+When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special
+`package.g.ts` file to your project. Note that it is not on the ignore list, so you are supposed to commit this file.
+
+:::
+
+Renderer class derived from `DG.GridCellRender` must implement `name` and `cellType` properties, the main drawing
 method `render`, and optional `renderSettings` methods allowing to build UI HTML Element for renderer settings.
 An example is
 available ["PowerGrid" public package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/src/sparklines/piechart.ts)

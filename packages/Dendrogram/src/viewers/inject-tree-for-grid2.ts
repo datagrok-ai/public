@@ -27,12 +27,10 @@ export function injectTreeForGridUI2(
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
   const treeNb: GridNeighbor = attachDivToGrid(grid, neighborWidth);
-
   // const treeDiv = ui.div();
   // treeRoot.appendChild(treeDiv);
   // treeRoot.style.backgroundColor = '#FFF0F0';
   // treeRoot.style.setProperty('overflow-y', 'hidden', 'important');
-
   // TODO: adapt tree: bio.NodeType to MarkupNodeType
   if (treeRoot) markupNode(treeRoot);
   const totalLength: number = treeRoot ? (treeRoot as MarkupNodeType).subtreeLength! : 1;
@@ -102,8 +100,8 @@ export function injectTreeForGridUI2(
   function alignGridWithTree(): void {
     const [viewedRoot] = th.setGridOrder(treeRoot, grid, leafColName);
     if (viewedRoot) markupNode(viewedRoot);
-    const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
-      {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
+    // const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
+    //   {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
 
     renderer.treeRoot = viewedRoot as MarkupNodeType;
   }
@@ -116,10 +114,10 @@ export function injectTreeForGridUI2(
   try {
     const lineWidthProperty = DG.Property.int(D_PROPS.lineWidth,
       (obj) => {
-        let k = 11;
+        return obj;
       },
       (obj, value) => {
-        let k = 11;
+        obj = value;
       },
       1);
     lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
@@ -130,33 +128,41 @@ export function injectTreeForGridUI2(
 
   // -- Handling events --
 
+  // When a node is clicked, all of the leaf nodes come from it should become selected
   function rendererOnCurrentChanged() {
     window.setTimeout(() => {
       if (!renderer || !placer) return;
 
-      const oldCurrentRowIdx: number = grid.dataFrame.currentRowIdx;
+      // Reset the current row index
+      // grid.dataFrame.currentRowIdx = -1;
+      const selectionIndexes = new Set<number>();
       // only one current becomes first of sub leaves
-      const currentLeaf: NodeType | null = renderer.current ? th.getLeafList(renderer.current.node)[0] : null;
-      let newCurrentRowIdx: number = -1;
-      if (currentLeaf) {
+      const selectionLeafs: NodeType[] | null = renderer.current ? th.getLeafList(renderer.current.node) : null;
+      if (selectionLeafs && selectionLeafs.length > 0) {
+        const selectionLeafNames = new Set<string>(selectionLeafs.map((leaf) => leaf.name));
         if (leafColName) {
           const leafCol: DG.Column = grid.dataFrame.getCol(leafColName);
           const rowCount = grid.dataFrame.rowCount;
           for (let rowI: number = 0; rowI < rowCount; rowI++) {
             const rowLeafName: string = leafCol.get(rowI);
-            if (rowLeafName == currentLeaf.name) {
-              newCurrentRowIdx = rowI;
+            if (selectionLeafNames.has(rowLeafName)) {
+              selectionIndexes.add(rowI);
               break;
             }
           }
         } else {
-          newCurrentRowIdx = parseInt(currentLeaf.name);
+          selectionLeafs.forEach((leaf) => {
+            selectionIndexes.add(parseInt(leaf.name));
+          });
         }
       }
-      if (newCurrentRowIdx != oldCurrentRowIdx) {
-        grid.dataFrame.currentRowIdx = newCurrentRowIdx;
-        grid.invalidate(); // fixing stall current on changed currentRowIdx to -1
+      if (selectionIndexes.size === 1) {
+        grid.dataFrame.currentRowIdx = selectionIndexes.values().next().value;
+      } else {
+        grid.dataFrame.selection.init((i) => selectionIndexes.has(i));
+        grid.dataFrame.selection.fireChanged();
       }
+      grid.invalidate(); // fixing stall current on changed currentRowIdx to -1
     });
   }
 
@@ -200,7 +206,7 @@ export function injectTreeForGridUI2(
 
       const oldSelection: DG.BitSet = grid.dataFrame.selection.clone();
       if (renderer.selections.length == 0) {
-        grid.dataFrame.selection.init((rowI) => { return false; }, false);
+        grid.dataFrame.selection.init((_) => { return false; }, false);
       } else {
         const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
         const nodeNameSet = new Set(
@@ -234,7 +240,7 @@ export function injectTreeForGridUI2(
     }, 0 /* next event cycle*/);
   }
 
-  function dataFrameOnCurrentRowChanged(value: any) {
+  function dataFrameOnCurrentRowChanged(_value: any) {
     const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
     const idx: number = grid.dataFrame.currentRowIdx;
     const currentLeafName: string | null = idx == -1 ? null : !!leafCol ? leafCol.get(idx) : `${idx}`;
@@ -250,7 +256,7 @@ export function injectTreeForGridUI2(
     renderer.current = current;
   }
 
-  function dataFrameOnMouseOverRowChanged(value: any) {
+  function dataFrameOnMouseOverRowChanged(_value: any) {
     if (!renderer || !placer) return;
 
     const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
@@ -268,7 +274,7 @@ export function injectTreeForGridUI2(
     renderer.mouseOver = mouseOver;
   }
 
-  function dataFrameOnSelectionChanged(value: any) {
+  function dataFrameOnSelectionChanged(_value: any) {
     if (!renderer || !placer) return;
 
     const leafList: MarkupNodeType[] = th.getLeafList(renderer.treeRoot);
@@ -301,16 +307,25 @@ export function injectTreeForGridUI2(
 
     renderer.selections = selections;
   }
+  // Variable to track if filter is changed and prevent the sorting change event
+  let filterChangeCounter = 0;
 
-  function dataFrameOnFilterChanged(value: any) {
+  function dataFrameOnFilterChanged(_value: any) {
     // TODO: Filter newick tree
     console.debug('Dendrogram: injectTreeForGridUI2() grid.dataFrame.onFilterChanged()');
-
+    filterChangeCounter += 1;
     // to prevent nested fire event in event handler
-    window.setTimeout(() => { alignGridWithTree(); }, 0);
+    window.setTimeout(() => {
+      alignGridWithTree();
+    }, 0);
   }
 
-  function dfOnSortingChanged(value?: any) {
+  function dfOnSortingChanged(_value?: any) {
+    // If the reordering is caused by the filter change, return
+    if (filterChangeCounter > 0) {
+      filterChangeCounter -= 1;
+      return;
+    }
     const treeOverlay = ui.div();
     treeOverlay.style.width = treeNb.root!.style.width;
     treeOverlay.style.height = treeNb.root!.style.height;
@@ -339,7 +354,9 @@ export function injectTreeForGridUI2(
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));
 
   let sortingSub = grid.onRowsSorted.subscribe(dfOnSortingChanged);
+  subs.push(sortingSub);
 
+  subs.push(grid.onRowsResized.subscribe(dataFrameOnFilterChanged));
   subs.push(grid.dataFrame.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
   subs.push(grid.dataFrame.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));
   subs.push(grid.dataFrame.onSelectionChanged.subscribe(dataFrameOnSelectionChanged));

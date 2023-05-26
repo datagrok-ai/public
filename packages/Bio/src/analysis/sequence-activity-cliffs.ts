@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import {AvailableMetrics, AvailableMetricsTypes, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import * as C from '../utils/constants';
 import {GridColumn} from 'datagrok-api/dg';
@@ -15,7 +15,7 @@ export async function getDistances(col: DG.Column, seq: string): Promise<Array<n
   const stringArray = col.toList();
   const distances = new Array(stringArray.length).fill(0);
   const distanceMethod: (x: string, y: string) => number =
-    AvailableMetrics[AvailableMetricsTypes.String][StringMetricsNames.Levenshtein];
+    AvailableMetrics[DistanceMetricsSubjects.String][StringMetricsNames.Levenshtein];
   for (let i = 0; i < stringArray.length; ++i) {
     const distance = stringArray[i] ? distanceMethod(stringArray[i], seq) : null;
     distances[i] = distance ? distance / Math.max((stringArray[i] as string).length, seq.length) : null;
@@ -43,8 +43,8 @@ export async function getSimilaritiesMatrix(
 }
 
 export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
-  df: DG.DataFrame, colName: string, simArr: DG.Column[])
-  : Promise<DG.Column[]> {
+  df: DG.DataFrame, colName: string, simArr: (DG.Column | null)[])
+  : Promise<(DG.Column | null)[]> {
   if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
     await invalidateMols(seqCol, false);
   const fpDf = DG.DataFrame.create(seqCol.length);

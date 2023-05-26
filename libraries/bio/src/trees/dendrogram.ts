@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
-import {NodeType} from '.';
+import {NodeType} from './types';
 
 /**
  * min - undefined for root at 0

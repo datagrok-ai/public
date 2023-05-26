@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UnitsHandler} from './units-handler';
-import {NOTATION} from './macromolecule';
+import {NOTATION} from './macromolecule/consts';
 
 /** Class for parsing FASTA files */
 export class FastaFileHandler {

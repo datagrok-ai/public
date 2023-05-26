@@ -126,13 +126,16 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--host] [--csv]
+[--category] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--catchUnhandled] [--report]
 
---host           Host alias as in the config file
---csv            Save the test report in a CSV file
---gui            Launch graphical interface (non-headless mode)
---skip-build     Skip the package build step
---skip-publish   Skip the package publication step
+--category          Specify a category name to run tests for
+--host              Host alias as in the config file
+--csv               Save the test report in a CSV file
+--gui               Launch graphical interface (non-headless mode)
+--catchUnhandled    Catch unhandled exceptions during test execution (default=true)
+--report            Report failed tests to audit (default=false)
+--skip-build        Skip the package build step
+--skip-publish      Skip the package publication step
 
 Run package tests
 

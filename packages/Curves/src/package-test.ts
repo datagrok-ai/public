@@ -2,7 +2,7 @@ import * as DG from "datagrok-api/dg";
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
-import './tests/fit-viewer-test';
+import './tests/detector-tests';
 
 export const _package = new DG.Package();
 export {tests};

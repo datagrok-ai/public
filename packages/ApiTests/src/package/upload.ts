@@ -1,8 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import dayjs from 'dayjs';
-import {hashDataFrame} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {before, after, category, expect, test, expectTable} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 
 category('Package', () => {
@@ -22,7 +20,7 @@ category('Package', () => {
     const response = await fetch(`${grok.dapi.root}/users/current/dev_key?getNew=false`,
       {method: 'GET', credentials: 'include'});
     key = await response.json();
-    query = await grok.functions.eval('ApiTests:PackageTest');
+    query = await grok.functions.eval('DBTests:PackageTest');
   });
 
   async function publish(debug: boolean) {
@@ -38,14 +36,17 @@ category('Package', () => {
       await fetch(`${grok.dapi.root}/packages/${p.id}`, {method: 'DELETE', credentials: 'include'});
     await publish(false);
     await publish(true);
-    expectArray(hashDataFrame(await query.apply()), hashDataFrame(DG.DataFrame.fromCsv(test1)));
+    expectTable(await query.apply(), DG.DataFrame.fromCsv(test1));
     expect((await grok.dapi.scripts.filter('package.name = "Test"').list()).length, 1);
     expect((await grok.dapi.scripts.filter('package.name = "Test"').allPackageVersions().list()).length, 2);
     for (let i = 0; i < 2; i++) {
       await publish(false);
-      expectArray(hashDataFrame(await query.apply()), hashDataFrame(DG.DataFrame.fromCsv(test2)));
+      expectTable(await query.apply(), DG.DataFrame.fromCsv(test2));
       expect((await grok.dapi.scripts.filter('package.name = "Test"').allPackageVersions().list()).length, 1);
     }
   });
 
+  after(async () => {
+    DG.Balloon.closeAll();
+  });
 });
