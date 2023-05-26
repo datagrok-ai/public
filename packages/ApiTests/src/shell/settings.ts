@@ -5,11 +5,13 @@ import * as DG from 'datagrok-api/dg';
 
 category('Settings', () => {
   let gss: DG.Settings & any;
-  let views: DG.View[];
+  let t: DG.DataFrame;
+  // let views: DG.View[];
 
   before(async () => {
     gss = grok.shell.settings;
-    views = [];
+    t = grok.data.demo.demog(20);
+    // views = [];
   });
 
   test('Dev Settings', async () => {
@@ -35,6 +37,28 @@ category('Settings', () => {
     }
   });
 
+  test('Sync Settings', async () => {
+    expect(gss.showCurrentRowInProperties, false);
+    expect(gss.showFilteredRowsInProperties, true);
+    expect(gss.showSelectedRowsInProperties, true);
+    expect(gss.showSelectedColumnsInProperties, true);
+    expect(gss.showCurrentColumnInProperties, true);
+    try {
+      // const v = grok.shell.addTableView(t);
+      // views.push(v);
+      grok.shell.o = t;
+      t.rows.select((row) => row.sex === 'F');
+      expect(grok.shell.o instanceof DG.RowGroup, true);
+      expect(grok.shell.o.dataFrame.selection.trueCount, t.selection.trueCount);
+      gss.showSelectedRowsInProperties = false;
+      grok.shell.o = t;
+      t.rows.select((row) => row.sex === 'M');
+      expect(grok.shell.o instanceof DG.DataFrame, true);
+    } finally {
+      gss.showSelectedRowsInProperties = true;
+    }
+  }, {skipReason: 'GROK-11670'});
+
   test('Windows Settings', async () => {
     expect(gss.showMenu, !grok.shell.windows.simpleMode,
       `showMenu ${gss.showMenu} != ${!grok.shell.windows.simpleMode}`);
@@ -57,7 +81,7 @@ category('Settings', () => {
   });
 
   after(async () => {
-    views.forEach((v) => v.close());
+    // views.forEach((v) => v.close());
     grok.shell.closeAll();
   });
 });

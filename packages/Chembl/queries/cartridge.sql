@@ -19,7 +19,7 @@ limit @maxRows
 --input: string threshold = "0.6"
 select set_config('rdkit.tanimoto_threshold', @threshold, true);
 --batch
-select * from get_mfp2_neighbors(@pattern);
+select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 --end
 
 --name: patternSubstructureSearch

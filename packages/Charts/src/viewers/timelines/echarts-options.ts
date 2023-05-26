@@ -23,6 +23,7 @@ export const options = {
     triggerEvent: true,
     axisTick: { show: false },
     axisLine: { show: false },
+    axisLabel: { overflow: 'truncate', width: 100 },
   },
   dataZoom: [
     {
