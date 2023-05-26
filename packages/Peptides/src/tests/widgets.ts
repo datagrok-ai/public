@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
@@ -6,7 +7,7 @@ import {PeptidesModel} from '../model';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SCALING_METHODS} from '../utils/constants';
+import * as C from '../utils/constants';
 import {PANES_INPUTS, SETTINGS_PANES, getSettingsDialog} from '../widgets/settings';
 import {getDistributionWidget} from '../widgets/distribution';
 import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
@@ -26,10 +27,10 @@ category('Widgets: Settings', () => {
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
-      SCALING_METHODS.NONE);
+      C.SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
@@ -67,10 +68,10 @@ category('Widgets: Distribution panel', () => {
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
-      SCALING_METHODS.NONE);
+      C.SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
@@ -99,10 +100,10 @@ category('Widgets: Mutation cliffs', () => {
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
-      SCALING_METHODS.NONE);
+      C.SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
@@ -122,9 +123,45 @@ category('Widgets: Mutation cliffs', () => {
 });
 
 category('Widgets: Actions', () => {
-  test('New view', async () => {
+  let df: DG.DataFrame;
+  let model: PeptidesModel;
+  let activityCol: DG.Column<number>;
+  let sequenceCol: DG.Column<string>;
+  let clusterCol: DG.Column<any>;
+  let scaledActivityCol: DG.Column<number>;
 
-  }, {skipReason: 'Not implemented yet'});
+  before(async () => {
+    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
+    const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
+      C.SCALING_METHODS.NONE);
+    if (tempModel === null)
+      throw new Error('Model is null');
+    model = tempModel;
+  });
+
+  test('New view', async () => {
+    // Set compound bitset: filter out 2 rows and select 1 among them
+    const filter = model.df.filter;
+    filter.setAll(false, false);
+    filter.set(0, true, false);
+    filter.set(1, true, false);
+
+    const selection = model.df.selection;
+    selection.set(0, true, false);
+
+    const newViewId = model.createNewView();
+    const currentTable = grok.shell.t;
+
+    expect(currentTable.getTag(C.TAGS.MULTIPLE_VIEWS), '1', 'Current table is expected to have multiple views tag');
+    expect(currentTable.getTag(C.TAGS.UUID), newViewId, 'Current table is expected to have the same UUID as new view');
+    expect(currentTable.rowCount, 1, 'Current table is expected to have 1 row');
+  });
 
   test('Custom clusters', async () => {
 

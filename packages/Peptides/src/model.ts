@@ -115,6 +115,14 @@ export class PeptidesModel {
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
 
+  get id(): string {
+    const id = this.df.getTag(C.TAGS.UUID);
+    if (id === null || id === '')
+      throw new Error('PeptidesError: UUID is not defined');
+
+    return id;
+  }
+
   get treeHelper(): ITreeHelper {
     this._treeHelper ??= getTreeHelperInstance();
     return this._treeHelper;
@@ -202,9 +210,9 @@ export class PeptidesModel {
 
   get analysisView(): DG.TableView {
     this._analysisView ??=
-      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.getTag(C.TAGS.UUID) == this.df.getTag(C.TAGS.UUID)) ??
+      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.getTag(C.TAGS.UUID) === this.id) ??
         grok.shell.addTableView(this.df);
-    if (this.df.getTag(C.MULTIPLE_VIEWS) != '1')
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1')
       grok.shell.v = this._analysisView;
 
     return this._analysisView;
@@ -1092,7 +1100,7 @@ export class PeptidesModel {
       return;
     this.isInitialized = true;
 
-    if (!this.isRibbonSet && this.df.getTag(C.MULTIPLE_VIEWS) != '1') {
+    if (!this.isRibbonSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) != '1') {
       //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
       this.analysisView.setRibbonPanels([[settingsButton]], false);
@@ -1158,18 +1166,21 @@ export class PeptidesModel {
     this.analysisView.grid.col(newClusterCol.name)!.visible = false;
   }
 
-  createNewView(): void {
+  createNewView(): string {
     const rowMask = this.getCompoundBitset();
-    if (!rowMask.anyTrue)
-      return grok.shell.warning('Cannot create a new view, there are no visible selected rows in your dataset');
+    const newDfId = uuid.v4();
 
     const newDf = this.df.clone(rowMask);
     for (const [tag, value] of newDf.tags)
       newDf.setTag(tag, tag == C.TAGS.SETTINGS ? value : '');
+
     newDf.name = 'Peptides Multiple Views';
-    newDf.setTag(C.MULTIPLE_VIEWS, '1');
-    newDf.setTag(C.TAGS.UUID, uuid.v4());
+    newDf.setTag(C.TAGS.MULTIPLE_VIEWS, '1');
+    newDf.setTag(C.TAGS.UUID, newDfId);
+
     const view = grok.shell.addTableView(newDf);
-    view.addViewer('logo-summary-viewer');
+    view.addViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
+
+    return newDfId;
   }
 }
