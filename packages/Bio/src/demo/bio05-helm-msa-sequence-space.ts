@@ -8,8 +8,8 @@ import {handleError} from './utils';
 import {IWebLogoViewer} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {pepseaMethods, runPepsea} from '../utils/pepsea';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 const helmFn: string = 'samples/sample_HELM.csv';
 
@@ -44,7 +44,7 @@ export async function demoBio05UI(): Promise<void> {
         const method: string = pepseaMethods[0];
         const gapOpen: number = 1.53;
         const gapExtend: number = 0;
-        msaHelmCol = await runPepsea(helmCol, msaHelmColName, method, gapOpen, gapExtend, undefined);
+        msaHelmCol = (await runPepsea(helmCol, msaHelmColName, method, gapOpen, gapExtend, undefined))!;
         df.columns.add(msaHelmCol);
         await grok.data.detectSemanticTypes(df);
       }, {
