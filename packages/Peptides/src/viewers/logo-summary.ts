@@ -218,7 +218,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.viewerGrid.sort([C.LST_COLUMN_NAMES.MEMBERS], [false]);
     this.updateFilter();
     const gridClustersCol = this.viewerGrid.col(clustersColName)!;
-    gridClustersCol.name = C.LST_COLUMN_NAMES.CLUSTER;
+    gridClustersCol.column!.name = C.LST_COLUMN_NAMES.CLUSTER;
     gridClustersCol.visible = true;
     this.viewerGrid.columns.setOrder([C.LST_COLUMN_NAMES.CLUSTER, C.LST_COLUMN_NAMES.MEMBERS,
       C.LST_COLUMN_NAMES.WEB_LOGO, C.LST_COLUMN_NAMES.DISTRIBUTION, C.LST_COLUMN_NAMES.MEAN_DIFFERENCE,
@@ -370,7 +370,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     for (let i = 0; i < viewerDfColsLength; ++i) {
       const col = viewerDfCols.byIndex(i);
-      newClusterVals[i] = col.name === this.model.settings.clustersColumnName! ? newClusterName :
+      newClusterVals[i] = col.name === C.LST_COLUMN_NAMES.CLUSTER ? newClusterName :
         col.name === C.LST_COLUMN_NAMES.MEMBERS ? selection.trueCount :
           col.name === C.LST_COLUMN_NAMES.WEB_LOGO ? null :
             col.name === C.LST_COLUMN_NAMES.DISTRIBUTION ? null :
@@ -388,16 +388,18 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   removeCluster(): void {
     const lss = this.model.clusterSelection;
-    const dfCols = this.dataFrame.columns;
+    const customClusters = wu(this.model.customClusters).map((cluster) => cluster.name).toArray();
 
     // Names of the clusters to remove
-    const clustNames = lss.filter((cluster) => dfCols.contains(cluster));
+    const clustNames = lss.filter((cluster) => customClusters.includes(cluster));
     if (clustNames.length === 0)
-      return grok.shell.warning('Only custom clusters can be removed');
+      return grok.shell.warning('No custom clusters selected to be removed');
 
     const viewerDf = this.viewerGrid.dataFrame;
     const viewerDfRows = viewerDf.rows;
-    const clustColCat = viewerDf.getCol(this.model.settings.clustersColumnName!).categories;
+    const clustCol = viewerDf.getCol(C.LST_COLUMN_NAMES.CLUSTER);
+    const clustColCat = clustCol.categories;
+    const dfCols = this.dataFrame.columns;
 
     for (const cluster of clustNames) {
       lss.splice(lss.indexOf(cluster), 1);
@@ -408,6 +410,8 @@ export class LogoSummaryTable extends DG.JsViewer {
       this.webLogoDfPlot.splice(clustIdx, 1);
       this.distributionDfPlot.splice(clustIdx, 1);
     }
+
+    clustCol.compact();
 
     this.model.clusterSelection = lss;
     this.render();
@@ -424,7 +428,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
 
     if (clustType === CLUSTER_TYPE.ORIGINAL) {
-      const origClustCol = filteredDf.getCol(this.model.settings.clustersColumnName!);
+      const origClustCol = filteredDf.getCol(C.LST_COLUMN_NAMES.CLUSTER);
       const origClustColData = origClustCol.getRawData();
       const origClustColCategories = origClustCol.categories;
       const seekValue = origClustColCategories.indexOf(clustName);
