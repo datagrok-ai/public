@@ -400,8 +400,6 @@ public abstract class JdbcDataProvider extends DataProvider {
                 int precision = resultSetMetaData.getPrecision(c);
                 int scale = resultSetMetaData.getScale(c);
 
-                queryLogger.debug("Column: {}, type: {}, type name: {}, precision: {}, scale: {}",
-                        label, type, typeName, precision, scale);
                 long startTime = System.currentTimeMillis();
                 if (isInteger(type, typeName, precision, scale))
                     column = new IntColumn();
@@ -428,8 +426,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                     supportedType.set(c - 1, false);
                     initColumn.set(c - 1, false);
                 }
-                queryLogger.debug("Prepared column type is {}, time taken to detect: {} ms",
-                        column.getType(), startTime - System.currentTimeMillis());
+                queryLogger.debug("Column: {}, type: {}, type name: {}, precision: {}, scale: {}. "
+                                + "Prepared column type {}, time taken to detect: {} ms",
+                        label, type, typeName, precision, scale, column.getType(), startTime - System.currentTimeMillis());
                 column.name = label;
                 columns.add(c - 1, column);
             }

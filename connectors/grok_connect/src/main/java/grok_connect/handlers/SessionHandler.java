@@ -60,7 +60,6 @@ public class SessionHandler {
             session.close();
             queryManager.closeConnection();
         }
-
     }
 
     public void onMessage(String message) throws Throwable {
