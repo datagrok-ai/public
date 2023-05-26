@@ -494,6 +494,81 @@ from our server.
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
     (see examples in the article [Parameterized Queries](../../access/databases#parameterized-queries)).
 
+## Exercise X: Reading files
+
+*Prerequisites:* basic TypeScript/JavaScript knowledge
+
+*Details:* [How to access data](../how-to/access-data),
+[How to work with package files](../how-to/work-with-package-files.md)
+
+*You will learn*: different ways to read files programmatically
+
+1. In previous exercises, we opened the test file `Demo Files > bio > sars-cov-2.csv` from the UI. Let's now write a
+   function that opens a file by its path programmatically. Firstly, add this to your package:
+
+   ```ts
+   //input: string filepath
+   //output: dataframe df
+   export async function openTable(filepath: string): Promise<DG.DataFrame> {
+   }
+   ```
+
+   There are several methods you can use to open a table. For demo files, the simplest way is
+   [grok.data.getDemoTable](https://datagrok.ai/js-api/classes/dg.Data#getdemotable). For files outside of the
+   `Demo:Files` [file share](../../access/file-shares.mdx), you can use
+   [grok.data.files.openTable](https://datagrok.ai/js-api/classes/dg.Data#opentable), or execute a command
+   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/classes/dg.Functions#eval) (to see how it
+   works, open a file from the UI and find the last console command, it will look similar to
+   `OpenServerFile("Demo:Files/bio/sars-cov-2.csv")`).
+   
+   Assume that the inputs will be demo files only. Make sure to open a table view using `grok.shell.addTableView(df)`
+   before you return the dataframe from your function.
+
+1. Publish your package and test the function with the following inputs:
+
+   ```ts
+   openTable("bio/sars-cov-2.csv");
+   openTable("geo/earthquakes.csv");
+   openTable("demog.csv");
+   ```
+
+   <details>
+   <summary> Function implementation </summary>
+   <div>
+
+   ```ts
+   //input: string filepath
+   //output: dataframe df
+   export async function openTable1(filepath: string): Promise<DG.DataFrame> {
+      const df = await grok.data.getDemoTable(filepath);
+      grok.shell.addTableView(df);
+      return df;
+   }
+
+   //input: string filepath
+   //output: dataframe df
+   export async function openTable2(filepath: string): Promise<DG.DataFrame> {
+      const df = await grok.data.files.openTable(`Demo:Files/${filepath}`);
+      grok.shell.addTableView(df);
+      return df;
+   }
+
+   //input: string filepath
+   //output: dataframe df
+   export async function openTable3(filepath: string): Promise<DG.DataFrame> {
+      const df = await grok.functions.eval(`OpenServerFile("Demo:Files/${filepath}")`)[0];
+      grok.shell.addTableView(df);
+      return df;
+   }
+   ```
+
+   </div>
+   </details>
+
+1. Now let's see how to load external files by URL. Run a code snippet:
+   <https://public.datagrok.ai/js/samples/data-access/external/stock-prices>. We will use the method
+   `grok.data.loadTable` in the next step.
+
 ## Exercise 5: Creating a scripting viewer
 
 *Prerequisites:* basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
