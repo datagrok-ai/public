@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import './scripts/scripts-params';
+import './shell/ml';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 

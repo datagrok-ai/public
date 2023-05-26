@@ -51,7 +51,7 @@ category('Table view', () => {
       const tableColName = col.column!.name;
       const expectedVisibility = posCols.includes(tableColName) || (tableColName === COLUMNS_NAMES.ACTIVITY_SCALED) ||
       visibleColumns.includes(tableColName);
-      expect(col.visible, expectedVisibility, `Column ${tableColName} is visible == ${col.visible} but should be ` +
+      expect(col.visible, expectedVisibility, `Column ${tableColName} is visible === ${col.visible} but should be ` +
         `${expectedVisibility}`);
     }
   });

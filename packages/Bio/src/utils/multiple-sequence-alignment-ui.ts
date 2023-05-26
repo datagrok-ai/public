@@ -53,7 +53,7 @@ export async function multipleSequenceAlignmentUI(
     const pepseaInputRootStyles: CSSStyleDeclaration[] = [methodInput.root.style];
     const kalignInputRootStyles: CSSStyleDeclaration[] = [terminalGapInput.root.style, kalignVersionDiv.style];
 
-    let performAlignment: (() => Promise<DG.Column<string>>) | undefined;
+    let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
     // TODO: allow only macromolecule colums to be chosen
     const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
@@ -93,7 +93,7 @@ export async function multipleSequenceAlignmentUI(
 async function onDialogOk(
   colInput: DG.InputBase< DG.Column<any>>,
   table: DG.DataFrame,
-  performAlignment: (() => Promise<DG.Column<string>>) | undefined,
+  performAlignment: (() => Promise<DG.Column<string> | null>) | undefined,
   resolve: (value: DG.Column<any>) => void,
   reject: (reason: any) => void
 ): Promise<void> {
@@ -107,7 +107,7 @@ async function onDialogOk(
       throw new Error('Invalid column format');
     msaCol = await performAlignment(); // progress
     if (msaCol == null)
-      return grok.shell.warning('Wrong column format');
+      return grok.shell.warning('PepSeA container has not started');
 
     table.columns.add(msaCol);
     await grok.data.detectSemanticTypes(table);
@@ -129,7 +129,7 @@ async function onColInputChange(
   methodInput: DG.InputBase<string | null>, clustersColInput: DG.InputBase<DG.Column<any> | null>,
   gapOpenInput: DG.InputBase<number | null>, gapExtendInput: DG.InputBase<number | null>,
   terminalGapInput: DG.InputBase<number | null>
-): Promise<(() => Promise<DG.Column<string>>) | undefined> {
+): Promise<(() => Promise<DG.Column<string> | null>) | undefined> {
   try {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
       return;

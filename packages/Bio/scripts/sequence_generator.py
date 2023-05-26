@@ -19,8 +19,10 @@
 import random
 import argparse
 import sys
+from enum import Enum
 
 from typing import List, Tuple, Dict, Iterator, Any
+
 
 # --- Type definitions ---
 
@@ -37,6 +39,8 @@ SequenceRecord = Tuple[int, Sequence, float, bool]
 ClusterSequenceRecord = Tuple[int, str, Sequence, float, bool]
 
 # --- constants ---
+
+HelmConnectionMode = Enum("HelmConnectionMode", ["linear", "cyclic", "mixed"])
 
 alphabets: Dict[str, str] = {
     "PT": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y",
@@ -113,6 +117,24 @@ def make_cliff(
 
 def sequence_to_fasta(sequence: Sequence, separator: str) -> SequenceSquashed:
     return separator.join(sequence)
+
+
+def sequence_to_helm(
+    sequence: Sequence, helm_connection_mode: str = HelmConnectionMode.linear.name
+) -> SequenceSquashed:
+    def is_cyclic(helm_connection_mode: str) -> bool:
+        return helm_connection_mode == HelmConnectionMode.cyclic.name or (
+            helm_connection_mode == HelmConnectionMode.mixed.name
+            and random.random() < 0.5
+        )
+
+    sequence_escaped: Sequence = [
+        f"[{letter}]" if len(letter) > 1 else letter for letter in sequence
+    ]
+    connection_format = ""
+    if is_cyclic(helm_connection_mode):
+        connection_format = f"PEPTIDE1,PEPTIDE1,{len(sequence_escaped)}:R2-1:R1"
+    return f"PEPTIDE1{{{sequence_to_fasta(sequence_escaped,'.')}}}${connection_format}$$$V2.0"
 
 
 def generate_cluster(
@@ -212,6 +234,40 @@ def convert_to_fasta(
     ]
 
 
+def convert_to_helm(
+    cluster_sequence_records: List[ClusterSequenceRecord], helm_connection_mode: str
+) -> List[Tuple[int, str, str, float, bool]]:
+    return [
+        (
+            n_cluster,
+            name_cluster,
+            sequence_to_helm(seq, helm_connection_mode),
+            activity,
+            is_cliff,
+        )
+        for n_cluster, name_cluster, seq, activity, is_cliff in cluster_sequence_records
+    ]
+
+
+def is_monomer_suitable(monomer: Any) -> bool:
+    return (
+        monomer["polymerType"] == "PEPTIDE"
+        and monomer["monomerType"] == "Backbone"
+        and len(monomer["rgroups"]) == 2
+    )
+
+
+def alphabet_from_helm(helm_library_file: str) -> Alphabet:
+    import json
+
+    alphabet: Alphabet = []
+    with open(helm_library_file) as helm_library:
+        for monomer in json.load(helm_library):
+            if is_monomer_suitable(monomer):
+                alphabet.append(monomer["symbol"])
+    return alphabet
+
+
 def parse_command_line_args() -> Any:
     parser = argparse.ArgumentParser(
         prog="MotifSequencesGenerator",
@@ -247,6 +303,21 @@ def parse_command_line_args() -> Any:
         type=int,
         default=2,
         help="Variation of total sequence length",
+    )
+
+    parser.add_argument(
+        "-h,",
+        "--helm-library-file",
+        type=str,
+        help="JSON file containing the HELM monomer library in the same format as used for Datagrok. "
+        + "The alphabet property is ignored when helm library is specified.",
+    )
+
+    parser.add_argument(
+        "--helm-connection-mode",
+        type=str,
+        default=HelmConnectionMode.linear.value,
+        help=f"HELM peptide generation mode: {'/'.join([mode.name for mode in HelmConnectionMode])}",
     )
 
     available_alphabets = ",".join(list(alphabets.keys()) + ["custom"])
@@ -310,12 +381,17 @@ if not grok:
     cliff_probability = args.cliff_probability
     cliff_strength = args.cliff_strength
     fasta_separator = args.fasta_separator
+    helm_library_file = args.helm_library_file
+    helm_connection_mode = args.helm_connection_mode
 
-alphabet: Alphabet = (
-    alphabets[alphabet_key].split(",")
-    if alphabet_key in alphabets
-    else alphabet_key.split(",")
-)
+if helm_library_file is None:
+    alphabet: Alphabet = (
+        alphabets[alphabet_key].split(",")
+        if alphabet_key in alphabets
+        else alphabet_key.split(",")
+    )
+else:
+    alphabet = alphabet_from_helm(helm_library_file)
 
 # Running sequence generator
 header, data = generate_sequences(
@@ -330,8 +406,10 @@ header, data = generate_sequences(
     cliff_probability,
     cliff_strength,
 )
-
-data_formatted = convert_to_fasta(data, fasta_separator)
+if helm_library_file is None:
+    data_formatted = convert_to_fasta(data, fasta_separator)
+else:
+    data_formatted = convert_to_helm(data, helm_connection_mode)
 
 if grok:
     # Exporting data to Datagrok as a Pandas dataframe

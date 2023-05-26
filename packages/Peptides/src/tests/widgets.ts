@@ -1,16 +1,19 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, delay} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SCALING_METHODS} from '../utils/constants';
+import * as C from '../utils/constants';
 import {PANES_INPUTS, SETTINGS_PANES, getSettingsDialog} from '../widgets/settings';
 import {getDistributionWidget} from '../widgets/distribution';
 import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 import {TEST_COLUMN_NAMES} from './utils';
+import wu from 'wu';
+import {LogoSummaryTable} from '../viewers/logo-summary';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -26,10 +29,10 @@ category('Widgets: Settings', () => {
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
-      SCALING_METHODS.NONE);
+      C.SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
@@ -67,10 +70,10 @@ category('Widgets: Distribution panel', () => {
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
-      SCALING_METHODS.NONE);
+      C.SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
@@ -99,10 +102,10 @@ category('Widgets: Mutation cliffs', () => {
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
-      SCALING_METHODS.NONE);
+      C.SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
@@ -122,11 +125,84 @@ category('Widgets: Mutation cliffs', () => {
 });
 
 category('Widgets: Actions', () => {
-  test('New view', async () => {
+  let df: DG.DataFrame;
+  let model: PeptidesModel;
+  let activityCol: DG.Column<number>;
+  let sequenceCol: DG.Column<string>;
+  let clusterCol: DG.Column<any>;
+  let scaledActivityCol: DG.Column<number>;
 
-  }, {skipReason: 'Not implemented yet'});
+  before(async () => {
+    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
+    const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
+      C.SCALING_METHODS.NONE);
+    if (tempModel === null)
+      throw new Error('Model is null');
+    model = tempModel;
+  });
+
+  test('New view', async () => {
+    // Set compound bitset: filter out 2 rows and select 1 among them
+    const filter = model.df.filter;
+    filter.setAll(false, false);
+    filter.set(0, true, false);
+    filter.set(1, true, false);
+
+    const selection = model.df.selection;
+    selection.set(0, true, false);
+
+    const newViewId = model.createNewView();
+    const currentTable = grok.shell.t;
+
+    expect(currentTable.getTag(C.TAGS.MULTIPLE_VIEWS), '1', 'Current table is expected to have multiple views tag');
+    expect(currentTable.getTag(C.TAGS.UUID), newViewId, 'Current table is expected to have the same UUID as new view');
+    expect(currentTable.rowCount, 1, 'Current table is expected to have 1 row');
+
+    await delay(500);
+
+    const currentTableModel = currentTable.temp[PeptidesModel.modelName] as PeptidesModel;
+    const lstViewer = currentTableModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
+    expect(lstViewer !== null, true, 'New view is expected to have Logo Summary Table viewer attached');
+  });
 
   test('Custom clusters', async () => {
+    // Set compound bitset: filter out 2 rows and select 1 among them
+    const filter = model.df.filter;
+    filter.setAll(false, false);
+    filter.set(0, true, false);
+    filter.set(1, true, false);
 
-  }, {skipReason: 'Not implemented yet'});
+    const selection = model.df.selection;
+    selection.set(0, true, false);
+
+    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+
+    // Check that custom clusters are not created yet
+    expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters before creating one');
+
+    // Create custom cluster
+    model._newClusterSubject.next();
+    const customClusterList = wu(model.customClusters).toArray();
+    expect(customClusterList.length, 1, 'Expected to have 1 custom cluster');
+    const clustName = customClusterList[0].name;
+    expect(model.df.col(clustName) !== null, true,
+      'Expected to have custom cluster column in the table');
+    expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) !== -1, true,
+      'Expected to have custom cluster in the Logo Summary Table');
+
+    // Remove custom cluster
+    model.modifyClusterSelection(clustName);
+    model._removeClusterSubject.next();
+    expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
+    expect(model.df.col(clustName) === null, true,
+      'Expected to have no custom cluster column in the table');
+    expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) === -1, true,
+      'Expected to have no custom cluster in the Logo Summary Table');
+  });
 });
