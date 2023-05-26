@@ -5,20 +5,31 @@ import {getTypedArrayConstructor} from './misc';
 type MutationCliffInfo = {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number};
 
 export function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
-  settings: type.PeptidesSettings = {}): type.MutationCliffs {
+  settings: type.PeptidesSettings = {},
+  targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {}): type.MutationCliffs {
   const nCols = monomerInfoArray.length;
-  if (nCols == 0)
+  if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
+
+  settings.minActivityDelta ??= 0;
+  settings.maxMutations ??= 1;
+  const currentTargetIdx = targetOptions.targetCol?.cat!.indexOf(targetOptions.currentTarget!) ?? -1;
 
   const substitutionsInfo: type.MutationCliffs = new Map();
   const nRows = activityArray.length;
   for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
+    if (currentTargetIdx !== -1 && targetOptions.targetCol?.rawData[seq1Idx] !== currentTargetIdx)
+      continue;
+
     for (let seq2Idx = seq1Idx + 1; seq2Idx < nRows; seq2Idx++) {
+      if (currentTargetIdx !== -1 && targetOptions.targetCol?.rawData[seq2Idx] !== currentTargetIdx)
+        continue;
+
       let substCounter = 0;
       const activityValSeq1 = activityArray[seq1Idx];
       const activityValSeq2 = activityArray[seq2Idx];
       const delta = activityValSeq1 - activityValSeq2;
-      if (Math.abs(delta) < (settings.minActivityDelta ?? 0))
+      if (Math.abs(delta) < settings.minActivityDelta)
         continue;
 
       let substCounterFlag = false;
@@ -26,11 +37,11 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
       for (const monomerInfo of monomerInfoArray) {
         const seq1category = monomerInfo.rawData[seq1Idx];
         const seq2category = monomerInfo.rawData[seq2Idx];
-        if (seq1category == seq2category)
+        if (seq1category === seq2category)
           continue;
 
         substCounter++;
-        substCounterFlag = substCounter > (settings.maxMutations ?? 1);
+        substCounterFlag = substCounter > settings.maxMutations;
         if (substCounterFlag)
           break;
 
@@ -43,7 +54,7 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
         });
       }
 
-      if (substCounterFlag || substCounter == 0)
+      if (substCounterFlag || substCounter === 0)
         continue;
 
       for (const tempDataElement of tempData) {

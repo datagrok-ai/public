@@ -4,7 +4,7 @@ import MolNotation = DG.chem.Notation;
 
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import { getMolSafe } from './mol-creation_rdkit';
+import {getMolSafe} from './mol-creation_rdkit';
 
 
 export const MALFORMED_MOL_V2000 = `
@@ -31,8 +31,8 @@ M  END`;
  */
 export function _convertMolNotation(
   moleculeString: string,
-  sourceNotation: string,
-  targetNotation: string,
+  sourceNotation: DG.chem.Notation,
+  targetNotation: DG.chem.Notation,
   rdKitModule: RDModule,
 ): string {
   if (sourceNotation === targetNotation)

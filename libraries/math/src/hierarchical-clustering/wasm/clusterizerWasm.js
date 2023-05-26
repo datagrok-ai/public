@@ -1,6 +1,6 @@
 import {exportCppLib} from './wasmCluster.js';
 
-/*
+/**
  calls wasm function to get clustering merges and heights from distance matrix
  distmat: distance matrix as an array of floats comprising the top right triangle of the matrix
  n: number of observables
@@ -11,7 +11,9 @@ import {exportCppLib} from './wasmCluster.js';
  each row in the given matrix comprises the merge event at step i and last column is the height from the leaves.
 */
 export async function getClustersFromDistMatWasm(distmat, n, method) {
-  const wasmInstance = await exportCppLib({locateFile: () => '../dist/wasmCluster.wasm'});
+  const wasmUrl = new URL('./wasmCluster.wasm', import.meta.url).href;
+  const wasmPath = wasmUrl.substring(0, wasmUrl.lastIndexOf('/') + 1) + 'wasmCluster.wasm';
+  const wasmInstance = await exportCppLib({locateFile: () => wasmPath});
   const getDendrogramWasm =
     wasmInstance.cwrap('getDendrogram', 'null', ['number', 'number', 'number', 'number', 'number']);
   // allocate a memory block on the wasm heap for the distance matrix

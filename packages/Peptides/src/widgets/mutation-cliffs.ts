@@ -11,7 +11,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const currentCell = model.monomerPositionSelection;
   const positions = Object.keys(currentCell);
 
-  if (!positions.length)
+  if (!positions.length || substInfo === null)
     return new DG.Widget(ui.label('No mutations table generated'));
 
   const substitutionsArray: string[] = [];
@@ -61,7 +61,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     }
   }
 
-  if (!substitutionsArray.length)
+  if (substitutionsArray.length === 0)
     return new DG.Widget(ui.label('No mutations table generated'));
 
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
@@ -76,7 +76,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
 
   const aminoToInput = ui.stringInput('Mutated to:', '', () => {
     const substitutedToAar = aminoToInput.stringValue;
-    if (substitutedToAar != '')
+    if (substitutedToAar !== '')
       substTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else
       substTable.filter.setAll(true);

@@ -104,7 +104,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const includedColumnsInputs: DG.InputBase[] = [];
   for (const col of model.df.columns.numerical) {
     const colName = col.name;
-    if (colName == settings.activityColumnName || colName == C.COLUMNS_NAMES.ACTIVITY_SCALED)
+    if (colName === settings.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY_SCALED)
       continue;
 
     const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED,
@@ -127,7 +127,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     $(inputsRow).find('div.ui-div').css('display', 'inline-flex');
     inputsRows.push(inputsRow);
   }
-  if (inputsRows.length != 0) {
+  if (inputsRows.length !== 0) {
     accordion.addPane(SETTINGS_PANES.COLUMNS, () => ui.divV(inputsRows), false);
     inputs[SETTINGS_PANES.COLUMNS] = includedColumnsInputs;
   }

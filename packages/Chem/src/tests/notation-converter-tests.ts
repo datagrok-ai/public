@@ -1,9 +1,6 @@
 import {category, expectArray, test, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../package';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
@@ -37,7 +34,8 @@ category('converters', async () => {
     const result = [];
     for (const mol of molecules[srcNotation])
       result.push(_convertMolNotation(mol, srcNotation, tgtNotation, getRdKitModule()));
-    expectArray(result.map((it) => it.replaceAll('\r', '')), molecules[tgtNotation].map((it) => it.replaceAll('\r', '')));
+    expectArray(result.map((it) => it.replaceAll('\r', '')),
+      molecules[tgtNotation].map((it) => it.replaceAll('\r', '')));
   }
 
   test('SMILES to Molfile V2000', async () => {

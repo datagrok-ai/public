@@ -1,14 +1,23 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DIRECTION, VIEWER_PATH, viewerTypesMapping} from './consts';
+import {VIEWER_PATH, viewerTypesMapping} from './consts';
+import wu from 'wu';
 
-// DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13015
-export const getDataFrame = (call: DG.FuncCall, name: string, direction: DIRECTION): DG.DataFrame => {
-  if (direction === DIRECTION.INPUT)
-    return call.inputs[name] instanceof DG.DataFrame ? call.inputs[name] : call.inputs[name].dataFrame;
-  else
-    return call.outputs[name] instanceof DG.DataFrame ? call.outputs[name] : call.outputs[name].dataFrame;
+export const deepCopy = (call: DG.FuncCall) => {
+  const deepClone = call.clone();
+
+  const dfOutputs = wu(call.outputParams.values() as DG.FuncCallParam[])
+    .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+  for (const output of dfOutputs)
+    deepClone.outputs[output.name] = call.outputs[output.name].clone();
+
+  const dfInputs = wu(call.inputParams.values() as DG.FuncCallParam[])
+    .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+  for (const input of dfInputs)
+    deepClone.inputs[input.name] = call.inputs[input.name].clone();
+
+  return deepClone;
 };
 
 export const boundImportFunction = (func: DG.Func): string | undefined => {

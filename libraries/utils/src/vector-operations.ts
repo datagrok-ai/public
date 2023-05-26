@@ -164,6 +164,34 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
   return matrix;
 }
 
+/**
+ * Creates a distance matrix using a custom distance function.
+ *
+ * @export
+ * @param {Vectors} data Input vectors to calculate distances.
+ * @param {DistanceMetric} distance Custom distance function.
+ * @return {Matrix} Calculated custom distance matrix.
+ */
+export function calcNormalizedDistanceMatrix(data: Vectors, distance: DistanceMetric): Matrix {
+  const nItems = data.length;
+  const matrix = initCoordinates(nItems, nItems, 0);
+  let max = Number.MIN_VALUE;
+  let min = Number.MAX_VALUE;
+  for (let i = 0; i < nItems; ++i) {
+    for (let j = i; j < nItems; ++j) {
+      const d: number = (data[i] == null) || (data[j] == null || i === j) ? 0 : distance(data[i], data[j]);
+      matrix[i][j] = matrix[j][i] = d;
+      if (d > max) max = d;
+      if (d < min) min = d;
+    }
+  }
+  for (let i = 0; i < nItems; ++i) {
+    for (let j = i + 1; j < nItems; ++j)
+      matrix[i][j] = matrix[j][i] = (matrix[i][j] - min) / (max - min);
+  }
+  return matrix;
+}
+
 /** Generates array from a range [begin; end] or [begin; end) if endExclusive. **/
 export function genRange(begin: number, end: number, endExclusive = false): Int32Array {
   const nItems = end - begin + (endExclusive ? 0 : 1);

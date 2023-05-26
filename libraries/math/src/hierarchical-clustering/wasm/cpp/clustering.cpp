@@ -59,6 +59,5 @@ void getDendrogram(float *distmat, int npoints, int optMethod, int *merge, float
 
     hclust_fast(npoints, distmat, optMethod, merge, heights);
     // don't forget to delete merges and heights from the client;
-    free(distmat);
     return;
 }

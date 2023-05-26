@@ -1,6 +1,7 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
+import { RuleId } from '../panels/structural-alerts';
 
 export class RdKitService {
   workerCount: number;
@@ -83,15 +84,15 @@ export class RdKitService {
       });
   }
 
-  
+
   async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Uint8Array[]> {
     const t = this;
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
         t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
-        (data: Array<Uint8Array | null>[][]) => {
-          return ([] as Array<Uint8Array | null>[]).concat(...data);
-        }) :
+      (data: Array<Uint8Array | null>[][]) => {
+        return ([] as Array<Uint8Array | null>[]).concat(...data);
+      }) :
       await this._doParallel(
         (i: number, _: number) => {
           return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules);
@@ -110,10 +111,28 @@ export class RdKitService {
         return t.parallelWorkers[i].convertMolNotation(targetNotation);
       },
       (data: any) => {
-        for (let k = 0; k < data.length; ++k) {
+        for (let k = 0; k < data.length; ++k)
           data[k] = data[k].map((a: number) => a + t.segmentLength * k);
-        }
+
         return [].concat(...data);
       });
+  }
+
+  async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): Promise<[RuleId, boolean[]][]> {
+    const t = this;
+    const fooGather = (data: {[rule in RuleId]?: boolean[]}[]): [RuleId, boolean[]][] => {
+      const result: {[rule in RuleId]?: boolean[]} = {};
+      for (let k = 0; k < data.length; ++k) {
+        const part = data[k];
+        for (const ruleId of Object.keys(part)) {
+          result[ruleId as RuleId] ??= [];
+          result[ruleId as RuleId] = result[ruleId as RuleId]!.concat(...part[ruleId as RuleId]!);
+        }
+      }
+      return Object.entries(result) as [RuleId, boolean[]][];
+    };
+    return molecules ? this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+        t.parallelWorkers[i].getStructuralAlerts(alerts, segment), fooGather) :
+      this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 }
