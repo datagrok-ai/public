@@ -195,7 +195,7 @@ WHERE f.level4_description = @level4
 
 --name: QueryBySubstructure
 --friendlyName: Search | By substructure, country and action type
---connection: ChemblSql 
+--connection: Chembl 
 --meta.batchMode: true
 --input: string substructure = 'c1ccccc1' {semType: Molecule}
 --input: string threshold = '0.1' 
