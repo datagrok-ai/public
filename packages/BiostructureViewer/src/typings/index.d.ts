@@ -76,6 +76,13 @@ declare module 'NGL' {
 
     renderer: WebGLRenderer;
     boundingBox: Box3;
+
+    rendering: boolean;
+    renderPending: boolean;
+
+    render(picking: boolean): void;
+
+    setSize(width: number, height: number): void;
   }
 
   export class Stats {

@@ -24,7 +24,7 @@ export abstract class Tutorial extends DG.Widget {
   get url(): string {
     const removeSpaces = (s: string) => s.split(' ').join('');
     const root = window.location.origin;
-    return `${root}/apps/tutorials/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
+    return `${root}/apps/tutorials/Tutorials/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
   }
 
   imageUrl: string = '';
@@ -228,6 +228,7 @@ export abstract class Tutorial extends DG.Widget {
     }, `Copy the tutorial link`);
 
     closeTutorial.style.minWidth = '30px';
+    this.header.textContent = this.name;
     this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
     this.headerDiv.append(closeTutorial);
   }

@@ -4,7 +4,7 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 module.exports = {
   mode: 'development',
   entry: {
-    package: [`./src/wasm/wasmCluster.wasm`, './src/package.ts'],
+    package: ['./src/package.ts'],
     test: {
       filename: 'package-test.js',
       library: {type: 'var', name: `${packageName}_test`},
@@ -19,24 +19,24 @@ module.exports = {
     topLevelAwait: true
   },
   resolve: {
-    fallback: { "url": false },
+    fallback: {'url': false},
     extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
       {
         test: /\.worker\.ts$/,
-        loader: "worker-loader",
+        loader: 'worker-loader',
         options: {
-          inline: "fallback" // this creates a separate file
+          inline: 'fallback' // this creates a separate file
         },
       },
       {
         test: /\.(wasm)$/i,
-        type: "javascript/auto",
-        loader: "file-loader",
+        type: 'javascript/auto',
+        loader: 'file-loader',
         options: {
-          publicPath: "dist/",
+          publicPath: 'dist/',
           name: '[name].[ext]'
         }
       },

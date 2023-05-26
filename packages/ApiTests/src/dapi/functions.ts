@@ -1,12 +1,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectTable} from '@datagrok-libraries/utils/src/test';
 
 const GDF = grok.dapi.functions;
 
 category('Dapi: functions.calls', async () => {
   const xValue = 1.5;
+
+  test('clone DFs', async () => {
+    const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    const funcCall = await funcWithDf.prepare({'table': grok.data.demo.demog(30)}).call();
+    const clonedFunccall = funcCall.clone();
+    expectTable(funcCall.inputs['table'], clonedFunccall.inputs['table'].dataFrame);
+    expectTable(funcCall.outputs['tableOut'], clonedFunccall.outputs['tableOut'].dataFrame);
+  });
 
   test('save', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');

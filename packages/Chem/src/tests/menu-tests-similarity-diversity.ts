@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, expectFloat, expectArray, test, delay, before, after, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectFloat, expectArray, test, delay,
+  before, after, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
 import {createTableView, readDataframe, molV2000, molV3000} from './utils';
@@ -10,6 +11,7 @@ import {findSimilar, getSimilarities} from '../package';
 import {chemDiversitySearch, ChemDiversityViewer} from '../analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 
 
 category('top menu similarity/diversity', () => {
@@ -57,8 +59,9 @@ category('top menu similarity/diversity', () => {
     await delay(500);
     const viewer = getSearchViewer(tv, 'Chem Similarity Search') as ChemSimilarityViewer;
     try {
-      expectArray(viewer.scores!.toList(), [1, 0.6808510422706604, 0.6739130616188049, 0.6521739363670349, 0.6458333134651184,
-        0.4821428656578064, 0.4736842215061188, 0.4736842215061188, 0.4655172526836395, 0.4576271176338196]);
+      expectArray(viewer.scores!.toList(), [1, 0.6808510422706604, 0.6739130616188049, 0.6521739363670349,
+        0.6458333134651184, 0.4821428656578064, 0.4736842215061188, 0.4736842215061188, 0.4655172526836395,
+        0.4576271176338196, 0.4545454680919647, 0.44999998807907104]);
     } finally {tv.close();}
   }, {skipReason: 'GROK-12227'});
 
@@ -85,9 +88,11 @@ category('top menu similarity/diversity', () => {
     const viewer = getSearchViewer(tv, 'Chem Similarity Search') as ChemSimilarityViewer;
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 2000);
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+      'cannot find warning balloon', 2000);
       expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 0.234375, 0.23076923191547394,
-        0.2222222238779068, 0.2222222238779068, 0.20253165066242218, 0.2023809552192688, 0.18309858441352844]);
+        0.2222222238779068, 0.2222222238779068, 0.20253165066242218, 0.2023809552192688, 0.18309858441352844,
+        0.1818181872367859, 0.1649484485387802]);
     } finally {
       tv.close();
       DG.Balloon.closeAll();
@@ -101,7 +106,8 @@ category('top menu similarity/diversity', () => {
     tv.addViewer('Chem Similarity Search');
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+      'cannot find warning balloon', 1000);
     } finally {
       tv.close();
       DG.Balloon.closeAll();
@@ -113,26 +119,28 @@ category('top menu similarity/diversity', () => {
   });
 
   test('similaritySearchFunctionality', async () => {
-    await _testSimilaritySearchFunctionality('Tanimoto', 'Morgan');
-    await _testSimilaritySearchFunctionality('Dice', 'Morgan');
-    await _testSimilaritySearchFunctionality('Cosine', 'Morgan');
-    await _testSimilaritySearchFunctionality('Euclidean', 'Morgan');
-    await _testSimilaritySearchFunctionality('Hamming', 'Morgan');
+    await _testSimilaritySearchFunctionality(BitArrayMetricsNames.Tanimoto, Fingerprint.Morgan);
+    await _testSimilaritySearchFunctionality(BitArrayMetricsNames.Dice, Fingerprint.Morgan);
+    await _testSimilaritySearchFunctionality(BitArrayMetricsNames.Cosine, Fingerprint.Morgan);
   });
 
-  test('testDiversitySearch.molecules', async () => {
-    let df;
-    if (DG.Test.isInBenchmark) df = await readDataframe('tests/smi10K.csv');
-    else df = molecules;
+  test('testSimilaritySearch.smiles', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip") : molecules;
+    await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0), 'Tanimoto', 10, 0.01, Fingerprint.Morgan);
+  });
+
+  test('testDiversitySearch.smiles', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip") : molecules;
     await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
   });
 
   test('testDiversitySearch.molV2000', async () => {
-    await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+    await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint);
   });
 
   test('testDiversitySearch.molV3000', async () => {
-    await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+    await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10,
+      Fingerprint.Morgan as Fingerprint);
   });
 
   test('diversity.emptyValues', async () => {
@@ -141,7 +149,7 @@ category('top menu similarity/diversity', () => {
     await delay(500);
     const viewer = getSearchViewer(tv, 'Chem Diversity Search') as ChemDiversityViewer;
     try {
-      expect(viewer.renderMolIds.length, 10);
+      expect(viewer.renderMolIds.length, 12);
     } finally {tv.close();}
   });
 
@@ -152,9 +160,10 @@ category('top menu similarity/diversity', () => {
     await delay(500);
     const viewer = getSearchViewer(tv, 'Chem Diversity Search') as ChemDiversityViewer;
     try {
-      expect(viewer.renderMolIds.length, 10);
+      expect(viewer.renderMolIds.length, 12);
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+      'cannot find warning balloon', 1000);
     } finally {
       tv.close();
       DG.Balloon.closeAll();
@@ -176,13 +185,14 @@ function getSearchViewer(tv: DG.TableView, name: string): DG.Viewer {
     if (v.type === name)
       return v;
   }
-  throw 'Search viewer not found';
+  throw new Error('Search viewer not found');
 }
 
 export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>,
   molecule: string = 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', notation?: string) {
   let dfInput: DG.DataFrame;
-  if (notation) dfInput = await readDataframe(notation === 'V2000' ? 'tests/spgi-100.csv' : 'tests/approved-drugs-100.csv');
+  if (notation)
+    dfInput = await readDataframe(notation === 'V2000' ? 'tests/spgi-100.csv' : 'tests/approved-drugs-100.csv');
   else if (DG.Test.isInBenchmark) dfInput = await readDataframe('tests/smi10K.csv');
   else dfInput = await readDataframe('sar-small.csv');
   await grok.data.detectSemanticTypes(dfInput);
@@ -263,8 +273,8 @@ async function _testSimilaritySearchViewerOpen() {
   molecules.addViewer('Chem Similarity Search');
   await delay(500);
   const similaritySearchviewer = getSearchViewer(molecules, 'Chem Similarity Search') as ChemSimilarityViewer;
-  expect(similaritySearchviewer.fingerprint, 'Morgan');
-  expect(similaritySearchviewer.distanceMetric, 'Tanimoto');
+  expect(similaritySearchviewer.fingerprint, Fingerprint.Morgan);
+  expect(similaritySearchviewer.distanceMetric, BitArrayMetricsNames.Tanimoto);
   expect(similaritySearchviewer.scores!.get(0), 1);
   expect(similaritySearchviewer.idxs!.get(0), 0);
   expect(similaritySearchviewer.molCol!.get(0), 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
@@ -276,7 +286,7 @@ async function _testSimilaritySearchViewerOpen() {
   molecules.close();
 }
 
-async function _testSimilaritySearchFunctionality(distanceMetric: string, fingerprint: string) {
+async function _testSimilaritySearchFunctionality(distanceMetric: BitArrayMetrics, fingerprint: string) {
   const molecules = await readDataframe('tests/sar-small_test.csv');
   const moleculeColumn = molecules.col('smiles');
   const similarityDf = await chemSimilaritySearch(molecules, moleculeColumn!, moleculeColumn!.get(0),
@@ -294,8 +304,8 @@ async function _testDiversitySearchViewerOpen() {
   molecules.addViewer('Chem Diversity Search');
   await delay(500);
   const diversitySearchviewer = getSearchViewer(molecules, 'Chem Diversity Search') as ChemDiversityViewer;
-  expect(diversitySearchviewer.fingerprint, 'Morgan');
-  expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
+  expect(diversitySearchviewer.fingerprint, Fingerprint.Morgan);
+  expect(diversitySearchviewer.distanceMetric, BitArrayMetricsNames.Tanimoto);
   expect(diversitySearchviewer.initialized, true);
   expect(diversitySearchviewer.renderMolIds.length > 0, true);
   diversitySearchviewer.close();

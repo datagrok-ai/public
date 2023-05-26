@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import {Paint} from "datagrok-api/dg";
 
 
 /** Represents 1D transformation between screen and world coordinates */
@@ -11,12 +10,12 @@ interface ITransform {
 
 /** Linear transformation */
 class _LinearTransform implements ITransform {
-  screenToWorld(screen: number, length: number, min: number, max: number, inverse?: boolean) {
+  screenToWorld(screen: number, length: number, min: number, max: number, inverse?: boolean): number {
     const d = inverse ?  1 - screen / length: screen / length;
     return min + d * (max - min);
   }
 
-  worldToScreen(world: number, length: number, min: number, max: number, inverse?: boolean) {
+  worldToScreen(world: number, length: number, min: number, max: number, inverse?: boolean): number {
     return inverse
       ? ((1 - ((world - min)) / (max - min)) * length)
       : ((world - min) / (max - min) * length);
@@ -26,7 +25,7 @@ class _LinearTransform implements ITransform {
 
 /** Log transformation */
 class _LogTransform implements ITransform {
-  screenToWorld(screen: number, length: number, min: number, max: number, inverse?: boolean) {
+  screenToWorld(screen: number, length: number, min: number, max: number, inverse?: boolean): number {
     min = (min < 0.00000001 ? 0.00000001 : min);
 
     const maxLog = Math.log(max);
@@ -34,12 +33,12 @@ class _LogTransform implements ITransform {
     return Math.exp(minLog + (maxLog - minLog) * (inverse ? length - screen : screen) / length);
   }
 
-  worldToScreen(world: number, length: number, min: number, max: number, inverse?: boolean) {
+  worldToScreen(world: number, length: number, min: number, max: number, inverse?: boolean): number {
     if (world <= 0) return NaN;
 
     //eliminates problems with rounding
-    if (world == min) return inverse ? length : 0.0;
-    if (world == max) return inverse ? 0.0 : length;
+    if (world === min) return inverse ? length : 0.0;
+    if (world === max) return inverse ? 0.0 : length;
 
     min = (min < 0.00000001 ? 0.00000001 : min);
     world = (world < 0.00000001 ? 0.00000001 : world);
@@ -48,7 +47,6 @@ class _LogTransform implements ITransform {
     return inverse ? length - res : res;
   }
 }
-
 
 const linearTransform = new _LinearTransform();
 const logTransform = new _LogTransform();
@@ -92,7 +90,7 @@ export class Viewport {
   toScreen(world: DG.Point): DG.Point { return new DG.Point(this.xToScreen(world.x), this.yToScreen(world.y)); }
   toWorld(screen: DG.Point): DG.Point { return new DG.Point(this.xToWorld(screen.x), this.yToWorld(screen.y)); }
 
-  drawCoordinateGrid(g: CanvasRenderingContext2D, xAxis: DG.Rect | undefined, yAxis: DG.Rect | undefined) {
+  drawCoordinateGrid(g: CanvasRenderingContext2D, xAxis: DG.Rect | undefined, yAxis: DG.Rect | undefined): void {
     if (xAxis)
       DG.Paint.horzAxis(g, this.world.minX, this.world.maxX, xAxis.x, xAxis.y, xAxis.width, xAxis.height, this.logX, this.inverseX);
     if (yAxis)

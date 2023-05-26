@@ -75,6 +75,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   constructor() {
     super();
+    this.helpUrl = '/help/visualize/viewers/ngl';
 
     // -- Data --
     this.pdb = this.string(PROPS.pdb, defaults.pdb,
@@ -110,21 +111,21 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     }
 
     switch (property.name) {
-    case PROPS.representation:
-      this.updateView();
-      break;
-    case PROPS.showCurrentRowLigand:
-    case PROPS.showSelectedRowsLigands:
-    case PROPS.showMouseOverRowLigand:
-      this.rebuildViewLigands();
-      break;
+      case PROPS.representation:
+        this.updateView();
+        break;
+      case PROPS.showCurrentRowLigand:
+      case PROPS.showSelectedRowsLigands:
+      case PROPS.showMouseOverRowLigand:
+        this.rebuildViewLigands();
+        break;
     }
 
     switch (property.name) {
-    case PROPS.pdb:
-    case PROPS.pdbTag:
-      this.setData('onPropertyChanged');
-      break;
+      case PROPS.pdb:
+      case PROPS.pdbTag:
+        this.setData('onPropertyChanged');
+        break;
     }
   }
 
@@ -146,8 +147,11 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   override detach(): void {
+    if (this.setDataInProgress) return;
+
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
+    this.detachPromise = this.detachPromise.then(async () => { // detach
+      await this.viewPromise;
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
@@ -159,6 +163,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   // -- Data --
 
   setData(purpose: string): void {
+    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
     _package.logger.debug(`NglViewer.setData(purpose='${purpose}') `);
 
     this.viewPromise = this.viewPromise.then(async () => { // setData
@@ -166,32 +171,38 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
         await this.destroyView('setData');
         this.viewed = false;
       }
-    });
+    }).then(async () => {
+      await this.detachPromise;
+      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-    // -- PDB data --
-    let pdbTag: string = pdbTAGS.PDB;
-    if (this.pdbTag) pdbTag = this.pdbTag;
-    this.pdbStr = this.dataFrame.getTag(pdbTag);
-    if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+      // -- PDB data --
+      let pdbTag: string = pdbTAGS.PDB;
+      if (this.pdbTag) pdbTag = this.pdbTag;
+      this.pdbStr = this.dataFrame.getTag(pdbTag);
+      if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
 
-    // -- Ligand --
-    if (!this.ligandColumnName) {
-      const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      if (molCol)
-        this.ligandColumnName = molCol.name;
-    }
-
-    this.viewPromise = this.viewPromise.then(async () => {
+      // -- Ligand --
+      if (!this.ligandColumnName) {
+        const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+        if (molCol)
+          this.ligandColumnName = molCol.name;
+      }
+    }).then(async () => {
       if (!this.viewed) {
         await this.buildView('setData').then(() => { this._onAfterBuildView.next(); });
         this.viewed = true;
       }
+    }).finally(() => {
+      this.setDataInProgress = false;
     });
   }
 
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
+  private detachPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
+
   private nglDiv?: HTMLDivElement;
   private stage?: NGL.Stage;
 
@@ -360,8 +371,10 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   private rebuildViewLigands(): void {
     this.viewPromise = this.viewPromise.then(async () => {
-      await this.destroyViewLigands();
-      await this.buildViewLigands();
+      if (this.viewed) {
+        await this.destroyViewLigands();
+        await this.buildViewLigands();
+      }
     });
   }
 

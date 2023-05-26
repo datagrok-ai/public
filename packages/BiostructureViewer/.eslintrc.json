@@ -15,16 +15,10 @@
     "@typescript-eslint"
   ],
   "rules": {
-    "indent": [
-      "error",
-      2
-    ],
-    "max-len": [
-      "error",
-      120
-    ],
+    "indent": ["error", 2, {"SwitchCase": 1}],
+    "max-len": ["error", 120],
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
     "require-jsdoc": "off",
     "valid-jsdoc": "off",
     "spaced-comment": "off",
@@ -42,12 +36,14 @@
       }
     ],
     "block-spacing": [2, "always"],
-    "comma-dangle": ["error", {
-      "arrays": "only-multiline",
-      "functions": "never",
-      "objects": "only-multiline",
-      "imports": "only-multiline"
-    }],
+    "comma-dangle": [
+      "error", {
+        "arrays": "only-multiline",
+        "functions": "never",
+        "objects": "only-multiline",
+        "imports": "only-multiline"
+      }
+    ],
     "guard-for-in": "off"
   }
 }

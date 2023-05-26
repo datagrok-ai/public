@@ -36,12 +36,13 @@ export class AbstractComposedCellRenderer extends GridCellRendererEx {
     const arBackColors : string[] = [];
     this.fillLabelsAndUI(cellGrid, arTextLabels, arTextFonts, arTextColors, arBackColors);
 
-    const font = style.font;
+    let font = style.font;
+    if (font === null || font === undefined)
+      font = 'Roboto 13px';
+
     const nHFont = TextUtils.getFontSize(font);
     const nHFontSub = nHFont < 0 ? nHFont : nHFont - 2;
-
     //const arFonts = ["bold " + font, "bold " + TextUtils.setFontSize(font, nHFontSub)];
-
     try {
       this.paintLabelsAndExternal(g, cellGrid, arTextLabels, arTextFonts, arTextColors, arBackColors, nX, nY, nW, nH);
     } catch (e) {

@@ -27,8 +27,8 @@ category('monomerLibraries', () => {
     await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, {}, true);
     await monomerLibHelper.loadLibraries(true); // test defaultLib
 
-    // Currently default monomer lib is empty
+    // Currently default monomer lib set is of all files at LIB_PATH (at least HELMCoreLibrary.json)
     const currentMonomerLib = monomerLibHelper.getBioLib();
-    expect(currentMonomerLib.getTypes().length, 0);
+    expect(currentMonomerLib.getTypes().length > 0, true);
   });
 });

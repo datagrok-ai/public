@@ -1,6 +1,17 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {_package} from '../package-test';
 
+export async function loadFileAsText(name: string): Promise<string> {
+  return await _package.files.readAsText(name);
+}
+
+export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
+  const file = await loadFileAsText(tableName);
+  const df = DG.DataFrame.fromCsv(file);
+  df.name = tableName.replace('.csv', '');
+  return df;
+}
 
 export function isExceptionElement(action: string): void {
   const exceptionElement = document.getElementsByClassName('grok-global-exception');
@@ -51,7 +62,7 @@ export function isDialogPresent(dialogTitle: string): boolean {
   }
   if (check == false)
     throw new Error('Dialog ' + dialogTitle + ' not found');
-  return check;  
+  return check;
 }
 
 export function checkDialog(dialogTitle: string): boolean {
@@ -62,7 +73,7 @@ export function checkDialog(dialogTitle: string): boolean {
       break;
     }
   }
-  return check;  
+  return check;
 }
 
 export function returnDialog(dialogTitle: string): DG.Dialog | undefined {
@@ -85,7 +96,7 @@ export async function uploadProject(projectName: string, tableInfo: DG.TableInfo
   const project = DG.Project.create();
   project.name = projectName;
   project.addChild(tableInfo);
-  project.addChild(view.saveLayout());  
+  project.addChild(view.saveLayout());
   await grok.dapi.layouts.save(view.saveLayout());
   await grok.dapi.tables.uploadDataFrame(df);
   await grok.dapi.tables.save(tableInfo);
@@ -118,7 +129,7 @@ export function checkHTMLElementbyInnerText(className: string, innerText: string
 export function getHTMLElementbyInnerText(className: string, innerText: string): HTMLElement | undefined {
   const elements = document.getElementsByClassName(className);
   let element;
-  for (let i = 0; i < elements.length; i++ ) {        
+  for (let i = 0; i < elements.length; i++ ) {
     element = elements[i] as HTMLElement;
     if (element.innerText == innerText)
       return element;
@@ -137,7 +148,7 @@ export async function waitForElement(selector: string, error: string, wait=3000)
         resolve(document.querySelector(selector) as HTMLElement);
       }
     });
-    
+
     const timeout = setTimeout(() => {
       observer.disconnect();
       reject(new Error(error));

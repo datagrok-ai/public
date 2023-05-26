@@ -31,6 +31,7 @@ export const enum TAGS {
   alphabetSize = '.alphabetSize',
   alphabetIsMultichar = '.alphabetIsMultichar',
   separator = 'separator',
+  isHelmCompatible = '.isHelmCompatible',
 }
 
 export const monomerRe: RegExp = /\[(\w+)\]|(\w)|(-)/g;

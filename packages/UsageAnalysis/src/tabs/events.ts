@@ -18,7 +18,7 @@ export class EventsView extends UaView {
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Sources',
       queryName: 'EventsSources',
-      viewerFunction: (t: DG.DataFrame) => {
+      createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.lineChart(t, {
           // 'overviewColumnName': 'date',
           xColumnName: 'time_start',
@@ -39,7 +39,7 @@ export class EventsView extends UaView {
       filterSubscription: this.uaToolbox.filterStream,
       name: 'User events',
       queryName: 'EventsUsersSources',
-      viewerFunction: (t: DG.DataFrame) => {
+      createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'source',

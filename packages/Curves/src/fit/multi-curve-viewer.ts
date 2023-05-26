@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+
 import {CellRenderViewer} from "./cell-render-viewer";
 import {FitChartCellRenderer} from "./fit-renderer";
 import {
@@ -9,7 +10,8 @@ import {
   IFitChartData,
   mergeProperties
 } from "./fit-data";
-import {debounce, filter} from 'rxjs/operators';
+
+import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
 
 
@@ -41,17 +43,17 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     return viewer;
   }
 
-  applyViewerProperties() {
+  applyViewerProperties(): void {
     mergeProperties(fitChartDataProperties, this, this.data.chartOptions);
   }
 
-  createChartData() {
+  createChartData(): void {
     this.rows.length = 0;
-    if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx != -1)
+    if (this.showCurrentRowCurve && this.dataFrame.currentRowIdx !== -1)
       this.rows.push(this.dataFrame.currentRowIdx);
-    if (this.showMouseOverRowCurve && this.dataFrame.mouseOverRowIdx != -1)
+    if (this.showMouseOverRowCurve && this.dataFrame.mouseOverRowIdx !== -1)
       this.rows.push(this.dataFrame.mouseOverRowIdx);
-    if (this.showSelectedRowsCurves && this.dataFrame.mouseOverRowIdx != -1)
+    if (this.showSelectedRowsCurves && this.dataFrame.mouseOverRowIdx !== -1)
       this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
 
     this.data = new FitChartData();
@@ -62,12 +64,12 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
     }
   }
 
-  onPropertyChanged(property: DG.Property | null) {
+  onPropertyChanged(property: DG.Property | null): void {
     this.applyViewerProperties();
     this.render();
   }
 
-  onTableAttached() {
+  onTableAttached(): void {
     const grid = this.tableView?.grid!;
     this.curvesColumnName ??= this.dataFrame.columns.bySemType(FIT_SEM_TYPE)?.name;
 
@@ -79,7 +81,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       });
   }
 
-  render() {
+  render(): void {
     const g = this.canvas.getContext('2d')!
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.renderer.renderCurves(g, 0, 0, this.canvas.width, this.canvas.height, this.data);

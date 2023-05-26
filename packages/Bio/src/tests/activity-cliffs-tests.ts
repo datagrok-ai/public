@@ -6,6 +6,7 @@ import {after, before, category, test} from '@datagrok-libraries/utils/src/test'
 
 import {readDataframe} from './utils';
 import {_testActivityCliffsOpen} from './activity-cliffs-utils';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 
 category('activityCliffs', async () => {
@@ -33,7 +34,7 @@ category('activityCliffs', async () => {
     actCliffsTableView = grok.shell.addTableView(actCliffsDf);
     viewList.push(actCliffsTableView);
 
-    await _testActivityCliffsOpen(actCliffsDf, 57, 'UMAP', 'MSA');
+    await _testActivityCliffsOpen(actCliffsDf, 57, DimReductionMethods.UMAP, 'MSA');
   }, {skipReason: 'GROK-12774'});
 
   test('activityCliffsWithEmptyRows', async () => {
@@ -42,6 +43,6 @@ category('activityCliffs', async () => {
     actCliffsTableViewWithEmptyRows = grok.shell.addTableView(actCliffsDfWithEmptyRows);
     viewList.push(actCliffsTableViewWithEmptyRows);
 
-    await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 57, 'UMAP', 'MSA');
+    await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 57, DimReductionMethods.UMAP, 'MSA');
   }, {skipReason: 'GROK-12774'});
 });

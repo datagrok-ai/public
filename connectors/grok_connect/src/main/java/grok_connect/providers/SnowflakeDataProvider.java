@@ -69,7 +69,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s"
+                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s ORDER BY c.table_name, c.ordinal_position;"
                 , db == null && schema == null && table == null ? "" : whereClause);
     }
 

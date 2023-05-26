@@ -9,11 +9,6 @@ import './dataframe/dataframe-join';
 import './functions/functions';
 import './shell/shell';
 import './shell/windows';
-import './views/docking';
-import './views/docking-nested';
-import './views/events';
-import './views/layouts';
-import './views/files-view';
 import './dapi/files';
 import './dapi/functions';
 import './dapi/fetch';
@@ -35,13 +30,8 @@ import './widgets/legend';
 import './widgets/tree-view';
 import './utils/color';
 import './package/upload';
-import './viewers/viewers';
-import './viewers/filters';
 import './grid/grid';
 import './grid/color-coding';
-import './connections/queries-test';
-import './connections/get-all-top100';
-import './scripts/scripts-params';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 

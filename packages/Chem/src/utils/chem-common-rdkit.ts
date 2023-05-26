@@ -6,10 +6,10 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import { isMolBlock } from './chem-common';
+import {isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, Reaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {IMolContext, getMolSafe} from "./mol-creation_rdkit";
+import {IMolContext, getMolSafe} from './mol-creation_rdkit';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -27,7 +27,7 @@ const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
   minFontSize: -1,
   maxFontSize: -1,
   annotationFontScale: 0.7,
-  highlightBondWidthMultiplier: 12,
+  highlightBondWidthMultiplier: 20,
   dummyIsotopeLabels: false,
   atomColourPalette: {
     0: [0.1, 0.1, 0.1],
@@ -42,6 +42,7 @@ const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
     35: [0.0, 0.498, 0.0],
     53: [0.247, 0.0, 0.498],
   },
+  highlightColour: [1.0, 0.7, 0.7, 1.0],
   backgroundColour: [1, 1, 1, 1],
   queryColour: [0, 0, 0, 1],
 };
@@ -54,7 +55,7 @@ export async function initRdKitModuleLocal(): Promise<void> {
   _rdKitModule = await initRDKitModule(
     {locateFile: () => `${_webRoot}/dist/${rdKitLibVersion}.wasm`});
   if (!_rdKitModule)
-    throw 'RdKit Module is not loaded';
+    throw new Error('RdKit Module is not loaded');
   _rdKitModule.prefer_coordgen(false);
   _rdKitModule.use_legacy_stereo_perception(false);
   console.log('RDKit module package instance was initialized');
@@ -68,14 +69,14 @@ export async function initRdKitService(): Promise<void> {
 
 export function getRdKitModule(): RDModule {
   if (!moduleInitialized)
-    throw ('RdKit Module is not initialized');
+    throw new Error('RdKit Module is not initialized');
   return _rdKitModule!;
 }
 
 export async function getRdKitService(): Promise<RdKitService> {
   await initRdKitService();
   if (!_rdKitService)
-    throw 'RdKit Service isn\'t initialized';
+    throw new Error('RdKit Service isn\'t initialized');
   return _rdKitService;
 }
 
@@ -84,16 +85,16 @@ export function getRdKitWebRoot() {
 }
 
 export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: number, height: number) {
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = '#EFEFEF';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(width, height);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(width, 0);
-      ctx.lineTo(0, height);
-      ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#EFEFEF';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(width, height);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(width, 0);
+  ctx.lineTo(0, height);
+  ctx.stroke();
 }
 
 function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]: any} {
@@ -105,9 +106,9 @@ function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]:
 
 export function drawRdKitMoleculeToOffscreenCanvas(
   molCtx: IMolContext, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
-  const g = offscreenCanvas.getContext('2d', {willReadFrequently : true}) as OffscreenCanvasRenderingContext2D;
+  const g = offscreenCanvas.getContext('2d', {willReadFrequently: true}) as OffscreenCanvasRenderingContext2D;
   const rdKitMol: RDMol | null = molCtx.mol;
-  if(rdKitMol === null) {
+  if (rdKitMol === null) {
     console.error('Molecule to be rendered cannot be null.');
     drawErrorCross(g, w, h);
     return;
@@ -124,21 +125,22 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
   const opts = createRenderingOpts({width: w, height: h});
 
-  g?.clearRect(0,0, w, h);
+  g?.clearRect(0, 0, w, h);
   if (substruct)
     Object.assign(opts, substruct);
   const kekulize = molCtx.kekulize;
   if (!kekulize)
-    Object.assign(opts, { kekulize });
+    Object.assign(opts, {kekulize});
 
   const useMolBlockWedging = molCtx.useMolBlockWedging;
   const wedgeBonds = false;
   const addChiralHs = false;
   if (useMolBlockWedging)
-    Object.assign(opts, { useMolBlockWedging, wedgeBonds, addChiralHs });
+    Object.assign(opts, {useMolBlockWedging, wedgeBonds, addChiralHs});
 
-  try { rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));}
-  catch(e) {
+  try {
+    rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
+  } catch (e) {
     console.error('Molecule failed to render ' + rdKitMol.get_molblock());
     drawErrorCross(g, w, h);
     return;
@@ -149,15 +151,14 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 export function drawRdKitReactionToOffscreenCanvas(
   rdKitReaction: Reaction, w: number, h: number, offscreenCanvas: OffscreenCanvas) {
   const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h)});
-  const g = offscreenCanvas.getContext('2d', {willReadFrequently : true});
-  g?.clearRect(0,0, w, h);
+  const g = offscreenCanvas.getContext('2d', {willReadFrequently: true});
+  g?.clearRect(0, 0, w, h);
   rdKitReaction.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
 }
 
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
   options = {normalizeDepiction: true, straightenDepiction: true}) {
-
   if (!w || !h) {
     console.error('Width and height cannot be zero.');
     return;
@@ -198,13 +199,14 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
 
   try {
     const scaffoldMol = scaffoldMolString == null ? null :
-      (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
+      (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
+        getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
     if (scaffoldMol) {
-      try{
+      try {
         substructJson = mol.get_substruct_match(scaffoldMol);
-      } catch(e) {
-        console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`)
+      } catch (e) {
+        console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`);
       }
       if (substructJson === '')
         substructJson = '{}';
@@ -230,8 +232,7 @@ export function checkMoleculeValid(molecule: string): any {
   let mol;
   try {
     mol = getRdKitModule().get_mol(molecule);
-  }
-  catch (e: any) {
+  } catch (e: any) {
     mol?.delete();
     return null;
   }

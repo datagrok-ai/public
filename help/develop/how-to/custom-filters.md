@@ -20,6 +20,25 @@ export function radioButtonFilter() {
 
 ```
 
+:::tip
+
+If you are on version `^4.10.x` of `datagrok-tools`, you can use class decorators to register filters:
+
+```ts
+@grok.functions.decorators.grokFilter({
+  semType: 'Country',
+})
+export class RadioButtonFilter extends DG.Filter {
+  /* RadioButtonFilter contents */
+}
+```
+
+This is equivalent to adding a function to `package.ts`. There is no need to add anything other than the class itself.
+When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special
+`package.g.ts` file to your project. Note that it is not on the ignore list, so you are supposed to commit this file.
+
+:::
+
 The filter then can be invoked in the package with JS API as shown in
 [custom filters example](https://dev.datagrok.ai/js/samples/ui/viewers/filters/custom-filters):
 

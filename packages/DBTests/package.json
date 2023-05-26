@@ -1,53 +1,54 @@
 {
-	"name": "@datagrok/dbtests",
-	"friendlyName": "DB Tests",
-	"version": "0.0.2",
-	"description": "Automated tests for JDBC Providers",
-	"author": {
-		"name": "Alexander Paramonov",
-		"email": "aparamonov@datagrok.ai"
-	},
-	"dependencies": {
-		"datagrok-api": "latest",
-		"cash-dom": "latest",
-		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
-	},
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest"
-	},
-	"scripts": {
-		"link-all": "",
-		"debug-dbtests": "webpack && grok publish",
-		"release-dbtests": "webpack && grok publish --release",
-		"build-dbtests": "webpack",
-		"build": "webpack",
-		"debug-dbtests-public": "webpack && grok publish public",
-		"release-dbtests-public": "webpack && grok publish public --release",
-		"debug-dbtests-local": "webpack && grok publish local",
-		"release-dbtests-local": "webpack && grok publish local --release",
-		"debug-dbtests-localhost": "webpack && grok publish localhost",
-		"release-dbtests-localhost": "webpack && grok publish localhost --release",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"category": "Development",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/DBTests"
-	}
+  "name": "@datagrok/dbtests",
+  "friendlyName": "DB Tests",
+  "version": "1.0.2",
+  "description": "Automated tests for JDBC Providers",
+  "author": {
+    "name": "Pavlo Polovyi",
+    "email": "ppolovyi@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.0.4",
+    "cash-dom": "latest",
+    "datagrok-api": "latest",
+    "dayjs": "latest"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-dbtests": "webpack && grok publish",
+    "release-dbtests": "webpack && grok publish --release",
+    "build-dbtests": "webpack",
+    "build": "webpack",
+    "debug-dbtests-public": "webpack && grok publish public",
+    "release-dbtests-public": "webpack && grok publish public --release",
+    "debug-dbtests-local": "webpack && grok publish local",
+    "release-dbtests-local": "webpack && grok publish local --release",
+    "debug-dbtests-localhost": "webpack && grok publish localhost",
+    "release-dbtests-localhost": "webpack && grok publish localhost --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Development",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/DBTests"
+  }
 }
