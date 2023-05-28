@@ -1,11 +1,13 @@
-import {category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
 category('Data Science', () => {
-  let tv: DG.TableView;
+  before(async () => {
+    grok.shell.closeAll();
+  });
 
   test('SPE 2D', async () => {
     await spe('2D');
@@ -15,9 +17,14 @@ category('Data Science', () => {
     await spe('3D');
   });
 
+  after(async () => {
+    grok.shell.closeAll();
+    DG.Balloon.closeAll();
+  });
+
   async function spe(dimensions: string) {
     const smiles = grok.data.demo.molecules(100);
-    tv = grok.shell.addTableView(smiles);
+    grok.shell.addTableView(smiles);
     try {
       await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
       grok.shell.topMenu.find('Tools').find('Data Science').find('Stochastic Proximity Embedding...').click();
@@ -34,9 +41,8 @@ category('Data Science', () => {
       await awaitCheck(() => smiles.col('y') !== null, 'cannot find y column', 1000);
       if (dimensions === '3D') await awaitCheck(() => smiles.col('z') !== null, 'cannot find z column', 1000);
     } finally {
-      tv.close();
-      grok.shell.closeTable(smiles);
       DG.Dialog.getOpenDialogs().forEach((d) => d.close());
+      grok.shell.closeAll();
     }
   }
 });
