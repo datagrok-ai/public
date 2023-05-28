@@ -12,6 +12,8 @@ dirs=(
   "../../libraries/utils/"
   "../../libraries/ml/"
   "../../libraries/bio/"
+  "../../packages/Bio/"
+  "../../packages/Helm/"
 )
 
 for dir in ${dirs[@]}; do

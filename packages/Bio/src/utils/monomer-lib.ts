@@ -6,7 +6,6 @@ import {Observable, Subject} from 'rxjs';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
   createJsonMonomerLibFromSdf,
-  expectedMonomerData,
   IMonomerLibHelper
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
@@ -17,7 +16,6 @@ const HELM_REQUIRED_FIELDS_ARRAY = [
 ] as const;
 
 const HELM_OPTIONAL_FIELDS_ARRAY = [OPT.NATURAL_ANALOG, OPT.META] as const;
-
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
 export const LIB_PATH = 'System:AppData/Bio/libraries/';
@@ -49,36 +47,36 @@ export async function setUserLibSetting(value: LibSettings): Promise<void> {
 }
 
 export class MonomerLib implements IMonomerLib {
-  private _monomers: { [type: string]: { [monomerName: string]: Monomer } } = {};
+  private _monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
 
-  constructor(monomers: { [type: string]: { [monomerName: string]: Monomer } }) {
+  constructor(monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } }) {
     this._monomers = monomers;
   }
 
-  getMonomer(monomerType: string, monomerName: string): Monomer | null {
-    if (monomerType in this._monomers! && monomerName in this._monomers![monomerType])
-      return this._monomers![monomerType][monomerName];
+  getMonomer(polymerType: string, monomerSymbol: string): Monomer | null {
+    if (polymerType in this._monomers! && monomerSymbol in this._monomers![polymerType])
+      return this._monomers![polymerType][monomerSymbol];
     else
       return null;
   }
 
-  getTypes(): string[] {
+  getPolymerTypes(): string[] {
     return Object.keys(this._monomers);
   }
 
-  getMonomerMolsByType(type: string): { [monomerName: string]: string } {
-    const res: { [monomerName: string]: string } = {};
+  getMonomerMolsByPolymerType(polymerType: string): { [monomerSymbol: string]: string } {
+    const res: { [monomerSymbol: string]: string } = {};
 
-    Object.keys(this._monomers[type]).forEach((monomerName) => {
-      res[monomerName] = this._monomers[type][monomerName].molfile;
+    Object.keys(this._monomers[polymerType]).forEach((monomerSymbol) => {
+      res[monomerSymbol] = this._monomers[polymerType][monomerSymbol].molfile;
     });
 
     return res;
   }
 
-  getMonomerNamesByType(type: string): string[] {
-    return Object.keys(this._monomers[type]);
+  getMonomerSymbolsByType(polymerType: string): string[] {
+    return Object.keys(this._monomers[polymerType]);
   }
 
   get onChanged(): Observable<any> {
@@ -86,8 +84,8 @@ export class MonomerLib implements IMonomerLib {
   }
 
   private _updateInt(lib: IMonomerLib): void {
-    const typesNew = lib.getTypes();
-    const types = this.getTypes();
+    const typesNew = lib.getPolymerTypes();
+    const types = this.getPolymerTypes();
 
     typesNew.forEach((type) => {
       //could possibly rewrite -> TODO: check duplicated monomer symbol
@@ -95,9 +93,9 @@ export class MonomerLib implements IMonomerLib {
       if (!types.includes(type))
         this._monomers![type] = {};
 
-      const monomers = lib.getMonomerNamesByType(type);
-      monomers.forEach((monomerName) => {
-        this._monomers[type][monomerName] = lib.getMonomer(type, monomerName)!;
+      const monomers = lib.getMonomerSymbolsByType(type);
+      monomers.forEach((monomerSymbol) => {
+        this._monomers[type][monomerSymbol] = lib.getMonomer(type, monomerSymbol)!;
       });
     });
   }
@@ -153,7 +151,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
 
   /** Reads library from file shares, handles .json and .sdf */
   async readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
-    let data: any[] = [];
+    let rawLibData: any[] = [];
     let file;
     let dfSdf;
     const fileSource = new DG.FileSource(path);
@@ -162,38 +160,23 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       if (funcList.length === 1) {
         file = await fileSource.readAsBytes(fileName);
         dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
-        data = createJsonMonomerLibFromSdf(dfSdf[0]);
+        rawLibData = createJsonMonomerLibFromSdf(dfSdf[0]);
       } else {
         grok.shell.warning('Chem package is not installed');
       }
     } else {
       const file = await fileSource.readAsText(fileName);
-      data = JSON.parse(file);
+      rawLibData = JSON.parse(file);
     }
 
-    const monomers: { [type: string]: { [name: string]: Monomer } } = {};
-    const types: string[] = [];
-    data.forEach((monomer) => {
-      const monomerAdd: {[key: string]: any} = {};
-      for (const field of HELM_REQUIRED_FIELDS_ARRAY)
-        monomerAdd[field] = monomer[field];
-      for (const optField of HELM_OPTIONAL_FIELDS_ARRAY) {
-        const value = monomer[optField];
-        if (value !== undefined)
-          monomerAdd[optField] = value;
-      }
-
-      Object.keys(monomer).forEach((prop) => {
-        if (!expectedMonomerData.includes(prop))
-          monomerAdd[prop] = monomer[prop];
-      });
-
-      if (!types.includes(monomer[REQ.POLYMER_TYPE])) {
+    const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
+    const polymerTypes: string[] = [];
+    rawLibData.forEach((monomer) => {
+      if (!polymerTypes.includes(monomer[REQ.POLYMER_TYPE])) {
         monomers[monomer[REQ.POLYMER_TYPE]] = {};
-        types.push(monomer[REQ.POLYMER_TYPE]);
+        polymerTypes.push(monomer[REQ.POLYMER_TYPE]);
       }
-
-      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.NAME]] = monomerAdd as Monomer;
+      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomer as Monomer;
     });
 
     return new MonomerLib(monomers);
