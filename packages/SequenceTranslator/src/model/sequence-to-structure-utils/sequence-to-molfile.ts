@@ -31,7 +31,7 @@ export class SequenceToMolfileConverter {
   }
 
   private getMonomerMolfile(monomerName: string, idx: number): string {
-    const molBlock = this.lib.getMolfileByName(monomerName);
+    const molBlock = this.lib.getMolfileBySymbol(monomerName);
     if (this.lib.isModification(monomerName))
       return (idx === 0) ? this.reflect(molBlock) : molBlock;
     else

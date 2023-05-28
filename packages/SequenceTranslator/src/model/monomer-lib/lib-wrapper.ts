@@ -42,26 +42,26 @@ export class MonomerLibWrapper {
     return MonomerLibWrapper.instance!;
   }
 
-  getMolfileByName(monomerName: string): string {
-    const monomer = this.getMonomer(monomerName);
+  getMolfileBySymbol(monomerSymbol: string): string {
+    const monomer = this.getMonomer(monomerSymbol);
     return monomer.molfile;
   }
 
-  getSmilesByName(monomerName: string): string {
-    const monomer = this.getMonomer(monomerName);
+  getSmilesBySymbol(monomerSymbol: string): string {
+    const monomer = this.getMonomer(monomerSymbol);
     return monomer.smiles;
   }
 
-  get3PrimeTerminalSmiles(modificationName: string): string {
-    if (!this.isModification(modificationName))
-      throw new Error(`SequenceTranslator: ${modificationName} is not a modification`);
-    const monomer = this.getMonomer(modificationName);
+  get3PrimeTerminalSmiles(modificationSymbol: string): string {
+    if (!this.isModification(modificationSymbol))
+      throw new Error(`SequenceTranslator: ${modificationSymbol} is not a modification`);
+    const monomer = this.getMonomer(modificationSymbol);
     return monomer[OPT.META]![MET.TERMINAL_SMILES];
   }
 
   // todo: a better criterion
-  isModification(monomerName: string): boolean {
-    const molfile = this.getMolfileByName(monomerName);
+  isModification(monomerSymbol: string): boolean {
+    const molfile = this.getMolfileBySymbol(monomerSymbol);
     return (molfile.includes('MODIFICATION')) ? true : false;
   }
 
@@ -90,7 +90,7 @@ export class MonomerLibWrapper {
   getModificationGCRSCodes(): string[] {
     let result: string[] = [];
     const modifications = this.getMonomersByFormat(SYNTHESIZERS.GCRS)
-      .filter((monomer) => this.isModification(monomer.name));
+      .filter((monomer) => this.isModification(monomer[REQ.SYMBOL]));
     for (const monomer of modifications) {
       const codes = this.getCodesObject(monomer)[SYNTHESIZERS.GCRS] as TechnologiesObject;
       for (const technology in codes)
@@ -151,7 +151,6 @@ export class MonomerLibWrapper {
         }
       }
     }
-    console.log('codes wo linkages:', codes);
     return codes;
   }
 
@@ -184,22 +183,22 @@ export class MonomerLibWrapper {
   }
 
   private getAllMonomers(): Monomer[] {
-    const monomerTypes = this.lib.getTypes();
+    const polymerTypes = this.lib.getPolymerTypes();
     let result: Monomer[] = [];
-    for (const monomerType of monomerTypes) {
-      const monomerNames = this.lib.getMonomerNamesByType(monomerType);
-      const monomersByType: Monomer[] = monomerNames
-        .map((monomerName) => this.lib.getMonomer(monomerType, monomerName))
+    for (const polymerType of polymerTypes) {
+      const monomerSymbols = this.lib.getMonomerSymbolsByType(polymerType);
+      const monomersByType: Monomer[] = monomerSymbols
+        .map((monomerSymbol) => this.lib.getMonomer(polymerType, monomerSymbol))
         .filter((monomer): monomer is Monomer => monomer !== null);
       result = result.concat(monomersByType);
     }
     return result;
   }
 
-  private getMonomer(monomerName: string): Monomer {
-    const monomer = this.lib.getMonomer('RNA', monomerName);
+  private getMonomer(monomerSymbol: string): Monomer {
+    const monomer = this.lib.getMonomer('RNA', monomerSymbol);
     if (monomer === undefined)
-      throw new Error(`SequenceTranslator: no monomer with name ${monomerName}`);
+      throw new Error(`SequenceTranslator: no monomer with symbol ${monomerSymbol}`);
     return monomer!;
   }
 

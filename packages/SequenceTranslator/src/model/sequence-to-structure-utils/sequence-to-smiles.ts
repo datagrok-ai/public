@@ -31,11 +31,11 @@ export class SequenceToSmilesConverter {
     return this.getPolymerSmiles(monomerSmilesArray);
   }
 
-  private getMonomerSmiles(monomerName: string, idx: number): string {
-    if (this.lib.isModification(monomerName) && idx > 0)
-      return this.lib.get3PrimeTerminalSmiles(monomerName);
+  private getMonomerSmiles(monomerSymbol: string, idx: number): string {
+    if (this.lib.isModification(monomerSymbol) && idx > 0)
+      return this.lib.get3PrimeTerminalSmiles(monomerSymbol);
     else
-      return this.lib.getSmilesByName(monomerName);
+      return this.lib.getSmilesBySymbol(monomerSymbol);
   }
 
   private getPolymerSmiles(monomerSmiles: string[]): string {

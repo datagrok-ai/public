@@ -24,14 +24,6 @@ export const enum HELM_OPTIONAL_FIELDS {
   META = 'meta', // for SequenceTranslator
 }
 
-export const enum HELM_RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSmiles',
-  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
-  ALTERNATE_ID = 'alternateId',
-  CAP_GROUP_NAME = 'capGroupName',
-  LABEL = 'label',
-}
-
 export const enum HELM_FIELDS {
   MONOMER_TYPE = 'monomerType',
   SMILES = 'smiles',
@@ -46,10 +38,13 @@ export const enum HELM_FIELDS {
   SYMBOL = 'symbol'
 }
 
-/* Modes of work for toAtomicLevel functions */
-export const enum MODE {
-  STANDARD, // work with standard monomer types, as in HELM Core Library
-  SEQ_TRAN // non-standard monomer types for SequenceTranslator app, todo: consider possibility of the unification
+// fields of "rgroups" sub-object in HELM library
+export const enum HELM_RGROUP_FIELDS {
+  CAP_GROUP_SMILES = 'capGroupSmiles',
+  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
+  ALTERNATE_ID = 'alternateId',
+  CAP_GROUP_NAME = 'capGroupName',
+  LABEL = 'label',
 }
 
 // possible values of polymers

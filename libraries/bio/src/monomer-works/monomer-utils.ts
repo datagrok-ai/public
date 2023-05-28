@@ -6,13 +6,10 @@ import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
-import {IMonomerLib, Monomer} from '../types/index';
+import {IMonomerLib} from '../types/index';
 import {TAGS} from '../utils/macromolecule/consts';
 import {SplitterFunc} from '../utils/macromolecule/types';
 import {getSplitter} from '../utils/macromolecule/utils';
-
-
-export const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -116,8 +113,7 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
           const rgroup: { [key: string]: string | any } = {};
           const altAtom = g.substring(g.lastIndexOf(']') + 1);
           const radicalNum = g.match(/\[R(\d+)\]/)![1];
-          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] =
-            altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
+          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
           rgroup[HELM_RGROUP_FIELDS.ALTERNATE_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
           rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
           rgroup[HELM_RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
