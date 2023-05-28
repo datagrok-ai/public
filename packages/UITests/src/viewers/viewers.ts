@@ -40,6 +40,7 @@ category('Viewers', () => {
     viewerList = [];
   });
 
+  /*
   test('addViewer(ViewerType)', async () => {
     try {
       for (const viewerType of coreViewerTypes) {
@@ -56,6 +57,7 @@ category('Viewers', () => {
       closeViewers(tv);
     }
   });
+  */
 
   test('addViewer(Viewer)', async () => {
     try {

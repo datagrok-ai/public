@@ -15,15 +15,15 @@ category('Settings', () => {
   });
 
   test('Dev Settings', async () => {
-    expect(gss.loadDefaultsOnStart, true);
-    expect(gss.webpackDevUrl, null);
-    expect(gss.cvmUrl.startsWith('https://cvm'), true);
-    expect(gss.cvmSplit, true);
-    expect(gss.apiUrl.endsWith('/api'), true);
-    expect(gss.helpBaseUrl, '');
-    expect(gss.jupyterNotebook, `${gss.cvmUrl}/notebook`);
-    expect(typeof gss.jupyterGatewayToken, 'string');
-    expect(typeof gss.jupyterNotebookToken, 'string');
+    expect(gss.loadDefaultsOnStart, true, 'loadDefaultsOnStart');
+    expect(gss.webpackDevUrl, null, 'webpackDevUrl');
+    expect(gss.cvmUrl.startsWith('https://cvm'), true, 'cvmUrl');
+    expect(gss.cvmSplit, true, 'cvmSplit');
+    expect(gss.apiUrl.endsWith('/api'), true, 'apiUrl');
+    expect(gss.helpBaseUrl, '', 'helpBaseUrl');
+    expect(gss.jupyterNotebook, `${gss.cvmUrl}/notebook`, 'jupyterNotebook');
+    expect(typeof gss.jupyterGatewayToken, 'string', 'jupyterGatewayToken');
+    expect(typeof gss.jupyterNotebookToken, 'string', 'jupyterNotebookToken');
   });
 
   test('Beta Settings', async () => {
@@ -60,24 +60,15 @@ category('Settings', () => {
   }, {skipReason: 'GROK-11670'});
 
   test('Windows Settings', async () => {
-    expect(gss.showMenu, !grok.shell.windows.simpleMode,
-      `showMenu ${gss.showMenu} != ${!grok.shell.windows.simpleMode}`);
-    expect(gss.showTables, grok.shell.windows.showTables,
-      `showTables ${gss.showTables} != ${!grok.shell.windows.showTables}`);
-    expect(gss.showColumns, grok.shell.windows.showColumns,
-      `showColumns ${gss.showColumns} != ${!grok.shell.windows.showColumns}`);
-    expect(gss.showProperties, grok.shell.windows.showProperties,
-      `showProperties ${gss.showProperties} != ${!grok.shell.windows.showProperties}`);
-    expect(gss.showToolbox, grok.shell.windows.showToolbox,
-      `showToolbox ${gss.showToolbox} != ${!grok.shell.windows.showToolbox}`);
-    expect(gss.showStatusBar, grok.shell.windows.showStatusBar,
-      `showStatusBar ${gss.showStatusBar} != ${!grok.shell.windows.showStatusBar}`);
-    expect(gss.showVariables, grok.shell.windows.showVariables,
-      `showVariables ${gss.showVariables} != ${!grok.shell.windows.showVariables}`);
-    expect(gss.showConsole, grok.shell.windows.showConsole,
-      `showConsole ${gss.showConsole} != ${!grok.shell.windows.showConsole}`);
-    expect(gss.showHelp, grok.shell.windows.showHelp,
-      `showHelp ${gss.showHelp} != ${!grok.shell.windows.showHelp}`);
+    expect(gss.showMenu, !grok.shell.windows.simpleMode, 'showMenu');
+    expect(gss.showTables, grok.shell.windows.showTables, 'showTables');
+    expect(gss.showColumns, grok.shell.windows.showColumns, 'showColumns');
+    expect(gss.showProperties, grok.shell.windows.showProperties, 'showProperties');
+    expect(gss.showToolbox, grok.shell.windows.showToolbox, 'showToolbox');
+    expect(gss.showStatusBar, grok.shell.windows.showStatusBar, 'showStatusBar');
+    expect(gss.showVariables, grok.shell.windows.showVariables, 'showVariables');
+    expect(gss.showConsole, grok.shell.windows.showConsole, 'showConsole');
+    expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
   });
 
   after(async () => {

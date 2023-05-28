@@ -12,6 +12,8 @@ import {PANES_INPUTS, SETTINGS_PANES, getSettingsDialog} from '../widgets/settin
 import {getDistributionWidget} from '../widgets/distribution';
 import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 import {TEST_COLUMN_NAMES} from './utils';
+import wu from 'wu';
+import {LogoSummaryTable} from '../viewers/logo-summary';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -170,6 +172,37 @@ category('Widgets: Actions', () => {
   });
 
   test('Custom clusters', async () => {
+    // Set compound bitset: filter out 2 rows and select 1 among them
+    const filter = model.df.filter;
+    filter.setAll(false, false);
+    filter.set(0, true, false);
+    filter.set(1, true, false);
 
+    const selection = model.df.selection;
+    selection.set(0, true, false);
+
+    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+
+    // Check that custom clusters are not created yet
+    expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters before creating one');
+
+    // Create custom cluster
+    model._newClusterSubject.next();
+    const customClusterList = wu(model.customClusters).toArray();
+    expect(customClusterList.length, 1, 'Expected to have 1 custom cluster');
+    const clustName = customClusterList[0].name;
+    expect(model.df.col(clustName) !== null, true,
+      'Expected to have custom cluster column in the table');
+    expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) !== -1, true,
+      'Expected to have custom cluster in the Logo Summary Table');
+
+    // Remove custom cluster
+    model.modifyClusterSelection(clustName);
+    model._removeClusterSubject.next();
+    expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
+    expect(model.df.col(clustName) === null, true,
+      'Expected to have no custom cluster column in the table');
+    expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) === -1, true,
+      'Expected to have no custom cluster in the Logo Summary Table');
   });
 });
