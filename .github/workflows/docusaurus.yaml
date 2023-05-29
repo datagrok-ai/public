@@ -8,11 +8,45 @@ on:
       - 'help/**'
       - 'docusaurus/**'
       - 'js-api/**'
+  pull_request:
 
 jobs:
+  process-merge-commit:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get commit details
+        id: commit-details
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_INFO=$(curl -sH "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_SHA}")
+          echo "::set-output name=commit_info::$COMMIT_INFO"
+      - name: Determine if merge commit
+        id: check-merge-commit
+        run: |
+          PARENT_COUNT=$(echo "${{ steps.commit-details.outputs.commit_info }}" | jq '.parents | length')
+          if [[ $PARENT_COUNT -gt 1 ]]; then
+            echo "::set-output name=is_merge_commit::true"
+          else
+            echo "::set-output name=is_merge_commit::false"
+          }
+
+  this-is-merge-commit:
+    needs: process-merge-commit
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Merge commit announce
+        if: needs.process-merge-commit.outputs.check-merge-commit == 'true'
+        run: |
+          echo "This is a merge commit push. No actions will be runned"
+
   lint:
     name: Lint
+    needs: process-merge-commit
     runs-on: ubuntu-20.04
+    if: needs.process-merge-commit.outputs.check-merge-commit == 'false'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -45,7 +79,8 @@ jobs:
 
   convert:
     name: Convert to HTML
-    needs: [lint]
+    needs: [lint, process-merge-commit]
+    if: needs.process-merge-commit.outputs.check-merge-commit == 'false'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -114,11 +149,11 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: convert
+    needs: [convert, process-merge-commit]
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.outputs.check-merge-commit == 'false'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -162,12 +197,12 @@ jobs:
 
   scrape:
     name: Scrape
-    needs: deploy
+    needs: [deploy, process-merge-commit]
     environment: Help
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.outputs.check-merge-commit == 'false'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
