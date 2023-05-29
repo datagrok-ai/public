@@ -9,8 +9,8 @@ import {
   expectArray,
   assure,
 } from '@datagrok-libraries/utils/src/test';
-import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
-import { mapToFixed } from './utils/array-utils';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
+import {mapToFixed} from './utils/array-utils';
 
 const validDistanceMatrix5x5 = [0, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const validDistanceMatrixSize = 6;

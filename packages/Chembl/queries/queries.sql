@@ -202,7 +202,7 @@ WHERE f.level4_description = @level4
 --input: string actionType = 'BLOCKER' {choices: Query("SELECT DISTINCT action_type from drug_mechanism")}
 --input: string mechanismOfAction = 'Amiloride-sensitive sodium channel, ENaC blocker' {choices: Query("SELECT DISTINCT mechanism_of_action from drug_mechanism where action_type = @actionType")}
 --input: string country = 'UK' {choices: Query("SELECT DISTINCT country from research_companies")}
---input: list company = ['GlaxoSmithKline'] {choices: Query("SELECT DISTINCT company from research_companies where country = @country")}
+--input: list<string> company = ['GlaxoSmithKline'] {choices: Query("SELECT DISTINCT company from research_companies where country = @country")}
 SELECT set_config('rdkit.tanimoto_threshold', @threshold, true);
 --batch
 SELECT s.*
@@ -226,7 +226,7 @@ AND r.company IN (
 --name: ByChemblIds
 --friendlyName: Search | byChemblIds
 --connection: Chembl 
---input: list chemblIds = ['CHEMBL1185', 'CHEMBL1186'] {inputType: TextArea}
+--input: list<string> chemblIds = ['CHEMBL1185', 'CHEMBL1186'] {inputType: TextArea}
 SELECT *
 FROM molecule_dictionary
 WHERE chembl_id IN (

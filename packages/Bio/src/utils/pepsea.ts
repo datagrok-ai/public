@@ -23,7 +23,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
 ): Promise<DG.Column<string> | null> {
   const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
   if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking') {
-    grok.log.error('PepSeA container has not started yet');
+    grok.log.warning('PepSeA container has not started yet');
     return null;
   }
 
