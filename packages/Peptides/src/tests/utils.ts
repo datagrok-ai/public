@@ -8,6 +8,12 @@ import {
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
+export enum TEST_COLUMN_NAMES {
+  SEQUENCE = 'sequence',
+  ACTIVITY = 'activity',
+  CLUSTER = 'cluster',
+}
+
 /**
  * Tests if a table has non zero rows and columns.
  *

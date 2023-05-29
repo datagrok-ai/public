@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.8.3",
+  "version": "1.9.1",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -48,7 +48,7 @@
     "link-statistics": "npm link @datagrok-libraries/statistics",
     "link-ml": "npm link @datagrok-libraries/ml",
     "link-bio": "npm link @datagrok-libraries/bio",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics link @datagrok-libraries/ml @datagrok-libraries/bio",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics @datagrok-libraries/ml @datagrok-libraries/bio",
     "install-dependencies": "npm install",
     "debug-peptides": "grok publish",
     "release-peptides": "grok publish --release",

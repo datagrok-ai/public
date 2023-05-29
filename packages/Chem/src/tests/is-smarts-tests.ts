@@ -1,11 +1,11 @@
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, expect, category, test} from '@datagrok-libraries/utils/src/test';
-import { isFragment, isSmarts } from '../utils/mol-creation_rdkit';
-import { readDataframe } from './utils';
+import {isFragment, isSmarts} from '../utils/mol-creation_rdkit';
+import {readDataframe} from './utils';
 
 const smarts = [
-    `
+  `
     RDKit          2D
 
  0  0  0  0  0  0  0  0  0  0999 V3000
@@ -29,9 +29,8 @@ M  V30 6 1 6 1
 M  V30 END BOND
 M  V30 END CTAB
 M  END
+  `,
   `
-,
-`
 MJ201900
 
   6  6  1  0  0  0  0  0  0  0999 V2000
@@ -51,7 +50,7 @@ MJ201900
 M  ALS   1  2 T C   N
 M  END
 `,
-`[!#6&!#7]1:[#6]:[#6]:[#6]:[#6]:[#6]:1`
+  `[!#6&!#7]1:[#6]:[#6]:[#6]:[#6]:[#6]:1`,
 ];
 
 const fragments = [
@@ -80,7 +79,7 @@ M  V30 END BOND
 M  V30 END CTAB
 M  END
 `,
-`
+  `
   RDKit          2D
 
   0  0  0  0  0  0  0  0  0  0999 V3000
@@ -105,7 +104,7 @@ M  V30 END BOND
 M  V30 END CTAB
 M  END
 `,
-`
+  `
 MJ201900                      
 
   6  6  0  0  0  0  0  0  0  0999 V2000
@@ -122,7 +121,7 @@ MJ201900
   5  6  2  0  0  0  0
   6  4  1  0  0  0  0
 M  END`,
-`
+  `
 MJ201900                      
 
   6  6  0  0  0  0  0  0  0  0999 V2000
@@ -139,12 +138,12 @@ MJ201900
   5  6  2  0  0  0  0
   6  4  1  0  0  0  0
 M  END`,
-`CC1(N[*:1])CCN([*:2])C1`
+  `CC1(N[*:1])CCN([*:2])C1`,
 ];
 
 const notSmarts = [
-'O=C1CN=C(c2ccccc2N1)C3CCCCC3',
-    `
+  'O=C1CN=C(c2ccccc2N1)C3CCCCC3',
+  `
 -ISIS-  03062316482D
 
  27 29  0  0  1  0  0  0  0  0999 V2000
@@ -206,7 +205,7 @@ const notSmarts = [
  27 26  1  0  0  0  0
 M  END
 `,
-    `
+  `
     RDKit          2D
 
  0  0  0  0  0  0  0  0  0  0999 V3000
@@ -265,7 +264,7 @@ M  V30 END BOND
 M  V30 END CTAB
 M  END
 `,
-`
+  `
      RDKit          2D
 
  22 24  0  0  0  0  0  0  0  0999 V2000
@@ -316,8 +315,8 @@ M  END
  16 11  1  0
  22 17  1  0
 M  END
-`
-]
+`,
+];
 
 category('isSmarts', async () => {
   before(async () => {
@@ -329,14 +328,14 @@ category('isSmarts', async () => {
 
   test('isSmarts', async () => {
     smarts.forEach((mol) => {
-        expect(isSmarts(mol), true);
+      expect(isSmarts(mol), true);
     });
     notSmarts.forEach((mol) => expect(isSmarts(mol), false));
   });
 
   test('isFragment', async () => {
     fragments.forEach((mol) => {
-        expect(isFragment(mol), true);
+      expect(isFragment(mol), true);
     });
     notSmarts.forEach((mol) => expect(isFragment(mol), false));
   });
@@ -349,5 +348,4 @@ category('isSmarts', async () => {
       isSmarts(molecules[i%100]);
     console.profileEnd('isSmarts');
   });
-
 });

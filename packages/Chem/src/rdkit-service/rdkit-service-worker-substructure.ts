@@ -3,6 +3,8 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {syncQueryAromatics} from '../utils/aromatic-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { RuleId } from '../panels/structural-alerts';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -33,7 +35,6 @@ function validateMol(mol: RDMol | null, molString: string) : void {
 }
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
-
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
@@ -51,7 +52,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           mol.is_qmol = molSafe.isQMol;
           this._rdKitMols[i] = mol;
         } else
-        malformed++;        
+          malformed++;
       }
     }
     return malformed;
@@ -59,8 +60,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   getQMol(molString: string) : RDMol | null {
     let mol = null;
-    try { mol = this._rdKitModule.get_qmol(molString); }
-    catch(e) {
+    try {mol = this._rdKitModule.get_qmol(molString);} catch (e) {
       if (mol !== null)
         mol.delete();
       return null;
@@ -80,11 +80,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
         queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
       else {
-        const molTmp = getMolSafe(queryMolString, {"mergeQueryHs":true, "kekulize": true}, this._rdKitModule).mol;
+        const molTmp = getMolSafe(queryMolString, {'mergeQueryHs': true, 'kekulize': true}, this._rdKitModule).mol;
         if (molTmp !== null) {
           let molBlockAroma: string | null;
-          try { molBlockAroma = molTmp!.get_aromatic_form(); }
-          catch(e) { // looks like we get here when the molecule is already aromatic, so we just re-assign the block
+          try {molBlockAroma = molTmp!.get_aromatic_form();} catch (e) {
+            // looks like we get here when the molecule is already aromatic, so we just re-assign the block
             molBlockAroma = queryMolString;
           }
 
@@ -93,8 +93,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
         queryMol = this.getQMol(queryMolString);
       }
-    }
-    else { // not a molblock
+    } else { // not a molblock
       queryMol = this.getQMol(queryMolString);
       if (queryMol !== null) {
         const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
@@ -103,36 +102,37 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (match === '{}') {
             queryMol.delete(); //remove mol object previously stored in queryMol
             queryMol = mol;
-          }
-          else
+          } else
             mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
-        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol; // possibly get rid of fall-over in future
+        // possibly get rid of fall-over in future
+        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol;
       }
     }
 
     if (queryMol !== null) {
-        if (bitset) {
-          for (let i = 0; i < bitset.length; ++i) {
-            try { //get_substruct_match can potentially throw an exception, need to catch
-              if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+      if (bitset) {
+        for (let i = 0; i < bitset.length; ++i) {
+          try { //get_substruct_match can potentially throw an exception, need to catch
+            // Is patternFP iff?
+            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
               matches.push(i);
-            } catch {
-              continue;
-            }
-          }
-        } else {
-          for (let i = 0; i < this._rdKitMols!.length; ++i) {
-            try {
-              if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
-              matches.push(i);
-            } catch {
-              continue;
-            }
+          } catch {
+            continue;
           }
         }
-        queryMol.delete();
+      } else {
+        for (let i = 0; i < this._rdKitMols!.length; ++i) {
+          try {
+            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+              matches.push(i);
+          } catch {
+            continue;
+          }
+        }
+      }
+      queryMol.delete();
     } else
       throw new Error('Chem | Search pattern cannot be set');
 
@@ -159,19 +159,77 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         if (targetNotation === MolNotation.MolBlock) {
           if (!mol.has_coords())
             mol.set_new_coords();
-         result = mol.get_molblock();
-        }
-        else if (targetNotation === MolNotation.Smiles)
+          result = mol.get_molblock();
+        } else if (targetNotation === MolNotation.Smiles)
           result = mol.get_smiles();
         else if (targetNotation === MolNotation.V3KMolBlock)
           result = mol.get_v3Kmolblock();
         else if (targetNotation === MolNotation.Smarts)
           result = mol.get_smarts();
       }
-     results[i] = result;
+      results[i] = result;
     }
 
     console.log('Finished Worker ' + results.length);
     return results;
+  }
+
+  getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): {[rule in RuleId]?: boolean[]} {
+    if (this._rdKitMols === null && typeof molecules === 'undefined') {
+      console.debug(`getStructuralAlerts: No molecules to process`);
+      return {};
+    }
+
+    const ruleSmartsMap: {[rule in RuleId]?: (RDMol | null)[]} = {};
+    const rules = Object.keys(alerts) as RuleId[];
+    for (let rule of rules) {
+      const ruleLength = alerts[rule]!.length;
+      ruleSmartsMap[rule] = new Array(ruleLength);
+      for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++)
+        ruleSmartsMap[rule]![smartsIdx] = this.getQMol(alerts[rule]![smartsIdx]);
+    }
+
+    const molsCount = molecules?.length ?? this._rdKitMols!.length;
+    // Prepare the result storage
+    const resultValues: {[ruleId in RuleId]?: BitArray} = {};
+    for (const rule of rules)
+      resultValues[rule] = new BitArray(molsCount, false);
+
+    // Run the structural alerts detection
+    for (let molIdx = 0; molIdx < molsCount; molIdx++) {
+      const mol = typeof molecules !== 'undefined' ? getMolSafe(molecules[molIdx], {}, this._rdKitModule).mol :
+        this._rdKitMols![molIdx];
+      if (mol === null) {
+        console.debug(`Molecule ${molIdx} is null`);
+        continue;
+      }
+
+      for (const rule of rules) {
+        const ruleSmarts = ruleSmartsMap[rule]!;
+        for (let alertIdx = 0; alertIdx < ruleSmarts.length; alertIdx++) {
+          const smarts = ruleSmarts[alertIdx];
+          if (smarts === null) {
+            console.debug(`Smarts ${alertIdx} for rule ${rule} is null at molecule ${molIdx}`);
+            continue;
+          }
+
+          const matches = mol.get_substruct_match(smarts);
+          if (matches !== '{}') {
+            resultValues[rule]!.setTrue(molIdx);
+            break;
+          }
+        }
+      }
+      mol.delete();
+    }
+
+    for (const smartsList of Object.values(ruleSmartsMap)) {
+      for (const smarts of smartsList)
+        smarts?.delete();
+    }
+
+    this._rdKitMols = null;
+
+    return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
 }

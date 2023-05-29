@@ -44,7 +44,7 @@ export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<
 
 export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
   if (spaceParams.seqCol.version !== spaceParams.seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(spaceParams.seqCol, false);
+    await invalidateMols(spaceParams.seqCol as unknown as DG.Column<string>, false); //we expect only string columns here
 
   const result = await grok.functions.call('Chem:getChemSpaceEmbeddings', {
     col: spaceParams.seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],

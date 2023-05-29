@@ -13,6 +13,10 @@ export class AbstractComposedCellRenderer extends GridCellRendererEx {
 
   getChildRenderer() {return this.m_renderer;}
 
+   shouldRenderExternalContent(g: CanvasRenderingContext2D, cellGrid: DG.GridCell, nX: number, nY: number, nW: number, nH: number): boolean {
+    return this.m_renderer !== null;
+   }
+
    renderExternalContent(g: CanvasRenderingContext2D, cellGrid: DG.GridCell, nX: number, nY: number, nW: number, nH: number): void {
    if (this.m_renderer === null)
      return;
@@ -50,8 +54,8 @@ export class AbstractComposedCellRenderer extends GridCellRendererEx {
     }
   }
 
-  paintLabelsAndExternal(g: CanvasRenderingContext2D, cellGrid: DG.GridCell, arIDs: string[], arFonts: string[], arTextColors: string[], arBackColors: string[],
-                         nX: number, nY: number, nW: number, nH: number): void {
+  paintLabelsAndExternal(g: CanvasRenderingContext2D, cellGrid: DG.GridCell, arIDs: string[], arFonts: string[],
+                         arTextColors: string[], arBackColors: string[], nX: number, nY: number, nW: number, nH: number): void {
     g.fillStyle = "white";
     g.strokeStyle = "black";
     g.textAlign = "center";
@@ -77,37 +81,39 @@ export class AbstractComposedCellRenderer extends GridCellRendererEx {
 
     const nCPdMinHeight = 21;
 
-    let bCpd = true;
-    if (nFittedRowCount < nIDCount || nExtraHeight < nCPdMinHeight)
-      bCpd = false;
+    let bRenderExternal = this.shouldRenderExternalContent(g, cellGrid, nX, nY, nW, nH);
+    if (!bRenderExternal || nFittedRowCount < nIDCount || nExtraHeight < nCPdMinHeight)
+      bRenderExternal = false;
 
     if (nHLabel > 0) {
-
       let cr = null;
       let str = null;
       let nYTemp = null;
-      for (let n = 0; n < nFittedRowCount; n++) {
-
-        g.font = arFonts[n];
-        str = arIDs[n];
+      for (let nLine = 0; nLine < nFittedRowCount; nLine++) {
+        g.font = arFonts[nLine];
+        str = arIDs[nLine];
         str = TextUtils.trimText(str, g, nW);
 
-        nYTemp = nH - nHLabel * (nFittedRowCount - n);
+        if (!bRenderExternal) {
+          const nYShift = Math.floor((nH - nHFont * nFittedRowCount)/2);
+          nYTemp = nYShift + nHFont * nLine;
+        }
+        else nYTemp = nH - nHLabel * (nFittedRowCount - nLine);
 
         g.translate(0, nYTemp);
-        cr = arBackColors[n];
+        cr = arBackColors[nLine];
         if (cr !== null) {
           g.fillStyle = cr;
           g.fillRect(nX, nY + nYInset, nW, nHFont);
         }
 
-        g.fillStyle = arTextColors[n];
+        g.fillStyle = arTextColors[nLine];
         g.fillText(str, nX + Math.floor(nW / 2), nY + nYInset /*+ nHFont*/);
         g.translate(0, -nYTemp);
       }
     }
 
-    if (!bCpd)
+    if (!bRenderExternal)
       return;
 
     if (nHAvail > 5)

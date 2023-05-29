@@ -7,18 +7,6 @@ import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 category('Viewers', () => {
   const df = grok.data.demo.demog(100);
   const viewers = DG.Func.find({package: 'Charts', tags: ['viewer']}).map((f) => f.friendlyName);
-  const viewersToSkip: {[v: string]: string} = {
-    'Surface plot': 'GROK-13113',
-    'Sunburst': 'GROK-13113',
-    'Group Analysis': 'GROK-13113',
-    'Sankey': 'GROK-13113',
-    'Chord': 'GROK-13113',
-    'Globe': 'GROK-13113',
-    'Timelines': 'GROK-13113',
-    'Radar': 'GROK-13113',
-    'Word Cloud Viewer': 'GROK-13113',
-    'Tree': 'GROK-12569',
-  };
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {
@@ -27,6 +15,7 @@ category('Viewers', () => {
         else if (v === 'Globe') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
       })(), {detectSemanticTypes: true});
-    }, v in viewersToSkip ? {skipReason: viewersToSkip[v]} : {});
+    }, v === 'Tree' ? {skipReason: 'GROK-12569'} :
+    v === 'Word Cloud Viewer' ? {skipReason: 'GROK-13198'} : {});
   }
 });

@@ -19,7 +19,7 @@ export class FunctionsView extends UaView {
       filterSubscription: this.uaToolbox.filterStream,
       name: 'Functions',
       queryName: 'FunctionsUsage',
-      viewerFunction: (t: DG.DataFrame) => {
+      processDataFrame: (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
           if (!t.selection.anyTrue) return;
           let df = t.clone(t.selection);
@@ -33,7 +33,7 @@ export class FunctionsView extends UaView {
           t.selection.init((i) => {
             const row = gen.next().value as DG.Row;
             return dateFrom <= row.time_start && row.time_start < dateTo &&
-            packages.includes(row.pid) && functions.includes(row.function);
+              packages.includes(row.pid) && functions.includes(row.function);
           }, false);
           const cp = DG.Accordion.create();
           df = t.clone(t.selection);
@@ -67,6 +67,9 @@ export class FunctionsView extends UaView {
           this.getFunctionPane(cp, filter, true);
           grok.shell.o = cp.root;
         });
+        return t;
+      },
+      createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'function',

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {TreeHelper} from './tree-helper';
-import {getClusterMatrixWorker} from '../wasm/clustering-worker-creator';
+import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {attachLoaderDivToGrid} from '.';
 

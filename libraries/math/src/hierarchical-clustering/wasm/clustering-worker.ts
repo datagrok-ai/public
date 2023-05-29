@@ -1,5 +1,5 @@
 import {getClustersFromDistMatWasm} from './clusterizerWasm';
-import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
+import {ClusterMatrix} from '../types';
 
 
 onmessage = (event) => {
