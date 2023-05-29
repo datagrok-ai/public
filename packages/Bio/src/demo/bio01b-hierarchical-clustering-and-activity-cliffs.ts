@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 
 import {TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import * as lev from 'fastest-levenshtein';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {handleError} from './utils';
