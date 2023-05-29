@@ -116,7 +116,11 @@ category('Distance', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
       {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1}
     );
-    _testDistance(prot5, prot6, df, 1);
+    if (DG.Test.isInBenchmark) {
+      const seq1 = Array(10000).fill('FWRY').join('');
+      const seq2 = Array(10000).fill('FYWRRY').join('');
+      _testDistance(seq1, seq2, df, -20000);
+    } else _testDistance(prot5, prot6, df, 1);
   });
 });
 
