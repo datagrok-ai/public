@@ -11,7 +11,7 @@ const HEIGHT = 100;
 export async function searchWidget(molString: string, searchType: 'similarity' | 'substructure', dbdf: DG.DataFrame,
 ): Promise<DG.Widget> {
   const headerHost = ui.div();
-  const compsHost = ui.divV([]);
+  const compsHost = ui.div([], 'd4-flex-wrap');
   const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;
@@ -38,29 +38,30 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
   table.name = `DrugBank ${searchType === 'similarity' ? 'Similarity' : 'Substructure'} Search`;
 
   const bitsetIndexes = table.filter.getSelectedIndexes();
-  const iterations = Math.min(bitsetIndexes.length, 20);
+  const molCount = Math.min(bitsetIndexes.length, 20);
   const moleculeCol: DG.Column<string> = table.getCol('molecule');
   const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
   const nameCol: DG.Column<string> = table.getCol('COMMON_NAME');
+  const r = window.devicePixelRatio;
 
-  for (let n = 0; n < iterations; n++) {
+  const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
+  if (renderFunctions.length == 0)
+    throw new Error('RDKit renderer is not available');
+
+  for (let n = 0; n < molCount; n++) {
     const piv = bitsetIndexes[n];
     const molfile = moleculeCol.get(piv)!;
 
     const molHost = ui.canvas(WIDTH, HEIGHT);
     molHost.classList.add('chem-canvas');
-    const r = window.devicePixelRatio;
     molHost.width = WIDTH * r;
     molHost.height = HEIGHT * r;
     molHost.style.width = (WIDTH).toString() + 'px';
     molHost.style.height = (HEIGHT).toString() + 'px';
-    const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-    if (renderFunctions.length > 0) {
+
     renderFunctions[0].apply().then((rendndererObj) => {
-      rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT,
-        DG.GridCell.fromValue(molfile));
-      });
-    }
+      rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT, DG.GridCell.fromValue(molfile));
+    });
   
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));

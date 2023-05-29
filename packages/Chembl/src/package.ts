@@ -5,6 +5,8 @@ import $ from 'cash-dom';
 
 export let _package = new DG.Package();
 
+const WIDTH = 200;
+const HEIGHT = 100;
 
 export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame> {
   try {
@@ -42,32 +44,52 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //input: string searchType
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
-  const headerHost = ui.divH([]);
-  const compsHost = ui.divH([ui.loader(), headerHost]);
-  const panel = ui.divV([compsHost]);
-  const searchFunc = substructure ?
-    async () => chemblSubstructureSearch(mol) :
-    async () => chemblSimilaritySearch(mol);
+  const headerHost = ui.div([]);
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const panel = ui.divV([headerHost, compsHost]);
+  const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
-  searchFunc().then((t: any) => {
+  searchFunc().then((table: DG.DataFrame) => {
     compsHost.removeChild(compsHost.firstChild!);
-    if (t == null) {
+    if (table == null) {
       compsHost.appendChild(ui.divText('No matches'));
       return;
     }
-    t.col('smiles').semType = 'Molecule';
-    t.col('smiles').setTag('cell.renderer', 'Molecule');
+    const moleculeCol = table.getCol('smiles');
+    const molregnoCol = table.getCol('molregno');
+    
+    const molCount = Math.min(table.rowCount, 20);
+    const r = window.devicePixelRatio;
 
-    const grid = t.plot.grid();
-    compsHost.appendChild(grid.root);
-    headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-      t.name = `"ChEMBL Similarity Search"`;
-      grok.shell.addTableView(t);
-    }, 'Open compounds as table'));
-      compsHost.style.overflowY = 'auto';
+    const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
+    if (renderFunctions.length == 0)
+      throw new Error('RDKit renderer is not available');
+
+    for (let i = 0; i < molCount; i++) {
+      const molHost = ui.canvas(WIDTH, HEIGHT);
+      molHost.classList.add('chem-canvas');
+      molHost.width = WIDTH * r;
+      molHost.height = HEIGHT * r;
+      molHost.style.width = (WIDTH).toString() + 'px';
+      molHost.style.height = (HEIGHT).toString() + 'px';
+
+      renderFunctions[0].apply().then((rendndererObj) => {
+      rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT, DG.GridCell.fromValue(moleculeCol.get(i)));
+      });
+  
+      ui.tooltip.bind(molHost,
+        () => ui.divText(`ChEMBL ID: ${molregnoCol.get(i)}\nClick to open in ChEMBL Database`));
+      molHost.addEventListener('click',
+        () => window.open(`https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL${molregnoCol.get(i)}`, '_blank'));
+      compsHost.appendChild(molHost);
     }
-  )
-  .catch((err: any) => {
+
+    headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+      table.name = `"ChEMBL Similarity Search"`;
+      grok.shell.addTableView(table);
+    }, 'Open compounds as table'));
+    compsHost.style.overflowY = 'auto';
+  }).catch((err: any) => {
     if (compsHost.children.length > 0) {
       compsHost.removeChild(compsHost.firstChild!);
     }
