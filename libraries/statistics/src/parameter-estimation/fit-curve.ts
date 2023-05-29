@@ -1,3 +1,4 @@
+import * as DG from 'datagrok-api/dg';
 import {limitedMemoryBFGS} from "../../lbfgs/lbfgs"
 //@ts-ignore: no types
 import * as jStat from 'jstat';
@@ -118,18 +119,53 @@ export interface IFitOptions {
   statistics: boolean;
 }
 
+// TODO: move to DG.Rect
+/** Gets the bounds of provided points */
+export function getDataBounds(data: {x: number[], y: number[]}): DG.Rect {
+  let minX = data.x[0];
+  let minY = data.y[0];
+  let maxX = data.x[0];
+  let maxY = data.y[0];
+
+  for (let i = 1; i < data.x.length; i++) {
+    minX = Math.min(minX, data.x[i]);
+    minY = Math.min(minY, data.y[i]);
+    maxX = Math.max(maxX, data.x[i]);
+    maxY = Math.max(maxY, data.y[i]);
+  }
+
+  return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
+}
+
 
 /**
  * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
  * */
-export function fit(data:{x: number[], y: number[]},
-                    params: FitParam[],
-                    curveFunction: (paramValues: number[], x: number) => number,
-                    errorModel: FitErrorModel,
-                    confidenceLevel: number = 0.05,
-                    statistics: boolean = true): FitResult {
+export function fit(data:{x: number[], y: number[]}, params: FitParam[],
+  curveFunction: (paramValues: number[], x: number) => number, errorModel: FitErrorModel,
+  confidenceLevel: number = 0.05, statistics: boolean = true): FitResult {
+  let paramValues: number[] = [];
+  if (params.length === 0) {
+    const dataBounds = getDataBounds(data);
+    const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
+    let maxYInterval = dataBounds.bottom - dataBounds.top;
+    let nearestXIndex = 0;
+    for (let i = 0; i < data.x.length; i++) {
+      const currentInterval = Math.abs(data.y[i] - medY);
+      if (currentInterval < maxYInterval) {
+        maxYInterval = currentInterval;
+        nearestXIndex = i;
+      }
+    }
+    const xAtMedY = data.x[nearestXIndex];
+    const slope = data.y[0] > data.y[data.y.length - 1] ? 1.2 : -1.2;
 
-  let paramValues = params.map(p => p.value);
+    // params are: [max, tan, IC50, min]
+    paramValues = [dataBounds.bottom, slope, xAtMedY, dataBounds.top];
+  }
+  else {
+    paramValues = params.map(p => p.value);
+  }
   let of: ObjectiveFunction;
   switch(errorModel) {
     case FitErrorModel.Constant:
@@ -168,13 +204,13 @@ export function fit(data:{x: number[], y: number[]},
 
     overLimits = false;
     for (let i = 0; i < paramValues.length; i++) {
-      if(params[i].maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
+      if(params[i]?.maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
         overLimits = true;
         fixed.push(i);
         paramValues[i] = params[i].maxBound!;
         break;
       }
-      if(params[i].minBound !== undefined && paramValues[i] < params[i].minBound!) {
+      if(params[i]?.minBound !== undefined && paramValues[i] < params[i].minBound!) {
         overLimits = true;
         fixed.push(i);
         paramValues[i] = params[i].minBound!;

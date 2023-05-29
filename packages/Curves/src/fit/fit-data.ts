@@ -211,7 +211,7 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
 }
 
 
-//TODO: move to DG.Rect
+// TODO: move to DG.Rect
 /** Gets the bounds of provided points */
 export function getDataBounds(points: IFitPoint[]): DG.Rect {
   let minX = points[0].x;
@@ -232,23 +232,27 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
 
 /** Fits the series data according to the series fitting settings */
 export function fitSeries(series: IFitSeries, statistics: boolean = false): FitResult {
-  const dataBounds = getDataBounds(series.points);
-  const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
+  // const dataBounds = getDataBounds(series.points);
+  // const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
 
-  let maxYInterval = dataBounds.bottom - dataBounds.top;
-  let nearestXIndex = 0;
-  for (let i = 0; i < series.points.length; i++) {
-    const currentInterval = Math.abs(series.points[i].y - medY);
-    if (currentInterval < maxYInterval) {
-      maxYInterval = currentInterval;
-      nearestXIndex = i;
-    }
-  }
-  const xAtMedY = series.points[nearestXIndex].x;
-  const slope = series.points[0].y > series.points[series.points.length - 1].y ? 1.2 : -1.2;
+  // let maxYInterval = dataBounds.bottom - dataBounds.top;
+  // let nearestXIndex = 0;
+  // for (let i = 0; i < series.points.length; i++) {
+  //   const currentInterval = Math.abs(series.points[i].y - medY);
+  //   if (currentInterval < maxYInterval) {
+  //     maxYInterval = currentInterval;
+  //     nearestXIndex = i;
+  //   }
+  // }
+  // const xAtMedY = series.points[nearestXIndex].x;
+  // const slope = series.points[0].y > series.points[series.points.length - 1].y ? 1.2 : -1.2;
 
-  // params are: [max, tan, IC50, min]
-  const initialParams: FitParam[] = [{value: dataBounds.bottom}, {value: slope}, {value: xAtMedY}, {value: dataBounds.top}];
+  // // params are: [max, tan, IC50, min]
+  // const initialParams: FitParam[] = [{value: dataBounds.bottom}, {value: slope}, {value: xAtMedY}, {value: dataBounds.top}];
+  let initialParams: FitParam[] = [];
+  if (series.parameters)
+    initialParams = [{value: series.parameters[0]}, {value: series.parameters[1]}, {value: series.parameters[2]},
+    {value: series.parameters[3]}];
 
   return fit(
     {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)},
