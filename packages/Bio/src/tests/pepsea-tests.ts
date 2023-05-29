@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {runPepsea} from '../utils/pepsea';
+import {awaitContainerStart} from './utils';
 
 category('PepSeA', () => {
   const testCsv = `HELM,MSA
@@ -12,6 +13,7 @@ category('PepSeA', () => {
   "PEPTIDE1{F.V.R.G.Y.[MeF].Y.W.S.N.C}$$$$","F.V.R.G.Y.MeF.Y.W.S..N.C"`;
 
   test('Basic alignment', async () => {
+    await awaitContainerStart();
     const table = DG.DataFrame.fromCsv(testCsv);
     const alignedCol = await runPepsea(table.getCol('HELM'), 'msa(HELM)');
     expect(alignedCol !== null, true, 'PepSeA conainter has not started');

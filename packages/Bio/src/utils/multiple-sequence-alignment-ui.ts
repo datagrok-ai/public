@@ -107,7 +107,7 @@ async function onDialogOk(
       throw new Error('Invalid column format');
     msaCol = await performAlignment(); // progress
     if (msaCol == null)
-      return grok.shell.warning('PepSeA container has not started');
+      return reject('PepSeA container has not started');
 
     table.columns.add(msaCol);
     await grok.data.detectSemanticTypes(table);

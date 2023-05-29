@@ -6,6 +6,7 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
+import {awaitContainerStart} from './utils';
 //import * as grok from 'datagrok-api/grok';
 
 export const _package = new DG.Package();
@@ -82,10 +83,12 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
   });
 
   test('isCorrectHelm', async () => {
+    await awaitContainerStart();
     await _testMSAOnColumn(helmFromCsv, helmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
   });
 
   test('isCorrectHelmLong', async () => {
+    await awaitContainerStart();
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
   });
 
