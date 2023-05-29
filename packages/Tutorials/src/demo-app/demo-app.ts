@@ -19,7 +19,8 @@ type DemoFunc = {
 };
 
 const resultContainer = ui.div([], 'hidden');
-
+const dockRoot = ui.panel([]);
+let treeNodeY: number = 0;
 
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
@@ -215,7 +216,7 @@ export class DemoView extends DG.ViewBase {
     });
     
     for (let i = 0; i < directionFuncs.length; i++) {
-      
+
       const path = directionFuncs[i].path.split('|').map((s) => s.trim());
 
       const img = ui.div('', 'ui-image');
@@ -396,10 +397,13 @@ export class DemoView extends DG.ViewBase {
     };
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
+      treeNodeY = dockRoot.parentElement?.scrollTop!;
+      
       if (DemoScript.currentObject) {
         DemoScript.currentObject.cancelScript();
         this._closeAll();
         grok.shell.addView(new DemoView());
+        dockRoot.parentElement?.scrollTo(0, treeNodeY);
       }
 
       if (value.root.classList.contains('d4-tree-view-item')) {
@@ -415,12 +419,13 @@ export class DemoView extends DG.ViewBase {
         this.tree.root.focus();
         this.nodeView(value.text, value.value.path);
       }
+      
+      dockRoot.parentElement?.scrollTo(0, treeNodeY);
     });
-
-    this.dockPanel = grok.shell.dockManager.dock(ui.panel([
-      this.searchInput.root,
-      this.tree.root,
-    ]), DG.DOCK_TYPE.LEFT, null, 'Categories');
+    
+    dockRoot.append(this.searchInput.root);
+    dockRoot.append(this.tree.root);
+    this.dockPanel = grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Categories');
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     this.tree.root.classList.add('demo-app-tree-group');
