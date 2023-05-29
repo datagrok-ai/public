@@ -25,21 +25,21 @@ export class MainTabUI {
   constructor() {
     this.moleculeImgDiv = ui.block([]);
     this.outputTableDiv = ui.div([]);
-    this.formatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
-    this.formatChoiceInput.onInput(async () => {
-      await this.updateLayout();
+    this.formatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS), async () => {
+      this.format = this.formatChoiceInput.value;
+      this.updateTable();
+      await this.updateMolImg();
     });
     this.sequenceInputBase = ui.textInput('', DEFAULT_INPUT,
-      (sequence: string) => {
-        // Send event to DG.debounce()
-        this.onInput.next(sequence);
-      });
+      () => { this.onInput.next(); });
 
     this.init();
 
     DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       this.init();
-      await this.updateLayout();
+      this.formatChoiceInput.value = this.format;
+      this.updateTable();
+      await this.updateMolImg();
     });
   }
 
@@ -91,7 +91,9 @@ export class MainTabUI {
       ], {style: {paddingTop: '20px', paddingLeft: '20px'}})
     );
 
-    await this.updateLayout();
+    this.formatChoiceInput.value = this.format;
+    this.updateTable();
+    await this.updateMolImg();
     return mainTabBody;
   }
 
@@ -147,12 +149,11 @@ export class MainTabUI {
   // todo: sort mehtods
   private init(): void {
     this.sequence = this.getFormattedSequence();
-    // this.format = this.getInputFormat();
+
     this.format = (new FormatDetector(this.sequence)).getFormat();
 
-    // warning: getMolfile relies on this.format, so the order is important
+    // warning: getMolfile relies on 'this.format', so the order is important
     this.molfile = this.getMolfile();
-    // this.molfile = '';
   }
 
   private getFormattedSequence(): string {
@@ -168,11 +169,5 @@ export class MainTabUI {
     }
     const molfile = (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
     return molfile;
-  }
-
-  private async updateLayout(): Promise<void> {
-    this.formatChoiceInput.value = this.format;
-    this.updateTable();
-    await this.updateMolImg();
   }
 }
