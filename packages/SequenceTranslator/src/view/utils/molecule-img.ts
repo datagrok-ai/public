@@ -52,7 +52,7 @@ export class MoleculeImage {
   };
 
   private getMoleculeDimensions(): {height: number, width: number} {
-    const molData = MolfileHandler.createInstance(this.molblock);
+    const molData = MolfileHandler.getInstance(this.molblock);
     const height: number = Math.max(...molData.x) - Math.min(...molData.x);
     const width: number = Math.max(...molData.y) - Math.min(...molData.y);
     return {height: height, width: width};
