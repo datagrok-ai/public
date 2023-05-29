@@ -75,7 +75,9 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
         const points = createSigmoidPoints(seriesLength, step, pointsPerX);
         let color = DG.Color.toHtml(DG.Color.getCategoricalColor(colIdx * chartsPerCell + j));
         chartData.series?.push({
-          parameters: j % 2 === 0 ? points.params : undefined,
+          parameters: undefined,
+          // TODO: make better parameter generating 
+          // parameters: j % 2 === 0 ? points.params : undefined,
           fitLineColor: color,
           pointColor: color,
           showCurveConfidenceInterval: charts === 1,
