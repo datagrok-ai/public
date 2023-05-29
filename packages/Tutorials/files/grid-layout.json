@@ -3,7 +3,7 @@
   "viewStateMap": {
     "containerType": "fill",
     "state": {
-      "width": 1860,
+      "width": 1391,
       "height": 913,
       "documentManager": true
     },
@@ -11,10 +11,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 1860,
+          "width": 1391,
           "height": 913,
           "element": {
-            "id": "503b9fe0-ed50-11ed-e613-151b8e89e68c",
+            "id": "7cff2f80-ed50-11ed-d528-217b30084cc5",
             "type": "Grid",
             "look": {
               "#type": "GridLook",
@@ -53,16 +53,18 @@
                   "isColorCoded": true,
                   "width": 96,
                   "columnName": "ExactMolWt",
+                  "customFormat": "0.0000000",
                   "cellType": "number",
-                  "format": "0.0000000",
+                  "format": "two digits after comma",
                   "colorCodingType": "Linear"
                 },
                 {
                   "isColorCoded": true,
                   "width": 96,
                   "columnName": "MolWt",
+                  "customFormat": "0.0000000",
                   "cellType": "number",
-                  "format": "0.0000000",
+                  "format": "two digits after comma",
                   "colorCodingType": "Linear"
                 },
                 {
@@ -152,7 +154,7 @@
       }
     ],
     "floating": [],
-    "tableId": "96f00440-ed50-11ed-e6c1-33e60bacfcd8",
+    "tableId": "542bad90-ed50-11ed-95ea-cd45ed478f85",
     "tableName": "Table"
   },
   "name": "Table",
@@ -160,5 +162,5 @@
   "author": {
     "id": "fb93def0-7820-11ed-a90e-d5cadbc9618b"
   },
-  "createdOn": "2023-05-24T14:07:26.941Z"
+  "createdOn": "2023-05-26T16:36:39.159Z"
 }

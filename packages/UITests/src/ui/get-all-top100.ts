@@ -11,9 +11,9 @@ category('Connections', () => {
   before(async () => {
     const mng: DG.TabPane = grok.shell.sidebar.getPane('Manage');
     await (mng.content.querySelector('[data-view=connections]') as HTMLElement).click();
-    await awaitCheck(() => document.querySelector('[data-link="/e/ApiTests.PostgresTest"]') !== null,
-      'cannot find Northwind connection', 3000);
-    nw = document.querySelector('[data-link="/e/ApiTests.PostgresTest"]') as HTMLElement;
+    await awaitCheck(() => document.querySelector('[data-link="/e/Dbtests.PostgresTest"]') !== null,
+      'cannot find NorthwindTest connection', 3000);
+    nw = document.querySelector('[data-link="/e/Dbtests.PostgresTest"]') as HTMLElement;
   });
 
   test('getAll', async () => {
@@ -42,7 +42,7 @@ category('Connections', () => {
 
   after(async () => {
     grok.shell.closeAll();
-    grok.shell.tables.forEach((t) => grok.shell.closeTable(t));
+    DG.Balloon.closeAll();
   });
 
   async function browseSchema() {
