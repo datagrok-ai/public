@@ -1,7 +1,11 @@
 package grok_connect.handlers;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+
+import grok_connect.log.QueryLoggerImpl;
 import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
@@ -13,7 +17,8 @@ public class SessionManager {
 
     static void add(Session session) throws IOException {
         LOGGER.trace("add method was called with parameter: {}", session);
-        sessions.put(session, new SessionHandler(session));
+        List<String> printLevels = Arrays.asList(session.getUpgradeRequest().getHeader("PrintLevels").split(", "));
+        sessions.put(session, new SessionHandler(session, new QueryLoggerImpl(printLevels)));
         session.getRemote().sendString("CONNECTED");
     }
 

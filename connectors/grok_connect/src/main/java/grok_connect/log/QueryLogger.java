@@ -1,12 +1,11 @@
 package grok_connect.log;
 
 import org.slf4j.Logger;
-import serialization.DataFrame;
 
-public interface QueryLogger {
+public interface QueryLogger<T> {
     Logger getLogger();
 
     void closeLogger();
 
-    DataFrame dumpLogMessages();
+    T dumpLogMessages();
 }

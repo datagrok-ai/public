@@ -7,7 +7,7 @@ import serialization.DataFrame;
 import java.util.List;
 import java.util.UUID;
 
-public class QueryLoggerImpl implements QueryLogger {
+public class QueryLoggerImpl implements QueryLogger<DataFrame> {
     private final DataFrameAppender appender;
     private final Logger logger;
 
