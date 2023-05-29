@@ -2,10 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray, expectObject, delay} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {_package, getHelmMonomers} from '../package';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 
@@ -23,9 +22,9 @@ category('splitters', () => {
     tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
-  const helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
+  const _helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
 
-  const helm2 = 'PEPTIDE1{meI.hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.N.meK}$$$';
+  const _helm2 = 'PEPTIDE1{meI.hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.N.meK}$$$';
 
   const data: { [key: string]: [string, string[]] } = {
     fastaMulti: [
@@ -85,7 +84,7 @@ category('splitters', () => {
       seqCol.semType = semType;
     seqCol.setTag(bioTAGS.aligned, C.MSA);
 
-    const tv: DG.TableView = grok.shell.addTableView(df);
+    const _tv: DG.TableView = grok.shell.addTableView(df);
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 

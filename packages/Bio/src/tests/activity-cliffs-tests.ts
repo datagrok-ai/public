@@ -6,7 +6,7 @@ import {after, before, category, test} from '@datagrok-libraries/utils/src/test'
 
 import {readDataframe} from './utils';
 import {_testActivityCliffsOpen} from './activity-cliffs-utils';
-import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 
 category('activityCliffs', async () => {
@@ -29,7 +29,9 @@ category('activityCliffs', async () => {
   });
 
   test('activityCliffsOpens', async () => {
-    actCliffsDf = await readDataframe(DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv' : 'tests/100_3_clustests.csv');
+    actCliffsDf = await readDataframe(
+      DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv' : 'tests/100_3_clustests.csv'
+    );
     dfList.push(actCliffsDf);
     actCliffsTableView = grok.shell.addTableView(actCliffsDf);
     viewList.push(actCliffsTableView);

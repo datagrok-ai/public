@@ -48,6 +48,7 @@ export async function demoBio05UI(): Promise<void> {
         df.columns.add(msaHelmCol);
         await grok.data.detectSemanticTypes(df);
       }, {
+        // eslint-disable-next-line max-len
         description: 'Multiple sequence alignment (MSA) performed with PepSeA tool operating on non-natural aminoacids as well.',
         delay: 2000,
       })
@@ -67,6 +68,7 @@ export async function demoBio05UI(): Promise<void> {
         }) as DG.Viewer & IWebLogoViewer;
         view.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.2);
       }, {
+        // eslint-disable-next-line max-len
         description: 'Composition analysis allows to reveal functional features of sequences like motifs, or variable loops.',
         delay: 2000,
       })

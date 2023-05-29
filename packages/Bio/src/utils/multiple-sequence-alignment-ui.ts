@@ -77,7 +77,7 @@ export async function multipleSequenceAlignmentUI(
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
       return;
     }
-    const dlg = ui.dialog('MSA')
+    const _dlg = ui.dialog('MSA')
       .add(colInput)
       .add(clustersColInput)
       .add(methodInput)

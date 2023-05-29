@@ -13,7 +13,6 @@ import {
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
   let dfList: DG.DataFrame[];
-  let currentView: DG.ViewBase;
 
   const csvDf1 = `seq
 ATC-G-TTGC--
@@ -73,9 +72,8 @@ ATC-G-TTGC--
 
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
-      for (const key in positions[i].freq) {
+      for (const key in positions[i].freq)
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
-      }
     }
   });
 
@@ -125,9 +123,8 @@ ATC-G-TTGC--
 
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
-      for (const key in positions[i].freq) {
+      for (const key in positions[i].freq)
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
-      }
     }
   });
 

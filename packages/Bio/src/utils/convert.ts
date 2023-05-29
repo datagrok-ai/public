@@ -71,7 +71,7 @@ export function convert(col: DG.Column): void {
       })
       .show({x: 350, y: 100});
 
-    convertDialogSubs.push(convertDialog.onClose.subscribe((value) => {
+    convertDialogSubs.push(convertDialog.onClose.subscribe((_value) => {
       convertDialogSubs.forEach((s) => { s.unsubscribe(); });
       convertDialogSubs = [];
       convertDialog = null;
@@ -79,7 +79,11 @@ export function convert(col: DG.Column): void {
   }
 }
 
-/** Creates a new column with converted sequences and detects its semantic type */
+/** Creates a new column with converted sequences and detects its semantic type
+ * @param {DG.Column} srcCol Column with 'Macromolecule' semantic type
+ * @param {NOTATION} targetNotation Target notation
+ * @param {string | null} separator Separator for SEPARATOR notation
+ */
 export async function convertDo(
   srcCol: DG.Column, targetNotation: NOTATION, separator: string | null
 ): Promise<DG.Column> {

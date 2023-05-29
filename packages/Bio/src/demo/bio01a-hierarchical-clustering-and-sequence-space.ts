@@ -19,11 +19,10 @@ export async function demoBio01aUI() {
   let dendrogramSvc: IDendrogramService;
   let view: DG.TableView;
   let df: DG.DataFrame;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let spViewer: DG.ScatterPlotViewer;
 
   const dimRedMethod: string = 'UMAP';
-  const idRows: { [id: number]: number } = {};
-  const embedCols: { [colName: string]: DG.Column<number> } = {};
 
   try {
     const demoScript = new DemoScript(
@@ -80,6 +79,7 @@ export async function demoBio01aUI() {
         });
         df.currentRowIdx = 27;
       }, {
+        // eslint-disable-next-line max-len
         description: 'Selecting a group of rows from a data frame to show their similarity and proximity to each other on a viewer..',
         delay: 2000,
       })

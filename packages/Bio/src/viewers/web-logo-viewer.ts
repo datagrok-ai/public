@@ -13,7 +13,7 @@ import {
   TAGS as bioTAGS
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
-  WebLogoPropsDefault, WebLogoProps, IWebLogoViewer,
+  WebLogoPropsDefault, WebLogoProps,
   PositionHeight,
   positionSeparator,
   VerticalAlignments,
@@ -68,10 +68,11 @@ export class PositionInfo {
   sumForHeightCalc: number;
 
   /** freq = {}, rowCount = 0
+   * @param {number} pos Position in sequence
    * @param {string} name Name of position ('111A', '111.1', etc)
-   * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
-   * @param {number} rowCount Count of elements in column
    * @param {string[]} freq frequency of monomers in position
+   * @param {number} rowCount Count of elements in column
+   * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
    */
   constructor(pos: number, name: string,
     freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0
@@ -184,21 +185,21 @@ export class WebLogoViewer extends DG.JsViewer {
   private get filter(): DG.BitSet {
     let res: DG.BitSet;
     switch (this.filterSource) {
-    case FilterSources.Filtered:
-      res = this.dataFrame.filter;
-      break;
-    case FilterSources.Selected:
-      res = this.dataFrame.selection;
-      break;
+      case FilterSources.Filtered:
+        res = this.dataFrame.filter;
+        break;
+      case FilterSources.Selected:
+        res = this.dataFrame.selection;
+        break;
     }
     return res;
   }
 
   /** For startPosition equals to endPosition Length is 1 */
   private get Length(): number {
-    if (this.skipEmptyPositions) {
+    if (this.skipEmptyPositions)
       return this.positions.length;
-    }
+
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
@@ -208,27 +209,26 @@ export class WebLogoViewer extends DG.JsViewer {
   }
 
   private get positionMarginValue() {
-    if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true)) {
+    if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true))
       return this.positionMargin;
-    }
-    if (this.positionMarginState === 'enable') {
+
+    if (this.positionMarginState === 'enable')
       return this.positionMargin;
-    }
+
 
     return 0;
   }
 
   /** Count of position rendered for calculations countOfRenderPositions */
   private get countOfRenderPositions() {
-    if (this.host == null) {
+    if (this.host == null)
       return 0;
-    }
+
     const r = window.devicePixelRatio;
-    if (r > 1) {
+    if (r > 1)
       return this.canvasWidthWithRatio / this.positionWidthWithMargin;
-    } else {
+    else
       return this.canvas.width / (this.positionWidthWithMargin * r);
-    }
   }
 
   private get canvasWidthWithRatio() {
@@ -439,10 +439,11 @@ export class WebLogoViewer extends DG.JsViewer {
     let showSliderWithFitArea = true;
     const minScale = Math.min(this.xScale, this.yScale);
 
-    if (((minScale == this.xScale) || (minScale <= 1)) && (this.fitArea)) {
+    if (((minScale == this.xScale) || (minScale <= 1)) && (this.fitArea))
       showSliderWithFitArea = false;
-    }
-    return ((this.fixWidth || Math.ceil(this.canvas.width / this.positionWidthWithMargin) >= this.Length) || (showSliderWithFitArea));
+
+    return ((this.fixWidth || Math.ceil(this.canvas.width / this.positionWidthWithMargin) >= this.Length) ||
+      (showSliderWithFitArea));
   }
 
   setSliderVisibility(visible: boolean): void {
@@ -457,16 +458,17 @@ export class WebLogoViewer extends DG.JsViewer {
 
   /** Updates {@link slider}, needed to set slider options and to update slider position. */
   private updateSlider(): void {
-    if (this.checkIsHideSlider()) {
+    if (this.checkIsHideSlider())
       this.setSliderVisibility(false);
-    } else {
+    else
       this.setSliderVisibility(true);
-    }
+
     if ((this.slider != null) && (this.canvas != null)) {
       const diffEndScrollAndSliderMin = Math.max(0,
         Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length);
       let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
-      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
+      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) +
+        Math.floor(this.canvas.width / this.positionWidthWithMargin);
       if (this.checkIsHideSlider()) {
         newMin = 0;
         newMax = Math.max(newMin, this.Length - 1);
@@ -477,30 +479,32 @@ export class WebLogoViewer extends DG.JsViewer {
     }
   }
 
-  /** Handler of property change events. */
+  /** Handler of property change events.
+   * @param {DG.Property} property - property which was changed.
+   */
   public override onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
 
     switch (property.name) {
-    case PROPS.sequenceColumnName:
-    case PROPS.startPositionName:
-    case PROPS.endPositionName:
-    case PROPS.filterSource:
-      this.updateSeqCol();
-      break;
-    case PROPS.positionWidth:
-      this._positionWidth = this.positionWidth;
-      this.updateSlider();
-      break;
-    case PROPS.fixWidth:
-    case PROPS.fitArea:
-    case PROPS.positionMargin:
-      this.updateSlider();
-      break;
-    case PROPS.shrinkEmptyTail:
-    case PROPS.skipEmptyPositions:
-      this.updatePositions();
-      break;
+      case PROPS.sequenceColumnName:
+      case PROPS.startPositionName:
+      case PROPS.endPositionName:
+      case PROPS.filterSource:
+        this.updateSeqCol();
+        break;
+      case PROPS.positionWidth:
+        this._positionWidth = this.positionWidth;
+        this.updateSlider();
+        break;
+      case PROPS.fixWidth:
+      case PROPS.fitArea:
+      case PROPS.positionMargin:
+        this.updateSlider();
+        break;
+      case PROPS.shrinkEmptyTail:
+      case PROPS.skipEmptyPositions:
+        this.updatePositions();
+        break;
     }
 
     this.render(true);
@@ -557,7 +561,10 @@ export class WebLogoViewer extends DG.JsViewer {
     return [jPos, monomer, position.freq[monomer]];
   };
 
-  /** Helper function for rendering */
+  /** Helper function for rendering
+   * @param {boolean} fillerResidue
+   * @return {string} - string with null sequence
+  */
   protected _nullSequence(fillerResidue = 'X'): string {
     if (!this.skipEmptySequences)
       return new Array(this.Length).fill(fillerResidue).join('');
@@ -582,9 +589,8 @@ export class WebLogoViewer extends DG.JsViewer {
 
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
-    if (this.skipEmptyPositions) {
+    if (this.skipEmptyPositions)
       this.removeWhere(this.positions, (item) => item?.freq['-']?.count === item.rowCount);
-    }
   }
 
   protected _calculate(r: number) {
@@ -652,9 +658,9 @@ export class WebLogoViewer extends DG.JsViewer {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
       const alphabetSize = this.getAlphabetSize();
-      if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null)) {
+      if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
         grok.shell.error('WebLogo: alphabet is undefined.');
-      }
+
 
       const alphabetSizeLog = Math.log2(alphabetSize);
       const maxHeight = (this.positionHeight == PositionHeight.Entropy) ?
@@ -698,7 +704,8 @@ export class WebLogoViewer extends DG.JsViewer {
       }
     }
 
-    if (!this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 || this.endPosition === -1 || this.host == null || this.slider == null)
+    if (!this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 ||
+        this.endPosition === -1 || this.host == null || this.slider == null)
       return;
 
     const g = this.canvas.getContext('2d');
@@ -734,7 +741,8 @@ export class WebLogoViewer extends DG.JsViewer {
       g.resetTransform();
       g.setTransform(
         hScale, 0, 0, 1,
-        jPos * this.positionWidthWithMargin + this._positionWidth / 2 - this.positionWidthWithMargin * firstVisibleIndex, 0);
+        jPos * this.positionWidthWithMargin + this._positionWidth / 2 -
+          this.positionWidthWithMargin * firstVisibleIndex, 0);
       g.fillText(pos.name, 0, 0);
     }
     //#endregion Plot positionNames
@@ -813,34 +821,34 @@ export class WebLogoViewer extends DG.JsViewer {
       // vertical alignment
       let hostTopMargin = 0;
       switch (this.verticalAlignment) {
-      case 'top':
-        hostTopMargin = 0;
-        break;
-      case 'middle':
-        hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
-        break;
-      case 'bottom':
-        hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
-        break;
+        case 'top':
+          hostTopMargin = 0;
+          break;
+        case 'middle':
+          hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
+          break;
+        case 'bottom':
+          hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
+          break;
       }
       // horizontal alignment
       let hostLeftMargin = 0;
       switch (this.horizontalAlignment) {
-      case 'left':
-        hostLeftMargin = 0;
-        break;
-      case 'center':
-        hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
-        break;
-      case 'right':
-        hostLeftMargin = Math.max(0, this.root.clientWidth - width);
-        break;
+        case 'left':
+          hostLeftMargin = 0;
+          break;
+        case 'center':
+          hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
+          break;
+        case 'right':
+          hostLeftMargin = Math.max(0, this.root.clientWidth - width);
+          break;
       }
       this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
       this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
-      if (this.slider != null) {
+      if (this.slider != null)
         this.slider.root.style.setProperty('margin-top', `${hostTopMargin + canvasHeight}px`, 'important');
-      }
+
 
       if (this.root.clientHeight <= height) {
         this.host.style.setProperty('height', `${this.root.clientHeight}px`);
@@ -857,7 +865,7 @@ export class WebLogoViewer extends DG.JsViewer {
 
   // -- Handle events --
 
-  private sliderOnValuesChanged(value: any): void {
+  private sliderOnValuesChanged(_value: any): void {
     if ((this.host == null)) return;
 
     try {
@@ -879,7 +887,7 @@ export class WebLogoViewer extends DG.JsViewer {
     }
   }
 
-  private dataFrameFilterOnChanged(value: any): void {
+  private dataFrameFilterOnChanged(_value: any): void {
     console.debug('Bio: WebLogoViewer.dataFrameFilterChanged()');
     try {
       this.updatePositions();
@@ -891,7 +899,7 @@ export class WebLogoViewer extends DG.JsViewer {
     }
   }
 
-  private dataFrameSelectionOnChanged(value: any): void {
+  private dataFrameSelectionOnChanged(_value: any): void {
     console.debug('Bio: WebLogoViewer.dataFrameSelectionOnChanged()');
     try {
       this.render();
@@ -1007,6 +1015,6 @@ export function countForMonomerAtPosition(
   // wu.count().take(this.dataFrame.rowCount).filter(function(iRow) {
   //   return correctMonomerFilter(iRow, monomer, jPos);
   // }).reduce<number>((count, iRow) => count + 1, 0);
-  const monomerAtPosRowCount = posMList.filter((m) => m == monomer).reduce((count, m) => count + 1, 0);
+  const monomerAtPosRowCount = posMList.filter((m) => m == monomer).reduce((count, _m) => count + 1, 0);
   return monomerAtPosRowCount;
 }

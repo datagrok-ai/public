@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -201,7 +201,7 @@ MWRSWY-CKHP
     return df;
   }
 
-  async function readFileFasta(file: string): Promise<DG.DataFrame> {
+  async function _readFileFasta(file: string): Promise<DG.DataFrame> {
     const txt: string = await grok.dapi.files.readAsText(file);
     const df: DG.DataFrame = importFasta(txt)[0];
     return df;

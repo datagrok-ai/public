@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';

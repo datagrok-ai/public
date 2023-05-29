@@ -171,7 +171,7 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$
     const tgtCol: DG.Column = tgtDf.getCol('seq');
 
     expectArray(resCol.toList(), tgtCol.toList());
-    const uh: UnitsHandler = new UnitsHandler(resCol);
+    const _uh: UnitsHandler = new UnitsHandler(resCol);
   }
 
   // FASTA tests

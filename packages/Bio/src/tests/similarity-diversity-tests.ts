@@ -1,6 +1,6 @@
 import {after, before, category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
-import {createTableView, readDataframe} from './utils';
+import {createTableView} from './utils';
 import * as grok from 'datagrok-api/grok';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
@@ -9,7 +9,6 @@ let dfList: DG.DataFrame[];
 
 
 category('similarity/diversity', async () => {
-
   before(async () => {
     viewList = [];
     dfList = [];

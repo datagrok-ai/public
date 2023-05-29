@@ -61,7 +61,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   get defaultWidth(): number | null { return 230; }
 
-  onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+  onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
     const colTemp: TempType = gridCell.cell.column.temp;
     colTemp[tempTAGS.currentWord] = gridCell.cell.value;
     gridCell.grid.invalidate();
@@ -112,12 +112,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    * @param {number} w width of the cell.
    * @param {number} h height of the cell.
    * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} cellStyle Cell style.
+   * @param {DG.GridCellStyle} _cellStyle Cell style.
    * @memberof AlignedSequenceCellRenderer
    */
   render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle
   ) {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
@@ -382,7 +382,7 @@ function fillShorterSequence(subParts1: string[], subParts2: string[]): ICompare
   let numIdenticalStart = 0;
   let numIdenticalEnd = 0;
   const longerSeq = subParts1.length > subParts2.length ? subParts1 : subParts2;
-  let shorterSeq = subParts1.length > subParts2.length ? subParts2 : subParts1;
+  const shorterSeq = subParts1.length > subParts2.length ? subParts2 : subParts1;
 
   for (let i = 0; i < shorterSeq.length; i++) {
     if (longerSeq[i] === shorterSeq[i])
@@ -398,9 +398,11 @@ function fillShorterSequence(subParts1: string[], subParts2: string[]): ICompare
   const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
 
   function concatWithEmptyVals(subparts: string[]): string[] {
-    return numIdenticalStart > numIdenticalEnd ? subparts.concat(emptyMonomersArray) : emptyMonomersArray.concat(subparts);
+    return numIdenticalStart > numIdenticalEnd ?
+      subparts.concat(emptyMonomersArray) : emptyMonomersArray.concat(subparts);
   }
 
-  subParts1.length > subParts2.length ? subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
+  subParts1.length > subParts2.length ?
+    subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
   return {subParts1: subParts1, subParts2: subParts2};
 }

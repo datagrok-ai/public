@@ -11,7 +11,6 @@ import * as grok from 'datagrok-api/grok';
 import wu from 'wu';
 import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
 import {Subject, Subscription} from 'rxjs';
-import * as C from '../utils/constants';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {delay} from '@datagrok-libraries/utils/src/test';
@@ -87,14 +86,18 @@ export class BioSubstructureFilter extends DG.Filter {
       this.dataFrame?.filter.and(this.bitset);
   }
 
-  /** Override to save filter state. */
+  /** Override to save filter state.
+   * @return {any} - filter state
+   */
   saveState(): any {
     const state = super.saveState();
     state.bioSubstructure = this.bioFilter?.substructure;
     return state;
   }
 
-  /** Override to load filter state. */
+  /** Override to load filter state.
+   * @param {any} state - filter state
+   */
   applyState(state: any): void {
     super.applyState(state); //column, columnName
     if (state.bioSubstructure)
@@ -144,7 +147,7 @@ abstract class BioFilterBase {
   set substructure(s: string) {
   }
 
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+  async substrucrureSearch(_column: DG.Column): Promise<DG.BitSet | null> {
     return null;
   }
 }
@@ -227,7 +230,7 @@ export class HelmFilter extends BioFilterBase {
     this.helmEditor = await grok.functions.call('HELM:helmWebEditor');
     await ui.tools.waitForElementInDom(this._filterPanel);
     this.updateFilterPanel();
-    this._filterPanel.addEventListener('click', (event: MouseEvent) => {
+    this._filterPanel.addEventListener('click', (_event: MouseEvent) => {
       const {editorDiv, webEditor} = this.helmEditor.createWebEditor(this.helmSubstructure);
       //@ts-ignore
       ui.dialog({showHeader: false, showFooter: true})

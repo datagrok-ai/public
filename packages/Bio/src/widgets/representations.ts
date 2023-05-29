@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 
 /**
  * @export
@@ -10,9 +9,6 @@ import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
  * @return {Promise<DG.Widget>} Widget.
  */
 export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
-  const NONE = 'None';
-  const scaffoldColName = 'short';
-
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
     (c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
@@ -27,7 +23,9 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
       col.setTag('.calculatedCellRender', '0');
       col.dataFrame.fireValuesChanged();
     });
-  monomerWidth.setTooltip('In short mode, only the first character should be visible, followed by .. if there are more characters');
+  monomerWidth.setTooltip(
+    'In short mode, only the first character should be visible, followed by .. if there are more characters'
+  );
 
   const colorCode = ui.boolInput('Color code',
     (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
@@ -37,10 +35,11 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     });
   colorCode.setTooltip('Color code');
 
-  const referenceSequence = ui.stringInput('Reference sequence', (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '', (v: string) => {
-    col.temp['reference-sequence'] = v;
-    col.dataFrame.fireValuesChanged();
-  });
+  const referenceSequence = ui.stringInput('Reference sequence',
+    (col?.temp['reference-sequence'] != null) ? col?.temp['reference-sequence'] : '', (v: string) => {
+      col.temp['reference-sequence'] = v;
+      col.dataFrame.fireValuesChanged();
+    });
   referenceSequence.setTooltip('Reference sequence is not empty, then the sequence will be render ' + '\n' +
     'as a difference from the reference sequence');
 
@@ -77,8 +76,8 @@ export async function representationsWidget(macroMolecule: DG.Cell, monomersLibO
   let molBlock3D = '';
   try {
     try {
-      const atomicCodes = getMolfilesFromSingleSeq(macroMolecule, monomersLibObject);
-      const result = ''//await getMacroMol(atomicCodes!);
+      const _atomicCodes = getMolfilesFromSingleSeq(macroMolecule, monomersLibObject);
+      const result = '';//await getMacroMol(atomicCodes!);
       const molBlock2D = result[0];
       molBlock3D = (await grok.functions.call('Bio:Embed', {molBlock2D})) as unknown as string;
     } catch (e) {

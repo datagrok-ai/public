@@ -6,8 +6,6 @@ import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activit
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
-import * as C from '../utils/constants';
-import {GridColumn} from 'datagrok-api/dg';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {getSplitter, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -69,7 +67,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
   columnNames.style.display = 'flex';
   columnNames.style.justifyContent = 'space-between';
   tooltipElement.append(columnNames);
-  params.line.mols.forEach((molIdx: number, idx: number) => {
+  params.line.mols.forEach((molIdx: number, _idx: number) => {
     const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
     activity.style.display = 'flex';
     activity.style.justifyContent = 'left';
@@ -82,7 +80,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
   return tooltipElement;
 }
 
-function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
+function _moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
   const dict: { [key: string]: string } = {};
   for (const col of df.columns) {
     if (col.name !== seqColName)

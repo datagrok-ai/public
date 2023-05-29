@@ -1,16 +1,14 @@
 import * as DG from 'datagrok-api/dg';
-import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {BitArrayMetrics, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import * as grok from 'datagrok-api/grok';
-import { NotationConverter } from '@datagrok-libraries/bio/src/utils/notation-converter';
-import { ALPHABET, NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 export interface ISequenceSpaceResult {
   distance: Matrix;
@@ -44,7 +42,8 @@ export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<
 
 export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
   if (spaceParams.seqCol.version !== spaceParams.seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(spaceParams.seqCol as unknown as DG.Column<string>, false); //we expect only string columns here
+    //we expect only string columns here
+    await invalidateMols(spaceParams.seqCol as unknown as DG.Column<string>, false);
 
   const result = await grok.functions.call('Chem:getChemSpaceEmbeddings', {
     col: spaceParams.seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
@@ -67,8 +66,7 @@ export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promi
       seqList = fastaCol.toList();
       const uh = new UnitsHandler(fastaCol);
       distanceFName = uh.getDistanceFunctionName();
-    }
-    else {
+    } else {
       distanceFName = nc.getDistanceFunctionName();
     }
     const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
