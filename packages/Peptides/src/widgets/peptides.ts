@@ -30,7 +30,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
 
     seqColInput = ui.columnInput('Sequence', df, potentialCol, () => {
       const seqCol = seqColInput!.value;
-      if (!(seqCol.getTag(DG.TAGS.SEMTYPE) == DG.SEMTYPE.MACROMOLECULE)) {
+      if (!(seqCol.getTag(DG.TAGS.SEMTYPE) === DG.SEMTYPE.MACROMOLECULE)) {
         grok.shell.warning('Peptides analysis only works with macromolecules');
         seqColInput!.value = potentialCol;
       }
@@ -40,7 +40,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         return viewer.root;
       }));
     });
-  } else if (!(col.getTag(bioTAGS.aligned) == ALIGNMENT.SEQ_MSA) &&
+  } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
       host: ui.label('Peptides analysis only works with aligned sequences'),
@@ -49,7 +49,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   }
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
-  if (funcs.length == 0) {
+  if (funcs.length === 0) {
     return {
       host: ui.label('Bio package is missing or out of date. Please install the latest version.'),
       callback: async (): Promise<boolean> => false,
@@ -57,7 +57,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   }
 
   funcs = DG.Func.find({package: 'Bio', name: 'getBioLib'});
-  if (funcs.length == 0) {
+  if (funcs.length === 0) {
     return {
       host: ui.label('Bio package is missing or out of date. Please install the latest version.'),
       callback: async (): Promise<boolean> => false,
@@ -121,7 +121,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
         scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value);
-      return model != null;
+      return model !== null;
     }
     return false;
   };
@@ -183,19 +183,19 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
 
     if (clustersColumn) {
       const clusterCol = newDf.getCol(clustersColumn.name);
-      if (clusterCol.type != DG.COLUMN_TYPE.STRING)
+      if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
         newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
       settings.clustersColumnName = clustersColumn.name;
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
     let monomerType = 'HELM_AA';
-    if (peptidesCol.getTag(DG.TAGS.UNITS) == NOTATION.HELM) {
+    if (peptidesCol.getTag(DG.TAGS.UNITS) === NOTATION.HELM) {
       const sampleSeq = peptidesCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
     } else {
       const alphabet = peptidesCol.tags[C.TAGS.ALPHABET];
-      monomerType = alphabet == 'DNA' || alphabet == 'RNA' ? 'HELM_BASE' : 'HELM_AA';
+      monomerType = alphabet === 'DNA' || alphabet === 'RNA' ? 'HELM_BASE' : 'HELM_AA';
     }
     const dfUuid = uuid.v4();
     newDf.setTag(C.TAGS.UUID, dfUuid);

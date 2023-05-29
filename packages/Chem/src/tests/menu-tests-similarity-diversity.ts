@@ -124,11 +124,14 @@ category('top menu similarity/diversity', () => {
     await _testSimilaritySearchFunctionality(BitArrayMetricsNames.Cosine, Fingerprint.Morgan);
   });
 
-  test('testDiversitySearch.molecules', async () => {
-    let df;
-    if (DG.Test.isInBenchmark) df = await readDataframe('tests/smi10K.csv');
-    else df = molecules;
-    await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint);
+  test('testSimilaritySearch.smiles', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip") : molecules;
+    await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0), 'Tanimoto', 10, 0.01, Fingerprint.Morgan);
+  });
+
+  test('testDiversitySearch.smiles', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip") : molecules;
+    await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
   });
 
   test('testDiversitySearch.molV2000', async () => {

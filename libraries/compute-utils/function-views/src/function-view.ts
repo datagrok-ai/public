@@ -8,6 +8,7 @@ import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {RunComparisonView} from './run-comparison-view';
 import {CARD_VIEW_TYPE} from './shared/consts';
+import {deepCopy} from './shared/utils';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -436,7 +437,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     // If a view is incapuslated into a tab (e.g. in PipelineView),
     // there is no need to save run till an entire pipeline is over.
-    this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? this.funcCall.clone() : await this.saveRun(this.funcCall);
+    this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
   }
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});

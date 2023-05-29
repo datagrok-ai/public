@@ -8,7 +8,7 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
   settings: type.PeptidesSettings = {},
   targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {}): type.MutationCliffs {
   const nCols = monomerInfoArray.length;
-  if (nCols == 0)
+  if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
   settings.minActivityDelta ??= 0;
@@ -37,7 +37,7 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
       for (const monomerInfo of monomerInfoArray) {
         const seq1category = monomerInfo.rawData[seq1Idx];
         const seq2category = monomerInfo.rawData[seq2Idx];
-        if (seq1category == seq2category)
+        if (seq1category === seq2category)
           continue;
 
         substCounter++;
@@ -54,7 +54,7 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
         });
       }
 
-      if (substCounterFlag || substCounter == 0)
+      if (substCounterFlag || substCounter === 0)
         continue;
 
       for (const tempDataElement of tempData) {

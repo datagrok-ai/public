@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {chemGetFingerprints} from '../chem-searches';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {Fingerprint} from '../utils/chem-common';
@@ -7,6 +8,8 @@ import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/workers/di
 import {ISequenceSpaceParams, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {malformedDataWarning, setEmptyBitArraysForMalformed} from '../utils/malformed-data-utils';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { DimReductionMethods, ITSNEOptions, IUMAPOptions } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import { BitArrayMetrics, BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
@@ -41,4 +44,29 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
   const axes = ['Embed_X', 'Embed_Y'];
   const colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
   return axes.map((it) => `${it}_${colNameInd}`);
+}
+
+export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
+  similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
+  options?: IUMAPOptions | ITSNEOptions):  Promise<DG.Viewer | undefined>{
+  const embedColsNames = getEmbeddingColsNames(table);
+
+  const chemSpaceParams = {
+    seqCol: molecules,
+    methodName: methodName,
+    similarityMetric: similarityMetric as BitArrayMetrics,
+    embedAxesNames: [embedColsNames[0], embedColsNames[1]],
+    options: options,
+  };
+  const chemSpaceRes = await chemSpace(chemSpaceParams);
+  const embeddings = chemSpaceRes.coordinates;
+
+  for (const col of embeddings)
+    table.columns.add(col);
+
+  if (plotEmbeddings) {
+    return grok.shell
+      .tableView(table.name)
+      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+  }
 }

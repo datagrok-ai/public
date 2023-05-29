@@ -9,9 +9,9 @@ import {
   Matrix,
 } from '@datagrok-libraries/utils/src/type-declarations';
 import {
-  calcDistanceMatrix,
   transposeMatrix,
   assert,
+  calcNormalizedDistanceMatrix,
 } from '@datagrok-libraries/utils/src/vector-operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics/typed-metrics';
@@ -44,6 +44,11 @@ export interface IDimReductionParam {
   tooltip: string;
   placeholder?: string;
 }
+
+/** Umap uses precalculated distance matrix to save time. though for too much data, memory becomes constraint.
+ * if we have 100 000 rows, distance matrix will take ~10gb of memory and probably overflow.
+ */
+export const MAX_DISTANCE_MATRIX_ROWS = 10000;
 
 export class UMAPOptions {
   learningRate: IDimReductionParam =  {uiName: 'Learinig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
@@ -101,7 +106,7 @@ class TSNEReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
   public transform(): { [key: string]: Matrix } {
-    const distance = calcDistanceMatrix(this.data, this.distanceFn);
+    const distance = calcNormalizedDistanceMatrix(this.data, this.distanceFn);
     this.reducer.initDataDist(distance);
 
     for (let i = 0; i < this.iterations; ++i) {
@@ -111,7 +116,7 @@ class TSNEReducer extends Reducer {
   }
 }
 
-export type UmapOptions = Options & UMAPParameters;
+export type UmapOptions = Options & UMAPParameters & {preCalculateDistanceMatrix?: boolean};
 
 /**
  * Implements UMAP dimensionality reduction.
@@ -123,7 +128,8 @@ class UMAPReducer extends Reducer {
   protected reducer: umj.UMAP;
   protected distanceFn: Function;
   protected vectors: number[][];
-
+  protected distanceMatrix?: Matrix;
+  protected usingDistanceMatrix: boolean;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -135,11 +141,18 @@ class UMAPReducer extends Reducer {
     assert('distanceFn' in options);
 
     this.distanceFn = options.distanceFn!;
-    this.vectors = [];
-    options.distanceFn = this._encodedDistance.bind(this);
+    this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
+    this.usingDistanceMatrix = !(!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS);
+    if (!this.usingDistanceMatrix) {
+      options.distanceFn = this._encodedDistance.bind(this);
+    } else {
+      this.distanceMatrix = Array(this.data.length).fill(0).map(() => new Float32Array(this.data.length).fill(0));
+      options.distanceFn = this._encodedDistanceMatrix.bind(this);
+    }
     if (this.data.length < 15)
       options.nNeighbors = this.data.length - 1;
     this.reducer = new umj.UMAP(options);
+    // this.reducer.distanceFn = this._encodedDistance.bind(this);
   }
 
   /**
@@ -151,6 +164,10 @@ class UMAPReducer extends Reducer {
    * @return {number} Distance metric.
    * @memberof UMAPReducer
    */
+  protected _encodedDistanceMatrix(a: number[], b: number[]): number {
+    return this.distanceMatrix![a[0]][b[0]];
+  }
+
   protected _encodedDistance(a: number[], b: number[]): number {
     return this.distanceFn(this.data[a[0]], this.data[b[0]]);
   }
@@ -172,15 +189,15 @@ class UMAPReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding.
    */
   public transform(): { [key: string]: Matrix } {
-    this._encode();
-
+    if(this.usingDistanceMatrix)
+      this.distanceMatrix = calcNormalizedDistanceMatrix(this.data, this.distanceFn as DistanceMetric);
     const embedding = this.reducer.fit(this.vectors);
 
     function arrayCast2Coordinates(data: number[][]): Coordinates {
       return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));
     }
 
-    return {embedding: arrayCast2Coordinates(embedding)};
+    return {embedding: arrayCast2Coordinates(embedding), ...(this.distanceMatrix ? {distance: this.distanceMatrix} : {})};
   }
 }
 

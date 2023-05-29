@@ -14,7 +14,7 @@ import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getDataFrame, getFuncRunLabel, getPropViewers} from './shared/utils';
+import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -600,23 +600,34 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const sub = val.onChanged.subscribe(() => {
+    const syncSub = () => {
       const newValue = this.funcCall!.inputs[val.name];
       if (val.property.propertyType === DG.TYPE.DATA_FRAME)
         this.dfInputRecreate(t, val, newValue);
-        // there is no notify for DG.FuncCallParam, so we need to
-        // check if the value is not the same for floats, otherwise we
-        // will overwrite a user input with a lower precicsion decimal
-        // representation
+      // there is no notify for DG.FuncCallParam, so we need to
+      // check if the value is not the same for floats, otherwise we
+      // will overwrite a user input with a lower precicsion decimal
+      // representation
       else if (((typeof newValue === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue !== 'number') {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
       }
+      this.hideOutdatedOutput();
       this.checkDisability.next();
-    });
+    };
 
+    const sub = val.onChanged.subscribe(syncSub);
     this.subs.push(sub);
+
+    this.subs.push(
+      this.funcCallReplaced.subscribe(() => {
+        const newParam = this.funcCall.inputParams[val.property.name];
+
+        const sub = newParam.onChanged.subscribe(syncSub);
+        this.subs.push(sub);
+      }),
+    );
   }
 
   private isRunnable() {
@@ -654,6 +665,8 @@ export class RichFunctionView extends FunctionView {
       this.funcCall!.inputs[val.name] = t.value;
       if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
       this.checkDisability.next();
+
+      this.hideOutdatedOutput();
     });
   }
 
@@ -676,6 +689,14 @@ export class RichFunctionView extends FunctionView {
       });
       this.subs.push(sub);
     }
+  }
+
+  private hideOutdatedOutput() {
+    this.outputsTabsElem.panes
+      .filter((tab) => tab.name !== 'Input')
+      .forEach((tab) => $(tab.header).hide());
+
+    if (this.outputsTabsElem.getPane('Input')) this.outputsTabsElem.currentPane = this.outputsTabsElem.getPane('Input');
   }
 
   /**
@@ -712,7 +733,7 @@ export class RichFunctionView extends FunctionView {
       const visibleTitle = dfInput.options.caption || dfInput.name;
       const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT));
 
-      const currentDf = getDataFrame(lastCall, dfInput.name, DIRECTION.INPUT);
+      const currentDf = lastCall.inputs[dfInput.name];
       dfToSheet(currentDfSheet, currentDf);
     });
 
@@ -729,7 +750,7 @@ export class RichFunctionView extends FunctionView {
       const visibleTitle = dfOutput.options.caption || dfOutput.name;
       const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
 
-      const currentDf = getDataFrame(lastCall, dfOutput.name, DIRECTION.OUTPUT);
+      const currentDf = lastCall.outputs[dfOutput.name];
       dfToSheet(currentDfSheet, currentDf);
     });
 
@@ -757,7 +778,7 @@ export class RichFunctionView extends FunctionView {
 
           const dfInput = dfInputs.find((input) => input.name === inputParam.name)!;
           const visibleTitle = dfInput!.options.caption || inputParam.name;
-          const currentDf = getDataFrame(lastCall, dfInput.name, DIRECTION.INPUT);
+          const currentDf = lastCall.inputs[dfInput.name];
 
           for (const [index, viewer] of nonGridViewers.entries()) {
             await plotToSheet(
@@ -783,7 +804,7 @@ export class RichFunctionView extends FunctionView {
 
           const dfOutput = dfOutputs.find((output) => output.name === outputParam.property.name)!;
           const visibleTitle = dfOutput.options.caption || outputParam.property.name;
-          const currentDf = getDataFrame(lastCall, dfOutput.name, DIRECTION.OUTPUT);
+          const currentDf = lastCall.outputs[dfOutput.name];
 
           for (const [index, viewer] of nonGridViewers.entries()) {
             if (viewer.type === DG.VIEWER.STATISTICS) {
@@ -830,7 +851,7 @@ export class RichFunctionView extends FunctionView {
 }
 
 const getSheetName = (name: string, direction: DIRECTION) => {
-  const idealName = `${direction} - ${name}`;
+  const idealName = `${name}`;
   return (idealName.length > 31) ? name.substring(0, 32) : idealName;
 };
 

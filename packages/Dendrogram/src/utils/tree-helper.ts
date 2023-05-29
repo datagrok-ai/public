@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {
   DistanceMatrixWorker

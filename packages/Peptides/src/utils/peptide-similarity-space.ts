@@ -68,7 +68,7 @@ export async function createPeptideSimilaritySpaceViewer(table: DG.DataFrame, me
     const axisCol = table.col(axis);
     const newCol = edf.getCol(axis);
 
-    if (axisCol != null) {
+    if (axisCol !== null) {
       for (let i = 0; i < newCol.length; ++i) {
         const v = newCol.get(i);
         table.set(axis, i, v);
@@ -204,7 +204,7 @@ export class PeptideSimilaritySpaceWidget {
       for (const v of this.view.viewers) {
         const opts = v.getOptions() as {[name: string]: any};
 
-        if (opts.type == 'Scatter plot' && opts.look.xColumnName == '~X' && opts.look.yColumnName == '~Y')
+        if (opts.type === 'Scatter plot' && opts.look.xColumnName === '~X' && opts.look.yColumnName === '~Y')
           found = true;
       }
 

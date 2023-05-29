@@ -10,9 +10,9 @@ import {TreeHelper} from '../utils/tree-helper';
 import {DistanceMetric, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
-import {getClusterMatrixWorker} from '../wasm/clustering-worker-creator';
+import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 
 /*
 https://onecompiler.com/python

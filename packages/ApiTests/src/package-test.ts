@@ -32,7 +32,6 @@ import './utils/color';
 import './package/upload';
 import './grid/grid';
 import './grid/color-coding';
-import './scripts/scripts-params';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 

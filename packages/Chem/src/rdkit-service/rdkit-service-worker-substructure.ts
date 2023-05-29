@@ -3,6 +3,8 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {syncQueryAromatics} from '../utils/aromatic-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {RuleId} from '../panels/structural-alerts';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -207,5 +209,64 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       return smarts;
     }
     return '';
-  } 
+  }
+
+  getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): {[rule in RuleId]?: boolean[]} {
+    if (this._rdKitMols === null && typeof molecules === 'undefined') {
+      console.debug(`getStructuralAlerts: No molecules to process`);
+      return {};
+    }
+
+    const ruleSmartsMap: {[rule in RuleId]?: (RDMol | null)[]} = {};
+    const rules = Object.keys(alerts) as RuleId[];
+    for (const rule of rules) {
+      const ruleLength = alerts[rule]!.length;
+      ruleSmartsMap[rule] = new Array(ruleLength);
+      for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++)
+        ruleSmartsMap[rule]![smartsIdx] = this.getQMol(alerts[rule]![smartsIdx]);
+    }
+
+    const molsCount = molecules?.length ?? this._rdKitMols!.length;
+    // Prepare the result storage
+    const resultValues: {[ruleId in RuleId]?: BitArray} = {};
+    for (const rule of rules)
+      resultValues[rule] = new BitArray(molsCount, false);
+
+    // Run the structural alerts detection
+    for (let molIdx = 0; molIdx < molsCount; molIdx++) {
+      const mol = typeof molecules !== 'undefined' ? getMolSafe(molecules[molIdx], {}, this._rdKitModule).mol :
+        this._rdKitMols![molIdx];
+      if (mol === null) {
+        console.debug(`Molecule ${molIdx} is null`);
+        continue;
+      }
+
+      for (const rule of rules) {
+        const ruleSmarts = ruleSmartsMap[rule]!;
+        for (let alertIdx = 0; alertIdx < ruleSmarts.length; alertIdx++) {
+          const smarts = ruleSmarts[alertIdx];
+          if (smarts === null) {
+            console.debug(`Smarts ${alertIdx} for rule ${rule} is null at molecule ${molIdx}`);
+            continue;
+          }
+
+          const matches = mol.get_substruct_match(smarts);
+          if (matches !== '{}') {
+            resultValues[rule]!.setTrue(molIdx);
+            break;
+          }
+        }
+      }
+      mol.delete();
+    }
+
+    for (const smartsList of Object.values(ruleSmartsMap)) {
+      for (const smarts of smartsList)
+        smarts?.delete();
+    }
+
+    this._rdKitMols = null;
+
+    return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
+  }
 }

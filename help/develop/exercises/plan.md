@@ -172,11 +172,11 @@ After Day 5, you will learn how to:
 1. Scripting viewers:
    1. Watch a [Scripting viewers video](https://www.youtube.com/watch?v=jHRpOnhBAz4)
    1. Read [documentation](../how-to/develop-custom-viewer.md#scripting-viewers)
-   1. Complete [Exercise #5](exercises.md#exercise-5-creating-a-scripting-viewer)
+   1. Complete [Exercise #6](exercises.md#exercise-6-creating-a-scripting-viewer)
 1. Data access:
    1. Complete [Exercise #4](exercises.md#exercise-4-querying-databases)
    1. Read [documentation](../how-to/access-data)
-1. Complete [Exercise #6](exercises.md#exercise-6-transforming-dataframes)
+1. Complete [Exercise #7](exercises.md#exercise-7-transforming-dataframes)
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.
 
@@ -190,12 +190,12 @@ After Day 6, you will learn how to:
 
 1. Cell renderers:
    1. Read [documentation](../how-to/custom-cell-renderers.md)
-   1. Complete [Exercise #7](exercises.md#exercise-7-custom-cell-renderers)
+   1. Complete [Exercise #8](exercises.md#exercise-8-custom-cell-renderers)
 1. Connecting to a webservice:
    1. Read [documentation](../how-to/access-data)
-   1. Complete [Exercise #8](exercises.md#exercise-8-creating-an-info-panel-with-a-rest-web-service)
+   1. Complete [Exercise #9](exercises.md#exercise-9-creating-an-info-panel-with-a-rest-web-service)
 1. Building a user interface:
-   1. Complete [Exercise #9](exercises.md#exercise-9-enhancing-datagrok-with-dialog-based-functions)
+   1. Complete [Exercise #10](exercises.md#exercise-10-enhancing-datagrok-with-dialog-based-functions)
    1. Refer to [UI components](../advanced/ui.md) article
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.

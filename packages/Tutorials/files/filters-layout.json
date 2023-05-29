@@ -3,17 +3,17 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1390,
+      "width": 1391,
       "height": 913
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 424,
+          "width": 388,
           "height": 913,
           "element": {
-            "id": "ac1a4b20-ed50-11ed-af60-75bfbee6c4fc",
+            "id": "db2b5640-ed50-11ed-ee0f-091f6147daf5",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -23,7 +23,21 @@
                   "column": "smiles",
                   "active": true,
                   "columnName": "smiles",
-                  "molBlock": "\n  MJ201900                      \n\n  6  6  0  0  0  0  0  0  0  0999 V2000\n   -0.6696    1.1598    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.3839    0.7473    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.3839   -0.0776    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.6696   -0.4902    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0448   -0.0776    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0448    0.7473    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  2  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  2  0  0  0  0\n  6  1  1  0  0  0  0\nM  END\n",
+                  "molBlock": "\n  MJ201900                      \n\n  6  6  0  0  0  0  0  0  0  0999 V2000\n   -0.1116    0.6241    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8260    0.2116    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8260   -0.6134    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.1116   -1.0259    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.6028   -0.6134    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.6028    0.2116    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  2  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  2  0  0  0  0\n  6  1  1  0  0  0  0\nM  END\n",
+                  "boolInput": null
+                },
+                {
+                  "type": "PowerPack:fuzzyFilter",
+                  "column": "text",
+                  "active": true,
+                  "columnName": "text",
+                  "input": "",
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "R3 fmla",
+                  "active": true,
                   "boolInput": null
                 },
                 {
@@ -36,18 +50,6 @@
                   "showSlider": true,
                   "showMinMax": false,
                   "boolInput": null
-                },
-                {
-                  "type": "categorical",
-                  "column": "R3 fmla",
-                  "active": true,
-                  "boolInput": null
-                },
-                {
-                  "type": "categorical",
-                  "column": "text",
-                  "active": true,
-                  "boolInput": null
                 }
               ]
             },
@@ -59,7 +61,7 @@
       {
         "containerType": "fill",
         "state": {
-          "width": 965,
+          "width": 1002,
           "height": 913,
           "documentManager": true
         },
@@ -67,10 +69,10 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 965,
+              "width": 1002,
               "height": 913,
               "element": {
-                "id": "ac1a7230-ed50-11ed-c864-57db121d9c0b",
+                "id": "db2ba460-ed50-11ed-c3c6-d53e4a6a2280",
                 "type": "Grid",
                 "look": {
                   "#type": "GridLook",
@@ -94,6 +96,7 @@
                     {
                       "width": 96,
                       "columnName": "Mol Wt.",
+                      "customFormat": "0.0000000",
                       "cellType": "number",
                       "format": "0.0000000"
                     },
@@ -117,13 +120,13 @@
       }
     ],
     "floating": [],
-    "tableId": "166f1620-ed50-11ed-ae00-1103f9f0bb71",
-    "tableName": "sar_small (2)"
+    "tableId": "c9a2f6d0-ed50-11ed-a08b-f9009aac641a",
+    "tableName": "Table"
   },
-  "name": "SarSmall2",
-  "friendlyName": "sar_small (2)",
+  "name": "Table",
+  "friendlyName": "Table",
   "author": {
     "id": "fb93def0-7820-11ed-a90e-d5cadbc9618b"
   },
-  "createdOn": "2023-05-24T16:47:29.999Z"
+  "createdOn": "2023-05-25T08:05:04.544Z"
 }
