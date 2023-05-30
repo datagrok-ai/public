@@ -15,6 +15,8 @@
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
 //editor: Compute:RichFunctionViewEditor
 //meta.uploadMode: true
+//meta.runOnOpen: true
+//meta.runOnInput: true
 
 timeToCool = undefined;
 
