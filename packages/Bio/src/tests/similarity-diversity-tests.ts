@@ -41,12 +41,12 @@ async function _testSimilaritySearchViewer() {
     expect(similaritySearchViewer.idxs!.get(1), 11);
     expect(similaritySearchViewer.molCol!.get(1),
       'meI/hHis//Aca/meM/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
-    const waiter = waitForCompute(similaritySearchViewer); /* subscribe for computeCompleted event before start compute */
     molecules.dataFrame.currentRowIdx = 1;
-    await waiter;
-    expect(similaritySearchViewer.targetMoleculeIdx, 1);
-    expect(similaritySearchViewer.molCol!.get(0),
-      'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me');
+    await awaitCheck(() => similaritySearchViewer.targetMoleculeIdx === 1, 'Target molecule has not been changed', 5000);
+    await awaitCheck(() => similaritySearchViewer.molCol!.get(0) === 
+    'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me',
+    'Incorrect first similar molecule', 5000);
+    
   } finally {
     grok.shell.closeAll();
   }
@@ -78,15 +78,3 @@ function getSearchViewer(viewer: DG.Viewer, name: string) {
   }
 }
 
-async function waitForCompute(viewer: SequenceSimilarityViewer) {
-  const t = new Promise((resolve, reject) => {
-    viewer.computeCompleted.subscribe(async (_: any) => {
-      try {
-        resolve(true);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-  await t;
-}
