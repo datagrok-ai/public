@@ -250,9 +250,11 @@ export function fitSeries(series: IFitSeries, statistics: boolean = false): FitR
   // // params are: [max, tan, IC50, min]
   // const initialParams: FitParam[] = [{value: dataBounds.bottom}, {value: slope}, {value: xAtMedY}, {value: dataBounds.top}];
   let initialParams: FitParam[] = [];
-  if (series.parameters)
-    initialParams = [{value: series.parameters[0]}, {value: series.parameters[1]}, {value: series.parameters[2]},
-    {value: series.parameters[3]}];
+  if (series.parameters) {
+    for (let i = 0; i < series.parameters.length; i++) {
+      initialParams[i] = {value: series.parameters[i]};
+    }
+  }
 
   return fit(
     {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)},
