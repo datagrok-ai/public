@@ -27,10 +27,10 @@ jobs:
           echo "$COMMIT_INFO"
           PARENT_COUNT=$(echo "$COMMIT_INFO" | jq '.parents | length')
           if [[ $PARENT_COUNT -gt 1 ]]; then
-            echo "::set-output name=is_merge_commit::true"
+            echo "is_merge_commit=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=is_merge_commit::false"
-          fi
+            echo "is_merge_commit=false" >> $GITHUB_OUTPUT
+          fi 
 
   this-is-merge-commit:
     needs: process-merge-commit
