@@ -451,7 +451,6 @@ export class TestManager extends DG.ViewBase {
         break;
       }
     }
-    grok.shell.closeAll();
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType,
         grok.shell.lastError.length ? grok.shell.lastError : '');
