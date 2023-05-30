@@ -133,7 +133,7 @@ Options:
 --csv               Save the test report in a CSV file
 --gui               Launch graphical interface (non-headless mode)
 --catchUnhandled    Catch unhandled exceptions during test execution (default=true)
---report            Report failed tests to audit (default=false)
+--report            Report failed tests to audit, notifies package author (default=false)
 --skip-build        Skip the package build step
 --skip-publish      Skip the package publication step
 
