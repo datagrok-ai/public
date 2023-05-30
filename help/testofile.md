@@ -1,3 +1,3 @@
 # This is testfile
 
-Testfile. addrm
+Testfile. add
