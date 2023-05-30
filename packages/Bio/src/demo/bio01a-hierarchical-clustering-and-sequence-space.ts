@@ -78,8 +78,8 @@ export async function demoBio01aUI() {
         });
         df.currentRowIdx = 27;
       }, {
-        // eslint-disable-next-line max-len
-        description: 'Selecting a group of rows from a data frame to show their similarity and proximity to each other on a viewer..',
+        description: 'Selecting a group of rows from a data frame' +
+         ' to show their similarity and proximity to each other on a viewer..',
         delay: 2000,
       })
       .start();
