@@ -42,7 +42,7 @@ category('Radar', () => {
       showMin: true,
       showMax: true,
       showValues: true,
-      valuesColumnNames: null,
+      valuesColumnNames: ['AGE', 'COUNTRYID'],
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });
