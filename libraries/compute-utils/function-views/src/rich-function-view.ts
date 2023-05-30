@@ -67,7 +67,7 @@ export class RichFunctionView extends FunctionView {
    * Showing UI after completion of function call.
    * @param runFunc
    */
-  public override onAfterRun(runFunc: DG.FuncCall): Promise<void> {
+  public override onAfterSaveRun(): Promise<void> {
     const firstOutputTab = this.outputsTabsElem.panes.find((tab) => tab.name !== 'Input');
     if (firstOutputTab) this.outputsTabsElem.currentPane = firstOutputTab;
 
