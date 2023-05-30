@@ -1,10 +1,10 @@
-import {after, before, category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import {createTableView, readDataframe} from './utils';
 import * as grok from 'datagrok-api/grok';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
-let viewList: DG.ViewBase[];
+let viewList: (DG.JsViewer | DG.ViewBase)[];
 let dfList: DG.DataFrame[];
 
 
@@ -32,12 +32,13 @@ category('similarity/diversity', async () => {
 async function _testSimilaritySearchViewer() {
   const molecules = await createTableView('tests/sample_MSA_data.csv');
   const viewer = molecules.addViewer('Sequence Similarity Search');
-  await delay(100);
-  const similaritySearchViewer = getSearchViewer(viewer, 'Sequence Similarity Search');
+  await awaitCheck(() => getSearchViewer(viewer, 'Sequence Similarity Search') !== undefined,
+    'Sequence Similarity Search has not been created', 5000);
+  const similaritySearchViewer: SequenceSimilarityViewer = getSearchViewer(viewer, 'Sequence Similarity Search');
   viewList.push(similaritySearchViewer);
   viewList.push(molecules);
-  if (!similaritySearchViewer.molCol)
-    await waitForCompute(similaritySearchViewer);
+  await awaitCheck(() => similaritySearchViewer.root.getElementsByClassName('d4-grid').length !== 0,
+    'Sequence Similarity Search has not been created', 5000);
   expect(similaritySearchViewer.fingerprint, 'Morgan');
   expect(similaritySearchViewer.distanceMetric, 'Tanimoto');
   expect(similaritySearchViewer.scores!.get(0), DG.FLOAT_NULL);
@@ -60,12 +61,13 @@ async function _testSimilaritySearchViewer() {
 async function _testDiversitySearchViewer() {
   const molecules = await createTableView('tests/sample_MSA_data.csv');
   const viewer = molecules.addViewer('Sequence Diversity Search');
-  await delay(10);
+  await awaitCheck(() => getSearchViewer(viewer, 'Sequence Diversity Search') !== undefined,
+    'Sequence Diversity Search has not been created', 5000);
   const diversitySearchviewer = getSearchViewer(viewer, 'Sequence Diversity Search');
   viewList.push(diversitySearchviewer);
   viewList.push(molecules);
-  if (!diversitySearchviewer.renderMolIds)
-    await waitForCompute(diversitySearchviewer);
+  await awaitCheck(() => diversitySearchviewer.root.getElementsByClassName('d4-grid').length !== 0,
+    'Sequence Diversity Search has not been created', 5000);
   expect(diversitySearchviewer.fingerprint, 'Morgan');
   expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
   expect(diversitySearchviewer.initialized, true);
