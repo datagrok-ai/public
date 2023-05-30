@@ -73,6 +73,35 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     grok.shell.o = gridCell;
+
+    const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
+      ? convertXMLToIFitChartData(gridCell.cell.value)
+      : getChartData(gridCell);
+
+    const screenBounds = gridCell.bounds.inflate(-6, -6);
+    const dataBox = layoutChart(screenBounds)[0];
+    const dataBounds = getChartBounds(data);
+    const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
+
+    for (const series of data.series!) {
+      if (!series.clickToToggle)
+        continue;
+      for (let i = 0; i < series.points.length!; i++) {
+        const p = series.points[i];
+        const screenX = viewport.xToScreen(p.x);
+        const screenY = viewport.yToScreen(p.y);
+        const pxPerMarkerType = (p.outlier ? 6 : 4) / 2;
+        if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
+          e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
+            p.outlier = !p.outlier;
+            // temporarily works only for JSON structure
+            if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
+              gridCell.cell.value = JSON.stringify(data);
+            }
+            return;
+          }
+      }
+    }   
   }
 
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {

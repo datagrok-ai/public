@@ -146,7 +146,7 @@ export const fitSeriesProperties: Property[] = [
   Property.js('fitLineColor', TYPE.STRING,
     {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
-    'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true}),
+    'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
   Property.js('autoFit', TYPE.BOOL,
     {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
   Property.js('showFitLine', TYPE.BOOL,
@@ -257,7 +257,7 @@ export function fitSeries(series: IFitSeries, statistics: boolean = false): FitR
   }
 
   return fit(
-    {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)},
+    {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)},
     initialParams, sigmoid, FitErrorModel.Constant, 0.05, statistics);
 }
 
