@@ -36,57 +36,49 @@ In Datagrok, dataframes (data tables), functions, entities, views, and info pane
 
 ### Dataframe
 
-A dataframe (also a _table_ or a _data table_) is the foundation of the Datagrok platform. Serving as an in-memory database, a dataframe loads up data as soon as you open it in Datagrok. It is a table-like structure with rows and columns. These columns are named and can hold various data types such as `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`. 
+A _dataframe_ (also a _table_ or a _data table_) is a key component of Datagrok's in-memory data engine. Acting as an in-memory database, the dataframe loads data from the associated [data source](../access/access.md#data-sources) as soon as you open or generate it in Datagrok. Subsequent data operations, including [transformation](../transform/data-wrangling.md), [statistical computations](../explore), and [visualization](../visualize), are performed directly on the dataframe. This direct interaction allows [interactive exploration](../explore/exploratory-data-analysis.md) of big datasets - like the entire 2.7 million molecules from the ChEMBL database - right in the browser.
 
-Dataframe is central to the Datagrok's proprietary in-memory data engine, which is built to optimize operations like [data access](../access/access.md), [transformation](../transform/), [visualization](../visualize/), and [analysis](../explore/). With this powerful data engine, you can load and interactively explore big datasets - even something as large as the entire 2.7 million molecules from the ChEMBL database - right in your browser.
+A dataframe has a structure similar to a table, composed of rows and named columns. These columns support various data types including `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `float`, `datetime`. Unlike Excel, columns in Datagrok are strongly-typed. This means that every cell in a column belongs to the data type specified for that column.
 
-:::note developers
-
-Datagrok's data engine runs entirely in the browser, but the same code can run on Datagrok servers for tasks like serialization. To learn how Datagrok stores and processes data and to optimize performance for large datasets, see [Performance](../develop/advanced/performance.md). For additioal technical details, see [JS API: Dataframe](https://datagrok.ai/js-api/classes/dg.DataFrame).
-
-:::
-
-The dataframe does more than just holds your data. By adding [tags](../discover/tags.md) like units, data format, or semantic type to a column, you can connect that column's data to its logical type, such as a zip code or a molecule. This functionality is essential for [data discovery](../discover/data-augmentation.md) and [extending or customizng the platform](../develop/advanced/). 
+When parsing data, Datagrok automatically annotates dataframes and dataframe columns with basic [metadata](../discover/metadata.md) like its source or import time. It also automatically detects [certain semantic (logical) types](../discover/semantic-types.md#automatic-semantic-type-detection) like a zip code or a stock ticker. [Entities](#entities) like dataframes and dataframe columns can be [tagged](../discover/tags.md) with custom metadata and logical types. This functionality is essential for [data discovery](../discover/data-augmentation.md) and extensibility of the platform.
 
 <details>
-<summary>Example: Semantic-type tags as a basis for cheminformatics capability</summary>
+<summary>Example: Cheminformatics capability</summary>
 
-Upon installing the [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem), which introduces the [semantic type](../discover/semantic-types.md) _molecule_, Datagrok gains the ability to recognize and process molecular data. Consider a scenario where you open a file containing molecules represented in the SMILES format. Without the Chem package, the data is presented as text. However, with the Chem package installed,opening the same data leads to the following:
+An underlying raw data type of a molecule is usually a `string`. Installing the [Chem package](https://github.com/datagrok-ai/public/tree/master/packages/Chem), which introduces the [semantic type](../discover/semantic-types.md) _molecule_, gives Datagrok the ability to recognize and work with molecules. For example, when you open a file with molecules represented in the SMILES format, the following happens with the Chem package installed:
 
-* Data is parsed, and the semantic type _molecule_ is assigned to the corresponding column.
+* Data is parsed, and the semantic type _molecule_ is assigned to the corresponding string column.
 * Molecules are automatically rendered in the spreadsheet.
 * Column tooltip now shows most diverse molecules in the dataset.
 * Default column filter is now a sketcher-driven substructure search.
 * A top menu item labeled **Chem** appears.
-* The **Context Panel** on the right shows molecule-specific _info panes_, such as **Toxicity**, **Drug Likeness**, and others.
+* The **Context Panel** on the right shows molecule-specific [info panes](#info-panes), such as **Toxicity**, **Drug Likeness**, and others.
 
 ![Data augmentation with sematic types](img/temp-datagrok-sem-types.gif)
 
 </details>
 
-Datagrok supports loading tabular data from [various sources](../access/access.md#data-sources), including [local files](../access/file-shares.mdx), [databases](../access/databases.mdx), and [webservices](../access/open-api.md). It also detects tabular data within text-based file formats such as TXT, JSON, or HTML and automatically converts it into a tabular format. 
-
-When loading database tables to a dataframe, you can processes, filter, and transform it using [visual queries](../access/databases.mdx#querying-data) or programmatically using [functions](#functions). Another option is to open a dataset and transform or cleanse it using available menus and context actions.
-
-When parsing data, Datagrok automatically annotates tables and table columns with basic metadata like its source or import time. You can add your own annotations as key-value pairs from the user interface. You can leverage table and column metadata as search criteria in [projects](../datagrok/project.md) and filter tables using [smart search](smart-search.md) based on various fields like ID, name, rowCount, colCount, createdOn, updatedOn, author ([user](../govern/user.md) object),starredBy ([user](../govern/user.md) object), commentedBy ([user](../govern/user.md) object).
-
-<details>
-<summary>How to add metadata</summary>
-
-To add your own annotations as key-value pairs from the user interface, follow this steps:
-
-1. Open a dataset in Datagrok.
-1. Right-click the header of the column you want to annotate and select **Properties...**.
-1. [ADD DESCRIPTION] 
-
-</details>
-
-<details>
-<summary>How to search and filter using metadata</summary> 
-
-</details>
- 
 Dataframes are visualized in a [Table view](#table-view) using a [grid](../visualize/viewers/grid.md) viewer.
+
+:::note developers
+
+Datagrok's data engine runs entirely in the browser, but the same code can run on Datagrok servers for tasks like serialization. To learn how Datagrok stores and processes data and to optimize performance for large datasets, see [Performance](../develop/advanced/performance.md). For additional technical information, see [JS API: Dataframe](https://datagrok.ai/js-api/classes/dg.DataFrame).
+
+:::
+
+### Entities
+
+_Entities_ are distinct classes of objects linked to _dataframes_, such as molecules, users, data connections, or function calls. All entities within a class share the same data type, data attributes, and a set of operations that can be performed on them.
+
+<details>
+<summary>Expand to see a list of entities</summary>
+
+
+
+</details>
+
+Entities can be defined by users or obtained programmatically using the `grok.data.getEntities`, which retrieves entities associated with a specific dataframe, and their data can be loaded from or saved to dataframes.
+
 
 ### Functions
 
@@ -317,21 +309,6 @@ Datagrok provides a number of enhancements to function parameters, including the
 
 
 
-
-### Entities
-
-_Entities_ are associated with dataframes and represent certain classes of objects, such as molecules, users, data connections, or function calls. 
-
-<details>
-<summary>Expand to see a list of entities</summary>
-
-
-
-</details>
-
-Entities are classified in terms of operations applicable to them, data types, or other defined data attributes. These classes have a common set of properties and operations that can be applied to them. 
-
-Entities can be defined by users or obtained programmatically using the `grok.data.getEntities`, which retrieves entities associated with a specific dataframe, and their data can be loaded from or saved to dataframes.
 
 
 
