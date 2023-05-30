@@ -31,7 +31,6 @@ jobs:
             echo "::set-output name=is_merge_commit::true"
           else
             echo "::set-output name=is_merge_commit::false"
-          }
 
   this-is-merge-commit:
     needs: process-merge-commit
