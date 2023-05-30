@@ -13,6 +13,8 @@ on:
 jobs:
   process-merge-commit:
     runs-on: ubuntu-20.04
+    outputs:
+      merge_commit: ${{ steps.commit-details.outputs.is_merge_commit }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -35,7 +37,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Merge commit announce
-        if: needs.process-merge-commit.steps.outputs.is_merge_commit == 'true'
+        if: needs.process-merge-commit.outputs.merge_commit == 'true'
         run: |
           echo "This is a merge commit push. No actions will be runned"
 
@@ -43,7 +45,7 @@ jobs:
     name: Lint
     needs: process-merge-commit
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.steps.outputs.is_merge_commit == 'false'
+    if: needs.process-merge-commit.outputs.merge_commit == 'false'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -77,7 +79,7 @@ jobs:
   convert:
     name: Convert to HTML
     needs: [lint, process-merge-commit]
-    if: needs.process-merge-commit.steps.outputs.is_merge_commit == 'false'
+    if: needs.process-merge-commit.outputs.merge_commit == 'false'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -150,7 +152,7 @@ jobs:
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.steps.outputs.is_merge_commit == 'false'
+    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.outputs.merge_commit == 'false'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -199,7 +201,7 @@ jobs:
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.steps.outputs.is_merge_commit == 'false'
+    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.outputs.merge_commit == 'false'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
