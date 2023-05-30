@@ -16,6 +16,8 @@ export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, e
 
   for (let i = 0; i < molecules.length; i++) {
     const molString = molecules.get(i);
+    if (!molString)
+      continue;
     const molSafe = getMolSafe(molString!, {}, rdkit);
     if (molSafe.mol !== null && !molSafe.isQMol && molSafe.mol.is_valid())
       mols.push(molSafe.mol);
