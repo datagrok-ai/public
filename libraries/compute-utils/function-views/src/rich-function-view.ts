@@ -108,8 +108,8 @@ export class RichFunctionView extends FunctionView {
   public buildIO(): HTMLElement {
     const inputBlock = this.buildInputBlock();
 
-    ui.tools.handleResize(inputBlock, (width) => {
-      if (width < 350) {
+    ui.tools.handleResize(inputBlock, () => {
+      if (Array.from(this.formTabsElem.getPane('Input').content.children).some((child) => $(child).width() < 250)) {
         $(this.formTabsElem.getPane('Output').content).addClass('ui-form-condensed');
         $(this.formTabsElem.getPane('Input').content).addClass('ui-form-condensed');
       } else {
@@ -181,7 +181,7 @@ export class RichFunctionView extends FunctionView {
       $(this.controllsDiv).css({'margin-top': '0px', 'position': 'sticky'});
     }
 
-    const controlsWrapper = ui.div(this.controllsDiv, 'ui-form');
+    const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
     $(controlsWrapper).css('padding', '0px');
 
     return ui.divV([
@@ -468,7 +468,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private renderOutputForm(): HTMLElement {
-    const outputs = ui.divV([], 'ui-form');
+    const outputs = ui.divV([], 'ui-form ui-form-wide');
     let prevCategory = 'Misc';
     wu(this.funcCall.outputParams.values() as DG.FuncCallParam[])
       .filter((val) => !!val)
@@ -480,7 +480,13 @@ export class RichFunctionView extends FunctionView {
             this.funcCall.outputs[prop.name] = file;
           });
           if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category));
+            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+
+          $(t.root).css({
+            'width': `${prop.options['block'] ?? '100'}%`,
+            'box-sizing': 'border-box',
+            'padding-right': '5px',
+          });
 
           outputs.append(t.root);
         } else {
@@ -500,7 +506,13 @@ export class RichFunctionView extends FunctionView {
           });
 
           if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category));
+            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+
+          $(t.root).css({
+            'width': `${prop.options['block'] ?? '100'}%`,
+            'box-sizing': 'border-box',
+            'padding-right': '5px',
+          });
 
           outputs.append(t.root);
         }
@@ -515,7 +527,8 @@ export class RichFunctionView extends FunctionView {
   }
 
   private renderInputForm(): HTMLElement {
-    const inputs = ui.divV([], 'ui-form');
+    const inputs = ui.divH([], 'ui-form ui-form-wide');
+    $(inputs).css({'flex-wrap': 'wrap'});
     let prevCategory = 'Misc';
     wu(this.funcCall.inputParams.values() as DG.FuncCallParam[])
       .filter((val) => !!val)
@@ -534,8 +547,13 @@ export class RichFunctionView extends FunctionView {
           }
 
           if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category));
+            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
 
+          $(t.root).css({
+            'width': `${prop.options['block'] ?? '100'}%`,
+            'box-sizing': 'border-box',
+            'padding-right': '5px',
+          });
           inputs.append(t.root);
           this.afterInputPropertyRender.next({prop, input: t});
         } else {
@@ -561,7 +579,13 @@ export class RichFunctionView extends FunctionView {
             this.runOnInput(t, val);
 
           if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category));
+            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+
+          $(t.root).css({
+            'width': `${prop.options['block'] ?? '100'}%`,
+            'box-sizing': 'border-box',
+            'padding-right': '5px',
+          });
 
           inputs.append(t.root);
           this.afterInputPropertyRender.next({prop, input: t});
@@ -580,6 +604,7 @@ export class RichFunctionView extends FunctionView {
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
     inputs.style.paddingLeft = '0px';
+    inputs.style.maxWidth = '100%';
     this.checkDisability.next();
 
     return inputs;
