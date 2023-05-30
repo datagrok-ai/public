@@ -21,12 +21,7 @@ jobs:
       - name: Get commit details
         id: commit-details
         run: |
-          COMMIT_SHA=$(git rev-parse HEAD)
-          COMMIT_INFO=$(curl -sH "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/commits/${COMMIT_SHA}")
-          echo "$COMMIT_INFO"
-          PARENT_COUNT=$(echo "$COMMIT_INFO" | jq '.parents | length')
-          if [[ $PARENT_COUNT -gt 1 ]]; then
+          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]] || [[ $(git log -n 1 --pretty=%B) == *"branch 'origin/master'"* ]]; then
             echo "is_merge_commit=true" >> $GITHUB_OUTPUT
           else
             echo "is_merge_commit=false" >> $GITHUB_OUTPUT
