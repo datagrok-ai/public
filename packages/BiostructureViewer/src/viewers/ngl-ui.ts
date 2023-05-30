@@ -4,7 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import * as NGL from 'NGL';
 
-/** @returns {DG.View} */
+/**
+ * @param {any} file
+ * @return {DG.View} */
 export function nglViewUI(file: any): DG.View {
   const view = DG.View.create();
   const host = ui.div([], 'd4-ngl-viewer');

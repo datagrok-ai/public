@@ -17,7 +17,7 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
   const availableColNames = (table: DG.DataFrame): string[] => {
     return table.columns.toList()
       .filter(
-        (col) => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === DG.SEMTYPE.MACROMOLECULE
+        (col) => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === DG.SEMTYPE.MACROMOLECULE,
       ).map((col) => col.name);
   };
 
@@ -46,7 +46,7 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
     tableInput.root,
     columnsInputDiv,
     distanceInput.root,
-    linkageInput.root
+    linkageInput.root,
   ]);
 
   ui.dialog('Hierarchical Clustering')
@@ -69,7 +69,7 @@ export async function hierarchicalClusteringUI(
   colNameList: string[],
   distance: DistanceMetric = DistanceMetric.Euclidean,
   linkage: string,
-  neighborWidth: number = 300
+  neighborWidth: number = 300,
 ): Promise<void> {
   const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
@@ -112,7 +112,7 @@ export async function hierarchicalClusteringUI(
       distance);
 
     const clusterMatrixWorker = getClusterMatrixWorker(
-       distanceMatrix!.data, preparedDf.rowCount, linkageCode
+       distanceMatrix!.data, preparedDf.rowCount, linkageCode,
     );
     const clusterMatrix = await clusterMatrixWorker;
 
@@ -149,7 +149,7 @@ export async function hierarchicalClusteringUI(
 }
 
 export function hierarchicalClusteringFilterDfForNulls(
-  df: DG.DataFrame, colNameSet: Set<string>
+  df: DG.DataFrame, colNameSet: Set<string>,
 ): [DG.DataFrame, Int32Array] {
   // filteredNullsDf to open new table view
   const colList: DG.Column[] = df.columns.toList().filter((col) => colNameSet.has(col.name));

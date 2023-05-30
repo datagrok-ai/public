@@ -30,10 +30,11 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
   default:
     throw new Error(`ScalingError: method \`${scaling}\` is not available.`);
   }
+  const activityColData = activityCol.getRawData();
   const scaledCol: DG.Column<number> = DG.Column.float(C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.length)
     .init((i) => {
-      const val = activityCol.get(i);
-      return val ? formula(val) : val;
+      const val = activityColData[i];
+      return val === DG.FLOAT_NULL || val === DG.INT_NULL ? val : formula(val);
     });
 
   return scaledCol;

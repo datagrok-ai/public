@@ -3,31 +3,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TestViewerForProperties} from './viewers/test-viewer-for-properties';
-import {TestCustomFilter} from './viewers/test-custom-filter';
 import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
-
-
-// -- Viewers --
-
-//name: TestViewerForProperties
-//description: Viewer to test properties and others
-//tags: viewer, panel
-//output: viewer result
-export function testViewerForProperties() {
-  return new TestViewerForProperties();
-}
-
-// -- Filters --
-
-//name: testCustomFilter
-//description: Test custom filter
-//tags: filter
-//output: filter result
-export function testCustomFilter(): DG.Filter {
-  const flt: TestCustomFilter = new TestCustomFilter();
-  return flt;
-}
 
 //name: getTable
 //input: string name

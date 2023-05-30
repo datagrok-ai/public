@@ -80,7 +80,7 @@ export function generateTreeDialog() {
       const leafCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Leaf',
         leafList.map((n) => n.name));
       const activityCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Activity',
-        leafList.map((n) => Math.random()));
+        leafList.map((_n) => Math.random()));
 
       const df = DG.DataFrame.fromColumns([leafCol, activityCol]);
       await _package.files.writeAsText(filenameInput.value + '.nwk', treeNwk);

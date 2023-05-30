@@ -8,8 +8,8 @@ import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimension
 export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: number, method: DimReductionMethods, colName: string) {
   await grok.data.detectSemanticTypes(df);
   const scatterPlot = await activityCliffs(
-    df, df.getCol(colName), df.getCol('Activity'),
-    50, method);
+    df, df.getCol(colName), df.getCol('activity'),
+    90, method);
   // const scatterPlot = (await grok.functions.call('Bio:activityCliffs', {
   //   table: df, molecules: df.getCol(colName), activities: df.getCol('Activity'),
   //   similarity: 50, methodName: method

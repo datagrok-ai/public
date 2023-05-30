@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 
 import * as lev from 'fastest-levenshtein';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {demoSequenceSpace, handleError} from './utils';
