@@ -210,7 +210,7 @@ export class PeptidesModel {
 
   get analysisView(): DG.TableView {
     this._analysisView ??=
-      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.getTag(C.TAGS.UUID) === this.id) ??
+      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id) ??
         grok.shell.addTableView(this.df);
     if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1')
       grok.shell.v = this._analysisView;
