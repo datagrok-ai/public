@@ -15,7 +15,7 @@ import {
   PluginLayoutControlsDisplayType,
   RegionStateOptionsType,
   RepresentationType,
-  SimpleRegionStateOptionsType
+  SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
@@ -184,13 +184,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.layoutRegionStateLeft = this.string(PROPS.layoutRegionStateLeft, defaults.layoutRegionStateLeft,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType)}) as RegionStateOptionsType;
     this.layoutRegionStateTop = this.string(PROPS.layoutRegionStateTop, defaults.layoutRegionStateTop,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateRight = this.string(PROPS.layoutRegionStateRight, defaults.layoutRegionStateRight,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateBottom = this.string(PROPS.layoutRegionStateBottom, defaults.layoutRegionStateBottom,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutControlsDisplay = this.string(PROPS.layoutControlsDisplay, defaults.layoutControlsDisplay,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType)});
@@ -284,9 +284,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
               left: this.layoutRegionStateLeft,
               top: this.layoutRegionStateTop,
               right: this.layoutRegionStateRight,
-              bottom: this.layoutRegionStateBottom
-            }
-          }
+              bottom: this.layoutRegionStateBottom,
+            },
+          },
         });
       }
         break;
@@ -508,7 +508,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       onClick: (event: PointerEvent) => {
         event.preventDefault();
         $(fileEl).trigger('click');
-      }
+      },
     });
     this.splashDiv = ui.div([fileLink, fileEl],
       {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
@@ -558,7 +558,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   private ligands: LigandMap = {selected: [], current: null, hovered: null};
   private ligandsPromise: Promise<void> = Promise.resolve();
 
-  /** Unify get mol* component key/ref, not static for performance */
+  /** Unify get mol* component key/ref, not static for performance
+   * @param {StructureComponentRef} comp
+   * @return {string | null}*/
   getCompKey(comp: StructureComponentRef): string | null {
     return comp.cell.sourceRef ?? null; // comp.version
   }
@@ -584,7 +586,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     const allLigands: LigandMapItem[] = [
       ...this.ligands.selected,
       ...(this.ligands.current ? [this.ligands.current] : []),
-      ...(this.ligands.hovered ? [this.ligands.hovered] : [])
+      ...(this.ligands.hovered ? [this.ligands.hovered] : []),
     ];
 
     const refRemovingPromises: Promise<void>[] = [];
@@ -613,7 +615,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.ligands.hovered = !this.showMouseOverRowLigand ? null :
       this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, structureRefs: null} : null;
 
-    /** Adds ligand and returns component key */
+    /** Adds ligand and returns component keys. single component has multiple refs when created manually
+     * @param {number} rowIdx
+     * @param {DG.Color | null} _color*/
     const addLigandOnStage = async (rowIdx: number, _color: DG.Color | null): Promise<Array<string> | null> => {
       const plugin = this.viewer!.plugin;
       const ligandLabel: string = `<Ligand at row ${rowIdx}>`;
@@ -624,7 +628,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       const _model = await plugin.builders.structure.createModel(_moltraj);
       const _structure = await plugin.builders.structure.createStructure(_model);
       const _component = await plugin.builders.structure.tryCreateComponentStatic(
-        _structure, 'ligand', {label: ligandLabel}
+        _structure, 'ligand', {label: ligandLabel},
       );
       await plugin.builders.structure.hierarchy.applyPreset(_moltraj, 'default',
         {representationPreset: 'polymer-and-ligand'});
@@ -682,9 +686,9 @@ export async function byId(pdbId: string) {
 
 /**
  * Creates an instance of Mol* viewer.
- *
  * @param {string} data Data in PDB
- */
+ * @param {string} name Name of the view
+ * @param {BuiltInTrajectoryFormat} format Format of the data*/
 export async function byData(data: string, name: string = 'Mol*', format: BuiltInTrajectoryFormat = 'pdb') {
   await initViewer(name)
     .then(async (viewer: RcsbViewer) => {
@@ -707,6 +711,8 @@ export async function viewMolstarUI(content: string, name?: string, format?: Bui
 /** Creates view with Molstar viewer to preview Biostructure (PDB)
  * returns the view immidiately, but the viewer is created asynchronously and promise
  * for that is returned separately which resolves once the viewer is initialized.
+ * @param {DG.FileInfo} file
+ * @return {{view: DG.View, loadingPromise: Promise<void>}}
 */
 export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
   const builtinFormats = BuiltInTrajectoryFormats.map((obj) => obj[0]) as string[];
@@ -777,7 +783,7 @@ function castProps(src: BiostructureProps): Partial<RcsbViewerProps> {
     viewportShowSelectionMode: src.viewportShowSelectionMode,
     volumeStreamingServer: src.volumeStreamingServer,
     modelUrlProviders: [],
-    extensions: []
+    extensions: [],
   };
   return res;
 }

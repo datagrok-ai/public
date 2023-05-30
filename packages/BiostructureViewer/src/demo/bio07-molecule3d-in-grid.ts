@@ -46,7 +46,7 @@ export async function demoBio07UI(): Promise<void> {
   try {
     await new DemoScript(
       'Molecule3D in Grid',
-      'View structures PDB in grid'
+      'View structures PDB in grid',
     )
       .step('Loading structures', async () => {
         grok.shell.windows.showContextPanel = false;

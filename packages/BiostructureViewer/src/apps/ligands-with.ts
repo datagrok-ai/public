@@ -15,7 +15,7 @@ interface INglViewer extends IViewer {
 
 export abstract class LigandsWithBase {
   constructor(
-    private readonly appFuncName: string
+    private readonly appFuncName: string,
   ) { }
 
   async init(): Promise<void> {
@@ -74,7 +74,7 @@ export class LigandsWithNglApp extends LigandsWithBase {
 
   override async buildViewViewer(): Promise<void> {
     const viewer: DG.Viewer & INglViewer = (await this.df!.plot.fromType('NGL', {
-      pdb: this.pdb
+      pdb: this.pdb,
     })) as DG.Viewer & INglViewer;
     this.view!.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.35);
   }
