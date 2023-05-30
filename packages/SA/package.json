@@ -1,0 +1,40 @@
+{
+	"name": "sa",
+	"friendlyName": "SA",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-sa": "webpack && grok publish",
+		"release-sa": "webpack && grok publish --release",
+		"build-sa": "webpack",
+		"build": "webpack",
+		"debug-sa-dev": "webpack && grok publish dev",
+		"release-sa-dev": "webpack && grok publish dev --release",
+		"debug-sa-local": "webpack && grok publish local",
+		"release-sa-local": "webpack && grok publish local --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/SA"
+	}
+}
