@@ -8,7 +8,7 @@ import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
@@ -210,7 +210,7 @@ export class PeptidesModel {
 
   get analysisView(): DG.TableView {
     this._analysisView ??=
-      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.getTag(C.TAGS.UUID) === this.id) ??
+      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id) ??
         grok.shell.addTableView(this.df);
     if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1')
       grok.shell.v = this._analysisView;

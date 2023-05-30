@@ -1,6 +1,6 @@
 import {
   mmDistanceFunctions,
-  MmDistanceFunctionsNames
+  MmDistanceFunctionsNames,
 } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 function numericDistance(a: number, b: number): number {

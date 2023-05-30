@@ -1,4 +1,4 @@
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {distanceFunctions} from './distance-functions';
 
 onmessage = (event) => {

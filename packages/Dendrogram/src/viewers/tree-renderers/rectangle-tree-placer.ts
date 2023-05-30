@@ -12,7 +12,6 @@ export type RectangleTreeHoverType<TNode extends NodeType> = HoverType<TNode> & 
   nodeHeight: number
 };
 
-
 // eslint-disable-next-line max-len
 export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreePlacer<TNode, RectangleTreeHoverType<TNode>> {
   private _top: number;
@@ -43,47 +42,36 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
 
   update(params: { top?: number, bottom?: number, totalLength?: number }): void {
     let changed: boolean = false;
-
     if (params.top && params.top != this.top) {
       this._top = params.top;
       changed = true;
     }
-
     if (params.bottom && params.bottom != this.bottom) {
       this._bottom = params.bottom;
       changed = true;
     }
-
     if (params.totalLength && params.totalLength != this.totalLength) {
       this._totalLength = params.totalLength;
       changed = true;
     }
-
     if (changed)
       this._onChanged.next();
   }
-
   /**
-   * @param {NodeType} treeRoot
-   * @param {DG.Point} point
+   * @param {NodeType} treeRoot Tree root node
+   * @param {DG.Point} canvasPoint Point in canvas coords
+   * @param {number} lineWidth Width of line in pixels (of styler)
    * @param {number} nodeSize Size of node in pixels (of styler)
-   */
+   * @param {Function} treeToCanvas Transform from tree coords to canvas coords
+   * @return {RectangleTreeHoverType<TNode> | null} Hover type or null if not found*/
   getNode(
     treeRoot: TNode, canvasPoint: DG.Point, lineWidth: number, nodeSize: number,
-    treeToCanvas: (treeP: DG.Point) => DG.Point
+    treeToCanvas: (treeP: DG.Point) => DG.Point,
   ): RectangleTreeHoverType<TNode> | null {
     function getNodeInt(
-      node: MarkupNodeType, canvasPoint: DG.Point, currentHeight: number
+      node: MarkupNodeType, canvasPoint: DG.Point, currentHeight: number,
     ): RectangleTreeHoverType<TNode> | null {
       const dpr: number = window.devicePixelRatio;
-      // console.debug('DendrogramTreePlacer.getNode() ' +
-      //   `point = ${JSON.stringify(point)}, currentHeight = ${currentHeight}, ` +
-      //   `node = ${JSON.stringify({
-      //     index: node.index,
-      //     minIndex: node.minIndex,
-      //     maxIndex: node.maxIndex,
-      //     branch_length: node.branch_length
-      //   })}`);
       // tree to canvas is linear transform, so searching node in canvas coords is correct
       const minIndex: number = (node.minIndex ?? node.index) - 0.25;
       const maxIndex: number = (node.maxIndex ?? node.index) + 0.25;
@@ -111,20 +99,17 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
             if (res) break;
           }
         }
-
         return res;
       }
-
       return null;
     }
-
     const res = getNodeInt(treeRoot, canvasPoint, 0);
     return res;
   }
 
   getNodeHeight(treeRoot: MarkupNodeType | null, node: MarkupNodeType): number | undefined {
     function getNodeHeightInt(
-      currentNode: MarkupNodeType, node: MarkupNodeType, currentHeight: number
+      currentNode: MarkupNodeType, node: MarkupNodeType, currentHeight: number,
     ): number | undefined {
       let res: number | undefined = undefined;
       if (currentNode == node) {
@@ -135,10 +120,8 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
           if (res !== undefined) break;
         }
       }
-
       return res;
     }
-
     const res: number | undefined = !treeRoot ? undefined : getNodeHeightInt(treeRoot, node, 0);
     return res;
   }

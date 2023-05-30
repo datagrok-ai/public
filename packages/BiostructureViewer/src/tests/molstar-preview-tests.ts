@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   category /*, expect*/,
   test,
-  expect
+  expect,
 } from '@datagrok-libraries/utils/src/test';
 import {_packageName} from './utils';
 import {previewMolstarUI} from '../viewers/molstar-viewer';

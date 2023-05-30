@@ -49,7 +49,6 @@ export class RadarViewer extends DG.JsViewer {
 
   init() {
     option.radar.indicator = [];
-
     const columnNames: string[] = [];
     for (const column of this.dataFrame.columns.numerical)
       columnNames.push(column.name);
@@ -89,6 +88,9 @@ export class RadarViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
     this.initChartEventListeners();
+    this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
+    .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
+    .map((c: DG.Column) => c.name);
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => {

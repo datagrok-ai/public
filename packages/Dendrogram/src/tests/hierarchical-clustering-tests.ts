@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectObject, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectObject, expectArray} from '@datagrok-libraries/utils/src/test';
 import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
 import {_package} from '../package-test';
 import {viewsTests} from './utils/views-tests';
@@ -10,7 +10,7 @@ import {TreeHelper} from '../utils/tree-helper';
 import {DistanceMetric, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 
@@ -111,7 +111,7 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
   });
 
   async function _testHierarchicalClustering(
-    csv: string, distance: string, linkage: string, tgtNewick: string
+    csv: string, distance: string, linkage: string, tgtNewick: string,
   ): Promise<void> {
     const th: ITreeHelper = new TreeHelper();
     const dataDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
@@ -140,7 +140,7 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
   });
 
   async function _testHierarchicalClusteringScript(
-    csv: string, distance: string, linkage: string, tgtNewick: string
+    csv: string, distance: string, linkage: string, tgtNewick: string,
   ): Promise<void> {
     const dataDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const resNewick: string = await grok.functions.call('Dendrogram:hierarchicalClusteringScript',
@@ -183,7 +183,7 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
   });
 
   async function _testHierarchicalClusteringByDistanceScript(
-    distA: number[], linkage: string, tgtNewick: string
+    distA: number[], linkage: string, tgtNewick: string,
   ): Promise<void> {
     const distance: DistanceMatrix = new DistanceMatrix(new Float32Array(distA));
     const distanceCol: DG.Column = DG.Column.fromFloat32Array('distance', distance.data);
@@ -205,7 +205,7 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
   });
 
   async function _testHierarchicalClusteringByDistance(
-    distA: number[], linkage: string, tgtNewick: string
+    distA: number[], linkage: string, tgtNewick: string,
   ): Promise<void> {
     const th: ITreeHelper = new TreeHelper();
     const distance: DistanceMatrix = new DistanceMatrix(new Float32Array(distA));
@@ -234,13 +234,13 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
   // });
 
   async function _testHierarchicalClusteringWasm(
-    distA: number[], linkage: number, tgtClusterMatrix: ClusterMatrix
+    distA: number[], linkage: number, tgtClusterMatrix: ClusterMatrix,
   ) {
     //calculate number of observations from distance matrix length
     const n = (1 + Math.sqrt(1 + 4 * 2 * distA.length)) / 2;
     const distanceMatrix: DistanceMatrix = new DistanceMatrix(new Float32Array(distA));
     const clusterMatrix: ClusterMatrix = await getClusterMatrixWorker(
-      distanceMatrix.data, n, linkage
+      distanceMatrix.data, n, linkage,
     );
     expectObject(clusterMatrix, tgtClusterMatrix);
   }

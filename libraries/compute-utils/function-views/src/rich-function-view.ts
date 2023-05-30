@@ -67,7 +67,7 @@ export class RichFunctionView extends FunctionView {
    * Showing UI after completion of function call.
    * @param runFunc
    */
-  public override onAfterRun(runFunc: DG.FuncCall): Promise<void> {
+  public override onAfterSaveRun(): Promise<void> {
     const firstOutputTab = this.outputsTabsElem.panes.find((tab) => tab.name !== 'Input');
     if (firstOutputTab) this.outputsTabsElem.currentPane = firstOutputTab;
 
@@ -600,23 +600,34 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const sub = val.onChanged.subscribe(() => {
+    const syncSub = () => {
       const newValue = this.funcCall!.inputs[val.name];
       if (val.property.propertyType === DG.TYPE.DATA_FRAME)
         this.dfInputRecreate(t, val, newValue);
-        // there is no notify for DG.FuncCallParam, so we need to
-        // check if the value is not the same for floats, otherwise we
-        // will overwrite a user input with a lower precicsion decimal
-        // representation
+      // there is no notify for DG.FuncCallParam, so we need to
+      // check if the value is not the same for floats, otherwise we
+      // will overwrite a user input with a lower precicsion decimal
+      // representation
       else if (((typeof newValue === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue !== 'number') {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
       }
+      this.hideOutdatedOutput();
       this.checkDisability.next();
-    });
+    };
 
+    const sub = val.onChanged.subscribe(syncSub);
     this.subs.push(sub);
+
+    this.subs.push(
+      this.funcCallReplaced.subscribe(() => {
+        const newParam = this.funcCall.inputParams[val.property.name];
+
+        const sub = newParam.onChanged.subscribe(syncSub);
+        this.subs.push(sub);
+      }),
+    );
   }
 
   private isRunnable() {
@@ -654,6 +665,8 @@ export class RichFunctionView extends FunctionView {
       this.funcCall!.inputs[val.name] = t.value;
       if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
       this.checkDisability.next();
+
+      this.hideOutdatedOutput();
     });
   }
 
@@ -676,6 +689,14 @@ export class RichFunctionView extends FunctionView {
       });
       this.subs.push(sub);
     }
+  }
+
+  private hideOutdatedOutput() {
+    this.outputsTabsElem.panes
+      .filter((tab) => tab.name !== 'Input')
+      .forEach((tab) => $(tab.header).hide());
+
+    if (this.outputsTabsElem.getPane('Input')) this.outputsTabsElem.currentPane = this.outputsTabsElem.getPane('Input');
   }
 
   /**

@@ -17,7 +17,6 @@ export interface RcsbFv3DCustomInterface extends RcsbFv3DAbstractInterface {
 
 
 export class RcsbFv3DCustom extends RcsbFv3dBase {
-
   constructor(config?: RcsbFv3DCustomInterface) {
     super(config);
   }
@@ -27,7 +26,7 @@ export class RcsbFv3DCustom extends RcsbFv3dBase {
     this.structureConfig = config.structurePanelConfig;
     this.sequenceConfig = {
       ...config.sequencePanelConfig,
-      type: 'custom'
+      type: 'custom',
     };
     this.cssConfig = config.cssConfig;
   }

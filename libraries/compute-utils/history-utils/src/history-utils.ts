@@ -94,12 +94,12 @@ export namespace historyUtils {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
         .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
       for (const output of dfOutputs)
-        pulledRun.outputs[output.name] = (await grok.dapi.tables.getTable(pulledRun.outputs[output.name])).clone();
+        pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
 
       const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
         .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
       for (const input of dfInputs)
-        pulledRun.inputs[input.name] = (await grok.dapi.tables.getTable(pulledRun.inputs[input.name])).clone();
+        pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
     }
 
     return pulledRun;
@@ -114,13 +114,17 @@ export namespace historyUtils {
   export async function saveRun(callToSave: DG.FuncCall) {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs)
+    for (const output of dfOutputs) {
+      callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
+    }
 
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
       .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs)
+    for (const input of dfInputs) {
+      callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
+    }
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }
