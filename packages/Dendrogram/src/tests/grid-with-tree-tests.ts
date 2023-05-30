@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {TreeHelper} from '../utils/tree-helper';
 import {_package} from '../package-test';
@@ -14,7 +14,7 @@ import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 category('GridWithTree', viewsTests((ctx: { dfList: DG.DataFrame[], vList: DG.ViewBase[] }) => {
   test('open', async () => {
-    const th: ITreeHelper = new TreeHelper();
+    const _th: ITreeHelper = new TreeHelper();
 
     const csv: string = await _package.files.readAsText('data/tree95df.csv');
     const newickStr: string = await _package.files.readAsText('data/tree95.nwk');

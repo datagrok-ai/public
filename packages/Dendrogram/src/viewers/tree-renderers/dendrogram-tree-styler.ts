@@ -34,7 +34,7 @@ export class DendrogramTreeStyler extends TreeStylerBase<MarkupNodeType> {
     this._onStylingChanged.next();
   }
 
-  override getStrokeColor(node: MarkupNodeType): string { return this._strokeColor; }
+  override getStrokeColor(_node: MarkupNodeType): string { return this._strokeColor; }
 
   get fillColor(): string { return this._fillColor; }
 
@@ -43,10 +43,10 @@ export class DendrogramTreeStyler extends TreeStylerBase<MarkupNodeType> {
     this._onStylingChanged.next();
   }
 
-  override getFillColor(node: MarkupNodeType): string { return this._fillColor; }
+  override getFillColor(_node: MarkupNodeType): string { return this._fillColor; }
 
   constructor(name: string,
-    lineWidth: number, nodeSize: number, showGrid: boolean, strokeColor?: string, fillColor?: string
+    lineWidth: number, nodeSize: number, showGrid: boolean, strokeColor?: string, fillColor?: string,
   ) {
     super(name, lineWidth, nodeSize, showGrid, strokeColor, fillColor);
   }
@@ -63,7 +63,7 @@ export class DendrogramColorCodingTreeStyler extends DendrogramTreeStyler {
 
   constructor(name: string, lineWidth: number, nodeSize: number, showGrid: boolean,
     nodeCol: DG.Column, colorCol: DG.Column, colorAggrType: string,
-    strokeColor: string, fillColor: string
+    strokeColor: string, fillColor: string,
   ) {
     super(name, lineWidth, nodeSize, showGrid, strokeColor, fillColor);
     this._nodeCol = nodeCol;
