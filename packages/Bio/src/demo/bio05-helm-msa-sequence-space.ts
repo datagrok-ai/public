@@ -58,7 +58,7 @@ export async function demoBio05UI(): Promise<void> {
         view.dockManager.dock(ssViewer, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
       }, {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Analyse sequence composition', async () => {
         wlViewer = await df.plot.fromType('WebLogo', {

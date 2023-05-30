@@ -395,7 +395,7 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
 export async function _testPos(
   readDf: DfReaderFunc, colName: string, units: string,
   aligned: string | null, alphabet: string | null, alphabetSize: number, alphabetIsMultichar: boolean,
-  separator: string | null = null
+  separator: string | null = null,
 ) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.col(colName)!;
@@ -427,7 +427,7 @@ class PosCol {
     public readonly alphabet: string | null,
     public readonly alphabetSize: number,
     public readonly alphabetIsMultichar: boolean,
-    public readonly separator?: string
+    public readonly separator?: string,
   ) { };
 }
 

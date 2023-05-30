@@ -30,7 +30,7 @@ category('activityCliffs', async () => {
 
   test('activityCliffsOpens', async () => {
     actCliffsDf = await readDataframe(
-      DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv' : 'tests/100_3_clustests.csv'
+      DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv' : 'tests/100_3_clustests.csv',
     );
     dfList.push(actCliffsDf);
     actCliffsTableView = grok.shell.addTableView(actCliffsDf);

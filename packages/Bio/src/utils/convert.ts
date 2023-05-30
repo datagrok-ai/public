@@ -23,7 +23,7 @@ export function convert(col: DG.Column): void {
   const notations = [
     NOTATION.FASTA,
     NOTATION.SEPARATOR,
-    NOTATION.HELM
+    NOTATION.HELM,
   ];
   const separatorArray = ['-', '.', '/'];
   const filteredNotations = notations.filter((e) => e !== currentNotation);
@@ -57,11 +57,11 @@ export function convert(col: DG.Column): void {
               'font-weight': 'bold',
               'font-size': '14px',
               'padding': '5px',
-            }
-          }
+            },
+          },
         ),
         targetNotationInput.root,
-        separatorInput.root
+        separatorInput.root,
       ]))
       .onOK(async () => {
         const targetNotation = targetNotationInput.value as NOTATION;
@@ -85,7 +85,7 @@ export function convert(col: DG.Column): void {
  * @param {string | null} separator Separator for SEPARATOR notation
  */
 export async function convertDo(
-  srcCol: DG.Column, targetNotation: NOTATION, separator: string | null
+  srcCol: DG.Column, targetNotation: NOTATION, separator: string | null,
 ): Promise<DG.Column> {
   const converter = new NotationConverter(srcCol);
   const newColumn = converter.convert(targetNotation, separator);

@@ -19,8 +19,7 @@ export async function demoBio01aUI() {
   let dendrogramSvc: IDendrogramService;
   let view: DG.TableView;
   let df: DG.DataFrame;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let spViewer: DG.ScatterPlotViewer;
+  let _spViewer: DG.ScatterPlotViewer;
 
   const dimRedMethod: string = 'UMAP';
 
@@ -33,7 +32,7 @@ export async function demoBio01aUI() {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
-          getDendrogramService()
+          getDendrogramService(),
         ]);
         view = grok.shell.addTableView(df);
         view.grid.props.rowHeight = 22;
@@ -48,10 +47,10 @@ export async function demoBio01aUI() {
         delay: 2000,
       })
       .step('Build sequence space', async () => {
-        spViewer = await demoSequenceSpace(view, df, seqColName, dimRedMethod);
+        _spViewer = await demoSequenceSpace(view, df, seqColName, dimRedMethod);
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
-        delay: 2000
+        delay: 2000,
       })
       .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol(seqColName);

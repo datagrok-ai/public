@@ -38,7 +38,7 @@ export async function demoBio01bUI() {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
-          getDendrogramService()
+          getDendrogramService(),
         ]);
 
         view = grok.shell.addTableView(df);
@@ -62,7 +62,7 @@ export async function demoBio01bUI() {
         cliffsLink.click();
       }, {
         description: 'Reveal similar sequences with a cliff of activity.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol('sequence');
@@ -79,7 +79,7 @@ export async function demoBio01bUI() {
         activityGCol.scrollIntoView();
       }, {
         description: 'Perform hierarchical clustering to reveal relationships between sequences.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Browse the cliff', async () => {
         //cliffsDfGrid.dataFrame.currentRowIdx = -1; // reset
@@ -99,7 +99,7 @@ export async function demoBio01bUI() {
         // }
       }, {
         description: 'Zoom in to explore selected activity cliff details.',
-        delay: 2000
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

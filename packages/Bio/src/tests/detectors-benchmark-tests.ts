@@ -21,38 +21,38 @@ category('detectorsBenchmark', () => {
   // -- fasta --
 
   test('fastaDnaShorts50Few50', async () => {
-    const _et: number = await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
+    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
   },
   {skipReason: '#1192'});
 
   test('fastaDnaShorts50Many1E6', async () => {
-    const _et: number = await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
+    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
   },
   {skipReason: '#1192'});
 
   test('fastaDnaLong1e6Few50', async () => {
-    const _et: number = await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
+    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
   },
   {skipReason: '#1192'});
 
   // -- separator --
 
   test('separatorDnaShorts50Few50', async () => {
-    const _et: number = await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
+    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
   }, {skipReason: '#1192'});
 
   test('separatorDnaShorts50Many1E6', async () => {
-    const _et: number = await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
+    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
   },
   { /* skipReason: 'slow transmit large dataset to detector' */});
 
   test('separatorDnaLong1e6Few50', async () => {
-    const _et: number = await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
+    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
   },
   {skipReason: '#1192'});
 
   async function detectMacromoleculeBenchmark(
-    maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string
+    maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
   ): Promise<number> {
     return await benchmark<DG.FuncCall, DG.Column>(10,
       (): DG.FuncCall => {
@@ -68,13 +68,13 @@ category('detectorsBenchmark', () => {
           semType: DG.SEMTYPE.MACROMOLECULE,
           notation: notation,
           alphabet: alphabet,
-          separator: separator
+          separator: separator,
         });
       });
   }
 
   function generate(
-    notation: NOTATION, alphabet: string[], length: number, count: number, separator?: string
+    notation: NOTATION, alphabet: string[], length: number, count: number, separator?: string,
   ): DG.Column {
     let seqMerger: (seqMList: string[], separator?: string) => string;
 
@@ -138,7 +138,7 @@ category('detectorsBenchmark', () => {
 
 //Returns ET [ms] of test()
 async function benchmark<TData, TRes>(
-  maxET: number, prepare: () => TData, test: (data: TData) => Promise<TRes>, check: (res: TRes) => void
+  maxET: number, prepare: () => TData, test: (data: TData) => Promise<TRes>, check: (res: TRes) => void,
 ): Promise<number> {
   const data: TData = prepare();
 

@@ -26,7 +26,7 @@ type PepseaBodyUnit = { ID: string, HELM: string };
  */
 export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   method: typeof pepseaMethods[number] = 'ginsi', gapOpen: number = 1.53, gapExtend: number = 0.0,
-  clustersCol: DG.Column<string | number> | null = null
+  clustersCol: DG.Column<string | number> | null = null,
 ): Promise<DG.Column<string> | null> {
   const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
   if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking') {

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
 import {IVdRegionsViewer,
-  VdRegion, VdRegionType
+  VdRegion, VdRegionType,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
 import {FilterSources, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {Unsubscribable} from 'rxjs';
@@ -258,7 +258,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
               width: '16px',
               marginTop: '24px',
               marginLeft: '6px',
-            }
+            },
           })] : []),
           // List with controls for regions
           ...[...Array(orderList.length).keys()].map((orderI) => {
@@ -270,7 +270,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
                 // height: '100%',
                 marginTop: '4px',
                 marginBottom: '4px',
-              }
+              },
             });
 
             return resDiv;
@@ -279,8 +279,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       },
       ['', ...[...Array(orderList.length).keys()].map(
         (orderI: number) => regionsFiltered.find(
-          (r: VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0]
-        )!.name || 'Name')]
+          (r: VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0],
+        )!.name || 'Name')],
     );
     this.mainLayout.className = 'mlb-vd-regions-viewer-table2';
     // this.mainLayout.style.background = '#EEEEFF';
@@ -309,7 +309,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
     const maxHeight: number = Math.min(logoHeight,
       Math.max(...this.logos.map((wlDict) =>
-        Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight))))
+        Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight)))),
     );
 
     for (let orderI = 0; orderI < this.logos.length; orderI++) {

@@ -66,7 +66,7 @@ PEPTIDE1{meI}$$$$
     const stats = getStats(seqCol, 1, splitterAsHelm);
 
     expectObject(stats.freq, {
-      'meI': 1
+      'meI': 1,
     });
     expect(stats.sameLength, true);
   });
@@ -108,7 +108,7 @@ export async function _testGetStats(csvDfN1: string) {
     'A': 4,
     'C': 5,
     'G': 3,
-    'T': 6
+    'T': 6,
   });
   expect(stats.sameLength, true);
 }
@@ -119,7 +119,7 @@ export async function _testGetAlphabetSimilarity() {
     'C': 3015,
     'G': 3015,
     'T': 2048,
-    '-': 1000
+    '-': 1000,
   };
   const alphabet: Set<string> = new Set(Object.keys(Nucleotides.Names));
   const res = getAlphabetSimilarity(freq, alphabet);

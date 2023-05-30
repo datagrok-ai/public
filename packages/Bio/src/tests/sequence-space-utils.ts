@@ -6,7 +6,7 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export async function _testSequenceSpaceReturnsResult(
-  df: DG.DataFrame, algorithm: DimReductionMethods, colName: string
+  df: DG.DataFrame, algorithm: DimReductionMethods, colName: string,
 ) {
   // await grok.data.detectSemanticTypes(df);
   const col: DG.Column = df.getCol(colName);

@@ -18,7 +18,7 @@ export class MsaWarning extends Error {
 }
 
 export async function multipleSequenceAlignmentUI(
-  options: multipleSequenceAlginmentUIOptions = {}
+  options: multipleSequenceAlginmentUIOptions = {},
 ): Promise<DG.Column> {
   return new Promise(async (resolve, reject) => {
     options.clustersCol ??= null;
@@ -59,9 +59,9 @@ export async function multipleSequenceAlignmentUI(
     const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
       performAlignment = await onColInputChange(
         colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
-        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
       );
-    }
+    },
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
     const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
@@ -71,7 +71,7 @@ export async function multipleSequenceAlignmentUI(
     if (options.col) {
       performAlignment = await onColInputChange(
         options.col, table, pepseaInputRootStyles, kalignInputRootStyles,
-        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
       );
 
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
@@ -95,7 +95,7 @@ async function onDialogOk(
   table: DG.DataFrame,
   performAlignment: (() => Promise<DG.Column<string> | null>) | undefined,
   resolve: (value: DG.Column<any>) => void,
-  reject: (reason: any) => void
+  reject: (reason: any) => void,
 ): Promise<void> {
   let msaCol: DG.Column<string> | null = null;
   const pi = DG.TaskBarProgressIndicator.create('Analyze for MSA ...');
@@ -128,7 +128,7 @@ async function onColInputChange(
   pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[],
   methodInput: DG.InputBase<string | null>, clustersColInput: DG.InputBase<DG.Column<any> | null>,
   gapOpenInput: DG.InputBase<number | null>, gapExtendInput: DG.InputBase<number | null>,
-  terminalGapInput: DG.InputBase<number | null>
+  terminalGapInput: DG.InputBase<number | null>,
 ): Promise<(() => Promise<DG.Column<string> | null>) | undefined> {
   try {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
@@ -182,7 +182,7 @@ async function onColInputChange(
 type MSADialogType = 'kalign' | 'pepsea';
 
 function switchDialog(
-  pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[], dialogType: MSADialogType
+  pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[], dialogType: MSADialogType,
 ) {
   if (dialogType === 'kalign') {
     for (const inputRootStyle of pepseaInputRootStyles)

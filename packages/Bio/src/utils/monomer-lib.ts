@@ -6,13 +6,13 @@ import {Observable, Subject} from 'rxjs';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
   createJsonMonomerLibFromSdf,
-  IMonomerLibHelper
+  IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
 const _HELM_REQUIRED_FIELDS_ARRAY = [
   REQ.SYMBOL, REQ.NAME, REQ.MOLFILE, REQ.AUTHOR, REQ.ID,
-  REQ.RGROUPS, REQ.SMILES, REQ.POLYMER_TYPE, REQ.MONOMER_TYPE, REQ.CREATE_DATE
+  REQ.RGROUPS, REQ.SMILES, REQ.POLYMER_TYPE, REQ.MONOMER_TYPE, REQ.CREATE_DATE,
 ] as const;
 
 const _HELM_OPTIONAL_FIELDS_ARRAY = [OPT.NATURAL_ANALOG, OPT.META] as const;
@@ -139,7 +139,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
     return this.loadLibrariesPromise = this.loadLibrariesPromise.then(async () => {
       const [libFileNameList, settings]: [string[], LibSettings] = await Promise.all([
         getLibFileNameList(),
-        getUserLibSettings()
+        getUserLibSettings(),
       ]);
       const libs: IMonomerLib[] = await Promise.all(libFileNameList
         .filter((libFileName) => !settings.exclude.includes(libFileName))

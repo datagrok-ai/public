@@ -15,7 +15,7 @@ category('sequenceSpace', async () => {
 
   test('sequenceSpaceOpens', async () => {
     testFastaDf = await readDataframe(
-      DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv':'tests/100_3_clustests.csv'
+      DG.Test.isInBenchmark ? 'test/peptides_motif-with-random_10000.csv' : 'tests/100_3_clustests.csv',
     );
     testFastaTableView = grok.shell.addTableView(testFastaDf);
     await _testSequenceSpaceReturnsResult(testFastaDf, DimReductionMethods.UMAP, 'sequence');

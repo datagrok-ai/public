@@ -24,7 +24,7 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
       col.dataFrame.fireValuesChanged();
     });
   monomerWidth.setTooltip(
-    'In short mode, only the first character should be visible, followed by .. if there are more characters'
+    'In short mode, only the first character should be visible, followed by .. if there are more characters',
   );
 
   const colorCode = ui.boolInput('Color code',
@@ -55,7 +55,7 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     monomerWidth,
     colorCode,
     referenceSequence,
-    compareWithCurrent
+    compareWithCurrent,
   ]);
 
   return new DG.Widget(rdKitInputs);

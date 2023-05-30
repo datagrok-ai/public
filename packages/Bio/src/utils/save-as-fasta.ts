@@ -44,7 +44,7 @@ export function saveAsFastaUI() {
     .add(ui.inputs([
       idGColListInput,
       seqColInput,
-      lineWidthInput
+      lineWidthInput,
     ]))
     .onOK(() => {
       const valueIdColList: DG.Column[] = idGColListInput.value ?
@@ -75,7 +75,7 @@ export function saveAsFastaUI() {
  * @return {string} FASTA content
 */
 export function saveAsFastaDo(
-  idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n'
+  idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n',
 ): string {
   const splitter: SplitterFunc = splitterAsFasta;
 

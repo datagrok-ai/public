@@ -85,7 +85,7 @@ YHSPFHN
     const parsedSequencesArray = ffh.sequencesArray;
     expectArray(
       [parsedDescriptionsArray, parsedSequencesArray],
-      [descriptionsArray, sequencesArray]
+      [descriptionsArray, sequencesArray],
     );
   }
 

@@ -30,7 +30,7 @@ export function checkInputColumnUI(col: DG.Column, name: string, allowedNotation
  * @return {[boolean, string]} [True if the column is suitable for the analysis, warning message].
  */
 export function checkInputColumn(
-  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
+  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = [],
 ): [boolean, string] {
   let res: boolean = true;
   let msg: string = '';

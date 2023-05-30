@@ -197,7 +197,7 @@ export class SeparatorFilter extends FastaFilter {
   get filterPanel() {
     return ui.divV([
       this.substructureInput.root,
-      this.separatorInput.root
+      this.separatorInput.root,
     ]);
   }
 

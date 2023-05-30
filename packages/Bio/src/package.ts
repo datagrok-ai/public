@@ -3,19 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
-  MacromoleculeDifferenceCellRenderer,
-  MacromoleculeSequenceCellRenderer,
-  MonomerCellRenderer
+  MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer, MonomerCellRenderer,
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, getSequenceSpace} from './analysis/sequence-space';
 import {ISequenceSpaceParams, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
-  createLinesGrid,
-  createPropPanelElement,
-  createTooltipElement,
-  getChemSimilaritiesMatrix,
+  createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
 } from './analysis/sequence-activity-cliffs';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel} from './widgets/representations';
@@ -32,7 +27,7 @@ import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {
-  getStats, splitterAsHelm, TAGS as bioTAGS, ALPHABET, NOTATION
+  getStats, splitterAsHelm, TAGS as bioTAGS, ALPHABET, NOTATION,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -125,7 +120,7 @@ export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
     backgroundColor: 0xFFfdffe5,
     fitArea: false,
     positionHeight: 'Entropy',
-    fixWidth: true
+    fixWidth: true,
   });
   viewer.root.style.height = '50px';
   return viewer;
@@ -179,7 +174,7 @@ export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
 
   return new DG.Widget(ui.splitV([
     divInputs,
-    ui.divV([filesButton])
+    ui.divV([filesButton]),
   ]));
 }
 
@@ -278,7 +273,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: DimReductionMethods, options?: IUMAPOptions | ITSNEOptions
+  similarity: number, methodName: DimReductionMethods, options?: IUMAPOptions | ITSNEOptions,
 ): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUI(macroMolecule, 'Activity Cliffs'))
     return;
@@ -348,7 +343,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 export async function sequenceSpaceTopMenu(
   table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto,
-  plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions
+  plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions,
 ): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
@@ -365,7 +360,7 @@ export async function sequenceSpaceTopMenu(
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames,
-    options: options
+    options: options,
   };
   const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
@@ -487,7 +482,7 @@ export async function compositionAnalysis(): Promise<void> {
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
       title: 'Composition Analysis',
-      helpUrl: '/help/domains/bio/macromolecules.md#composition-analysis'
+      helpUrl: '/help/domains/bio/macromolecules.md#composition-analysis',
     })
       .add(ui.div([
         colInput,
@@ -582,7 +577,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
 
           res.push({
             file: fileInfo.path, result: 'detected', column: col.name,
-            message: `units: ${col.getTag(DG.TAGS.UNITS)}`
+            message: `units: ${col.getTag(DG.TAGS.UNITS)}`,
           });
         }
       }

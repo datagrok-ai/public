@@ -5,9 +5,8 @@ import {expect} from '@datagrok-libraries/utils/src/test';
 import {activityCliffs} from '../package';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
-export async function _testActivityCliffsOpen(
-  df: DG.DataFrame, numberCliffs: number, method: DimReductionMethods, colName: string
-) {
+export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: number, method: DimReductionMethods,
+  colName: string) {
   await grok.data.detectSemanticTypes(df);
   const scatterPlot = await activityCliffs(
     df, df.getCol(colName), df.getCol('activity'),

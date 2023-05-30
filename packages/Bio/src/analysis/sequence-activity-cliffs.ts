@@ -22,7 +22,7 @@ export async function getDistances(col: DG.Column, seq: string): Promise<Array<n
 }
 
 export async function getSimilaritiesMatrix(
-  dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]
+  dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[],
 ): Promise<DG.Column[]> {
   const distances = new Array(simArr.length).fill(null);
   for (let i = 0; i != dim - 1; ++i) {
@@ -52,7 +52,7 @@ export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
     col: seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
     df: fpDf,
     colName: colName,
-    simArr: simArr
+    simArr: simArr,
   });
   return res;
 }
@@ -122,7 +122,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 function createPropPanelField(name: string, value: number): HTMLDivElement {
   return ui.divH([
     ui.divText(`${name}: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
-    ui.divText(value.toFixed(2))
+    ui.divText(value.toFixed(2)),
   ], {style: {paddingTop: '10px'}});
 }
 
@@ -145,13 +145,13 @@ export function createDifferencesWithPositions(
     const diffsPanel = ui.divV([]);
     diffsPanel.append(ui.divH([
       ui.divText('Pos', {style: {fontWeight: 'bold', width: '30px', borderBottom: '1px solid'}}),
-      ui.divText('Difference', {style: {fontWeight: 'bold', borderBottom: '1px solid'}})
+      ui.divText('Difference', {style: {fontWeight: 'bold', borderBottom: '1px solid'}}),
     ]));
     for (const key of Object.keys(molDifferences)) {
       molDifferences[key as any].style.borderBottom = '1px solid lightgray';
       diffsPanel.append(ui.divH([
         ui.divText((parseInt(key) + 1).toString(), {style: {width: '30px', borderBottom: '1px solid lightgray'}}),
-        molDifferences[key as any]
+        molDifferences[key as any],
       ]));
     }
     div.append(diffsPanel);

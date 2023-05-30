@@ -7,7 +7,7 @@ import {
   countForMonomerAtPosition,
   PositionInfo as PI,
   PositionMonomerInfo as PMI,
-  WebLogoViewer
+  WebLogoViewer,
 } from '../viewers/web-logo-viewer';
 
 category('WebLogo-positions', () => {
@@ -156,7 +156,7 @@ ATC-G-TTGC--
       new PI(6, '7', {'T': new PMI(5)}),
       new PI(7, '8', {'T': new PMI(5)}),
       new PI(8, '9', {'G': new PMI(5)}),
-      new PI(9, '10', {'C': new PMI(5)})
+      new PI(9, '10', {'C': new PMI(5)}),
     ];
 
     expect(resPosList.length, tgtPosList.length);
@@ -176,7 +176,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo', {
       startPositionName: '3',
       endPositionName: '7',
-      skipEmptyPositions: true
+      skipEmptyPositions: true,
     })) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 

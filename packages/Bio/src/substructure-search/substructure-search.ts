@@ -56,7 +56,7 @@ export function substructureSearchDialog(col: DG.Column<string>): void {
   ui.dialog('Substructure Search')
     .add(ui.divV([
       ui.divText(`Notation: ${units}`),
-      inputsDiv
+      inputsDiv,
     ]))
     .onOK(async () => {
       let substructure = units === NOTATION.HELM ? df.get(SUBSTR_HELM_COL_NAME, 0) : substructureInput.value;

@@ -14,7 +14,7 @@ enum EMBED_COL_NAMES {
 }
 
 export async function demoSequenceSpace(
-  view: DG.TableView, df: DG.DataFrame, colName: string, method: string
+  view: DG.TableView, df: DG.DataFrame, colName: string, method: string,
 ): Promise<DG.ScatterPlotViewer> {
   let resSpaceViewer: DG.ScatterPlotViewer;
   if (true) {

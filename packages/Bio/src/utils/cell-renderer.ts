@@ -117,7 +117,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle
+    gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle,
   ) {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
@@ -302,7 +302,7 @@ export function drawMoleculeDifferenceOnCanvas(
   subParts2: string [],
   units: string,
   fullStringLength?: boolean,
-  molDifferences?: { [key: number]: HTMLCanvasElement }
+  molDifferences?: { [key: number]: HTMLCanvasElement },
 ): void {
   if (subParts1.length !== subParts2.length) {
     const sequences: IComparedSequences = fillShorterSequence(subParts1, subParts2);

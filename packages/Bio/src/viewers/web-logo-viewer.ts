@@ -10,7 +10,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
   getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc,
-  TAGS as bioTAGS
+  TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   WebLogoPropsDefault, WebLogoProps,
@@ -75,7 +75,7 @@ export class PositionInfo {
    * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
    */
   constructor(pos: number, name: string,
-    freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0
+    freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0,
   ) {
     this.pos = pos;
     this.name = name;
@@ -988,7 +988,7 @@ export class WebLogoViewer extends DG.JsViewer {
 
 export function checkSeqForMonomerAtPos(
   df: DG.DataFrame, seqCol: DG.Column, filter: DG.BitSet, rowI: number,
-  splitter: SplitterFunc, monomer: string, at: PositionInfo
+  splitter: SplitterFunc, monomer: string, at: PositionInfo,
 ): boolean {
   // if (!filter.get(rowI)) return false;
   // TODO: Use BitSet.get(idx)
@@ -1001,7 +1001,7 @@ export function checkSeqForMonomerAtPos(
 
 export function countForMonomerAtPosition(
   df: DG.DataFrame, seqCol: DG.Column, filter: DG.BitSet,
-  splitter: SplitterFunc, monomer: string, at: PositionInfo
+  splitter: SplitterFunc, monomer: string, at: PositionInfo,
 ): number {
   const posMList: (string | null)[] = wu.count(0).take(df.rowCount)
     .filter((rowI) => filter.get(rowI))
