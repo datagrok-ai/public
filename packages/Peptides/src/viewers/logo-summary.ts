@@ -43,20 +43,8 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-
     this.model = PeptidesModel.getInstance(this.dataFrame);
-    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
-      this.createLogoSummaryGrid();
-      this.render();
-    }));
-    this.subs.push(this.model.onNewCluster.subscribe(() => this.clusterFromSelection()));
-    this.subs.push(this.model.onRemoveCluster.subscribe(() => this.removeCluster()));
-    this.subs.push(this.model.onFilterChanged.subscribe(() => {
-      this.createLogoSummaryGrid();
-      this.render();
-    }));
-
-    this.createLogoSummaryGrid();
+    this.createLogoSummaryTableGrid();
     this.initialized = true;
     this.render();
   }
@@ -86,7 +74,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.render();
   }
 
-  createLogoSummaryGrid(): DG.Grid {
+  createLogoSummaryTableGrid(): DG.Grid {
     const clustersColName = this.model.settings.clustersColumnName!;
     const isDfFiltered = this.dataFrame.filter.anyFalse;
     const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
