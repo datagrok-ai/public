@@ -21,7 +21,7 @@ jobs:
       - name: Get commit details
         id: commit-details
         run: |
-          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]] || [[ $(git log -n 1 --pretty=%B) == *"branch 'origin/master'"* ]]; then
+          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; then
             echo "is_merge_commit=true" >> $GITHUB_OUTPUT
           else
             echo "is_merge_commit=false" >> $GITHUB_OUTPUT
