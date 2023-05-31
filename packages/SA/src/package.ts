@@ -11,6 +11,7 @@ export function info() {
 }
 
 //name: Ishigami func
+//tags: model
 //input: double x1 = 1 {caption: x1; category: Varibles}
 //input: double x2 = 2 {caption: x2; category: Varibles}
 //input: double x3 = 3 {caption: x3; category: Varibles}
@@ -25,15 +26,18 @@ export function ishigamiFunc(x1: number, x2: number, x3: number, a : number, b :
 }
 
 //name: Parabola
+//tags: model
 //input: double x = 1 {caption: x; category: Varibles}
 //input: double a = 7.0 {caption: a; category: Parameters}
 //input: double b = 0.1 {caption: b; category: Parameters}
 //output: double result
+//editor: Compute:RichFunctionViewEditor
 export function parabola(x: number, a : number, b : number): number {      
   return a * x * x + b;
 }
 
 //name: Cubic parabola
+//tags: model
 //input: double x = 1 {caption: x; category: Varibles}
 //input: double a = 7.0 {caption: a; category: Parameters}
 //input: double b = 0.1 {caption: b; category: Parameters}
@@ -43,15 +47,18 @@ export function cubicParabola(x: number, a : number, b : number): number {
 }
 
 //name: Quadric parabola
+//tags: model
 //input: double x = 1 {caption: x; category: Varibles}
 //input: double a = 7.0 {caption: a; category: Parameters}
 //input: double b = 0.1 {caption: b; category: Parameters}
 //output: double result
+//editor: Compute:RichFunctionViewEditor
 export function quadricParabola(x: number, a : number, b : number): number {      
   return a * x * x * x * x + b;
 }
 
 //name: oneDfOutput
+//tags: model
 //input: double x1 = 1 {caption: x1; category: Varibles}
 //input: double x2 = 2 {caption: x2; category: Varibles}
 //input: double x3 = 3 {caption: x3; category: Varibles}
@@ -69,6 +76,7 @@ export function oneDfOutput(x1: number, x2: number, x3: number, a : number, b : 
 }
 
 //name: twoDfOutput
+//tags: model
 //input: double x1 = 1 {caption: x1; category: Varibles}
 //input: double x2 = 2 {caption: x2; category: Varibles}
 //input: double x3 = 3 {caption: x3; category: Varibles}
