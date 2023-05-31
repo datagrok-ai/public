@@ -4,13 +4,15 @@ import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 
+const WIDTH = 200;
+const HEIGHT = 100;
 
-export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFrame> {
+export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFrame | null> {
   try {
-    let df = await grok.data.query(`${_package.name}:SubstructureSmile`, {'smile': mol})
+    let df: DG.DataFrame = await grok.data.query(`${_package.name}:SubstructureSmile`, {'smile': mol});
+    if (df.rowCount === 0)
+      return null;
     df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
-    if (df == null)
-      return DG.DataFrame.create();
 
     return df;
   } catch (e: any) {
@@ -19,12 +21,12 @@ export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFram
   }
 }
 
-export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame> {
+export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame | null> {
   try {
-    let df = await grok.data.query(`${_package.name}:SimilaritySmileScore`, {'smile': molecule, 'score': 40})
+    let df = await grok.data.query(`${_package.name}:SimilaritySmileScore`, {'smile': molecule, 'score': 40});
+    if (df.rowCount === 0)
+      return null;
     df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
-    if (df == null)
-      return DG.DataFrame.create();
 
     return df;
   } catch (e: any) {
@@ -47,32 +49,45 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
                      async () => chemblSubstructureSearch(mol) :
                      async () => chemblSimilaritySearch(mol);
 
-  searchFunc().then((t: any) => {
+  searchFunc().then((table: DG.DataFrame | null) => {
       compsHost.removeChild(compsHost.firstChild!);
-      if (t == null) {
-
+      if (table === null) {
         compsHost.appendChild(ui.divText('No matches'));
         return;
       }
-      t.col('canonical_smiles').semType = 'Molecule';
-      t.col('canonical_smiles').setTag('cell.renderer', 'Molecule');
 
+      const moleculeCol = table.getCol('canonical_smiles');
+      const chemblIdCol = table.getCol('molecule_chembl_id');
 
-      const grid = t.plot.grid();
-      const col = grid.columns.byName('molecule_chembl_id');
-      col.cellType = 'html';
-      grid.onCellPrepare(function (gc: DG.GridCell) {
-        if (gc.isTableCell && gc.gridColumn.name === 'molecule_chembl_id') {
-          const link = `https://www.ebi.ac.uk/chembl/compound_report_card/${gc.cell.value}/`;
-          gc.style.element = ui.divV([
-            ui.link(gc.cell.value, link, link)
-          ]);
-        }
-      });
-      compsHost.appendChild(grid.root)
+      const molCount = Math.min(table.rowCount, 20);
+      const r = window.devicePixelRatio;
+  
+      const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
+      if (renderFunctions.length == 0)
+        throw new Error('RDKit renderer is not available');
+  
+      for (let i = 0; i < molCount; i++) {
+        const molHost = ui.canvas(WIDTH, HEIGHT);
+        molHost.classList.add('chem-canvas');
+        molHost.width = WIDTH * r;
+        molHost.height = HEIGHT * r;
+        molHost.style.width = (WIDTH).toString() + 'px';
+        molHost.style.height = (HEIGHT).toString() + 'px';
+  
+        renderFunctions[0].apply().then((rendndererObj) => {
+        rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT, DG.GridCell.fromValue(moleculeCol.get(i)));
+        });
+    
+        ui.tooltip.bind(molHost,
+          () => ui.divText(`ChEMBL ID: ${chemblIdCol.get(i)}\nClick to open in ChEMBL Database`));
+        molHost.addEventListener('click',
+          () => window.open(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblIdCol.get(i)}`, '_blank'));
+        compsHost.appendChild(molHost);
+      }
+  
       headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-        t.name = `"DrugBank Similarity Search"`;
-        grok.shell.addTableView(t);
+        table.name = `"ChEMBL Similarity Search"`;
+        grok.shell.addTableView(table);
       }, 'Open compounds as table'));
       compsHost.style.overflowY = 'auto';
     }
