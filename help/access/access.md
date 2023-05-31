@@ -19,7 +19,7 @@ A data connection is an [entity](../datagrok/objects.md) representing informatio
 source, such as its address and credentials. A data connection allows you to work with files and database tables
 directly in Datagrok. When connecting to a data source, you can access data manually from the UI, or programmatically,
 [through an application](../develop/how-to/access-data.md). For manual data access, Datagrok provides a convenient UI
-that lets you connect directly to any of the [30+ supported connectors](supported-connectors.md), retrieve data using
+that lets you connect directly to any of the [30+ supported connectors](./connectors/connectors.md), retrieve data using
 queries, and securely share data with others.
 
 :::note

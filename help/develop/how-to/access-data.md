@@ -74,7 +74,7 @@ Connection parameters are specific to a data source. Most data providers require
 * Password
 * Other parameters.
 
-See [Supported connectors](../../access/supported-connectors.md) for details.
+See [Supported connectors](../../access/connectors/connectors.md) for details.
 
 When providing a connection string, you don't need to pass other parameters.
 
