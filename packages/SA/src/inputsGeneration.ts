@@ -1,12 +1,29 @@
+/* inputsGeneration.ts
 
+   Generator of inputs for variance-based sensitivity analysis.
+       
+   Computation of Sobol indeces requires the set of matrices {A, B and AB[i]} (see [1, 2] for more details).
+   Generation of these matrices is provided below.
 
+   REMARK. We use notations from the following sources. It provides simplicity of the further 
+           computations implementation.
+
+   References
+     [1] A. Saltelli, et. al., "Variance based sensitivity analysis of model output. Design and estimator
+         for the total sensitivity index", DOI: https://doi.org/10.1016/j.cpc.2009.09.018
+
+     [2] Variance-based sensitivity analysis, 
+         LINK: https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis
+*/
+
+// Inputs generator
 export class InputsForVarianceBasedSensitivityAnalysis {
   private N: number; // samplesCount
-  private d: number; // dimension
+  private d: number; // dimension, i.e. model inputs count
 
-  private A: Array<Float32Array>; // 
-  private B: Array<Float32Array>; // 
-  private AB: Array<Array<Float32Array>>; //
+  private A: Array<Float32Array>; // columns of the matrix A
+  private B: Array<Float32Array>; // columns of the matrix B
+  private AB: Array<Array<Float32Array>>; // each element is an array of columns of the matrices AB
 
   constructor(samplesCount: number = 1, dimension: number = 1) {
     this.N = samplesCount;
@@ -17,6 +34,7 @@ export class InputsForVarianceBasedSensitivityAnalysis {
     this.AB = this.createMixMatrax(this.A, this.B);
   }
 
+  // Returns array of columns of randomly generated elements with uniform distribution on the segemnt [0, 1]
   private generateMatrix(rowCount: number, colCount: number): Array<Float32Array> {
     const M = new Array<Float32Array>(colCount);
 
@@ -30,23 +48,27 @@ export class InputsForVarianceBasedSensitivityAnalysis {
     return M;
   } // generateMatrix
 
+  // Returns a set of matrices AB (see [1, 2] for more details).
   private createMixMatrax(A: Array<Float32Array>, B: Array<Float32Array>): Array<Array<Float32Array>> {
     const d = this.d;
-    const M = new Array<Array<Float32Array>>(d);
+    const AB = new Array<Array<Float32Array>>(d);
 
+    /* For any i, the matrix AB[i] has the same columns as the matrix A except i-th column 
+       that is taken from the matrix B. */
     for (let i = 0; i < d; ++i) {
-      M[i] = new Array<Float32Array>(0);
+      AB[i] = new Array<Float32Array>(0);
 
       for (let j = 0; j < d; ++j)
         if (i !== j)
-          M[i].push(A[j]);
+          AB[i].push(A[j]); // copy all non i-th columns of A
         else
-          M[i].push(B[j]);     
+          AB[i].push(B[j]); // i-th column is taken from B    
     }
 
-    return M;
+    return AB;
   } // createMixMatrax
 
+  // Returns the specified row of the matrix, which is given as an array of columns.
   private getRow(M: Array<Float32Array>, index: number): Float32Array {
     const row = new Float32Array(this.d);
 
@@ -56,18 +78,22 @@ export class InputsForVarianceBasedSensitivityAnalysis {
     return row;
   }
 
+  // Returns the specified row of A
   getRowOfMatrixA(index: number): Float32Array {
     return this.getRow(this.A, index);
   }
 
+  // Returns the specified row of B
   getRowOfMatrixB(index: number): Float32Array {
     return this.getRow(this.B, index);
   }
 
+  // Returns the specified row of the specified matrix AB
   getRowOfMatrixAB(matrixIndex: number, rowIndex: number): Float32Array {
     return this.getRow(this.AB[matrixIndex], rowIndex);
   }
 
+  // TODO: remove the following testing tools
   print(): void {
     console.log(`N = ${this.N}, d = ${this.d}`);
 
@@ -100,11 +126,9 @@ export class InputsForVarianceBasedSensitivityAnalysis {
   }
 } // InputsForVarianceBasedSensitivityAnalysis
 
+// TODO: remove the following testing tools
 const inputs = new InputsForVarianceBasedSensitivityAnalysis(3, 2);
 
 inputs.print();
 
 inputs.printRows();
-
-//console.log(inputs);
-
