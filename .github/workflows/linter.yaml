@@ -7,6 +7,8 @@ on:
 jobs:
   check-commit:
     uses: ./.github/workflows/check_merge_commit.yaml
+    with:
+      run_trigger: github.event_name
 
   super-linter:
     name: Super Lint Code Base

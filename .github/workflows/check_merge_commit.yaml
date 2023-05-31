@@ -2,6 +2,10 @@ name: Check merge commit
 
 on:
   workflow_call:
+    inputs:
+      run_trigger:
+        required: false
+        type: string
     outputs:
       continue: 
         description: "Run nested acions if no merge commit"
@@ -18,7 +22,7 @@ jobs:
       - name: Get commit details
         id: commit-details
         run: |
-          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; then
+          if [[ ${{ inputs.run_trigger }} != 'workflow_dispatch' ]] && { [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; };  then
             echo "continue_action=false" >> $GITHUB_OUTPUT
             echo "This is a merge commit push. No actions will be runned"
           else
