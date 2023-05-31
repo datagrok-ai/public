@@ -12,7 +12,7 @@ jobs:
   check-commit:
     uses: ./.github/workflows/check_merge_commit.yaml
     with:
-      run_trigger: github.event_name
+      run_trigger: ${{ github.event_name }}
 
   build:
     name: Build maven
