@@ -17,10 +17,13 @@ export class FormatConverter {
   constructor(private readonly sequence: string, private readonly sourceFormat: FORMAT) { };
 
   convertTo(targetFormat: FORMAT): string {
-    if (this.sourceFormat === FORMAT.HELM && targetFormat === FORMAT.GCRS)
-      return this.helmToGcrs();
-    else if (this.sourceFormat === FORMAT.GCRS && targetFormat === FORMAT.HELM)
-      return this.gcrsToHelm();
+    const supportedTargets = [FORMAT.GCRS, FORMAT.AXOLABS];
+    const supportedSources = [FORMAT.GCRS, FORMAT.AXOLABS];
+
+    if (this.sourceFormat === FORMAT.HELM && supportedTargets.includes(targetFormat))
+      return this.helmToFormat(targetFormat);
+    if (supportedSources.includes(this.sourceFormat) && targetFormat === FORMAT.HELM)
+      return this.formatToHelm(this.sourceFormat);
 
     const codeMapping = formatDictionary[this.sourceFormat][targetFormat];
     if (codeMapping === undefined && targetFormat !== FORMAT.HELM) {
@@ -41,12 +44,12 @@ export class FormatConverter {
       return this.simpleConversion(codeMapping as KeyToValue);
   }
 
-  private gcrsToHelm(): string {
-    const codesInfoObject = codesToHelmDictionary[FORMAT.GCRS] as CodesInfo;
+  private formatToHelm(sourceFormat: FORMAT): string {
+    const codesInfoObject = codesToHelmDictionary[sourceFormat] as CodesInfo;
     const dict = Object.assign({}, ...Object.values(codesInfoObject)) as {[code: string]: string};
 
-    const gcrsCodes = Object.keys(dict).sort(sortCallback);
-    const gcrsRegExp = new RegExp(getRegExpPattern(gcrsCodes), 'g');
+    const formatCodes = Object.keys(dict).sort(sortCallback);
+    const formatRegExp = new RegExp(getRegExpPattern(formatCodes), 'g');
 
     const phosphateHELMCodes = Array.from(
       new Set(Object.values(codesInfoObject[GROUP_TYPE.LINKAGE]))
@@ -54,7 +57,7 @@ export class FormatConverter {
     const phosphateHELMPattern = getRegExpPattern(phosphateHELMCodes);
     const phosphateRegExp = new RegExp(`${PHOSPHORUS}\.(${phosphateHELMPattern})`, 'g');
 
-    let helm = this.sequence.replace(gcrsRegExp, (match) => dict[match] + '.');
+    let helm = this.sequence.replace(formatRegExp, (match) => dict[match] + '.');
     helm = helm.slice(0, -1); // strip last dot
     if (helm[helm.length - 1] === PHOSPHORUS) 
       helm = helm.slice(0, -1);
@@ -62,23 +65,19 @@ export class FormatConverter {
     return `${HELM_WRAPPER.LEFT + helm + HELM_WRAPPER.RIGHT}`;
   }
 
-  private helmToGcrs(): string {
-    const codesInfoObject = codesToHelmDictionary[FORMAT.GCRS] as CodesInfo;
+  private helmToFormat(targetFormat: FORMAT): string {
+    const codesInfoObject = codesToHelmDictionary[targetFormat] as CodesInfo;
     const dict = getHelmToCodeDict(codesInfoObject);
     const wrapperRegExp = new RegExp(getRegExpPattern(Object.values(HELM_WRAPPER)), 'g')
-    let gcrs = this.sequence.replace(wrapperRegExp, '');
+    let result = this.sequence.replace(wrapperRegExp, '');
 
     const helmCodes = Object.keys(dict)
       .sort(sortCallback);
     const helmRegExp = new RegExp(getRegExpPattern(helmCodes), 'g');
-    gcrs = gcrs.replace(helmRegExp, (match) => dict[match]);
-    gcrs = gcrs.replace(/p\.|\./g, '');
-    return gcrs;
+    result = result.replace(helmRegExp, (match) => dict[match]);
+    result = result.replace(/p\.|\./g, '');
+    return result;
   }
-
-  // private BiospringToHelm(): string {
-  //   return ''
-  // }
 
   private simpleConversion(codeMapping: KeyToValue) {
     const regexp = new RegExp(getRegExpPattern(sortByReverseLength(Object.keys(codeMapping))), 'g');
