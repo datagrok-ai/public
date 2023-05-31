@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findRGroups} from '../scripts-api';
-import {convertMolNotation, getRdKitModule} from '../package';
+import {getRdKitModule} from '../package';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMCS} from '../utils/most-common-subs';
 
 
@@ -32,15 +33,20 @@ export function rGroupAnalysis(col: DG.Column): void {
 
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
+    let mcsMol: RDMol|null = null;
     try {
       const molCol = col.dataFrame.columns.byName(columnInput.value!);
       //TODO: implements mcs using web worker
-      const smarts: string = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
-      ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setMolFile(convertMolNotation(smarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
+      mcsMol = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
+      if (mcsMol) {
+        ui.setUpdateIndicator(sketcher.root, false);
+        sketcher.setMolFile(mcsMol.get_molblock());
+      }
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
+    } finally {
+      mcsMol?.delete();
     }
   });
   ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
