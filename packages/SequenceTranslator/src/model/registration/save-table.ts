@@ -23,13 +23,13 @@ export async function sdfSaveTable(table: DG.DataFrame, onError: (rowI: number, 
       let rowStr = '';
       const parser = new RegistrationSequenceParser();
       const format = SYNTHESIZERS.GCRS; //getFormat(sequenceCol.get(i))!;
-      if (typeCol.get(i) == SEQUENCE_TYPES.SENSE_STRAND) {
+      if (typeCol.get(i) === SEQUENCE_TYPES.SENSE_STRAND) {
         const molfile = (new SequenceToMolfileConverter(sequenceCol.get(i), false, format)).convert();
         rowStr += `${molfile}\n> <Sequence>\nSense Strand\n\n`;
-      } else if (typeCol.get(i) == SEQUENCE_TYPES.ANTISENSE_STRAND) {
+      } else if (typeCol.get(i) === SEQUENCE_TYPES.ANTISENSE_STRAND) {
         const molfile = (new SequenceToMolfileConverter(sequenceCol.get(i), true, format).convert());
         rowStr += `${molfile}\n> <Sequence>\nAnti Sense\n\n`;
-      } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
+      } else if (typeCol.get(i) === SEQUENCE_TYPES.DUPLEX) {
         const obj = parser.getDuplexStrands(sequenceCol.get(i));
         const asMolfile = (new SequenceToMolfileConverter(obj.as, true, format)).convert();
         const as = `${asMolfile}\n> <Sequence>\nAnti Sense\n\n`;
@@ -51,7 +51,7 @@ export async function sdfSaveTable(table: DG.DataFrame, onError: (rowI: number, 
       }
 
       for (const col of table.columns) {
-        if (col.name != COL_NAMES.SEQUENCE)
+        if (col.name !== COL_NAMES.SEQUENCE)
           rowStr += `> <${col.name}>\n${col.get(i)}\n\n`;
       }
 

@@ -21,14 +21,14 @@ export function findDuplicates(data: Int32Array | Float32Array | Float64Array | 
 export async function isCurrentUserCreatedThisPattern(patternName: string): Promise<boolean> {
   return await grok.dapi.users.current().then((user) => {
     const [firstName, lastName] = getUserName(patternName);
-    return (user.firstName != firstName || user.lastName != lastName);
+    return (user.firstName !== firstName || user.lastName !== lastName);
   });
 }
 
 export function getShortName(patternName: string): string {
   let first = patternName.length + 1;
   for (let i = 0; i < patternName.length; i++) {
-    if (patternName[i] == '(') {
+    if (patternName[i] === '(') {
       first = i;
       break;
     }
@@ -39,12 +39,12 @@ export function getShortName(patternName: string): string {
 function getUserName(patternName: string): string[] {
   let first = -1;
   for (let i = 0; i < patternName.length; i++) {
-    if (patternName[i] == '(') {
+    if (patternName[i] === '(') {
       first = i;
       break;
     }
   }
-  return (first == -1) ? ['', ''] : patternName.slice(first + 9, patternName.length - 1).split(' ').slice(1);
+  return (first === -1) ? ['', ''] : patternName.slice(first + 9, patternName.length - 1).split(' ').slice(1);
 }
 
 export function translateSequence(
@@ -71,9 +71,9 @@ export function translateSequence(
     }
     return (ptoLinkages[i].value) ? symbol + 's' : symbol;
   });
-  if (mainSequence.slice(0, 5).split('mU').length == 3)
+  if (mainSequence.slice(0, 5).split('mU').length === 3)
     mainSequence = '(uu)' + mainSequence.slice(4);
-  if (mainSequence.slice(mainSequence.length - 7).split('mU').length == 3)
+  if (mainSequence.slice(mainSequence.length - 7).split('mU').length === 3)
     mainSequence = mainSequence.slice(0, mainSequence.length - 4) + '(uu)';
   return startModification.value + (firstPtoExist ? 's' : '') + mainSequence + endModification.value;
 }
@@ -85,7 +85,7 @@ export function addColumnWithIds(tableName: string, columnName: string, patternN
     columns.remove(nameOfNewColumn);
   const columnWithIds = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return (columnWithIds.getString(i) == '') ? '' : columnWithIds.get(i) + '_' + patternName;
+    return (columnWithIds.getString(i) === '') ? '' : columnWithIds.get(i) + '_' + patternName;
   });
 }
 
@@ -103,7 +103,7 @@ export function addColumnWithTranslatedSequences(
     columns.remove(nameOfNewColumn);
   const columnWithInputSequences = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return columnWithInputSequences.getString(i) == '' ?
+    return columnWithInputSequences.getString(i) === '' ?
       '' :
       translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification,
         firstPtoExist);

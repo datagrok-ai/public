@@ -69,7 +69,7 @@ export class RegistrationColumnsHandler {
         const seqType = this.typeCol.get(i);
         if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(seqType)) {
           res = this.sequenceCol.get(i);
-        } else if (seqType == SEQUENCE_TYPES.DUPLEX) {
+        } else if (seqType === SEQUENCE_TYPES.DUPLEX) {
           const obj = parser.getDuplexStrands(this.sequenceCol.get(i));
           res = `${this.chemistryNameCol.get(i)}; duplex of SS: ${obj.ss} and AS: ${obj.as}`;
         } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(seqType)) {
@@ -93,7 +93,7 @@ export class RegistrationColumnsHandler {
         if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(seqType)) {
           const seq = this.sequenceCol.get(i);
           res = (isValid(seq)) ? getMolWeight(seq, codesToWeightsMap) : DG.FLOAT_NULL;
-        } else if (seqType == SEQUENCE_TYPES.DUPLEX) {
+        } else if (seqType === SEQUENCE_TYPES.DUPLEX) {
           const seq = this.sequenceCol.get(i);
           const obj = parser.getDuplexStrands(seq);
           const strands = Object.values(obj);

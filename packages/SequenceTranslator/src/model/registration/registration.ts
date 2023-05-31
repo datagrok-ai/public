@@ -149,7 +149,7 @@ export async function oligoSdFile(dl: DBLoaderBase, table: DG.DataFrame) {
   const d = ui.div([
     ui.icons.edit(() => {
       d.innerHTML = '';
-      if (table.getCol(COL_NAMES.IDP).type != DG.COLUMN_TYPE.STRING)
+      if (table.getCol(COL_NAMES.IDP).type !== DG.COLUMN_TYPE.STRING)
         table.changeColumnType(COL_NAMES.IDP, DG.COLUMN_TYPE.STRING);
       d.append(
         ui.divH([

@@ -2,7 +2,7 @@ import {NUCLEOTIDES} from '../const';
 import {axolabsStyleMap} from '../data-loading-utils/json-loader';
 
 export function isOverhang(modification: string): boolean {
-  return modification.slice(-3) == '(o)';
+  return modification.slice(-3) === '(o)';
 }
 
 export function isOneDigitNumber(n: number): boolean {
@@ -21,7 +21,7 @@ export function getPointsToDrawStar(centerX: number, centerY: number): string {
 
   let points = '';
   for (let i = 0; i < totalNumberOfPoints; i++) {
-    const r = (i % 2 == 0) ? outerRadius : innerRadius;
+    const r = (i % 2 === 0) ? outerRadius : innerRadius;
     const currentX = centerX + Math.cos(i * angle + angleOffsetToCenterStar) * r;
     const currentY = centerY + Math.sin(i * angle + angleOffsetToCenterStar) * r;
     points += `${currentX},${currentY} `;
@@ -33,7 +33,7 @@ export function countOverhangsOnTheRightEdge(modifications: string[]): number {
   let i = 0;
   while (i < modifications.length && isOverhang(modifications[i]))
     i++;
-  return (i == modifications.length - 1) ? 0 : i;
+  return (i === modifications.length - 1) ? 0 : i;
 }
 
 export function textWidth(text: string, font: number): number {

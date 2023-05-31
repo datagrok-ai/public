@@ -17,8 +17,11 @@ export class FormatConverter {
   constructor(private readonly sequence: string, private readonly sourceFormat: FORMAT) { };
 
   convertTo(targetFormat: FORMAT): string {
-    if (this.sourceFormat === FORMAT.HELM)
+    if (this.sourceFormat === FORMAT.HELM && targetFormat === FORMAT.GCRS)
       return this.helmToGcrs();
+    else if (this.sourceFormat === FORMAT.GCRS && targetFormat === FORMAT.HELM)
+      return this.gcrsToHelm();
+
     const codeMapping = formatDictionary[this.sourceFormat][targetFormat];
     if (codeMapping === undefined && targetFormat !== FORMAT.HELM) {
       throw new Error (`ST: unsupported translation direction ${this.sourceFormat} -> ${targetFormat}`);
@@ -26,8 +29,6 @@ export class FormatConverter {
       return this.bioSpringToGcrs(codeMapping as KeyToValue);
     else if (this.sourceFormat === FORMAT.GCRS && targetFormat === FORMAT.LCMS)
       return this.gcrsToLcms(codeMapping as KeyToValue);
-    else if (this.sourceFormat === FORMAT.GCRS && targetFormat === FORMAT.HELM)
-      return this.gcrsToHelm();
     else if (this.sourceFormat === FORMAT.NUCLEOTIDES) {
       const edgeCodeMapping = codeMapping[EDGES] as KeyToValue;
       const centerCodeMapping = codeMapping[CENTER] as KeyToValue;
@@ -38,20 +39,6 @@ export class FormatConverter {
       }
     } else
       return this.simpleConversion(codeMapping as KeyToValue);
-  }
-
-  private simpleConversion(codeMapping: KeyToValue) {
-    const regexp = new RegExp(getRegExpPattern(sortByReverseLength(Object.keys(codeMapping))), 'g');
-    return this.sequence.replace(regexp, (code) => codeMapping[code]);
-  }
-
-  private bioSpringToGcrs(codeMapping: KeyToValue): string {
-    let count: number = -1;
-    const regexp = new RegExp(getRegExpPattern(Object.keys(codeMapping)), 'g');
-    return this.sequence.replace(regexp, (x: string) => {
-        count++;
-        return (count == 4) ? codeMapping[x].slice(0, -3) + 'ps' : (count == 14) ? codeMapping[x].slice(0, -2) + 'nps' : codeMapping[x];
-      });
   }
 
   private gcrsToHelm(): string {
@@ -87,6 +74,24 @@ export class FormatConverter {
     gcrs = gcrs.replace(helmRegExp, (match) => dict[match]);
     gcrs = gcrs.replace(/p\.|\./g, '');
     return gcrs;
+  }
+
+  // private BiospringToHelm(): string {
+  //   return ''
+  // }
+
+  private simpleConversion(codeMapping: KeyToValue) {
+    const regexp = new RegExp(getRegExpPattern(sortByReverseLength(Object.keys(codeMapping))), 'g');
+    return this.sequence.replace(regexp, (code) => codeMapping[code]);
+  }
+
+  private bioSpringToGcrs(codeMapping: KeyToValue): string {
+    let count: number = -1;
+    const regexp = new RegExp(getRegExpPattern(Object.keys(codeMapping)), 'g');
+    return this.sequence.replace(regexp, (x: string) => {
+        count++;
+        return (count == 4) ? codeMapping[x].slice(0, -3) + 'ps' : (count == 14) ? codeMapping[x].slice(0, -2) + 'nps' : codeMapping[x];
+      });
   }
 
   private gcrsToLcms(codeMapping: KeyToValue): string {
