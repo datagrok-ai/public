@@ -1,6 +1,6 @@
 # Create custom connectors
 
-Datagrok connectors are plugins that provide a way for Datagrok to interact with external data sources. Datagrok platform supports [30+ popular databases](supported-connectors.md) right out of the box, with the list of supported databases continuously growing. You can also create your own connectors and seamlessly integrate them into the platform.
+Datagrok connectors are plugins that provide a way for Datagrok to interact with external data sources. Datagrok platform supports [30+ popular databases](./connectors/connectors.md) right out of the box, with the list of supported databases continuously growing. You can also create your own connectors and seamlessly integrate them into the platform.
 
 ## How it works
 
