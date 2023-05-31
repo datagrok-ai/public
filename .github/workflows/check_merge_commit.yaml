@@ -23,4 +23,5 @@ jobs:
             echo "This is a merge commit push. No actions will be runned"
           else
             echo "continue_action=true" >> $GITHUB_OUTPUT
+            echo "This is no merge commit push. Actions will be runned"
           fi 
