@@ -16,35 +16,13 @@ on:
 
 jobs:
   process-merge-commit:
-    runs-on: ubuntu-20.04
-    outputs:
-      merge_commit: ${{ steps.commit-details.outputs.is_merge_commit }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Get commit details
-        id: commit-details
-        run: |
-          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; then
-            echo "is_merge_commit=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_merge_commit=false" >> $GITHUB_OUTPUT
-          fi 
-
-  this-is-merge-commit:
-    needs: process-merge-commit
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Merge commit announce
-        if: needs.process-merge-commit.outputs.merge_commit == 'true'
-        run: |
-          echo "This is a merge commit push. No actions will be runned"
+    uses: ./.github/workflows/check_merge_commit.yaml
 
   codeql:
     name: CodeQL static analysis
     needs: process-merge-commit
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.merge_commit == 'false'
+    if: needs.process-merge-commit.outputs.continue == 'true'
     permissions:
       security-events: write
     steps:

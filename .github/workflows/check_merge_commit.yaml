@@ -1,0 +1,26 @@
+name: Check merge commit
+
+on:
+  workflow_call:
+    outputs:
+      continue: 
+        description: "Run nested acions if no merge commit"
+        value: ${{ jobs.check-merge-commit.outputs.continue }}
+
+jobs:
+  check-merge-commit:
+    runs-on: ubuntu-20.04
+    outputs:
+      continue: ${{ steps.commit-details.outputs.continue_action }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get commit details
+        id: commit-details
+        run: |
+          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; then
+            echo "continue_action=false" >> $GITHUB_OUTPUT
+            echo "This is a merge commit push. No actions will be runned"
+          else
+            echo "continue_action=true" >> $GITHUB_OUTPUT
+          fi 
