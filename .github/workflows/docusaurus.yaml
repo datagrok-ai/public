@@ -9,6 +9,10 @@ on:
       - 'docusaurus/**'
       - 'js-api/**'
   pull_request:
+    paths:
+      - 'help/**'
+      - 'docusaurus/**'
+      - 'js-api/**'
 
 jobs:
   process-merge-commit:

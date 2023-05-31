@@ -9,11 +9,41 @@ on:
   push:
     paths:
       - 'packages/**'
+  pull_request:
+    paths:
+      - 'packages/**'
 
 jobs:
+  process-merge-commit:
+    runs-on: ubuntu-20.04
+    outputs:
+      merge_commit: ${{ steps.commit-details.outputs.is_merge_commit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get commit details
+        id: commit-details
+        run: |
+          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; then
+            echo "is_merge_commit=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_merge_commit=false" >> $GITHUB_OUTPUT
+          fi 
+
+  this-is-merge-commit:
+    needs: process-merge-commit
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Merge commit announce
+        if: needs.process-merge-commit.outputs.merge_commit == 'true'
+        run: |
+          echo "This is a merge commit push. No actions will be runned"
+
   matrix:
     name: Check changes
     runs-on: ubuntu-20.04
+    needs: process-merge-commit
+    if: needs.process-merge-commit.outputs.merge_commit == 'false'
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
@@ -26,7 +56,7 @@ jobs:
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]]; then
               commit="$(git log --format="%H" -n 1 --no-merges)"
             else
               commit=${{ github.sha }}
@@ -96,7 +126,8 @@ jobs:
     name: Test and publish to npm
     needs:
       - matrix
-    if: needs.matrix.outputs.publish == 'yes'
+      - process-merge-commit
+    if: needs.matrix.outputs.publish == 'yes' && needs.process-merge-commit.outputs.merge_commit == 'false'
     runs-on: ubuntu-20.04
     env:
       HOST: GitHubAction
