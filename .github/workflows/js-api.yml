@@ -9,7 +9,7 @@ on:
       - 'js-api/**'
 jobs:
   check-commit:
-    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
+    uses: ./.github/workflows-reusable/check_merge_commit.yaml
 
   version:
     name: Check version

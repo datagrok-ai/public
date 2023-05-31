@@ -16,7 +16,7 @@ on:
 
 jobs:
   check-commit:
-    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
+    uses: ./.github/workflows-reusable/check_merge_commit.yaml
 
   codeql:
     name: CodeQL static analysis
