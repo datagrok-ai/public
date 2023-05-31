@@ -397,7 +397,7 @@ export async function _tableLinkingDemo() {
 	const demogTypesTableView = grok.shell.addTableView(demogTypes);
 
 	grok.data.linkTables(demogTypes, demog, ['sex', 'race'], ['sex', 'race'],
-		[DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER, DG.SYNC_TYPE.MOUSE_OVER_ROW_TO_SELECTION]);
+		[DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
   const demogGridViewer = demogTypesTableView.addViewer(DG.VIEWER.GRID, {table: 'Table'});
   demogTypesTableView.dockManager.dock(demogGridViewer, DG.DOCK_TYPE.RIGHT, null, 'demog', 0.7);
   
