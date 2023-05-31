@@ -5,6 +5,12 @@ title: "Metadata"
 Any [entity](../datagrok/objects.md) can be annotated with metadata, which can be used for searching. In Datagrok, there
 are three kinds of metadata: tags, parameters, and properties.
 
+:::tip
+
+Right-click a column's header and select **Properties...** to view associated tags and other information.
+
+:::
+
 ## Tags
 
 A tag is a short string that can be associated with any entity. It is convenient for grouping things
@@ -43,6 +49,11 @@ Common properties:
 Search criteria can be combined using 'and' or 'or' operands:
 
 * `#demo or #chem`
+
+:::tip
+
+You can leverage metadata as search criteria in [projects](../datagrok/project.md). You can also filter tables using [smart search](../datagrok/smart-search.md) based on various fields like ID, name, rowCount, colCount, createdOn, updatedOn, author ([user](../govern/user.md) object),starredBy ([user](../govern/user.md) object), commentedBy ([user](../govern/user.md) object).
+
 
 See also
 
