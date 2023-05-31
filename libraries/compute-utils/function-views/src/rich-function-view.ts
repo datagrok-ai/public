@@ -112,7 +112,8 @@ export class RichFunctionView extends FunctionView {
       if (([
         ...Array.from(inputForm.childNodes),
         ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
-      ]).some((child) => $(child).width() < 250)) {
+      ]).some((child) => $(child).width() < 250) ||
+      $(inputBlock).width() < 350) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
       } else {
