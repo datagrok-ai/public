@@ -267,12 +267,20 @@ export abstract class FunctionView extends DG.ViewBase {
     this.subs.push(
       newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id))),
       newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
+      grok.events.onCurrentViewChanged.subscribe(() => {
+        if (grok.shell.v === this) {
+          setTimeout(() => {
+            grok.shell.o = this.historyRoot;
+          });
+        }
+      }),
     );
 
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
     this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
+    grok.shell.o = this.historyRoot;
     return newHistoryBlock.root;
   }
 

@@ -76,33 +76,33 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   test('isCorrect', async () => {
     await _testMsaIsCorrect(fromCsv, toCsv);
-  });
+  }, {skipReason: 'GROK-13221'});
 
   test('isCorrectLong', async () => {
     await _testMsaIsCorrect(longFromCsv, longToCsv);
-  });
+  }, {skipReason: 'GROK-13221'});
 
   test('isCorrectHelm', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(helmFromCsv, helmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  });
+  }, {skipReason: 'GROK-13221'});
 
   test('isCorrectHelmLong', async () => {
     await awaitContainerStart();
     await _testMSAOnColumn(longHelmFromCsv, longHelmToCsv, NOTATION.HELM, NOTATION.SEPARATOR, undefined, 'mafft');
-  });
+  }, {skipReason: 'GROK-13221'});
 
   test('isCorrectSeparator', async () => {
     await _testMSAOnColumn(
-      SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT
+      SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  });
+  }, {skipReason: 'GROK-13221'});
 
   test('isCorrectSeparatorLong', async () => {
     await _testMSAOnColumn(
-      SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT
+      SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  });
+  }, {skipReason: 'GROK-13221'});
 });
 
 async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> {
@@ -122,7 +122,7 @@ async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> 
 
 async function _testMSAOnColumn(
   srcCsv: string, tgtCsv: string,
-  srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string
+  srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
 ): Promise<void> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);

@@ -4,11 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DistanceFunctionNames} from './distance-functions';
 
-// export interface IDistanceMatrixCalculator{
-//   calc<T>(values: Array<T> | ArrayLike<T>, fnName: DistanceFunctionNames<T>): Promise<Float32Array>;
-//   terminate: () => void;
-// }
-
 
 export class DistanceMatrixWorker {
   private _worker: Worker;
@@ -30,20 +25,3 @@ export class DistanceMatrixWorker {
     this._worker.terminate();
   }
 }
-
-// export class DistanceMatrixCalculator implements IDistanceMatrixCalculator {
-//   public async calc<T>(values: Array<T> | ArrayLike<T>, fnName: DistanceFunctionNames<T>): Promise<Float32Array> {
-//     return new Promise((resolve, reject) => {
-//       try {
-//         const distanceMatrix = DistanceMatrix.calc(values, distanceFunctions[fnName]);
-//         resolve(distanceMatrix.data);
-//       } catch (e) {
-//         reject(e);
-//       }
-//     });
-//   }
-
-//   public terminate(): void {
-//     // no-op
-//   }
-// }

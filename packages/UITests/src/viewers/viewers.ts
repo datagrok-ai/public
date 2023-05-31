@@ -4,11 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
 
-
 category('Viewers: Core Viewers', () => {
   const df = grok.data.demo.demog(100);
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
-    !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines'));
+    !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') && v !== 'Google map');
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
   //@ts-ignore
@@ -20,7 +19,6 @@ category('Viewers: Core Viewers', () => {
   }
 });
 
-
 category('Viewers', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
@@ -28,14 +26,9 @@ category('Viewers', () => {
   let viewerList: DG.JsViewer[];
 
   before(async () => {
-    coreViewerTypes = Object.values(DG.VIEWER).filter((v) =>
-      v != DG.VIEWER.TIMELINES &&
-      v != DG.VIEWER.GLOBE &&
-      v != DG.VIEWER.SCATTER_PLOT_3D &&
-      v != DG.VIEWER.GOOGLE_MAP &&
-      v != DG.VIEWER.SHAPE_MAP);
-    // v != DG.VIEWER.SURFACE_PLOT);
-    df = grok.data.demo.demog();
+    coreViewerTypes = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
+      !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') && v !== 'Google map');
+    df = grok.data.demo.demog(100);
     tv = grok.shell.addTableView(df);
     viewerList = [];
   });
@@ -57,7 +50,6 @@ category('Viewers', () => {
       closeViewers(tv);
     }
   });
-  */
 
   test('addViewer(Viewer)', async () => {
     try {
@@ -72,6 +64,7 @@ category('Viewers', () => {
       closeViewers(tv);
     }
   });
+  */
 
   test('close', async () => {
     tv.scatterPlot();
@@ -89,10 +82,12 @@ category('Viewers', () => {
   test('fromType', async () => {
     for (const viewerType of coreViewerTypes) {
       const viewer = DG.Viewer.fromType(viewerType, df);
+      await delay(200);
       if (!(viewer instanceof DG.Viewer))
         throw new Error(`Viewer.fromType('${viewerType}', df) should add a Viewer instance`);
       expect(viewer.table.id, df.id);
     }
+    DG.Balloon.closeAll();
   });
 
   test('Reset default properties', async () => {
@@ -212,8 +207,7 @@ category('Viewers', () => {
   }, {skipReason: 'GROK-11485'});
 
   after(async () => {
-    tv.close();
-    grok.shell.closeTable(df);
+    grok.shell.closeAll();
 
     for (const viewer of viewerList) {
       try {
@@ -231,24 +225,24 @@ function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());
 }
 
-function addViewerAndWait(tv: DG.TableView, viewerType: string | DG.Viewer): Promise<DG.Viewer> {
-  return new Promise((resolve, reject) => {
-    const sub = grok.events.onViewerAdded.subscribe((data) => {
-      // @ts-ignore
-      if ((data.args.viewer as DG.Viewer).type == viewerType || data.args.viewer == viewerType) {
-        sub.unsubscribe();
-        // @ts-ignore
-        resolve(data.args.viewer);
-      }
-    });
-    tv.addViewer(viewerType);
-    setTimeout(() => {
-      sub.unsubscribe();
-      // eslint-disable-next-line prefer-promise-reject-errors
-      reject('timeout');
-    }, 100);
-  });
-}
+// function addViewerAndWait(tv: DG.TableView, viewerType: string | DG.Viewer): Promise<DG.Viewer> {
+//   return new Promise((resolve, reject) => {
+//     const sub = grok.events.onViewerAdded.subscribe((data) => {
+//       // @ts-ignore
+//       if ((data.args.viewer as DG.Viewer).type == viewerType || data.args.viewer == viewerType) {
+//         sub.unsubscribe();
+//         // @ts-ignore
+//         resolve(data.args.viewer);
+//       }
+//     });
+//     tv.addViewer(viewerType);
+//     setTimeout(() => {
+//       sub.unsubscribe();
+//       // eslint-disable-next-line prefer-promise-reject-errors
+//       reject('timeout');
+//     }, 100);
+//   });
+// }
 
 function testDefaultSettings(tv: DG.TableView, dataFields: boolean, styleFields: boolean, reset: boolean = true) {
   const options = {

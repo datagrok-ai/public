@@ -65,12 +65,7 @@ export class MonomerPosition extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.subs.push(this.model.onMonomerPositionSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
-    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
-      this.createMonomerPositionGrid();
-      this.render();
-    }));
     this.render();
   }
 
@@ -101,7 +96,6 @@ export class MonomerPosition extends DG.JsViewer {
       const aar = monomerCol.get(gridCell!.tableRowIndex!);
       chooseAction(aar, position, ev.shiftKey, this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.model);
       this.viewerGrid.invalidate();
-      // this.model.fireBitsetChanged();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
 
@@ -154,7 +148,7 @@ export class MonomerPosition extends DG.JsViewer {
 }
 
 /** Vertical structure activity relationship viewer */
-export class MostPotentResiduesViewer extends DG.JsViewer {
+export class MostPotentResidues extends DG.JsViewer {
   _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
@@ -183,12 +177,7 @@ export class MostPotentResiduesViewer extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.subs.push(this.model.onMonomerPositionSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
-    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
-      this.createMostPotentResiduesGrid();
-      this.render();
-    }));
     this.render();
   }
 

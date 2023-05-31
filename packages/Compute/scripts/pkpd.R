@@ -13,6 +13,9 @@
 #output: graphics PKPD
 #output: double Cmax {units: nM}
 #meta.domain: PKPD
+#meta.runOnOpen: true
+#meta.runOnInput: true
+
 
 require("ggplot2")
 require("RxODE")

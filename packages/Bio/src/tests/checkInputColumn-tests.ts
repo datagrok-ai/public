@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {checkInputColumn} from '../utils/check-input-column';
@@ -15,11 +15,6 @@ seq3,
 seq4`;
 
   test('testMsaPos', async () => {
-    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentDialog'})[0];
-    const funcInputColumnProperty: DG.Property = func.inputs.find((i) => i.name == 'sequence')!;
-
-    const k = 11;
-
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -27,7 +22,7 @@ seq4`;
     col.setTag(bioTAGS.alphabet, ALPHABET.DNA);
     col.setTag(bioTAGS.aligned, 'SEQ');
 
-    const [res, msg]: [boolean, string] = checkInputColumn(
+    const [res, _msg]: [boolean, string] = checkInputColumn(
       col, 'Test', [NOTATION.FASTA],
       [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
 
@@ -42,7 +37,7 @@ seq4`;
     // col.setTag(bio.TAGS.alphabetSize, '11');
     col.setTag(bioTAGS.alphabetIsMultichar, 'true');
 
-    const [res, msg]: [boolean, string] = checkInputColumn(
+    const [res, _msg]: [boolean, string] = checkInputColumn(
       col, 'Test', [NOTATION.FASTA],
       [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
 
@@ -59,7 +54,7 @@ seq4`;
     col.setTag(bioTAGS.alphabetIsMultichar, 'true');
     col.setTag(bioTAGS.aligned, 'SEQ');
 
-    const [res, msg]: [boolean, string] = checkInputColumn(
+    const [res, _msg]: [boolean, string] = checkInputColumn(
       col, 'Test', [NOTATION.FASTA],
       [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
 
@@ -68,7 +63,6 @@ seq4`;
 
   test('testGetActionFunctionMeta', async () => {
     const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentDialog'})[0];
-    const sequenceInput: DG.Property = func.inputs.find((i) => i.name == 'sequence')!;
-    const k = 11;
+    const _sequenceInput: DG.Property = func.inputs.find((i) => i.name == 'sequence')!;
   });
 });

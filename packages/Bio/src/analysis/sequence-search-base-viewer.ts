@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import * as C from '../utils/constants';
 
 export class SequenceSearchBaseViewer extends DG.JsViewer {
   name: string = '';
@@ -66,7 +65,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
     this.render();
   }
 
-  async render(computeData = true) {
+  async render(_computeData = true) {
 
   }
 

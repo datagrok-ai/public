@@ -33,7 +33,7 @@ Seamlessly bring together data from the different silos and formats.
 
 * [30+ connectors](access/access.md#data-connection) to all major databases
 * 1,000+ services exposed via [OpenAPI](access/open-api.md)
-* Drag-and-drop files to open ([10+ formats](access/supported-connectors.md)), or
+* Drag-and-drop files to open ([10+ formats](access/connectors/connectors.md)), or
   browse [file shares](https://public.datagrok.ai/files)
 * [Visually explore](access/databases.mdx#database-manager) and manage relational databases
   using [schema browser](access/databases.mdx#schema-browser)

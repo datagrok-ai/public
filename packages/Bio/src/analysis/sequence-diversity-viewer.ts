@@ -51,7 +51,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       col: monomericMols,
       metricName: this.distanceMetric,
       limit: this.limit,
-      fingerprint: this.fingerprint
+      fingerprint: this.fingerprint,
     });
   }
 
