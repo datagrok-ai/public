@@ -48,7 +48,8 @@ export async function demoBio05UI(): Promise<void> {
         df.columns.add(msaHelmCol);
         await grok.data.detectSemanticTypes(df);
       }, {
-        description: 'Multiple sequence alignment (MSA) performed with PepSeA tool operating on non-natural aminoacids as well.',
+        description: 'Multiple sequence alignment (MSA) performed with' +
+          'PepSeA tool operating on non-natural aminoacids as well.',
         delay: 2000,
       })
       .step('Build sequence space', async () => {
@@ -57,7 +58,7 @@ export async function demoBio05UI(): Promise<void> {
         view.dockManager.dock(ssViewer, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
       }, {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Analyse sequence composition', async () => {
         wlViewer = await df.plot.fromType('WebLogo', {
@@ -67,7 +68,8 @@ export async function demoBio05UI(): Promise<void> {
         }) as DG.Viewer & IWebLogoViewer;
         view.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.2);
       }, {
-        description: 'Composition analysis allows to reveal functional features of sequences like motifs, or variable loops.',
+        description: 'Composition analysis allows to reveal' +
+          'functional features of sequences like motifs, or variable loops.',
         delay: 2000,
       })
       .start();

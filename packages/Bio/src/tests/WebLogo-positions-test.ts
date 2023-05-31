@@ -7,13 +7,12 @@ import {
   countForMonomerAtPosition,
   PositionInfo as PI,
   PositionMonomerInfo as PMI,
-  WebLogoViewer
+  WebLogoViewer,
 } from '../viewers/web-logo-viewer';
 
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
   let dfList: DG.DataFrame[];
-  let currentView: DG.ViewBase;
 
   const csvDf1 = `seq
 ATC-G-TTGC--
@@ -73,9 +72,8 @@ ATC-G-TTGC--
 
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
-      for (const key in positions[i].freq) {
+      for (const key in positions[i].freq)
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
-      }
     }
   });
 
@@ -125,9 +123,8 @@ ATC-G-TTGC--
 
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
-      for (const key in positions[i].freq) {
+      for (const key in positions[i].freq)
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
-      }
     }
   });
 
@@ -159,7 +156,7 @@ ATC-G-TTGC--
       new PI(6, '7', {'T': new PMI(5)}),
       new PI(7, '8', {'T': new PMI(5)}),
       new PI(8, '9', {'G': new PMI(5)}),
-      new PI(9, '10', {'C': new PMI(5)})
+      new PI(9, '10', {'C': new PMI(5)}),
     ];
 
     expect(resPosList.length, tgtPosList.length);
@@ -179,7 +176,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo', {
       startPositionName: '3',
       endPositionName: '7',
-      skipEmptyPositions: true
+      skipEmptyPositions: true,
     })) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 

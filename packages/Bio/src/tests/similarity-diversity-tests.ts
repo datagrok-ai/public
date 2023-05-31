@@ -1,11 +1,10 @@
 import {after, before, category, test, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
-import {createTableView, readDataframe} from './utils';
+import {createTableView} from './utils';
 import * as grok from 'datagrok-api/grok';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
 category('similarity/diversity', async () => {
-
   before(async () => {
     grok.shell.closeAll();
   });

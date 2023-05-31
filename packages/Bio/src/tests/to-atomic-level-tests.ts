@@ -183,5 +183,5 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
 async function _testToAtomicLevel(df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper) {
   const seqCol: DG.Column<string> = df.getCol(seqColName);
   const monomerLib: IMonomerLib = monomerLibHelper.getBioLib();
-  const resCol = await _toAtomicLevel(df, seqCol, monomerLib);
+  const _resCol = await _toAtomicLevel(df, seqCol, monomerLib);
 }
