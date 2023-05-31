@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as OCL from 'openchemlib/full';
 import {findSimilar, searchSubstructure} from './searches';
 
 const WIDTH = 200;
@@ -62,7 +61,7 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
     renderFunctions[0].apply().then((rendndererObj) => {
       rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT, DG.GridCell.fromValue(molfile));
     });
-  
+
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));
     compsHost.appendChild(molHost);

@@ -152,7 +152,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
 
     return new DG.Widget(resultMap);
   }
-  
+
   const r = window.devicePixelRatio;
   const molCount = Math.min(moleculesJson.length, 20);
   const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
@@ -173,7 +173,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
       rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT,
         DG.GridCell.fromValue(molEntry['CanonicalSMILES']));
     });
-  
+
     ui.tooltip.bind(molHost, () => ui.divText(`CID: ${molEntry['CID']}\nClick to open in PubChem`));
     molHost.addEventListener('click',
       () => window.open(`https://pubchem.ncbi.nlm.nih.gov/compound/${molEntry['CID']}`, '_blank'));

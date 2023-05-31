@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchWidget, drugNameMoleculeConvert} from '../widgets';
 import * as CONST from './const';
@@ -29,7 +29,7 @@ category('DrugBank', () => {
   });
 
   test('drugNameMolecule', async () => {
-    drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, moleculeCol)
+    drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, moleculeCol);
     // expect(drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, smilesCol), 'CC(Oc(cccc1)c1C(O)=O)=O');
     // expect(drugNameMoleculeConvert('db:carbono', dbdfRowCount, synonymsCol, smilesCol), '[C]');
     // expect(drugNameMoleculeConvert('db:gadolinio', dbdfRowCount, synonymsCol, smilesCol), '[Gd]');
