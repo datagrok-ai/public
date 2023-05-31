@@ -109,12 +109,12 @@ export class RichFunctionView extends FunctionView {
     const inputBlock = this.buildInputBlock();
 
     ui.tools.handleResize(inputBlock, () => {
-      if (Array.from(this.formTabsElem.getPane('Input').content.children).some((child) => $(child).width() < 250)) {
-        $(this.formTabsElem.getPane('Output').content).addClass('ui-form-condensed');
-        $(this.formTabsElem.getPane('Input').content).addClass('ui-form-condensed');
+      if (Array.from(inputBlock.children).some((child) => $(child).width() < 250)) {
+        $(inputBlock).addClass('ui-form-condensed');
+        $(inputBlock).addClass('ui-form-condensed');
       } else {
-        $(this.formTabsElem.getPane('Output').content).removeClass('ui-form-condensed');
-        $(this.formTabsElem.getPane('Input').content).removeClass('ui-form-condensed');
+        $(inputBlock).removeClass('ui-form-condensed');
+        $(inputBlock).removeClass('ui-form-condensed');
       }
     });
 
@@ -141,16 +141,20 @@ export class RichFunctionView extends FunctionView {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
 
-    this.formTabsElem = ui.tabControl({
-      'Input': inputFormDiv,
-      'Output': outputFormDiv,
+    const form = ui.divV([
+      inputFormDiv,
+      ...this.hasUploadMode ? [
+        ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root]),
+        outputFormDiv,
+      ]: [],
+    ]);
+
+    this.isUploadMode.subscribe((newValue) => {
+      if (newValue)
+        $(outputFormDiv).show();
+      else
+        $(outputFormDiv).hide();
     });
-
-    $(this.formTabsElem.root).removeClass('ui-box');
-    $(this.formTabsElem.root).css('flex-grow', 0);
-
-    $(this.formTabsElem.getPane('Output').header).hide();
-    $(this.formTabsElem.getPane('Input').header).hide();
 
     this.controllsDiv = undefined;
     this.beforeRenderControlls.next(true);
@@ -185,7 +189,7 @@ export class RichFunctionView extends FunctionView {
     $(controlsWrapper).css('padding', '0px');
 
     return ui.divV([
-      this.formTabsElem.root,
+      form,
       ...this.runningOnInput ? []: [controlsWrapper],
     ], 'ui-box');
   }
@@ -218,14 +222,6 @@ export class RichFunctionView extends FunctionView {
       }
 
       toggleUploadMode.classList.toggle('d4-current');
-      if (this.isUploadMode.value) {
-        $(this.formTabsElem.getPane('Input').header).show();
-        $(this.formTabsElem.getPane('Output').header).show();
-      } else {
-        this.formTabsElem.currentPane = this.formTabsElem.getPane('Input');
-        $(this.formTabsElem.getPane('Input').header).hide();
-        $(this.formTabsElem.getPane('Output').header).hide();
-      }
     }, 'Upload experimental data');
     toggleUploadMode.classList.add(
       'd4-toggle-button',
@@ -247,8 +243,6 @@ export class RichFunctionView extends FunctionView {
 
   // Main element of the output block. Stores all the tabs for the output and input
   private outputsTabsElem = ui.tabControl();
-  // Main element of the input block. Stores the forms for inputs and outputs
-  private formTabsElem = ui.tabControl();
 
   public buildOutputBlock(): HTMLElement {
     this.outputsTabsElem.root.style.width = '100%';
@@ -664,9 +658,8 @@ export class RichFunctionView extends FunctionView {
     const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
     expFuncCall.dart.r2 = tempCall.dart.r2;
 
-    let tagsRef = expFuncCall.options['tags'] as undefined | string[];
-    tagsRef = tagsRef ? [...tagsRef, EXPERIMENTAL_TAG] : [EXPERIMENTAL_TAG];
-    expFuncCall.options['tags'] = tagsRef;
+    const tags = expFuncCall.options['tags'] || [];
+    expFuncCall.options['tags'] = tags.includes(EXPERIMENTAL_TAG) ? tags: [...tags, EXPERIMENTAL_TAG];
 
     expFuncCall.newId();
 
