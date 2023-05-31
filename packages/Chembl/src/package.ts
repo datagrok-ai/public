@@ -49,7 +49,7 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
 
   searchFunc().then((table: DG.DataFrame | null) => {
     compsHost.removeChild(compsHost.firstChild!);
-    if (table == null || table.rowCount == 0) {
+    if (table === null || table.rowCount === 0) {
       compsHost.appendChild(ui.divText('No matches'));
       return;
     }
@@ -60,7 +60,7 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     const r = window.devicePixelRatio;
 
     const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-    if (renderFunctions.length == 0)
+    if (renderFunctions.length === 0)
       throw new Error('RDKit renderer is not available');
 
     for (let i = 0; i < molCount; i++) {
@@ -201,8 +201,8 @@ export async function Browser() {
   }
 
   async function update() {
-    const ro5 = ro5Violation.value == 'All' ? -1 : parseInt(ro5Violation.value!);
-    const qMaxPhase = maxPhase.value == 'All' ? -1 : parseInt(maxPhase.value!);
+    const ro5 = ro5Violation.value === 'All' ? -1 : parseInt(ro5Violation.value!);
+    const qMaxPhase = maxPhase.value === 'All' ? -1 : parseInt(maxPhase.value!);
     const queryParameters = {
       'substructure': molecule.value,
       'subname': subName.value,
@@ -211,7 +211,7 @@ export async function Browser() {
       'molecule_type': moleculeType.value,
     };
     const query = await grok.data.query(`${_package.name}:cbChemblBrowserQuery`, queryParameters);
-    if (query.rowCount == 0)
+    if (query.rowCount === 0)
       grok.shell.info('No results for this filter were found');
     else {
       query.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
@@ -230,7 +230,7 @@ export async function Browser() {
 
   async function findByMolregno() {
     const query = await grok.data.query(`${_package.name}:cbFindByMolregno`, {'molregno': parseInt(molregno.value)});
-    if (query.rowCount == 0)
+    if (query.rowCount === 0)
       grok.shell.info('No results for this filter were found');
     else {
       query.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;

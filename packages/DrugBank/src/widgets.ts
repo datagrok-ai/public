@@ -7,7 +7,12 @@ import {findSimilar, searchSubstructure} from './searches';
 const WIDTH = 200;
 const HEIGHT = 100;
 
-export async function searchWidget(molString: string, searchType: 'similarity' | 'substructure', dbdf: DG.DataFrame,
+export enum SEARCH_TYPE {
+  SIMILARITY = 'similarity',
+  SUBSTRUCTURE = 'substructure',
+}
+
+export async function searchWidget(molString: string, searchType: SEARCH_TYPE, dbdf: DG.DataFrame,
 ): Promise<DG.Widget> {
   const headerHost = ui.div();
   const compsHost = ui.div([], 'd4-flex-wrap');
@@ -16,10 +21,10 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
   let table: DG.DataFrame | null;
   try {
     switch (searchType) {
-    case 'similarity':
+    case SEARCH_TYPE.SIMILARITY:
       table = await findSimilar(molString, 20, 0, dbdf);
       break;
-    case 'substructure':
+    case SEARCH_TYPE.SUBSTRUCTURE:
       table = await searchSubstructure(molString, dbdf);
       break;
     default:
@@ -34,7 +39,7 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
     compsHost.appendChild(ui.divText('No matches'));
     return new DG.Widget(panel);
   }
-  table.name = `DrugBank ${searchType === 'similarity' ? 'Similarity' : 'Substructure'} Search`;
+  table.name = `DrugBank ${searchType} Search`;
 
   const bitsetIndexes = table.filter.getSelectedIndexes();
   const molCount = Math.min(bitsetIndexes.length, 20);
@@ -44,7 +49,7 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
   const r = window.devicePixelRatio;
 
   const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-  if (renderFunctions.length == 0)
+  if (renderFunctions.length === 0)
     throw new Error('RDKit renderer is not available');
 
   for (let n = 0; n < molCount; n++) {

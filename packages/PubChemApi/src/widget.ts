@@ -78,7 +78,7 @@ export function renderSection(section: anyObject, refs: anyObject): HTMLDivEleme
 }
 
 export async function buildAccordion(id: pubChemIdType | null): Promise<HTMLElement> {
-  if (id == '0' || id == null)
+  if (id === '0' || id === null)
     return ui.div('Not found in PubChem');
 
   const json = await getCompoundInfo(id);
@@ -129,7 +129,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     return widget;
   }
 
-  if (searchType == 'identity') {
+  if (searchType === 'identity') {
     const props: {value: anyObject, urn: anyObject}[] = moleculesJson[0]['props'];
     const result: anyObject = {};
     const bannedKeys = ['label', 'name', 'implementation', 'datatype'];
@@ -156,7 +156,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   const r = window.devicePixelRatio;
   const molCount = Math.min(moleculesJson.length, 20);
   const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-  if (renderFunctions.length == 0)
+  if (renderFunctions.length === 0)
     throw new Error('RDKit renderer is not available');
 
   for (let idx = 0; idx < molCount; idx++) {

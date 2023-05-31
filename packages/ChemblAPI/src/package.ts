@@ -62,7 +62,7 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
     const r = window.devicePixelRatio;
 
     const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-    if (renderFunctions.length == 0)
+    if (renderFunctions.length === 0)
       throw new Error('RDKit renderer is not available');
 
     for (let i = 0; i < molCount; i++) {
@@ -107,7 +107,7 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
 //output dataframe
 export async function getById(id: string): Promise<DG.DataFrame | null> {
   if (!id.toLowerCase().startsWith('chembl'))
-    id = 'CHEMBL' + id;
+    id = `CHEMBL${id}`;
 
   try {
     return await grok.data.query(`${_package.name}:MoleculeJson`, {'molecule_chembl_id__exact': id});
