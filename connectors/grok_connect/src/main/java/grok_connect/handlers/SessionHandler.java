@@ -9,7 +9,6 @@ import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import grok_connect.GrokConnect;
@@ -23,7 +22,6 @@ public class SessionHandler {
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
     private static final String END_MESSAGE = "EOF";
     private static final String SIZE_RECIEVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
-    private final Queue<Integer> chunkNumberQueue;
     private final Session session;
     private final ExecutorService threadPool;
     private final QueryLogger<DataFrame> queryLogger;
@@ -32,13 +30,12 @@ public class SessionHandler {
     private DataFrame dataFrame;
     private Boolean firstTry = true;
     private Boolean oneDfSent = false;
-    private int messageNumber = 1;
+    private int dfNumber = 1;
     private byte[] bytes;
     private QueryManager queryManager;
 
     SessionHandler(Session session, QueryLogger<DataFrame> queryLogger) {
         threadPool = Executors.newCachedThreadPool();
-        chunkNumberQueue = new LinkedBlockingQueue<>();
         this.queryLogger = queryLogger;
         this.logger = queryLogger.getLogger();
         this.session = session;
@@ -67,33 +64,30 @@ public class SessionHandler {
     }
 
     public void onMessage(String message) throws Throwable {
-        logger.debug(EventType.SOCKET_MESSAGE_PROCESSING.getMarkerNumbered(messageNumber), "Received message {}", message);
+        logger.debug(EventType.MISC.getMarker(), "Received message {}", message);
         if (message.startsWith(MESSAGE_START)) {
             message = message.substring(6);
             queryManager = new QueryManager(message, queryLogger.getLogger());
             queryManager.initResultSet();
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
-                dataFrame = queryManager.getSubDF();
+                dataFrame = queryManager.getSubDF(dfNumber);
             } else {
                 dataFrame = new DataFrame();
             }
-            chunkNumberQueue.add(Integer.valueOf(dataFrame.tags.get(QueryManager.CHUNK_NUMBER_TAG)));
         } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
-            long startTime = System.currentTimeMillis();
-            fdf = threadPool.submit(() -> queryManager.getSubDF());
-            Integer dfNumber = chunkNumberQueue.poll();
-            Marker markerNumbered = EventType.CHUNK_SENDING.getMarkerNumbered(dfNumber);
-            logger.debug(markerNumbered, "Sending binary dataframe with id {}", dfNumber);
+            fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
+            Marker start = EventType.CHUNK_SENDING.getMarker(dfNumber, EventType.Stage.START);
+            Marker end = EventType.CHUNK_SENDING.getMarker(dfNumber, EventType.Stage.END);
+            logger.debug(start, "Sending binary dataframe with id {}", dfNumber);
             session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
-            logger.debug(markerNumbered, "Binary dataframe with id {} was sent to the server, exec time: {} ms", dfNumber,
-                    System.currentTimeMillis() - startTime);
+            logger.debug(end, "Binary dataframe with id {} was sent to the server", dfNumber);
+            logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing has finished");
             return;
         } else if (message.startsWith(COMPLETED)) {
-            logger.debug(EventType.LOG_PROCESSING.getMarker(), "Converting logs to byteArray");
+            logger.debug(EventType.LOG_PROCESSING.getMarker(EventType.Stage.START), "Converting logs to byteArray");
             byte[] logs = queryLogger.dumpLogMessages().toByteArray();
-            logger.debug(EventType.LOG_PROCESSING.getMarker(), "Logs were converted to byteArray");
-            logger.debug(EventType.LOG_PROCESSING.getMarker(), "Sending logs");
+            logger.debug(EventType.LOG_PROCESSING.getMarker(EventType.Stage.END), "Logs were converted to byteArray");
             session.getRemote().sendBytes(ByteBuffer.wrap(logs));
             queryLogger.closeLogger();
             session.getRemote().sendString(END_MESSAGE);
@@ -112,27 +106,25 @@ public class SessionHandler {
                 oneDfSent = true;
                 if (queryManager.isResultSetInitialized()) {
                     dataFrame = fdf.get();
-                    chunkNumberQueue.add(Integer.valueOf(dataFrame.tags.get(QueryManager.CHUNK_NUMBER_TAG)));
+                    dfNumber++;
                 }
             }
         }
         if (dataFrame != null && (dataFrame.rowCount != 0 || !oneDfSent)) {
-            Integer peek = chunkNumberQueue.peek();
-            Marker marker = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarkerNumbered(peek);
-            logger.debug(marker, "Converting dataframe to byteArray");
-            long start = System.currentTimeMillis();
+            Marker start = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.START);
+            Marker finish = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.END);
+            logger.debug(start, "Converting dataframe to byteArray");
             bytes = dataFrame.toByteArray();
-            logger.debug(marker, "DataFrame with id {} was converted to byteArray, execution time: {} ms", peek,
-                    System.currentTimeMillis() - start);
-            logger.debug(EventType.CHECKSUM_SENDING.getMarkerNumbered(peek), "Sending checkSum message with bytes length of {}", bytes.length);
+            logger.debug(finish, "DataFrame with id {} was converted to byteArray", dfNumber);
+            logger.debug(EventType.CHECKSUM_SENDING.getMarker(dfNumber, EventType.Stage.START), "Sending checkSum message with bytes length of {}", bytes.length);
             session.getRemote().sendString(checksumMessage(bytes.length));
+            logger.debug(EventType.CHECKSUM_SENDING.getMarker(dfNumber, EventType.Stage.END), "CheckSum message was sent");
         } else {
-            logger.debug(EventType.MISC.getMarker(), "Closing connection");
+            logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame is empty. Processing has finished");
             queryManager.closeConnection();
             logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
             session.getRemote().sendString("COMPLETED");
         }
-        logger.debug(EventType.SOCKET_MESSAGE_PROCESSING.getMarkerNumbered(messageNumber++), "Message was proceeded");
     }
 
     public String checksumMessage(int i) {

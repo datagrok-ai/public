@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.regex.*;
 import com.clickhouse.data.value.UnsignedByte;
 import com.clickhouse.data.value.UnsignedShort;
-import grok_connect.handlers.SessionHandler;
 import grok_connect.log.EventType;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
@@ -141,23 +140,21 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         ResultSet resultSet = null;
         if (dataQuery.inputParamsCount() > 0) {
-            long convertingStartTime = System.currentTimeMillis();
-            queryLogger.debug(EventType.QUERY_PARSING.getMarker(), "Converting query");
+            queryLogger.debug(EventType.QUERY_PARSING.getMarker(EventType.Stage.START), "Converting query");
             query = convertPatternParamsToQueryParams(queryRun, query);
-            queryLogger.debug(EventType.QUERY_PARSING.getMarker(), "Query after converting: {}, time taken to convert: {} ms",
-                    query.replaceAll("\n", ""), System.currentTimeMillis() - convertingStartTime);
+            queryLogger.debug(EventType.QUERY_PARSING.getMarker(EventType.Stage.END), "Query after converting: {}",
+                    query);
             if (autoInterpolation()) {
                 StringBuilder queryBuffer = new StringBuilder();
-                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(), "Query will be auto interpolated");
-                long interpolatingStartTime = System.currentTimeMillis();
+                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(EventType.Stage.START), "Query will be auto interpolated");
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
-                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(), "Interpolated query: {}, time taken to interpolate: {} ms",
-                        query.replaceAll("\n", ""), System.currentTimeMillis() - interpolatingStartTime);
+                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(EventType.Stage.END), "Interpolated query: {}",
+                        query);
                 PreparedStatement statement = connection.prepareStatement(query);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
-                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACING.getMarker(), "Query detected parameters: {}", names);
+                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACING.getMarker(EventType.Stage.START), "Query detected parameters: {}", names);
                 int i = 0;
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
@@ -179,21 +176,17 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                     stringValues.add(stringValue);
                 }
-                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACING.getMarker(), "Parameters were replaced by: {}", stringValues);
+                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACING.getMarker(EventType.Stage.END), "Parameters were replaced by: {}", stringValues);
                 setQueryTimeOut(statement, timeout);
-                queryLogger.debug(EventType.STATEMENT_EXECUTING.getMarker(), "Executing statement");
-                long queryCallStartTime = System.currentTimeMillis();
+                queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.START), "Executing statement");
                 if(statement.execute())
                     resultSet = statement.getResultSet();
-                queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(), "Statement was executed, time taken: {} ms",
-                        System.currentTimeMillis() - queryCallStartTime);
+                queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.END), "Statement was executed");
                 providerManager.getQueryMonitor().removeStatement(mainCallId);
             } else {
-                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(), "Query will be manually interpolated");
-                long startManualTime = System.currentTimeMillis();
+                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(EventType.Stage.START), "Query will be manually interpolated");
                 query = manualQueryInterpolation(query, dataQuery);
-                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(), "Interpolated query: {}, time taken to interpolate: {} ms",
-                        query, System.currentTimeMillis() - startManualTime);
+                queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(EventType.Stage.END), "Interpolated query");
                 resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId);
             }
         } else {
@@ -209,12 +202,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         PreparedStatement statement = connection.prepareStatement(query);
         providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
-        queryLogger.debug(EventType.STATEMENT_EXECUTING.getMarker(), "Executing statement");
-        long queryCallStartTime = System.currentTimeMillis();
+        queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.START), "Executing statement");
         if(statement.execute())
             resultSet = statement.getResultSet();
-        queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(), "Statement was executed, time taken: {} ms",
-                System.currentTimeMillis() - queryCallStartTime);
+        queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.END), "Statement was executed");
         providerManager.getQueryMonitor().removeStatement(mainCallId);
         return resultSet;
     }
@@ -336,7 +327,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger) throws QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
@@ -356,8 +347,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
                 resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger);
             } else {
+                queryLogger.debug(EventType.MISC.getMarker(), "Executing batch mode");
                 String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
-
                 for (String currentQuery : queries)
                     resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger); // IT WON'T WORK?
             }
@@ -392,7 +383,6 @@ public abstract class JdbcDataProvider extends DataProvider {
                 int precision = resultSetMetaData.getPrecision(c);
                 int scale = resultSetMetaData.getScale(c);
 
-                long startTime = System.currentTimeMillis();
                 if (isInteger(type, typeName, precision, scale))
                     column = new IntColumn();
                 else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName, scale))
@@ -418,16 +408,16 @@ public abstract class JdbcDataProvider extends DataProvider {
                     supportedType.set(c - 1, false);
                     initColumn.set(c - 1, false);
                 }
-                queryLogger.debug(EventType.SCHEME_INFO_INIT.getMarker(), "Column: {}, type: {}, type name: {}, precision: {}, scale: {}. "
-                                + "Prepared column type {}, time taken to detect: {} ms",
-                        label, type, typeName, precision, scale, column.getType(), startTime - System.currentTimeMillis());
+                queryLogger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.INTERMEDIATE), "Column: {}, type: {}, type name: {}, precision: {}, scale: {}. "
+                                + "Prepared column type {}",
+                        label, type, typeName, precision, scale, column.getType());
                 column.name = label;
                 columns.add(c - 1, column);
             }
             return new SchemeInfo(columns, supportedType, initColumn);
 
         } catch (SQLException e) {
-            queryLogger.warn("An exception was thrown", e);
+            queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);
             if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
@@ -451,8 +441,6 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             queryLogger.debug(EventType.MISC.getMarker(), "Received resultSet meta data");
-            queryLogger.debug(EventType.RESULT_SET_PROCESSING.getMarkerNumbered(operationNumber), "ResultSet processing was started");
-            long fillingDataframeStart = System.currentTimeMillis();
             BufferedWriter csvWriter = null;
             if (outputCsv != null) {
                 csvWriter = new BufferedWriter(new FileWriter(outputCsv));
@@ -462,7 +450,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                     csvWriter.append(c == columnCount ? '\n' : ',');
                 }
             }
-
+            queryLogger.debug(EventType.COLUMN_FILLING.getMarker(operationNumber, EventType.Stage.START),
+                    "Column filling was started");
             int rowCount = 0;
             while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
                 rowCount++;
@@ -654,13 +643,12 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (outputCsv != null) {
                 csvWriter.close();
             }
-            queryLogger.debug(EventType.RESULT_SET_PROCESSING.getMarkerNumbered(operationNumber), "ResultSet processing was finished, execution time: {} ms", System.currentTimeMillis() - fillingDataframeStart);
+            queryLogger.debug(EventType.COLUMN_FILLING.getMarker(operationNumber, EventType.Stage.END),
+                    "Column filling was finished");
             DataFrame dataFrame = new DataFrame();
-            queryLogger.debug(EventType.DATAFRAME_FILLING.getMarkerNumbered(operationNumber), "Filling dataFrame was started");
-            long addingColumnsTime = System.currentTimeMillis();
+            queryLogger.debug(EventType.DATAFRAME_FILLING.getMarker(operationNumber, EventType.Stage.START), "Filling dataFrame was started");
             dataFrame.addColumns(columns);
-            queryLogger.debug(EventType.DATAFRAME_FILLING.getMarkerNumbered(operationNumber), "Filling dataFrame was finished, execution time: {} ms",
-                    System.currentTimeMillis() - addingColumnsTime);
+            queryLogger.debug(EventType.DATAFRAME_FILLING.getMarker(operationNumber, EventType.Stage.END), "Filling dataFrame was finished");
             return dataFrame;
         } catch (Exception e) {
             queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);

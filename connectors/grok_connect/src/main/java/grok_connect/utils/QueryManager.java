@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import grok_connect.GrokConnect;
@@ -31,7 +30,6 @@ public class QueryManager {
     private static final int MAX_FETCH_SIZE = 100000;
     private static final int MIN_FETCH_SIZE = 100;
     private static final int FIRST_FETCH_SIZE = 100;
-    private final AtomicInteger currentChunk = new AtomicInteger(1);
     private final JdbcDataProvider provider;
     private final FuncCall query;
     private final Logger logger;
@@ -63,54 +61,52 @@ public class QueryManager {
     }
 
     public void initResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
-        logger.debug(EventType.CONNECTION_RECEIVING.getMarker(), "Receiving connection to db");
+        logger.debug(EventType.RESULT_SET_INIT.getMarker(EventType.Stage.START), "Initializing resultSet");
+        logger.debug(EventType.CONNECTION_RECEIVING.getMarker(EventType.Stage.START), "Receiving connection to db");
         connection = provider.getConnection(query.func.connection);
-        logger.debug(EventType.CONNECTION_RECEIVING.getMarker(), "Connection was received");
-        logger.debug(EventType.RESULT_SET_INIT.getMarker(), "Initializing resultSet");
-        long startTime = System.currentTimeMillis();
+        logger.debug(EventType.CONNECTION_RECEIVING.getMarker(EventType.Stage.END), "Connection was received");
         resultSet = provider.getResultSet(query, connection, logger);
-        logger.debug(EventType.RESULT_SET_INIT.getMarker(), "Finished resultSet init, execution time: {} ms", System.currentTimeMillis() - startTime);
+        logger.debug(EventType.RESULT_SET_INIT.getMarker(EventType.Stage.END), "Finished resultSet init");
         supportTransactions = connection.getMetaData().supportsTransactions();
     }
 
     public void initScheme() throws QueryCancelledByUser, SQLException {
-        logger.debug(EventType.SCHEME_INFO_INIT.getMarker(), "Initializing schemeInfo");
-        long startTime = System.currentTimeMillis();
+        logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.START), "Initializing schemeInfo");
         if (resultSet == null) {
-            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(), "resultSet is null, return empty schemeInfo");
+            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.END), "resultSet is null, return empty schemeInfo");
             schemeInfo = new SchemeInfo(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
             return;
         }
         schemeInfo = provider.resultSetScheme(query, resultSet, logger);
-        logger.debug(EventType.SCHEME_INFO_INIT.getMarker(), "Finished schemeInfo init, execution time: {} ms", System.currentTimeMillis() - startTime);
+        logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.END), "Finished schemeInfo init");
     }
 
-    public DataFrame getSubDF() throws IOException, SQLException, QueryCancelledByUser {
+    public DataFrame getSubDF(int dfNumber) throws IOException, SQLException, QueryCancelledByUser {
         logger.trace(EventType.MISC.getMarker(), "getSubDF was called with argument");
+        logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.START), "DataFrame processing was started");
         List<Column> columns = schemeInfo.columns;
         for (Column column : columns) {
             column.empty();
         }
         DataFrame df = new DataFrame();
-        int chunkNumber = currentChunk.getAndIncrement();
         if (!connection.isClosed() && !resultSet.isClosed()) {
-            Marker markerNumbered = EventType.RESULT_SET_PROCESSING.getMarkerNumbered(chunkNumber);
-            logger.debug(markerNumbered, "Receiving part of resultSet");
-            long startTime = System.currentTimeMillis();
+            Marker start = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.START);
+            Marker end = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.END);
+            logger.debug(start, "ResultSet processing was started");
             df = provider.getResultSetSubDf(query, resultSet, columns,
-            schemeInfo.supportedType, schemeInfo.initColumn, currentFetchSize, logger, chunkNumber);
-            logger.debug(markerNumbered, "Received part of resultSet, execution time: {} ms", System.currentTimeMillis() - startTime);
+            schemeInfo.supportedType, schemeInfo.initColumn, currentFetchSize, logger, dfNumber);
+            logger.debug(end, "ResultSet processing has finished");
         }
 
         if (supportTransactions && df.rowCount != 0 && !changedFetchSize) {
             currentFetchSize = getFetchSize(df);
-            logger.debug(EventType.FETCH_SIZE_CHANGING.getMarkerNumbered(chunkNumber), "Fetch size: {}", currentFetchSize);
+            logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size: {}", currentFetchSize);
             if (!provider.descriptor.type.equals("Virtuoso")) {
                 resultSet.setFetchSize(currentFetchSize);
             }
         }
         df.tags = new LinkedHashMap<>();
-        df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(chunkNumber));
+        df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
         return df;
     }
 
