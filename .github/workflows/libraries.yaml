@@ -14,14 +14,14 @@ on:
       - 'libraries/**'
 
 jobs:
-  process-merge-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  check-commit:
+    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
 
   metadata:
     name: Check changes
-    needs: process-merge-commit
+    needs: check-commit
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.check-commit.outputs.continue == 'true'
     outputs:
       publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -102,8 +102,8 @@ jobs:
 
   publish:
     name: Build and publish to npm
-    needs: [metadata, process-merge-commit]
-    if: needs.metadata.outputs.continue == 'yes' && needs.process-merge-commit.outputs.continue == 'true'
+    needs: [metadata, check-commit]
+    if: needs.metadata.outputs.continue == 'yes' && needs.check-commit.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false

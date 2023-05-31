@@ -8,14 +8,14 @@ on:
     paths:
       - 'js-api/**'
 jobs:
-  process-merge-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  check-commit:
+    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
 
   version:
     name: Check version
-    needs: process-merge-commit
+    needs: check-commit
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.check-commit.outputs.continue == 'true'
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
       current_version: ${{ steps.check-version.outputs.current_version }}
@@ -128,8 +128,8 @@ jobs:
   build:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
-    needs: [version, process-merge-commit] 
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    needs: [version, check-commit] 
+    if: needs.check-commit.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -193,11 +193,11 @@ jobs:
   libraries:
     name: Check libraries
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.replace_lib_dep == 'true' && needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.version.outputs.replace_lib_dep == 'true' && needs.check-commit.outputs.continue == 'true'
     needs:
       - build
       - version
-      - process-merge-commit
+      - check-commit
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.version.outputs.libraries_matrix) }}
@@ -271,11 +271,11 @@ jobs:
   packages:
     name: Check packages
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.replace_pack_dep == 'true' && needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.version.outputs.replace_pack_dep == 'true' && needs.check-commit.outputs.continue == 'true'
     needs:
       - build
       - version
-      - process-merge-commit
+      - check-commit
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.version.outputs.packages_matrix) }}

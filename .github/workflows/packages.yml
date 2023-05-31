@@ -14,14 +14,14 @@ on:
       - 'packages/**'
 
 jobs:
-  process-merge-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  check-commit:
+    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
 
   matrix:
     name: Check changes
     runs-on: ubuntu-20.04
-    needs: process-merge-commit
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    needs: check-commit
+    if: needs.check-commit.outputs.continue == 'true'
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
@@ -104,8 +104,8 @@ jobs:
     name: Test and publish to npm
     needs:
       - matrix
-      - process-merge-commit
-    if: needs.matrix.outputs.publish == 'yes' && needs.process-merge-commit.outputs.continue == 'true'
+      - check-commit
+    if: needs.matrix.outputs.publish == 'yes' && needs.check-commit.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     env:
       HOST: GitHubAction

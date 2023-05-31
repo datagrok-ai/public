@@ -15,14 +15,14 @@ on:
       - 'js-api/**'
 
 jobs:
-  process-merge-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  check-commit:
+    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
 
   lint:
     name: Lint
-    needs: process-merge-commit
+    needs: check-commit
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.check-commit.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -55,8 +55,8 @@ jobs:
 
   convert:
     name: Convert to HTML
-    needs: [lint, process-merge-commit]
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    needs: [lint, check-commit]
+    if: needs.check-commit.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -125,11 +125,11 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: [convert, process-merge-commit]
+    needs: [convert, check-commit]
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.outputs.continue == 'true'
+    if: github.ref == 'refs/heads/master' && needs.check-commit.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -173,12 +173,12 @@ jobs:
 
   scrape:
     name: Scrape
-    needs: [deploy, process-merge-commit]
+    needs: [deploy, check-commit]
     environment: Help
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master' && needs.process-merge-commit.outputs.continue == 'true'
+    if: github.ref == 'refs/heads/master' && needs.check-commit.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout

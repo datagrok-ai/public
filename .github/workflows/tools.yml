@@ -9,13 +9,13 @@ on:
       - 'tools/**'
 
 jobs:
-  process-merge-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  check-commit:
+    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
 
   check:
-    needs: process-merge-commit
+    needs: check-commit
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.check-commit.outputs.continue == 'true'
     name: Check version was changed
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
@@ -40,9 +40,9 @@ jobs:
 
   build:
     name: Build and publish to npm
-    needs: [check, process-merge-commit]
+    needs: [check, check-commit]
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.check-commit.outputs.continue == 'true'
     steps:
       - uses: actions/checkout@v3
         with:

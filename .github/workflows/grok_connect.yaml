@@ -9,14 +9,14 @@ on:
       - 'connectors/**'
 
 jobs:
-  process-merge-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  check-commit:
+    uses: ./.github/workflows/called_workflows/check_merge_commit.yaml
 
   build:
     name: Build maven
-    needs: process-merge-commit
+    needs: check-commit
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.check-commit.outputs.continue == 'true'
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       image_exists: ${{ steps.get_version.outputs.image_exists }}
@@ -72,9 +72,9 @@ jobs:
 
   docker:
     name: Build Docker
-    needs: [build, process-merge-commit]
+    needs: [build, check-commit]
     runs-on: ubuntu-20.04
-    if: needs.process-merge-commit.outputs.continue == 'true'
+    if: needs.check-commit.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
