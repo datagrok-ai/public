@@ -106,15 +106,18 @@ export class RichFunctionView extends FunctionView {
    * @returns HTMLElement attached to the root of the view
    */
   public buildIO(): HTMLElement {
-    const inputBlock = this.buildInputBlock();
+    const {inputBlock, inputForm, outputForm} = this.buildInputBlock();
 
     ui.tools.handleResize(inputBlock, () => {
-      if (Array.from(inputBlock.children).some((child) => $(child).width() < 250)) {
-        $(inputBlock).addClass('ui-form-condensed');
-        $(inputBlock).addClass('ui-form-condensed');
+      if (([
+        ...Array.from(inputForm.childNodes),
+        ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
+      ]).some((child) => $(child).width() < 250)) {
+        $(inputForm).addClass('ui-form-condensed');
+        $(outputForm).addClass('ui-form-condensed');
       } else {
-        $(inputBlock).removeClass('ui-form-condensed');
-        $(inputBlock).removeClass('ui-form-condensed');
+        $(inputForm).removeClass('ui-form-condensed');
+        $(outputForm).removeClass('ui-form-condensed');
       }
     });
 
@@ -137,7 +140,7 @@ export class RichFunctionView extends FunctionView {
     return out;
   }
 
-  public buildInputBlock(): HTMLElement {
+  public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
 
@@ -188,10 +191,14 @@ export class RichFunctionView extends FunctionView {
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
     $(controlsWrapper).css('padding', '0px');
 
-    return ui.divV([
-      form,
-      ...this.runningOnInput ? []: [controlsWrapper],
-    ], 'ui-box');
+    return {
+      inputBlock: ui.divV([
+        form,
+        ...this.runningOnInput ? []: [controlsWrapper],
+      ], 'ui-box'),
+      inputForm: inputFormDiv,
+      outputForm: outputFormDiv,
+    };
   }
 
   buildRibbonPanels(): HTMLElement[][] {
@@ -516,6 +523,7 @@ export class RichFunctionView extends FunctionView {
     outputs.classList.remove('ui-panel');
     outputs.style.paddingTop = '0px';
     outputs.style.paddingLeft = '0px';
+    outputs.style.maxWidth = '100%';
 
     return outputs;
   }
