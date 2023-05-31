@@ -83,11 +83,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const dataBounds = getChartBounds(data);
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
-    for (const series of data.series!) {
-      if (!series.clickToToggle)
+    for (let i = 0; i < data.series?.length!; i++) {
+      if (!data.series![i].clickToToggle || data.series![i].showBoxPlot)
         continue;
-      for (let i = 0; i < series.points.length!; i++) {
-        const p = series.points[i];
+      for (let j = 0; j < data.series![i].points.length!; j++) {
+        const p = data.series![i].points[j];
         const screenX = viewport.xToScreen(p.x);
         const screenY = viewport.yToScreen(p.y);
         const pxPerMarkerType = (p.outlier ? 6 : 4) / 2;
@@ -96,7 +96,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             p.outlier = !p.outlier;
             // temporarily works only for JSON structure
             if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
-              gridCell.cell.value = JSON.stringify(data);
+              const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
+              gridCellValue.series![i].points[j].outlier = p.outlier;
+              gridCell.cell.value = JSON.stringify(gridCellValue);
             }
             return;
           }
@@ -136,7 +138,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
           if (!candleStart && nextSame)
             candleStart = i;
-          else if (candleStart !== null && !nextSame) {
+          else if ((series.showBoxPlot ?? false) && candleStart !== null && !nextSame) {
             let minY = series.points[candleStart].y;
             let maxY = minY;
             for (let j = candleStart; j < i; j++) {
@@ -151,7 +153,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
             candleStart = null;
           }
-          else if (!candleStart) {
+          else if (!candleStart || !series.showBoxPlot) {
             DG.Paint.marker(g,
               p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
               viewport.xToScreen(p.x), viewport.yToScreen(p.y),

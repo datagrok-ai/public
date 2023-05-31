@@ -153,6 +153,8 @@ export const fitSeriesProperties: Property[] = [
     {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
   Property.js('showPoints', TYPE.BOOL,
     {category: 'Fitting', description: 'Whether points should be rendered', defaultValue: true}),
+  Property.js('showBoxPlot', TYPE.BOOL,
+    {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
 
 
