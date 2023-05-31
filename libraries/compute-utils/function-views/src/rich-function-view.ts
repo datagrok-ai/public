@@ -677,6 +677,12 @@ export class RichFunctionView extends FunctionView {
   private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
     const prop = val.property;
     const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
+    $(newTableInput.root).css({
+      'width': `${prop.options['block'] ?? '100'}%`,
+      'box-sizing': 'border-box',
+      'padding-right': '5px',
+    });
+
     t.root.replaceWith(newTableInput.root);
     t = newTableInput;
     this.syncOnInput(t, val);
