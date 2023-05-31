@@ -144,21 +144,6 @@ export class RichFunctionView extends FunctionView {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
 
-    const form = ui.divV([
-      inputFormDiv,
-      ...this.hasUploadMode ? [
-        ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root]),
-        outputFormDiv,
-      ]: [],
-    ]);
-
-    this.isUploadMode.subscribe((newValue) => {
-      if (newValue)
-        $(outputFormDiv).show();
-      else
-        $(outputFormDiv).hide();
-    });
-
     this.controllsDiv = undefined;
     this.beforeRenderControlls.next(true);
     if (!this.controllsDiv) {
@@ -191,11 +176,24 @@ export class RichFunctionView extends FunctionView {
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
     $(controlsWrapper).css('padding', '0px');
 
+    const form = ui.divV([
+      inputFormDiv,
+      ...this.hasUploadMode ? [
+        ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
+        outputFormDiv,
+      ]: [],
+      ...this.runningOnInput ? []: [controlsWrapper],
+    ], 'ui-box');
+
+    this.isUploadMode.subscribe((newValue) => {
+      if (newValue)
+        $(outputFormDiv).show();
+      else
+        $(outputFormDiv).hide();
+    });
+
     return {
-      inputBlock: ui.divV([
-        form,
-        ...this.runningOnInput ? []: [controlsWrapper],
-      ], 'ui-box'),
+      inputBlock: form,
       inputForm: inputFormDiv,
       outputForm: outputFormDiv,
     };
@@ -470,6 +468,10 @@ export class RichFunctionView extends FunctionView {
 
   private renderOutputForm(): HTMLElement {
     const outputs = ui.divV([], 'ui-form ui-form-wide');
+    $(outputs).css({
+      'flex-wrap': 'wrap',
+      'flex-grow': '0',
+    });
     let prevCategory = 'Misc';
     wu(this.funcCall.outputParams.values() as DG.FuncCallParam[])
       .filter((val) => !!val)
@@ -530,7 +532,10 @@ export class RichFunctionView extends FunctionView {
 
   private renderInputForm(): HTMLElement {
     const inputs = ui.divH([], 'ui-form ui-form-wide');
-    $(inputs).css({'flex-wrap': 'wrap'});
+    $(inputs).css({
+      'flex-wrap': 'wrap',
+      'flex-grow': '0',
+    });
     let prevCategory = 'Misc';
     wu(this.funcCall.inputParams.values() as DG.FuncCallParam[])
       .filter((val) => !!val)
