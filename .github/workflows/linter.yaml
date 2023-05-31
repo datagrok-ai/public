@@ -6,7 +6,7 @@ on:
 
 jobs:
   check-commit:
-    uses: ./.github/workflows-reusable/check_merge_commit.yaml
+    uses: ./.github/workflows/check_merge_commit.yaml
 
   super-linter:
     name: Super Lint Code Base
