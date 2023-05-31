@@ -341,15 +341,15 @@ _Entities_ are associated with dataframes, and Datagrok provides a set of functi
 * [Data Connection](../access/access.md#data-connection)
 * [Data Query](../access/access.md#data-query)
 * [Data Job](../access/access.md)
-* [DB Table Info](../access/databases.mdx#working-with-queries)
-* [DB Column Info](../access/databases.mdx#working-with-queries)
+* [DB Table Info](../access/databases/databases.mdx#working-with-queries)
+* [DB Column Info](../access/databases/databases.mdx#working-with-queries)
 * [User](../govern/user.md)
 * [Group](../govern/group.md)
 * [Model](../learn/predictive-modeling.md)
 * [Notebook](../compute/jupyter-notebook.md)
 * [Package](../develop/develop.md#packages)
 * [Project](project.md)
-* [Repository](../access/connectors/git.md)
+* [Repository](../access/databases/connectors/git.md)
 * [Script](../compute/scripting.md)
 * [Table](#table): Also known as a _dataframe_. A two-dimemnsional structure containing named columns with different data types.  
 * [View Layout](../visualize/view-layout.md)
@@ -394,11 +394,11 @@ To open a **Welcome Page** view, on the **Sidebar** click the **Hamburger** (ADD
 Entity browsers are special views used to manage the display of and commands and context actions applicable to certain _entities_. Each such browser has its own URL link. These views are generally accessible from a **Sidebar**:
 
 * Data views (**Sidebar** > **Data**): Data views are generally related to data access and include the following:
-  * [Files](../access/file-shares.mdx#file-manager) ([open in Datagrok](https://public.datagrok.ai/files))
-  * [Databases](../access/databases.mdx#database-manager) ([open in Datagrok](https://public.datagrok.ai/connect))
+  * [Files](../access/files/files.mdx#file-manager) ([open in Datagrok](https://public.datagrok.ai/files))
+  * [Databases](../access/databases/databases.mdx#database-manager) ([open in Datagrok](https://public.datagrok.ai/connect))
   * [Webservices](../access/open-api.md#webservices-manager) ([open in Datagrok](https://public.datagrok.ai/webservices))
   * [Text](https://public.datagrok.ai/files#importing-text) ([open in Datagrok](https://public.datagrok.ai/text))
-  * [Queries](../access/databases.mdx#running-queries)([open in Datagrok](https://public.datagrok.ai/queries))
+  * [Queries](../access/databases/databases.mdx#running-queries)([open in Datagrok](https://public.datagrok.ai/queries))
   * [Projects](#projects) ([open in Datagrok](https://public.datagrok.ai/projects)).[WHAT IS ALATION?]
   
   <details>
@@ -861,7 +861,7 @@ not specified, the first view from the project will open.
 
 #### Files
 
-A [file share](../access/file-shares.mdx) for which the user has access is available by the link. You should
+A [file share](../access/files/files.mdx) for which the user has access is available by the link. You should
 specify the file share name and the namespace in which it exists in the URL, for
 example, [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles)
 .
@@ -889,7 +889,7 @@ link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datag
 The link to a [data query](../access/access.md#data-query), in addition to its name, must also contain the
 corresponding [data connection](../access/access.md#data-connection) name and the namespace (or several nested namespaces).
 
-[Parameterized queries](../access/databases.mdx#parameterized-queries) can be executed as well. In this case, query parameters are
+[Parameterized queries](../access/databases/databases.mdx#parameterized-queries) can be executed as well. In this case, query parameters are
 passed directly in the URL. For example:
 
 [https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY](https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY)

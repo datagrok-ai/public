@@ -56,7 +56,7 @@ with chemical data:
   * Structure analysis using [R-groups decomposition](#r-groups-analysis) and [scaffold tree](#scaffold-tree-analysis).  
   * Interactive exploration of [SAR data](#structure-relationship-analysis) and [ADME/Tox properties](#admetox).
   * Flexible reporting and sharing options, including [dynamic
-    dashboards](../../access/databases.mdx/#sharing-query-results).
+    dashboards](../../access/databases/databases.mdx/#sharing-query-results).
 * [**QSAR and QSPR modeling support**](#qsar-and-qspr-modeling)
   * Train, assess, execute, deploy, reuse, and incorporate custom predictive
     models that accept molecular structures as their input.
@@ -66,11 +66,11 @@ with chemical data:
 
 ## Data access
 
-Datagrok provides a single, unified access point for organizations, allowing you to connect to various machine readable sources, such as [file storages](../../access/file-shares.mdx), [databases](../../access/databases.mdx), or [webservices](../../access/open-api.md).  You can use the Datagrok UI to connect directly to any of the [30+ supported data sources](../../access/supported-connectors.md), retrieve data, and securely share data with others.
+Datagrok provides a single, unified access point for organizations, allowing you to connect to various machine readable sources, such as [file storages](../../access/files/files.mdx), [databases](../../access/databases/databases.mdx), or [webservices](../../access/open-api.md).  You can use the Datagrok UI to connect directly to any of the [30+ supported data sources](../../access/databases/connectors/connectors.md), retrieve data, and securely share data with others.
 
 :::note developers
 
-You can [create custom connectors](../../access/create-custom-connectors.md) and connect to data [programmatically](../../develop/how-to/access-data.md).
+You can [create custom connectors](../../access/databases/create-custom-connectors.md) and connect to data [programmatically](../../develop/how-to/access-data.md).
 
 :::
 
@@ -94,7 +94,7 @@ Once you've created the query, it functions as a [regular Datagrok query](../../
 
 To run an in-memory query against the ChEMBL database, follow these steps:
 
-1. [Run](../../access/databases.mdx#running-queries) a [parameterized data query](../../access/databases.mdx#parameterized-queries) with input paramters that specify a semantic type. Here's an example:
+1. [Run](../../access/databases/databases.mdx#running-queries) a [parameterized data query](../../access/databases/databases.mdx#parameterized-queries) with input paramters that specify a semantic type. Here's an example:
 
   ```sql
   --input: string pattern {semType: Substructure}
@@ -112,7 +112,7 @@ To learn more about querying data and data access in general, see the [Access](.
 
 ### Supported data formats
 
-Datagrok supports most popular data formats, such as SMILES, SMARTS, InChI,InChiKey, SDF, PDB, MOL2 and other [file formats](../../access/supported-formats.md), molecular fingerprints (such as MACCS,ECFP, FCFP, and others), molecular descriptors, and graph-based representations. To restore MOL files for subsequent processing, the platform uses SMILES. For chemical reactions, the platform uses the modified strings of [SMIRKS notation](https://www.daylight.com/dayhtml/doc/theory/theory.smirks.html).
+Datagrok supports most popular data formats, such as SMILES, SMARTS, InChI,InChiKey, SDF, PDB, MOL2 and other [file formats](../../access/files/supported-formats.md), molecular fingerprints (such as MACCS,ECFP, FCFP, and others), molecular descriptors, and graph-based representations. To restore MOL files for subsequent processing, the platform uses SMILES. For chemical reactions, the platform uses the modified strings of [SMIRKS notation](https://www.daylight.com/dayhtml/doc/theory/theory.smirks.html).
 
 <!--Thanks to the highly optimized database memory use, we are capable of working with huge volumes of data.-->
 
@@ -661,7 +661,7 @@ To highlight rows matching a particular scaffold, hover the mouse over the scaff
 
 ### Elemental analysis
 
-**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualize the results in a [radar viewer](../../visualize/viewers/radar-viewer.md), which provides a visual representation of the elemental composition of the analyzed structure. Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure. The angle of the point represents the electronegativity of the element.
+**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualize the results in a [radar viewer](../../visualize/viewers/radar.md), which provides a visual representation of the elemental composition of the analyzed structure. Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure. The angle of the point represents the electronegativity of the element.
 
 [GIF]
 
