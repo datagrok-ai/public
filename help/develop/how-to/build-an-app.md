@@ -166,7 +166,7 @@ There's a variety of data sources which Datagrok can handle out of the box:
 * Web Services (REST endpoints) specified via Swagger / OpenAPI ([link](../../access/open-api.md))
 * Arbitrary REST APIs (including these outside host's domain) ([link](access-data.md#rest-endpoints))
 * Access a file from the Datagrok server space (either shared or Home) ([link](access-data.md#file-shares))
-* Reading from databases: Datagrok supports more than 30 connectors ([link](../../access/connectors/connectors.md))
+* Reading from databases: Datagrok supports more than 30 connectors ([link](../../access/databases/connectors/connectors.md))
 * Access a file from a network file share (Windows Shares, SAMBA and the like) ([link](access-data.md#file-shares))
 
 Connections to databases, respective database queries, and file shares connections live in Datagrok

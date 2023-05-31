@@ -43,7 +43,7 @@ Now, let's proceed to the sidebar icons and explore the functionality they offer
 This tab brings together the platform's main data-retrieving capabilities. There are multiple ways in which you can work
 with data in Datagrok: from a full in-browser experience to establishing data connections, deploying interactive
 applications, running data jobs, building pipelines. It all starts with a simple step
-of [importing data](../access/file-shares.mdx).
+of [importing data](../access/files/files.mdx).
 
 ### Local files
 
@@ -51,12 +51,12 @@ Take a local file to begin with. To open it on the platform, drag-and-drop it in
 file dialog interaction: double-click on the `Data` icon or press `Ctrl + O`. You can access this dialog from the
 toolbox as well (`Data | Open local file`). It is important to note that the data resides in the browser up until the
 moment you choose to upload it to the server. This is always done explicitly. See the list
-of [supported file formats](../access/supported-formats.md)
+of [supported file formats](../access/files/supported-formats.md)
 and read more about [saving data to the server](../datagrok/project.md#uploading-a-project).
 
 ### File browser
 
-[File shares](../access/file-shares.mdx) are arguably an even more popular choice for working with data. Files
+[File shares](../access/files/files.mdx) are arguably an even more popular choice for working with data. Files
 form a hierarchy, which you can browse naturally from the interface. The
 [File Browser](https://public.datagrok.ai/files) operates as a file system: you can organize pieces of data into folders
 and subfolders, rename and move files. The [tree map](../visualize/viewers/tree-map.md)
@@ -75,7 +75,7 @@ users can do that from `Data | Files | Actions | New File Share`. Besides, since
 connections, they can be added in the connection dialog (`Databases | Actions | Add New Connection`)
 . If you enable indexing feature, the platform will extract metadata from the files, which you can later apply in the
 search. The articles on
-[data access](../develop/how-to/access-data.md#file-shares), [file shares](../access/file-shares.mdx)
+[data access](../develop/how-to/access-data.md#file-shares), [file shares](../access/files/files.mdx)
 and
 [routing](routing.md#files) explain in more detail how to work with file shares.
 
@@ -89,7 +89,7 @@ that, it is possible to develop your own data connectors, and seamlessly integra
 in [Connection Tree](https://public.datagrok.ai/connect), which you can reach from `Data | Databases`. Each branch
 corresponds to a provider and unfolds to show connections to the given data source. Connections, in their turn,
 list [data queries](../access/access.md#data-query)
-and, if available, [tables](../access/databases.mdx#working-with-queries) from the database.
+and, if available, [tables](../access/databases/databases.mdx#working-with-queries) from the database.
 
 ### Webservices
 
