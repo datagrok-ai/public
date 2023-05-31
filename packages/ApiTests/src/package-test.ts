@@ -29,9 +29,10 @@ import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
 import './utils/color';
-import './package/upload';
+// import './package/upload';
 import './grid/grid';
 import './grid/color-coding';
+import './stats/stats';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 

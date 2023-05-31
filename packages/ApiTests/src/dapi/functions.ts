@@ -99,8 +99,10 @@ category('Dapi: functions.calls', async () => {
   test('delete', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
-    expect((await GDF.calls.filter(`func.id="${funcCall.func.id}"`).list()).includes(funcCall), false);
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    expect(await GDF.calls.find(funcCall.id) !== undefined, true, 'funcCall was not saved');
     await GDF.calls.delete(funcCall);
-    expect((await GDF.calls.filter(`func.id="${funcCall.func.id}"`).list()).includes(funcCall), false);
+    expect(await GDF.calls.find(funcCall.id) === undefined, true, 'funcCall was not deleted');
   });
 });
