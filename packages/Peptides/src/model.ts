@@ -20,7 +20,7 @@ import * as uuid from 'uuid';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary} from './utils/misc';
-import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
+import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap,
@@ -59,12 +59,6 @@ export const getAggregatedColName = (aggF: string, colName: string): string => `
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
-
-  _settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
-  _monomerPositionSelectionSubject: rxjs.Subject<undefined> = new rxjs.Subject();
-  _newClusterSubject: rxjs.Subject<undefined> = new rxjs.Subject();
-  _removeClusterSubject: rxjs.Subject<undefined> = new rxjs.Subject();
-  _filterChangedSubject: rxjs.Subject<undefined> = new rxjs.Subject();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -179,10 +173,6 @@ export class PeptidesModel {
   }
 
   get mutationCliffs(): type.MutationCliffs | null {
-    // if (this._mutationCliffs)
-    //   return this._mutationCliffs;
-
-    // this.updateMutationCliffs(false);
     return this._mutationCliffs!;
   }
 
@@ -218,26 +208,6 @@ export class PeptidesModel {
     return this._analysisView;
   }
 
-  get onMonomerPositionSelectionChanged(): rxjs.Observable<undefined> {
-    return this._monomerPositionSelectionSubject.asObservable();
-  }
-
-  get onSettingsChanged(): rxjs.Observable<type.PeptidesSettings> {
-    return this._settingsSubject.asObservable();
-  }
-
-  get onNewCluster(): rxjs.Observable<undefined> {
-    return this._newClusterSubject.asObservable();
-  }
-
-  get onRemoveCluster(): rxjs.Observable<undefined> {
-    return this._removeClusterSubject.asObservable();
-  }
-
-  get onFilterChanged(): rxjs.Observable<undefined> {
-    return this._filterChangedSubject.asObservable();
-  }
-
   get monomerPositionSelection(): type.PositionToAARList {
     this._monomerPositionSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
     return this._monomerPositionSelection;
@@ -247,7 +217,12 @@ export class PeptidesModel {
     this._monomerPositionSelection = selection;
     this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
-    this._monomerPositionSelectionSubject.next();
+
+    const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    mpViewer?.viewerGrid.invalidate();
+    const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+    mprViewer?.viewerGrid.invalidate();
+
     this.analysisView.grid.invalidate();
   }
 
@@ -389,7 +364,15 @@ export class PeptidesModel {
     }
 
     //TODO: handle settings change
-    this._settingsSubject.next(this.settings);
+    const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    mpViewer?.createMonomerPositionGrid();
+    mpViewer?.render();
+    const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+    mprViewer?.createMostPotentResiduesGrid();
+    mprViewer?.render();
+    const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+    lstViewer?.createLogoSummaryTableGrid();
+    lstViewer?.render();
   }
 
   updateMutationCliffs(notify: boolean = true): void {
@@ -464,10 +447,18 @@ export class PeptidesModel {
       acc.addPane('Actions', () => {
         const newViewButton = ui.button('New view', () => trueModel.createNewView(),
           'Creates a new view from current selection');
-        const newCluster = ui.button('New cluster', () => trueModel._newClusterSubject.next(),
-          'Creates a new cluster from selection');
-        const removeCluster = ui.button('Remove cluster', () => trueModel._removeClusterSubject.next(),
-          'Removes currently selected custom cluster');
+        const newCluster = ui.button('New cluster', () => {
+          const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+          if (lstViewer === null)
+            throw new Error('Logo summary table viewer is not found');
+          lstViewer.clusterFromSelection();
+        }, 'Creates a new cluster from selection');
+        const removeCluster = ui.button('Remove cluster', () => {
+          const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+          if (lstViewer === null)
+            throw new Error('Logo summary table viewer is not found');
+          lstViewer.removeCluster();
+        }, 'Removes currently selected custom cluster');
         removeCluster.disabled = trueModel.clusterSelection.length === 0 ||
           !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name));
         return ui.divV([newViewButton, newCluster, removeCluster]);
@@ -1005,7 +996,11 @@ export class PeptidesModel {
       const temp = invariantMapBitset.and(this.initBitset);
       filter.init((i) => temp.get(i), false);
 
-      this._filterChangedSubject.next();
+      const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+      if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
+        lstViewer.createLogoSummaryTableGrid();
+        lstViewer.render();
+      }
     });
     this.isBitsetChangedInitialized = true;
   }
@@ -1136,7 +1131,7 @@ export class PeptidesModel {
 
   async addMonomerPosition(): Promise<void> {
     const monomerPosition = await this.df.plot.fromType(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
-    const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResiduesViewer | null;
+    const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
       [DG.DOCK_TYPE.LEFT, this.findViewerNode(VIEWER_TYPE.MOST_POTENT_RESIDUES), 0.7];
@@ -1151,7 +1146,7 @@ export class PeptidesModel {
 
   async addMostPotentResidues(): Promise<void> {
     const mostPotentResidues =
-      await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResiduesViewer;
+      await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
     const monomerPosition = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
     const dm = this.analysisView.dockManager;
     const [dockType, refNode, ratio] = monomerPosition === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :

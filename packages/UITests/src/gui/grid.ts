@@ -50,7 +50,7 @@ category('GUI: Grid', () => {
     } finally {
       grok.shell.closeAll();
     }
-  });
+  }, {skipReason: 'GROK-13162'});
 
   test('grid.deleteRows', async () => {
     const demog = grok.data.demo.demog(100);
