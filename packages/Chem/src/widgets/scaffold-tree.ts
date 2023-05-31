@@ -11,10 +11,11 @@ import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree} from "../package";
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
+import {filter} from 'rxjs/operators';
 
 const CELL_HEIGHT = 100;
 const CELL_WIDTH = 180;
-let FLAG = false;
+let attached = false;
 
 enum BitwiseOp {
   AND = "AND",
@@ -36,6 +37,15 @@ interface ITreeNode {
   orphans: boolean;
   labelDiv: HTMLDivElement;
   canvas: Element;
+}
+
+interface Size {
+  height: number;
+  width: number;
+}
+
+interface SizesMap {
+  [key: string]: Size;
 }
 
 function value(node: TreeViewNode): ITreeNode {
@@ -348,10 +358,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   Table: string;
   treeEncode: string;
 
-  sizesMap: {[key: string]: {[key: string]: number}} = {
-    'small': {height: 70, width: 80},
-    'normal': {height: 90, width: 120},
-    'large': {height: 100, width: 180}}; 
+  sizesMap: SizesMap = {
+    'small': { height: 70, width: 80 },
+    'normal': { height: 90, width: 120 },
+    'large': { height: 100, width: 180 }
+  };
   size: string;
 
   constructor() {
@@ -1166,8 +1177,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
-    while (this.root.firstChild) 
-      this.root.removeChild(this.root.firstChild);
+    ui.empty(this.root);
 
     if (this.dataFrameSwitchgInProgress) {
       this.dataFrameSwitchgInProgress = true;
@@ -1186,7 +1196,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (orphans)
         return;
 
-      if (FLAG) 
+      if (attached) 
         menu.clear();
 
       menu
@@ -1279,7 +1289,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.render();
     if (this.autoGenerate)
       setTimeout(() => this.generateTree(), 1000);
-    FLAG = true;
+    attached = true;
   }
 
   detach(): void {
@@ -1552,43 +1562,49 @@ export class ScaffoldTreeFilter extends DG.Filter {
   constructor() {
     super();
     this.root = ui.divV([]);
-    this.subs = [];
-  };
+    this.subs = this.viewer.subs;
+  }
 
   get isFiltering(): boolean {
     return super.isFiltering;
-  };
+  }
 
   get filterSummary(): string {
     return ScaffoldTreeViewer.TYPE;  
-  };
+  }
 
   attach(dataFrame: DG.DataFrame): void {
     super.attach(dataFrame);
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name;
     this.createViewer(dataFrame);
-  };
+    this.subs.push(this.dataFrame!.onRowsFiltering
+      .pipe(filter((_) => !this.isFiltering))
+      .subscribe((_: any) => {
+        delete this.column!.temp['chem-scaffold-filter'];
+        setTimeout(() => this.viewer.updateFilters(this.isFiltering), 100);
+      })
+    );
+  }
 
   saveState(): any {
     const state = super.saveState();
     state.savedTree = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.viewer.tree));
-    this.viewer.updateFilters(this.isFiltering);
     return state;
   }
 
   applyState(state: any): void {
     super.applyState(state);
     this.viewer.loadTreeStr(state.savedTree);
-  };
+  }
+
+  applyFilter(): void {
+  }
 
   detach(): void {
     super.detach();
     this.viewer.clearFilters();
-  };
-
-  applyFilter(): void {
-  };
+  }
 
   createViewer(dataFrame: DG.DataFrame) {
     this.viewer.autoGenerate = false;
