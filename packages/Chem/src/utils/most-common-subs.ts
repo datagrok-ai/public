@@ -6,39 +6,49 @@ import {getMolSafe} from './mol-creation_rdkit';
 import {MAX_MCS_ROW_COUNT} from '../constants';
 
 
-export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, exactBondSearch: boolean): RDMol|null {
+export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, exactBondSearch: boolean): string {
   if (molecules.length > MAX_MCS_ROW_COUNT) {
     grok.shell.warning(`Too many rows, maximum for MCS is ${MAX_MCS_ROW_COUNT}`);
-    return null;
+    return '';
   }
   const rdkit = getRdKitModule();
-  let mols;
-  try {
-    mols = rdkit.MolIterator();
+  const mols: RDMol[] = [];
 
-    for (let i = 0; i < molecules.length; i++) {
-      const molString = molecules.get(i);
-      if (!molString)
-        continue;
-      let molSafe;
-      try {
-        molSafe = getMolSafe(molString!, {}, rdkit);
-        if (molSafe.mol !== null && !molSafe.isQMol)
-          mols.append(molSafe.mol);
-      } finally {
-        molSafe?.mol?.delete();
-      }
+  for (let i = 0; i < molecules.length; i++) {
+    const molString = molecules.get(i);
+    if (!molString)
+      continue;
+    const molSafe = getMolSafe(molString!, {}, rdkit);
+    if (molSafe.mol !== null && !molSafe.isQMol && molSafe.mol.is_valid())
+      mols.push(molSafe.mol);
+    else
+      molSafe.mol?.delete();
+  }
+
+  if (mols.length > 0) {
+    const arr = new Uint32Array(mols.length);
+
+    for (let i = 0; i < mols.length; i++) {
+      //@ts-ignore
+      arr[i] = mols[i].$$.ptr;
     }
 
-    let mcsMol: RDMol|null = null;
-    if (mols.size() > 1)
-      mcsMol = rdkit.get_mcs(mols, JSON.stringify({
-        AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
-        BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
-      }));
+    //as wasm works with 8 bit and 32 bit are used
+    const buff = rdkit._malloc(mols.length*4);
 
-    return mcsMol;
-  } finally {
-    mols?.delete();
+    // >> 2 is the reduction of element number of 32 bit vs 8 bit for offset
+    //@ts-ignore
+    rdkit.HEAPU32.set(arr, buff >> 2);
+
+    const smarts: string = rdkit.get_mcs(buff, mols.length, exactAtomSearch, exactBondSearch);
+
+    rdkit._free(buff);
+
+    for (let j = 0; j < mols.length; j++)
+      mols[j].delete();
+
+    return smarts;
   }
+
+  return '';
 }
