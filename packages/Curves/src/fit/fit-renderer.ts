@@ -169,10 +169,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         const curve = fitResult.fittedCurve;
 
         g.beginPath();
-        const dataBoundsStep = dataBounds.width / dataBox.width;
-        for (let i = 0, currentX = dataBounds.x; i < dataBox.width; i++, currentX += dataBoundsStep) {
-          const x = viewport.xToScreen(currentX);
-          const y = viewport.yToScreen(curve(currentX));
+        for (let i = 0; i < series.points.length!; i++) {
+          const x = viewport.xToScreen(series.points[i].x);
+          const y = viewport.yToScreen(curve(series.points[i].x));
           if (i === 0)
             g.moveTo(x, y);
           else
