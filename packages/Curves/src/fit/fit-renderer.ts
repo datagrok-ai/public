@@ -24,14 +24,15 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 }
 
 /** Performs a curve confidence interval drawing */
-function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, fitResult: FitResult,
+function drawConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResult, dataBox: DG.Rect, dataBounds: DG.Rect,
   transform: Viewport, confidenceType: string): void {
   g.beginPath();
-  for (let i = 0; i < series.points.length!; i++) {
-    const x = transform.xToScreen(series.points[i].x);
+  const dataBoundsStep = dataBounds.width / dataBox.width;
+  for (let i = 0, currentX = dataBounds.x; i < dataBox.width; i++, currentX += dataBoundsStep) {
+    const x = transform.xToScreen(currentX);
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
-      transform.yToScreen(fitResult.confidenceTop(series.points[i].x)) :
-      transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
+      transform.yToScreen(fitResult.confidenceTop(currentX)) :
+      transform.yToScreen(fitResult.confidenceBottom(currentX));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -41,11 +42,13 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
 }
 
 /** Performs a curve confidence interval color filling */
-function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, fitResult: FitResult, transform: Viewport): void {
+function fillConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResult,
+  dataBox: DG.Rect, dataBounds: DG.Rect, transform: Viewport): void {
   g.beginPath();
-  for (let i = 0; i < series.points.length!; i++) {
-    const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitResult.confidenceTop(series.points[i].x));
+  const dataBoundsStep = dataBounds.width / dataBox.width;
+  for (let i = 0, currentX = dataBounds.x; i < dataBox.width; i++, currentX += dataBoundsStep) {
+    const x = transform.xToScreen(currentX);
+    const y = transform.yToScreen(fitResult.confidenceTop(currentX));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -53,9 +56,9 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
   }
 
   // reverse traverse to make a shape of confidence interval to fill it
-  for (let i = series.points.length! - 1; i >= 0; i--) {
-    const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
+  for (let i = 0, currentX = dataBounds.right; i < dataBox.width; i++, currentX -= dataBoundsStep) {
+    const x = transform.xToScreen(currentX);
+    const y = transform.yToScreen(fitResult.confidenceBottom(currentX));
     g.lineTo(x, y);
   }
   g.closePath();
@@ -185,11 +188,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
-        drawConfidenceInterval(g, series, fitResult, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
-        drawConfidenceInterval(g, series, fitResult, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
-        fillConfidenceInterval(g, series, fitResult, viewport);
+        drawConfidenceInterval(g, fitResult, dataBox, dataBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
+        drawConfidenceInterval(g, fitResult, dataBox, dataBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
+        fillConfidenceInterval(g, fitResult, dataBox, dataBounds, viewport);
       }
-
 
       if (data.chartOptions?.showStatistics) {
         for (let i = 0; i < data.chartOptions.showStatistics.length; i++) {
