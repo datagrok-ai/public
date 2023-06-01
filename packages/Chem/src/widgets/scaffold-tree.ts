@@ -816,7 +816,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.wrapper = null;
       }
     }, async(strMolSketch: string) => {
-      //await this.filterByStruct(strMolSketch);
+      await this.filterByStruct(strMolSketch);
     });
     this.wrapper.show();
   }
@@ -1109,6 +1109,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateSizes();
   }
 
+  changeCanvasSize(molString: string, canvas: any, width: number, height: number): void {
+    const newMolHost = renderMolecule(molString, width, height);
+    canvas.replaceWith(newMolHost);
+  }
+
   onPropertyChanged(p: DG.Property): void {
     if (p.name === 'Table') {
       for (let n = 0; n < this.molColumns.length; ++n) {
@@ -1166,11 +1171,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this._bitOpInput!.value = this.bitOperation;
     }
     else if (p.name === 'size') {
-      const savedTree = JSON.parse(JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree)));
-      this.clear();
-      ScaffoldTreeViewer.deserializeTrees(savedTree, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
-        return this.createGroup(molStr, rootGroup, false);
-      });
+      const canvases = this.tree.root.querySelectorAll('.chem-canvas');
+      const molStrings = this.tree.items.map((item) => (item.value as ITreeNode).smiles);
+      for (let i = 0; i < canvases.length; ++i) 
+        this.changeCanvasSize(molStrings[i], canvases[i], this.sizesMap[this.size].width, this.sizesMap[this.size].height);
       this.updateSizes();
       this.updateUI();
     }

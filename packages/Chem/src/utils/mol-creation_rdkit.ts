@@ -12,7 +12,7 @@ export interface IMolContext {
 
 export function isFragment(molString: string) {
   if (isMolBlock(molString)) {
-    //return MolfileHandler.getInstance(molString).isFragment();
+    return MolfileHandler.getInstance(molString).isFragment();
   } else
     return !!molString.match(/\[.?:|\*.?\]/g);
 }
