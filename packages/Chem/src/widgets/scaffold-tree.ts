@@ -1570,7 +1570,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return super.isFiltering;
+    return super.isFiltering && this.viewer.tree.items.filter((v) => v.checked).length > 0;
   }
 
   get filterSummary(): string {
