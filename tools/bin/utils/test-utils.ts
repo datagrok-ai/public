@@ -109,3 +109,21 @@ export class TestContext {
     if (report !== undefined) this.report = report;
   };
 }
+
+export const recorderConfig = {
+  followNewTab: true,
+  fps: 25,
+  ffmpeg_Path: null,
+  videoFrame: {
+    width: 1024,
+    height: 768,
+  },
+  videoCrf: 18,
+  videoCodec: 'libx264',
+  videoPreset: 'ultrafast',
+  videoBitrate: 1000,
+  autopad: {
+    color: 'black',
+  },
+  aspectRatio: '4:3',
+};
