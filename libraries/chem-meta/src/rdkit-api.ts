@@ -6,12 +6,10 @@ export interface RDModule {
   prefer_coordgen(prefer: boolean): void;
   get_rxn(reactionString: string, options?: string): Reaction;
   use_legacy_stereo_perception(value: boolean): boolean;
-  get_mcs(mols: MolIterator, details: string): RDMol;
+  get_mcs(buf: number, length: number, compareElements: boolean, compareBonds: boolean): string;
   _malloc(size: number): any;
   _free(buf: any): any;
   writeArrayToMemory(arr: any, buff:any): any;
-  MolIterator(): MolIterator;
-  SubstructLibrary(): SubstructLibrary;
 }
 
 export interface RDMol {
@@ -64,46 +62,25 @@ export interface RDMol {
   delete(): void;
 }
 
-export interface MolIterator {
-  append(mol: RDMol): number;
-  insert(i: number, mol: RDMol): number;
-  at(i: number): RDMol;
-  pop(i: number): RDMol;
-  next(): RDMol;
-  reset(): void;
-  at_end(): boolean;
-  size(): number;
-  delete(): void;
-}
-
-interface MolIteratorConstructor {
-  new(): MolIterator;
-}
-
-declare var MolIterator: MolIteratorConstructor;
-
 export interface SubstructLibrary {
+  d_num_bits: number;
+  d_defaultNumBits: number;
+  d_defaultUseChirality: boolean;
+  d_defaultNumThreads: number;
+  d_defaultMaxResults: number;
+
   add_mol(mol: RDMol): number;
   add_smiles(smiles: string): number;
   add_trusted_smiles(smiles: string): number;
-  get_trusted_smiles(i: number): string;
-  add_trusted_smiles_and_pattern_fp(smiles: string, patternFp: Uint8Array): number;
-  get_pattern_fp_as_uint8array(i: number): Uint8Array;
-  get_matches_as_uint32array(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): Uint32Array;
   get_mol(i: number): RDMol;
   get_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): string;
   count_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number): number;
-  size(): number;
-  delete(): void;
 }
-
-interface SubstructLibraryConstructor {
-  new(): SubstructLibrary;
-}
-
-declare var SubstructLibrary: SubstructLibraryConstructor;
 
 export interface Reaction {
+  d_defaultWidth: number;
+  d_defaultHeight: number;
+
   is_valid(): boolean;
   get_svg(width: number, height: number): string;
   get_svg(): string;
