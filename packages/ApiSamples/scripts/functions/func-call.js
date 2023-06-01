@@ -1,9 +1,9 @@
 let f = DG.Func.find({name: 'Sin'})[0];
 
 // inspect function parameters
-let s = f.name + '(' + f.inputs.map(input => input.propertyType + ' ' + input.name) + ')' + ': ' + f.outputs.map(output => output.propertyType + ' ' + output.name);
-
-grok.shell.info(s);
+let inputs = f.inputs.map(input => input.propertyType + ' ' + input.name);
+let outputs = f.outputs.map(output => output.propertyType + ' ' + output.name);
+grok.shell.info(f.name +  '(' + inputs + ')' + ': ' + outputs);
 
 // simple way: f.apply
 f.apply({x: 0.5}).then((result) => grok.shell.info(result));
