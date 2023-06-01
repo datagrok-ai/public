@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -69,10 +69,5 @@ category('Settings', () => {
     expect(gss.showVariables, grok.shell.windows.showVariables, 'showVariables');
     expect(gss.showConsole, grok.shell.windows.showConsole, 'showConsole');
     expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
-  });
-
-  after(async () => {
-    // views.forEach((v) => v.close());
-    grok.shell.closeAll();
   });
 });
