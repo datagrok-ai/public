@@ -1,15 +1,11 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 const demog = grok.data.demo.demog();
 
 category('Shell', () => {
-  before(async () => {
-    grok.shell.closeAll();
-  });
-
   test('AddView', async () => {
     const v = grok.shell.addTableView(demog);
     expect(grok.shell.v, v);
@@ -19,10 +15,5 @@ category('Shell', () => {
     expect(grok.shell.v != v, true);
     expect(grok.shell.table(demog.name), demog);
     grok.shell.closeTable(v.dataFrame);
-  });
-
-  after(async () => {
-    //   v.close();
-    // grok.shell.closeTable(v.table!);
   });
 });

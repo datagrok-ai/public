@@ -10,6 +10,7 @@
 //input: double z0 = 1.05 [Initial conditions for distortion (from linearity) of the vertical temperature profile]
 //output: dataframe df {caption: Lorenz attractor; viewer: 3d Scatter plot())}
 //editor: Compute:RichFunctionViewEditor
+//meta.runOnOpen: true
 //meta.runOnInput: true
 
 function lorenzEquations(x, y, z, s=10, r=28, b=2.667) {

@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 
 category('fastaFileHandler', () => {
@@ -71,7 +70,7 @@ YHSPFHN
   const descriptionsArray = [
     'description:1', 'description:2', 'description:3', 'description:4',
   ];
-  const descriptionCol = DG.Column.fromStrings('description', descriptionsArray);
+  const _descriptionCol = DG.Column.fromStrings('description', descriptionsArray);
 
   const sequencesArray = [
     'MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW',
@@ -86,7 +85,7 @@ YHSPFHN
     const parsedSequencesArray = ffh.sequencesArray;
     expectArray(
       [parsedDescriptionsArray, parsedSequencesArray],
-      [descriptionsArray, sequencesArray]
+      [descriptionsArray, sequencesArray],
     );
   }
 

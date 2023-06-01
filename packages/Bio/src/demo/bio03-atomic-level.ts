@@ -1,10 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
-
 import {_package, toAtomicLevel} from '../package';
-import $ from 'cash-dom';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {delay} from '@datagrok-libraries/utils/src/test';
@@ -20,7 +17,7 @@ export async function demoBio03UI(): Promise<void> {
   try {
     await new DemoScript(
       'Atomic Level',
-      'Atomic level structure of Macromolecules'
+      'Atomic level structure of Macromolecules',
     )
       .step(`Loading Macromolecules notation 'Helm'`, async () => {
         grok.shell.windows.showContextPanel = false;

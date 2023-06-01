@@ -29,13 +29,13 @@ category('screening tools', () => {
   test('elementalAnalysis.smiles', async () => {
     let df: DG.DataFrame;
     if (DG.Test.isInBenchmark)
-      df = await readDataframe('smiles.csv');
+      df = await grok.data.files.openTable("Demo:Files/chem/smiles_100K.zip");
     else
       df = molecules.clone();
     const tv = grok.shell.addTableView(df);
     elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
     tv.close();
-    expect(df.columns.length, DG.Test.isInBenchmark ? 20 : 11);
+    expect(df.columns.length, DG.Test.isInBenchmark ? 17 : 11); //TODO!! Check number of columns for benchmark
   });
 
   test('elementalAnalysis.molV2000', async () => {
@@ -85,7 +85,8 @@ category('screening tools: benchmarks', () => {
     const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
     // const rdkitModule = chemCommonRdKit.getRdKitModule();
     const rdkitService = await chemCommonRdKit.getRdKitService();
-    const sarSmall = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/smi10K.csv'));
+    const sarSmall = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip") :
+      DG.DataFrame.fromCsv(await _package.files.readAsText('tests/smi10K.csv'));
     const smilesCol = sarSmall.getCol('smiles');
     const ruleSet: RuleSet = {'BMS': true, 'Dandee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,
       'MLSMR': true, 'PAINS': true, 'SureChEMBL': true};

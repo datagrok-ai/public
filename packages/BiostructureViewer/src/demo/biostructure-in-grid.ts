@@ -6,7 +6,7 @@ import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 import {NglForGridTestApp} from '../apps/ngl-for-grid-test-app';
 
 export async function biostructureInGridApp(appName: string, pi: TaskBarProgressIndicator): Promise<void> {
-  const piMsg = pi.description;
+  const _piMsg = pi.description;
   const dfCsv: string = await _package.files.readAsText('pdb_data.csv');
 
   const df: DG.DataFrame = DG.DataFrame.fromCsv(dfCsv);

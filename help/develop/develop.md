@@ -30,7 +30,7 @@ package might contain different things:
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
 * [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/access.md#data-query) and [connections](../access/access.md#data-connection)
-* [Tables](../access/supported-formats.md#tabular-formats), files, and other objects
+* [Tables](../access/files/supported-formats.md#tabular-formats), files, and other objects
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples, or follow
 the [step-by-step guide](how-to/create-package.md) for creating your own package.

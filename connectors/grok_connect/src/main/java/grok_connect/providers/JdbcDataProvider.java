@@ -168,11 +168,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                            stringValue = param.value.toString();
                         i = i + setArrayParamValue(statement, n + i + 1, param);
                     } else {
-                        if (param.value == null)
+                        if (param.value == null) {
                             stringValue = "null";
-                        else
+                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
+                        } else {
                             stringValue = param.value.toString();
-                        statement.setObject(n + i + 1, param.value);
+                            statement.setObject(n + i + 1, param.value);
+                        }
                     }
                     stringValues.add(stringValue);
                 }

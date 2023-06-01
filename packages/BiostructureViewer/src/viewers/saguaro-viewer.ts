@@ -6,7 +6,6 @@ import {_package} from '../package';
 import $ from 'cash-dom';
 import {v4 as uuidv4} from 'uuid';
 
-import {RcsbFvTrack} from '@rcsb/rcsb-saguaro/build/RcsbFv/RcsbFvTrack/RcsbFvTrack';
 import {Unsubscribable} from 'rxjs';
 import {RcsbFv, RcsbFvDisplayTypes, RcsbFvRowConfigInterface} from '@rcsb/rcsb-saguaro';
 import {RcsbFvBoardConfigInterface} from '@rcsb/rcsb-saguaro/build/RcsbFv/RcsbFvConfig/RcsbFvConfigInterface';
@@ -101,7 +100,7 @@ export class SaguaroViewer extends DG.JsViewer {
     }
     switch (property.name) {
     case PROPS.borderColor:
-      const borderColorValue: string = intToHtmlA(this.borderColor);
+      const _borderColorValue: string = intToHtmlA(this.borderColor);
       break;
 
     case PROPS.rowTitleWidth:
@@ -224,9 +223,9 @@ export class SaguaroViewer extends DG.JsViewer {
         length: 110,
         range: {
           min: 1,
-          max: sequence.length
+          max: sequence.length,
         },
-        includeAxis: true
+        includeAxis: true,
       };
 
       const sequenceTrack: RcsbFvRowConfigInterface = {
@@ -239,9 +238,9 @@ export class SaguaroViewer extends DG.JsViewer {
         trackData: [
           {
             begin: 1,
-            value: sequence
-          }
-        ]
+            value: sequence,
+          },
+        ],
       };
 
       const bondTrack: RcsbFvRowConfigInterface = {
@@ -255,9 +254,9 @@ export class SaguaroViewer extends DG.JsViewer {
           {
             begin: 30,
             end: 90,
-            isEmpty: true
-          }
-        ]
+            isEmpty: true,
+          },
+        ],
       };
 
       const blockTrack: RcsbFvRowConfigInterface = {
@@ -274,14 +273,14 @@ export class SaguaroViewer extends DG.JsViewer {
             gaps: [{
               begin: 40,
               end: 50,
-              isConnected: true
-            }]
+              isConnected: true,
+            }],
           }, {
             begin: 80,
             end: 90,
-            openEnd: true
-          }
-        ]
+            openEnd: true,
+          },
+        ],
       };
 
       const pinTrack: RcsbFvRowConfigInterface = {
@@ -294,13 +293,13 @@ export class SaguaroViewer extends DG.JsViewer {
         rowTitle: 'PIN',
         trackData: [
           {
-            begin: 60
+            begin: 60,
           }, {
-            begin: 70
+            begin: 70,
           }, {
-            begin: 100
-          }
-        ]
+            begin: 100,
+          },
+        ],
       };
 
       const vline: RcsbFvRowConfigInterface = {
@@ -317,7 +316,7 @@ export class SaguaroViewer extends DG.JsViewer {
       this.viewer = new RcsbFv({
         boardConfigData: boardConfig,
         rowConfigData: rowConfig,
-        elementId: this.viewerDivId
+        elementId: this.viewerDivId,
       });
     }
   }
@@ -338,8 +337,8 @@ export class SaguaroViewer extends DG.JsViewer {
         boardConfigData:
           {
             trackWidth: cw - (this.rowTitleWidth ?? 0),
-            includeAxis: true
-          }
+            includeAxis: true,
+          },
       }).then(() => {
         // -- Props editors --
         const rowTitleWidthProp: DG.Property = this.props.getProperty(PROPS.rowTitleWidth);
@@ -353,7 +352,7 @@ export class SaguaroViewer extends DG.JsViewer {
 
   // -- Handle events --
 
-  private rootOnSizeChanged(value: any): void {
+  private rootOnSizeChanged(_value: any): void {
     _package.logger.debug('BiotrackViewer.rootOnSizeChanged() ');
     this.calcSize();
   }
