@@ -203,7 +203,8 @@ function addNamespace(s: string, f: DG.Func): string {
 export async function initAutoTests(packageId: string, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
-  if (moduleTests[autoTestsCatName] !== undefined) {
+  if (moduleTests[autoTestsCatName] !== undefined ||
+    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
