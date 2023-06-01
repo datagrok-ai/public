@@ -730,6 +730,11 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
   ): Promise<void> {
+  if (col.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${col.name} is not of Molecule semantic type`);
+    return;
+  }
+
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
