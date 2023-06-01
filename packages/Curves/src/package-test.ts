@@ -3,6 +3,7 @@ import * as DG from "datagrok-api/dg";
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
 import './tests/detector-tests';
+import './tests/curves-cell-renderer-tests';
 
 export const _package = new DG.Package();
 export {tests};
