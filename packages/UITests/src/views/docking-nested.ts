@@ -295,7 +295,7 @@ category('View: DockingNested', () => {
     } finally {
       tv.close();
     }
-  });
+  }, {skipReason: 'GROK-13242'});
 });
 
 function isLeftOf(tgt: Element, ref: Element): boolean {

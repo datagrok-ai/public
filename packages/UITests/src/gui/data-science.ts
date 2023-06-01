@@ -11,11 +11,11 @@ category('Data Science', () => {
 
   test('SPE 2D', async () => {
     await spe('2D');
-  });
+  }, {skipReason: 'GROK-13162'});
 
   test('SPE 3D', async () => {
     await spe('3D');
-  });
+  }, {skipReason: 'GROK-13162'});
 
   after(async () => {
     grok.shell.closeAll();

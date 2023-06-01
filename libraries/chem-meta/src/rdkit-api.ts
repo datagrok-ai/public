@@ -1,12 +1,15 @@
 export interface RDModule {
-  get_mol(molString: string, options?: string): RDMol;
-  get_qmol(smarts: string): RDMol;
-  get_inchikey_for_inchi(input: string): string;
   version(): string;
   prefer_coordgen(prefer: boolean): void;
-  get_rxn(reactionString: string, options?: string): Reaction;
   use_legacy_stereo_perception(value: boolean): boolean;
-  get_mcs(mols: MolIterator, details: string): RDMol;
+  allow_non_tetrahedral_chirality(value: boolean): boolean;
+  get_inchikey_for_inchi(input: string): string;
+  get_mol(molString: string, options?: string): RDMol;
+  get_mol_from_uint8array(pkl: Uint8Array): RDMol;
+  get_mol_copy(other: RDMol): RDMol;
+  get_qmol(molString: string): RDMol;
+  get_rxn(reactionString: string, options?: string): Reaction;
+  get_mcs(mols: MolIterator, details?: string): RDMol;
   _malloc(size: number): any;
   _free(buf: any): any;
   writeArrayToMemory(arr: any, buff:any): any;
@@ -17,48 +20,78 @@ export interface RDModule {
 export interface RDMol {
   is_qmol: boolean;
 
+  is_valid(): boolean;
+  has_coords(): number;
+
   get_smiles(): string;
   get_cxsmiles(): string;
   get_smarts(): string;
   get_cxsmarts(): string;
-  get_molblock(): string;
-  get_v3Kmolblock(): string;
+  get_molblock(details?: string): string;
+  get_v3Kmolblock(details?: string): string;
+  get_as_uint8array(): Uint8Array;
   get_inchi(): string;
   get_json(): string;
   get_svg(width?: number, height?: number): string;
   get_svg_with_highlights(details: string): string;
-  get_substruct_match(qmol: RDMol) : string;
-  get_substruct_matches(qmol: RDMol): string;
-  get_descriptors(): string;
 
-  get_morgan_fp(details?: string): string;
+  draw_to_canvas_with_offset(
+    canvas: HTMLCanvasElement, offsetX: number, offsetY: number, width: number, height: number): string;
+  draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
+  draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
+  generate_aligned_coords(template: RDMol, details?: string): string;
   get_morgan_fp_as_uint8array(details?: string): Uint8Array;
   get_pattern_fp(details?: string): string;
   get_pattern_fp_as_uint8array(details?: string): Uint8Array;
+  get_topological_torsion_fp_as_uint8array(details?: string): Uint8Array;
+  get_rdkit_fp_as_uint8array(details?: string): Uint8Array;
+  get_atom_pair_fp_as_uint8array(details?: string): Uint8Array;
+  get_maccs_fp_as_uint8array(): Uint8Array;
+  get_frags(details?: string): {
+    molIterator: MolIterator,
+    mappings: {
+      frags: Array<number>,
+      fragsMolAtomMapping: Array<Array<number>>,
+    },
+  };
+  get_avalon_fp_as_uint8array(details?: string): Uint8Array;
 
-  condense_abbreviations(maxCoverage?: number, useLinkers?: boolean): string;
-  condense_abbreviations_from_defs(definitions: string, maxCoverage: number, areLinkers: boolean): string;
-  generate_aligned_coords(template: RDMol, details?: string): string;
-
-  draw_to_canvas_with_offset(
-      canvas: HTMLCanvasElement, offsetX: number, offsetY: number, width: number, height: number): string;
-  draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
-  draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
-  get_morgan_fp_as_uint8array(radius: number, fplen: number): Uint8Array;
-
-  is_valid(): boolean;
-  has_coords(): number;
+  get_substruct_match(qmol: RDMol) : string;
+  get_substruct_matches(qmol: RDMol): string;
+  get_descriptors(): string;
+  get_morgan_fp(details?: string): string;
+  get_pattern_fp(details?: string): string;
+  get_topological_torsion_fp(details?: string): string;
+  get_rdkit_fp(details?: string): string;
+  get_atom_pair_fp(details?: string): string;
+  get_maccs_fp(): string;
+  get_avalon_fp(details?: string): string;
 
   get_stereo_tags(): string;
   get_aromatic_form(): string;
+  set_aromatic_form(): void;
   get_kekule_form(): string;
+  set_kekule_form(): void;
   get_new_coords(useCoordGen?: boolean): string;
   set_new_coords(useCoordGen?: boolean): boolean;
-  remove_hs(): string;
-  add_hs(): string;
+  has_prop(key: string): boolean;
+  get_prop_list(includePrivate?: boolean, includeComputed?: boolean): Array<string>;
+  set_prop(key: string, value: string, computed?: boolean): boolean;
+  get_prop(key: string): string;
+  clear_prop(key: string): boolean;
 
-  normalize_depiction(canonicalize: number, scaleFactor?: number): void;
+  condense_abbreviations(maxCoverage?: number, useLinkers?: boolean): string;
+  condense_abbreviations_from_defs(definitions: string, maxCoverage: number, areLinkers: boolean): string;
+
+  add_hs(): string;
+  add_hs_in_place(): boolean;
+  remove_hs(): string;
+  remove_hs_in_place(): boolean;
+
+  normalize_depiction(canonicalize?: number, scaleFactor?: number): number;
   straighten_depiction(minimizeRotation?: boolean): void;
+  get_num_atoms(heavyOnly?: boolean): number;
+  get_num_bonds(): number;
 
   /** Reclaims the memory used for that molecule. */
   delete(): void;

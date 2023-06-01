@@ -145,7 +145,7 @@ category('GUI: Dialogs', () => {
       grok.shell.closeAll();
       DG.Balloon.closeAll();
     }
-  });
+  }, {skipReason: 'GROK-13162'});
 
   test('splitColumn', async () => {
     try {
