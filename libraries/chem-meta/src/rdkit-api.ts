@@ -13,8 +13,8 @@ export interface RDModule {
   _malloc(size: number): any;
   _free(buf: any): any;
   writeArrayToMemory(arr: any, buff:any): any;
-  MolIterator(): MolIterator;
-  SubstructLibrary(): SubstructLibrary;
+  MolIterator: MolIteratorConstructor;
+  SubstructLibrary: SubstructLibraryConstructor;
 }
 
 export interface RDMol {
@@ -99,6 +99,7 @@ export interface RDMol {
 }
 
 export interface MolIterator {
+  new(): MolIterator;
   append(mol: RDMol): number;
   insert(i: number, mol: RDMol): number;
   at(i: number): RDMol;
@@ -114,8 +115,6 @@ interface MolIteratorConstructor {
   new(): MolIterator;
 }
 
-declare var MolIterator: MolIteratorConstructor;
-
 export interface Reaction {
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
@@ -129,6 +128,7 @@ export interface Reaction {
 }
 
 export interface SubstructLibrary {
+  new(bits?: number): SubstructLibrary;
   add_mol(mol: RDMol): number;
   add_smiles(smiles: string): number;
   add_trusted_smiles(smiles: string): number;
@@ -144,7 +144,5 @@ export interface SubstructLibrary {
 }
 
 interface SubstructLibraryConstructor {
-  new(bits?: number): SubstructLibrary;
+  new(): SubstructLibrary;
 }
-
-declare var SubstructLibrary: SubstructLibraryConstructor;
