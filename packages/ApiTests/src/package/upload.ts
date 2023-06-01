@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {before, after, category, expect, test, expectTable} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test, expectTable} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 
 category('Package', () => {
@@ -44,9 +44,5 @@ category('Package', () => {
       expectTable(await query.apply(), DG.DataFrame.fromCsv(test2));
       expect((await grok.dapi.scripts.filter('package.name = "Test"').allPackageVersions().list()).length, 1);
     }
-  });
-
-  after(async () => {
-    DG.Balloon.closeAll();
   });
 });
