@@ -58,12 +58,12 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
       }
       return {mol, kekulize, isQMol, useMolBlockWedging};
     }
-    if (mol.is_valid())
+    if (mol?.is_valid())
       useMolBlockWedging = (mol.has_coords() === 2);
 
     return {mol, kekulize, isQMol, useMolBlockWedging};
   }
-  if (mol.is_valid())
+  if (mol?.is_valid())
     useMolBlockWedging = (mol.has_coords() === 2);
   else {
     mol?.delete();

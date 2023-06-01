@@ -14,7 +14,7 @@ CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
 CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`;
 
 category('column panel', () => {
-  test('add inchi', async () => {
+  test('inchi', async () => {
     if (DG.Test.isInBenchmark) {
       const df = await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip");
       addInchis(df, df.col('smiles')!);
