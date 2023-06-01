@@ -741,8 +741,10 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Colum
   const progress = DG.TaskBarProgressIndicator.create('Detecting structural alerts...');
   try {
     const resultDf = await runStructuralAlertsDetection(col, ruleSet, alertsDf, rdkitService);
-    for (const resultCol of resultDf.columns)
+    for (const resultCol of resultDf.columns) {
+      resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${col.name})`);
       table.columns.add(resultCol);
+    }
   } catch (e) {
     grok.shell.error('Structural alerts detection failed');
     grok.log.error(`Structural alerts detection failed: ${e}`);
