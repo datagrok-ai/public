@@ -54,9 +54,9 @@ public class OracleObjectsMother {
                         table, table, table})
                 .setColumn(new StringColumn(), thirdColumnName, new String[] {"ID", "FIRST_NAME", "LAST_NAME", "EMAIL",
                         "GENDER", "IP_ADDRESS", "COUNTRY", "DAT", "SOME_NUMBER"})
-                .setColumn(new StringColumn(), fourthColumnName, new String[] {"NUMBER", "VARCHAR2",
+                .setColumn(new StringColumn(), fourthColumnName, new String[] {"NUMBER(18, 0)", "VARCHAR2",
                         "VARCHAR2", "VARCHAR2", "VARCHAR2", "VARCHAR2",
-                        "VARCHAR2", "DATE", "NUMBER"})
+                        "VARCHAR2", "DATE", "NUMBER(5, 2)"})
                 .setColumn(new IntColumn(), fifthColumnname, new Integer[]{0, 0, 0, 0, 0, 0, 0, 0, 0})
                 .build();
         return Stream.of(Arguments.of(expected));
