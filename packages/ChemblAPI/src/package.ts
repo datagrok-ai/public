@@ -7,12 +7,22 @@ export const _package = new DG.Package();
 const WIDTH = 200;
 const HEIGHT = 100;
 
+enum COLUMN_NAMES {
+  SMILES = 'canonical_smiles',
+  CHEMBL_ID = 'molecule_chembl_id',
+}
+
 export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFrame | null> {
   try {
     let df: DG.DataFrame = await grok.data.query(`${_package.name}:SubstructureSmile`, {'smile': mol});
+    const smilesCol = df.col(COLUMN_NAMES.SMILES);
+    if (smilesCol === null || df.col(COLUMN_NAMES.CHEMBL_ID) === null)
+      return null;
+
+    const rowMask = DG.BitSet.create(df.rowCount, (i) => smilesCol.get(i) !== '');
+    df = df.clone(rowMask, [COLUMN_NAMES.SMILES, COLUMN_NAMES.CHEMBL_ID]);
     if (df.rowCount === 0)
       return null;
-    df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
 
     return df;
   } catch (e: any) {
@@ -24,9 +34,14 @@ export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFram
 export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame | null> {
   try {
     let df = await grok.data.query(`${_package.name}:SimilaritySmileScore`, {'smile': molecule, 'score': 40});
+    const smilesCol = df.col(COLUMN_NAMES.SMILES);
+    if (smilesCol === null || df.col(COLUMN_NAMES.CHEMBL_ID) === null)
+      return null;
+
+    const rowMask = DG.BitSet.create(df.rowCount, (i) => smilesCol.get(i) !== '');
+    df = df.clone(rowMask, [COLUMN_NAMES.SMILES, COLUMN_NAMES.CHEMBL_ID]);
     if (df.rowCount === 0)
       return null;
-    df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
 
     return df;
   } catch (e: any) {
@@ -55,8 +70,8 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
       return;
     }
 
-    const moleculeCol = table.getCol('canonical_smiles');
-    const chemblIdCol = table.getCol('molecule_chembl_id');
+    const moleculeCol = table.getCol(COLUMN_NAMES.SMILES);
+    const chemblIdCol = table.getCol(COLUMN_NAMES.CHEMBL_ID);
 
     const molCount = Math.min(table.rowCount, 20);
     const r = window.devicePixelRatio;
@@ -70,8 +85,8 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
       molHost.classList.add('chem-canvas');
       molHost.width = WIDTH * r;
       molHost.height = HEIGHT * r;
-      molHost.style.width = (WIDTH).toString() + 'px';
-      molHost.style.height = (HEIGHT).toString() + 'px';
+      molHost.style.width = `${WIDTH}px`;
+      molHost.style.height = `${HEIGHT}px`;
 
       renderFunctions[0].apply().then((rendndererObj) => {
         rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT, DG.GridCell.fromValue(moleculeCol.get(i)));
