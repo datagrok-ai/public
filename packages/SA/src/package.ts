@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {getEachOutputItemInfo} from './outputTools';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -133,10 +135,35 @@ export async function performSA(funcName: string): Promise<void> {
 
   console.log(someFuncCall);
 
-  let res = await someFuncCall.call();
+  await someFuncCall.call();
 
-  console.log(someFuncCall);
+  console.log(getEachOutputItemInfo(someFuncCall));
 
-  console.log('Result:');
-  console.log(res);
+  /*console.log(someFuncCall);
+  
+  console.log('=================');
+
+  //console.log(someFuncCall.outputs['result']);
+
+  //console.log(someFuncCall.outputParams.values());
+
+  for (const el of [...someFuncCall.outputs])
+    console.log(`${el[0]}  <-->  ${el[1]}`);
+
+  console.log('=================');
+
+  const names = [];
+
+  for (const el of [...someFuncCall.inputs]) {
+    console.log(`${el[0]}  <-->  ${el[1]}`);
+    names.push(el[0]);
+  }
+
+  console.log(names);
+
+
+
+  /*someFuncCall.outputs['...'] // !!!
+  [...someFuncCall.outputParams] // array DG.FUNCALLPARAM name 
+  [...lastCall.outputParams.values()] as DG.FuncCallParam[];*/
 }
