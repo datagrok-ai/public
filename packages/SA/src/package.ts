@@ -11,7 +11,6 @@ export function info() {
 }
 
 //name: Ishigami func
-//tags: model
 //input: double x1 = 1 {caption: x1; category: Varibles}
 //input: double x2 = 2 {caption: x2; category: Varibles}
 //input: double x3 = 3 {caption: x3; category: Varibles}
@@ -26,7 +25,6 @@ export function ishigamiFunc(x1: number, x2: number, x3: number, a : number, b :
 }
 
 //name: Parabola
-//tags: model
 //input: double x = 1 {caption: x; category: Varibles}
 //input: double a = 7.0 {caption: a; category: Parameters}
 //input: double b = 0.1 {caption: b; category: Parameters}
@@ -37,7 +35,6 @@ export function parabola(x: number, a : number, b : number): number {
 }
 
 //name: Cubic parabola
-//tags: model
 //input: double x = 1 {caption: x; category: Varibles}
 //input: double a = 7.0 {caption: a; category: Parameters}
 //input: double b = 0.1 {caption: b; category: Parameters}
@@ -47,7 +44,6 @@ export function cubicParabola(x: number, a : number, b : number): number {
 }
 
 //name: Quadric parabola
-//tags: model
 //input: double x = 1 {caption: x; category: Varibles}
 //input: double a = 7.0 {caption: a; category: Parameters}
 //input: double b = 0.1 {caption: b; category: Parameters}
@@ -58,7 +54,6 @@ export function quadricParabola(x: number, a : number, b : number): number {
 }
 
 //name: oneDfOutput
-//tags: model
 //input: double x1 = 1 {caption: x1; category: Varibles}
 //input: double x2 = 2 {caption: x2; category: Varibles}
 //input: double x3 = 3 {caption: x3; category: Varibles}
@@ -76,7 +71,6 @@ export function oneDfOutput(x1: number, x2: number, x3: number, a : number, b : 
 }
 
 //name: twoDfOutput
-//tags: model
 //input: double x1 = 1 {caption: x1; category: Varibles}
 //input: double x2 = 2 {caption: x2; category: Varibles}
 //input: double x3 = 3 {caption: x3; category: Varibles}
@@ -111,4 +105,38 @@ export async function foo() {
 
   const someFuncCall = someFunc.prepare();
   console.log(someFuncCall);
+}
+
+//name: Perform Sensitivity Analysis
+//input: string funcName {choices: ['ishigamiFunc', 'parabola', 'cubicParabola', 'quadricParabola', 'oneDfOutput', 'twoDfOutput']}
+export async function performSA(funcName: string): Promise<void> {
+  const someFunc: DG.Func = await grok.functions.eval('SA:' + funcName);
+  console.log(someFunc);
+
+  console.log('INPUTS:');
+  for (const prop of someFunc.inputs)
+    console.log(prop);
+
+  console.log('OUTPUTS:');
+  for (const prop of someFunc.outputs)
+    console.log(prop);
+
+  const someFuncCall = someFunc.prepare(
+    {
+      'x1': 1,
+      'x2': 2,
+      'x3': 3,
+      'a': 7,
+      'b': 0.1
+    }
+  );
+
+  console.log(someFuncCall);
+
+  let res = await someFuncCall.call();
+
+  console.log(someFuncCall);
+
+  console.log('Result:');
+  console.log(res);
 }
