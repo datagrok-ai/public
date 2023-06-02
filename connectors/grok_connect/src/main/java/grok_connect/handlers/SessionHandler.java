@@ -7,6 +7,8 @@ import grok_connect.log.QueryLogger;
 import grok_connect.utils.QueryChunkNotSent;
 import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.*;
@@ -52,12 +54,14 @@ public class SessionHandler {
             String message = cause.getMessage();
             String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
                     .collect(Collectors.joining(System.lineSeparator()));
-            logger.error(EventType.ERROR.getMarker(), "An exception was thrown", cause);
+            logger.error(EventType.ERROR.getMarker(), cause.toString(), cause);
+            logger.error(EventType.ERROR.getMarker(), String.format("STACK_TRACE: %s", stackTrace));
             DataQueryRunResult result = new DataQueryRunResult();
             result.errorMessage = message;
             result.errorStackTrace = stackTrace;
-            result.log = queryLogger.dumpLogMessages().toCsv();
             session.getRemote().sendString(socketErrorMessage(new Gson().toJson(result)));
+            sendLog();
+            queryLogger.closeLogger();
             session.close();
             queryManager.closeConnection();
         }
@@ -94,10 +98,7 @@ public class SessionHandler {
             logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing has finished");
             return;
         } else if (message.startsWith(COMPLETED_OK)) {
-            logger.debug(EventType.LOG_PROCESSING.getMarker(EventType.Stage.START), "Converting logs to byteArray");
-            byte[] logs = queryLogger.dumpLogMessages().toByteArray();
-            logger.debug(EventType.LOG_PROCESSING.getMarker(EventType.Stage.END), "Logs were converted to byteArray");
-            session.getRemote().sendBytes(ByteBuffer.wrap(logs));
+            sendLog();
             queryLogger.closeLogger();
             session.getRemote().sendString(END_MESSAGE);
             session.close();
@@ -146,5 +147,11 @@ public class SessionHandler {
 
     private String socketErrorMessage(String s) {
         return String.format("ERROR: %s", s);
+    }
+
+    private void sendLog() throws IOException {
+        logger.debug(EventType.MISC.getMarker(), "Converting logs to byteArray");
+        byte[] logs = queryLogger.dumpLogMessages().toByteArray();
+        session.getRemote().sendBytes(ByteBuffer.wrap(logs));
     }
 }
