@@ -11,7 +11,8 @@ import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree} from "../package";
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
-import {filter} from 'rxjs/operators';
+import {filter, debounce} from 'rxjs/operators';
+import {interval} from 'rxjs';
 
 const CELL_HEIGHT = 100;
 const CELL_WIDTH = 180;
@@ -1583,10 +1584,10 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.columnName ??= this.column?.name;
     this.createViewer(dataFrame);
     this.subs.push(this.dataFrame!.onRowsFiltering
-      .pipe(filter((_) => !this.isFiltering))
-      .subscribe((_: any) => {
+      .pipe(filter((_) => !this.isFiltering), debounce(_ => interval(100)))
+      .subscribe((_) => {
         delete this.column!.temp['chem-scaffold-filter'];
-        setTimeout(() => this.viewer.updateFilters(this.isFiltering), 100);
+        this.viewer.updateFilters(this.isFiltering);
       })
     );
   }
