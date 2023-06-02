@@ -26,10 +26,12 @@ public class QueryManager {
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
     public static final String FETCH_SIZE_KEY = "connectFetchSize";
+    public static final String DRY_RUN_KEY = "dryRun";
     private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
     private static final int MAX_FETCH_SIZE = 100000;
     private static final int MIN_FETCH_SIZE = 100;
     private static final int FIRST_FETCH_SIZE = 100;
+    public boolean isDryRun = false;
     private final JdbcDataProvider provider;
     private final FuncCall query;
     private final Logger logger;
@@ -47,7 +49,8 @@ public class QueryManager {
         query.afterDeserialization();
         this.logger = logger;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
-        if (query.func.options != null && query.func.options.containsKey(FETCH_SIZE_KEY)) {
+        boolean optionsExists = query.func.options != null;
+        if (optionsExists && query.func.options.containsKey(FETCH_SIZE_KEY)) {
             String value = query.func.options.get(FETCH_SIZE_KEY).toString();
             Pattern pattern = Pattern.compile("(\\d+) MB");
             Matcher matcher = pattern.matcher(value);
@@ -57,6 +60,9 @@ public class QueryManager {
                 changedFetchSize = true;
                 currentFetchSize = Integer.parseInt(value);
             }
+        }
+        if (optionsExists && query.func.options.containsKey(DRY_RUN_KEY)) {
+            isDryRun = Boolean.parseBoolean((String) query.func.options.get(DRY_RUN_KEY));
         }
     }
 
@@ -89,22 +95,28 @@ public class QueryManager {
             column.empty();
         }
         DataFrame df = new DataFrame();
-        if (!connection.isClosed() && !resultSet.isClosed()) {
-            Marker start = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.START);
-            Marker end = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.END);
-            logger.debug(start, "ResultSet processing was started");
-            df = provider.getResultSetSubDf(query, resultSet, columns,
-            schemeInfo.supportedType, schemeInfo.initColumn, currentFetchSize, logger, dfNumber);
-            logger.debug(end, "ResultSet processing has finished");
-        }
 
-        if (supportTransactions && df.rowCount != 0 && !changedFetchSize) {
-            currentFetchSize = getFetchSize(df);
-            logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size: {}", currentFetchSize);
-            if (!provider.descriptor.type.equals("Virtuoso")) {
-                resultSet.setFetchSize(currentFetchSize);
+        if (!connection.isClosed() && !resultSet.isClosed()) {
+            df = getResultSetSubDf(dfNumber, columns);
+            if (isDryRun) {
+                logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing was finished");
             }
         }
+
+        changeFetchSize(df, dfNumber);
+
+        if (isDryRun && df.rowCount != 0) {
+            while (df.rowCount != 0) {
+                logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(++dfNumber, EventType.Stage.START), "DataFrame processing was started");
+                for (Column column : columns) {
+                    column.empty();
+                }
+                df = getResultSetSubDf(dfNumber, columns);
+                logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing was finished");
+                changeFetchSize(df, dfNumber);
+            }
+        }
+
         df.tags = new LinkedHashMap<>();
         df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
         return df;
@@ -127,6 +139,26 @@ public class QueryManager {
 
     public FuncCall getQuery() {
         return query;
+    }
+
+    private DataFrame getResultSetSubDf(int dfNumber, List<Column> columns) throws QueryCancelledByUser, SQLException, IOException {
+        Marker start = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.START);
+        Marker end = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.END);
+        logger.debug(start, "ResultSet processing was started");
+        DataFrame df = provider.getResultSetSubDf(query, resultSet, columns,
+                schemeInfo.supportedType, schemeInfo.initColumn, currentFetchSize, logger, dfNumber);
+        logger.debug(end, "ResultSet processing has finished");
+        return df;
+    }
+
+    private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
+        if (supportTransactions && df.rowCount != 0 && !changedFetchSize) {
+            currentFetchSize = getFetchSize(df);
+            logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size: {}", currentFetchSize);
+            if (!provider.descriptor.type.equals("Virtuoso")) {
+                resultSet.setFetchSize(currentFetchSize);
+            }
+        }
     }
 
     private int getFetchSize(DataFrame df) {

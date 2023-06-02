@@ -17,7 +17,7 @@ import org.slf4j.Marker;
 import serialization.DataFrame;
 
 public class SessionHandler {
-    private static final String COMPLETED = "COMPLETED_OK";
+    private static final String COMPLETED_OK = "COMPLETED_OK";
     private static final String MESSAGE_START = "QUERY";
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
     private static final String END_MESSAGE = "EOF";
@@ -71,6 +71,15 @@ public class SessionHandler {
             queryManager.initResultSet();
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
+                if (queryManager.isDryRun) {
+                    logger.info(EventType.MISC.getMarker(), "Running DRY RUN");
+                    dataFrame = queryManager.getSubDF(dfNumber);
+                    logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
+                    queryManager.closeConnection();
+                    logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
+                    session.getRemote().sendString("COMPLETED");
+                    return;
+                }
                 dataFrame = queryManager.getSubDF(dfNumber);
             } else {
                 dataFrame = new DataFrame();
@@ -84,7 +93,7 @@ public class SessionHandler {
             logger.debug(end, "Binary dataframe with id {} was sent to the server", dfNumber);
             logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing has finished");
             return;
-        } else if (message.startsWith(COMPLETED)) {
+        } else if (message.startsWith(COMPLETED_OK)) {
             logger.debug(EventType.LOG_PROCESSING.getMarker(EventType.Stage.START), "Converting logs to byteArray");
             byte[] logs = queryLogger.dumpLogMessages().toByteArray();
             logger.debug(EventType.LOG_PROCESSING.getMarker(EventType.Stage.END), "Logs were converted to byteArray");
