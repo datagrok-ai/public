@@ -58,8 +58,11 @@ export class DistanceMatrix {
     const size: number = list.length;
     const res = new DistanceMatrix(undefined, size);
     for (let i = 0; i < size; i++) {
-      for (let j = i + 1; j < size; j++)
-        res.set(i, j, method(list[i], list[j]));
+      for (let j = i + 1; j < size; j++) {
+        // if any of the values is null, set distance to 1
+        list[i] !== null && list[j] !== null ?
+          res.set(i, j, method(list[i], list[j])) : res.set(i, j, 1);
+      }
     }
     return res;
   }
@@ -86,7 +89,7 @@ export class DistanceMatrix {
 
   //normilze distance matrix in place
   public normalize() {
-    let min = this._data[0];
+    let min = 0;
     let max = this._data[0];
     for (let i = 0; i < this._data.length; i++) {
       if (this._data[i] < min)
