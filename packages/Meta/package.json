@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.98",
+  "version": "3.3.99",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2819,6 +2819,9 @@
         },
         "1.0.3": {
           "datagrok-api": "latest"
+        },
+        "1.0.4": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -2826,7 +2829,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/UITests"
-      }
+      },
+      "category": "Development"
     },
     "curves": {
       "dependencies": {

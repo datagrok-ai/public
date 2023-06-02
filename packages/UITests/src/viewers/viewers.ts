@@ -12,9 +12,9 @@ category('Viewers: Core Viewers', () => {
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
     v !== 'Google map' && v !== 'Markup');
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
-  const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
-  //@ts-ignore
+  const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
   coreViewers.push('Leaflet', 'distributionProfiler');
+
   for (const v of coreViewers) {
     test(v, async () => {
       await testViewer(v, df.clone());
@@ -211,6 +211,7 @@ category('Viewers', () => {
 
   after(async () => {
     grok.shell.closeAll();
+    DG.Balloon.closeAll();
 
     for (const viewer of viewerList) {
       try {
@@ -222,7 +223,7 @@ category('Viewers', () => {
     }
     viewerList = [];
   });
-});
+}, false);
 
 function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());
