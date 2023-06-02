@@ -80,11 +80,11 @@ export class Viewport {
   }
 
   xToWorld(screen: number): number {
-    return this.xt.screenToWorld(screen, this.screen.width, this.world.minX, this.world.maxX, this.inverseX);
+    return this.xt.screenToWorld(screen - this.screen.left, this.screen.width, this.world.minX, this.world.maxX, this.inverseX);
   }
 
   yToWorld(screen: number): number {
-    return this.yt.screenToWorld(screen, this.screen.height, this.world.minY, this.world.maxY, this.inverseY);
+    return this.yt.screenToWorld(screen - this.screen.top, this.screen.height, this.world.minY, this.world.maxY, this.inverseY);
   }
 
   toScreen(world: DG.Point): DG.Point { return new DG.Point(this.xToScreen(world.x), this.yToScreen(world.y)); }
