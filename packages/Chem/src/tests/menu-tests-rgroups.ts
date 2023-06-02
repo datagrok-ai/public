@@ -8,6 +8,7 @@ import {readDataframe} from './utils';
 import {findMCS, findRGroups} from '../scripts-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMCS} from '../utils/most-common-subs';
 
 
@@ -34,27 +35,47 @@ category('top menu r-groups', () => {
   });
 
   test('mcs.exactAtomsExactBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, true);
-    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-[#6]-[#7]-[#6]');
+    let mcs: RDMol|null = null;
+    try {
+      mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, true);
+      expect(mcs?.get_smarts(), DG.Test.isInBenchmark ? '[#17]' : '[#6]-[#6]-[#7]-[#6]');
+    } finally {
+      mcs?.delete();
+    }
   });
 
   test('mcs.anyAtomsExactBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, true);
-    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
+    let mcs: RDMol|null = null;
+    try {
+      mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, true);
+      expect(mcs?.get_smarts(), DG.Test.isInBenchmark ? '[#17]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
+    } finally {
+      mcs?.delete();
+    }
   });
 
   test('mcs.exactAtomsAnyBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, false);
-    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
+    let mcs: RDMol|null = null;
+    try {
+      mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, false);
+      expect(mcs?.get_smarts(), DG.Test.isInBenchmark ? '[#17]' : '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
+    } finally {
+      mcs?.delete();
+    }
   });
 
   test('mcs.anyAtomsAnyBonds', async () => {
-    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, false);
-    expect(mcs, DG.Test.isInBenchmark ?
-      `[#8,#6,#7,#9,#15,#16,#17,#35]-,:[#17,#5,#6,#7,#8,#14,#15,#16,#33,#34]` :
-      `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:\
-[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
-  });
+    let mcs: RDMol|null = null;
+    try {
+      mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, false);
+      expect(mcs?.get_smarts(), DG.Test.isInBenchmark ?
+        `[#8,#6,#7,#9,#15,#16,#17,#35]-,:[#17,#5,#6,#7,#8,#14,#15,#16,#33,#34]` :
+        `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:\
+  [#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
+    } finally {
+      mcs?.delete();
+    }
+});
 
   test('rgroups.smiles', async () => {
     if (DG.Test.isInBenchmark) {
