@@ -43,7 +43,7 @@ category('top menu activity cliffs', async () => {
   test('activityCliffs.malformedData', async () => {
     DG.Balloon.closeAll();
     await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
-      'canonical_smiles', 'FractionCSP3', 23);
+      'canonical_smiles', 'FractionCSP3', 24);
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
