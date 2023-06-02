@@ -24,14 +24,14 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 }
 
 /** Performs a curve confidence interval drawing */
-function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, fitResult: FitResult,
+function drawConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResult, screenBounds: DG.Rect,
   transform: Viewport, confidenceType: string): void {
   g.beginPath();
-  for (let i = 0; i < series.points.length!; i++) {
-    const x = transform.xToScreen(series.points[i].x);
+  for (let i = 0; i <= screenBounds.width; i++) {
+    const x = screenBounds.x + i;
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
-      transform.yToScreen(fitResult.confidenceTop(series.points[i].x)) :
-      transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
+      transform.yToScreen(fitResult.confidenceTop(transform.xToWorld(x))) :
+      transform.yToScreen(fitResult.confidenceBottom(transform.xToWorld(x)));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -41,11 +41,11 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
 }
 
 /** Performs a curve confidence interval color filling */
-function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, fitResult: FitResult, transform: Viewport): void {
+function fillConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResult, screenBounds: DG.Rect, transform: Viewport): void {
   g.beginPath();
-  for (let i = 0; i < series.points.length!; i++) {
-    const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitResult.confidenceTop(series.points[i].x));
+  for (let i = 0; i <= screenBounds.width; i++) {
+    const x = screenBounds.x + i;
+    const y = transform.yToScreen(fitResult.confidenceTop(transform.xToWorld(x)));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -53,9 +53,9 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
   }
 
   // reverse traverse to make a shape of confidence interval to fill it
-  for (let i = series.points.length! - 1; i >= 0; i--) {
-    const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
+  for (let i = screenBounds.width; i >= 0; i--) {
+    const x = screenBounds.x + i;
+    const y = transform.yToScreen(fitResult.confidenceBottom(transform.xToWorld(x)));
     g.lineTo(x, y);
   }
   g.closePath();
@@ -130,6 +130,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (const series of data.series!) {
       series.points.sort((a, b) => a.x - b.x);
+      // TODO: add check if parameters
       const fitResult = fitSeries(series, !!data.chartOptions?.showStatistics);
       if (series.showPoints ?? true) {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
@@ -169,9 +170,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         const curve = fitResult.fittedCurve;
 
         g.beginPath();
-        for (let i = 0; i < series.points.length!; i++) {
-          const x = viewport.xToScreen(series.points[i].x);
-          const y = viewport.yToScreen(curve(series.points[i].x));
+        for (let i = 0; i <= screenBounds.width; i++) {
+          const x = screenBounds.x + i;
+          const y = viewport.yToScreen(curve(viewport.xToWorld(x)));
           if (i === 0)
             g.moveTo(x, y);
           else
@@ -184,9 +185,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
-        drawConfidenceInterval(g, series, fitResult, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
-        drawConfidenceInterval(g, series, fitResult, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
-        fillConfidenceInterval(g, series, fitResult, viewport);
+        drawConfidenceInterval(g, fitResult, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
+        drawConfidenceInterval(g, fitResult, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
+        fillConfidenceInterval(g, fitResult, screenBounds, viewport);
       }
 
 
