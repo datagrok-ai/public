@@ -8,12 +8,12 @@ To accommodate any enterprise needs, we can develop a customer-specific integrat
 
 All methods can be enabled separately or combined.
 
-More information about authentication can be found on [our wiki](../../../govern/authentication.md).
+More information about authentication can be found on [our wiki](../../govern/authentication.md).
 
 ## Common options
 
 If you want to display something on the login window, set the 'Prompt' option
-![Login prompt](../../img/login-prompt.png)
+![Login prompt](../img/login-prompt.png)
 
 Enable the 'Send Welcome Email' option to send welcome emails to new signed-up users.
 
@@ -21,7 +21,7 @@ Enable the 'Send Welcome Email' option to send welcome emails to new signed-up u
 
 It is the most basic method to authenticate users with Datagrok.
 
-To configure [login-password authentication](../../../govern/authentication.md) for Datagrok:
+To configure [login-password authentication](../../govern/authentication.md) for Datagrok:
 
 1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2. Enable 'Internal authentication' to use the login-password method

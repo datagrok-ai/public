@@ -1,5 +1,5 @@
 ---
-title: "Deployment on a regular machine"
+title: "Regular machine"
 ---
 
 Datagrok is based on Docker containers, [database](../infrastructure.md#database)
