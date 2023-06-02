@@ -76,14 +76,9 @@ export class SeqPaletteCustom implements SeqPalette {
   }
 }
 
-// let loadLibrariesPromise: Promise<void> = Promise.resolve();
-
 //tags: init
 export async function initBio() {
-  // loadLibrariesPromise = loadLibrariesPromise.then(() => {
-  await MonomerLibHelper.instance.loadLibraries(); // from initBio()
-  // });
-  // await loadLibrariesPromise;
+  await MonomerLibHelper.instance.loadLibraries();
   const monomerLib = MonomerLibHelper.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
@@ -148,7 +143,7 @@ export async function manageFiles() {
 export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
   const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  const divInputs: HTMLDivElement = ui.div();
+  const inputsForm: HTMLDivElement = ui.inputs([]);
   const libFileNameList: string[] = await getLibFileNameList();
 
   let userStoragePromise: Promise<void> = Promise.resolve();
@@ -169,13 +164,9 @@ export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
           grok.shell.info('Monomer library user settings saved.');
         });
       });
-    divInputs.append(libInput.root);
+    inputsForm.append(libInput.root);
   }
-
-  return new DG.Widget(ui.splitV([
-    divInputs,
-    ui.divV([filesButton]),
-  ]));
+  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
 }
 
 //name: fastaSequenceCellRenderer
