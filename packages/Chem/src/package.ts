@@ -21,7 +21,7 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {calcChemProperty, getChemPropertyFunc, propertiesWidget} from './widgets/properties';
+import {getChemPropertyFunc, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {toxicityWidget} from './widgets/toxicity';
@@ -797,15 +797,6 @@ export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
   return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
     isSmarts(smiles.value) || isFragment(smiles.value)? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
       propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
-}
-
-//name: calculateChemProperty
-//description: Calculate chem property
-//input: string name
-//input: string smiles
-//output: object result
-export async function calculateChemProperty(name: string, smiles: string) : Promise<object> {
-  return calcChemProperty(name, smiles);
 }
 
 //name: getChemPropertyFunction
