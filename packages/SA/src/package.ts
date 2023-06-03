@@ -4,6 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {getEachOutputItemInfo} from './outputTools';
+import {VariedNumericalInputInfo, FixedInputItem} from './inputTools';
+
+import { VarianceBasedSenstivityAnalysis } from './sensitivityAnalysis';
 
 export const _package = new DG.Package();
 
@@ -22,7 +25,10 @@ export function info() {
 //editor: Compute:RichFunctionViewEditor
 export function ishigamiFunc(x1: number, x2: number, x3: number, a : number, b : number): number {  
   const sin = Math.sin;
-  const pow = Math.pow;  
+  const pow = Math.pow;
+  /*let res = sin(x1) + a * pow(sin(x2), 2) + b * pow(x3, 4) * sin(x1);
+  console.log(res);
+  return res;*/
   return sin(x1) + a * pow(sin(x2), 2) + b * pow(x3, 4) * sin(x1);
 }
 
@@ -113,7 +119,8 @@ export async function foo() {
 //input: string funcName {choices: ['ishigamiFunc', 'parabola', 'cubicParabola', 'quadricParabola', 'oneDfOutput', 'twoDfOutput']}
 export async function performSA(funcName: string): Promise<void> {
   const someFunc: DG.Func = await grok.functions.eval('SA:' + funcName);
-  console.log(someFunc);
+  
+  /*console.log(someFunc);
 
   console.log('INPUTS:');
   for (const prop of someFunc.inputs)
@@ -131,13 +138,69 @@ export async function performSA(funcName: string): Promise<void> {
       'a': 7,
       'b': 0.1
     }
-  );
+  );*/
 
-  console.log(someFuncCall);
+  const fixed1: FixedInputItem = {name: 'a', value: 7};
+  const fixed2: FixedInputItem = {name: 'b', value: 0.1};
+
+  const fixedInputs: Array<FixedInputItem> = [fixed1, fixed2];
+
+  const inp1: VariedNumericalInputInfo = {
+    name: 'x1', caption: undefined, type: DG.COLUMN_TYPE.FLOAT, min: 10, max: 20, column: undefined};
+  
+  const inp2: VariedNumericalInputInfo = {
+    name: 'x2', caption: undefined, type: DG.COLUMN_TYPE.FLOAT, min: 30, max: 40, column: undefined};
+
+  const inp3: VariedNumericalInputInfo = {
+    name: 'x3', caption: undefined, type: DG.COLUMN_TYPE.FLOAT, min: -10, max: 0, column: undefined};
+
+  const variedInputs: Array<VariedNumericalInputInfo> = [inp1, inp2, inp3];
+
+  const samplesCount = 5;
+
+  const sa = new VarianceBasedSenstivityAnalysis(someFunc, fixedInputs, variedInputs, samplesCount);
+
+  //await sa.perform();
+
+  grok.shell.addTableView(await sa.perform());
+
+  /*const runsCount = samplesCount * (variedInputs.length + 2);
+
+  createVariedNumericalInputColumns(samplesCount, variedInputs);
+
+  const funcCalls: Array<DG.FuncCall> = [];
+
+  for (let i = 0; i < runsCount; ++i) {
+    let inputs: any = {};
+
+    for (const input of fixedInputs)
+      inputs[input.name] = input.value;
+
+    for (const input of variedInputs)
+      inputs[input.name] = input.column?.get(i);
+      
+    funcCalls.push(someFunc.prepare(inputs));
+  }
+
+  for (const funcCall of funcCalls)
+    await funcCall.call();*/
+
+
+
+  /*const columns: DG.Column[] = [];
+
+  for (const item of variedInputs)
+    columns.push(item.column!);
+
+  const result = DG.DataFrame.fromColumns(columns);
+
+  grok.shell.addTableView(result);*/
+
+  /*console.log(someFuncCall);
 
   await someFuncCall.call();
 
-  console.log(getEachOutputItemInfo(someFuncCall));
+  console.log(getEachOutputItemInfo(someFuncCall));*/
 
   /*console.log(someFuncCall);
   

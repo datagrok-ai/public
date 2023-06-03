@@ -16,8 +16,10 @@
          LINK: https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis
 */
 
+import {checkSize} from './utils';
+
 // Inputs generator
-export class InputsForVarianceBasedSensitivityAnalysis {
+class InputsForVarianceBasedSensitivityAnalysis {
   private N: number; // samplesCount
   private d: number; // dimension, i.e. model inputs count
 
@@ -26,6 +28,11 @@ export class InputsForVarianceBasedSensitivityAnalysis {
   private AB: Array<Array<Float32Array>>; // each element is an array of columns of the matrices AB
 
   constructor(samplesCount: number = 1, dimension: number = 1) {
+
+    // check sizes
+    checkSize(samplesCount);
+    checkSize(dimension);  
+
     this.N = samplesCount;
     this.d = dimension;
 
@@ -93,42 +100,34 @@ export class InputsForVarianceBasedSensitivityAnalysis {
     return this.getRow(this.AB[matrixIndex], rowIndex);
   }
 
-  // TODO: remove the following testing tools
-  print(): void {
-    console.log(`N = ${this.N}, d = ${this.d}`);
+  // Returns concatenated column of A,B and AB's
+  getConcatenatedColumns(): Array<Float32Array> {    
+    const columns = new Array<Float32Array>(0);
 
-    console.log('A:');
-    console.log(this.A);
+    const N = this.N;
+    const d = this.d;
 
-    console.log('B:');
-    console.log(this.B);
+    for (let i = 0; i < d; ++i) {
+      const col = new Float32Array(N * (d + 2));
 
-    for (let i = 0; i < this.d; ++i) {
-      console.log(`AB[${i}]:`);
-      console.log(this.AB[i]);
+      col.set(this.A[i]);
+
+      col.set(this.B[i], N);
+
+      for (let j = 0; j < d; ++j)
+        col.set(this.AB[j][i], 2 * N + N * j);
+
+      columns.push(col);
     }
-  }
 
-  printRows(): void {
-    console.log('A:');
-    for (let i = 0; i < this.N; ++i) 
-      console.log(this.getRowOfMatrixA(i));
-
-    console.log('B:');
-    for (let i = 0; i < this.N; ++i) 
-      console.log(this.getRowOfMatrixB(i));
-
-    for (let j = 0; j < this.d; ++j) {
-      console.log(`AB[${j}]:`);
-      for (let i = 0; i < this.N; ++i)
-        console.log(this.getRowOfMatrixAB(j, i));
-    }
-  }
+    return columns;
+  }  
 } // InputsForVarianceBasedSensitivityAnalysis
 
-// TODO: remove the following testing tools
-const inputs = new InputsForVarianceBasedSensitivityAnalysis(3, 2);
+// Returns input columns data for variance-based sensitivity analysis
+export function getGeneratedColumnsData(samplesCount: number, dimension: number): Array<Float32Array> {
+  const inputs = new InputsForVarianceBasedSensitivityAnalysis(samplesCount, dimension);  
 
-inputs.print();
+  return inputs.getConcatenatedColumns();
+}
 
-inputs.printRows();
