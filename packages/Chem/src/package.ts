@@ -803,7 +803,7 @@ export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
 //description: Return chem property function
 //input: string name
 //output: object result
-export async function getChemPropertyFunction(name: string) : Promise<any> {
+export function getChemPropertyFunction(name: string) : null | ((smiles: string) => any) {
   return getChemPropertyFunc(name);
 }
 

@@ -14,7 +14,7 @@ interface IChemProperty {
   valueFunc: (mol: OCL.Molecule) => any;
 }
 
-const PROP_MAP: any = {
+const PROP_MAP: {[k: string]: IChemProperty}  = {
   'MW': {name: 'MW', type: DG.TYPE.FLOAT, valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().absoluteWeight},
   'HBA': {name: 'HBA', type: DG.TYPE.INT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).acceptorCount},
   'HBD': {name: 'HBD', type: DG.TYPE.INT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).donorCount},
@@ -79,7 +79,7 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
           }
         });
       semValue.cell.dataFrame.columns.add(col);
-    }, `Calculate ${name} for the whole table`);
+    }, `Calculate ${p.name} for the whole table`);
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
     $(addColumnIcon)
@@ -92,10 +92,10 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     return ui.divH([addColumnIcon, p.valueFunc(mol)], {style: {'position': 'relative'}});
   }
 
-  const map = {};
+  const map : {[k: string]: HTMLElement} = {};
   const props = Object.keys(PROP_MAP);
   for (let n = 0; n < props.length; ++n)
-    (map as any)[props[n]] = prop(PROP_MAP[props[n]], mol);
+   map[props[n]] = prop(PROP_MAP[props[n]], mol);
 
   host.appendChild(ui.tableFromMap(map));
 
