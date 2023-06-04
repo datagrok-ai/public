@@ -388,7 +388,7 @@ export class DimensionalityReducer {
    * @memberof DimensionalityReducer
    */
   public async transform(transpose: boolean = false, parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
-    if (this.reducer == undefined)
+    if (this.reducer === undefined)
       throw new Error('Reducer was not defined.');
 
     let {embedding, distance} = await this.reducer.transform(parallelDistanceWorkers);

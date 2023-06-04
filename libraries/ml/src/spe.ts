@@ -89,7 +89,7 @@ export class SPEBase {
 
     let lambda2 = this.lambda2;
 
-    if (this.steps == 0)
+    if (this.steps === 0)
       this.steps = vectors.length - 1;
 
 
@@ -216,10 +216,10 @@ export class OriginalSPE extends SPEBase {
 
     this.initDistance(vectors);
 
-    if (this.maxDistanceSteps == null)
+    if (this.maxDistanceSteps === null)
       this.maxDistanceSteps = nItems * Math.floor((nItems - 1) / 2);
 
-    if (this.maxDistance == null) {
+    if (this.maxDistance === null) {
       this.maxDistance = -1e37;
       for (let n = 0; n < this.maxDistanceSteps; n++) {
         const i = randomInt(nItems); let j = randomInt(nItems);

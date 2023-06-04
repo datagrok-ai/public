@@ -60,8 +60,7 @@ export class DistanceMatrix {
     for (let i = 0; i < size; i++) {
       for (let j = i + 1; j < size; j++) {
         // if any of the values is null, set distance to 1
-        list[i] !== null && list[j] !== null ?
-          res.set(i, j, method(list[i], list[j])) : res.set(i, j, 1);
+        res.set(i, j, list[i] !== null && list[j] !== null ? method(list[i], list[j]) : 1);
       }
     }
     return res;
