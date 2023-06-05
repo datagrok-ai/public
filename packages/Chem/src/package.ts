@@ -703,7 +703,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
 //top-menu: Chem | Calculate | To InchI...
 //name: To InchI
 //input: dataframe table [Input data table]
-//input: column molecules {type:categorical; semType: Molecule}
+//input: column molecules {semType: Molecule}
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
   addInchis(table, col);
 }
@@ -711,7 +711,7 @@ export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
 //top-menu: Chem | Calculate | To InchI Keys...
 //name: To InchI Keys
 //input: dataframe table [Input data table]
-//input: column molecules {type:categorical; semType: Molecule}
+//input: column molecules {semType: Molecule}
 export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
   addInchiKeys(table, col);
 }
