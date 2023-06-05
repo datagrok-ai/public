@@ -1,12 +1,12 @@
 ---
-title: "Deployment on Docker Swarm"
+title: "Docker Swarm"
 ---
 
-Datagrok is based on Docker containers, [database](../infrastructure.md#database)
-and [persistent file storage](../infrastructure.md#storage).
+The deployment consists of a few docker containers, [database](../infrastructure.md#database) for storing metadata,
+and [persistent file storage](../infrastructure.md#storage) for storing files
 
-As [database](../infrastructure.md#database) Datagrok supports any PostgreSQL database out-of-the-box, including cloud
-solutions for PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/).
+Datagrok requires PostgreSQL [database](../infrastructure.md#database) to store metadata.
+We recommend using scalable and highly reliable solutions, such as [AWS RDS](https://aws.amazon.com/rds/).
 
 For [persistent file storage](../infrastructure.md#storage), Datagrok supports a lot of options, including cloud solutions,
 for example [AWS S3](https://aws.amazon.com/s3/) and Local File System storage.

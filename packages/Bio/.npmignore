@@ -43,3 +43,5 @@ test-report.html
 
 # webpack-bundle-analyzer
 stats.json
+test-record.mp4
+test-report.csv

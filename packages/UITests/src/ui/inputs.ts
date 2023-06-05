@@ -105,7 +105,6 @@ category('UI: Inputs', () => {
   });
 
   after(async () => {
-    v.close();
     grok.shell.closeAll();
   });
 
@@ -182,4 +181,4 @@ category('UI: Inputs', () => {
     input.fireChanged();
     input.root.remove();
   }
-});
+}, false);

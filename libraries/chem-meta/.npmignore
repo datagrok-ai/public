@@ -3,3 +3,5 @@ data-samples/
 
 src/**/*.ts
 !src/**/*.d.ts
+test-record.mp4
+test-report.csv
