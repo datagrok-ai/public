@@ -89,7 +89,7 @@ interface IAnalyzedColumn {
 }
 
 
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Group Analysis',
   description: 'Creates a group analysis viewer',
   icon: 'icons/groupanalysis-viewer.svg',
