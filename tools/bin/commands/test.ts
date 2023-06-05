@@ -121,8 +121,17 @@ export function test(args: TestArgs): boolean {
     function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
       report?: boolean, record?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
-        if (options.record)
+        let consoleLog: string = '';
+        if (options.record) {
           await recorder.start('./test-record.mp4');
+          page.on('console', msg => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
+          page.on('pageerror', error => {
+            consoleLog += `CONSOLE LOG ERROR: ${error.message}\n`;
+          });
+          page.on('response', response => {
+            consoleLog += `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`;
+          });
+        }
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
 
@@ -167,8 +176,10 @@ export function test(args: TestArgs): boolean {
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
 
-        if (options.record)
+        if (options.record) {
           await recorder.stop();
+          fs.writeFileSync('./test-console-output.log', consoleLog)
+        }
         return r;
       });
     }
