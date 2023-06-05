@@ -10,7 +10,7 @@ import {
   FitErrorModel,
   FitParam,
   FitResult, fitResultProperties,
-  sigmoid
+  fitFunctions,
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 /**
@@ -31,6 +31,9 @@ import {
  * - Ability to overlay curves from multiple grid cells (special viewer)
  * - Work with series stored in multiple formats (binary for performance, json for flexibility, etc)
 */
+
+// TODO: document functionality, screenshot, also JSON structure and how to use your data in README.md
+// TODO: add tests on fit
 
 export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
@@ -260,7 +263,7 @@ export function fitSeries(series: IFitSeries, statistics: boolean = false): FitR
 
   return fit(
     {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)},
-    initialParams, sigmoid, FitErrorModel.Constant, 0.05, statistics);
+    initialParams, fitFunctions.FIT_FUNCTION_SIGMOID, FitErrorModel.Constant, 0.05, statistics);
 }
 
 // /** Returns a curve function, either using the pre-computed parameters
