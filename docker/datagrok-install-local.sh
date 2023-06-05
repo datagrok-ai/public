@@ -16,9 +16,8 @@ datagrok_public_repo_url="https://raw.githubusercontent.com/datagrok-ai/public/m
 datagrok_local_url="http://localhost:8080/"
 
 script_name="$0"
-script_dir=$(dirname "$(readlink -f "$0")" )
+script_dir=$(dirname "$(readlink -f "$0")")
 compose_config_path="${script_dir}/${compose_config_name}"
-
 
 function message() {
     echo -e "${YELLOW}$1${RESET}"
@@ -32,7 +31,7 @@ function user_query_yn() {
     echo -ne "${YELLOW}"
     read -r -p "${1} (y/N)" answer
     echo -ne "${RESET}"
-    if [[ $answer =~ ^(Y|y) ]] ; then
+    if [[ $answer =~ ^(Y|y) ]]; then
         return 0 # 0 = True
     else
         return 1 # 1 = False
@@ -41,7 +40,7 @@ function user_query_yn() {
 
 function count_down() {
     echo -n "Waiting:"
-    for ((i = ${1} ; i > 0 ; i--)); do
+    for ((i = ${1}; i > 0; i--)); do
         echo -n " $i"
         sleep 1
     done
@@ -56,10 +55,18 @@ function check_docker() {
     fi
 }
 
+function check_docker_daemon() {
+    docker info >/dev/null || {
+        error "Docker daemon is not running"
+        message "Please launch Docker Desktop application"
+        exit 255
+    }
+}
+
 function check_installation() {
     if [ ! -f "${compose_config_path}" ]; then
         return 1 # False
-    else 
+    else
         docker_image=$(docker images -q "datagrok/datagrok")
         if [ ! -n "$docker_image" ]; then
             return 1 # False
@@ -130,16 +137,19 @@ function datagrok_purge() {
     fi
 }
 
-
 # === Main part of the script starts from here ===
 check_docker
+check_docker_daemon
 
 case "$1" in
-    install) datagrok_install ;;
-    start)   datagrok_start ;;
-    stop)    datagrok_stop ;;
-    reset)   datagrok_reset ;;
-    purge)   datagrok_purge ;;
-    help|"-h"|"--help") echo "usage: $script_name install|start|stop|reset" >&2 ; exit 1 ;;
-    *) datagrok_start
+install) datagrok_install ;;
+start) datagrok_start ;;
+stop) datagrok_stop ;;
+reset) datagrok_reset ;;
+purge) datagrok_purge ;;
+help | "-h" | "--help")
+    echo "usage: $script_name install|start|stop|reset" >&2
+    exit 1
+    ;;
+*) datagrok_start ;;
 esac

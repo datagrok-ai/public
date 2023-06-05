@@ -22,7 +22,7 @@ echo %compose_config_path%
 
 call :check_docker_daemon
 if %errorlevel% neq 0 (
-    call :message "Docker daemon is not running, please launch your Docker daemon."
+    call :message "Docker daemon is not running, please launch Docker Desktop application."
     pause
     exit /b
 )
