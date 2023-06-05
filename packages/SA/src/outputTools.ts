@@ -12,12 +12,7 @@ type OutputInfo = {
 };
 
 function getOutputsInfo(func: DG.Func): OutputInfo[] {
-  const ouputInfo = Array<OutputInfo>(0);
-
-  for (const item of func.outputs)
-    ouputInfo.push({name: item.name, type: item.propertyType} as OutputInfo);
-
-  return ouputInfo;
+  return func.outputs.map(item => ({name: item.name, type: item.propertyType}));
 }
 
 function getDataFrameItemsInfo(funcCall: DG.FuncCall, outputName: string): OutputInfo[] {

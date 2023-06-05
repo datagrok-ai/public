@@ -6,13 +6,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {getGeneratedColumnsData} from './inputsGeneration';
 
-export type VariedNumericalInputInfo = {
-  name: string,
-  caption: string | undefined,
-  type: DG.COLUMN_TYPE,
+export type VariedNumericalInputInfo = {  
+  prop: DG.Property,
   min: number,
-  max: number,
-  column: DG.Column | undefined
+  max: number
 };
 
 export type FixedInputItem = {
@@ -20,31 +17,30 @@ export type FixedInputItem = {
   value: any
 };
 
-function createNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
+function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
   randomData: Float32Array): DG.Column {  
 
-  const length = randomData.length;  
+  const length = randomData.length;    
   
-  const column = DG.Column.fromType( numInputInfo.type, numInputInfo.caption ?? numInputInfo.name, length);
+  const column = DG.Column.fromType(numInputInfo.prop.propertyType as unknown as DG.COLUMN_TYPE, 
+    numInputInfo.prop.caption ?? numInputInfo.prop.name, length);
+
   const columnSource = column.getRawData();
 
   const step = numInputInfo.max - numInputInfo.min;
 
   for (let i = 0; i < length; ++i)
     columnSource[i] = numInputInfo.min + step * randomData[i];
-
-  numInputInfo.column = column;
   
   return column;
 }
 
-export function createVariedNumericalInputColumns(samplesCount: number, 
-  inputsInfo: Array<VariedNumericalInputInfo>): void { 
+export function getVariedNumericalInputColumns(samplesCount: number, 
+  inputsInfo: VariedNumericalInputInfo[]): DG.Column[] { 
 
   const dimension = inputsInfo.length;
 
-  const randData = getGeneratedColumnsData(samplesCount, dimension);
+  const randData = getGeneratedColumnsData(samplesCount, dimension);  
 
-  for (let i = 0; i < dimension; ++i)
-    createNumericalInputCol(inputsInfo[i], randData[i]);
+  return [...Array(dimension).keys()].map(i => getNumericalInputCol(inputsInfo[i], randData[i]));
 }

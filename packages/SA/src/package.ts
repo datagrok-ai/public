@@ -116,9 +116,10 @@ export async function foo() {
 }
 
 //name: Perform Sensitivity Analysis
-//input: string funcName {choices: ['ishigamiFunc', 'parabola', 'cubicParabola', 'quadricParabola', 'oneDfOutput', 'twoDfOutput']}
-export async function performSA(funcName: string): Promise<void> {
-  const someFunc: DG.Func = await grok.functions.eval('SA:' + funcName);
+//input: string funcName {choices: ['ishigamiFunc', 'oneDfOutput', 'twoDfOutput']}
+//input: int samplesCount = 1000
+export async function performSA(funcName: string, samplesCount: number): Promise<void> {
+  const func: DG.Func = await grok.functions.eval('SA:' + funcName);
   
   /*console.log(someFunc);
 
@@ -145,20 +146,27 @@ export async function performSA(funcName: string): Promise<void> {
 
   const fixedInputs: Array<FixedInputItem> = [fixed1, fixed2];
 
-  const inp1: VariedNumericalInputInfo = {
+  /*const inp1: VariedNumericalInputInfo = {
     name: 'x1', caption: undefined, type: DG.COLUMN_TYPE.FLOAT, min: 10, max: 20, column: undefined};
   
   const inp2: VariedNumericalInputInfo = {
     name: 'x2', caption: undefined, type: DG.COLUMN_TYPE.FLOAT, min: 30, max: 40, column: undefined};
 
   const inp3: VariedNumericalInputInfo = {
-    name: 'x3', caption: undefined, type: DG.COLUMN_TYPE.FLOAT, min: -10, max: 0, column: undefined};
+    name: 'x3', caption: undefined, type: DG.COLUMN_TYPE.FLOAT, min: -10, max: 0, column: undefined};*/
+
+  const inp1: VariedNumericalInputInfo = {
+    prop: func.inputs[0], min: 10, max: 20};
+    
+  const inp2: VariedNumericalInputInfo = {
+    prop: func.inputs[1], min: 30, max: 40};
+  
+  const inp3: VariedNumericalInputInfo = {
+    prop: func.inputs[2], min: -10, max: 0};
 
   const variedInputs: Array<VariedNumericalInputInfo> = [inp1, inp2, inp3];
-
-  const samplesCount = 5;
-
-  const sa = new VarianceBasedSenstivityAnalysis(someFunc, fixedInputs, variedInputs, samplesCount);
+  
+  const sa = new VarianceBasedSenstivityAnalysis(func, fixedInputs, variedInputs, samplesCount);
 
   //await sa.perform();
 

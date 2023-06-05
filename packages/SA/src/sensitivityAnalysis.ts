@@ -4,15 +4,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {VariedNumericalInputInfo, FixedInputItem, createVariedNumericalInputColumns} from './inputTools';
+import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumns} from './inputTools';
 import {getOutputColumns} from './outputTools';
 import {checkSize} from './utils';
+
+type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
 export class VarianceBasedSenstivityAnalysis {
   private samplesCount: number;
   private runsCount: number;
   private fixedInputs: FixedInputItem[];
-  private variedInputs: VariedNumericalInputInfo[];
+ 
+  private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
   private funcCalls: DG.FuncCall[];  
   
@@ -23,13 +26,21 @@ export class VarianceBasedSenstivityAnalysis {
 
     this.samplesCount = samplesCount;
     this.fixedInputs = fixedInputs;
-    this.variedInputs = variedInputs;
-
-    this.func = func;
     
-    createVariedNumericalInputColumns(samplesCount, this.variedInputs);
+    this.func = func;
 
-    this.runsCount = samplesCount * (variedInputs.length + 2);
+    const numericalColumns = getVariedNumericalInputColumns(samplesCount, variedInputs);
+
+    const dimension = variedInputs.length;   
+    
+    this.variedInputs = [...Array(dimension).keys()].map(i => 
+      ({prop: variedInputs[i].prop, 
+        min: variedInputs[i].min, 
+        max: variedInputs[i].max,
+        column: numericalColumns[i]})
+    );
+
+    this.runsCount = samplesCount * (dimension + 2);
 
     this.funcCalls = [];
 
@@ -39,25 +50,21 @@ export class VarianceBasedSenstivityAnalysis {
       for (const input of fixedInputs)
         inputs[input.name] = input.value;
     
-      for (const input of variedInputs)
-        inputs[input.name] = input.column?.get(i);
+      for (const input of this.variedInputs)
+        inputs[input.prop.name] = input.column.get(i);
           
       this.funcCalls.push(func.prepare(inputs));
     }
   }
 
-  private async run(): Promise<void> {
-    for (const funcCall of this.funcCalls)
-      await funcCall.call();
+  private async run(): Promise<void> {    
+    await Promise.all(this.funcCalls.map((call) => call.call()));
   }
 
   async perform(): Promise<DG.DataFrame> {
     await this.run();
 
-    const columns: DG.Column[] = [];
-
-    for (const input of this.variedInputs)
-      columns.push(input.column as DG.Column);
+    const columns = this.variedInputs.map((varInput) => varInput.column as DG.Column)
     
     const table = DG.DataFrame.fromColumns(columns);
     table.name = `Sensitivity Analysis of ${this.func.friendlyName}`;    
