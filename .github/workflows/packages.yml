@@ -275,8 +275,18 @@ jobs:
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
-        run: npm run test -- --skip-build --skip-publish
+        run: npm run test -- --skip-build --skip-publish --record --csv
         working-directory: packages/${{ matrix.package }}
+      - name: Upload Artifact
+        if: always() && steps.test-package.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            packages/${{ matrix.package }}/test-record.mp4
+            packages/${{ matrix.package }}/test-report.csv
+          retention-days: 14
+          if-no-files-found: warn
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
