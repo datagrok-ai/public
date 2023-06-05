@@ -5,6 +5,7 @@ export namespace decorators {
    * @param description - function description in UI.
    * @param icon - path to an icon file from the package root.
    * @param toolbox - set to true to add the viewer icon to the toolbox.
+   * @param trellisable - a flag that indicates whether this viewer can be an inner viewer of [DG.VIEWER.TRELLIS_PLOT]
    * @param viewerPath - viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | \<ViewerPath\>).
    *   The default path is "Add > JavaScript Viewers > \<Package Name\> > \<Friendly Viewer Name\>".
    * 
@@ -38,6 +39,7 @@ export namespace decorators {
     description?: string,
     icon?: string,
     toolbox?: boolean,
+    trellisable?: boolean,
     viewerPath?: string,
   }) {
     return function(constructor: Function) {};
