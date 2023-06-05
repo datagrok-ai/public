@@ -514,10 +514,10 @@ menu. The default path is `Add > JavaScript Viewers > <Package Name> > <Friendly
 
 :::tip
 
-If you are on version `^4.10.x` of `datagrok-tools`, you can use class decorators to register viewers:
+If you are on version `^4.12.x` of `datagrok-tools`, you can use class decorators to register viewers:
 
 ```ts
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   icon: 'images/icon.png',
   toolbox: true,
 })

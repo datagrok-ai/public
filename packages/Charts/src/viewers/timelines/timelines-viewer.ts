@@ -14,7 +14,7 @@ import { ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoi
 import '../../../css/timelines-viewer.css';
 
 
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Timelines',
   description: 'Creates a timelines viewer',
   icon: 'icons/timelines-viewer.svg',

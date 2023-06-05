@@ -45,7 +45,7 @@ interface AlignMethod {
   right: (node: SankeyNode<{}, {}>, n: number) => number,
 }
 
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Sankey',
   description: 'Creates a sankey viewer',
   icon: 'icons/sankey-viewer.svg',

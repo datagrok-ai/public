@@ -7,7 +7,7 @@ import { TreeUtils } from '../../utils/tree-utils';
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 /** Represents a sunburst viewer */
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Sunburst',
   description: 'Creates a sunburst viewer',
   icon: 'icons/sunburst-viewer.svg',

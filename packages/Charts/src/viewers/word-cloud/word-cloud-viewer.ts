@@ -8,7 +8,7 @@ import 'echarts-wordcloud';
 import $ from 'cash-dom';
 
 
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Word Cloud Viewer',
   description: 'Creates a word cloud viewer',
   icon: 'icons/wordcloud-viewer.svg',
