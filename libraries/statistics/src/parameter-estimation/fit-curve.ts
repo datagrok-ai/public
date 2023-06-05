@@ -103,11 +103,26 @@ class SigmoidFunction extends FitFunction {
   }
 
   y(params: number[], x: number): number {
-    throw new Error('Not implemented');
+    return sigmoid(params, x);
   }
 
   getInitialParameters(x: number[], y: number[]): number[] {
-    throw new Error('Not implemented');
+    const dataBounds = getDataBounds({x: x, y: y});
+    const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
+    let maxYInterval = dataBounds.bottom - dataBounds.top;
+    let nearestXIndex = 0;
+    for (let i = 0; i < x.length; i++) {
+      const currentInterval = Math.abs(y[i] - medY);
+      if (currentInterval < maxYInterval) {
+        maxYInterval = currentInterval;
+        nearestXIndex = i;
+      }
+    }
+    const xAtMedY = x[nearestXIndex];
+    const slope = y[0] > y[y.length - 1] ? 1.2 : -1.2;
+
+    // params are: [max, tan, IC50, min]
+    return [dataBounds.bottom, slope, xAtMedY, dataBounds.top];
   }
 }
 
@@ -147,29 +162,16 @@ export function getDataBounds(data: {x: number[], y: number[]}): DG.Rect {
  * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
  * */
 export function fit(data:{x: number[], y: number[]}, params: FitParam[],
-  curveFunction: (paramValues: number[], x: number) => number, errorModel: FitErrorModel,
+  fitFunction: FitFunction, errorModel: FitErrorModel,
   confidenceLevel: number = 0.05, statistics: boolean = true): FitResult {
+  const curveFunction = fitFunction.y;
   let paramValues: number[] = [];
   if (params.length === 0) {
-    const dataBounds = getDataBounds(data);
-    const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
-    let maxYInterval = dataBounds.bottom - dataBounds.top;
-    let nearestXIndex = 0;
-    for (let i = 0; i < data.x.length; i++) {
-      const currentInterval = Math.abs(data.y[i] - medY);
-      if (currentInterval < maxYInterval) {
-        maxYInterval = currentInterval;
-        nearestXIndex = i;
-      }
-    }
-    const xAtMedY = data.x[nearestXIndex];
-    const slope = data.y[0] > data.y[data.y.length - 1] ? 1.2 : -1.2;
-
-    // params are: [max, tan, IC50, min]
-    paramValues = [dataBounds.bottom, slope, xAtMedY, dataBounds.top];
+    paramValues = fitFunction.getInitialParameters(data.x, data.y);
   } else {
     paramValues = params.map((p) => p.value);
   }
+
   let of: ObjectiveFunction;
   switch (errorModel) {
   case FitErrorModel.Constant:
