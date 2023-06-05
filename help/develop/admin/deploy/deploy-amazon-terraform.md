@@ -1,9 +1,10 @@
 ---
-title: "Deployment on AWS ECS using Terraform"
+title: "AWS ECS using Terraform"
+sidebar_position: 2
 ---
 
-Datagrok is based on Docker containers, [database](../infrastructure.md#database)
-and [persistent file storage](../infrastructure.md#storage).
+The deployment consists of a few docker containers, [database](../infrastructure.md#database) for storing metadata,
+and [persistent file storage](../infrastructure.md#storage) for storing files
 
 This document contains instructions to deploy Datagrok using [Terraform](https://www.terraform.io/)
 on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)

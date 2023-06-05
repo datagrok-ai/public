@@ -38,7 +38,7 @@ services:
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
       GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-false}
     ports:
-      - "${DATAGROK_GROK_SPAWNER_PORT:-8000}:8000/tcp"
+      - "${GROK_SPAWNER_PORT:-8000}:8000/tcp"
     networks:
       datagrok:
         aliases:
@@ -135,7 +135,7 @@ services:
     environment:
       POSTGRES_DB: northwind
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND:-5433}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND_PORT:-5433}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -150,7 +150,7 @@ services:
     environment:
       POSTGRES_DB: chembl
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_CHEMBL:-5434}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_CHEMBL_PORT:-5434}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -165,7 +165,7 @@ services:
     environment:
       POSTGRES_DB: unichem
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_UNICHEM:-5435}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_UNICHEM_PORT:-5435}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -180,7 +180,7 @@ services:
     environment:
       POSTGRES_DB: starbucks
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS:-5436}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS_PORT:-5436}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -195,7 +195,7 @@ services:
     environment:
       POSTGRES_DB: world
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_WORLD:-5437}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_WORLD_PORT:-5437}:5432/tcp"
     networks:
       datagrok:
         aliases:
