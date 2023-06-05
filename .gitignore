@@ -66,3 +66,4 @@ pubspec.lock
 docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
+test-console-output.log
