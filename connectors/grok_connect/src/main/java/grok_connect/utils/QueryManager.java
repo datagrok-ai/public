@@ -61,8 +61,8 @@ public class QueryManager {
                 currentFetchSize = Integer.parseInt(value);
             }
         }
-        if (optionsExists && query.func.options.containsKey(DRY_RUN_KEY)) {
-            isDryRun = Boolean.parseBoolean((String) query.func.options.get(DRY_RUN_KEY));
+        if (query.func.aux != null && query.func.aux.containsKey(DRY_RUN_KEY)) {
+            isDryRun = (Boolean) query.func.aux.get(DRY_RUN_KEY);
         }
     }
 
