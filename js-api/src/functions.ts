@@ -5,7 +5,6 @@ import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
-import {decorators} from "./decorators/functions";
 import * as rxjs from "rxjs";
 import dayjs from "dayjs";
 declare let grok: any;
@@ -101,9 +100,6 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 /** Grok functions */
 export class Functions {
-  get decorators() {
-    return decorators;
-  }
 
   register(func: Func): void {
     api.grok_RegisterFunc(func);

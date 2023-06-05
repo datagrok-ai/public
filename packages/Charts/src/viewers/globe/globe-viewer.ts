@@ -10,7 +10,7 @@ import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear}
 import {_package} from '../../package';
 
 
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Globe',
   description: 'Creates a globe viewer',
   icon: 'icons/globe-viewer.svg',

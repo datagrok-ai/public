@@ -8,7 +8,7 @@ import * as utils from '../../utils/utils';
 
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Tree',
   description: 'Creates a tree viewer',
   trellisable: true,

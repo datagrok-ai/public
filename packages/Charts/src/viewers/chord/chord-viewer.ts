@@ -11,7 +11,7 @@ import {layoutConf, topSort} from './utils';
 import '../../../css/chord-viewer.css';
 
 
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Chord',
   description: 'Creates a chord viewer',
   icon: 'icons/chord-viewer.svg',

@@ -10,7 +10,7 @@ type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Radar',
   description: 'Creates a radar viewer',
   icon: 'icons/radar-viewer.svg',
