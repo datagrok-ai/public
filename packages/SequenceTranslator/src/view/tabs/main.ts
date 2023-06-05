@@ -13,7 +13,7 @@ import {INPUT_FORMATS} from '../../model/const';
 import {SYNTHESIZERS as FORMAT} from '../../model/const';
 import {SequenceToSmilesConverter} from '../../model/sequence-to-structure-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
-import {convertSequence} from '../../model/format-translation/conversion-utils';
+import {getTranslatedSequences} from '../../model/format-translation/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
@@ -114,15 +114,15 @@ export class MainTabUI {
     this.outputTableDiv.innerHTML = '';
     // todo: does not detect correctly (U-A)(U-A)
     const indexOfInvalidChar = (!this.format) ? 0 : (new SequenceValidator(this.sequence)).getInvalidCodeIndex(this.format!);
-    const outputSequenceObj = convertSequence(this.sequence, indexOfInvalidChar, this.format);
+    const translatedSequences = getTranslatedSequences(this.sequence, indexOfInvalidChar, this.format);
     const tableRows = [];
 
-    for (const key of Object.keys(outputSequenceObj).slice(1)) {
-      const sequence = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
+    for (const key of Object.keys(translatedSequences).slice(1)) {
+      const sequence = ('indexOfFirstInvalidChar' in translatedSequences) ?
         ui.divH([]) :
         ui.link(
-          outputSequenceObj[key],
-          () => navigator.clipboard.writeText(outputSequenceObj[key])
+          translatedSequences[key],
+          () => navigator.clipboard.writeText(translatedSequences[key])
             .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)),
           SEQ_TOOLTIP_MSG, ''
         );
