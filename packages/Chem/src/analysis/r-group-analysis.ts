@@ -72,7 +72,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
         return;
       }
-      const core = sketcher.getMolFile();
+      const core = await sketcher.getSmarts();
       if (!core) {
         grok.shell.error('No core was provided');
         return;
