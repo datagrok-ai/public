@@ -5,9 +5,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_principalComponentAnalysisInWebWorker,
-  _partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
+  _partialLeastSquareRegressionInWebWorker, _oneWayAnovaInWebWorker} from '../wasm/EDAAPI';
 
-import {checkComponenets, checkGeneratorSVMinputs} from './utils';
+import {checkComponenets, checkGeneratorSVMinputs, checkColumns} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
@@ -44,3 +44,19 @@ export async function computePLS(table: DG.DataFrame, features: DG.ColumnList, p
 
   return _output;
 } 
+
+// Analysis of Variance (ANOVA)
+export async function computeANOVA(table: DG.DataFrame, columns: DG.ColumnList): Promise<number> 
+{
+  checkColumns(columns);
+
+  let _output: any;
+  let _promise = _oneWayAnovaInWebWorker(table, columns);
+
+  await _promise.then(
+    _result => { _output = _result; },    
+    _error => {  throw new Error (`Error: ${_error}`); }
+  );
+
+  return _output;
+}
