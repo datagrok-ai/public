@@ -33,7 +33,7 @@ Datagrok supports different deployment scenarios. You can choose the one which s
 ### Local deployment
 
 Local deployment is a quick way to see Datagrok in action, and should not be used as a production environment.
-[Try Datagrok Locally](docker-compose.md) for this case.
+[Try Datagrok Locally](docker-compose.mdx) for this case.
 
 ### Deploy script
 

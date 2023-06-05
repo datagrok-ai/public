@@ -1,5 +1,6 @@
 ---
 title: "AWS ECS using Terraform"
+sidebar_position: 2
 ---
 
 The deployment consists of a few docker containers, [database](../infrastructure.md#database) for storing metadata,

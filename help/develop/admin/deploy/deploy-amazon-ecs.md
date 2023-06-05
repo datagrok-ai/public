@@ -1,5 +1,6 @@
 ---
 title: "AWS ECS using Docker Compose"
+sidebar_position: 4
 ---
 
 The deployment consists of a few docker containers, [database](../infrastructure.md#database) for storing metadata,

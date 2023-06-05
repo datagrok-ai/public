@@ -1,6 +1,7 @@
 ---
 title: "Local machine: advanced"
 slug: /develop/admin/docker-compose-advanced
+sidebar_position: 1
 ---
 
 This document contains instructions for running Datagrok on a local machine

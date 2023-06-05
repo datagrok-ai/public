@@ -1,5 +1,6 @@
 ---
 title: "AWS ECS using CloudFormation"
+sidebar_position: 3
 ---
 
 The deployment consists of a few docker containers, [database](../infrastructure.md#database) for storing metadata,

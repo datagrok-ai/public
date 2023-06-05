@@ -17,7 +17,7 @@ title: "Release History"
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../deploy/docker-compose.md)
+- [Docker-Compose](../deploy/docker-compose.mdx)
 
 
 ## 2023-05-25 1.15.1
