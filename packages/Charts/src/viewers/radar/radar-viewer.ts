@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 import {option} from './constants';
@@ -9,6 +10,11 @@ type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
+@grok.functions.decorators.grokViewer({
+  name: 'Radar',
+  description: 'Creates a radar viewer',
+  icon: 'icons/radar-viewer.svg',
+})
 export class RadarViewer extends DG.JsViewer {
   get type(): string {return 'RadarViewer';}
 

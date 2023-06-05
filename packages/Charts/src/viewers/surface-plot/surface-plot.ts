@@ -7,7 +7,13 @@ import 'echarts-gl';
 
 
 type AxisArray = {data: number[], min: number, max: number, type: string}
+
 /** Represents a surface plot viewer */
+@grok.functions.decorators.grokViewer({
+  name: 'Surface plot',
+  description: 'Creates a surface plot viewer',
+  icon: 'icons/surfaceplot-viewer.svg',
+})
 export class SurfacePlot extends EChartViewer {
   XColumnName: string;
   YColumnName: string;
