@@ -21,7 +21,8 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
   if (sourceFormat === FORMAT.BIOSPRING) {
     const converter = new FormatConverter(sequence, FORMAT.BIOSPRING);
     return {
-      [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
+      // [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
+      [FORMAT.HELM]: converter.convertTo(FORMAT.HELM),
       [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
   }
@@ -58,7 +59,7 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
     return {
       [FORMAT.GCRS]: gcrsSequence,
       [FORMAT.NUCLEOTIDES]: fromGcrs.convertTo(FORMAT.NUCLEOTIDES),
-      [FORMAT.BIOSPRING]: fromGcrs.convertTo(FORMAT.BIOSPRING),
+      [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
       [FORMAT.AXOLABS]: converter.convertTo(FORMAT.AXOLABS),
       [FORMAT.MERMADE_12]: fromGcrs.convertTo(FORMAT.MERMADE_12),
       [FORMAT.LCMS]: fromGcrs.convertTo(FORMAT.LCMS),

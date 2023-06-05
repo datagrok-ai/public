@@ -17,12 +17,11 @@ export class FormatConverter {
   constructor(private readonly sequence: string, private readonly sourceFormat: FORMAT) { };
 
   convertTo(targetFormat: FORMAT): string {
-    const supportedTargets = [FORMAT.GCRS, FORMAT.AXOLABS];
-    const supportedSources = [FORMAT.GCRS, FORMAT.AXOLABS];
+    const formatsConvertableToHelm = [FORMAT.GCRS, FORMAT.AXOLABS, FORMAT.BIOSPRING];
 
-    if (this.sourceFormat === FORMAT.HELM && supportedTargets.includes(targetFormat))
+    if (this.sourceFormat === FORMAT.HELM && formatsConvertableToHelm.includes(targetFormat))
       return this.helmToFormat(targetFormat);
-    if (supportedSources.includes(this.sourceFormat) && targetFormat === FORMAT.HELM)
+    if (formatsConvertableToHelm.includes(this.sourceFormat) && targetFormat === FORMAT.HELM)
       return this.formatToHelm(this.sourceFormat);
 
     const codeMapping = formatDictionary[this.sourceFormat][targetFormat];
@@ -89,7 +88,7 @@ export class FormatConverter {
     const regexp = new RegExp(getRegExpPattern(Object.keys(codeMapping)), 'g');
     return this.sequence.replace(regexp, (x: string) => {
         count++;
-        return (count == 4) ? codeMapping[x].slice(0, -3) + 'ps' : (count == 14) ? codeMapping[x].slice(0, -2) + 'nps' : codeMapping[x];
+        return (count === 4) ? codeMapping[x].slice(0, -3) + 'ps' : (count === 14) ? codeMapping[x].slice(0, -2) + 'nps' : codeMapping[x];
       });
   }
 
@@ -104,11 +103,11 @@ export class FormatConverter {
       let i = 0;
       let r1 = '';
       while (i < this.sequence.length) {
-        const matchedCode = sortedCodes.find((c) => c == this.sequence.slice(i, i + c.length))!;
+        const matchedCode = sortedCodes.find((c) => c === this.sequence.slice(i, i + c.length))!;
         r1 += codeMapping[this.sequence.slice(i, i + matchedCode.length)];
         i += matchedCode.length;
       }
-      while (r1.indexOf('//') != -1)
+      while (r1.indexOf('//') !== -1)
         r1 = r1.replace('//', '/');
       return r1;
     } catch {
@@ -130,8 +129,8 @@ export class FormatConverter {
     const regexp = new RegExp(getRegExpPattern(Object.keys(edgeCodeMapping)), 'g');
     return this.sequence.replace(regexp, (x: string) => {
       count++;
-      if (count < 5) return (count == 4) ? edgeCodeMapping[x].slice(0, -3) + 'ps' : edgeCodeMapping[x];
-      if (count < 15) return (count == 14) ? centerCodeMapping[x].slice(0, -2) + 'nps' : centerCodeMapping[x];
+      if (count < 5) return (count === 4) ? edgeCodeMapping[x].slice(0, -3) + 'ps' : edgeCodeMapping[x];
+      if (count < 15) return (count === 14) ? centerCodeMapping[x].slice(0, -2) + 'nps' : centerCodeMapping[x];
       return edgeCodeMapping[x];
     });
   }

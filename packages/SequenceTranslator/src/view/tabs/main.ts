@@ -117,7 +117,7 @@ export class MainTabUI {
     const translatedSequences = getTranslatedSequences(this.sequence, indexOfInvalidChar, this.format);
     const tableRows = [];
 
-    for (const key of Object.keys(translatedSequences).slice(1)) {
+    for (const key of Object.keys(translatedSequences)) {
       const sequence = ('indexOfFirstInvalidChar' in translatedSequences) ?
         ui.divH([]) :
         ui.link(
