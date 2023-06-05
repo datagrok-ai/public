@@ -45,7 +45,7 @@ you should commit this file to the repository.
 
    ```json
    "devDependencies": {
-     "datagrok-tools": "^4.10.x"
+     "datagrok-tools": "^4.12.x"
    }
    ```
 
