@@ -2,12 +2,17 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {FitResult, fitResultProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {
+  FitResult,
+  fitResultProperties,
+  getFittedCurve,
+  SigmoidFunction,
+} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 import {fitSeries, getChartData, getChartBounds, IFitChartData, IFitSeries,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
-  TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from './fit-data';
+  TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {Viewport} from './transform';
 import {MultiCurveViewer} from './multi-curve-viewer';
@@ -24,14 +29,15 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 }
 
 /** Performs a curve confidence interval drawing */
-function drawConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResult, screenBounds: DG.Rect,
-  transform: Viewport, confidenceType: string): void {
+function drawConfidenceInterval(g: CanvasRenderingContext2D, 
+  confIntervals: {confidenceTop: (x: number) => number, confidenceBottom: (x: number) => number},
+  screenBounds: DG.Rect, transform: Viewport, confidenceType: string): void {
   g.beginPath();
   for (let i = 0; i <= screenBounds.width; i++) {
     const x = screenBounds.x + i;
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
-      transform.yToScreen(fitResult.confidenceTop(transform.xToWorld(x))) :
-      transform.yToScreen(fitResult.confidenceBottom(transform.xToWorld(x)));
+      transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x))) :
+      transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -41,11 +47,12 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResul
 }
 
 /** Performs a curve confidence interval color filling */
-function fillConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResult, screenBounds: DG.Rect, transform: Viewport): void {
+function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: {confidenceTop: (x: number) => number, confidenceBottom: (x: number) => number},
+  screenBounds: DG.Rect, transform: Viewport): void {
   g.beginPath();
   for (let i = 0; i <= screenBounds.width; i++) {
     const x = screenBounds.x + i;
-    const y = transform.yToScreen(fitResult.confidenceTop(transform.xToWorld(x)));
+    const y = transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x)));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -55,7 +62,7 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, fitResult: FitResul
   // reverse traverse to make a shape of confidence interval to fill it
   for (let i = screenBounds.width; i >= 0; i--) {
     const x = screenBounds.x + i;
-    const y = transform.yToScreen(fitResult.confidenceBottom(transform.xToWorld(x)));
+    const y = transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
     g.lineTo(x, y);
   }
   g.closePath();
@@ -130,8 +137,16 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (const series of data.series!) {
       series.points.sort((a, b) => a.x - b.x);
-      // TODO: add check if parameters
-      const fitResult = fitSeries(series, !!data.chartOptions?.showStatistics);
+      let curve: (x: number) => number;
+      if (series.parameters)
+        curve = getFittedCurve(new SigmoidFunction().y, series.parameters);
+      else {
+        const fitResult = fitSeries(series);
+        curve = fitResult.fittedCurve;
+        series.parameters = fitResult.parameters;
+      }
+      const confidenceIntervals = getSeriesConfidenceInterval(series);
+
       if (series.showPoints ?? true) {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
         for (let i = 0, candleStart = null; i < series.points.length!; i++) {
@@ -167,7 +182,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (series.showFitLine ?? true) {
         g.strokeStyle = series.fitLineColor ?? 'black';
         g.lineWidth = 2 * ratio;
-        const curve = fitResult.fittedCurve;
 
         g.beginPath();
         for (let i = 0; i <= screenBounds.width; i++) {
@@ -185,18 +199,19 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
-        drawConfidenceInterval(g, fitResult, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
-        drawConfidenceInterval(g, fitResult, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
-        fillConfidenceInterval(g, fitResult, screenBounds, viewport);
+        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
+        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
+        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport);
       }
 
 
       if (data.chartOptions?.showStatistics) {
+        const statistics = getSeriesStatistics(series);
         for (let i = 0; i < data.chartOptions.showStatistics.length; i++) {
           const statName = data.chartOptions.showStatistics[i];
           const prop = fitResultProperties.find(p => p.name === statName);
           if (prop) {
-            const s = StringUtils.formatNumber(prop.get(fitResult));
+            const s = StringUtils.formatNumber(prop.get(statistics));
             g.fillStyle = series.fitLineColor ?? 'black';
             g.textAlign = 'left';
             g.fillText(prop.name + ': ' + s, dataBox.x + 5, dataBox.y + 20 + 20 * i);

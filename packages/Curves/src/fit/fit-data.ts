@@ -6,11 +6,13 @@ import {Property} from 'datagrok-api/src/entities';
 import {TYPE} from 'datagrok-api/src/const';
 
 import {
-  fit,
   FitErrorModel,
   FitParam,
   FitResult, fitResultProperties,
   fitFunctions,
+  fitData,
+  getCurveConfidenceIntervals,
+  getStatistics,
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 /**
@@ -236,34 +238,19 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
 
 
 /** Fits the series data according to the series fitting settings */
-export function fitSeries(series: IFitSeries, statistics: boolean = false): FitResult {
-  // const dataBounds = getDataBounds(series.points);
-  // const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
+export function fitSeries(series: IFitSeries): any {
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  return fitData(data, fitFunctions.FIT_FUNCTION_SIGMOID, FitErrorModel.Constant);
+}
 
-  // let maxYInterval = dataBounds.bottom - dataBounds.top;
-  // let nearestXIndex = 0;
-  // for (let i = 0; i < series.points.length; i++) {
-  //   const currentInterval = Math.abs(series.points[i].y - medY);
-  //   if (currentInterval < maxYInterval) {
-  //     maxYInterval = currentInterval;
-  //     nearestXIndex = i;
-  //   }
-  // }
-  // const xAtMedY = series.points[nearestXIndex].x;
-  // const slope = series.points[0].y > series.points[series.points.length - 1].y ? 1.2 : -1.2;
+export function getSeriesConfidenceInterval(series: IFitSeries): any {
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  return getCurveConfidenceIntervals(data, series.parameters!, new fitFunctions.FIT_FUNCTION_SIGMOID().y, 0.05, FitErrorModel.Constant);
+}
 
-  // // params are: [max, tan, IC50, min]
-  // const initialParams: FitParam[] = [{value: dataBounds.bottom}, {value: slope}, {value: xAtMedY}, {value: dataBounds.top}];
-  let initialParams: FitParam[] = [];
-  if (series.parameters) {
-    for (let i = 0; i < series.parameters.length; i++) {
-      initialParams[i] = {value: series.parameters[i]};
-    }
-  }
-
-  return fit(
-    {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)},
-    initialParams, fitFunctions.FIT_FUNCTION_SIGMOID, FitErrorModel.Constant, 0.05, statistics);
+export function getSeriesStatistics(series: IFitSeries): any {
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  return getStatistics(data, series.parameters!, new fitFunctions.FIT_FUNCTION_SIGMOID().y, 0.05, true);
 }
 
 // /** Returns a curve function, either using the pre-computed parameters

@@ -6,6 +6,11 @@ import * as jStat from 'jstat';
 import {Property} from 'datagrok-api/src/entities';
 import {TYPE} from 'datagrok-api/src/const';
 
+type Optimizable = {
+  getValue: (parameters: number[]) => number,
+  getGradient: (parameters: number[], gradient: number[]) => number[],
+}
+
 type Likelihood = {
   value: number,
   const: number,
@@ -93,7 +98,7 @@ class LinearFunction extends FitFunction {
 }
 
 
-class SigmoidFunction extends FitFunction {
+export class SigmoidFunction extends FitFunction {
   get name(): string {
     return FIT_FUNCTION_SIGMOID;
   }
@@ -157,21 +162,7 @@ export function getDataBounds(data: {x: number[], y: number[]}): DG.Rect {
   return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
 }
 
-
-/**
- * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
- * */
-export function fit(data:{x: number[], y: number[]}, params: FitParam[],
-  fitFunction: FitFunction, errorModel: FitErrorModel,
-  confidenceLevel: number = 0.05, statistics: boolean = true): FitResult {
-  const curveFunction = fitFunction.y;
-  let paramValues: number[] = [];
-  if (params.length === 0) {
-    paramValues = fitFunction.getInitialParameters(data.x, data.y);
-  } else {
-    paramValues = params.map((p) => p.value);
-  }
-
+function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
   let of: ObjectiveFunction;
   switch (errorModel) {
   case FitErrorModel.Constant:
@@ -185,9 +176,13 @@ export function fit(data:{x: number[], y: number[]}, params: FitParam[],
     break;
   }
 
+  return of;
+}
+
+function createOptimizable(data: {x: number[], y: number[]},
+  curveFunction: (params: number[], x: number) => number, of: ObjectiveFunction): Optimizable {
   let iterations = 0;
   const fixed: number[] = [];
-  let overLimits = true;
 
   const optimizable = {
     getValue: (parameters: number[]) => {
@@ -205,30 +200,61 @@ export function fit(data:{x: number[], y: number[]}, params: FitParam[],
     },
   };
 
+  return optimizable;
+}
+
+export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel):
+  {parameters: number[], fittedCurve: (x: number) => number} {
+  const curveFunction = fitFunction.y;
+  const paramValues = fitFunction.getInitialParameters(data.x, data.y);
+
+  const of = createObjectiveFunction(errorModel);
+  const optimizable = createOptimizable(data, curveFunction, of);
+
+  let overLimits = true;
+
   while (overLimits) {
     limitedMemoryBFGS(optimizable, paramValues);
     limitedMemoryBFGS(optimizable, paramValues);
 
     overLimits = false;
-    for (let i = 0; i < paramValues.length; i++) {
-      if (params[i]?.maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
-        overLimits = true;
-        fixed.push(i);
-        paramValues[i] = params[i].maxBound!;
-        break;
-      }
-      if (params[i]?.minBound !== undefined && paramValues[i] < params[i].minBound!) {
-        overLimits = true;
-        fixed.push(i);
-        paramValues[i] = params[i].minBound!;
-        break;
-      }
-    }
+    // for (let i = 0; i < paramValues.length; i++) {
+    //   if (params[i]?.maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
+    //     overLimits = true;
+    //     fixed.push(i);
+    //     paramValues[i] = params[i].maxBound!;
+    //     break;
+    //   }
+    //   if (params[i]?.minBound !== undefined && paramValues[i] < params[i].minBound!) {
+    //     overLimits = true;
+    //     fixed.push(i);
+    //     paramValues[i] = params[i].minBound!;
+    //     break;
+    //   }
+    // }
   }
 
+  const fittedCurve = getFittedCurve(curveFunction, paramValues);
+
+  return {
+    parameters: paramValues,
+    fittedCurve: fittedCurve,
+  };
+}
+
+export function getFittedCurve(curveFunction: (params: number[], x: number) => number, paramValues: number[]):
+ (x: number) => number {
   const fittedCurve = (x: number) => {
     return curveFunction(paramValues, x);
   };
+
+  return fittedCurve;
+}
+
+export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: number[],
+  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModel):
+  {confidenceTop: (x: number) => number, confidenceBottom: (x: number) => number} {
+  const of = createObjectiveFunction(errorModel);
 
   const error = errorModel == FitErrorModel.Proportional ?
     of(curveFunction, data, paramValues).mult :
@@ -253,6 +279,16 @@ export function fit(data:{x: number[], y: number[]}, params: FitParam[],
       return value - studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
     }
   };
+
+  return {confidenceTop: top, confidenceBottom: bottom};
+}
+
+export function getStatistics(data: {x: number[], y: number[]}, paramValues: number[],
+  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, statistics: boolean = true) {
+  const fittedCurve = (x: number) => {
+    return curveFunction(paramValues, x);
+  };
+  const studentQ = jStat.studentt.inv(1 - confidenceLevel/2, data.x.length - paramValues.length);
 
   let inv: (y: number) => number = (y: number) => {
     return 0;
@@ -283,25 +319,163 @@ export function fit(data:{x: number[], y: number[]}, params: FitParam[],
     };
   }
 
-  const fitRes: FitResult = {
-    parameters: paramValues,
-    fittedCurve: fittedCurve,
-    confidenceTop: top,
-    confidenceBottom: bottom,
+  return {
     rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
     auc: statistics ? getAuc(fittedCurve, data) : undefined,
-    inverted: statistics ? inv : undefined,
-    invertedTop: statistics ? invTop : undefined,
-    invertedBottom: statistics ? invBottom : undefined,
+    // inverted: statistics ? inv : undefined,
+    // invertedTop: statistics ? invTop : undefined,
+    // invertedBottom: statistics ? invBottom : undefined,
     interceptX: paramValues[2],
     interceptY: fittedCurve(paramValues[2]),
     slope: paramValues[1],
     top: paramValues[0],
     bottom: paramValues[3],
   };
-
-  return fitRes;
 }
+
+/**
+ * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
+ * */
+// export function fit(data: {x: number[], y: number[]}, params: FitParam[], fitFunction: FitFunction,
+//   errorModel: FitErrorModel, confidenceLevel: number = 0.05, statistics: boolean = true): FitResult {
+//   const curveFunction = fitFunction.y;
+//   let paramValues: number[] = [];
+//   if (params.length === 0) {
+//     paramValues = fitFunction.getInitialParameters(data.x, data.y);
+//   } else {
+//     paramValues = params.map((p) => p.value);
+//   }
+
+//   let of: ObjectiveFunction;
+//   switch (errorModel) {
+//   case FitErrorModel.Constant:
+//     of = objectiveNormalConstant;
+//     break;
+//   case FitErrorModel.Proportional:
+//     of = objectiveNormalProportional;
+//     break;
+//   default:
+//     of = objectiveNormalConstant;
+//     break;
+//   }
+
+//   let iterations = 0;
+//   const fixed: number[] = [];
+//   let overLimits = true;
+
+//   const optimizable = {
+//     getValue: (parameters: number[]) => {
+//       return of(curveFunction, data, parameters).value;
+//     },
+//     getGradient: (parameters: number[], gradient: number[]) => {
+//       const length = Object.keys(parameters).length;
+//       iterations++;
+
+//       for (let i = 0; i < parameters.length; i++) {
+//         gradient[i] = fixed.includes(i) ? 0 : getObjectiveDerivative(of, curveFunction, data, parameters, i);
+//       }
+
+//       return gradient;
+//     },
+//   };
+
+//   while (overLimits) {
+//     limitedMemoryBFGS(optimizable, paramValues);
+//     limitedMemoryBFGS(optimizable, paramValues);
+
+//     overLimits = false;
+//     for (let i = 0; i < paramValues.length; i++) {
+//       if (params[i]?.maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
+//         overLimits = true;
+//         fixed.push(i);
+//         paramValues[i] = params[i].maxBound!;
+//         break;
+//       }
+//       if (params[i]?.minBound !== undefined && paramValues[i] < params[i].minBound!) {
+//         overLimits = true;
+//         fixed.push(i);
+//         paramValues[i] = params[i].minBound!;
+//         break;
+//       }
+//     }
+//   }
+
+//   const fittedCurve = (x: number) => {
+//     return curveFunction(paramValues, x);
+//   };
+
+//   const error = errorModel == FitErrorModel.Proportional ?
+//     of(curveFunction, data, paramValues).mult :
+//     of(curveFunction, data, paramValues).const;
+
+//   const studentQ = jStat.studentt.inv(1 - confidenceLevel/2, data.x.length - paramValues.length);
+
+//   const top = (x: number) =>{
+//     const value = curveFunction(paramValues, x);
+//     if (errorModel == FitErrorModel.Constant) {
+//       return value + studentQ*error/Math.sqrt(data.x.length);
+//     } else {
+//       return value + studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
+//     }
+//   };
+
+//   const bottom = (x: number) => {
+//     const value = curveFunction(paramValues, x);
+//     if (errorModel == FitErrorModel.Constant) {
+//       return value - studentQ*error/Math.sqrt(data.x.length);
+//     } else {
+//       return value - studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
+//     }
+//   };
+
+//   let inv: (y: number) => number = (y: number) => {
+//     return 0;
+//   };
+//   let invTop: (y: number) => number = (y: number) => {
+//     return 0;
+//   };
+//   let invBottom: (y: number) => number = (y: number) => {
+//     return 0;
+//   };
+
+//   if (statistics) {
+//     inv = (y: number) => {
+//       //should check if more than bottom and less than top
+//       return paramValues[2]/Math.pow((paramValues[0] - y)/(y - paramValues[3]), 1/paramValues[1]);
+//     };
+
+//     const error = getInvError(inv, data);
+
+//     invTop = (y: number) =>{
+//       const value = inv(y);
+//       return value + studentQ*error/Math.sqrt(data.y.length);
+//     };
+
+//     invBottom = (y: number) => {
+//       const value = inv(y);
+//       return value - studentQ*error/Math.sqrt(data.y.length);
+//     };
+//   }
+
+//   const fitRes: FitResult = {
+//     parameters: paramValues,
+//     fittedCurve: fittedCurve,
+//     confidenceTop: top,
+//     confidenceBottom: bottom,
+//     rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
+//     auc: statistics ? getAuc(fittedCurve, data) : undefined,
+//     inverted: statistics ? inv : undefined,
+//     invertedTop: statistics ? invTop : undefined,
+//     invertedBottom: statistics ? invBottom : undefined,
+//     interceptX: paramValues[2],
+//     interceptY: fittedCurve(paramValues[2]),
+//     slope: paramValues[1],
+//     top: paramValues[0],
+//     bottom: paramValues[3],
+//   };
+
+//   return fitRes;
+// }
 
 export function sigmoid(params: number[], x: number): number {
   const A = params[0];
