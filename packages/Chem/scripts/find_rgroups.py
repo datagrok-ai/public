@@ -20,7 +20,7 @@ if core is not None:
   r_group_map = dict()
   for n in range(0, length):
     try:
-      mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+      mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmarts(molecules[n], sanitize = True)
     except:
       mol = None
     if mol is None:
