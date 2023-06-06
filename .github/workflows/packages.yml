@@ -9,11 +9,22 @@ on:
   push:
     paths:
       - 'packages/**'
+  pull_request:
+    paths:
+      - 'packages/**'
 
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   matrix:
     name: Check changes
     runs-on: ubuntu-20.04
+    needs: common-check
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
@@ -26,7 +37,7 @@ jobs:
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]]; then
               commit="$(git log --format="%H" -n 1 --no-merges)"
             else
               commit=${{ github.sha }}
@@ -96,7 +107,8 @@ jobs:
     name: Test and publish to npm
     needs:
       - matrix
-    if: needs.matrix.outputs.publish == 'yes'
+      - common-check
+    if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     env:
       HOST: GitHubAction

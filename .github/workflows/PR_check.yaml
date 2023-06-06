@@ -1,11 +1,11 @@
-name: Pull request name check
+name: PR check
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
-  pullrequest:
-    name: Lint PR name
+  lint-name:
+    name: Lint name
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
