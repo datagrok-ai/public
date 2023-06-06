@@ -322,9 +322,9 @@ export function getStatistics(data: {x: number[], y: number[]}, paramValues: num
   return {
     rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
     auc: statistics ? getAuc(fittedCurve, data) : undefined,
-    // inverted: statistics ? inv : undefined,
-    // invertedTop: statistics ? invTop : undefined,
-    // invertedBottom: statistics ? invBottom : undefined,
+    inverted: statistics ? inv : undefined,
+    invertedTop: statistics ? invTop : undefined,
+    invertedBottom: statistics ? invBottom : undefined,
     interceptX: paramValues[2],
     interceptY: fittedCurve(paramValues[2]),
     slope: paramValues[1],
