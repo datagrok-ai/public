@@ -23,6 +23,7 @@ import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
+import {Tags} from "./api/ddt.api.g";
 
 declare let grok: any;
 declare let DG: any;
@@ -2358,4 +2359,10 @@ export class ColumnMetaHelper {
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+
+  get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
+  set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
+
+  get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
+  set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
 }

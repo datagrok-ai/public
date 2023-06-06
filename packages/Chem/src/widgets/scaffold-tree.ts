@@ -1350,7 +1350,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.divText(' '),
       this._iconDelete = ui.iconFA('trash-alt',
-        () => {thisViewer.cancelled = true; thisViewer.clear();}, 'Drop all trees'),
+        () => {
+          ui.dialog({showHeader: false})
+          .add(ui.divText('Do you want to continue?'))
+          .show()
+          .onOK(() => {
+            thisViewer.cancelled = true; 
+            thisViewer.clear();
+          });
+        }, 'Drop all trees'),
       ui.divText(' '),
       this._bitOpInput.root,
     ]), 'chem-scaffold-tree-toolbar');

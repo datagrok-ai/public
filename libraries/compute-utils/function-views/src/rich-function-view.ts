@@ -39,6 +39,7 @@ export class RichFunctionView extends FunctionView {
   private isUploadMode = new BehaviorSubject<boolean>(false);
 
   private controllsDiv?: HTMLElement;
+  private customObjectInput?: HTMLElement;
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -84,10 +85,17 @@ export class RichFunctionView extends FunctionView {
   /*
    * Will work only if called synchronously inside
    * beforeRenderControlls subscriber.
-   * TODO: remove this limitation
    */
   public replaceControlls(div: HTMLElement) {
     this.controllsDiv = div;
+  }
+
+  /*
+   * Will work only if called synchronously inside
+   * beforeInputPropertyRender subscriber.
+   */
+  public addCustomObjectInput(div: HTMLElement) {
+    this.customObjectInput = div;
   }
 
   public getRunButton(name = 'Run') {
@@ -564,6 +572,11 @@ export class RichFunctionView extends FunctionView {
           });
           inputs.append(t.root);
           this.afterInputPropertyRender.next({prop, input: t});
+        } else if (prop.propertyType.toString() === DG.TYPE.OBJECT) {
+          if (this.customObjectInput) {
+            inputs.append(this.customObjectInput);
+            this.customObjectInput === null;
+          }
         } else {
           const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
@@ -641,7 +654,7 @@ export class RichFunctionView extends FunctionView {
       // check if the value is not the same for floats, otherwise we
       // will overwrite a user input with a lower precicsion decimal
       // representation
-      else if (((typeof newValue === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue !== 'number') {
+      else if (((typeof newValue === 'number') && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) || typeof newValue !== 'number') {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
