@@ -1,7 +1,7 @@
 name: Pull request name check
 on:
-  workflow_dispatch: { }
   pull_request:
+    types: [opened, edited, synchronize, reopened]
 
 jobs:
   pullrequest:

@@ -1,9 +1,9 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from '../package-test';
 
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
 
 category('Dapi: files', () => {
   const filePrefix = 'System:AppData/ApiTests/';
@@ -14,50 +14,50 @@ category('Dapi: files', () => {
     await grok.dapi.files.writeAsText(testTextFilePath, 'testString');
   });
 
-  test('Dapi: files - exists', async () => {
+  test('exists', async () => {
     if (!await grok.dapi.files.exists(testTextFilePath))
-      throw 'File doesn\'t exist';
+      throw new Error('File doesn\'t exist');
   });
 
-  test('Dapi: files - write/read text', async () => {
+  test('write/read text', async () => {
     const filePath = filePrefix + 'Dapi. files - write, read text.txt';
     const fileText = 'testString';
 
     try {
       await grok.dapi.files.writeAsText(filePath, fileText);
       if (fileText !== await grok.dapi.files.readAsText(filePath))
-        throw 'Сontent is wrong';
+        throw new Error('Сontent is wrong');
     } finally {
       await grok.dapi.files.delete(filePath);
     }
   });
 
-  test('Dapi: files - write/read blob', async () => {
+  test('write/read blob', async () => {
     const filePath = filePrefix + 'Dapi. files - write, read blob.txt';
     const content = [0, 1, 2, 3];
 
     try {
       await grok.dapi.files.write(filePath, content);
       if (content.toString() !== (await grok.dapi.files.readAsBytes(filePath)).toString())
-        throw 'Сontent is wrong';
+        throw new Error('Сontent is wrong');
     } finally {
       await grok.dapi.files.delete(filePath);
     }
   });
 
-  test('Dapi: files - search', async () => {
+  test('search', async () => {
     if ((await grok.dapi.files.list(filePrefix, false, testTextFileName)).length !== 1)
-      throw 'Can\'t find the file';
+      throw new Error('Can\'t find the file');
   });
 
-  test('Dapi: package files', async () => {
+  test('package files', async () => {
     const files = await _package.files.list('datasets', false, 'csv');
     expect(files.length > 0, true);
     files.every((f) => expect(f.extension, 'csv'));
   });
 
-  // test('Dapi: files - move', async () => {
-  //     let fileName = 'Dapi: files - move.txt';
+  // test('move', async () => {
+  //     let fileName = 'move.txt';
   //     let filePath = filePrefix + fileName;
   //     let newFilePrefix = 'texts';
   //
@@ -73,7 +73,7 @@ category('Dapi: files', () => {
   //     await grok.dapi.files.delete(filePath);
   // });
 
-  test('Dapi: files - delete', async () => {
+  test('delete', async () => {
     const filePath = filePrefix + 'Dapi. files - delete.txt';
 
     try {
@@ -81,14 +81,14 @@ category('Dapi: files', () => {
       await grok.dapi.files.delete(filePath);
 
       if (await grok.dapi.files.exists(filePath))
-        throw 'File exists';
+        throw new Error('File exists');
     } finally {
       if (await grok.dapi.files.exists(filePath))
         await grok.dapi.files.delete(filePath);
     }
   });
 
-  test('Dapi: files - readBinaryDataFrames', async () => {
+  test('readBinaryDataFrames', async () => {
     const dfList = await _package.files.readBinaryDataFrames('datasets/country-languages.d42');
     expect(dfList.length, 1);
     expect(dfList[0] instanceof DG.DataFrame, true);
@@ -97,4 +97,16 @@ category('Dapi: files', () => {
   after(async () => {
     await grok.dapi.files.delete(testTextFilePath);
   });
+});
+
+category('Dapi: files: formats', () => {
+  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip']; //kml, kmz
+
+  for (const ext of extensions) {
+    test(ext, async () => {
+      const df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext);
+      expect(df.rowCount, 10, 'wrong rows number');
+      expect(df.columns.length, 10, 'wrong columns number');
+    });
+  }
 });

@@ -5,7 +5,7 @@
 
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
-import {VirtualView} from './src/views/view';
+import {View, VirtualView} from './src/views/view';
 import {
   Accordion,
   Dialog,
@@ -743,8 +743,9 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase<Column | null> {
-  return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {predicate?: Function | null}): InputBase<Column | null> {
+  const filter = options && typeof options.predicate === 'function' ? (x: any) => options.predicate!(toJs(x)) : null;
+  return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
@@ -1002,6 +1003,11 @@ export class ObjectHandler {
   /** Renders properties list for the item. */
   renderProperties(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
+  }
+
+  /** Renders preview list for the item. */
+  async renderPreview(x: any, context: any = null): Promise<View> {
+    return View.create();
   }
 
   /** Renders view for the item. */

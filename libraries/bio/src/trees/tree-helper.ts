@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ClusterMatrix, DistanceMetric, NodeCuttedType, NodeType} from './index';
-import {DistanceMatrix} from './distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
+import {ClusterMatrix, NodeCuttedType, NodeType} from './types';
+import {DistanceMetric} from './consts';
 
 export interface ITreeHelper {
   /** Generates data frame with row per node, parent relation, distance, annotation
@@ -64,13 +65,14 @@ export interface ITreeHelper {
   calcDistanceMatrix(df: DG.DataFrame, colNames: string[],
     distanceMetric?: DistanceMetric): Promise<DistanceMatrix | null>;
 
-  parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType;
+  parseClusterMatrix(clusterMatrix: ClusterMatrix): NodeType;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {
-  const funcList = DG.Func.find({package: 'Dendrogram', name: 'getTreeHelper'});
+  const treeHelperPackageName: string = 'Dendrogram';
+  const funcList = DG.Func.find({package: treeHelperPackageName, name: 'getTreeHelper'});
   if (funcList.length === 0)
-    throw new Error('Package "PhyloTreeViewer"" must be installed for TreeHelper.');
+    throw new Error(`Package "${treeHelperPackageName}" must be installed for TreeHelper.`);
 
   const res: ITreeHelper = (await funcList[0].prepare().call()).getOutputParamValue() as ITreeHelper;
   return res;

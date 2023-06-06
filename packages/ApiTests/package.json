@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.7.0",
+  "version": "1.7.5",
   "author": {
-    "name": "Alexander Paramonov",
-    "email": "aparamonov@datagrok.ai"
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
   },
   "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
   "repository": {
@@ -13,7 +13,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4",
+    "@datagrok-libraries/utils": "^4.0.10",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.14.0",
     "dayjs": "latest",

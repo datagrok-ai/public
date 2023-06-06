@@ -33,13 +33,14 @@ category('Core', () => {
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
+    simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
-    model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
+    model = await startAnalysis(
+      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true);
 
-    if (model != null)
-      model.mutationCliffsSelection = {'11': ['D']};
+    if (model !== null)
+      model.monomerPositionSelection = {'11': ['D']};
   });
 
   test('Start analysis: сomplex', async () => {
@@ -52,14 +53,14 @@ category('Core', () => {
     complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     complexAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
     complexAlignedSeqCol.setTag(C.TAGS.SEPARATOR, '/');
-    complexScaledCol = scaleActivity(complexActivityCol, '-lg');
+    complexScaledCol = scaleActivity(complexActivityCol, C.SCALING_METHODS.MINUS_LG);
 
     model = await startAnalysis(
-      complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, '-lg');
+      complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true);
 
-    if (model != null)
-      model.mutationCliffsSelection = {'13': ['-']};
+    if (model !== null)
+      model.monomerPositionSelection = {'13': ['-']};
   });
 
   test('Save and load project', async () => {
@@ -71,9 +72,10 @@ category('Core', () => {
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
+    simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
-    model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
+    model = await startAnalysis(
+      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     let v = grok.shell.getTableView('Peptides analysis');
     const d = v.dataFrame;
     const layout = v.saveLayout();
@@ -102,12 +104,13 @@ category('Core', () => {
   test('Cluster stats - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k_2.d42'))[0];
     const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, 'none');
+    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     const clustersCol = df.getCol('Cluster');
     const sequenceCol = df.getCol('HELM');
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, 'none');
+    const model = await startAnalysis(
+      activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
 
     for (let i = 0; i < 5; ++i)
       DG.time('Cluster stats', () => model?.calculateClusterStatistics());
@@ -116,12 +119,13 @@ category('Core', () => {
   test('Monomer Position stats - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
     const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, 'none');
+    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     const clustersCol = df.getCol('Cluster');
     const sequenceCol = df.getCol('HELM');
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, 'none');
+    const model = await startAnalysis(
+      activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
 
     for (let i = 0; i < 5; ++i)
       DG.time('Monomer position stats', () => model?.calculateMonomerPositionStatistics());
@@ -130,7 +134,7 @@ category('Core', () => {
   test('Analysis start - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
     const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, 'none');
+    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
     const clustersCol = df.getCol('Cluster');
     const sequenceCol = df.getCol('HELM');
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -138,7 +142,8 @@ category('Core', () => {
 
     for (let i = 0; i < 5; ++i) {
       await DG.timeAsync('Analysis start', async () => {
-        const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, 'none');
+        const model = await startAnalysis(
+          activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
         if (model)
           grok.shell.closeTable(model.df);
       });

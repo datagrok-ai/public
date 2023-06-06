@@ -4,10 +4,14 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
+import grok_connect.handlers.SessionHandler;
 import grok_connect.providers.JdbcDataProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,18 +50,37 @@ public class QueryManager {
 
     public void initResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
         LOGGER.trace("initResultSet was called");
+        LocalDateTime startTime = LocalDateTime.now();
+        if (query.debugQuery) {
+            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Initializing resultSet, current time: %s",
+                    startTime));
+        }
         connection = provider.getConnection(query.func.connection);
         resultSet = provider.getResultSet(query, connection);
+        if (query.debugQuery) {
+            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Finished resultSet init, execution time: %s",
+                    LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
+                            - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()));
+        }
         LOGGER.trace("ResultSet received");
     }
 
     public void initScheme() throws QueryCancelledByUser, SQLException {
-        LOGGER.trace("Starting schemeInfo initialization");
+        LocalDateTime startTime = LocalDateTime.now();
+        if (query.debugQuery) {
+            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Initializing schemeInfo, current time: %s",
+                    startTime));
+        }
         if (resultSet == null) {
             schemeInfo = new SchemeInfo(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
             return;
         }
         schemeInfo = provider.resultSetScheme(query, resultSet);
+        if (query.debugQuery) {
+            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Finished schemeInfo init, execution time: %s",
+                    LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
+                            - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()));
+        }
         LOGGER.trace("SchemeInfo initialization finished");
     }
 
@@ -69,22 +92,40 @@ public class QueryManager {
         }
         DataFrame df = new DataFrame();
         if (!connection.isClosed() && !resultSet.isClosed()) {
+            LocalDateTime startTime = LocalDateTime.now();
             LOGGER.trace("Calling getResultSetSubDf");
+            if (query.debugQuery) {
+                query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Receiving part of resultSet, "
+                                + "current time: %s",
+                        startTime));
+            }
             df = provider.getResultSetSubDf(query, resultSet, columns,
             schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+            if (query.debugQuery) {
+                query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Received part of resultSet, execution time: %s",
+                        LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
+                                - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()));
+            }
         }
 
         if (connection.getMetaData().supportsTransactions() && df.rowCount != 0) {
             Double memInBytes = df.memoryInBytes() / 1024.0;
             double fetchSize = df.rowCount / memInBytes * 30000;
-
+            if (query.debugQuery) {
+                query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Dataframe weight %s",
+                        memInBytes));
+            }
             if (fetchSize > 40000)
                 fetchSize = 40000;
-
+            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("New fetch size: %s", fetchSize));
             if (!provider.descriptor.type.equals("Virtuoso")) {
                 resultSet.setFetchSize((int)fetchSize);
-                LOGGER.trace("Set new fetch size");
+                LOGGER.trace("Set new fetch size to {}", fetchSize);
             }
+        }
+        if (provider.descriptor.type.equals("Oracle")) {
+            df.tags = new LinkedHashMap<>();
+            df.tags.put("ALLOW_COL_TYPE_CHANGE", "true");
         }
         return df;
     }

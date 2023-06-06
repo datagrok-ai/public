@@ -1,8 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions} from '../reduce-dimensionality';
+import { ITSNEOptions, IUMAPOptions } from '../reduce-dimensionality';
 import { SequenceSpaceBaseFuncEditor } from './seq-space-base-editor';
-import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
 
 export interface ISimilaritySpaceParams {
   table: DG.DataFrame;
@@ -15,7 +14,6 @@ export interface ISimilaritySpaceParams {
 
 export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
-  similarityMetricInput: DG.InputBase;
   plotEmbeddingsInput: DG.InputBase;
   funcParamsDiv: HTMLDivElement;
 
@@ -36,7 +34,6 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
   constructor(semtype: DG.SemType){
     super(semtype);
-    this.similarityMetricInput = ui.choiceInput('Similarity', 'Tanimoto', SEQ_SPACE_SIMILARITY_METRICS);
 
     this.plotEmbeddingsInput = ui.boolInput('Plot Embeddings', true);
 

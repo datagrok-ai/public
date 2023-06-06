@@ -91,7 +91,7 @@ export class TreeForGridCutApp {
   async buildView() {
     if (!this.tableView) {
       const dataDf: DG.DataFrame = this.dataDf;
-      dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
+      dataDf.columns.addNewInt('Cluster').init((_rowI) => null);
 
       markupNode(this.newickRoot);
       // const totalLength: number = this.newickRoot;

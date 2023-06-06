@@ -1,0 +1,122 @@
+[
+  {
+    "model": "alfaromeo",
+    "wheel.base": 94.5,
+    "length": 171.2,
+    "width": 65.5,
+    "height": 52.4,
+    "eng.size": 152,
+    "horsepower": 154,
+    "symbol": 1,
+    "city.mpg": 19,
+    "highway.mpg": 26
+  },
+  {
+    "model": "audi",
+    "wheel.base": 105.8,
+    "length": 192.7,
+    "width": 71.4,
+    "height": 55.7,
+    "eng.size": 136,
+    "horsepower": 110,
+    "symbol": 1,
+    "city.mpg": 19,
+    "highway.mpg": 25
+  },
+  {
+    "model": "bmw",
+    "wheel.base": 101.2,
+    "length": 176.8,
+    "width": 64.8,
+    "height": 54.3,
+    "eng.size": 108,
+    "horsepower": 101,
+    "symbol": 2,
+    "city.mpg": 23,
+    "highway.mpg": 29
+  },
+  {
+    "model": "chevrolet",
+    "wheel.base": 94.5,
+    "length": 158.8,
+    "width": 63.6,
+    "height": 52,
+    "eng.size": 90,
+    "horsepower": 70,
+    "symbol": 0,
+    "city.mpg": 38,
+    "highway.mpg": 43
+  },
+  {
+    "model": "dodge1",
+    "wheel.base": 93.7,
+    "length": 157.3,
+    "width": 63.8,
+    "height": 50.8,
+    "eng.size": 98,
+    "horsepower": 102,
+    "symbol": 1,
+    "city.mpg": 24,
+    "highway.mpg": 30
+  },
+  {
+    "model": "dodge2",
+    "wheel.base": 93.7,
+    "length": 157.3,
+    "width": 63.8,
+    "height": 50.6,
+    "eng.size": 90,
+    "horsepower": 68,
+    "symbol": 1,
+    "city.mpg": 31,
+    "highway.mpg": 38
+  },
+  {
+    "model": "honda1",
+    "wheel.base": 93.7,
+    "length": 150,
+    "width": 64,
+    "height": 52.6,
+    "eng.size": 92,
+    "horsepower": 76,
+    "symbol": 1,
+    "city.mpg": 30,
+    "highway.mpg": 34
+  },
+  {
+    "model": "honda2",
+    "wheel.base": 96.5,
+    "length": 175.4,
+    "width": 65.2,
+    "height": 54.1,
+    "eng.size": 110,
+    "horsepower": 86,
+    "symbol": 0,
+    "city.mpg": 27,
+    "highway.mpg": 33
+  },
+  {
+    "model": "isuzu",
+    "wheel.base": 94.3,
+    "length": 170.7,
+    "width": 61.8,
+    "height": 53.5,
+    "eng.size": 111,
+    "horsepower": 78,
+    "symbol": 0,
+    "city.mpg": 24,
+    "highway.mpg": 29
+  },
+  {
+    "model": "jaguar",
+    "wheel.base": 113,
+    "length": 199.6,
+    "width": 69.6,
+    "height": 52.8,
+    "eng.size": 258,
+    "horsepower": 176,
+    "symbol": 0,
+    "city.mpg": 15,
+    "highway.mpg": 19
+  }
+]

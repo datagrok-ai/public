@@ -21,7 +21,7 @@ category('UI: Inputs', () => {
       'switchInput': ui.switchInput('', true),
       'choiceInput': ui.choiceInput('', '1', ['1', '2', '3']),
       'multiChoiceInput': ui.multiChoiceInput('', [], []),
-//      'dateInput': ui.dateInput('', dayjs('2001-01-01')),
+      // 'dateInput': ui.dateInput('', dayjs('2001-01-01')),
       'textInput': ui.textInput('', ''),
       'searchInput': ui.searchInput('', ''),
       'columnInput': ui.columnInput('', t, t.col('age')),
@@ -30,6 +30,7 @@ category('UI: Inputs', () => {
       'colorInput': ui.colorInput('', '#ff0000'),
     };
     v = grok.shell.newView('');
+    grok.shell.windows.showContextPanel = true;
   });
 
   test('input.root', async () => {
@@ -104,7 +105,6 @@ category('UI: Inputs', () => {
   });
 
   after(async () => {
-    v.close();
     grok.shell.closeAll();
   });
 
@@ -138,7 +138,7 @@ category('UI: Inputs', () => {
         break;
       }
     } catch (x) {
-      throw name + ': ' + x;
+      throw new Error(name + ': ' + x);
     } finally {
       input.root.remove();
     }
@@ -155,7 +155,7 @@ category('UI: Inputs', () => {
         expect(input.readOnly, value);
       }
     } catch (x) {
-      throw name + ': ' + x;
+      throw new Error(name + ': ' + x);
     } finally {
       input.readOnly = false;
       input.root.remove();
@@ -175,10 +175,10 @@ category('UI: Inputs', () => {
     input.fireChanged();
 
     if (!changed)
-      throw `"${name}": OnChange value error`;
+      throw new Error(`"${name}": OnChange value error`);
 
     input.value = value;
     input.fireChanged();
     input.root.remove();
   }
-});
+}, false);

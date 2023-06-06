@@ -2,3 +2,10 @@
     outline: none;
     border-bottom: 1px solid var(--grey-2)!important;
 }
+
+.ui-btn-nav {
+    background-color: rgb(80 169 197 / 25%);
+    color: #50A9C5;
+    float: left;
+    margin-right: 5px;
+}

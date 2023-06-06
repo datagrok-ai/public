@@ -2,6 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import yaml from 'js-yaml';
+import { exec } from 'child_process';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import { validateConf } from '../validators/config-validator';
@@ -15,10 +16,10 @@ const packageJsonPath = path.join(curDir, 'package.json');
 const tsConfigPath = path.join(curDir, 'tsconfig.json');
 const webpackConfigPath = path.join(curDir, 'webpack.config.js');
 const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
+const options = ['ide', 'eslint', 'test', 'ts', 'git'];
 
 
 export function init(args: InitArgs) {
-  const options = ['ide', 'eslint', 'test', 'ts'];
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
 
@@ -41,7 +42,43 @@ export function init(args: InitArgs) {
       return false;
   }
 
-  if (!utils.isPackageDir(curDir)) {
+  if (args.git) {
+    exec('git config --global pull.rebase false && ' +
+      'git config --global branch.master.rebase true && ' +
+      'git config --global branch.main.rebase true && ' +
+      'git config --global rebase.autostash true',
+      (err, stdout, stderr) => {
+        color.info('Configuring rebase pull strategy...');
+        console.log('Read more: https://datagrok.ai/help/develop/advanced/git-policy');
+        if (err) throw err;
+        else {
+          console.log(stderr, stdout);
+          color.success('GIT successfully configured\n');
+        }
+      });
+
+    exec('npm install --location=global @commitlint/config-conventional @commitlint/cli',
+      (err, stdout, stderr) => {
+        color.info('Installing @commitlint/config-conventional and @commitlint/cli...');
+        if (err) throw err;
+        else console.log(stderr, stdout);
+      });
+
+    exec('pip install pre-commit',
+      (err, stdout, stderr) => {
+        color.info('Installing pre-commit...');
+        if (err) throw err;
+        else console.log(stderr, stdout);
+        exec('pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg',
+          (err, stdout, stderr) => {
+            color.info('Installing commit hooks...');
+            if (err) throw err;
+            else console.log(stderr, stdout);
+          });
+      });
+  }
+
+  if (!utils.isPackageDir(curDir) && (args.ts || args.ide || args.eslint || args.test)) {
     color.error('File `package.json` not found. Run the command from the package directory');
     return false;
   }
@@ -179,4 +216,5 @@ interface InitArgs {
   eslint?: boolean,
   test?: boolean,
   ts?: boolean,
+  git?: boolean,
 }

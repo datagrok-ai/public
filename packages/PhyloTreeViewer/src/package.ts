@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {newickToDf} from './utils';
-import {PhyloTreeViewer} from './viewers/phylotree-viewer';
 import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
 import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {TreeToGridApp} from './apps/tree-to-grid-app';
@@ -110,6 +108,7 @@ export async function treeInGridCellApp(): Promise<void> {
 //description: Opens Newick file
 //input: viewer grid
 //input: string newickText
+//input: string leafColName {optional: true}
 export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafColName?: string) {
   const colNameList: string[] = grid.dataFrame.columns.names();
   leafColName = leafColName ??
@@ -119,8 +118,7 @@ export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafCo
     colNameList.find((colName) => colName.toLowerCase() == 'id');
   if (!leafColName)
     throw new Error('The leaf column name can not be inferred. Specify it as an argument.');
-
-  injectTreeToGridUI(grid, newickText, leafColName!);
+  await injectTreeToGridUI(grid, newickText, leafColName!);
 }
 
 type PtvWindowType = Window & { $phylocanvasGlService?: PhylocanvasGlService };

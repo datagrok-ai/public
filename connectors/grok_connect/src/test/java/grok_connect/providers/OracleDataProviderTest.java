@@ -42,10 +42,10 @@ class OracleDataProviderTest extends ContainerizedProviderBaseTest {
 
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
-    @MethodSource({"grok_connect.providers.arguments_provider.CommonObjectsMother#checkParameterSupport_ok",
+    @MethodSource({"grok_connect.providers.arguments_provider.OracleObjectsMother#checkParameterSupport_ok",
             "grok_connect.providers.arguments_provider.OracleObjectsMother#checkMultipleParametersSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
+            "grok_connect.providers.arguments_provider.OracleObjectsMother#checkListParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.OracleObjectsMother#checkRegexSupport_ok"})
     public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         prepareDataFrame(expected);

@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {findMCS, findRGroups} from '../scripts-api';
+import {findRGroups} from '../scripts-api';
 import {convertMolNotation, getRdKitModule} from '../package';
+import {getMCS} from '../utils/most-common-subs';
 
 
 export function convertToRDKit(smiles: string): string {
@@ -17,6 +18,7 @@ export function convertToRDKit(smiles: string): string {
 /**
  * Opens a dialog with the sketcher that allows to sketch a core (or perform MCS),
  * and initiate the R-Group Analysis for the specified column with molecules.
+ * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
 export function rGroupAnalysis(col: DG.Column): void {
   const sketcher = new DG.chem.Sketcher();
@@ -25,16 +27,19 @@ export function rGroupAnalysis(col: DG.Column): void {
   const exactAtomsCheck = ui.boolInput('MCS exact atoms', true);
   const exactBondsCheck = ui.boolInput('MCS exact bonds', true);
 
-  let molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
+  const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
   const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
 
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
-      let molCol = col.dataFrame.columns.byName(columnInput.value!);
-      const smarts: string = await findMCS(molCol.name, molCol.dataFrame, exactAtomsCheck.value!, exactBondsCheck.value!);
-      ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setMolFile(convertMolNotation(smarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
+      const molCol = col.dataFrame.columns.byName(columnInput.value!);
+      //TODO: implements mcs using web worker
+      const mcsSmarts = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
+      if (mcsSmarts !== null) {
+        ui.setUpdateIndicator(sketcher.root, false);
+        sketcher.setMolFile(convertMolNotation(mcsSmarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
+      }
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
@@ -52,13 +57,13 @@ export function rGroupAnalysis(col: DG.Column): void {
       sketcher,
       ui.divH([
         ui.divV([
-          exactAtomsCheck.root, exactBondsCheck.root
+          exactAtomsCheck.root, exactBondsCheck.root,
         ]),
-        mcsButtonHost
+        mcsButtonHost,
       ]),
       columnInput,
       columnPrefixInput,
-      visualAnalysisCheck.root
+      visualAnalysisCheck.root,
     ]))
     .onOK(async () => {
       col = col.dataFrame.columns.byName(columnInput.value!);

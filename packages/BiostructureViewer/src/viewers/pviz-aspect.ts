@@ -1,10 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 //@ts-ignore
-import mutcodes from "../externalData/mutcodes.json";
-import { MiscMethods } from "./misc.js"
-import { PdbEntry } from '../pdb-entry';
+import {PdbEntry} from '../pdb-entry';
 
 export class PvizAspect {
   ngl: any;
@@ -18,14 +16,13 @@ export class PvizAspect {
   selection: { [chain: string]: {[key: string]: any} };
 
   async init(entry: PdbEntry, colorScheme: any, pVizHosts: { [key: string]: HTMLDivElement; }, twinSelections: any) {
-
     //@ts-ignore
     this.pviz = window.pviz;
     this.pVizParams = {};
-    this.entry = entry
+    this.entry = entry;
 
     this.pVizParams.seq = {};
-    this.entry.entities[0].chains.forEach(chain => {
+    this.entry.entities[0].chains.forEach((chain) => {
       this.pVizParams.seq[chain.id] = entry.entities[0].sequence;
     });
 
@@ -43,25 +40,24 @@ export class PvizAspect {
   }
 
   public async render(chain: string) {
-
-    let host = this.hosts[chain];
+    const host = this.hosts[chain];
 
     //@ts-ignore
     if ($(host).width() !== 0) {
-      let seq = this.pVizParams.seq[chain];
+      const seq = this.pVizParams.seq[chain];
 
-      let seqEntry = new this.pviz.SeqEntry({
-        sequence: seq
+      const seqEntry = new this.pviz.SeqEntry({
+        sequence: seq,
       });
       new this.pviz.SeqEntryAnnotInteractiveView({
         model: seqEntry,
         collapsible: true,
-        el: host
+        el: host,
       }).render();
 
-      let switchObj = this.selection;
-      let pVizParams = this.pVizParams;
-      let pv = this;
+      const switchObj = this.selection;
+      const pVizParams = this.pVizParams;
+      const pv = this;
 
       //adding all features
       //seqEntry.addFeatures(pVizParams.helixMap[chain].helixFeatureMap);
@@ -76,53 +72,52 @@ export class PvizAspect {
       //mouse over handlers
 
       //mouse click handlers
-      this.pviz.FeatureDisplayer.addClickCallback(['active'], async function (ft: any) {
+      this.pviz.FeatureDisplayer.addClickCallback(['active'], async function(ft: any) {
         if (switchObj[chain][ft.start] === undefined) {
           switchObj[chain][ft.start] = {};
           switchObj[chain][ft.start]['state'] = true;
         } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
         }
-        grok.events.fireCustomEvent("selectionChanged", null);
+        grok.events.fireCustomEvent('selectionChanged', null);
         await pv.color(chain);
       });
     }
   }
 
   helixMapping() {
-
-    let helixMap: { [key: string]: {} } = {};
+    const helixMap: { [key: string]: {} } = {};
 
     this.entry.entities[0].chains.forEach(async (chain) => {
-      let helixFeatureMap: any[] = [];
-      Object.keys(chain.tracks).forEach(track => {
-        if (track === "HELIX_P") {
+      const helixFeatureMap: any[] = [];
+      Object.keys(chain.tracks).forEach((track) => {
+        if (track === 'HELIX_P') {
           helixFeatureMap.push({
             category: 'Alpha helix',
             type: 'alpha',
             start: chain.tracks[track][0],
             end: chain.tracks[track].slice(-1),
             text: '',
-            improbable: true
-          })
+            improbable: true,
+          });
         }
       });
 
-      helixMap[chain.id] = { helixFeatureMap: helixFeatureMap };
+      helixMap[chain.id] = {helixFeatureMap: helixFeatureMap};
     });
 
     this.pVizParams.helixMap = (helixMap);
   }
 
   siteMapping() {
-    let siteMap: { [key: string]: any } = {};
-    let chains = ["A", "B"];
+    const siteMap: { [key: string]: any } = {};
+    const chains = ['A', 'B'];
     chains.forEach((chain) => {
-      let featureMap: any[] = [];
-      let siteArray: number[] = [24, 25, 26, 27, 28, 29, 48, 49, 50, 51, 52];
+      const featureMap: any[] = [];
+      const siteArray: number[] = [24, 25, 26, 27, 28, 29, 48, 49, 50, 51, 52];
 
 
-      siteArray.forEach(point => {
+      siteArray.forEach((point) => {
         featureMap.push({
           groupSet: 'Active site',
           category: 'Active',
@@ -130,28 +125,25 @@ export class PvizAspect {
           start: point,
           end: point,
           text: '',
-          improbable: true
-        })
-      })
-      siteMap[chain] = { featureMap: featureMap, elObj: siteArray };
-    })
+          improbable: true,
+        });
+      });
+      siteMap[chain] = {featureMap: featureMap, elObj: siteArray};
+    });
 
     this.pVizParams.siteMap = (siteMap);
   }
 
   async color(chosenTracksChain: string) {
-
-    let switchObj = this.selection;
-    let pVizParams = this.pVizParams;
+    const switchObj = this.selection;
+    const pVizParams = this.pVizParams;
 
     Object.keys(switchObj).forEach((keyChain) => {
-
-      let selectorStr = 'g.feature.data.active rect.feature';
-      let siteElements = document.querySelectorAll(selectorStr);
-      let siteNumbers = pVizParams.siteMap[keyChain].elObj;
+      const selectorStr = 'g.feature.data.active rect.feature';
+      const siteElements = document.querySelectorAll(selectorStr);
+      const siteNumbers = pVizParams.siteMap[keyChain].elObj;
       Object.keys(switchObj[keyChain]).forEach((keyPosition) => {
-
-        let position = parseInt(keyPosition);
+        const position = parseInt(keyPosition);
 
         if (keyChain === chosenTracksChain) {
           //densities
@@ -169,23 +161,23 @@ export class PvizAspect {
     });
   }
 
-  applyGradient(gradient_obj: any) {
-    Object.keys(gradient_obj).forEach((ptm_track) => {
-      let selectorStr = 'g.feature.' + ptm_track + ' rect.feature';
-      let el = document.querySelectorAll(selectorStr);
+  applyGradient(gradientObj: any) {
+    Object.keys(gradientObj).forEach((ptmTrack) => {
+      const selectorStr = 'g.feature.' + ptmTrack + ' rect.feature';
+      const el = document.querySelectorAll(selectorStr);
       for (let i = 0; i < el.length; i++) {
         //@ts-ignore
-        el[i].style.fill = gradient_obj[ptm_track][i];
+        el[i].style.fill = gradientObj[ptmTrack][i];
       }
-    })
+    });
   }
 
   // resize handle
   private async resize(chain: string) {
-    let host = this.hosts[chain];
+    const host = this.hosts[chain];
 
     ui.onSizeChanged(host).subscribe(async (_) => {
-      await this.render(chain)
+      await this.render(chain);
     });
   }
 }

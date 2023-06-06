@@ -13,7 +13,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   SurfacePlot: 'files/surface-plot.csv',
   Timelines: 'files/ae.csv',
   Tree: 'demog.csv',
-  WordCloud: 'word_cloud.csv',
+  WordCloudViewer: 'word_cloud.csv',
 };
 
 
@@ -24,9 +24,13 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const tableView = grok.shell.addTableView(df);
 
+  grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.syncCurrentObject = false;
+
   if (viewerName === 'Globe') {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
+      grok.shell.windows.help.showHelp(viewer.helpUrl);
       dockViewers(tableView, viewer, viewerName);
     });
     return;
@@ -34,13 +38,14 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const viewer = tableView.addViewer(viewerName, options);
   grok.shell.windows.help.showHelp(viewer.helpUrl);
+
   dockViewers(tableView, viewer, viewerName);
 }
 
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
   const rootNode = tableView.dockManager.rootNode;
 
-  if (viewerName === 'WordCloud') {
+  if (viewerName === 'WordCloudViewer') {
     tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
     tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
     return;

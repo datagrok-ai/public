@@ -165,10 +165,10 @@ jobs:
           export DATAGROK_VERSION
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
-          docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
+          docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
           echo "Notify abour version used for tests"
-          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
+          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -235,15 +235,16 @@ jobs:
               cd node_modules/$dep
               count=0
               retries=5
+              echo "Publishing $dep to ${HOST}..."
               until grok publish ${HOST}; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
                 if [ $count -lt "$retries" ]; then
-                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' for $dep in $wait seconds..."
                   sleep $wait
                 else
-                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}' for $dep."
                   exit $exit
                 fi
               done
@@ -272,11 +273,22 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
-        continue-on-error: ${{ matrix.package == 'ApiTests' }}
+        continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
-        run: npm run test -- --skip-build --skip-publish
+        run: npm run test -- --skip-build --skip-publish --record --csv
         working-directory: packages/${{ matrix.package }}
+      - name: Upload Artifact
+        if: always() && steps.test-package.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package }}.test-results
+          path: |
+            packages/${{ matrix.package }}/test-record.mp4
+            packages/${{ matrix.package }}/test-report.csv
+            packages/${{ matrix.package }}/test-console-output.log
+          retention-days: 14
+          if-no-files-found: warn
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
@@ -345,7 +357,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || matrix.package == 'ApiTests')
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')

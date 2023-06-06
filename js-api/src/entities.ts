@@ -632,6 +632,12 @@ export class FileInfo extends Entity {
   /** Returns file URL */
   get url(): string { return api.grok_FileInfo_Get_Url(this.dart); }
 
+  /** Checks if file */
+  get isFile(): boolean { return api.grok_FileInfo_Get_IsFile(this.dart); }
+
+  /** Checks if directory */
+  get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
+
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));

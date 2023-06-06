@@ -13,14 +13,12 @@ import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {LoaderParameters, RepresentationParameters} from 'NGL';
 import * as NGL from 'NGL';
 import {intToHtml} from '@datagrok-libraries/utils/src/color';
-
-export interface INglViewer {
-  get pdb(): string;
-
-  set pdb(value: string);
-
-  get onAfterBuildView(): Observable<void>;
-}
+import {
+  INglViewer,
+  NglProps,
+  NglPropsDefault,
+  RepresentationType,
+} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -44,15 +42,7 @@ export const enum PROPS {
 }
 
 const pdbDefault: string = '';
-
-enum RepresentationType {
-  Cartoon = 'cartoon',
-  Backbone = 'backbone',
-  BallAndStick = 'ball+stick',
-  Licorice = 'licorice',
-  Hyperball = 'hyperball',
-  Surface = 'surface'
-}
+const defaults: NglProps = NglPropsDefault;
 
 export type LigandMapItem = { rowIdx: number, compIdx: number | null };
 
@@ -85,25 +75,26 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   constructor() {
     super();
+    this.helpUrl = '/help/visualize/viewers/ngl';
 
     // -- Data --
-    this.pdb = this.string(PROPS.pdb, pdbDefault,
+    this.pdb = this.string(PROPS.pdb, defaults.pdb,
       {category: PROPS_CATS.DATA, userEditable: false});
-    this.pdbTag = this.string(PROPS.pdbTag, null,
+    this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
       {category: PROPS_CATS.DATA, choices: []});
-    this.ligandColumnName = this.string(PROPS.ligandColumnName, null,
+    this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
       {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE});
 
     // -- Style --
-    this.representation = this.string(PROPS.representation, RepresentationType.Cartoon,
+    this.representation = this.string(PROPS.representation, defaults.representation,
       {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)}) as NGL.StructureRepresentationType;
 
     // -- Behaviour --
-    this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, false,
+    this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, defaults.showSelectedRowsLigands,
       {category: PROPS_CATS.BEHAVIOUR});
-    this.showCurrentRowLigand = this.bool(PROPS.showCurrentRowLigand, true,
+    this.showCurrentRowLigand = this.bool(PROPS.showCurrentRowLigand, defaults.showCurrentRowLigand,
       {category: PROPS_CATS.BEHAVIOUR});
-    this.showMouseOverRowLigand = this.bool(PROPS.showMouseOverRowLigand, true,
+    this.showMouseOverRowLigand = this.bool(PROPS.showMouseOverRowLigand, defaults.showMouseOverRowLigand,
       {category: PROPS_CATS.BEHAVIOUR});
 
     // --
@@ -156,8 +147,11 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   override detach(): void {
+    if (this.setDataInProgress) return;
+
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
+    this.detachPromise = this.detachPromise.then(async () => { // detach
+      await this.viewPromise;
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
@@ -169,6 +163,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   // -- Data --
 
   setData(purpose: string): void {
+    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
     _package.logger.debug(`NglViewer.setData(purpose='${purpose}') `);
 
     this.viewPromise = this.viewPromise.then(async () => { // setData
@@ -176,32 +171,38 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
         await this.destroyView('setData');
         this.viewed = false;
       }
-    });
+    }).then(async () => {
+      await this.detachPromise;
+      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-    // -- PDB data --
-    let pdbTag: string = pdbTAGS.PDB;
-    if (this.pdbTag) pdbTag = this.pdbTag;
-    this.pdbStr = this.dataFrame.getTag(pdbTag);
-    if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+      // -- PDB data --
+      let pdbTag: string = pdbTAGS.PDB;
+      if (this.pdbTag) pdbTag = this.pdbTag;
+      this.pdbStr = this.dataFrame.getTag(pdbTag);
+      if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
 
-    // -- Ligand --
-    if (!this.ligandColumnName) {
-      const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      if (molCol)
-        this.ligandColumnName = molCol.name;
-    }
-
-    this.viewPromise = this.viewPromise.then(async () => {
+      // -- Ligand --
+      if (!this.ligandColumnName) {
+        const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+        if (molCol)
+          this.ligandColumnName = molCol.name;
+      }
+    }).then(async () => {
       if (!this.viewed) {
         await this.buildView('setData').then(() => { this._onAfterBuildView.next(); });
         this.viewed = true;
       }
+    }).finally(() => {
+      this.setDataInProgress = false;
     });
   }
 
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
+  private detachPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
+
   private nglDiv?: HTMLDivElement;
   private stage?: NGL.Stage;
 
@@ -242,7 +243,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     if (!this.nglDiv) {
       this.nglDiv = ui.div([], {
         classes: 'd4-ngl-viewer',
-        style: {width: '100%', height: '100%'}
+        style: {width: '100%', height: '100%'},
       });
       this.root.appendChild(this.nglDiv);
 
@@ -258,7 +259,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     await stage.loadFile(pdbBlob, {ext: 'pdb', compressed: false, binary: false, name: '<Name>'});
 
     //highlights in NGL
-    // eslint-disable-next-line camelcase, prefer-const
+    /* eslint-disable camelcase, prefer-const */
     let scheme_buffer: string[][] = [];
 
     //TODO: remove - demo purpose only
@@ -266,11 +267,12 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     scheme_buffer.push(['#f1532b', `* and :B`]);
     scheme_buffer.push(['green', `* and :R`]);
     scheme_buffer.push(['green', `* and :M`]);
+    /* eslint-enable camelcase, prefer-const */
 
     const schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-    const schemeObj = {color: schemeId};
+    const _schemeObj = {color: schemeId};
 
-    const repComp = stage.compList[0].addRepresentation(representation, {});
+    const _repComp = stage.compList[0].addRepresentation(representation, {});
     stage.compList[0].autoView();
 
     this.viewSubs.push(df.onSelectionChanged.subscribe(this.dataFrameOnSelectionChanged.bind(this)));
@@ -292,7 +294,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     const fileEl: HTMLInputElement = ui.element('input');
     fileEl.type = 'file';
     fileEl.style.display = 'none';
-    fileEl.addEventListener('change', async (event) => {
+    fileEl.addEventListener('change', async (_event) => {
       if (fileEl.files != null && fileEl.files.length == 1) {
         const pdbStr: string = await fileEl.files[0]!.text();
         this.pdb = pdbStr;
@@ -300,14 +302,14 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       }
     });
     const fileLink = ui.link('Open...', '', '', {
-      processNode: (node: HTMLElement) => {
-        const k = 11;
+      processNode: (_node: HTMLElement) => {
+        const _k = 11;
       },
       // @ts-ignore // ui.link argument options.onClick: (node: HTMLElement) => void
       onClick: (event: PointerEvent) => {
         event.preventDefault();
         $(fileEl).trigger('click');
-      }
+      },
     });
     this.splashDiv = ui.div([fileLink, fileEl],
       {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
@@ -323,7 +325,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   // -- Handle events --
 
-  private rootOnSizeChanged(value: any): void {
+  private rootOnSizeChanged(_value: any): void {
     const cw: number = this.root.clientWidth;
     const ch: number = this.root.clientHeight;
 
@@ -340,17 +342,17 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     }
   }
 
-  private dataFrameOnSelectionChanged(value: any): void {
+  private dataFrameOnSelectionChanged(_value: any): void {
     _package.logger.debug('NglViewer.dataFrameOnCurrentRowChanged() ');
     if (this.showSelectedRowsLigands) this.rebuildViewLigands();
   }
 
-  private dataFrameOnCurrentRowChanged(value: any): void {
+  private dataFrameOnCurrentRowChanged(_value: any): void {
     _package.logger.debug('NglViewer.dataFrameOnCurrentRowChanged() ');
     if (this.showCurrentRowLigand) this.rebuildViewLigands();
   }
 
-  private dataFrameOnMouseOverRowChanged(value: any) {
+  private dataFrameOnMouseOverRowChanged(_value: any) {
     _package.logger.debug('NglViewer.dataFrameOnMouseOverRowChanged() ');
 
     if (this.showMouseOverRowLigand) this.rebuildViewLigands();
@@ -369,8 +371,10 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   private rebuildViewLigands(): void {
     this.viewPromise = this.viewPromise.then(async () => {
-      await this.destroyViewLigands();
-      await this.buildViewLigands();
+      if (this.viewed) {
+        await this.destroyViewLigands();
+        await this.buildViewLigands();
+      }
     });
   }
 
@@ -381,7 +385,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     const allLigands: LigandMapItem[] = [
       ...this.ligands.selected,
       ...(this.ligands.current ? [this.ligands.current] : []),
-      ...(this.ligands.hovered ? [this.ligands.hovered] : [])
+      ...(this.ligands.hovered ? [this.ligands.hovered] : []),
     ];
     const desc = <T>(a: T, b: T): number => (a > b ? -1 : 1);
     for (const compIdx of allLigands.map((l) => l.compIdx!).sort(desc)) {
@@ -413,7 +417,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       const compIdx: number = this.stage!.compList.length - 1;
 
       const params: RepresentationParameters = {
-        ...(color ? {color: intToHtml(color as number)} : {})
+        ...(color ? {color: intToHtml(color as number)} : {}),
       };
 
       this.stage!.compList[compIdx].addRepresentation(RepresentationType.BallAndStick, params);

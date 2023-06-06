@@ -22,8 +22,9 @@ export class OverviewView extends UaView {
     const uniqueUsersViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'UniqueUsers',
+      activated: true,
       queryName: 'UniqueUsersOverview',
-      viewerFunction: (t: DG.DataFrame) => {
+      createViewer: (t: DG.DataFrame) => {
         return DG.Viewer.lineChart(t, {
           'overviewColumnName': 'date',
           'xColumnName': 'date',
@@ -70,8 +71,9 @@ export class OverviewView extends UaView {
     const packageStatsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'PackageStats',
+      activated: true,
       getDataFrame: () => df,
-      viewerFunction: (t: DG.DataFrame) => {
+      createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.barChart(t, {
           'valueColumnName': 'user',
           'valueAggrType': 'unique',
@@ -90,12 +92,11 @@ export class OverviewView extends UaView {
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
           skipEvent = true;
-          packagesSelection.init((i) => t.get('package', i) == args.args.categories[0]);
+          packagesSelection.init((i) => viewer.dataFrame.get('package', i) == args.args.categories[0]);
           userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.categories[0]);
           userStatsViewer.viewer!.props.rowSource = 'Filtered';
-          t.filter.copyFrom(usersSelection).and(packagesSelection);
-          //t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
+          viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
+          PackagesView.showSelectionContextPanel(viewer.dataFrame, this.uaToolbox, 'Overview', {showDates: false});
         });
         viewer.root.onclick = (_) => {
           //resetViewers(skipEvent, viewer.table);
@@ -115,9 +116,9 @@ export class OverviewView extends UaView {
             skipEvent = false;
             return viewer;
           }
-          t.filter.copyFrom(usersSelection).and(packagesSelection);
-          t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
+          viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
+          viewer.dataFrame.selection.copyFrom(viewer.dataFrame.filter);
+          PackagesView.showSelectionContextPanel(viewer.dataFrame, this.uaToolbox, 'Overview', {showDates: false});
           skipEvent = false;
         };
         return viewer;
@@ -127,8 +128,9 @@ export class OverviewView extends UaView {
     const userStatsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'UserStats',
+      activated: true,
       getDataFrame: () => df,
-      viewerFunction: (t: DG.DataFrame) => {
+      createViewer: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.barChart(t, {
           'valueColumnName': 'count',
           'valueAggrType': 'sum',
@@ -148,12 +150,12 @@ export class OverviewView extends UaView {
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
           skipEvent = true;
-          usersSelection.init((i) => t.get('user', i) == args.args.categories[0]);
+          usersSelection.init((i) => viewer.dataFrame.get('user', i) == args.args.categories[0]);
           packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.categories[0]);
           packageStatsViewer.viewer!.props.rowSource = 'Filtered';
-          t.filter.copyFrom(usersSelection).and(packagesSelection);
-          t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
+          viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
+          viewer.dataFrame.selection.copyFrom(viewer.dataFrame.filter);
+          PackagesView.showSelectionContextPanel(viewer.dataFrame, this.uaToolbox, 'Overview', {showDates: false});
         });
         viewer.root.onclick =(me) => {
           //resetViewers(skipEvent, viewer.table);
@@ -173,9 +175,9 @@ export class OverviewView extends UaView {
             skipEvent = false;
             return viewer;
           }
-          t.filter.copyFrom(usersSelection).and(packagesSelection);
-          t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
+          viewer.dataFrame.filter.copyFrom(usersSelection).and(packagesSelection);
+          viewer.dataFrame.selection.copyFrom(viewer.dataFrame.filter);
+          PackagesView.showSelectionContextPanel(viewer.dataFrame, this.uaToolbox, 'Overview', {showDates: false});
           skipEvent = false;
         };
         return viewer;
@@ -191,6 +193,11 @@ export class OverviewView extends UaView {
 
     const counters: {[key: string]: string} = {
       'Active users': 'UsageAnalysis:UniqueUsersCount',
+      'New users': 'UsageAnalysis:NewUsersCount',
+      'Sessions': 'UsageAnalysis:SessionsCount',
+      // 'Views': 'UsageAnalysis:ViewsCount',
+      'Connections': 'UsageAnalysis:ConnectionsCount',
+      'Queries': 'UsageAnalysis:QueriesCount',
     };
 
     const refresh = (filter: UaFilter): void => {

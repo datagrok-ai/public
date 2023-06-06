@@ -3,14 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {
-  HELM_FIELDS, HELM_CORE_FIELDS, RGROUP_FIELDS, jsonSdfMonomerLibDict,
+  HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
-import {getSplitter, SplitterFunc, TAGS} from '../utils/macromolecule';
-import {IMonomerLib, Monomer} from '../types/index';
-
-
-export const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
+import {IMonomerLib} from '../types/index';
+import {TAGS} from '../utils/macromolecule/consts';
+import {SplitterFunc} from '../utils/macromolecule/types';
+import {getSplitter} from '../utils/macromolecule/utils';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -22,7 +21,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   for (let i = 0; i < col.length; ++i) {
     let encodedMonomerStr = '';
     const monomers = splitterFunc(col.get(i));
-    monomers.forEach((m) => {
+    monomers.forEach((m: string) => {
       if (!monomerSymbolDict[m]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);
@@ -114,10 +113,10 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
           const rgroup: { [key: string]: string | any } = {};
           const altAtom = g.substring(g.lastIndexOf(']') + 1);
           const radicalNum = g.match(/\[R(\d+)\]/)![1];
-          rgroup[RGROUP_FIELDS.CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
-          rgroup[RGROUP_FIELDS.ALTER_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
-          rgroup[RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
-          rgroup[RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
+          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
+          rgroup[HELM_RGROUP_FIELDS.ALTERNATE_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
+          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
+          rgroup[HELM_RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
           jsonRgroups.push(rgroup);
         });
         monomer[key] = jsonRgroups;

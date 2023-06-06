@@ -91,6 +91,8 @@ export async function injectTreeToGridUI(
   pcCalcSize();
 
   function pcCalcSize() {
+    if (!grid.dataFrame)
+      return;
     const leafCount = grid.dataFrame.filter.trueCount;
 
     const width: number = treeRoot.clientWidth - leftMargin;
@@ -162,15 +164,17 @@ export async function injectTreeToGridUI(
 
     // to prevent nested fire event in event handler
     window.setTimeout(() => {
-      const [viewedRoot] = th.setGridOrder(newickRoot, grid, 'id');
-      const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
-        {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
-
-      try {
-        pcViewer.setProps({source: source});
-      } catch (ex) { } // ignore exception on empty source
-
-      pcCalcSize();
+      if(grid.dataFrame){
+        const [viewedRoot] = th.setGridOrder(newickRoot, grid, 'id');
+        const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
+          {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
+  
+        try {
+          pcViewer.setProps({source: source});
+        } catch (ex) { } // ignore exception on empty source
+  
+        pcCalcSize();
+      }
     }, 0 /* next event cycle */);
   });
 

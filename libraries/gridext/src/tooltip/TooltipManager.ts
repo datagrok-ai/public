@@ -7,6 +7,10 @@ import * as GridUtils from '../utils/GridUtils';
 const VIEWERS : Array<DG.Viewer> = [];
 
 function indexofViewer(viewer: DG.Viewer) : number {
+  const dart = toDart(viewer);
+  if (dart === null)
+    return -1;
+
   for (let n = 0; n < VIEWERS.length; ++n) {
     if(toDart(VIEWERS[n]) === toDart(viewer))
       return n;
@@ -51,7 +55,8 @@ export class TooltipManager {
           //console.log(`The resize was modified.` + rcTT + ' ' + entry.contentRect);
 
           const eUnderTT = document.elementFromPoint(rcTT.x, rcTT.y);
-          const viewers = Array.from(grok.shell.tv.viewers);
+          const viewersAr = grok.shell.tv.viewers;
+          const viewers = viewersAr === null || viewersAr === undefined ? [] : Array.from(grok.shell.tv.viewers);
           let viewer = null;
           let v = null;
           for (let n = 0; n < viewers.length; ++n) {

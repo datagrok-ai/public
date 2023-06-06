@@ -9,7 +9,7 @@
 .chem-mol-view-icon {
   width: 14px;
   text-align: center;
-  padding: 2px;
+  padding: 5px;
   margin: 2px;
   position: absolute;
   z-index: 1;
@@ -214,6 +214,10 @@
   visibility: visible;
 }
 
+.d4-viewer:hover .chem-scaffold-tree-toolbar {
+  visibility: visible;
+}
+
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
   display: flex;
   flex-direction: column;
@@ -332,4 +336,12 @@
   left: 120px;
   width: 335px;
   height: 0px;
+}
+
+.chem-substructure-limit-error {
+  background: white;
+}
+
+.chem-hide-filter {
+  display: none;
 }

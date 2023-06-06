@@ -7,10 +7,8 @@ on:
         required: true
         type: string
   push:
-    branches:
-      - 'master'
     paths:
-      - 'libraries/*/package.json'
+      - 'libraries/**'
 
 jobs:
   metadata:
@@ -144,7 +142,7 @@ jobs:
         if: ${{ matrix.build == 'true' }}
       - name: npm publish
         run: npm publish --access public
-        if: ${{ matrix.changed_version == 'true' }}
+        if: matrix.changed_version == 'true' && github.ref == 'refs/heads/master'
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
