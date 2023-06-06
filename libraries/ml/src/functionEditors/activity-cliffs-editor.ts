@@ -23,7 +23,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
   
     constructor(semtype: DG.SemType){
       super(semtype);
-      this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, this.tableInput.value!.columns.byIndex(0), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
+      this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
       this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.intInput('Similarity cutoff', 80);
       ui.tooltip.bind(this.similarityInput.root, `Pairs of similar (cutoff is used) molecules with high difference in activity are considered 'cliffs'`)
@@ -42,7 +42,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
     onTableInputChanged(semtype: DG.SemType) {
         super.onTableInputChanged(semtype);
         ui.empty(this.activitiesInputRoot);
-        this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, this.tableInput.value!.columns.byIndex(0), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
+        this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
         Array.from(this.activitiesInput.root.children).forEach((it) => this.activitiesInputRoot.append(it));
     }
   }
