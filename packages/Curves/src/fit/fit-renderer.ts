@@ -145,7 +145,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         curve = fitResult.fittedCurve;
         series.parameters = fitResult.parameters;
       }
-      const confidenceIntervals = getSeriesConfidenceInterval(series);
 
       if (series.showPoints ?? true) {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
@@ -199,6 +198,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
+        const confidenceIntervals = getSeriesConfidenceInterval(series);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport);
@@ -219,7 +219,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         }
       }
     }
-
     g.restore();
   }
 
