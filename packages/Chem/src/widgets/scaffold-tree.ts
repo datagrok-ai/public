@@ -9,7 +9,6 @@ import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UN
 import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree} from "../package";
-import {aromatizeMolBlock} from "../utils/aromatic-utils";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
@@ -418,8 +417,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       description: 'Remove charges and radicals from scaffolds',
     });
     
-
-
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
@@ -840,7 +837,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       checkedNodes[n].checked = false;
     this.checkBoxesUpdateInProgress = false;
     
-    
     this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
@@ -873,6 +869,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!isFiltering) {
       this.bitset = null;
       this.dataFrame.rows.requestFilter();
+    }
 
     const checkedNodes = this.tree.items.filter((v) => v.checked);
     if (checkedNodes.length === 0) {
@@ -1024,7 +1021,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.molColumn === null)
       return null;
     
-    const bitset =  DG.BitSet.create(this.molColumn.length);
+    const bitset = DG.BitSet.create(this.molColumn.length);
     const molHost = renderMolecule(molStr, this.sizesMap[this.size].width, this.sizesMap[this.size].height, skipDraw);
     const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset : null, bitwiseNot: false}) ;
     this.addIcons(molHost, bitset.trueCount === 0 ? "" : bitset.trueCount.toString(), group);
