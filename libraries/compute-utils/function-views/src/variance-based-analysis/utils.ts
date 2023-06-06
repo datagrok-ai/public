@@ -6,6 +6,7 @@ enum ERROR_MSG {
   SIZE_MUST_BE_POSITIVE = 'Size must be positive.',
 };
 
+// Check variable that is supposed to be a size
 export function checkSize(size: any): void {
   // check if it's a number
   if (!Number.isInteger(size))

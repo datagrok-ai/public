@@ -1,22 +1,27 @@
 // inputTools.ts
 
+// Tools for operating inputs for variance-based sensitivity analysis (VSA).
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {getGeneratedColumnsData} from './inputsGeneration';
 
+// Varied numerical input specification
 export type VariedNumericalInputInfo = {
   prop: DG.Property,
   min: number,
   max: number
 };
 
+// Fixed input specification
 export type FixedInputItem = {
   name: string,
   value: any
 };
 
+// Returns column of inputs that are used in VSA
 function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
   randomData: Float32Array): DG.Column {
   const length = randomData.length;
@@ -26,6 +31,10 @@ function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
 
   const columnSource = column.getRawData();
 
+  /* REMARK. 
+     Elements of the array randomData (uniform distribution on [0, 1]) are scaled
+     to the range [min, max], where min & max are defined by numInputInfo. */
+
   const step = numInputInfo.max - numInputInfo.min;
 
   for (let i = 0; i < length; ++i)
@@ -34,11 +43,14 @@ function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
   return column;
 }
 
+// Returns columns of varied numerical inputs that are used in VSA
 export function getVariedNumericalInputColumns(samplesCount: number,
   inputsInfo: VariedNumericalInputInfo[]): DG.Column[] {
   const dimension = inputsInfo.length;
 
+  // Get random data with the uniform distribution on [0, 1]
   const randData = getGeneratedColumnsData(samplesCount, dimension);
 
+  // Create & return an array of columns of varied numerical inputs
   return [...Array(dimension).keys()].map((i) => getNumericalInputCol(inputsInfo[i], randData[i]));
 }
