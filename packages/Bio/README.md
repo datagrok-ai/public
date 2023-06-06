@@ -7,7 +7,7 @@ and antibodies.
 ## Notations
 
 [@datagrok/bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) can ingest data in multiple file
-formats (such as fasta o csv) and multiple notations for natural and modified residues, aligned and non-aligned forms,
+formats (such as fasta or csv) and multiple notations for natural and modified residues, aligned and non-aligned forms,
 nucleotide and amino acid sequences. The sequences are automatically detected and classified, while preserving their
 initial notation. Datagrok allows you to convert sequences between different notations as well.
 
@@ -40,7 +40,7 @@ For multiple-sequence alignment, Datagrok uses the “kalign” that relies on W
 [Lassmann, Timo. _Kalign 3: multiple sequence alignment of large data sets._ **Bioinformatics** (2019).pdf](https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btz795/30314127/btz795.pdf).
 “kalign“ is suited for sequences containing only natural monomers. Sequences of a particular column can be analyzed
 using MSA algorithm available at the top menu. Aligned sequences can be inspected for base composition
-at the position of MSA result.
+at the position of MSA result. User is also able to specify custom gap open, gap extend and terminal gap penalties for alignment.
 
 ![MSA and base composition analysis](
 ../../help/uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif "MSA analysis")
@@ -48,8 +48,6 @@ at the position of MSA result.
 See:
 
 * [runKalign()](src/utils/multiple-sequence-alignment.ts)
-
-TODO: MSA with PepSeA
 
 ## Splitting to monomers
 
@@ -121,9 +119,9 @@ Datagrok allows visualizing multidimensional sequence space using a dimensionali
 Several distance-based dimensionality reduction algorithms are available, such as UMAP or t-SNE.
 The sequences are projected to 2D space closer if they correspond to similar structures, and farther
 otherwise. The tool for analyzing molecule collections is called 'Sequence space' and exists in
-the Bio package.
+the Bio package. Depending on the sequence type, different distance functions will be used, like [Levenstein](https://en.wikipedia.org/wiki/Levenshtein_distance) for DNA/RNA, [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) for Proteins and [Hamming](https://en.wikipedia.org/wiki/Hamming_distance) for already aligned sequences. The process is conducted in web-workers and is parallelized, which yields very fast and non interupting computing.
 
-To launch the analysis from the top menu, select Bio | Sequence space.
+To launch the analysis from the top menu, select Bio | Structure | Sequence space.
 
 ![Sequence space](../../help/uploads/macromolecules/sequence_space.gif)
 
@@ -137,11 +135,28 @@ Activity cliffs tool finds pairs of sequences where small changes in the sequenc
 changes in activity or any other numerical property. open the tool from a top menu by selecting.
 Similarity cutoff and similarity metric are configurable. As in Sequence space, you can select
 from different dimensionality reduction algorithms.
+A custom scatter plot with cliffs will be added to the right side of the grid. User has an option to show only cliffs and also to inspect them and highligh differences between simmilar sequences.  
 
-To launch the analysis from the top menu, select Bio | Sequence Activity Cliffs.
+To launch the analysis from the top menu, select Bio | SAR | Sequence Activity Cliffs.
 
 ![Running activity cliffs](../../help/uploads/macromolecules/activity_cliffs_open.gif)
 
 See:
 
 * [getActivityCliffs()](../../libraries/ml/src/viewers/activity-cliffs.ts)
+
+## Similarity Search
+
+Similarity Search tool allows user to find sequences that are most similar to target sequence. The tool can be accessed from the top menu of bio. It first constructs the distance matrix for all sequences, and then uses it to find most similar ones to the selection. Upon selecting similar sequences from the docked grid bellow, detailed difference will be shown in the context menu.
+
+To launch the searcg from the top menu, select Bio | Search | Similarity Search
+
+![Running similarity search](../../help/uploads/macromolecules/similarity_search.gif)
+
+## Diversity Search
+
+Diversity Search tool allows user to find sequences that are most diverse in given dataset. The tool can be accessed from the top menu of bio. By default, number of diverse sequneces will be 10.
+
+To launch the searcg from the top menu, select Bio | Search | Diversity Search
+
+![Running diversity search](../../help/uploads/macromolecules/diversity_search.gif)
