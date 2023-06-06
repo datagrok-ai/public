@@ -102,7 +102,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
             p.outlier = !p.outlier;
             // temporarily works only for JSON structure
-            if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
+            if (!data.series![i].parameters && gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
               const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
               gridCellValue.series![i].points[j].outlier = p.outlier;
               gridCell.cell.value = JSON.stringify(gridCellValue);
