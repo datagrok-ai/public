@@ -4,10 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {getSequenceMolecularWeight} from './molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {DimensionalityReducer, IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {
   createDimensinalityReducingWorker,
-  IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
