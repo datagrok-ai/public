@@ -4,7 +4,7 @@ on:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
-  lint:
+  lint-name:
     name: Lint name
     runs-on: ubuntu-20.04
     steps:

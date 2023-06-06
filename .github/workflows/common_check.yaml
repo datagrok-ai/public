@@ -9,10 +9,10 @@ on:
     outputs:
       continue:
         description: "Run nested actions if checks passed"
-        value: ${{ jobs.check.outputs.continue }}
+        value: ${{ jobs.check-merge-commit.outputs.continue }}
 
 jobs:
-  check:
+  check-merge-commit:
     name: Check merge commit
     runs-on: ubuntu-20.04
     outputs:
