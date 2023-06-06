@@ -17,9 +17,9 @@ jobs:
 
   build:
     name: Build maven
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       image_exists: ${{ steps.get_version.outputs.image_exists }}
@@ -75,9 +75,9 @@ jobs:
 
   docker:
     name: Build Docker
-    needs: [build, check-commit]
+    needs: [build, common-check]
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3

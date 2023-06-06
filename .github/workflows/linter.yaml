@@ -13,9 +13,9 @@ jobs:
 
   super-linter:
     name: Super Lint Code Base
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -69,9 +69,9 @@ jobs:
 
   markdown:
     name: MarkdownLint
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -92,9 +92,9 @@ jobs:
 
   commit:
     name: Lint Commit message
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3

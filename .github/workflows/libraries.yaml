@@ -22,9 +22,9 @@ jobs:
 
   metadata:
     name: Check changes
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -105,8 +105,8 @@ jobs:
 
   publish:
     name: Build and publish to npm
-    needs: [metadata, check-commit]
-    if: needs.metadata.outputs.continue == 'yes' && needs.check-commit.outputs.continue == 'true'
+    needs: [metadata, common-check]
+    if: needs.metadata.outputs.continue == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false

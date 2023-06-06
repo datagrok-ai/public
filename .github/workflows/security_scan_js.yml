@@ -23,9 +23,9 @@ jobs:
 
   codeql:
     name: CodeQL static analysis
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     permissions:
       security-events: write
     steps:
