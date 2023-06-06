@@ -5,7 +5,7 @@ import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParame
 import {before, category, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { searchSubstructure } from '../package';
+import { chemSubstructureSearchLibrary } from '../chem-searches';
 
 export const testSubstructure = 'C1CC1';
 //csv with C1CC1 as substructure in pos 0 and 2
@@ -155,9 +155,70 @@ M  END
 `, [2, 3]);
   });
 
-  test('substructureSearchLibrary', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip") :
+  test('search_withoutSubstructLibrary_WithoutFp_benzene', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
       grok.data.demo.molecules(500);
-    await searchSubstructure(df.col('smiles')!, 'c1ccccc1', '');
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', false, false);
   });
+
+  test('search_withoutSubstructLibrary_WithFp_benzene', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', true, false);
+  });
+
+  test('search_withSubstructLibrary_benzene', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', false, true);
+  });
+
+  test('search_withoutSubstructLibrary_WithoutFp_aspirin', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CC(Oc1ccccc1C(O)=O)=O', false, false);
+  });
+
+  test('search_withoutSubstructLibrary_WithFp_aspirin', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CC(Oc1ccccc1C(O)=O)=O', true, false);
+  });
+
+  test('search_withSubstructLibrary_aspirin', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CC(Oc1ccccc1C(O)=O)=O', false, true);
+  });
+
+  test('search_withoutSubstructLibrary_WithoutFp_3_benzene_rings', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1cc2cc3ccccc3cc2cc1', false, false);
+  });
+
+  test('search_withoutSubstructLibrary_WithFp_3_benzene_rings', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1cc2cc3ccccc3cc2cc1', true, false);
+  });
+
+  test('search_withSubstructLibrary_complex_3_benzene_rings', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1cc2cc3ccccc3cc2cc1', false, true);
+  });
+
+  async function performanceTestWithConsoleLog(molCol: DG.Column, query: string, 
+    usePattern: boolean, useSubstructLib: boolean) {
+    const startTime = performance.now();
+    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, useSubstructLib);
+    const midTime1 = performance.now();
+    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, useSubstructLib);
+    const midTime2 = performance.now();
+
+    console.log(`Use patten fp: ${usePattern}, use SubstructLibrary: ${useSubstructLib}`)
+    console.log(`first Call to substructure search took ${midTime1 - startTime} milliseconds`);
+    console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
+  }
 });

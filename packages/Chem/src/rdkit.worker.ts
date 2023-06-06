@@ -21,10 +21,10 @@ ctx.addEventListener('message', async (e: any) => {
     _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
     port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {
-    const result = _rdKitServiceWorker!.initMoleculesStructures(args[0]);
+    const result = _rdKitServiceWorker!.initMoleculesStructures(args[0], args[1]);
     port.postMessage({op: op, retval: result});
   } else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE) {
-    const result = _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2]);
+    const result = _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2], args[3]);
     port.postMessage({op: op, retval: result});
   } else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
     _rdKitServiceWorker!.freeMoleculesStructures();

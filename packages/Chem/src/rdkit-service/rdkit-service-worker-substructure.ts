@@ -1,6 +1,6 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {getMolSafe} from '../utils/mol-creation_rdkit';
+import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { RuleId } from '../panels/structural-alerts';
@@ -29,9 +29,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     super(module, webRoot);
   }
 
-  initMoleculesStructures(molecules: string[]): number {
+  initMoleculesStructures(molecules: string[], useSubstructLib?: boolean): number {
+    console.log(`initMoleculesStructures`);
     this.freeMoleculesStructures();
-    this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
+    useSubstructLib ? this._substructLibrary = new this._rdKitModule.SubstructLibrary() : 
+      this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
     let malformed = 0;
     for (let i = 0; i < molecules.length; ++i) {
       const item = molecules[i];
@@ -40,7 +42,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         const mol = molSafe.mol;
         if (mol) {
           mol.is_qmol = molSafe.isQMol;
-          this._rdKitMols[i] = mol;
+          if (useSubstructLib) {
+            this._substructLibrary?.add_trusted_smiles(mol.get_smiles());
+            mol.delete();
+          } else
+            this._rdKitMols![i] = mol;
         } else
           malformed++;
       }
@@ -48,68 +54,16 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return malformed;
   }
 
-  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, bitset?: boolean[]): string {
-    const matches: number[] = [];
-    if (this._rdKitMols === null)
+  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[], useSubstructLib?: boolean): string {
+    let matches: number[] = [];
+    if (this._rdKitMols === null && !molecules?.length && !useSubstructLib)
       return '[' + matches.join(', ') + ']';
-
-    let queryMol = null;
-
-    if (isMolBlock(queryMolString)) {
-      if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
-        queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
-      else {
-        try {
-          queryMol = this._rdKitModule.get_qmol(queryMolString);
-          queryMol.set_aromatic_form();
-        } catch (e) {
-          if (queryMol) {
-            queryMol.delete();
-            queryMol = null;
-          }
-        }
-      }
-    } else { // not a molblock
-      try {
-        queryMol = this._rdKitModule.get_qmol(queryMolString);
-      } catch (e) {}
-      if (queryMol !== null) {
-        const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
-        if (mol !== null) { // check the qmol is proper
-          const match = mol.get_substruct_match(queryMol);
-          if (match === '{}') {
-            queryMol.delete(); //remove mol object previously stored in queryMol
-            queryMol = mol;
-          } else
-            mol.delete();
-        } // else, this looks to be a real SMARTS
-      } else { // failover to queryMolBlockFailover
-        // possibly get rid of fall-over in future
-        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol;
-      }
-    }
-
+      
+    let queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
+    
     if (queryMol !== null) {
-      if (bitset) {
-        for (let i = 0; i < bitset.length; ++i) {
-          try { //get_substruct_match can potentially throw an exception, need to catch
-            // Is patternFP iff?
-            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
-              matches.push(i);
-          } catch {
-            continue;
-          }
-        }
-      } else {
-        for (let i = 0; i < this._rdKitMols!.length; ++i) {
-          try {
-            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
-              matches.push(i);
-          } catch {
-            continue;
-          }
-        }
-      }
+      matches = useSubstructLib ? this.searchWithSubstructLib(queryMol) :
+        molecules ? this.searchWithPatternFps(queryMol, molecules) : this.searchWithoutPatternFps(queryMol);
       queryMol.delete();
     } else
       throw new Error('Chem | Search pattern cannot be set');
@@ -117,7 +71,48 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return '[' + matches.join(', ') + ']';
   }
 
+  searchWithSubstructLib(queryMol: RDMol) {
+    return JSON.parse(this._substructLibrary!.get_matches(queryMol));
+  } 
+
+  searchWithPatternFps(queryMol: RDMol, molecules: string[]): number[] {
+    const matches: number[] = [];
+    let mol: RDMol | null = null;
+    for (let i = 0; i < molecules.length; ++i) {
+          try{
+            mol = getMolSafe(molecules[i], {}, this._rdKitModule).mol;
+            if (mol) {
+              if (mol.get_substruct_match(queryMol) !== '{}')
+                matches.push(i);
+            }
+          } catch {
+            continue;
+          } finally {
+            mol?.delete();
+          }
+    }
+    return matches;
+  }
+
+  searchWithoutPatternFps(queryMol: RDMol): number[] {
+    const matches: number[] = [];
+    for (let i = 0; i < this._rdKitMols!.length; ++i) {
+      try {
+        if (this._rdKitMols![i] && this._rdKitMols![i]!.get_substruct_match(queryMol) !== '{}')
+          matches.push(i);
+      } catch {
+        continue;
+      }
+    }
+    return matches;
+  }
+
+
   freeMoleculesStructures(): void {
+    if (this._substructLibrary){
+      this._substructLibrary.delete();
+      this._substructLibrary = null;
+    }
     if (this._rdKitMols !== null) {
       for (const mol of this._rdKitMols!)
         mol?.delete();

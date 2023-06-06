@@ -13,11 +13,12 @@ import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import { getMolSafe } from './utils/mol-creation_rdkit';
+import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
 
 const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
   molsCreatedForVersion = '.mols.created.for.version',
+  substrLibCreatedForVersion = 'substr.lib.created.for.version',
 }
 
 let lastColumnInvalidated: string = '';
@@ -81,17 +82,20 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   return diversities;
 }
 
-function colInvalidated(col: DG.Column, createMols: boolean): Boolean {
+function colInvalidated(col: DG.Column, createMols: boolean, useSubstructLib?: boolean): Boolean {
   return (lastColumnInvalidated == col.name &&
     col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version) &&
-    (!createMols || col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version)));
+    (!createMols || useSubstructLib ?
+      col.getTag(FING_COL_TAGS.substrLibCreatedForVersion) == String(col.version) :
+      col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version)));
 }
 
-async function _invalidate(molCol: DG.Column, createMols: boolean) {
-  if (!colInvalidated(molCol, createMols)) {
+async function _invalidate(molCol: DG.Column, createMols: boolean, useSubstructLib?: boolean) {
+  if (!colInvalidated(molCol, createMols, useSubstructLib)) {
     if (createMols) {
-      await (await getRdKitService()).initMoleculesStructures(molCol.toList());
-      molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 2));
+      await (await getRdKitService()).initMoleculesStructures(molCol.toList(), useSubstructLib);
+      useSubstructLib ? molCol.setTag(FING_COL_TAGS.substrLibCreatedForVersion, String(molCol.version + 2)) :
+        molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 2));
     }
     lastColumnInvalidated = molCol.name;
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
@@ -158,28 +162,27 @@ async function getUint8ArrayFingerprints(
   }
 }
 
-function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: Uint8Array[]): BitArray {
+function substructureSearchPatternsMatch(queryMolString: string, querySmarts: string, fgs: Uint8Array[]): number[] {
   const patternFpUint8Length = 256;
-  const result = new BitArray(fgs.length, false);
-  let queryMol = null;
-  try {
-    queryMol = getRdKitModule().get_mol(molString, '{"mergeQueryHs":true}');
-  } catch (e2) {
-    queryMol?.delete();
-    queryMol = null;
-    if (querySmarts !== null && querySmarts !== '')
-      queryMol = getRdKitModule().get_qmol(querySmarts);
-    else
-      throw new Error('Chem | SMARTS not set');
-  }
-  const fpRdKit = queryMol.get_pattern_fp_as_uint8array();
-  checkEl:
-  for (let i = 0; i < fgs.length; ++i) {
-    for (let j = 0; j < patternFpUint8Length; ++j) {
-      if ((fgs[i][j] & fpRdKit[j]) != fpRdKit[j])
-        continue checkEl;
+  const result: number[] = [];
+  let queryMol = getQueryMolSafe(queryMolString, querySmarts, getRdKitModule());
+
+  if (queryMol) {
+    try {
+      const fpRdKit = queryMol.get_pattern_fp_as_uint8array();
+      checkEl:
+      for (let i = 0; i < fgs.length; ++i) {
+        if (fgs[i]) {
+          for (let j = 0; j < patternFpUint8Length; ++j) {
+            if ((fgs[i][j] & fpRdKit[j]) != fpRdKit[j])
+              continue checkEl;
+          }
+          result.push(i);
+        }
+      }
+    } catch {
+      return result;
     }
-    result.setBit(i, true, false);
   }
   return result;
 }
@@ -223,7 +226,8 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 }
 
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, usePatternFingerprints = false)
+  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, usePatternFingerprints = false,
+  useSubstructLib?: boolean)
   : Promise<DG.BitSet> {
   await chemBeginCriticalSection();
   try {
@@ -231,12 +235,14 @@ export async function chemSubstructureSearchLibrary(
     if (molString.length != 0) {
       let matches: number[];
       if (usePatternFingerprints) {
-        const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false);
-        const bitset: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
-        matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, bitset);
+        const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false);
+        const indexes: number[] = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
+        const filteredRows: string[] = (molStringsColumn.toList()).filter((val, index) => indexes.includes(index));
+        const matchedIndexes = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredRows, false);
+        matches = indexes.filter((val, index) => matchedIndexes.includes(index));
       } else {
-        await _invalidate(molStringsColumn, true);
-        matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover);
+        await _invalidate(molStringsColumn, true, useSubstructLib);
+        matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, undefined, useSubstructLib);
       }
       for (const match of matches)
         result.set(match, true, false);

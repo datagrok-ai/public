@@ -57,22 +57,24 @@ export class RdKitService {
     );
   }
 
-  async initMoleculesStructures(molecules: string[])
+  async initMoleculesStructures(molecules: string[], useSubstructLib?: boolean)
     : Promise<any> {
     return this._initParallelWorkers(molecules, (i: number, segment: any) =>
-      this.parallelWorkers[i].initMoleculesStructures(segment),
+      this.parallelWorkers[i].initMoleculesStructures(segment, useSubstructLib),
     () => {});
   }
 
-  async searchSubstructure(query: string, queryMolBlockFailover: string, bitset?: BitArray): Promise<number[]> {
+  async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], useSubstructLib?: boolean): Promise<number[]> {
     const t = this;
+    if (!this.segmentLength)
+      this.segmentLength = Math.floor(length / this.workerCount);
     return this._doParallel(
       (i: number, nWorkers: number) => {
-        return bitset ?
+        return molecules ?
           t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, i < (nWorkers - 1) ?
-            bitset.getRangeAsList(i * this.segmentLength, (i + 1) * this.segmentLength) :
-            bitset.getRangeAsList(i * this.segmentLength, bitset.length)) :
-          t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover);
+          molecules.slice(i * t.segmentLength, (i + 1) * t.segmentLength) :
+          molecules.slice(i * t.segmentLength, length)) :
+          t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, undefined, useSubstructLib);
       },
       (data: any) => {
         for (let k = 0; k < data.length; ++k) {

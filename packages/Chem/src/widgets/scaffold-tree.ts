@@ -53,7 +53,7 @@ function value(node: TreeViewNode): ITreeNode {
 }
 
 function getMol(molString : string) : RDMol | null {
-  return getMolSafe(molString, {mergeQueryHs:true, kekulize: true}, _rdKitModule, true, false).mol;
+  return getMolSafe(molString, {mergeQueryHs:true, kekulize: true}, _rdKitModule, true).mol;
 }
 
 function processUnits(molPBlok : string): string {
