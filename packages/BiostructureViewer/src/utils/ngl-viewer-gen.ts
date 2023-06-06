@@ -19,7 +19,7 @@ export async function nglViewerGen(): Promise<void> {
 const TRIPOS_ATOM_LINE = '@<TRIPOS>ATOM';
 const TRIPOS_BOND_LINE = '@<TRIPOS>BOND';
 
-function replaceCoordsToMol2(mol2: string, x: number[], y: number[], z: number[]): string {
+function replaceCoordsToMol2(mol2: string, _x: number[], _y: number[], _z: number[]): string {
   const atomLinePos = mol2.indexOf(TRIPOS_ATOM_LINE);
   if (atomLinePos == -1) throw new Error('Invalid data');
   const bondLinePos = mol2.indexOf(TRIPOS_BOND_LINE, atomLinePos);

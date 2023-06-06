@@ -1,2 +1,3 @@
 bin/commands/*.js
 test-report.html
+test-console-output.log

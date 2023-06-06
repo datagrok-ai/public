@@ -86,37 +86,41 @@ category('Distance', async () => {
 
   test('needleman-custom-sub', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
-      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1}
+      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1},
     );
     _testDistance(prot1, prot2, df, -4);
   });
 
   test('needleman-custom-del', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
-      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1}
+      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1},
     );
     _testDistance(prot3, prot4, df, -1);
   });
 
   test('needleman-custom-zero-extend', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
-      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 0}
+      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 0},
     );
     _testDistance(prot5, prot6, df, -2);
   });
 
   test('needleman-custom-half-extend', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
-      {scoringMatrix, alphabetIndexes, gapOpen: 2, gapExtend: 1}
+      {scoringMatrix, alphabetIndexes, gapOpen: 2, gapExtend: 1},
     );
     _testDistance(prot5, prot6, df, 2);
   });
 
   test('needleman-custom-same-extend', async () => {
     const df = mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](
-      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1}
+      {scoringMatrix, alphabetIndexes, gapOpen: 1, gapExtend: 1},
     );
-    _testDistance(prot5, prot6, df, 1);
+    if (DG.Test.isInBenchmark) {
+      const seq1 = Array(10000).fill('FWRY').join('');
+      const seq2 = Array(10000).fill('FYWRRY').join('');
+      _testDistance(seq1, seq2, df, -20000);
+    } else { _testDistance(prot5, prot6, df, 1); }
   });
 });
 

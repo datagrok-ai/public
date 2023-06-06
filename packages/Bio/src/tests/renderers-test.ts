@@ -7,7 +7,6 @@ import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
 import * as C from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
@@ -156,7 +155,7 @@ category('renderers', () => {
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     // check newColumn with UnitsHandler constructor
-    const uh: UnitsHandler = new UnitsHandler(msaSeqCol);
+    const _uh: UnitsHandler = new UnitsHandler(msaSeqCol);
 
     dfList.push(df);
     tvList.push(tv);
@@ -184,7 +183,7 @@ category('renderers', () => {
     expect(resCellRenderer, 'sequence');
 
     // check tgtCol with UnitsHandler constructor
-    const uh: UnitsHandler = new UnitsHandler(tgtCol);
+    const _uh: UnitsHandler = new UnitsHandler(tgtCol);
   }
 
   async function _selectRendererBySemType() {

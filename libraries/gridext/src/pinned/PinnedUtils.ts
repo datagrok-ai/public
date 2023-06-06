@@ -297,7 +297,7 @@ export function registerPinnedColumns() {
   grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
     const view : DG.TableView = layout.view as TableView;
     if(view === null) {
-      console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
+      //console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
       return;
     }
 

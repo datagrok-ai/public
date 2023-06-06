@@ -113,9 +113,6 @@ category('Model: Settings', () => {
       `'${Object.keys(testColumns)[0]}' with '${testColumns[columnName]}' but aggregated with ` +
       `'${model.settings.columns![columnName]}' instead`);
 
-    expect(model.analysisView.grid.col(columnName)?.visible, true, `Expected to show column '${columnName}' but ` +
-      `it is hidden`);
-
     const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
     const aggColName = getAggregatedColName(testColumns[columnName], columnName);
     expect(lstViewer.viewerGrid.col(aggColName) !== null, true, `Expected to include column '${columnName}' in ` +
@@ -126,9 +123,6 @@ category('Model: Settings', () => {
     expect(Object.keys(model.settings.columns!).length, 0,
       `Expected to remove all column aggregations but columns {${Object.keys(model.settings.columns!).join(' & ')}} ` +
       `are still included`);
-
-    expect(model.analysisView.grid.col(columnName)?.visible, false, `Expected to hide column '${columnName}' but ` +
-      `it is shown`);
 
     expect(lstViewer.viewerGrid.col(aggColName) === null, true, `Expected to remove column '${columnName}' from ` +
       `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is still present`);

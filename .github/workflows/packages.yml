@@ -9,11 +9,22 @@ on:
   push:
     paths:
       - 'packages/**'
+  pull_request:
+    paths:
+      - 'packages/**'
 
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   matrix:
     name: Check changes
     runs-on: ubuntu-20.04
+    needs: common-check
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
@@ -26,7 +37,7 @@ jobs:
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]]; then
               commit="$(git log --format="%H" -n 1 --no-merges)"
             else
               commit=${{ github.sha }}
@@ -96,7 +107,8 @@ jobs:
     name: Test and publish to npm
     needs:
       - matrix
-    if: needs.matrix.outputs.publish == 'yes'
+      - common-check
+    if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     env:
       HOST: GitHubAction
@@ -235,15 +247,16 @@ jobs:
               cd node_modules/$dep
               count=0
               retries=5
+              echo "Publishing $dep to ${HOST}..."
               until grok publish ${HOST}; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
                 if [ $count -lt "$retries" ]; then
-                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' for $dep in $wait seconds..."
                   sleep $wait
                 else
-                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}' for $dep."
                   exit $exit
                 fi
               done
@@ -275,8 +288,19 @@ jobs:
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
-        run: npm run test -- --skip-build --skip-publish
+        run: npm run test -- --skip-build --skip-publish --record --csv
         working-directory: packages/${{ matrix.package }}
+      - name: Upload Artifact
+        if: always() && steps.test-package.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package }}.test-results
+          path: |
+            packages/${{ matrix.package }}/test-record.mp4
+            packages/${{ matrix.package }}/test-report.csv
+            packages/${{ matrix.package }}/test-console-output.log
+          retention-days: 14
+          if-no-files-found: warn
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |

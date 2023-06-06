@@ -23,15 +23,10 @@ import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import '../css/injected-dendrogram.css';
 
 export function injectTreeForGridUI2(
-  grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
+  grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions,
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
   const treeNb: GridNeighbor = attachDivToGrid(grid, neighborWidth);
-  // const treeDiv = ui.div();
-  // treeRoot.appendChild(treeDiv);
-  // treeRoot.style.backgroundColor = '#FFF0F0';
-  // treeRoot.style.setProperty('overflow-y', 'hidden', 'important');
-  // TODO: adapt tree: bio.NodeType to MarkupNodeType
   if (treeRoot) markupNode(treeRoot);
   const totalLength: number = treeRoot ? (treeRoot as MarkupNodeType).subtreeLength! : 1;
   if (Number.isNaN(totalLength))
@@ -100,8 +95,6 @@ export function injectTreeForGridUI2(
   function alignGridWithTree(): void {
     const [viewedRoot] = th.setGridOrder(treeRoot, grid, leafColName);
     if (viewedRoot) markupNode(viewedRoot);
-    // const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
-    //   {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
 
     renderer.treeRoot = viewedRoot as MarkupNodeType;
   }
@@ -250,7 +243,7 @@ export function injectTreeForGridUI2(
       .find((leaf) => currentLeafName == leaf.name) ?? null;
     const current: RectangleTreeHoverType<MarkupNodeType> | null = currentLeaf ? {
       node: currentLeaf,
-      nodeHeight: placer!.getNodeHeight(renderer.treeRoot, currentLeaf)!
+      nodeHeight: placer!.getNodeHeight(renderer.treeRoot, currentLeaf)!,
     } : null;
 
     renderer.current = current;
@@ -268,7 +261,7 @@ export function injectTreeForGridUI2(
       .find((leaf) => mouseOverLeafName == leaf.name) ?? null;
     const mouseOver: RectangleTreeHoverType<MarkupNodeType> | null = mouseOverLeaf ? {
       node: mouseOverLeaf,
-      nodeHeight: placer!.getNodeHeight(renderer.treeRoot, mouseOverLeaf)!
+      nodeHeight: placer!.getNodeHeight(renderer.treeRoot, mouseOverLeaf)!,
     } : null;
 
     renderer.mouseOver = mouseOver;
@@ -340,7 +333,7 @@ export function injectTreeForGridUI2(
     });
 
     const infoContainer = ui.divV(
-      [sortInfoDiv, realignButton]
+      [sortInfoDiv, realignButton],
     );
 
     treeOverlay.appendChild(infoContainer);

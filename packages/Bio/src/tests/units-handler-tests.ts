@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {ALPHABET, NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -33,44 +33,44 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H2.N.
 
 category('UnitsHandler', () =>{
   test('Seq-Fasta', async () =>{
-    const [df, uh] = await loadCsvWithDetection(seqDna);
+    const [_df, uh] = await loadCsvWithDetection(seqDna);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), false);
   });
 
   test('Seq-Fasta-MSA', async () =>{
-    const [df, uh] = await loadCsvWithDetection(seqDnaMsa);
+    const [_df, uh] = await loadCsvWithDetection(seqDnaMsa);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), true);
   });
 
   test('Seq-Fasta-units', async () =>{
-    const [df, uh] = await loadCsvWithTag(seqDna, DG.TAGS.UNITS, NOTATION.FASTA);
+    const [_df, uh] = await loadCsvWithTag(seqDna, DG.TAGS.UNITS, NOTATION.FASTA);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), false);
   });
 
   test('Seq-Fasta-MSA-units', async () =>{
-    const [df, uh] = await loadCsvWithTag(seqDnaMsa, DG.TAGS.UNITS, NOTATION.FASTA);
+    const [_df, uh] = await loadCsvWithTag(seqDnaMsa, DG.TAGS.UNITS, NOTATION.FASTA);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), true);
   });
 
   test('Seq-Helm', async () =>{
-    const [df, uh] = await loadCsvWithTag(seqHelm, DG.TAGS.UNITS, NOTATION.HELM);
+    const [_df, uh] = await loadCsvWithTag(seqHelm, DG.TAGS.UNITS, NOTATION.HELM);
     expect(uh.notation, NOTATION.HELM);
     expect(uh.isHelm(), true);
   });
 
   test('Seq-UN', async () =>{
-    const [df, uh] = await loadCsvWithTag(seqUn, DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    const [_df, uh] = await loadCsvWithTag(seqUn, DG.TAGS.UNITS, NOTATION.SEPARATOR);
     expect(uh.notation, NOTATION.SEPARATOR);
     expect(uh.separator, '-');
     expect(uh.alphabet, ALPHABET.UN);
   });
 
   test('Seq-UN-auto', async () =>{
-    const [df, uh] = await loadCsvWithDetection(seqUn);
+    const [_df, uh] = await loadCsvWithDetection(seqUn);
     expect(uh.notation, NOTATION.SEPARATOR);
     expect(uh.separator, '-');
     expect(uh.alphabet, ALPHABET.UN);

@@ -9,7 +9,7 @@ import {TreeHelper} from '../../utils/tree-helper';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 function canvasToTreePoint<TNode extends MarkupNodeType>(
-  canvasPoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>
+  canvasPoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>,
 ): DG.Point {
   const canvasWidth = canvas.clientWidth - placer.padding.left - placer.padding.right;
   const res: DG.Point = new DG.Point(
@@ -19,7 +19,7 @@ function canvasToTreePoint<TNode extends MarkupNodeType>(
 }
 
 function treeToCanvasPoint<TNode extends MarkupNodeType>(
-  treePoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>
+  treePoint: DG.Point, canvas: HTMLCanvasElement, placer: RectangleTreePlacer<TNode>,
 ): DG.Point {
   const canvasWidth = canvas.clientWidth - placer.padding.left - placer.padding.right;
   const res: DG.Point = new DG.Point(
@@ -61,7 +61,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   constructor(
     treeRoot: TNode | null, placer: RectangleTreePlacer<TNode>,
     mainStyler: ITreeStyler<TNode>, lightStyler: ITreeStyler<TNode>,
-    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>
+    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>,
   ) {
     super(treeRoot);
 
@@ -85,8 +85,8 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   /**
    * Leaves along axis has step 1 for every leaf.
    * Draw tree along all canvas height in terms of leaves' axis placement.
-   */
-  render(purpose: string): void {
+   * @param {string}_purpose 'reason for rerender'*/
+  render(_purpose: string): void {
     if (!this.view || !this.canvas) return;
 
     const ctx = this.canvas.getContext('2d')!;
@@ -99,7 +99,6 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
     const lengthRatio: number = plotWidth / this.placer.totalLength; // px/[length unit]
     const stepRatio: number = plotHeight / placerHeight; // px/[step unit, row]
 
-    const t1: number = Date.now();
     ctx.save();
     try {
       if (this.treeRoot) {
@@ -148,7 +147,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
             {
               ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
               leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-              styler: this.selectionStyler, totalLength: this.placer.totalLength
+              styler: this.selectionStyler, totalLength: this.placer.totalLength,
             },
             selection.node, selection.nodeHeight, []);
         }
@@ -192,16 +191,12 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
             this.mouseOver.node, this.mouseOver.nodeHeight, []);
         }
       }
-
-      // console.debug('');
-      // console.debug('');
     } catch (err: any) {
       const errMsg = errorToConsole(err);
       console.error('Dendrogram: CanvasTreeRenderer.render() error:\n' + errMsg);
       throw err;
     } finally {
       ctx.restore();
-      const t2: number = Date.now();
       // console.debug('Dendrogram: CanvasTreeRenderer.render(), ' + `ET: ${((t2 - t1) / 1000).toFixed(3)}`);
       this._onAfterRender.next({target: this, context: ctx, lengthRatio});
     }
@@ -299,7 +294,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
     this.mouseDragging = {pos: pos, top: this.placer.top, bottom: this.placer.bottom};
   }
 
-  protected canvasOnMouseUp(e: MouseEvent): void {
+  protected canvasOnMouseUp(_e: MouseEvent): void {
     this.mouseDragging = null;
   }
 
@@ -315,7 +310,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
       this.placer.update({
         top: md.top + deltaPosY,
-        bottom: md.bottom + deltaPosY
+        bottom: md.bottom + deltaPosY,
       });
     } else {
       // console.debug('CanvasTreeRender.onMouseMove() --- getNode() ---');

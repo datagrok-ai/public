@@ -14,35 +14,25 @@ interface IChemProperty {
   valueFunc: (mol: OCL.Molecule) => any;
 }
 
-const CHEM_PROPS : IChemProperty[] = [
-  {name: 'MW', type: DG.TYPE.FLOAT, valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().absoluteWeight},
-  {name: 'HBA', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).acceptorCount},
-  {name: 'HBD', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).donorCount},
-  {name: 'LogP', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).logP},
-  {name: 'LogS', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).logS},
-  {name: 'PSA', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).polarSurfaceArea},
-  {name: 'Rotatable bonds', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).rotatableBondCount},
-  {name: 'Stereo centers', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).stereoCenterCount},
-  {name: 'Molecule charge', type: DG.TYPE.INT, valueFunc: (m) => getMoleculeCharge(m)},
-];
-
-export function calcChemProperty(name: string, smiles: string) : any {
-  const mol = oclMol(smiles);
-  for (let n = 0; n < CHEM_PROPS.length; ++n) {
-    if (CHEM_PROPS[n].name === name)
-      return CHEM_PROPS[n].valueFunc(mol);
-  }
-  return null;
-}
+const PROP_MAP: {[k: string]: IChemProperty}  = {
+  'MW': {name: 'MW', type: DG.TYPE.FLOAT, valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().absoluteWeight},
+  'HBA': {name: 'HBA', type: DG.TYPE.INT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).acceptorCount},
+  'HBD': {name: 'HBD', type: DG.TYPE.INT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).donorCount},
+  'LogP': {name: 'LogP', type: DG.TYPE.FLOAT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).logP},
+  'LogS': {name: 'LogS', type: DG.TYPE.FLOAT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).logS},
+  'PSA': {name: 'PSA', type: DG.TYPE.FLOAT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).polarSurfaceArea},
+  'Rotatable bonds': {name: 'Rotatable bonds', type: DG.TYPE.INT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).rotatableBondCount},
+  'Stereo centers': {name: 'Stereo centers', type: DG.TYPE.INT, valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).stereoCenterCount},
+  'Molecule charge': {name: 'Molecule charge', type: DG.TYPE.INT, valueFunc: (m: OCL.Molecule) => getMoleculeCharge(m)},
+};
 
 export function getChemPropertyFunc(name: string) : null | ((smiles: string) => any) {
-  for (let n = 0; n < CHEM_PROPS.length; ++n) {
-    if (CHEM_PROPS[n].name === name) {
-      return (smiles: string) => {
-        const mol = oclMol(smiles);
-        return CHEM_PROPS[n].valueFunc(mol);
-      };
-    }
+  const p: IChemProperty = PROP_MAP[name];
+  if (p !== undefined) {
+    return (smiles: string) => {
+      const mol = oclMol(smiles);
+      return p.valueFunc(mol);
+    };
   }
   return null;
 }
@@ -72,7 +62,7 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     return new DG.Widget(ui.divText('Could not analyze properties'));
   }
 
-  function prop(p: IChemProperty, mol: OCL.Molecule) {
+  function prop(p: IChemProperty, mol: OCL.Molecule) : HTMLElement {
     const addColumnIcon = ui.iconFA('plus', () => {
       const molCol: DG.Column<string> = semValue.cell.column;
       const col : DG.Column = DG.Column.fromType(p.type,
@@ -89,7 +79,7 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
           }
         });
       semValue.cell.dataFrame.columns.add(col);
-    }, `Calculate ${name} for the whole table`);
+    }, `Calculate ${p.name} for the whole table`);
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
     $(addColumnIcon)
@@ -102,10 +92,10 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     return ui.divH([addColumnIcon, p.valueFunc(mol)], {style: {'position': 'relative'}});
   }
 
-  const map = {};
-  for (let n = 0; n < CHEM_PROPS.length; ++n)
-    (map as any)[CHEM_PROPS[n].name] = prop(CHEM_PROPS[n], mol);
-
+  const map : {[k: string]: HTMLElement} = {};
+  const props = Object.keys(PROP_MAP);
+  for (let n = 0; n < props.length; ++n)
+   map[props[n]] = prop(PROP_MAP[props[n]], mol);
 
   host.appendChild(ui.tableFromMap(map));
 

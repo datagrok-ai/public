@@ -55,7 +55,7 @@ export abstract class RcsbFv3dBase {
         unmount={this.unmount.bind(this)}
         fullScreen={this.fullScreenFlag}
       />,
-      element
+      element,
     );
   }
 
