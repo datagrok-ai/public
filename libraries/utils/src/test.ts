@@ -203,13 +203,14 @@ function addNamespace(s: string, f: DG.Func): string {
 export async function initAutoTests(packageId: string, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
-  if (moduleTests[autoTestsCatName] !== undefined) {
+  if (moduleTests[autoTestsCatName] !== undefined ||
+    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
-  const reg = new RegExp(/skip:\s+([^,\s]+)|wait:\s+(\d+)|cat:\s+([^,\s]+)/g);
+  const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)/g);
   for (const f of packFunctions) {
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
@@ -283,8 +284,9 @@ export async function runTests(options?: {category?: string, test?: string, test
     } catch (x: any) {
       value.afterStatus = x.toString();
     }
-    grok.shell.closeAll();
-    DG.Balloon.closeAll();
+    // Clear after category
+    // grok.shell.closeAll();
+    // DG.Balloon.closeAll();
     if (value.afterStatus)
       data.push({category: key, name: 'init', result: value.afterStatus, success: false, ms: 0, skipped: false});
     if (value.beforeStatus)
@@ -331,7 +333,7 @@ async function execTest(t: Test, predicate: string | undefined) {
     if (skip)
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     else
-      r = {success: true, result: await t.test() ?? 'OK', ms: 0, skipped: false};
+      r = {success: true, result: await timeout(t.test) ?? 'OK', ms: 0, skipped: false};
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
@@ -365,6 +367,23 @@ export async function awaitCheck(checkHandler: () => boolean,
       }
     }, interval);
   });
+}
+
+async function timeout(func: () => Promise<any>): Promise<any> {
+  let timeout: Timeout | null = null;
+  const timeoutPromise = new Promise<any>((_, reject) => {
+    //@ts-ignore
+    timeout = setTimeout(() => {
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject('EXECUTION TIMEOUT');
+    }, 30000);
+  });
+  try {
+    return await Promise.race([func(), timeoutPromise]);
+  } finally {
+    if (timeout)
+      clearTimeout(timeout);
+  }
 }
 
 export function isDialogPresent(dialogTitle: string): boolean {

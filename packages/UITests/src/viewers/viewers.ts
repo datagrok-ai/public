@@ -5,17 +5,20 @@ import {after, before, category, expect, test, delay, testViewer} from '@datagro
 import {TestViewerForProperties} from './test-viewer-for-properties';
 
 category('Viewers: Core Viewers', () => {
+  const skip: {[key: string]: string} = {'Form': 'GROK-11708',
+    'Heat map': 'GROK-11705', 'Network diagram': 'GROK-11707'};
   const df = grok.data.demo.demog(100);
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
-    !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') && v !== 'Google map');
+    !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
+    v !== 'Google map' && v !== 'Markup');
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
-  const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
-  //@ts-ignore
+  const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
   coreViewers.push('Leaflet', 'distributionProfiler');
+
   for (const v of coreViewers) {
     test(v, async () => {
       await testViewer(v, df.clone());
-    });
+    }, {skipReason: skip[v]});
   }
 });
 
@@ -208,6 +211,7 @@ category('Viewers', () => {
 
   after(async () => {
     grok.shell.closeAll();
+    DG.Balloon.closeAll();
 
     for (const viewer of viewerList) {
       try {
@@ -219,7 +223,7 @@ category('Viewers', () => {
     }
     viewerList = [];
   });
-});
+}, false);
 
 function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());

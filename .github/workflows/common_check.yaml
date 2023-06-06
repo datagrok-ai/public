@@ -7,13 +7,13 @@ on:
         required: false
         type: string
     outputs:
-      continue: 
+      continue:
         description: "Run nested actions if checks passed"
         value: ${{ jobs.check.outputs.continue }}
 
 jobs:
-  check:
-    name: Check changes
+  check-merge-commit:
+    name: Check merge commit
     runs-on: ubuntu-20.04
     outputs:
       continue: ${{ steps.merge-details.outputs.continue_action }}
@@ -25,8 +25,9 @@ jobs:
         run: |
           if [[ ${{ inputs.run_trigger }} != 'workflow_dispatch' ]] && { [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; };  then
             echo "continue_action=false" >> $GITHUB_OUTPUT
-            echo "This is a merge commit push. No actions will be run"
+            echo "The latest commit is a merge commit. GitHub actions wil be skipped"
+            echo "::notice title=Merge commit check::Latest commit is a merge from master. No actions will be run."
           else
             echo "continue_action=true" >> $GITHUB_OUTPUT
-            echo "This is no merge commit push. Actions will be run"
+            echo "The commit is not a merge commit. Actions will run normally"
           fi

@@ -5,15 +5,13 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
+import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {
-  DistanceMatrixWorker,
-} from '../workers/distance-matrix-calculator';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {MmDistanceFunctionsNames} from
   '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 type DataNodeDict = { [nodeName: string]: number };
 
 export const enum TAGS {
@@ -483,13 +481,13 @@ export class TreeHelper implements ITreeHelper {
     // Output distance matrix. reusing it saves a lot of memory
     let out: DistanceMatrix | null = null;
 
-    const distanceMatrixWorker = new DistanceMatrixWorker();
+    const distanceMatrixService = new DistanceMatrixService(true, false);
     const columns = colNames.map((name) => df.getCol(name));
     for (const col of columns) {
       let values: Float32Array;
       let isUsingNeedlemanWunsch: boolean = false;
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
-        values = await distanceMatrixWorker.calc(col.getRawData(), 'numericDistance');
+        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.NumericDistance, false);
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
         const uh = new UnitsHandler(col);
         // Use Hamming distance when sequences are aligned
@@ -497,7 +495,7 @@ export class TreeHelper implements ITreeHelper {
 
         if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
           isUsingNeedlemanWunsch = true;
-        values = await distanceMatrixWorker.calc(col.toList(), seqDistanceFunction);
+        values = await distanceMatrixService.calc(col.toList(), seqDistanceFunction, false);
       } else { throw new TypeError('Unsupported column type'); }
 
       if (!out) {
@@ -524,8 +522,7 @@ export class TreeHelper implements ITreeHelper {
         newMat = null;
       }
     }
-    distanceMatrixWorker.terminate();
-
+    distanceMatrixService.terminate();
     if (method === DistanceMetric.Euclidean && columns.length > 1)
       out?.sqrt();
 

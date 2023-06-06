@@ -199,9 +199,20 @@ export class PeptidesModel {
   }
 
   get analysisView(): DG.TableView {
-    this._analysisView ??=
-      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id) ??
-        grok.shell.addTableView(this.df);
+    if (this._analysisView === undefined) {
+      this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id);
+      if (this._analysisView === undefined) {
+        this._analysisView = grok.shell.addTableView(this.df);
+        const posCols = this.splitSeqDf.columns.names();
+
+        for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
+          const gridCol = this._analysisView.grid.columns.byIndex(colIdx)!;
+          gridCol.visible =
+            posCols.includes(gridCol.column!.name) || (gridCol.column!.name === C.COLUMNS_NAMES.ACTIVITY_SCALED);
+        }
+      }
+    }
+    
     if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1')
       grok.shell.v = this._analysisView;
 
@@ -343,7 +354,7 @@ export class PeptidesModel {
         this.clusterStats = this.calculateClusterStatistics();
         break;
       case 'grid':
-        this.postProcessGrids();
+        this.setGridProperties();
         break;
       case 'dendrogram':
         this.settings.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
@@ -490,7 +501,7 @@ export class PeptidesModel {
 
     this.setBitsetCallback();
 
-    this.postProcessGrids();
+    this.setGridProperties();
   }
 
   initMonomerPositionFilter(options: {cleanInit?: boolean, notify?: boolean} = {}): void {
@@ -1022,23 +1033,13 @@ export class PeptidesModel {
     this.isUserChangedSelection = true;
   }
 
-  postProcessGrids(): void {
-    const posCols = this.splitSeqDf.columns.names();
+  setGridProperties(props?: DG.IGridLookSettings): void {
     const sourceGrid = this.analysisView.grid;
-    const sourceGridCols = sourceGrid.columns;
-    const sourceGridColsLen = sourceGridCols.length;
-    const visibleColumns = Object.keys(this.settings.columns || {});
     const sourceGridProps = sourceGrid.props;
-    sourceGridProps.allowColSelection = false;
-    sourceGridProps.allowEdit = false;
-    sourceGridProps.showCurrentRowIndicator = false;
+    sourceGridProps.allowColSelection = props?.allowColSelection ?? false;
+    sourceGridProps.allowEdit = props?.allowEdit ?? false;
+    sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
-    for (let colIdx = 1; colIdx < sourceGridColsLen; ++colIdx) {
-      const gridCol = sourceGridCols.byIndex(colIdx)!;
-      const tableColName = gridCol.column!.name;
-      gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
-        visibleColumns.includes(tableColName);
-    }
   }
 
   closeViewer(viewerType: VIEWER_TYPE): void {
@@ -1105,13 +1106,13 @@ export class PeptidesModel {
         this.initMonomerPositionFilter({cleanInit: true});
         this.isInvariantMapTrigger = false;
       });
+      this.updateGrid();
     }
 
-    this.updateGrid();
     this.fireBitsetChanged(true);
-    this.analysisView.grid.invalidate();
     if (typeof this.settings.targetColumnName === 'undefined')
       this.updateMutationCliffs();
+    this.analysisView.grid.invalidate();
   }
 
   findViewer(viewerType: VIEWER_TYPE): DG.Viewer | null {

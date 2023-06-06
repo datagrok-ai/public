@@ -17,7 +17,7 @@ title: "Release History"
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../deploy/docker-compose.md)
+- [Docker-Compose](../deploy/docker-compose.mdx)
 
 
 ## 2023-05-25 1.15.1
@@ -366,7 +366,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
 ### Data Access
 
 * Improvements:
-  * Added the support of [CoreWeave Object Storage](../../../access/connectors/coreweave.md).
+  * Added the support of [CoreWeave Object Storage](../../../access/databases/connectors/coreweave.md).
   * Conducted Postgres harmonization, which includes complete types support and the addition of regex support in the string pattern for the connector.
   * The MySQL connector now fully supports all types.
   * Added the ability to display SQL views along with tables.

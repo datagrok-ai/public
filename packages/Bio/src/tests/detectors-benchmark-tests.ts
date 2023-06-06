@@ -121,7 +121,7 @@ category('detectorsBenchmark', () => {
     funcCall.callSync();
     const semType = funcCall.getOutputParamValue();
 
-    const col: DG.Column = funcCall.inputs.col;
+    const col: DG.Column = funcCall.inputs.col as unknown as DG.Column;
     if (semType) col.semType = semType;
     return col;
   }

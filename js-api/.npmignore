@@ -1,2 +1,5 @@
 **/*.ts
 !**/*.d.ts
+test-record.mp4
+test-report.csv
+test-console-output.log

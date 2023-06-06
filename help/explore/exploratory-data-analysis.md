@@ -28,8 +28,8 @@ _billions of rows_ at the speed of thought right in your browser.
 
 With Datagrok, you can:
 
-* [Seamlessly load data from any data source](../access/file-shares.mdx). Datagrok supports all popular databases,
-  multiple [file formats](../access/supported-formats.md) and is both data-agnostic and
+* [Seamlessly load data from any data source](../access/files/files.mdx). Datagrok supports all popular databases,
+  multiple [file formats](../access/files/supported-formats.md) and is both data-agnostic and
   domain-intelligent. <!--TODO link to a section on domains once ready-->
 
 * Visualize the data using domain-specific value renderers (such as molecules on scatter plot axes).

@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.96",
+  "version": "3.4.0",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1437,6 +1437,9 @@
         },
         "1.7.2": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.7.3": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -2682,6 +2685,9 @@
         },
         "1.2.15": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.16": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -2790,6 +2796,9 @@
         },
         "1.0.2": {
           "datagrok-api": "latest"
+        },
+        "1.0.3": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated tests for JDBC Providers",
@@ -2813,6 +2822,9 @@
         },
         "1.0.3": {
           "datagrok-api": "latest"
+        },
+        "1.0.4": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -2820,7 +2832,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/UITests"
-      }
+      },
+      "category": "Development"
     },
     "curves": {
       "dependencies": {

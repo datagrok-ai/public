@@ -673,7 +673,7 @@ export function saveAsFasta() {
   saveAsFastaUI();
 }
 
-//name: BioSubstructureFilter
+//name: Bio Substructure Filter
 //description: Substructure filter for macromolecules
 //tags: filter
 //output: filter result

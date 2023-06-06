@@ -22,10 +22,10 @@ export function radioButtonFilter() {
 
 :::tip
 
-If you are on version `^4.10.x` of `datagrok-tools`, you can use class decorators to register filters:
+If you are on version `^4.12.x` of `datagrok-tools`, you can use class decorators to register filters:
 
 ```ts
-@grok.functions.decorators.grokFilter({
+@grok.decorators.filter({
   semType: 'Country',
 })
 export class RadioButtonFilter extends DG.Filter {

@@ -640,9 +640,9 @@ property setter).
 
 [102]: ../../visualize/viewers/viewers.md "Datagrok Viewers"
 
-[103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L50 "DG.COLUMN_TYPE"
+[103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/consts.ts#L50 "DG.COLUMN_TYPE"
 
-[104]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L39 "NULL constants"
+[104]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/consts.ts#L39 "NULL constants"
 
 [105]: #column-data-types "Column data types"
 

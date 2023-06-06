@@ -5,7 +5,6 @@ import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
-import {decorators} from "./decorators/functions";
 import * as rxjs from "rxjs";
 import dayjs from "dayjs";
 declare let grok: any;
@@ -101,9 +100,6 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 /** Grok functions */
 export class Functions {
-  get decorators() {
-    return decorators;
-  }
 
   register(func: Func): void {
     api.grok_RegisterFunc(func);
@@ -219,19 +215,33 @@ export class Context {
  * */
 export class FuncCall extends Entity {
   public readonly dart: any;
-  public inputs: any;
-  public outputs: any;
+
+  /** Named input values. See {@link inputParams} for parameter metadata. */
+  public inputs: {[name: string]: FuncCallParam};
+
+  /** Named output values. See {@link outputParams} for parameter metadata. */
+  public outputs: {[name: string]: FuncCallParam};
+
+  /** Input parameter metadata. See {@link inputs} for parameter values. */
+  public inputParams: {[name: string]: FuncCallParam};
+
+  /** Output parameter metadata. See {@link outputs} for parameter values. */
+  public outputParams: {[name: string]: FuncCallParam};
+
   public aux: any;
   public options: any;
-  public inputParams: any;
-  public outputParams: any;
 
   constructor(dart: any) {
     super(dart);
+    // @ts-ignore
     this.inputs = new FuncCallParamMapProxy(this.dart, true);
+    // @ts-ignore
     this.outputs = new FuncCallParamMapProxy(this.dart, false);
+    // @ts-ignore
     this.inputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, true));
+    // @ts-ignore
     this.outputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, false));
+
     this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.dart));
     this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.dart));
   }
