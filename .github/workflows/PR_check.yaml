@@ -1,11 +1,11 @@
-name: Pull request name check
+name: PR check
 on:
   workflow_dispatch: { }
   pull_request:
 
 jobs:
-  pullrequest:
-    name: Lint PR name
+  lint:
+    name: Lint name
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code

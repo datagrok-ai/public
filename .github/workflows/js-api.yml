@@ -8,16 +8,17 @@ on:
     paths:
       - 'js-api/**'
 jobs:
-  check-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
     with:
       run_trigger: ${{ github.event_name }}
 
   version:
     name: Check version
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
       current_version: ${{ steps.check-version.outputs.current_version }}
@@ -130,8 +131,8 @@ jobs:
   build:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
-    needs: [version, check-commit] 
-    if: needs.check-commit.outputs.continue == 'true'
+    needs: [version, common-check] 
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -195,11 +196,11 @@ jobs:
   libraries:
     name: Check libraries
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.replace_lib_dep == 'true' && needs.check-commit.outputs.continue == 'true'
+    if: needs.version.outputs.replace_lib_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build
       - version
-      - check-commit
+      - common-check
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.version.outputs.libraries_matrix) }}
@@ -273,11 +274,11 @@ jobs:
   packages:
     name: Check packages
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.replace_pack_dep == 'true' && needs.check-commit.outputs.continue == 'true'
+    if: needs.version.outputs.replace_pack_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build
       - version
-      - check-commit
+      - common-check
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.version.outputs.packages_matrix) }}
