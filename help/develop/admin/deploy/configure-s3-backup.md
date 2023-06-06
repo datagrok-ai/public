@@ -1,5 +1,6 @@
 ---
 title: "AWS S3 backup configuration"
+sidebar_position: 8
 ---
 
 This document contains instructions to configure AWS S3 bucket backup

@@ -16,10 +16,17 @@ type PepseaBodyUnit = { ID: string, HELM: string };
 
 /** Gets the column containing MSA sequences produced by the 'PepSeA' tool from the {@link srcCol} column.
  * Does not add the result column to the dataframe of {@link srcCol}.
+ * @async
+ * @param {DG.Column} srcCol - The column containing the sequences to be aligned.
+ * @param {string} unUsedName - The name of the result column.
+ * @param {string} method - The method used for alignment.
+ * @param {number} gapOpen - The gap open penalty.
+ * @param {number} gapExtend - The gap extension penalty.
+ * @param {DG.Column} clustersCol - The column containing the clusters of the sequences.
  */
 export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   method: typeof pepseaMethods[number] = 'ginsi', gapOpen: number = 1.53, gapExtend: number = 0.0,
-  clustersCol: DG.Column<string | number> | null = null
+  clustersCol: DG.Column<string | number> | null = null,
 ): Promise<DG.Column<string> | null> {
   const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
   if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking') {

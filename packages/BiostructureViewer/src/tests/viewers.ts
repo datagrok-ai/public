@@ -3,15 +3,12 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
 import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
-//import {_package} from './package-test-int';
-import {PdbHelper} from '../utils/pdb-helper';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {getPdbHelper} from '../package';
 import {_packageName} from './utils';
 
 
 category('Viewers', () => {
-
   // -- Viewers tests --
   const viewers = DG.Func.find({package: 'BiostructureViewer', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {

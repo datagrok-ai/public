@@ -120,40 +120,39 @@ export class PdbEntry {
       const annotType = annot['type'];
 
       if (this.secondaryKinds.includes(annotType)) {
-        if (_tracks[annotType] === undefined) {
+        if (_tracks[annotType] === undefined)
           _tracks[annotType] = new Set();
-        }
+
 
         for (const pos of annot['feature_positions']) {
           const range = genRange(pos['beg_seq_id'], pos['end_seq_id']);
 
-          for (const i of range) {
+          for (const i of range)
             _tracks[annotType].add(i);
-          }
         }
       }
     }
 
     // Format tracks as sorted numbers.
-    for (const [k, v] of Object.entries(_tracks)) {
+    for (const [k, v] of Object.entries(_tracks))
       tracks[k] = Array.from(v.values()).sort((a: number, b: number) => a - b);
-    }
+
     return tracks;
   }
 
   /** Tertiary structure as a string. */
   get body(): string {
-    if (this.pdbBody.length == 0) {
+    if (this.pdbBody.length == 0)
       throw new Error('Call fetchInfo before getting file body.');
-    }
+
     return this.pdbBody;
   }
 
   /** Primary and secondary structure. */
   get entities(): Entity[] {
-    if (this.items.length == 0) {
+    if (this.items.length == 0)
       throw new Error('Call fetchInfo before getting entities.');
-    }
+
     return this.items;
   }
 

@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
-import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
@@ -67,7 +66,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
         const targetScoreCell = grid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (event: MouseEvent) => {
+        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (_event: MouseEvent) => {
           this.gridSelect = false;
         });
         updateDivInnerHTML(this.root, grid.root);
@@ -87,7 +86,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       metricName: this.distanceMetric,
       limit: this.limit,
       minScore: this.cutoff,
-      fingerprint: this.fingerprint
+      fingerprint: this.fingerprint,
     });
     this.idxs = df.getCol('indexes');
     this.scores = df.getCol('score');
@@ -127,7 +126,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       propPanel.append(ui.divV([
         ui.divText(`Different sequence length:`, {style: {fontWeight: 'bold'}}),
         ui.divText(`target: ${subParts1.length} monomers`),
-        ui.divText(`selected: ${subParts2.length} monomers`)
+        ui.divText(`selected: ${subParts2.length} monomers`),
       ], {style: {paddingBottom: '10px'}}));
     }
     propPanel.append(createDifferencesWithPositions(molDifferences));

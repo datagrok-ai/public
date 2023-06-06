@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 import {option} from './constants';
@@ -9,6 +10,11 @@ type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
+@grok.decorators.viewer({
+  name: 'Radar',
+  description: 'Creates a radar viewer',
+  icon: 'icons/radar-viewer.svg',
+})
 export class RadarViewer extends DG.JsViewer {
   get type(): string {return 'RadarViewer';}
 
@@ -49,7 +55,6 @@ export class RadarViewer extends DG.JsViewer {
 
   init() {
     option.radar.indicator = [];
-
     const columnNames: string[] = [];
     for (const column of this.dataFrame.columns.numerical)
       columnNames.push(column.name);
@@ -89,6 +94,9 @@ export class RadarViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
     this.initChartEventListeners();
+    this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
+    .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
+    .map((c: DG.Column) => c.name);
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => {

@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 import puppeteer from 'puppeteer';
 import {Browser, Page} from 'puppeteer';
+import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -13,7 +14,7 @@ import * as testUtils from '../utils/test-utils';
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
   const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled',
-    'report', 'skip-build', 'skip-publish', 'category'];
+    'report', 'skip-build', 'skip-publish', 'category', 'record'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -98,6 +99,7 @@ export function test(args: TestArgs): boolean {
     const P_START_TIMEOUT: number = 3600000;
     let browser: Browser;
     let page: Page;
+    let recorder: PuppeteerScreenRecorder;
     type resultObject = { failReport: string, skipReport: string, passReport: string, failed: boolean, csv?: string };
 
     function init(timeout: number): Promise<void> {
@@ -109,6 +111,7 @@ export function test(args: TestArgs): boolean {
           let out = await testUtils.getBrowserPage(puppeteer, params);
           browser = out.browser;
           page = out.page;
+          recorder = new PuppeteerScreenRecorder(page, testUtils.recorderConfig);
         } catch (e) {
           throw e;
         }
@@ -116,8 +119,19 @@ export function test(args: TestArgs): boolean {
     }
 
     function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
-      report?: boolean} = {}): Promise<resultObject> {
+      report?: boolean, record?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
+        let consoleLog: string = '';
+        if (options.record) {
+          await recorder.start('./test-record.mp4');
+          page.on('console', msg => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
+          page.on('pageerror', error => {
+            consoleLog += `CONSOLE LOG ERROR: ${error.message}\n`;
+          });
+          page.on('response', response => {
+            consoleLog += `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`;
+          });
+        }
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
 
@@ -162,6 +176,10 @@ export function test(args: TestArgs): boolean {
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
 
+        if (options.record) {
+          await recorder.stop();
+          fs.writeFileSync('./test-console-output.log', consoleLog)
+        }
         return r;
       });
     }
@@ -176,7 +194,7 @@ export function test(args: TestArgs): boolean {
       }
 
       const r = await runTest(7200000, { category: args.category,
-        catchUnhandled: args.catchUnhandled, report: args.report });
+        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record });
 
       if (r.csv && args.csv) {
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
@@ -215,6 +233,7 @@ interface TestArgs {
   gui?: boolean,
   catchUnhandled?: boolean,
   report?: boolean,
+  record?: boolean,
   'skip-build'?: boolean,
   'skip-publish'?: boolean,
 }

@@ -8,7 +8,7 @@ import rdKitLibVersion from '../rdkit_lib_version';
 import initRDKitModule from '../RDKit_minimal.js';
 import {isMolBlock} from './chem-common';
 import $ from 'cash-dom';
-import {RDModule, RDMol, Reaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
 
 export let _rdKitModule: RDModule;
@@ -149,7 +149,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 }
 
 export function drawRdKitReactionToOffscreenCanvas(
-  rdKitReaction: Reaction, w: number, h: number, offscreenCanvas: OffscreenCanvas) {
+  rdKitReaction: RDReaction, w: number, h: number, offscreenCanvas: OffscreenCanvas) {
   const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h)});
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true});
   g?.clearRect(0, 0, w, h);

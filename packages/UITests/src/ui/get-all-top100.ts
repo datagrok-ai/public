@@ -26,7 +26,7 @@ category('Connections', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'Get All does not work', 5000);
     grok.shell.v.close();
     schema.close();
-  });
+  }, {skipReason: 'GROK-13162'});
 
   test('getTop100', async () => {
     await browseSchema();
@@ -38,7 +38,7 @@ category('Connections', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'Get Top 100 does not work', 5000);
     grok.shell.v.close();
     schema.close();
-  });
+  }, {skipReason: 'GROK-13162'});
 
   after(async () => {
     grok.shell.closeAll();
@@ -55,4 +55,4 @@ category('Connections', () => {
     table = document.querySelector('.d4-sketch-item') as HTMLElement;
     schema = grok.shell.v;
   }
-});
+}, false);

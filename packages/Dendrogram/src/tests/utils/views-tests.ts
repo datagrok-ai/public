@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {after, before} from '@datagrok-libraries/utils/src/test';
 
 export function viewsTests(tests: (ctx: { dfList: DG.DataFrame[], vList: DG.ViewBase[] }) => void): () => void {
   return () => {

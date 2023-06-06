@@ -35,9 +35,11 @@ export function rGroupAnalysis(col: DG.Column): void {
     try {
       const molCol = col.dataFrame.columns.byName(columnInput.value!);
       //TODO: implements mcs using web worker
-      const smarts: string = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
-      ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setMolFile(convertMolNotation(smarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
+      const mcsSmarts = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
+      if (mcsSmarts !== null) {
+        ui.setUpdateIndicator(sketcher.root, false);
+        sketcher.setMolFile(convertMolNotation(mcsSmarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
+      }
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();

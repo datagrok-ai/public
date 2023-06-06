@@ -176,11 +176,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                            stringValue = param.value.toString();
                         i = i + setArrayParamValue(statement, n + i + 1, param);
                     } else {
-                        if (param.value == null)
+                        if (param.value == null) {
                             stringValue = "null";
-                        else
+                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
+                        } else {
                             stringValue = param.value.toString();
-                        statement.setObject(n + i + 1, param.value);
+                            statement.setObject(n + i + 1, param.value);
+                        }
                     }
                     stringValues.add(stringValue);
                 }
@@ -426,8 +428,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                         typeName.equalsIgnoreCase("uuid") ||
                         typeName.equalsIgnoreCase("set"))
                     column = new StringColumn();
-                else if (isBigInt(type, typeName, precision, scale))
-                    column = new BigIntColumn();
+                else if (isBigInt(type, typeName, precision, scale)) {
+                    if (descriptor.type.equals("Oracle")) {
+                        column = new IntColumn();
+                    } else {
+                        column = new BigIntColumn();
+                    }
+                }
                 else if (isTime(type, typeName))
                     column = new DateTimeColumn();
                 else if (isXml(type, typeName)) {
@@ -521,8 +528,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                     if (supportedType.get(c - 1)) {
                         String colType = columns.get(c - 1).getType();
-                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName, precision) ||
-                                colType.equals(Types.INT) || colType.equals(Types.BOOL))
+                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName, precision) || colType.equals(Types.BOOL))
                             if (value instanceof Short)
                                 columns.get(c - 1).add(((Short)value).intValue());
                             else if (value instanceof Double)
@@ -611,11 +617,39 @@ public abstract class JdbcDataProvider extends DataProvider {
                             } else {
                                 columns.get(c - 1).add(value);
                             }
-                        else if (isBigInt(type, typeName, precision, scale) ||
+                        else if (isBigInt(type, typeName, precision, scale)||
                                 typeName.equalsIgnoreCase("uuid") ||
                                 typeName.equalsIgnoreCase("set") ||
-                                colType.equals(Types.STRING))
-                            columns.get(c - 1).add((value != null) ? value.toString() : "");
+                                colType.equals(Types.STRING)) {
+                            if (!descriptor.type.equals("Oracle")) {
+                                columns.get(c - 1).add((value != null) ? value.toString() : "");
+                            } else {
+                                if (colType.equals(Types.BIG_INT)) {
+                                    columns.get(c - 1).add(value == null ? "" : value.toString());
+                                } else {
+                                    if (value == null) {
+                                        columns.get(c - 1).add(value);
+                                    } else {
+                                        String str = value.toString();
+                                        BigInteger bigIntValue = new BigInteger(str);
+                                        if (bigIntValue.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0 &&
+                                                bigIntValue.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) >= 0) {
+                                            columns.get(c - 1).add(bigIntValue.intValue());
+                                        } else {
+                                            Column current = columns.get(c - 1);
+                                            Column bigIntColumn = new BigIntColumn();
+                                            for (int i = 0; i < current.length; i++) {
+                                                Object currentValue = current.get(i);
+                                                bigIntColumn.add(currentValue == null ? "" : currentValue.toString());
+                                            }
+                                            bigIntColumn.add(str);
+                                            bigIntColumn.name = current.name;
+                                            columns.set(c - 1, bigIntColumn);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         else if (isTime(type, typeName)) {
                             java.util.Date time;
                             if (value instanceof java.sql.Timestamp)

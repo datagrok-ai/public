@@ -39,7 +39,7 @@ export function substructureSearchDialog(col: DG.Column<string>): void {
   });
 
   const df = DG.DataFrame.create(1);
-  df.columns.addNewString(SUBSTR_HELM_COL_NAME).init((i) => '');
+  df.columns.addNewString(SUBSTR_HELM_COL_NAME).init((_i) => '');
   df.col(SUBSTR_HELM_COL_NAME)!.semType = col.semType;
   df.col(SUBSTR_HELM_COL_NAME)!.setTag(DG.TAGS.UNITS, NOTATION.HELM);
   const grid = df.plot.grid();
@@ -56,7 +56,7 @@ export function substructureSearchDialog(col: DG.Column<string>): void {
   ui.dialog('Substructure Search')
     .add(ui.divV([
       ui.divText(`Notation: ${units}`),
-      inputsDiv
+      inputsDiv,
     ]))
     .onOK(async () => {
       let substructure = units === NOTATION.HELM ? df.get(SUBSTR_HELM_COL_NAME, 0) : substructureInput.value;
@@ -104,7 +104,7 @@ function prepareSubstructureRegex(substructure: string, separator: string) {
 export async function helmSubstructureSearch(substructure: string, col: DG.Column<string>): Promise<DG.BitSet> {
   if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
     await invalidateMols(col, true);
-  const substructureCol: DG.Column<string> = DG.Column.string('helm', 1).init((i) => substructure);
+  const substructureCol: DG.Column<string> = DG.Column.string('helm', 1).init((_i) => substructure);
   substructureCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
   const substructureMolsCol =
     await getMonomericMols(substructureCol, true, col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT]);

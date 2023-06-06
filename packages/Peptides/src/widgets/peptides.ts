@@ -158,8 +158,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   targetColumn: DG.Column<string> | null = null): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
-  if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT ||
-    activityColumn.type === DG.COLUMN_TYPE.BIG_INT || activityColumn.type === DG.COLUMN_TYPE.QNUM) {
+  if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
     //prepare new DF
     const newDf = DG.DataFrame.create(currentDf.rowCount);
     const newDfCols = newDf.columns;

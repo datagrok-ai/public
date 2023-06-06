@@ -2,9 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PdbHelper} from '../utils/pdb-helper';
-import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {getPdbHelper} from '../package';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
 /** The app for .pdb file handler */
@@ -13,14 +10,15 @@ export class PdbApp {
 
   constructor() {}
 
-  /** {@link df} created with pdbToDf() */
+  /**
+   * @param {DG.DataFrame} df dataframe created with pdbToDf()
+   * @param {string} funcName name of the function that will be called on the server*/
   async init(df: DG.DataFrame, funcName: string = 'pdbApp'): Promise<void> {
     this._funcName = funcName;
     await this.loadData(df);
   }
 
   async loadData(df: DG.DataFrame): Promise<void> {
-    const ph: IPdbHelper = await getPdbHelper();
     await this.setData(df);
   }
 
