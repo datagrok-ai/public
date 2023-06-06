@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset,
   openSketcher, scrollTable} from '../utils/demo-utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
@@ -735,4 +736,18 @@ export async function _demoScaffoldTree(): Promise<void> {
   }
   tv.dockManager.dock(viewer, DG.DOCK_TYPE.LEFT, null, undefined, 0.44);
   grok.shell.o = viewer;
+}
+
+export async function _demoScaffoldTree(): Promise<void> {
+    const tv: DG.TableView = await openMoleculeDataset('mol1K.csv');
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp('/help/domains/chem/scaffold-tree');
+    const table: DG.DataFrame = tv.dataFrame;
+    const tree = await _package.files.readAsText('scaffold-tree.json');
+    const viewer = new ScaffoldTreeViewer();
+    viewer.autoGenerate = false;
+    viewer.dataFrame = table;
+    viewer.size = 'small';
+    await viewer.loadTreeStr(tree);
+    tv.dockManager.dock(viewer, DG.DOCK_TYPE.LEFT);
 }

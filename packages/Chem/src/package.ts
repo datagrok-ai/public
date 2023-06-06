@@ -29,9 +29,7 @@ import {toxicityWidget} from './widgets/toxicity';
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
-
-//utils imports
-import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
+import { ScaffoldTreeFilter, ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, isSmarts} from './utils/mol-creation_rdkit';
@@ -54,7 +52,6 @@ import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
 
-//script api
 import {generateScaffoldTree} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
@@ -176,7 +173,7 @@ export function scaffoldTreeViewer() : ScaffoldTreeViewer {
   return new ScaffoldTreeViewer();
 }
 
-//name: SubstructureFilter
+//name: Substructure Filter
 //description: RDKit-based substructure filter
 //tags: filter
 //output: filter result
@@ -1161,6 +1158,14 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
+//name: Scaffold Tree Filter
+//description: Scaffold Tree filter
+//tags: filter
+//output: filter result
+//meta.semType: Molecule
+export function scaffoldTreeFilter(): ScaffoldTreeFilter {
+  return new ScaffoldTreeFilter();
+}
 
 //name: getScaffoldTree
 //input: dataframe data
