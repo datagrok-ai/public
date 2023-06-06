@@ -8,7 +8,7 @@ export class DistanceMatrixService {
       const threadCount = navigator.hardwareConcurrency;
       this._workerCount = useConcurrentWorkers ? Math.max(threadCount - 2, 1) : 1;
       this._workers = new Array(this._workerCount).fill(null)
-        .map(() => new Worker(new URL('./distance-matrix-worker.ts', import.meta.url)));
+        .map(() => new Worker(new URL('./distance-matrix-worker', import.meta.url)));
       this._terminateOnComplete = terminateOnComplete;
     };
 
