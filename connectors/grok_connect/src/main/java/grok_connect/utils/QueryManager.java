@@ -49,20 +49,21 @@ public class QueryManager {
         query.afterDeserialization();
         this.logger = logger;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
-        boolean optionsExists = query.func.options != null;
-        if (optionsExists && query.func.options.containsKey(FETCH_SIZE_KEY)) {
-            String value = query.func.options.get(FETCH_SIZE_KEY).toString();
-            Pattern pattern = Pattern.compile("(\\d+) MB");
-            Matcher matcher = pattern.matcher(value);
-            if (matcher.find()) {
-                chunkSize = Integer.parseInt(matcher.group(1)) * 1_000_000;
-            } else {
-                changedFetchSize = true;
-                currentFetchSize = Integer.parseInt(value);
+        if (query.func.options != null) {
+            if (query.func.options.containsKey(FETCH_SIZE_KEY)) {
+                setInitFetchSize(query.func.options.get(FETCH_SIZE_KEY).toString());
+            }
+            if (query.func.options.containsKey(DRY_RUN_KEY)) {
+                isDryRun = Boolean.parseBoolean(query.func.options.get(DRY_RUN_KEY).toString());
             }
         }
-        if (query.func.aux != null && query.func.aux.containsKey(DRY_RUN_KEY)) {
-            isDryRun = (Boolean) query.func.aux.get(DRY_RUN_KEY);
+        if (query.func.aux != null) {
+            if (query.func.aux.containsKey(FETCH_SIZE_KEY)) {
+                setInitFetchSize(query.func.aux.get(FETCH_SIZE_KEY).toString());
+            }
+            if (query.func.aux.containsKey(DRY_RUN_KEY)) {
+                isDryRun = (Boolean) query.func.aux.get(DRY_RUN_KEY);
+            }
         }
     }
 
@@ -165,5 +166,16 @@ public class QueryManager {
         int maxChunkSize = chunkSize != -1 ? chunkSize : MAX_CHUNK_SIZE_BYTES;
         int fetchSize = Math.round(maxChunkSize / (float) (df.memoryInBytes() / df.rowCount));
         return Math.min(Math.max(MIN_FETCH_SIZE, fetchSize), MAX_FETCH_SIZE);
+    }
+
+    private void setInitFetchSize(String optionValue) {
+        Pattern pattern = Pattern.compile("(\\d+) MB");
+        Matcher matcher = pattern.matcher(optionValue);
+        if (matcher.find()) {
+            chunkSize = Integer.parseInt(matcher.group(1)) * 1_000_000;
+        } else {
+            changedFetchSize = true;
+            currentFetchSize = Integer.parseInt(optionValue);
+        }
     }
 }
