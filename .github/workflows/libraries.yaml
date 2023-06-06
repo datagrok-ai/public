@@ -14,8 +14,9 @@ on:
       - 'libraries/**'
 
 jobs:
-  check-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
     with:
       run_trigger: ${{ github.event_name }}
 
