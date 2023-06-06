@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {fitSeries, getChartData, getColumnChartOptions, fitSeriesProperties, fitChartDataProperties} from './fit-data';
+import {fitSeries, getChartData, getColumnChartOptions, fitSeriesProperties, fitChartDataProperties, getSeriesStatistics} from './fit-data';
 import {fitResultProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
@@ -13,7 +13,7 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
     .init((i) => {
       const chartData = getChartData(
         DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
-      const fitResult = fitSeries(chartData.series![0], true);
+      const fitResult = getSeriesStatistics(chartData.series![0]);
       return p.get(fitResult);
     });
 }
@@ -44,10 +44,12 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
       for (let i = 0; i < chartData.series!.length; i++) {
         const series = chartData.series![i];
-        const fitResult = fitSeries(series, true);
+        if (!series.parameters)
+          series.parameters = fitSeries(series).parameters;
+        const seriesStatistics = getSeriesStatistics(series);
         host.appendChild(ui.panel([
           ui.h1(series.name ?? 'series ' + i),
-          ui.input.form(fitResult, fitResultProperties, {
+          ui.input.form(seriesStatistics, fitResultProperties, {
             onCreated: (input) => input.root.appendChild(
               ui.iconFA('plus',
                 () => addStatisticsColumn(gridCell.gridColumn, input.property),
