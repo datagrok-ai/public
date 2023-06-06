@@ -11,7 +11,7 @@ import {createDimensinalityReducingWorker,
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
-import { IReduceDimensionalityResult } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;

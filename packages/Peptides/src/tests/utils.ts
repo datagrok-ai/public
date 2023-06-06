@@ -6,7 +6,7 @@ import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import { IReduceDimensionalityResult } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export enum TEST_COLUMN_NAMES {
   SEQUENCE = 'sequence',
