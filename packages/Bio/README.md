@@ -147,7 +147,7 @@ See:
 
 ## Similarity Search
 
-Similarity Search tool allows user to find sequences that are most similar to target sequence. The tool can be accessed from the top menu of bio. It first constructs the distance matrix for all sequences, and then uses it to find most similar ones to the selection. Upon selecting similar sequences from the docked grid bellow, detailed difference will be shown in the context menu.
+Similarity Search tool allows user to find sequences that are most similar to target sequence. The tool can be accessed from the top menu of bio. It first constructs the distance matrix for all sequences, and then uses it to find most similar ones to the selection. Upon selecting similar sequences from the docked grid bellow, detailed difference will be shown in the context panel.
 
 To launch the searcg from the top menu, select Bio | Search | Similarity Search
 
@@ -157,6 +157,6 @@ To launch the searcg from the top menu, select Bio | Search | Similarity Search
 
 Diversity Search tool allows user to find sequences that are most diverse in given dataset. The tool can be accessed from the top menu of bio. By default, number of diverse sequneces will be 10.
 
-To launch the searcg from the top menu, select Bio | Search | Diversity Search
+To launch the search from the top menu, select Bio | Search | Diversity Search
 
 ![Running diversity search](../../help/uploads/macromolecules/diversity_search.gif)
