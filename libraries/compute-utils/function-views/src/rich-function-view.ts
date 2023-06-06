@@ -15,7 +15,7 @@ import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {SensitivityAnalysisView} from './sensitivity-analysis-view';
+import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -519,7 +519,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private async onSALaunch(): Promise<void> {
-    SensitivityAnalysisView.openInDockMode(this.func);
+    new SensitivityAnalysis(this.func);
   }
 
   private renderInputForm(): HTMLElement {
