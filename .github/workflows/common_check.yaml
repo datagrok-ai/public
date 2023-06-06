@@ -1,4 +1,4 @@
-name: Check merge commit
+name: Common Checks
 
 on:
   workflow_call:
@@ -8,24 +8,25 @@ on:
         type: string
     outputs:
       continue: 
-        description: "Run nested acions if no merge commit"
-        value: ${{ jobs.check-merge-commit.outputs.continue }}
+        description: "Run nested actions if checks passed"
+        value: ${{ jobs.check.outputs.continue }}
 
 jobs:
-  check-merge-commit:
+  check:
+    name: Check changes
     runs-on: ubuntu-20.04
     outputs:
-      continue: ${{ steps.commit-details.outputs.continue_action }}
+      continue: ${{ steps.merge-details.outputs.continue_action }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Get commit details
-        id: commit-details
+      - name: Check merge commit
+        id: merge-details
         run: |
           if [[ ${{ inputs.run_trigger }} != 'workflow_dispatch' ]] && { [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]] || [[ $(git log -n 1 --pretty=%B) == *"Merge remote-tracking branch 'origin/master'"* ]]; };  then
             echo "continue_action=false" >> $GITHUB_OUTPUT
-            echo "This is a merge commit push. No actions will be runned"
+            echo "This is a merge commit push. No actions will be run"
           else
             echo "continue_action=true" >> $GITHUB_OUTPUT
-            echo "This is no merge commit push. Actions will be runned"
-          fi 
+            echo "This is no merge commit push. Actions will be run"
+          fi

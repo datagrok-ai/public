@@ -14,16 +14,17 @@ on:
       - 'packages/**'
 
 jobs:
-  check-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
     with:
       run_trigger: ${{ github.event_name }}
 
   matrix:
     name: Check changes
     runs-on: ubuntu-20.04
-    needs: check-commit
-    if: needs.check-commit.outputs.continue == 'true'
+    needs: common-check
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
@@ -106,8 +107,8 @@ jobs:
     name: Test and publish to npm
     needs:
       - matrix
-      - check-commit
-    if: needs.matrix.outputs.publish == 'yes' && needs.check-commit.outputs.continue == 'true'
+      - common-check
+    if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     env:
       HOST: GitHubAction

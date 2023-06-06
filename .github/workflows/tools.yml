@@ -9,15 +9,16 @@ on:
       - 'tools/**'
 
 jobs:
-  check-commit:
-    uses: ./.github/workflows/check_merge_commit.yaml
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
     with:
       run_trigger: ${{ github.event_name }}
 
   check:
-    needs: check-commit
+    needs: common-check
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     name: Check version was changed
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
@@ -42,9 +43,9 @@ jobs:
 
   build:
     name: Build and publish to npm
-    needs: [check, check-commit]
+    needs: [check, common-check]
     runs-on: ubuntu-20.04
-    if: needs.check-commit.outputs.continue == 'true'
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - uses: actions/checkout@v3
         with:
