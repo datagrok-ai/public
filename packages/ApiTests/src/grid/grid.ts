@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
 export function hasTag(colTags: string[], colTagValue: string): boolean {
@@ -122,4 +122,8 @@ category('Grid', () => {
     for (const col of demog.columns.categorical)
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
   });
-});
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
+}, false);

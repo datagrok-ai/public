@@ -5,7 +5,6 @@ import { SequenceSpaceBaseFuncEditor } from './seq-space-base-editor';
 
 export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
-    activitiesDataframe: DG.DataFrame | string;
     activitiesInput: DG.InputBase;
     activitiesInputRoot: HTMLElement;
     similarityInput: DG.InputBase;
@@ -13,7 +12,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
 
     get funcParams(): any {
-      return {table: this.tableInput.value!, molecules: this.molColInput.value!, activities: this.tableInput.value.col(this.activitiesDataframe ? this.activitiesInput.value!.name : '')!,
+      return {table: this.tableInput.value!, molecules: this.molColInput.value!, activities: this.activitiesInput.value!,
         similarity: this.similarityInput.value!, methodName: this.methodInput.value!, similarityMetric: this.similarityMetricInput.value!,
         options: this.algorithmOptions};
     }
@@ -24,10 +23,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
   
     constructor(semtype: DG.SemType){
       super(semtype);
-      const numericColumns = Array.from((this.tableInput.value as DG.DataFrame).columns.numerical);
-      this.activitiesDataframe = numericColumns.length ? DG.DataFrame.fromColumns(numericColumns) : '';
-      //@ts-ignore
-      this.activitiesInput = ui.columnInput('Activities', this.activitiesDataframe, this.activitiesDataframe ? this.activitiesDataframe.columns.byIndex(0) : '');
+      this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
       this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.intInput('Similarity cutoff', 80);
       ui.tooltip.bind(this.similarityInput.root, `Pairs of similar (cutoff is used) molecules with high difference in activity are considered 'cliffs'`)
@@ -46,10 +42,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
     onTableInputChanged(semtype: DG.SemType) {
         super.onTableInputChanged(semtype);
         ui.empty(this.activitiesInputRoot);
-        const numericColumns = Array.from((this.tableInput.value as DG.DataFrame).columns.numerical);
-        this.activitiesDataframe = numericColumns.length ? DG.DataFrame.fromColumns(numericColumns) : '';
-        //@ts-ignore
-        this.activitiesInput = ui.columnInput('Activities', this.activitiesDataframe, this.activitiesDataframe ? this.activitiesDataframe.columns.byIndex(0) : '');
+        this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
         Array.from(this.activitiesInput.root.children).forEach((it) => this.activitiesInputRoot.append(it));
     }
   }

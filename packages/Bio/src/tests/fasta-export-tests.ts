@@ -47,7 +47,7 @@ MDYKETLLMP
 KTDFPMRGGL
 >3
 P
-`
+`,
     },
     [SaveAsFastaTests.test2]: {
       srcCsv: `id,id2,seq
@@ -66,8 +66,8 @@ KTDFP
 MRGGL
 >seqC|3
 [MeA]
-`
-    }
+`,
+    },
   };
 
   test('wrapSequenceSingle', async () => {

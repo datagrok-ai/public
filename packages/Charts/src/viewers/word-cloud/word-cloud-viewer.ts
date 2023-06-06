@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import * as echarts from 'echarts';
 import 'echarts-wordcloud';
@@ -7,6 +8,11 @@ import 'echarts-wordcloud';
 import $ from 'cash-dom';
 
 
+@grok.decorators.viewer({
+  name: 'Word Cloud Viewer',
+  description: 'Creates a word cloud viewer',
+  icon: 'icons/wordcloud-viewer.svg',
+})
 export class WordCloudViewer extends DG.JsViewer {
   strColumnName: string;
   shape: string;

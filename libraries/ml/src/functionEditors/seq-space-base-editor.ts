@@ -38,7 +38,7 @@ export class SequenceSpaceBaseFuncEditor {
         this.onTableInputChanged(semtype);
       });
   
-      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
+      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {'predicate': (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
       this.molColInputRoot = this.molColInput.root;
       this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
         if(settingsOpened) {

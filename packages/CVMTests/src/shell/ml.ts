@@ -1,10 +1,17 @@
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-// import * as DG from 'datagrok-api/dg';
-import {_package} from '../package-test';
+import * as DG from 'datagrok-api/dg';
+
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+// import {_package} from '../package-test';
 
 category('ML', () => {
+  let df: DG.DataFrame;
+
+  before(async () => {
+    df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/demog.csv');
+  });
+
   // test('Apply Model', async () => {
   //   const data = grok.data.demo.demog();
   //   const resultDf = await grok.ml.applyModel(
@@ -19,7 +26,7 @@ category('ML', () => {
   // });
 
   test('Missing Values Imputation', async () => {
-    const data = await _package.files.readCsv('datasets/demog.csv');
+    const data = df.clone();
     const resultDf = await grok.ml.missingValuesImputation(
       data, ['age', 'height', 'weight'], ['age', 'height', 'weight'], 5,
     );
@@ -31,7 +38,7 @@ category('ML', () => {
 
   test('Random Data', async () => {
     const seed = 42;
-    const data = await _package.files.readCsv('datasets/demog.csv');
+    const data = df.clone();
 
     await grok.ml.randomData(data, 'normal', {sd: 3.0, mean: 1.0}, seed);
     await grok.ml.randomData(data, 'uniform', {min: 0.0, max: 1.0}, seed);
@@ -47,5 +54,8 @@ category('ML', () => {
     expect(binomialCol.stats.min >= 0 && binomialCol.stats.max <= 100, true);
     expect(68 <= binomialCol.stats.avg && binomialCol.stats.avg <= 72, true);
   });
-});
 
+  after(async () => {
+    grok.shell.closeAll();
+  });
+});

@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils } from '../../utils/tree-utils';
@@ -6,6 +7,11 @@ import { TreeUtils } from '../../utils/tree-utils';
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
 /** Represents a sunburst viewer */
+@grok.decorators.viewer({
+  name: 'Sunburst',
+  description: 'Creates a sunburst viewer',
+  icon: 'icons/sunburst-viewer.svg',
+})
 export class SunburstViewer extends EChartViewer {
   hierarchyColumnNames: string[];
   hierarchyLevel: number;

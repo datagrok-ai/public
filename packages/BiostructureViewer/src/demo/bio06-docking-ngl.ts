@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {handleError} from './utils';
 import {_package} from '../package';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 const ligandsDataFn: string = 'samples/1bdq-obs-pred.sdf';
@@ -50,7 +49,7 @@ export async function demoBio06UI(): Promise<void> {
   try {
     await new DemoScript(
       'Docking NGL',
-      'Docking ligands along the structure'
+      'Docking ligands along the structure',
     )
       .step('Loading ligands', async () => {
         grok.shell.windows.showContextPanel = false;

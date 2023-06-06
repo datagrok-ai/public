@@ -45,7 +45,7 @@ export class TreeForGridFilterApp {
     const leafCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, leafColName,
       leafList.map((n) => n.name));
     const activityCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Activity',
-      leafList.map((n) => Math.random()));
+      leafList.map((_n) => Math.random()));
     const dataDf = DG.DataFrame.fromColumns([leafCol, activityCol]);
 
     // const csv = await _package.files.readAsText('data/tree-gen-100000.csv');
@@ -94,8 +94,8 @@ export class TreeForGridFilterApp {
   async buildView() {
     if (!this.tableView) {
       const dataDf: DG.DataFrame = this.dataDf;
-      dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
-
+      dataDf.columns.addNewInt('Cluster').init((_rowI) => null);
+      true || true;
       this.tableView = grok.shell.addTableView(dataDf);
       this.tableView.path = this.tableView.basePath = `/func/${_package.name}.treeForGridFilterApp`;
 

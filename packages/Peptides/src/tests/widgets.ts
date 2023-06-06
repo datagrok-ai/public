@@ -181,13 +181,15 @@ category('Widgets: Actions', () => {
     const selection = model.df.selection;
     selection.set(0, true, false);
 
-    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+    if (lstViewer === null)
+      throw new Error('Logo summary table viewer is not found');
 
     // Check that custom clusters are not created yet
     expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters before creating one');
 
     // Create custom cluster
-    model._newClusterSubject.next();
+    lstViewer.clusterFromSelection();
     const customClusterList = wu(model.customClusters).toArray();
     expect(customClusterList.length, 1, 'Expected to have 1 custom cluster');
     const clustName = customClusterList[0].name;
@@ -198,7 +200,7 @@ category('Widgets: Actions', () => {
 
     // Remove custom cluster
     model.modifyClusterSelection(clustName);
-    model._removeClusterSubject.next();
+    lstViewer.removeCluster();
     expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
     expect(model.df.col(clustName) === null, true,
       'Expected to have no custom cluster column in the table');

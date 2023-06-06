@@ -74,7 +74,7 @@ Connection parameters are specific to a data source. Most data providers require
 * Password
 * Other parameters.
 
-See [Supported connectors](../../access/supported-connectors.md) for details.
+See [Supported connectors](../../access/databases/connectors/connectors.md) for details.
 
 When providing a connection string, you don't need to pass other parameters.
 
@@ -162,7 +162,7 @@ query template into your package, type `grok add query <name>` in the terminal.
 
 :::
 
-For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
+For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
 
 #### Running queries
 
@@ -187,13 +187,13 @@ To see how this method works, refer to [this example](https://public.datagrok.ai
 ### Sharing connections
 
 Data connections can be shared as part of a [project](../../datagrok/project.md)
-, [package](../develop.md#packages) (and [repository](../../access/connectors/git.md) containing this package), or as a
+, [package](../develop.md#packages) (and [repository](../../access/databases/connectors/git.md) containing this package), or as a
 standalone [entity](../../datagrok/objects.md). The access rights of a database connection are inherited from the access rights of a
 query. However, the access rights of a query don't inherit the access rights of the database connection. Consequently, when sharing a query, the associated database connection will be shared automatically. However, sharing a connection does not automatically share your queries. In the case of web queries, they are shared automatically when the corresponding connection is shared.
 
 ### Caching results
 
-See [Caching data](../../access/databases.mdx/#caching-data).
+See [Caching data](../../access/databases/databases.mdx/#caching-data).
 
 ## Rest endpoints
 

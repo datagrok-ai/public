@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -201,7 +201,7 @@ MWRSWY-CKHP
     return df;
   }
 
-  async function readFileFasta(file: string): Promise<DG.DataFrame> {
+  async function _readFileFasta(file: string): Promise<DG.DataFrame> {
     const txt: string = await grok.dapi.files.readAsText(file);
     const df: DG.DataFrame = importFasta(txt)[0];
     return df;
@@ -395,7 +395,7 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
 export async function _testPos(
   readDf: DfReaderFunc, colName: string, units: string,
   aligned: string | null, alphabet: string | null, alphabetSize: number, alphabetIsMultichar: boolean,
-  separator: string | null = null
+  separator: string | null = null,
 ) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.col(colName)!;
@@ -427,7 +427,7 @@ class PosCol {
     public readonly alphabet: string | null,
     public readonly alphabetSize: number,
     public readonly alphabetIsMultichar: boolean,
-    public readonly separator?: string
+    public readonly separator?: string,
   ) { };
 }
 

@@ -7,12 +7,15 @@ import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {chem} from 'datagrok-api/grok';
 import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UNITS} from 'datagrok-api/dg';
 import Sketcher = chem.Sketcher;
-import {chemSubstructureSearchLibrary} from '../chem-searches';
-import {getScaffoldTree} from '../package';
-import {aromatizeMolBlock} from '../utils/aromatic-utils';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {chemSubstructureSearchLibrary} from "../chem-searches";
+import {getScaffoldTree} from "../package";
+import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
+import {filter, debounce} from 'rxjs/operators';
+import {interval} from 'rxjs';
 
-let FLAG = false;
+const CELL_HEIGHT = 100;
+const CELL_WIDTH = 180;
+let attached = false;
 
 enum BitwiseOp {
   AND = 'AND',
@@ -36,21 +39,21 @@ interface ITreeNode {
   canvas: Element;
 }
 
+interface Size {
+  height: number;
+  width: number;
+}
+
+interface SizesMap {
+  [key: string]: Size;
+}
+
 function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
 }
 
 function getMol(molString : string) : RDMol | null {
-  let mol = null;
-  try {mol = _rdKitModule.get_mol(molString, '{"mergeQueryHs":true, "kekulize": true}');} catch (e) {
-    if (mol !== null && mol.is_valid())
-      mol.delete();
-    try {mol = _rdKitModule.get_qmol(molString);} catch (e) {
-      return null;
-    }
-    return mol;
-  }
-  return mol;
+  return getMolSafe(molString, {mergeQueryHs:true, kekulize: true}, _rdKitModule, true, false).mol;
 }
 
 function processUnits(molPBlok : string): string {
@@ -341,15 +344,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   workersInit: boolean = false;
   progressBar: DG.TaskBarProgressIndicator | null = null;
   MoleculeColumn: string;
-
   molColPropObserver: MutationObserver | null = null;
   Table: string;
   treeEncode: string;
-
-  sizesMap: {[key: string]: {[key: string]: number}} = {
-    'small': {height: 70, width: 80},
-    'normal': {height: 90, width: 120},
-    'large': {height: 100, width: 180}};
+  sizesMap: SizesMap = {
+    'small': { height: 70, width: 80 },
+    'normal': { height: 90, width: 120 },
+    'large': { height: 100, width: 180 }
+  };
   size: string;
 
   constructor() {
@@ -414,8 +416,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       category: 'Scaffold Generation',
       description: 'Remove charges and radicals from scaffolds',
     });
-
-
+    
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
@@ -570,14 +571,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       molStr = this.molColumn.get(m);
       if (molStr.includes('V3000')) {
         mTmp = null;
-        try {mTmp = _rdKitModule.get_mol(molStr);} catch (e) {
-          if (mTmp !== null && mTmp.is_valid())
-            mTmp.delete();
-          try {mTmp = _rdKitModule.get_qmol(molStr);} catch (e) {
+        try {
+          mTmp = _rdKitModule.get_mol(molStr);
+        } catch (e) {
+          try {
+            mTmp = _rdKitModule.get_qmol(molStr);
+          } catch (e) {
             ar[n] = molStr;
           }
         }
-        if (mTmp !== null && mTmp.is_valid()) {
+        if (mTmp !== null) {
           ar[n] = mTmp.get_smiles();
           mTmp.delete();
         }
@@ -833,8 +836,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (let n = 0; n < checkedNodes.length; ++n)
       checkedNodes[n].checked = false;
     this.checkBoxesUpdateInProgress = false;
-
-
+    
     this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
@@ -861,13 +863,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   updateFilters(isFiltering = true): void {
-    if (this.molColumn === null)
+    if (this.molColumn === null) 
       return;
 
     if (!isFiltering) {
       this.bitset = null;
       this.dataFrame.rows.requestFilter();
-      return;
     }
 
     const checkedNodes = this.tree.items.filter((v) => v.checked);
@@ -879,8 +880,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (checkedNodes.length === 1) {
       const molStr = value(checkedNodes[0]).smiles;
       if (molStr !== undefined) {
-        const molFile = aromatizeMolBlock(molStr, _rdKitModule);
-        this.molColumn.temp['chem-scaffold-filter'] = molFile;
+        let molArom;
+        try {
+          molArom = _rdKitModule.get_qmol(molStr);
+          molArom.set_aromatic_form();
+          this.molColumn.temp['chem-scaffold-filter'] = molArom.get_molblock();
+        } catch (e) {
+        } finally {
+          molArom?.delete();
+        }
       }
     } else delete this.molColumn.temp['chem-scaffold-filter'];
 
@@ -1012,11 +1020,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false) : TreeViewGroup | null {
     if (this.molColumn === null)
       return null;
-
+    
     const bitset = DG.BitSet.create(this.molColumn.length);
     const molHost = renderMolecule(molStr, this.sizesMap[this.size].width, this.sizesMap[this.size].height, skipDraw);
-    const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset: null, bitwiseNot: false});
-    this.addIcons(molHost, bitset.trueCount === 0 ? '' : bitset.trueCount.toString(), group);
+    const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset : null, bitwiseNot: false}) ;
+    this.addIcons(molHost, bitset.trueCount === 0 ? "" : bitset.trueCount.toString(), group);
 
     group.enableCheckBox(false);
     group.autoCheckChildren = false;
@@ -1099,6 +1107,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateSizes();
   }
 
+  changeCanvasSize(molString: string, canvas: any, width: number, height: number): void {
+    const newMolHost = renderMolecule(molString, width, height);
+    canvas.replaceWith(newMolHost);
+  }
+
   onPropertyChanged(p: DG.Property): void {
     if (p.name === 'Table') {
       for (let n = 0; n < this.molColumns.length; ++n) {
@@ -1163,11 +1176,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateSizes();
       this.updateUI();
     }
+    else if (p.name === 'size') {
+      const canvases = this.tree.root.querySelectorAll('.chem-canvas');
+      const molStrings = this.tree.items.map((item) => (item.value as ITreeNode).smiles);
+      for (let i = 0; i < canvases.length; ++i) 
+        this.changeCanvasSize(molStrings[i], canvases[i], this.sizesMap[this.size].width, this.sizesMap[this.size].height);
+      this.updateSizes();
+      this.updateUI();
+    }
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
-    while (this.root.firstChild)
-      this.root.removeChild(this.root.firstChild);
+    ui.empty(this.root);
 
     if (this.dataFrameSwitchgInProgress) {
       this.dataFrameSwitchgInProgress = true;
@@ -1186,7 +1206,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (orphans)
         return;
 
-      if (FLAG)
+      if (attached) 
         menu.clear();
 
       menu
@@ -1278,7 +1298,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.render();
     if (this.autoGenerate)
       setTimeout(() => this.generateTree(), 1000);
-    FLAG = true;
+    attached = true;
   }
 
   detach(): void {
@@ -1310,7 +1330,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   updateSizes() {
-    const lastElement = this.tree.root.classList[this.tree.root.classList.length - 1];
+    let lastElement = this.tree.root.classList[this.tree.root.classList.length - 1];
     this.tree.root.classList.remove(lastElement);
     this.tree.root.classList.add(`scaffold-tree-${this.size}`);
   }
@@ -1350,7 +1370,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.divText(' '),
       this._iconDelete = ui.iconFA('trash-alt',
-        () => {thisViewer.cancelled = true; thisViewer.clear();}, 'Drop all trees'),
+        () => {
+          const dialog = ui.dialog({title: 'Delete Tree'});
+          dialog
+          .add(ui.divText('This cannot be undone. Are you sure?'))
+          .addButton('Yes', () => {
+            thisViewer.cancelled = true; 
+            thisViewer.clear();
+            dialog.close();
+          })
+          .show();
+          
+        }, 'Drop all trees'),
       ui.divText(' '),
       this._bitOpInput.root,
     ]), 'chem-scaffold-tree-toolbar');
@@ -1547,4 +1578,63 @@ class SketcherDialogWrapper {
 
   static SUCCESS_MSG_COLOR = 'green';
   static FAILURE_MSG_COLOR = 'red';
+}
+
+export class ScaffoldTreeFilter extends DG.Filter {
+  viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
+  savedTree: string = '';
+  
+  constructor() {
+    super();
+    this.root = ui.divV([]);
+    this.subs = this.viewer.subs;
+  }
+
+  get isFiltering(): boolean {
+    return super.isFiltering && this.viewer.tree.items.filter((v) => v.checked).length > 0;
+  }
+
+  get filterSummary(): string {
+    return ScaffoldTreeViewer.TYPE;  
+  }
+
+  attach(dataFrame: DG.DataFrame): void {
+    super.attach(dataFrame);
+    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.columnName ??= this.column?.name;
+    this.createViewer(dataFrame);
+    this.subs.push(this.dataFrame!.onRowsFiltering
+      .pipe(filter((_) => !this.isFiltering), debounce(_ => interval(100)))
+      .subscribe((_) => {
+        delete this.column!.temp['chem-scaffold-filter'];
+        this.viewer.updateFilters(this.isFiltering);
+      })
+    );
+  }
+
+  saveState(): any {
+    const state = super.saveState();
+    state.savedTree = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.viewer.tree));
+    return state;
+  }
+
+  applyState(state: any): void {
+    super.applyState(state);
+    this.viewer.loadTreeStr(state.savedTree);
+  }
+
+  applyFilter(): void {
+  }
+
+  detach(): void {
+    super.detach();
+    this.viewer.clearFilters();
+  }
+
+  createViewer(dataFrame: DG.DataFrame) {
+    this.viewer.autoGenerate = false;
+    this.viewer.size = 'small';
+    this.viewer.dataFrame = dataFrame;
+    this.root.appendChild(this.viewer.root);
+  }
 }
