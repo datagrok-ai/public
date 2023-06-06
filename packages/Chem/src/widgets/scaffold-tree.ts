@@ -9,7 +9,6 @@ import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UN
 import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {getScaffoldTree} from '../package';
-import {aromatizeMolBlock} from '../utils/aromatic-utils';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 let FLAG = false;
@@ -41,16 +40,7 @@ function value(node: TreeViewNode): ITreeNode {
 }
 
 function getMol(molString : string) : RDMol | null {
-  let mol = null;
-  try {mol = _rdKitModule.get_mol(molString, '{"mergeQueryHs":true, "kekulize": true}');} catch (e) {
-    if (mol !== null && mol.is_valid())
-      mol.delete();
-    try {mol = _rdKitModule.get_qmol(molString);} catch (e) {
-      return null;
-    }
-    return mol;
-  }
-  return mol;
+  return getMolSafe(molString, {mergeQueryHs:true, kekulize: true}, _rdKitModule, true, false).mol;
 }
 
 function processUnits(molPBlok : string): string {
@@ -570,14 +560,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       molStr = this.molColumn.get(m);
       if (molStr.includes('V3000')) {
         mTmp = null;
-        try {mTmp = _rdKitModule.get_mol(molStr);} catch (e) {
-          if (mTmp !== null && mTmp.is_valid())
-            mTmp.delete();
-          try {mTmp = _rdKitModule.get_qmol(molStr);} catch (e) {
+        try {
+          mTmp = _rdKitModule.get_mol(molStr);
+        } catch (e) {
+          try {
+            mTmp = _rdKitModule.get_qmol(molStr);
+          } catch (e) {
             ar[n] = molStr;
           }
         }
-        if (mTmp !== null && mTmp.is_valid()) {
+        if (mTmp !== null) {
           ar[n] = mTmp.get_smiles();
           mTmp.delete();
         }
@@ -879,8 +871,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (checkedNodes.length === 1) {
       const molStr = value(checkedNodes[0]).smiles;
       if (molStr !== undefined) {
-        const molFile = aromatizeMolBlock(molStr, _rdKitModule);
-        this.molColumn.temp['chem-scaffold-filter'] = molFile;
+        let molArom;
+        try {
+          molArom = _rdKitModule.get_qmol(molStr);
+          molArom.set_aromatic_form();
+          this.molColumn.temp['chem-scaffold-filter'] = molArom.get_molblock();
+        } catch (e) {
+        } finally {
+          molArom?.delete();
+        }
       }
     } else delete this.molColumn.temp['chem-scaffold-filter'];
 
