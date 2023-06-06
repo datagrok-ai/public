@@ -13,6 +13,7 @@ import {
   fitData,
   getCurveConfidenceIntervals,
   getStatistics,
+  SigmoidFunction,
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 /**
@@ -245,12 +246,12 @@ export function fitSeries(series: IFitSeries): any {
 
 export function getSeriesConfidenceInterval(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return getCurveConfidenceIntervals(data, series.parameters!, new fitFunctions.FIT_FUNCTION_SIGMOID().y, 0.05, FitErrorModel.Constant);
+  return getCurveConfidenceIntervals(data, series.parameters!, new SigmoidFunction().y, 0.05, FitErrorModel.Constant);
 }
 
 export function getSeriesStatistics(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return getStatistics(data, series.parameters!, new fitFunctions.FIT_FUNCTION_SIGMOID().y, 0.05, true);
+  return getStatistics(data, series.parameters!, new SigmoidFunction().y, 0.05, true);
 }
 
 // /** Returns a curve function, either using the pre-computed parameters
