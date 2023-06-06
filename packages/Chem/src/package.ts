@@ -424,7 +424,7 @@ export function searchSubstructureEditor(call: DG.FuncCall) {
   } else if (molColumns.length === 1)
     call.func.prepare({molecules: molColumns[0]}).call(true);
   else {
-    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0]);
+    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0], null, {'predicate': (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
     ui.dialog({title: 'Substructure search'})
       .add(colInput)
       .onOK(async () => {
