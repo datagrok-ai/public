@@ -2,6 +2,7 @@ import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
 import { RuleId } from '../panels/structural-alerts';
+import * as DG from 'datagrok-api/dg';
 
 export class RdKitService {
   workerCount: number;
@@ -9,10 +10,15 @@ export class RdKitService {
   timesInitialized = 0;
   parallelWorkers: RdKitServiceWorkerClient[] = [];
   segmentLength: number = 0;
+  moleculesSegmentsLengths: Uint32Array;
+  segmentLengthPatternFp: number = 0;
+  moleculesSegmentsLengthsPatternFp: Uint32Array;
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
     this.workerCount = Math.max(1, cpuLogicalCores - 2);
+    this.moleculesSegmentsLengths = new Uint32Array(this.workerCount);
+    this.moleculesSegmentsLengthsPatternFp = new Uint32Array(this.workerCount);
   }
 
   async init(webRoot: string): Promise<void> {
@@ -30,15 +36,15 @@ export class RdKitService {
   }
 
   async _doParallel(
-    fooScatter: (i: number, workerCount: number) => Promise<any>,
-    fooGather: (_: any) => any[] = (_: any) => []): Promise<any> {
+    map: (i: number, workerCount: number) => Promise<any>,
+    reduce: (_: any) => any = (_: any) => []): Promise<any> {
     const promises = [];
     const workerCount = this.workerCount;
     for (let i = 0; i < workerCount; i++)
-      promises[i] = fooScatter(i, workerCount);
+      promises[i] = map(i, workerCount);
 
     const data = await Promise.all(promises);
-    return fooGather(data);
+    return reduce(data);
   }
 
   async _initParallelWorkers(molecules: string[], func: any, postFunc: any): Promise<any> {
@@ -51,6 +57,7 @@ export class RdKitService {
         const segment = i < (nWorkers - 1) ?
           molecules.slice(i * segmentLength, (i + 1) * segmentLength) :
           molecules.slice(i * segmentLength, length);
+        t.moleculesSegmentsLengths![i] = segment.length;
         return func(i, segment);
       },
       postFunc,
@@ -58,31 +65,41 @@ export class RdKitService {
   }
 
   async initMoleculesStructures(molecules: string[], useSubstructLib?: boolean)
-    : Promise<any> {
+    : Promise<number> {
     return this._initParallelWorkers(molecules, (i: number, segment: any) =>
       this.parallelWorkers[i].initMoleculesStructures(segment, useSubstructLib),
     () => {});
   }
 
-  async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], useSubstructLib?: boolean): Promise<number[]> {
+  async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], 
+    useSubstructLib?: boolean): Promise<DG.BitSet> {
     const t = this;
-    if (!this.segmentLength)
-      this.segmentLength = Math.floor(length / this.workerCount);
+    if (molecules) { //need to recalculate segments lengths since when using pattern fp numbsr of molecules to search can be less that totla molecules in column
+      this.segmentLengthPatternFp = Math.floor(molecules.length / this.workerCount);
+      for (let j = 0; j < this.workerCount; j++) {
+        this.moleculesSegmentsLengthsPatternFp[j] = j < (this.workerCount - 1) ? this.segmentLengthPatternFp :
+          molecules.length - this.segmentLengthPatternFp * j;
+      }
+    }
     return this._doParallel(
       (i: number, nWorkers: number) => {
         return molecules ?
           t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, i < (nWorkers - 1) ?
-          molecules.slice(i * t.segmentLength, (i + 1) * t.segmentLength) :
-          molecules.slice(i * t.segmentLength, length)) :
+            molecules.slice(i * this.segmentLengthPatternFp, (i + 1) * this.segmentLengthPatternFp) :
+            molecules.slice(i * this.segmentLengthPatternFp, molecules.length)) :
           t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, undefined, useSubstructLib);
       },
-      (data: any) => {
-        for (let k = 0; k < data.length; ++k) {
-          // check for parse neccessity
-          data[k] = JSON.parse(data[k]);
-          data[k] = data[k].map((a: number) => a + t.segmentLength * k);
+      (data: Array<Uint32Array>) => {
+        const segmentsLengths = molecules ? t.moleculesSegmentsLengthsPatternFp : t.moleculesSegmentsLengths;
+        const totalLength = segmentsLengths.reduce((acc, cur) => acc + cur, 0);
+        const bitArray = DG.BitSet.create(totalLength);
+        let counter = 0;
+        for (let i = 0; i < segmentsLengths.length; i++) {
+          for (let j = 0; j < segmentsLengths[i]; j++) {
+            bitArray.set(counter++, !!(data[i][0] >> j & 1));
+          }
         }
-        return [].concat(...data);
+        return bitArray;
       });
   }
 

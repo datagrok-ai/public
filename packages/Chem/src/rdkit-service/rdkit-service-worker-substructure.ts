@@ -54,36 +54,39 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return malformed;
   }
 
-  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[], useSubstructLib?: boolean): string {
-    let matches: number[] = [];
-    if (this._rdKitMols === null && !molecules?.length && !useSubstructLib)
-      return '[' + matches.join(', ') + ']';
-      
+  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
+    useSubstructLib?: boolean): Uint32Array {
+    if (this._rdKitMols === null && !useSubstructLib && !molecules)
+      throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
+
     let queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
     
     if (queryMol !== null) {
-      matches = useSubstructLib ? this.searchWithSubstructLib(queryMol) :
+      const matches = useSubstructLib ? this.searchWithSubstructLib(queryMol) :
         molecules ? this.searchWithPatternFps(queryMol, molecules) : this.searchWithoutPatternFps(queryMol);
       queryMol.delete();
+      return matches;
     } else
       throw new Error('Chem | Search pattern cannot be set');
-
-    return '[' + matches.join(', ') + ']';
   }
 
-  searchWithSubstructLib(queryMol: RDMol) {
-    return JSON.parse(this._substructLibrary!.get_matches(queryMol));
+  searchWithSubstructLib(queryMol: RDMol): Uint32Array {
+    const matches = new BitArray(this._substructLibrary!.size());
+    const matchesIdxs = JSON.parse(this._substructLibrary!.get_matches(queryMol));
+    for (let i = 0; i < matchesIdxs.length; i++)
+      matches.setBit(matchesIdxs[i], true);
+    return matches.buffer;
   } 
 
-  searchWithPatternFps(queryMol: RDMol, molecules: string[]): number[] {
-    const matches: number[] = [];
+  searchWithPatternFps(queryMol: RDMol, molecules: string[]): Uint32Array {
+    const matches = new BitArray(molecules.length);
     let mol: RDMol | null = null;
     for (let i = 0; i < molecules.length; ++i) {
           try{
             mol = getMolSafe(molecules[i], {}, this._rdKitModule).mol;
             if (mol) {
               if (mol.get_substruct_match(queryMol) !== '{}')
-                matches.push(i);
+                matches.setBit(i, true);
             }
           } catch {
             continue;
@@ -91,20 +94,20 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             mol?.delete();
           }
     }
-    return matches;
+    return matches.buffer;
   }
 
-  searchWithoutPatternFps(queryMol: RDMol): number[] {
-    const matches: number[] = [];
+  searchWithoutPatternFps(queryMol: RDMol): Uint32Array {
+    const matches = new BitArray(this._rdKitMols!.length);
     for (let i = 0; i < this._rdKitMols!.length; ++i) {
       try {
         if (this._rdKitMols![i] && this._rdKitMols![i]!.get_substruct_match(queryMol) !== '{}')
-          matches.push(i);
+          matches.setBit(i, true);
       } catch {
         continue;
       }
     }
-    return matches;
+    return matches.buffer;
   }
 
 

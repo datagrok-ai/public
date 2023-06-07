@@ -162,27 +162,24 @@ async function getUint8ArrayFingerprints(
   }
 }
 
-function substructureSearchPatternsMatch(queryMolString: string, querySmarts: string, fgs: Uint8Array[]): number[] {
+function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: Uint8Array[]): BitArray {
   const patternFpUint8Length = 256;
-  const result: number[] = [];
-  let queryMol = getQueryMolSafe(queryMolString, querySmarts, getRdKitModule());
+  const result = new BitArray(fgs.length, false);
+  const queryMol = getQueryMolSafe(molString, querySmarts, getRdKitModule());
 
   if (queryMol) {
     try {
       const fpRdKit = queryMol.get_pattern_fp_as_uint8array();
       checkEl:
       for (let i = 0; i < fgs.length; ++i) {
-        if (fgs[i]) {
-          for (let j = 0; j < patternFpUint8Length; ++j) {
-            if ((fgs[i][j] & fpRdKit[j]) != fpRdKit[j])
-              continue checkEl;
-          }
-          result.push(i);
+        for (let j = 0; j < patternFpUint8Length; ++j) {
+          if ((fgs[i][j] & fpRdKit[j]) != fpRdKit[j])
+            continue checkEl;
         }
+        result.setBit(i, true, false);
       }
-    } catch {
       return result;
-    }
+    } catch { }
   }
   return result;
 }
@@ -231,26 +228,49 @@ export async function chemSubstructureSearchLibrary(
   : Promise<DG.BitSet> {
   await chemBeginCriticalSection();
   try {
-    const result = DG.BitSet.create(molStringsColumn.length);
+    let matches = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
-      let matches: number[];
       if (usePatternFingerprints) {
         const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false);
-        const indexes: number[] = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
-        const filteredRows: string[] = (molStringsColumn.toList()).filter((val, index) => indexes.includes(index));
-        const matchedIndexes = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredRows, false);
-        matches = indexes.filter((val, index) => matchedIndexes.includes(index));
+        const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
+        const filteredMolecules: string[] = getMoleculesFiletredByPatternFp(molStringsColumn, filteredMolsIdxs);
+        const matchesBitArray: DG.BitSet = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
+        matches = restoreMatchesByFiletredIdxs(filteredMolsIdxs, matchesBitArray);
       } else {
         await _invalidate(molStringsColumn, true, useSubstructLib);
         matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, undefined, useSubstructLib);
       }
-      for (const match of matches)
-        result.set(match, true, false);
     }
-    return result;
+    return matches;
   } finally {
     chemEndCriticalSection();
   }
+}
+
+function getMoleculesFiletredByPatternFp(molStringsColumn: DG.Column, filteredMolsIdxs: BitArray) {
+  const molStrings = molStringsColumn.toList();
+  const filteredMolecules = Array<string>(filteredMolsIdxs.trueCount());
+  let counter = 0;
+  for (let i = 0; i < molStrings.length; i++) {
+    if (filteredMolsIdxs.getBit(i)) {
+      filteredMolecules[counter] = molStrings[i];
+      counter++;
+    }
+  }
+  return filteredMolecules;
+}
+
+function restoreMatchesByFiletredIdxs(filteredMolsIdxs: BitArray, matchesBitArray: DG.BitSet): DG.BitSet {
+  const matches = DG.BitSet.create(filteredMolsIdxs.length);
+  let counter = 0;
+  for (let i = 0; i < filteredMolsIdxs.length; i++) {
+    if (filteredMolsIdxs.getBit(i)) {
+      if (matchesBitArray.get(counter))
+        matches.set(i, true);
+      counter++;
+    }
+  }
+  return matches;
 }
 
 export function chemGetFingerprint(molString: string, fingerprint: Fingerprint): BitArray {
