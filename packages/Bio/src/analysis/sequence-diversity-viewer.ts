@@ -37,6 +37,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
         resCol.semType = DG.SEMTYPE.MACROMOLECULE;
         this.tags.forEach((tag) => resCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([resCol]);
+        resDf.onCurrentRowChanged.subscribe((_) => {this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx];});
         updateDivInnerHTML(this.root, resDf.plot.grid().root);
         this.computeCompleted.next(true);
       }
@@ -51,7 +52,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       col: monomericMols,
       metricName: this.distanceMetric,
       limit: this.limit,
-      fingerprint: this.fingerprint
+      fingerprint: this.fingerprint,
     });
   }
 

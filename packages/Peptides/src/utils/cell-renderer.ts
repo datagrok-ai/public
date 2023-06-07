@@ -67,7 +67,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
     canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
     let substValue = 0;
     substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach((idxs) => substValue += idxs.length);
-    if (substValue && substValue != 0)
+    if (substValue && substValue !== 0)
       canvasContext.fillText(substValue.toString(), midX, midY);
   }
 

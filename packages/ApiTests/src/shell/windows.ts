@@ -1,13 +1,11 @@
 import {after, before, category, delay, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
+// import * as ui from 'datagrok-api/ui';
+// import * as DG from 'datagrok-api/dg';
 
-let v: DG.TableView;
-
-category('Shell - Windows', () => {
+category('Shell: Windows', () => {
   before(async () => {
-    v = grok.shell.addTableView(grok.data.demo.demog());
+    grok.shell.addTableView(grok.data.demo.demog(10));
   });
 
   test('ShowColumns', async () => {
@@ -45,17 +43,16 @@ category('Shell - Windows', () => {
   });
 
   after(async () => {
-    v.close();
-    grok.shell.closeTable(v.table!);
+    grok.shell.closeAll();
   });
-});
+}, false);
 
 function checkElementVisible(selector: string, exists: boolean = true): void {
   const e = document.body.querySelector(selector);
   if (e == undefined && exists)
-    throw `Element "${selector}" not found`;
+    throw new Error(`Element "${selector}" not found`);
   if ((e != undefined && e instanceof HTMLElement && e.offsetParent != undefined) && !exists)
-    throw `Element "${selector}" found`;
+    throw new Error(`Element "${selector}" found`);
 }
 
 async function checkSwitch(sw: string, selector: string) {

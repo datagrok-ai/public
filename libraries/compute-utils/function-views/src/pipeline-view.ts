@@ -267,6 +267,13 @@ export class PipelineView extends ComputationView {
     await this.onFuncCallReady();
   }
 
+  public override async onAfterSaveRun() {
+    this.stepTabs!.panes.forEach((stepTab) => {
+      $(stepTab.header).removeClass('d4-disabled');
+      ui.tooltip.bind(stepTab.header, '');
+    });
+  }
+
   public override async onComparisonLaunch(funcCallIds: string[]) {
     const parentCall = grok.shell.v.parentCall;
 

@@ -7,7 +7,7 @@ title: "Release History"
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
 | [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.1](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.12](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.13](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
@@ -17,7 +17,7 @@ title: "Release History"
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../deploy/docker-compose.md)
+- [Docker-Compose](../deploy/docker-compose.mdx)
 
 
 ## 2023-05-25 1.15.1
@@ -31,6 +31,7 @@ See also:
 * (Bug) [#1929](https://github.com/datagrok-ai/public/issues/1929): Viewers do not support hex colours set in categorical colouring.
 * (Bug) [#1208](https://github.com/datagrok-ai/public/issues/1208): Default tooltip is unexpectedly reset on duplicating a view.
 * (Bug) GROK-13126: Grid | Layouts: colorcoding is applied from the previous layout.
+
 
 ## 2023-05-17 1.15.0
 
@@ -220,13 +221,13 @@ Added structure editing support for pinned columns.
 ### Addressed Issues
 
 * (Bug) GROK-12918: Viewers: Grid: An exception when dragging columns to the first position 
-* (Bug) [#1855](https://github.com/datagrok-ai/public/issues/1690622388): "Pack and zoom by filter": some data is missing 
-* (Bug) [#1852](https://github.com/datagrok-ai/public/issues/1688387395): Line chart with splitting with specific data is making Datagrok slow (row selection, interaction with line chart) 
-* (Bug) [#1840](https://github.com/datagrok-ai/public/issues/1683443128): Calculated columns: errors on missing values 
+* (Bug) [#1855](https://github.com/datagrok-ai/public/issues/1855): "Pack and zoom by filter": some data is missing 
+* (Bug) [#1852](https://github.com/datagrok-ai/public/issues/1852): Line chart with splitting with specific data is making Datagrok slow (row selection, interaction with line chart) 
+* (Bug) [#1840](https://github.com/datagrok-ai/public/issues/1840): Calculated columns: errors on missing values 
 * null 
-* (Bug) [#1837](https://github.com/datagrok-ai/public/issues/1683243127): Filters cannot be enabled if all filters were disabled in another view 
-* (Bug) [#1839](https://github.com/datagrok-ai/public/issues/1683403062): Datagrok is sporadically frozen in drag-and-drop hover state (moving columns around, adding to filters, calculated columns dialog) 
-* (Enhancement) [#1860](https://github.com/datagrok-ai/public/issues/1692715442): Grid: Support "Apply Coloring" for selected columns of compatible data type 
+* (Bug) [#1837](https://github.com/datagrok-ai/public/issues/1837): Filters cannot be enabled if all filters were disabled in another view 
+* (Bug) [#1839](https://github.com/datagrok-ai/public/issues/1839): Datagrok is sporadically frozen in drag-and-drop hover state (moving columns around, adding to filters, calculated columns dialog) 
+* (Enhancement) [#1860](https://github.com/datagrok-ai/public/issues/1860): Grid: Support "Apply Coloring" for selected columns of compatible data type 
 
 
 ## 2023-05-03 1.14.3
@@ -249,12 +250,12 @@ Added structure editing support for pinned columns.
 
 * (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop 
 * (Improvement) GROK-12788: Cat filter: select one on first select, select all on deselecting last 
-* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used 
-* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views 
-* (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1662788717): Viewers: Organize properties consistently in the context panel 
-* (Enhancement) [#1635](https://github.com/datagrok-ai/public/issues/1613838883): Box Plot: Add a zoom slider to adjust axes range 
-* (Enhancement) [#1746](https://github.com/datagrok-ai/public/issues/1644383938): Scatter Plot: Date picker for X and Y axes min/max 
-* (Bug) [#1671](https://github.com/datagrok-ai/public/issues/1624096862): Line chart: connects the first and last values when  resizing the window 
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1583): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used 
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1758): Filtering is slow if there are multiple bar charts on several views 
+* (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1778): Viewers: Organize properties consistently in the context panel 
+* (Enhancement) [#1635](https://github.com/datagrok-ai/public/issues/1635): Box Plot: Add a zoom slider to adjust axes range 
+* (Enhancement) [#1746](https://github.com/datagrok-ai/public/issues/1746): Scatter Plot: Date picker for X and Y axes min/max 
+* (Bug) [#1671](https://github.com/datagrok-ai/public/issues/1671): Line chart: connects the first and last values when  resizing the window 
 * (Bug) GROK-12891: File Manager: scrollbar is missing in the File Tree 
 
 
@@ -365,7 +366,7 @@ We've launched a new version of the Datagrok platform (1.14.0). This release foc
 ### Data Access
 
 * Improvements:
-  * Added the support of [CoreWeave Object Storage](../../../access/connectors/coreweave.md).
+  * Added the support of [CoreWeave Object Storage](../../../access/databases/connectors/coreweave.md).
   * Conducted Postgres harmonization, which includes complete types support and the addition of regex support in the string pattern for the connector.
   * The MySQL connector now fully supports all types.
   * Added the ability to display SQL views along with tables.
@@ -555,13 +556,13 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ### Addressed Issues
 
-* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
-* (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1653528027): Out of memory on adding viewer with specific data
-* (Bug) [#1764](https://github.com/datagrok-ai/public/issues/1655940422): Error loading scatter plot for specific data and log scale axes on applying layout
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1583): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1761): Out of memory on adding viewer with specific data
+* (Bug) [#1764](https://github.com/datagrok-ai/public/issues/1764): Error loading scatter plot for specific data and log scale axes on applying layout
 * closes 1744 Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis
-* (Bug) [#1744](https://github.com/datagrok-ai/public/issues/1644087257): Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis (WIP)
-* (Bug) [#1745](https://github.com/datagrok-ai/public/issues/1644091651): Floating viewer appears unexpectedly on applying layout in some cases
-* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
+* (Bug) [#1744](https://github.com/datagrok-ai/public/issues/1744): Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis (WIP)
+* (Bug) [#1745](https://github.com/datagrok-ai/public/issues/1745): Floating viewer appears unexpectedly on applying layout in some cases
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1758): Filtering is slow if there are multiple bar charts on several views
 * Filters: return select filters dialog
 
 
@@ -583,21 +584,21 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 
 ### Addressed Issues
 
-* (Enhancement) [#1552](https://github.com/datagrok-ai/public/issues/1564713406): Scatter Plot: line labels enhancements
-* (Bug) [#1613](https://github.com/datagrok-ai/public/issues/1598588170): 'Error loading scatter plot' for apecific data on applying layout
+* (Enhancement) [#1552](https://github.com/datagrok-ai/public/issues/1552): Scatter Plot: line labels enhancements
+* (Bug) [#1613](https://github.com/datagrok-ai/public/issues/1613): 'Error loading scatter plot' for apecific data on applying layout
 * (Bug) GROK-12382: Websocket reconnects after it closed (WIP)
 * Datagrok Docker: Allow grok user use sudo without password
-* (Enhancement) [#1111](https://github.com/datagrok-ai/public/issues/1406443198): Viewers: PivotGrid: transformation result preview
+* (Enhancement) [#1111](https://github.com/datagrok-ai/public/issues/1111): Viewers: PivotGrid: transformation result preview
 * histogram imitates filter look
-* (Bug) [#1628](https://github.com/datagrok-ai/public/issues/1611012446): Wrong data is shown on line chart
+* (Bug) [#1628](https://github.com/datagrok-ai/public/issues/1628): Wrong data is shown on line chart
 * (Bug) GROK-12479: Project deserialization leads to 50MB response size
 * (Bug) GROK-12408: Chem: 'Chem | Possibly a malformed molString at init: `undefined`' error when hovering over mol column's header
 * Help: New release history
 * fix for column tooltip
 * Git: Fixed conflicts
 * fix scatterplot
-* (Bug) [#1651](https://github.com/datagrok-ai/public/issues/1623650870): Line chart: incorrect legend for Split by when Row Source=selected
-* (Bug) [#1650](https://github.com/datagrok-ai/public/issues/1623611567): Line chart: Unsupported operation: NaN.floor() error
+* (Bug) [#1651](https://github.com/datagrok-ai/public/issues/1651): Line chart: incorrect legend for Split by when Row Source=selected
+* (Bug) [#1650](https://github.com/datagrok-ai/public/issues/1650): Line chart: Unsupported operation: NaN.floor() error
 * (Bug) GROK-12498: Chem: grid scrolls to the right when you hover over a molecular column
 * connected not supported
 * updated version of grok_connect-1.2.1.jar
@@ -650,8 +651,8 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 * (Improvement) GROK-12095: GrokConect: Athena Harmonization (WIP)
 * GROK-12373: Create test class and test cases for Athena Provider
 * Grok Connect: Bump version
-* (Bug) [#1637](https://github.com/datagrok-ai/public/issues/1616819912): Filters re-ordering dialog is not opened if a custom filter was added to filters panel
-* (Bug) [#1724](https://github.com/datagrok-ai/public/issues/1632100036): Table is not rendered properly after switching dataframe if it was sorted
+* (Bug) [#1637](https://github.com/datagrok-ai/public/issues/1637): Filters re-ordering dialog is not opened if a custom filter was added to filters panel
+* (Bug) [#1724](https://github.com/datagrok-ai/public/issues/1724): Table is not rendered properly after switching dataframe if it was sorted
 
 
 ## 2023-03-14 1.13.7

@@ -37,4 +37,8 @@ ctx.addEventListener('message', async (e: any) => {
     const result = _rdKitServiceWorker!.convertMolNotation(args[0]);
     port.postMessage({op: op, retval: result});
   }
+  else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
+    const result = _rdKitServiceWorker!.getStructuralAlerts(args[0], args[1]);
+    port.postMessage({op: op, retval: result});
+  }
 });

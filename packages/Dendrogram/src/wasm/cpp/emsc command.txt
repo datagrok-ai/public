@@ -1,1 +1,0 @@
-em++ -O3 ./clustering.cpp ./fastcluster.cpp -o ./wasmCluster.js -s TOTAL_MEMORY=268435456 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportCppLib" -s EXPORTED_FUNCTIONS=["_getDendrogram","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"] -sENVIRONMENT=web,worker

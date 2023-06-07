@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expectObject} from '@datagrok-libraries/utils/src/test';
 
 import {markupNode, MarkupNodeType} from '../viewers/tree-renderers/markup';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
@@ -30,9 +30,9 @@ category('treeForGrid', () => {
                   children: [
                     {name: 'l2', branch_length: 1.2},
                     {name: 'l3', branch_length: 1.4},
-                  ]
-                }
-              ]
+                  ],
+                },
+              ],
             },
             {
               name: 'node-l4-l5-l6',
@@ -47,8 +47,8 @@ category('treeForGrid', () => {
                   ],
                 },
                 {name: 'l6', branch_length: 0.3},
-              ]
-            }
+              ],
+            },
           ],
         },
         tgt: {
@@ -67,10 +67,10 @@ category('treeForGrid', () => {
                     {name: 'l2', branch_length: 1.2, index: 1, subtreeLength: 1.2} as MarkupNodeType,
                     {name: 'l3', branch_length: 1.4, index: 2, subtreeLength: 1.4} as MarkupNodeType,
                   ],
-                  minIndex: 1, maxIndex: 2, subtreeLength: 1.6
+                  minIndex: 1, maxIndex: 2, subtreeLength: 1.6,
                 } as MarkupNodeType,
               ],
-              minIndex: 0, maxIndex: 2, subtreeLength: 2.6
+              minIndex: 0, maxIndex: 2, subtreeLength: 2.6,
             } as MarkupNodeType,
             {
               name: 'node-l4-l5-l6',
@@ -83,16 +83,16 @@ category('treeForGrid', () => {
                     {name: 'l4', branch_length: 0.3, index: 3, subtreeLength: 0.3} as MarkupNodeType,
                     {name: 'l5', branch_length: 1.0, index: 4, subtreeLength: 1.0} as MarkupNodeType,
                   ],
-                  minIndex: 3, maxIndex: 4, subtreeLength: 1.3
+                  minIndex: 3, maxIndex: 4, subtreeLength: 1.3,
                 },
                 {name: 'l6', branch_length: 0.3, index: 5, subtreeLength: 0.3} as MarkupNodeType,
               ],
-              minIndex: 3, maxIndex: 5, subtreeLength: 2.9
+              minIndex: 3, maxIndex: 5, subtreeLength: 2.9,
             } as MarkupNodeType,
           ],
-          minIndex: 0, maxIndex: 5, subtreeLength: 3.0
-        } as MarkupNodeType
-      }
+          minIndex: 0, maxIndex: 5, subtreeLength: 3.0,
+        } as MarkupNodeType,
+      },
     };
 
   test('markup1', async () => {

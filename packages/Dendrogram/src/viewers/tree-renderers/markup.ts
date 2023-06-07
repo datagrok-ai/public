@@ -17,13 +17,10 @@ export type MarkupNodeType = NodeType & {
 };
 
 /**
- *
- * @param node
- * @param currentLeafIndex
- * @return {number} Index pointing to the next leaf
- */
+ * @param {MarkupNodeType | NodeType}node
+ * @param {number}currentLeafIndex*/
 export function markupNode(
-  node: MarkupNodeType | NodeType, currentLeafIndex: number = 0
+  node: MarkupNodeType | NodeType, currentLeafIndex: number = 0,
 ): void {
   function markupNodeInt(node: MarkupNodeType, currentLeafIndex: number) {
     if (isLeaf(node)) {
@@ -119,11 +116,11 @@ export class TreeStylerBase<TNode extends NodeType> implements ITreeStyler<TNode
 
   protected _strokeColor;
 
-  getStrokeColor(node: TNode): string { return this._strokeColor; }
+  getStrokeColor(_node: TNode): string { return this._strokeColor; }
 
   protected _fillColor;
 
-  getFillColor(node: TNode): string { return this._fillColor; }
+  getFillColor(_node: TNode): string { return this._fillColor; }
 
   protected _onStylingChanged: rxjs.Subject<void> = new rxjs.Subject<void>();
   get onStylingChanged(): rxjs.Observable<void> { return this._onStylingChanged; }
@@ -165,33 +162,24 @@ export type RectangleRenderOptions<TNode extends MarkupNodeType> = {
 }
 
 /**
- * @param {RectangleRenderOptions} opts
- * @param node
- * @param {nnumber} currentLength
- * @param {Array} traceList    List of target nodes to trace back to root
- * @private
- */
+  * @param {RectangleRenderOptions<TNode>} opts Options
+  * @param {TNode} node Node to render
+  * @param {number} currentLength Current length of the tree
+  * @param {TraceTargetType<TNode>[]} traceList List of trace targets
+  * @return {RenderNodeResultType<TNode>}*/
 export function renderNode<TNode extends MarkupNodeType>(
   opts: RectangleRenderOptions<TNode>,
-  node: TNode, currentLength: number = 0, traceList: TraceTargetType<TNode>[]
+  node: TNode, currentLength: number = 0, traceList: TraceTargetType<TNode>[],
 ): RenderNodeResultType<TNode> {
   const dpr: number = window.devicePixelRatio;
   const res: RenderNodeResultType<TNode> = {
-    traceback: traceList.filter((t) => t.target == node).map((t) => t.styler)
+    traceback: traceList.filter((t) => t.target == node).map((t) => t.styler),
   };
 
   const beginX = currentLength * opts.lengthRatio + opts.leftPadding * dpr;
   const endX = (currentLength + node.branch_length!) * opts.lengthRatio + opts.leftPadding * dpr;
   const posY = (node.index - opts.firstRowIndex) * opts.stepRatio;
 
-  if (node.name == 'node-l1-l2') {
-    console.debug('Dendrogram: renderNode() \n' +
-      `node.name = ${node.name}, stylers = [${res.traceback.map((s) => s.name).join(', ')}]`);
-  }
-
-  if (node.name == 'node-92161' || (traceList.length == 1 && traceList[0].target.name == 'node-92161')) {
-    const k = 11;
-  }
   const ctx: CanvasRenderingContext2D = opts.ctx;
 
   const maxIndex = node.maxIndex ?? node.index;
@@ -247,14 +235,6 @@ export function renderNode<TNode extends MarkupNodeType>(
     }
   }
 
-  // if (res.traceback.length > 0) {
-  //   let k = 11;
-  // }
-
-  if (node.name == 'node-l1-l2-l3' && res.traceback.length > 1) {
-    const k = 11;
-  }
-
   for (const effStyler of [opts.styler, ...res.traceback]) {
     // Draw trace
     ctx.beginPath();
@@ -303,7 +283,6 @@ export function renderNode<TNode extends MarkupNodeType>(
       ctx.stroke();
       //#endregion
     }
-
     node.desc += effStyler.name + ', ';
   }
   return res;

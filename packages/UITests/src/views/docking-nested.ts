@@ -2,23 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {after, awaitCheck, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, test} from '@datagrok-libraries/utils/src/test';
 
 category('View: DockingNested', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
 
   before(async () => {
-    df = grok.data.demo.demog();
-    tv = grok.shell.addTableView(df);
-  });
-
-  after(async () => {
-    // tv.close();
-    // grok.shell.closeTable(df);
+    df = grok.data.demo.demog(10);
   });
 
   test('left-and-right', async () => {
+    tv = grok.shell.addTableView(df);
     const tlmClass = 'test-left-of-main';
     const trmClass = 'test-right-of-main';
 
@@ -42,6 +37,7 @@ category('View: DockingNested', () => {
   });
 
   test('top-and-down', async () => {
+    tv = grok.shell.addTableView(df);
     const ttmClass = 'test-top-of-main';
     const tdmClass = 'test-down-of-main';
 
@@ -65,6 +61,7 @@ category('View: DockingNested', () => {
   });
 
   test('down-of-right', async () => {
+    tv = grok.shell.addTableView(df);
     const trmClass = 'test-right-of-main';
     const tdrmClass = 'test-down-of-right-of-main';
 
@@ -87,6 +84,7 @@ category('View: DockingNested', () => {
   });
 
   test('fill-of-down-of-right', async () => {
+    tv = grok.shell.addTableView(df);
     const trmClass = 'test-right-of-main';
     const tdrmClass = 'test-down-of-right-of-main';
     const tfdrmClass = 'test-down-of-right-of-main';
@@ -121,6 +119,7 @@ category('View: DockingNested', () => {
   });
 
   test('fill-of-down-and-fill-of-right', async () => {
+    tv = grok.shell.addTableView(df);
     const trmClass = 'test-right-of-main';
     const tfrmClass = 'test-fill-of-right-of-main';
     const tdrmClass = 'test-down-of-right-of-main';
@@ -165,6 +164,7 @@ category('View: DockingNested', () => {
   });
 
   test('fill-of-down-and-fill-of-right-2', async () => {
+    tv = grok.shell.addTableView(df);
     const trmClass = 'test-right-of-main';
     const tfrmClass = 'test-fill-of-right-of-main';
     const tdrmClass = 'test-down-of-right-of-main';
@@ -209,6 +209,7 @@ category('View: DockingNested', () => {
   });
 
   test('left-of-fill-of-down-and-fill-of-right', async () => {
+    tv = grok.shell.addTableView(df);
     const trmClass = 'test-right-of-main';
     const tfrmClass = 'test-fill-of-right-of-main';
     const tdrmClass = 'test-down-of-right-of-main';
@@ -262,7 +263,7 @@ category('View: DockingNested', () => {
         isDownOf(resFillOfDownOfRightDiv, resFillOfRightDiv)
       );
     }, 'LEFT OF FILL OF DOWN AND FILL OF RIGHT OF MAIN failed', 1000);
-  });
+  }, {skipReason: 'GROK-13242'});
 });
 
 function isLeftOf(tgt: Element, ref: Element): boolean {

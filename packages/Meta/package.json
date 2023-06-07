@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.81",
+  "version": "3.4.1",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -274,6 +274,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.3.3": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.3.4": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -981,6 +984,15 @@
         },
         "1.9.0": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.9.1": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.9.2": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.9.3": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1198,6 +1210,12 @@
         },
         "1.7.3": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.7.4": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.5": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1404,6 +1422,24 @@
         },
         "1.6.0": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.6.2": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.6.3": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.6.4": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.0": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.2": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.3": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1580,6 +1616,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.0.23": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.0.24": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -2070,6 +2109,9 @@
           "datagrok-api": "^1.13.3"
         },
         "2.4.30": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.31": {
           "datagrok-api": "^1.13.3"
         }
       },
@@ -2637,6 +2679,15 @@
         },
         "1.2.12": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.14": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.2.15": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.2.16": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -2745,6 +2796,9 @@
         },
         "1.0.2": {
           "datagrok-api": "latest"
+        },
+        "1.0.3": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated tests for JDBC Providers",
@@ -2765,6 +2819,12 @@
         },
         "1.0.2": {
           "datagrok-api": "latest"
+        },
+        "1.0.3": {
+          "datagrok-api": "latest"
+        },
+        "1.0.4": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -2772,7 +2832,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/UITests"
-      }
+      },
+      "category": "Development"
     },
     "curves": {
       "dependencies": {
@@ -2815,6 +2876,22 @@
         "type": "git",
         "url": "git@github.com:datagrok-ai/public.git",
         "directory": "packages/LibTests"
+      }
+    },
+    "cvm-tests": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        },
+        "1.0.1": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Automated CVM tests",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/CVMTests"
       }
     }
   }

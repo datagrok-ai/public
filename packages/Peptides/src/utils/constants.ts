@@ -38,6 +38,7 @@ export enum TAGS {
   CUSTOM_CLUSTER = 'customCluster',
   UUID = 'pep-uuid',
   MONOMER_POSITION_MODE = 'monomerPositionMode',
+  MULTIPLE_VIEWS = 'isMultipleViews',
 }
 
 export enum SEM_TYPES {
@@ -46,8 +47,6 @@ export enum SEM_TYPES {
 }
 
 export const EMBEDDING_STATUS = 'embeddingStatus';
-
-export const MULTIPLE_VIEWS = 'isMultipleViews';
 
 export enum SCALING_METHODS {
   NONE = 'none',

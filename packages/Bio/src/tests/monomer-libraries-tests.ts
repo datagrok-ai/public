@@ -29,6 +29,6 @@ category('monomerLibraries', () => {
 
     // Currently default monomer lib set is of all files at LIB_PATH (at least HELMCoreLibrary.json)
     const currentMonomerLib = monomerLibHelper.getBioLib();
-    expect(currentMonomerLib.getTypes().length > 0, true);
+    expect(currentMonomerLib.getPolymerTypes().length > 0, true);
   });
 });

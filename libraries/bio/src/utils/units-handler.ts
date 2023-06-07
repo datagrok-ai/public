@@ -319,7 +319,7 @@ export class UnitsHandler {
     const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
     const bioLib = monomerLibHelper.getBioLib();
     // retrieve peptides
-    const peptides = bioLib.getMonomerNamesByType(HELM_POLYMER_TYPE.PEPTIDE.toString());
+    const peptides = bioLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE.toString());
     // convert the peptides list to a set for faster lookup
     const peptidesSet = new Set(peptides);
     // get splitter for given separator and check if all monomers are in the lib
