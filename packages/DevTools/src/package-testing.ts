@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay, Test, TestContext, initAutoTests} from '@datagrok-libraries/utils/src/test';
+import {delay, Test, TestContext, initAutoTests, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {c} from './package';
 import {Menu} from 'datagrok-api/dg';
 import '../css/styles.css';
@@ -22,6 +22,7 @@ interface IPackageTests {
   categories: {[index: string]: ICategory} | null;
   totalTests: number | null;
   resultDiv: HTMLElement;
+  check: boolean;
 }
 
 interface ICategory {
@@ -114,8 +115,10 @@ export class TestManager extends DG.ViewBase {
   }
 
   async collectPackageTests(packageNode: DG.TreeViewGroup, f: any, testFromUrl?: ITestFromUrl) {
+    const selectedPackage = this.packagesTests.find((pt) => pt.name === f.package.name);
     if (this.testFunctions.filter((it) => it.package.name === f.package.name).length !== 0 &&
-    this.packagesTests.filter((pt) => pt.name === f.package.name)[0].categories === null) {
+    selectedPackage.categories === null && selectedPackage.check === false) {
+      selectedPackage.check = true;
       await f.package.load({file: f.options.file});
       const testModule = f.package.getModule(f.options.file);
       if (!testModule)
@@ -162,7 +165,6 @@ export class TestManager extends DG.ViewBase {
           .forEach((cat) => {
             testsNumInPack += this.addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
           });
-        const selectedPackage = this.packagesTests.filter((pt) => pt.name === f.package.name)[0];
         selectedPackage.categories = packageTestsFinal;
         selectedPackage.totalTests = testsNumInPack;
       };
@@ -223,6 +225,7 @@ export class TestManager extends DG.ViewBase {
         categories: null,
         totalTests: null,
         resultDiv: testPassed,
+        check: false,
       });
       const packNode = this.tree.group(pack.package.friendlyName,
         null, testFromUrl && pack.package.name === testFromUrl.packName);
@@ -401,9 +404,10 @@ export class TestManager extends DG.ViewBase {
     case NODE_TYPE.PACKAGE: {
       const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
       let testsSucceded = true;
-      const packageTests = this.packagesTests.filter((pt) => pt.name === tests.package.name)[0];
+      const packageTests = this.packagesTests.find((pt) => pt.name === tests.package.name);
       this.testInProgress(packageTests.resultDiv, true);
       await this.collectPackageTests(node as DG.TreeViewGroup, tests);
+      await awaitCheck(() => packageTests.categories !== null, 'cannot load package categories', 5000);
       const cats = packageTests.categories;
       catsValuesSorted = Object.keys(cats).sort((a, b) => a.localeCompare(b)).map((cat) => cats[cat]);
       let completedTestsNum = 0;
