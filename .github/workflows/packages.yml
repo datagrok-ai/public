@@ -180,8 +180,9 @@ jobs:
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
-          echo "Notify abour version used for tests"
+          echo "Notify about version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
+          df -h
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -224,7 +225,9 @@ jobs:
       - name: Install datagrok tools
         id: datagrok-tools
         if: ${{ matrix.test == 'true' }}
-        run: npm install -g datagrok-tools@latest
+        run: |
+          df -h
+          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
