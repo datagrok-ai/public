@@ -67,7 +67,7 @@ export async function multipleSequenceAlignmentUI(
     }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
-    const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol ?? table.columns.byIndex(0));
+    const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
     clustersColInput.nullable = true;
     colInput.fireChanged();
     //if column is specified (from tests), run alignment and resolve with the result

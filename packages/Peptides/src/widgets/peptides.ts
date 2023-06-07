@@ -101,7 +101,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   //TODO: remove when new version of datagrok-api is available
   //@ts-ignore
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
-  const clustersColumnChoice = ui.columnInput('Clusters', df, df.columns.byIndex(0));
+  const clustersColumnChoice = ui.columnInput('Clusters', df, null);
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
