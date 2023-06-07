@@ -4,7 +4,7 @@
   "sources": [
     "css/power-pack.css",
     "css/viewers-gallery.css",
-    "css/window-manager.css"
+    "css/windows-manager.css"
   ],
   "version": "1.0.7",
   "author": {
