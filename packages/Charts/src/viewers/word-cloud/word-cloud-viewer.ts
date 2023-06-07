@@ -21,7 +21,7 @@ export class WordCloudViewer extends DG.JsViewer {
   maxTextSize: any;
   minRotationDegree: number;
   maxRotationDegree: number;
-  roationStep: number;
+  rotationStep: number;
   gridSize: number;
   drawOutOfBound: boolean;
   fontFamily: string;
@@ -44,7 +44,7 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.minRotationDegree = this.int('minRotationDegree', -30);
     this.maxRotationDegree = this.int('maxRotationDegree', 30);
-    this.roationStep = this.int('rotationStep', 5);
+    this.rotationStep = this.int('rotationStep', 5);
 
     this.gridSize = this.int('gridSize', 8);
 
@@ -142,7 +142,7 @@ export class WordCloudViewer extends DG.JsViewer {
         sizeRange: [this.minTextSize, this.maxTextSize],
         gridSize: this.gridSize,
         rotationRange: [this.minRotationDegree, this.maxRotationDegree],
-        rotationStep: this.roationStep,
+        rotationStep: this.rotationStep,
         drawOutOfBound: this.drawOutOfBound,
         textStyle: {
           fontFamily: this.fontFamily,
