@@ -12,7 +12,7 @@ export class SequenceToSmilesConverter {
     sequence: string, invert: boolean = false, format: string
   ) {
     this.lib = MonomerLibWrapper.getInstance();
-    const codeToNameMap = this.lib.getCodeToNameMap(format);
+    const codeToNameMap = this.lib.getCodeToSymbolMap(format);
     this.parser = new MonomerSequenceParser(sequence, invert, codeToNameMap);
   };
 

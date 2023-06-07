@@ -12,8 +12,8 @@ export class SequenceToMolfileConverter {
     sequence: string, invert: boolean = false, format: FORMAT
   ) {
     this.lib = MonomerLibWrapper.getInstance();
-    const codeToNameMap = this.lib.getCodeToNameMap(format);
-    this.parser = new MonomerSequenceParser(sequence, invert, codeToNameMap);
+    const codeToSymbolMapap = this.lib.getCodeToSymbolMap(format);
+    this.parser = new MonomerSequenceParser(sequence, invert, codeToSymbolMapap);
   }
 
   private parser: MonomerSequenceParser;

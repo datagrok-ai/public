@@ -65,26 +65,26 @@ export class MonomerLibWrapper {
     return (molfile.includes('MODIFICATION')) ? true : false;
   }
 
-  getCodeToNameMap(format: string): Map<string, string> {
-    const codeToNameMap = new Map<string, string>;
+  getCodeToSymbolMap(format: string): Map<string, string> {
+    const codeToSymbolMap = new Map<string, string>;
 
     for (const monomer of this.allMonomers) {
-      const name = monomer[REQ.NAME];
+      const monomerSymbol = monomer[REQ.SYMBOL];
       const codes = this.getCodesObject(monomer);
       if (Object.keys(codes).includes(format)) {
         if (Array.isArray(codes[format])) {
           const arr = codes[format] as string[];
-          arr.forEach((code) => codeToNameMap.set(code, name));
+          arr.forEach((code) => codeToSymbolMap.set(code, monomerSymbol));
         } else {
           const obj = codes[format] as TechnologiesObject;
           for (const technology in obj) {
             for (const code of obj[technology])
-              codeToNameMap.set(code, name);
+              codeToSymbolMap.set(code, monomerSymbol);
           }
         }
       }
     }
-    return codeToNameMap;
+    return codeToSymbolMap;
   }
 
   getModificationGCRSCodes(): string[] {
