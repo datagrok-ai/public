@@ -255,7 +255,7 @@ class SPEReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
   public async transform(): Promise<IReduceDimensionalityResult> {
-    const emb = this.reducer.embed(this.data);
+    const emb = await this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
 }
@@ -284,7 +284,7 @@ class PSPEReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
   public async transform(): Promise<IReduceDimensionalityResult> {
-    const emb = this.reducer.embed(this.data);
+    const emb = await this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
 }
@@ -313,7 +313,7 @@ class OriginalSPEReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
   public async transform(): Promise<IReduceDimensionalityResult> {
-    const emb = this.reducer.embed(this.data);
+    const emb = await this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
 }
@@ -371,9 +371,9 @@ export class DimensionalityReducer {
         ...options,
       };
     } else if (method == 'SPE') {
-      specOptions = {...{data: data}, ...{distance: measure}, ...options};
+      specOptions = {...{data: data}, ...{distance: measure}, distanceFunctionName: metric, ...options};
     } else {
-      specOptions = {...{data: data}, ...{distance: measure}, ...options};
+      specOptions = {...{data: data}, ...{distance: measure}, distanceFunctionName: metric, ...options};
     }
     this.reducer = new AvailableReducers[method](specOptions);
   }
