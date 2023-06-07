@@ -13,6 +13,8 @@ export function hamming(): mmDistanceFunctionType {
       if (seq1[i] !== seq2[i])
         result++;
     }
-    return result + diff;
+    result += diff;
+    result /= Math.max(seq1.length, seq2.length);
+    return result;
   };
 }
