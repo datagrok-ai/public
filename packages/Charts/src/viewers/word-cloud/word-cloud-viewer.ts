@@ -12,6 +12,7 @@ import $ from 'cash-dom';
   name: 'Word Cloud Viewer',
   description: 'Creates a word cloud viewer',
   icon: 'icons/wordcloud-viewer.svg',
+  toolbox: true,
 })
 export class WordCloudViewer extends DG.JsViewer {
   strColumnName: string;
