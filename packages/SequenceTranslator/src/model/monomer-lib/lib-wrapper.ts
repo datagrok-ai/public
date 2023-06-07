@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
-import {SYNTHESIZERS, TECHNOLOGIES} from '../const';
+import {FORMAT, TECHNOLOGIES} from '../const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
@@ -89,10 +89,10 @@ export class MonomerLibWrapper {
 
   getModificationGCRSCodes(): string[] {
     let result: string[] = [];
-    const modifications = this.getMonomersByFormat(SYNTHESIZERS.GCRS)
+    const modifications = this.getMonomersByFormat(FORMAT.GCRS)
       .filter((monomer) => this.isModification(monomer[REQ.SYMBOL]));
     for (const monomer of modifications) {
-      const codes = this.getCodesObject(monomer)[SYNTHESIZERS.GCRS] as TechnologiesObject;
+      const codes = this.getCodesObject(monomer)[FORMAT.GCRS] as TechnologiesObject;
       for (const technology in codes)
         result = result.concat(codes[technology]);
     }
@@ -135,8 +135,8 @@ export class MonomerLibWrapper {
   // todo: refactor, unify with getCodesByFormat
   getGcrsCodesWithoutLinkages(): string[] {
     let codes: string[] = [];
-    const format = SYNTHESIZERS.GCRS;
-    const monomers = this.getMonomersByFormat(SYNTHESIZERS.GCRS);
+    const format = FORMAT.GCRS;
+    const monomers = this.getMonomersByFormat(FORMAT.GCRS);
     for (const monomer of monomers) {
       if (monomer.name.includes('linkage'))
         continue;
@@ -162,7 +162,7 @@ export class MonomerLibWrapper {
     const meta = sourceObj[OPT.META] as Meta;
     const codes = meta[MET.CODES] as Codes;
 
-    for (const synthesizer of Object.values(SYNTHESIZERS)) {
+    for (const synthesizer of Object.values(FORMAT)) {
       const fieldName = synthesizer;
       const valuesList = [];
       if (codes[synthesizer] !== undefined) {

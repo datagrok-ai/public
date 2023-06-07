@@ -1,7 +1,7 @@
 import {NUCLEOTIDES} from '../const';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {sortByReverseLength} from '../helpers';
-import {SYNTHESIZERS as FORMAT} from '../const';
+import {FORMAT} from '../const';
 
 export class SequenceValidator {
   constructor(private sequence: string) {

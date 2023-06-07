@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {MonomerSequenceParser} from './monomer-code-parser';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
-import {SYNTHESIZERS as FORMAT} from '../../model/const';
+import {FORMAT} from '../../model/const';
 
 export class SequenceToMolfileConverter {
   constructor(

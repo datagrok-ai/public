@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './constants';
 import {differenceOfTwoArrays, download} from '../helpers';
 import * as grok from 'datagrok-api/grok';
-import {SYNTHESIZERS} from '../const';
+import {FORMAT} from '../const';
 import {SequenceToMolfileConverter} from '../sequence-to-structure-utils/sequence-to-molfile';
 import {RegistrationSequenceParser} from './sequence-parser';
 import {linkStrandsV3000} from '../sequence-to-structure-utils/mol-transformations';
@@ -22,7 +22,7 @@ export async function sdfSaveTable(table: DG.DataFrame, onError: (rowI: number, 
     try {
       let rowStr = '';
       const parser = new RegistrationSequenceParser();
-      const format = SYNTHESIZERS.GCRS; //getFormat(sequenceCol.get(i))!;
+      const format = FORMAT.GCRS; //getFormat(sequenceCol.get(i))!;
       if (typeCol.get(i) === SEQUENCE_TYPES.SENSE_STRAND) {
         const molfile = (new SequenceToMolfileConverter(sequenceCol.get(i), false, format)).convert();
         rowStr += `${molfile}\n> <Sequence>\nSense Strand\n\n`;

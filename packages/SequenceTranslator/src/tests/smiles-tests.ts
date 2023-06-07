@@ -1,12 +1,12 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {SequenceToSmilesConverter} from '../model/sequence-to-structure-utils/sequence-to-smiles';
-import {SYNTHESIZERS} from '../model/const';
+import {FORMAT} from '../model/const';
 
 function getSmiles(strand: string, format: string): string {
   return (new SequenceToSmilesConverter(strand, false, format)).convert();
 }
 
-const AXOLABS = SYNTHESIZERS.AXOLABS;
+const AXOLABS = FORMAT.AXOLABS;
 
 const axolabsToSmiles: {[key: string]: string} = {
   'usCfCfUfGfAf': 'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +

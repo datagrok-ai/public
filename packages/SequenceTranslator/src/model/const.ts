@@ -22,7 +22,7 @@ export enum INPUT_FORMATS {
   MERMADE_12 = 'Mermade12',
 };
 
-export enum SYNTHESIZERS {
+export enum FORMAT {
   HELM = 'HELM', // helm is not a synthesizer, rename enum
   NUCLEOTIDES = 'Nucleotides',
   BIOSPRING = 'BioSpring',

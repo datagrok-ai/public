@@ -1,4 +1,4 @@
-import {SYNTHESIZERS as FORMAT} from '../const';
+import {FORMAT} from '../const';
 import {FormatConverter} from './format-converter';
 
 const NO_TRANSLATION_MSG = 'No translation table available';

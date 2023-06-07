@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {sortByReverseLength} from '../helpers';
-import {SYNTHESIZERS as FORMAT} from '../const';
+import {FORMAT} from '../const';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {SequenceValidator} from './sequence-validator';
 

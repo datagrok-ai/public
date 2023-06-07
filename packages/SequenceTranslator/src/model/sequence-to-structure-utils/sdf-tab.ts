@@ -7,7 +7,7 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {download} from '../helpers';
 import {SequenceToMolfileConverter} from './sequence-to-molfile';
 import {linkStrandsV3000} from './mol-transformations';
-import {SYNTHESIZERS} from '../const';
+import {FORMAT} from '../const';
 
 export type StrandData = {
   strand: string,
@@ -19,7 +19,7 @@ export function getMolfileForStrand(strand: string, invert: boolean): string {
   if (strand === '')
     return '';
   // restrict to GCRS codes only
-  const format = SYNTHESIZERS.GCRS;
+  const format = FORMAT.GCRS;
   let molfile = '';
   try {
     molfile = (new SequenceToMolfileConverter(strand, invert, format)).convert();

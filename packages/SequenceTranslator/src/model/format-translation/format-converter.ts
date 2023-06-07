@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {DELIMITER} from '../const';
 import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
-import {SYNTHESIZERS as FORMAT} from '../const';
+import {FORMAT} from '../const';
 import {GROUP_TYPE, EDGES, CENTER, PHOSPHORUS} from './const';
 import {KeyToValue, CodesInfo} from '../data-loading-utils/types';
 import {formatDictionary, codesToHelmDictionary} from '../data-loading-utils/json-loader';

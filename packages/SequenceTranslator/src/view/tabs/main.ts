@@ -10,7 +10,7 @@ import $ from 'cash-dom';
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {INPUT_FORMATS} from '../../model/const';
-import {SYNTHESIZERS as FORMAT} from '../../model/const';
+import {FORMAT} from '../../model/const';
 import {SequenceToSmilesConverter} from '../../model/sequence-to-structure-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
 import {getTranslatedSequences} from '../../model/format-translation/conversion-utils';
