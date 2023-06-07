@@ -132,7 +132,8 @@ export class SensitivityAnalysisView {
           lvlInput: ui.intInput('Levels', 3, (v: number) => numericStore.lvl = v),
           distribInput: ui.choiceInput('Distribution', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => numericStore.distrib = v),
           isChangingInput: (() => {
-            const input = ui.switchInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));
+            //const input = ui.switchInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));
+            const input = ui.boolInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));
             $(input.root).css({'min-width': '50px', 'width': '50px'});
             $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
             return input;
@@ -369,6 +370,7 @@ export class SensitivityAnalysisView {
       'width': '100%',
       'max-width': '100%',
       'padding-top': '0px',
+      'overflow-y': 'scroll',
     });
 
     ui.tools.handleResize(form.container, adaptStyle);
@@ -418,6 +420,12 @@ export class SensitivityAnalysisView {
     const analysis = new VarianceBasedSenstivityAnalysis(options.func, options.fixedInputs, options.variedInputs, options.samplesCount);
     const df = await analysis.perform();
     this.comparisonView.dataFrame = df;
+
+    // TODO (Viktor Makarichev): provide better implementation 
+    const names = df.columns.names();
+    const xName: string = names[0];
+    const yName: string = names[names.length - 1];
+    this.comparisonView.addViewer(DG.Viewer.scatterPlot(df, {x: xName, y: yName}));
   }
 
   private async runSimpleAnalysis() {
