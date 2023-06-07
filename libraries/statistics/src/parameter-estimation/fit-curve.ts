@@ -71,7 +71,7 @@ export const FIT_FUNCTION_LINEAR = 'Linear';
 
 export type FitFunctionType = 'Sigmoid' | 'Linear';
 
-abstract class FitFunction {
+export abstract class FitFunction {
   abstract get name(): string;
   abstract get parameterNames(): string[];
   abstract y(params: number[], x: number): number;
@@ -79,7 +79,7 @@ abstract class FitFunction {
 }
 
 
-class LinearFunction extends FitFunction {
+export class LinearFunction extends FitFunction {
   get name(): string {
     return FIT_FUNCTION_LINEAR;
   }

@@ -3,9 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {
+  FitFunction,
   FitResult,
   fitResultProperties,
   getFittedCurve,
+  LinearFunction,
   SigmoidFunction,
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
@@ -137,9 +139,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (const series of data.series!) {
       series.points.sort((a, b) => a.x - b.x);
+      let fitFunc: FitFunction = new LinearFunction();
+      if (series.fitFunction === 'sigmoid') {
+        fitFunc = new SigmoidFunction();
+      }
       let curve: (x: number) => number;
       if (series.parameters)
-        curve = getFittedCurve(new SigmoidFunction().y, series.parameters);
+        curve = getFittedCurve(fitFunc.y, series.parameters);
       else {
         const fitResult = fitSeries(series);
         curve = fitResult.fittedCurve;

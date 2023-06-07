@@ -14,6 +14,7 @@ import {
   getCurveConfidenceIntervals,
   getStatistics,
   SigmoidFunction,
+  LinearFunction,
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 /**
@@ -241,17 +242,20 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
 /** Fits the series data according to the series fitting settings */
 export function fitSeries(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return fitData(data, fitFunctions.FIT_FUNCTION_SIGMOID, FitErrorModel.Constant);
+  const fitFunc = series.fitFunction === 'sigmoid' ? new SigmoidFunction() : new LinearFunction();
+  return fitData(data, fitFunc, FitErrorModel.Constant);
 }
 
 export function getSeriesConfidenceInterval(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return getCurveConfidenceIntervals(data, series.parameters!, new SigmoidFunction().y, 0.05, FitErrorModel.Constant);
+  const fitFunc = series.fitFunction === 'sigmoid' ? new SigmoidFunction() : new LinearFunction();
+  return getCurveConfidenceIntervals(data, series.parameters!, fitFunc.y, 0.05, FitErrorModel.Constant);
 }
 
 export function getSeriesStatistics(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return getStatistics(data, series.parameters!, new SigmoidFunction().y, 0.05, true);
+  const fitFunc = series.fitFunction === 'sigmoid' ? new SigmoidFunction() : new LinearFunction();
+  return getStatistics(data, series.parameters!, fitFunc.y, 0.05, true);
 }
 
 // /** Returns a curve function, either using the pre-computed parameters
