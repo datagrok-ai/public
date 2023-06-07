@@ -11,6 +11,7 @@ import {_package} from '../package';
 import {multipleSequenceAlginmentUIOptions} from './types';
 import {kalignVersion, msaDefaultOptions} from './constants';
 import '../../css/msa.css';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 export class MsaWarning extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -55,13 +56,15 @@ export async function multipleSequenceAlignmentUI(
 
     let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
-    // TODO: allow only macromolecule colums to be chosen
+    //TODO: remove when the new version of datagrok-api is available
+    //TODO: allow only macromolecule colums to be chosen
     const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
       performAlignment = await onColInputChange(
         colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
         methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
       );
-    },
+      //@ts-ignore
+    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
     const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);

@@ -38,7 +38,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       const mcsSmarts = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
       if (mcsSmarts !== null) {
         ui.setUpdateIndicator(sketcher.root, false);
-        sketcher.setMolFile(convertMolNotation(mcsSmarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
+        sketcher.setSmarts(mcsSmarts);
       }
     } catch (e: any) {
       grok.shell.error(e);
@@ -72,7 +72,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
         return;
       }
-      const core = sketcher.getMolFile();
+      const core = await sketcher.getSmarts();
       if (!core) {
         grok.shell.error('No core was provided');
         return;

@@ -37,7 +37,7 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
     isQMol = _isSmarts;
   } catch (e) {}
   if (!mol && kekulize) {
-    kekulize = false;
+    kekulize = false; //Pyrrole cycles
     try {
       mol = rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize}));
     } catch (e) {}

@@ -1,3 +1,5 @@
+import * as DG from 'datagrok-api/dg';
+
 /**
  * Denotes a vector of floating poit values.
  *
@@ -60,3 +62,8 @@ export type DistanceMetric = (v1: any, v2: any) => (number);
  * @type StringDictionary
  */
 export type StringDictionary = {[key: string]: string};
+
+
+export type ColumnInputOptions = {
+    filter?: (col: DG.Column) => boolean | null;
+};

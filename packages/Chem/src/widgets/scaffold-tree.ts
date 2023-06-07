@@ -1371,13 +1371,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.divText(' '),
       this._iconDelete = ui.iconFA('trash-alt',
         () => {
-          ui.dialog({showHeader: false})
-          .add(ui.divText('Do you want to continue?'))
-          .show()
-          .onOK(() => {
+          const dialog = ui.dialog({title: 'Delete Tree'});
+          dialog
+          .add(ui.divText('This cannot be undone. Are you sure?'))
+          .addButton('Yes', () => {
             thisViewer.cancelled = true; 
             thisViewer.clear();
-          });
+            dialog.close();
+          })
+          .show();
+          
         }, 'Drop all trees'),
       ui.divText(' '),
       this._bitOpInput.root,
