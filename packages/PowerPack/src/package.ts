@@ -19,6 +19,7 @@ import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {TableView, VIEWER} from 'datagrok-api/dg';
 import {FuzzyFilter} from './fuzzy-filter';
+import {windowsSidebar} from './windows-manager';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -198,4 +199,10 @@ export function viewerGallery(): void {
 //meta.primaryFilter: true
 export function fuzzyFilter(): FuzzyFilter {
   return new FuzzyFilter();
+}
+
+//name: WindowManager
+//description: Windows manager
+export function windowsManager() {
+  return windowsSidebar()
 }

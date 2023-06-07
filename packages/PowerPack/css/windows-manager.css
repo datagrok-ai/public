@@ -1,0 +1,28 @@
+
+.windows-manager {
+
+}
+
+.windows-manager-sidebar {
+    background: var(--warm-grey-1);
+    border-left: 1px solid var(--warm-grey-2);
+    padding: 12px 0;
+    width: 24px
+}
+
+.windows-manager-toggle {
+    color: var(--warm-grey-4);
+    height: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.windows-manager-toggle:hover {
+    cursor: pointer
+    background: var(--warm-grey-2);
+}
+
+.windows-manager-toggle.active {
+    background: #EBE9E8;
+}

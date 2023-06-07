@@ -3,7 +3,8 @@
   "friendlyName": "PowerPack",
   "sources": [
     "css/power-pack.css",
-    "css/viewers-gallery.css"
+    "css/viewers-gallery.css",
+    "css/window-manager.css"
   ],
   "version": "1.0.7",
   "author": {
