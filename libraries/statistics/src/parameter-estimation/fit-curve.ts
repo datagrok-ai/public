@@ -131,10 +131,41 @@ export class SigmoidFunction extends FitFunction {
   }
 }
 
+export class JsFunction extends FitFunction {
+  private _name: string;
+  private _parameterNames: string[];
 
-export const fitFunctions: {[index: string]: any} = {
-  FIT_FUNCTION_LINEAR: new LinearFunction(),
-  FIT_FUNCTION_SIGMOID: new SigmoidFunction(),
+  constructor(name: string, yFunc: (params: number[], x: number) => number,
+    getInitParamsFunc: (x: number[], y: number[]) => number[], parameterNames: string[]) {
+    super();
+
+    this._name = name;
+    this._parameterNames = parameterNames;
+
+    this.y = yFunc;
+    this.getInitialParameters = getInitParamsFunc;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get parameterNames(): string[] {
+    return this._parameterNames;
+  }
+
+  y(params: number[], x: number): number {
+    throw new Error('Not implemented');
+  }
+
+  getInitialParameters(x: number[], y: number[]): number[] {
+    throw new Error('Not implemented');
+  }
+}
+
+export const fitFunctions: {[index: string]: FitFunction} = {
+  'Linear': new LinearFunction(),
+  'Sigmoid': new SigmoidFunction(),
 };
 
 
@@ -285,9 +316,8 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 
 export function getStatistics(data: {x: number[], y: number[]}, paramValues: number[],
   curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, statistics: boolean = true) {
-  const fittedCurve = (x: number) => {
-    return curveFunction(paramValues, x);
-  };
+  const fittedCurve = getFittedCurve(curveFunction, paramValues);
+
   const studentQ = jStat.studentt.inv(1 - confidenceLevel/2, data.x.length - paramValues.length);
 
   let inv: (y: number) => number = (y: number) => {

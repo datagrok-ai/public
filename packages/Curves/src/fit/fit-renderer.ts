@@ -7,6 +7,7 @@ import {
   FitResult,
   fitResultProperties,
   getFittedCurve,
+  JsFunction,
   LinearFunction,
   SigmoidFunction,
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
@@ -14,7 +15,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 import {fitSeries, getChartData, getChartBounds, IFitChartData, IFitSeries,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
-  TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics} from './fit-data';
+  TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics, IFitFunction, getCurve} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {Viewport} from './transform';
 import {MultiCurveViewer} from './multi-curve-viewer';
@@ -139,13 +140,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (const series of data.series!) {
       series.points.sort((a, b) => a.x - b.x);
-      let fitFunc: FitFunction = new LinearFunction();
-      if (series.fitFunction === 'sigmoid') {
-        fitFunc = new SigmoidFunction();
-      }
       let curve: (x: number) => number;
       if (series.parameters)
-        curve = getFittedCurve(fitFunc.y, series.parameters);
+        curve = getCurve(series);
       else {
         const fitResult = fitSeries(series);
         curve = fitResult.fittedCurve;

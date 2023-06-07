@@ -15,6 +15,9 @@ import {
   getStatistics,
   SigmoidFunction,
   LinearFunction,
+  FitFunction,
+  JsFunction,
+  getFittedCurve,
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 /**
@@ -66,11 +69,18 @@ export interface IFitPoint {
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
 }
 
+export interface IFitFunction {
+  name: string;
+  function: string;
+  getInitialParameters: string;
+  parameterNames: string[];
+}
+
 
 /** Series options can be either applied globally on a column level, or partially overridden in particular series */
 export interface IFitSeriesOptions {
   name?: string;
-  fitFunction?: string;
+  fitFunction?: string | IFitFunction;
   parameters?: number[];         // auto-fitting when not defined
   pointColor?: string;
   fitLineColor?: string;
@@ -238,23 +248,46 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
   return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
 }
 
+function createFitFunction(seriesFitFunc: string | IFitFunction): FitFunction {
+  if (seriesFitFunc === 'sigmoid')
+    return new SigmoidFunction();
+  else if (seriesFitFunc === 'linear')
+    return new LinearFunction();
+  else {
+    seriesFitFunc = seriesFitFunc as IFitFunction;
+    const name = seriesFitFunc.name;
+    const paramNames = seriesFitFunc.parameterNames;
+    const fitFunctionParts = seriesFitFunc.function.split('=>').map(elem => elem.trim());
+    const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map(elem => elem.trim());
+    const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1), `return ${fitFunctionParts[1]}`);
+    const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1), `return ${getInitParamsParts[1]}`);
+    const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
+      (getInitParamsFunc as (x: number[], y: number[]) => number[]), paramNames);
+    return fitFunc;
+  } 
+}
+
+export function getCurve(series: IFitSeries): any {
+  const fitFunc = createFitFunction(series.fitFunction!);
+  return getFittedCurve(fitFunc.y, series.parameters!);
+}
 
 /** Fits the series data according to the series fitting settings */
 export function fitSeries(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  const fitFunc = series.fitFunction === 'sigmoid' ? new SigmoidFunction() : new LinearFunction();
+  const fitFunc = createFitFunction(series.fitFunction!);
   return fitData(data, fitFunc, FitErrorModel.Constant);
 }
 
 export function getSeriesConfidenceInterval(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  const fitFunc = series.fitFunction === 'sigmoid' ? new SigmoidFunction() : new LinearFunction();
+  const fitFunc = createFitFunction(series.fitFunction!);
   return getCurveConfidenceIntervals(data, series.parameters!, fitFunc.y, 0.05, FitErrorModel.Constant);
 }
 
 export function getSeriesStatistics(series: IFitSeries): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  const fitFunc = series.fitFunction === 'sigmoid' ? new SigmoidFunction() : new LinearFunction();
+  const fitFunc = createFitFunction(series.fitFunction!);
   return getStatistics(data, series.parameters!, fitFunc.y, 0.05, true);
 }
 
