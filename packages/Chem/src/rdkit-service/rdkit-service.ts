@@ -144,20 +144,20 @@ export class RdKitService {
    * @param {boolean} molecules - optional parameter, if passed RDMols objects are created on the fly (array of
    * predefined RDMols is not used) 
    * */
-  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Array<Uint8Array | null>[]> {
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Array<Uint8Array | null>> {
     const t = this;
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
         t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
-      (data: Array<Uint8Array | null>[][]) => {
-        return ([] as Array<Uint8Array | null>[]).concat(...data);
+      (data: Array<Uint8Array | null>[]) => {
+        return ([] as Array<Uint8Array | null>).concat(...data);
       }) :
       await this._doParallel(
         (i: number, _: number) => {
           return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules);
         },
-        (data: Array<Uint8Array | null>[][]) => {
-          return ([] as Array<Uint8Array | null>[]).concat(...data);
+        (data: Array<Uint8Array | null>[]) => {
+          return ([] as Array<Uint8Array | null>).concat(...data);
         });
     return res;
   }

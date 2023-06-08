@@ -116,7 +116,7 @@ function checkForFingerprintsColumn(col: DG.Column, fingerprintsType: Fingerprin
   return null;
 }
 
-function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[],
+function saveFingerprintsToCol(col: DG.Column, fgs: (Uint8Array | null)[],
   fingerprintsType: Fingerprint, createdMols: boolean): void {
   if (!col.dataFrame)
     throw new Error('Column has no parent dataframe');
@@ -141,7 +141,7 @@ function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[],
 
 async function getUint8ArrayFingerprints(
   molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan,
-  useSection = true, createMols = true): Promise<Uint8Array[]> {
+  useSection = true, createMols = true): Promise<(Uint8Array | null)[]> {
   if (useSection)
     await chemBeginCriticalSection();
   try {
@@ -162,7 +162,7 @@ async function getUint8ArrayFingerprints(
   }
 }
 
-function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: Uint8Array[]): BitArray {
+function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: (Uint8Array | null)[]): BitArray {
   const patternFpUint8Length = 256;
   const result = new BitArray(fgs.length, false);
   const queryMol = getQueryMolSafe(molString, querySmarts, getRdKitModule());
@@ -172,11 +172,13 @@ function substructureSearchPatternsMatch(molString: string, querySmarts: string,
       const fpRdKit = queryMol.get_pattern_fp_as_uint8array();
       checkEl:
       for (let i = 0; i < fgs.length; ++i) {
-        for (let j = 0; j < patternFpUint8Length; ++j) {
-          if ((fgs[i][j] & fpRdKit[j]) != fpRdKit[j])
-            continue checkEl;
+        if (fgs[i]) {
+          for (let j = 0; j < patternFpUint8Length; ++j) {
+            if ((fgs[i]![j] & fpRdKit[j]) != fpRdKit[j])
+              continue checkEl;
+          }
+          result.setBit(i, true, false);
         }
-        result.setBit(i, true, false);
       }
       return result;
     } catch { }
@@ -231,7 +233,7 @@ export async function chemSubstructureSearchLibrary(
     let matches = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
       if (usePatternFingerprints) {
-        const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false);
+        const fgs: (Uint8Array | null)[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false);
         const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
         const filteredMolecules: string[] = getMoleculesFiletredByPatternFp(molStringsColumn, filteredMolsIdxs);
         const matchesBitArray: DG.BitSet = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
