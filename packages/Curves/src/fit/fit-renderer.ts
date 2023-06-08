@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {statisticsProperties, FitConfidenceIntervals} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
-import {fitSeries, getChartData, getChartBounds, IFitChartData, createFitFunction,
+import {fitSeries, getChartData, getChartBounds, IFitChartData, getSeriesFitFunction,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics, getCurve, FIT_CELL_TYPE} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -132,7 +132,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     for (const series of data.series!) {
       series.points.sort((a, b) => a.x - b.x);
       let userParamsFlag = true;
-      const fitFunc = createFitFunction(series.fitFunction!);
+      const fitFunc = getSeriesFitFunction(series);
       let curve: (x: number) => number;
       if (series.parameters)
         curve = getCurve(series, fitFunc);

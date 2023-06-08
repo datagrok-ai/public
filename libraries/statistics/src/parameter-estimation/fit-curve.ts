@@ -41,6 +41,13 @@ export type FitResult = {
   bottom: number, // parameters[3]
 };
 
+export interface IFitFunction {
+  name: string;
+  function: string;
+  getInitialParameters: string;
+  parameterNames: string[];
+}
+
 export type FitCurve = {
   fittedCurve: (x: number) => number;
   parameters: number[];
@@ -193,6 +200,28 @@ export interface IFitOptions {
   confidenceLevel: number;
   statistics: boolean;
 }
+
+
+export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunction): FitFunction {
+  if (typeof seriesFitFunc === 'string') {
+    return fitFunctions[seriesFitFunc];
+  } else if (!fitFunctions[seriesFitFunc.name]) {
+    const name = seriesFitFunc.name;
+    const paramNames = seriesFitFunc.parameterNames;
+    const fitFunctionParts = seriesFitFunc.function.split('=>').map((elem) => elem.trim());
+    const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map((elem) => elem.trim());
+    const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1),
+      `return ${fitFunctionParts[1]}`);
+    const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1),
+      `return ${getInitParamsParts[1]}`);
+    const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
+      (getInitParamsFunc as (x: number[], y: number[]) => number[]), paramNames);
+    fitFunctions[name] = fitFunc;
+  }
+
+  return fitFunctions[seriesFitFunc.name];
+}
+
 
 // TODO: move to DG.Rect
 /** Gets the bounds of provided points */

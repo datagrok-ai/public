@@ -8,7 +8,7 @@ import {
   fitSeriesProperties,
   fitChartDataProperties,
   getSeriesStatistics,
-  createFitFunction,
+  getSeriesFitFunction,
   FIT_CELL_TYPE
 } from './fit-data';
 import {statisticsProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
@@ -22,7 +22,7 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
     .init((i) => {
       const chartData = getChartData(
         DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
-      const fitResult = getSeriesStatistics(chartData.series![0], createFitFunction(chartData.series![0].fitFunction!));
+      const fitResult = getSeriesStatistics(chartData.series![0], getSeriesFitFunction(chartData.series![0]));
       return p.get(fitResult);
     });
 }
@@ -53,7 +53,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
       for (let i = 0; i < chartData.series!.length; i++) {
         const series = chartData.series![i];
-        const fitFunction = createFitFunction(chartData.series![i].fitFunction!)
+        const fitFunction = getSeriesFitFunction(chartData.series![i]);
         if (!series.parameters)
           series.parameters = fitSeries(series, fitFunction).parameters;
         const seriesStatistics = getSeriesStatistics(series, fitFunction);

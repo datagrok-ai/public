@@ -8,16 +8,16 @@ import {TYPE} from 'datagrok-api/src/const';
 import {
   FitErrorModel,
   statisticsProperties,
-  fitFunctions,
   fitData,
   getCurveConfidenceIntervals,
   getStatistics,
   FitFunction,
-  JsFunction,
   getFittedCurve,
   FitStatistics,
   FitConfidenceIntervals,
   FitCurve,
+  IFitFunction,
+  getOrCreateFitFunction
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 /**
@@ -67,13 +67,6 @@ export interface IFitPoint {
   maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
   marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
-}
-
-export interface IFitFunction {
-  name: string;
-  function: string;
-  getInitialParameters: string;
-  parameterNames: string[];
 }
 
 
@@ -174,23 +167,6 @@ export const fitSeriesProperties: Property[] = [
     {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
 
-
-export function createFitFunction(seriesFitFunc: string | IFitFunction): FitFunction {
-  if (fitFunctions[seriesFitFunc as string] !== undefined)
-    return fitFunctions[seriesFitFunc as string];
-
-  seriesFitFunc = seriesFitFunc as IFitFunction;
-  const name = seriesFitFunc.name;
-  const paramNames = seriesFitFunc.parameterNames;
-  const fitFunctionParts = seriesFitFunc.function.split('=>').map(elem => elem.trim());
-  const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map(elem => elem.trim());
-  const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1), `return ${fitFunctionParts[1]}`);
-  const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1), `return ${getInitParamsParts[1]}`);
-  const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
-    (getInitParamsFunc as (x: number[], y: number[]) => number[]), paramNames);
-  return fitFunc;
-}
-
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: Property[]): any {
   const o: any = {};
@@ -264,6 +240,9 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
   return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
 }
 
+export function getSeriesFitFunction(series: IFitSeries): FitFunction {
+  return getOrCreateFitFunction(series.fitFunction!);
+}
 
 export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) => number {
   return getFittedCurve(fitFunc.y, series.parameters!);
