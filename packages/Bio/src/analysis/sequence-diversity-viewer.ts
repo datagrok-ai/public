@@ -61,6 +61,9 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
     const len = this.moleculeColumn!.length;
     const linearizeFunc = dmLinearIndex(len);
     this.renderMolIds = getDiverseSubset(len, Math.min(len, this.limit),
-      (i1: number, i2: number) => distanceMatrixData[linearizeFunc(i1, i2)]);
+      (i1: number, i2: number) => {
+       return this.moleculeColumn!.isNone(i1) || this.moleculeColumn!.isNone(i2) ? 0 :
+       distanceMatrixData[linearizeFunc(i1, i2)];
+      });
   }
 }
