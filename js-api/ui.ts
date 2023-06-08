@@ -765,6 +765,10 @@ export function colorInput(name: string, value: string, onValueChanged: Function
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
 
+export function radioInput(name: string, value: string, items: string[], onValueChanged: Function | null = null): InputBase<string | null> {
+  return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
+}
+
 /**
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element
