@@ -18,6 +18,7 @@ import java.util.*;
 
 public class NeptuneDataProvider extends JdbcDataProvider {
     private static final Map<String, String> SUPPORTED_VERSIONS = new HashMap<>();
+    private final Map<String, Driver> drivers;
 
     static {
         SUPPORTED_VERSIONS.put("< 1.2.0.0", "neptune-jdbc-2.0.0-all.jar");
@@ -49,6 +50,12 @@ public class NeptuneDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, "accessKey"));
             add(new Property(Property.STRING_TYPE, "secretAccessKey", new Prop("password")));
         }};
+
+        Driver driver1 = getDriver("neptune-jdbc-2.0.0-all.jar");
+        Driver driver2 = getDriver("amazon-neptune-jdbc-driver-3.0.0-all.jar");
+        drivers = new HashMap<>();
+        drivers.put("< 1.2.0.0", driver1);
+        drivers.put(">= 1.2.0.0", driver2);
     }
 
     public Properties getProperties(DataConnection conn) {
@@ -77,8 +84,7 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         if (engineVersion == null) {
             throw new RuntimeException("Engine version is mandatory");
         }
-        Driver driver = getDriver(SUPPORTED_VERSIONS.get(engineVersion));
-        return driver.connect(getConnectionString(conn), getProperties(conn));
+        return drivers.get(engineVersion).connect(getConnectionString(conn), getProperties(conn));
     }
 
     private Driver getDriver(String name) {

@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { IDimReductionParam, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
 import { SequenceSpaceBaseFuncEditor } from './seq-space-base-editor';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
@@ -23,7 +24,9 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
   
     constructor(semtype: DG.SemType){
       super(semtype);
-      this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
+      //TODO: remove when the new version of datagrok-api is available
+      //@ts-ignore
+      this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
       this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.intInput('Similarity cutoff', 80);
       ui.tooltip.bind(this.similarityInput.root, `Pairs of similar (cutoff is used) molecules with high difference in activity are considered 'cliffs'`)
@@ -42,7 +45,9 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
     onTableInputChanged(semtype: DG.SemType) {
         super.onTableInputChanged(semtype);
         ui.empty(this.activitiesInputRoot);
-        this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {'predicate': (col: DG.Column) => col.type === DG.TYPE.INT});
+        //TODO: remove when the new version of datagrok-api is available
+        //@ts-ignore
+        this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
         Array.from(this.activitiesInput.root.children).forEach((it) => this.activitiesInputRoot.append(it));
     }
   }

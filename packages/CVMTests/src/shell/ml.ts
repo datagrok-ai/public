@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 // import {_package} from '../package-test';
 
 category('ML', () => {
@@ -53,9 +53,5 @@ category('ML', () => {
     const binomialCol = data.getCol('binomial');
     expect(binomialCol.stats.min >= 0 && binomialCol.stats.max <= 100, true);
     expect(68 <= binomialCol.stats.avg && binomialCol.stats.avg <= 72, true);
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
   });
 });
