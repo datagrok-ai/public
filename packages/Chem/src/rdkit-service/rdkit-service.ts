@@ -130,7 +130,7 @@ export class RdKitService {
         let counter = 0;
         for (let i = 0; i < segmentsLengths.length; i++) {
           for (let j = 0; j < segmentsLengths[i]; j++) {
-            bitset.set(counter++, !!(data[i][0] >> j & 1));
+            bitset.set(counter++, !!(data[i][Math.floor(j / 32)] >> j % 32 & 1));
           }
         }
         return bitset;
