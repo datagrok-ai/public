@@ -240,10 +240,12 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
   return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
 }
 
+/** Returns series fit function */
 export function getSeriesFitFunction(series: IFitSeries): FitFunction {
   return getOrCreateFitFunction(series.fitFunction!);
 }
 
+/** Returns series curve function */
 export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) => number {
   return getFittedCurve(fitFunc.y, series.parameters!);
 }
@@ -254,12 +256,14 @@ export function fitSeries(series: IFitSeries, fitFunc: FitFunction): FitCurve {
   return fitData(data, fitFunc, FitErrorModel.Constant);
 }
 
+/** Returns series confidence interval functions */
 export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction, userParamsFlag: boolean): FitConfidenceIntervals {
   const data = userParamsFlag ? {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)} :
     {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
   return getCurveConfidenceIntervals(data, series.parameters!, fitFunc.y, 0.05, FitErrorModel.Constant);
 }
 
+/** Returns series statistics */
 export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): FitStatistics {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
   return getStatistics(data, series.parameters!, fitFunc.y, true);
@@ -272,13 +276,6 @@ export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): F
 //     return (x) => sigmoid(series.parameters!, x);
 //   else
 //     return fitSeries(series).fittedCurve;
-// }
-
-// /** Returns confidence interval functions */
-// export function getConfidenceIntervals(series: IFitSeries): {top: (x: number) => number, bottom: (x: number) => number} {
-//   const confTop = fitSeries(series).confidenceTop;
-//   const confBottom = fitSeries(series).confidenceBottom;
-//   return {top: confTop, bottom: confBottom};
 // }
 
 /** Constructs {@link IFitChartData} from the grid cell, taking into account

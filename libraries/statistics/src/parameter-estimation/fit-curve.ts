@@ -1,10 +1,12 @@
 /* eslint-disable valid-jsdoc */
 import * as DG from 'datagrok-api/dg';
+import {Property} from 'datagrok-api/src/entities';
+import {TYPE} from 'datagrok-api/src/const';
+
 import {limitedMemoryBFGS} from '../../lbfgs/lbfgs';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
-import {Property} from 'datagrok-api/src/entities';
-import {TYPE} from 'datagrok-api/src/const';
+
 
 type Optimizable = {
   getValue: (parameters: number[]) => number,
@@ -17,29 +19,29 @@ type Likelihood = {
   mult: number
 };
 
-export type FitParam = {
-  value: number;
-  minBound?: number;
-  maxBound?: number;
-};
+// export type FitParam = {
+//   value: number;
+//   minBound?: number;
+//   maxBound?: number;
+// };
 
-export type FitResult = {
-  parameters: number[],
-  fittedCurve: (x: number)=> number,
-  confidenceTop: (x: number)=> number,
-  confidenceBottom: (x: number)=> number,
+// export type FitResult = {
+//   parameters: number[],
+//   fittedCurve: (x: number)=> number,
+//   confidenceTop: (x: number)=> number,
+//   confidenceBottom: (x: number)=> number,
 
-  rSquared?: number,
-  auc?: number,
-  inverted?: (y: number)=> number,
-  invertedTop?: (y: number)=> number,
-  invertedBottom?: (y: number)=> number,
-  interceptX: number, // parameters[2]
-  interceptY: number, // fittedCurve[parameters[2]]
-  slope: number, // parameters[1]
-  top: number, // parameters[0]
-  bottom: number, // parameters[3]
-};
+//   rSquared?: number,
+//   auc?: number,
+//   inverted?: (y: number)=> number,
+//   invertedTop?: (y: number)=> number,
+//   invertedBottom?: (y: number)=> number,
+//   interceptX: number, // parameters[2]
+//   interceptY: number, // fittedCurve[parameters[2]]
+//   slope: number, // parameters[1]
+//   top: number, // parameters[0]
+//   bottom: number, // parameters[3]
+// };
 
 export interface IFitFunction {
   name: string;
@@ -96,7 +98,7 @@ export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
 
 
-export type FitFunctionType = 'sigmoid' | 'linear';
+// export type FitFunctionType = 'sigmoid' | 'linear';
 
 export abstract class FitFunction {
   abstract get name(): string;
@@ -261,7 +263,6 @@ function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
 
 function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (params: number[], x: number) => number,
   of: ObjectiveFunction): Optimizable {
-  let iterations = 0;
   const fixed: number[] = [];
 
   const optimizable = {
@@ -269,9 +270,6 @@ function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (par
       return of(curveFunction, data, parameters).value;
     },
     getGradient: (parameters: number[], gradient: number[]) => {
-      const length = Object.keys(parameters).length;
-      iterations++;
-
       for (let i = 0; i < parameters.length; i++) {
         gradient[i] = fixed.includes(i) ? 0 : getObjectiveDerivative(of, curveFunction, data, parameters, i);
       }
@@ -621,7 +619,6 @@ export function getDetCoeff(fittedCurve: (x: number) => number, data: {x: number
 }
 
 function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: number[]}): number {
-  const pi = Math.PI;
   let sigma = 0;
   let sigmaSq = 0;
 
