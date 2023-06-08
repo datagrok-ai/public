@@ -169,6 +169,7 @@ public class QueryManager {
     }
 
     private void setInitFetchSize(String optionValue) {
+        logger.debug(EventType.MISC.getMarker(), "Setting manual fetch size {}", optionValue);
         Pattern pattern = Pattern.compile("(\\d+) MB");
         Matcher matcher = pattern.matcher(optionValue);
         if (matcher.find()) {
