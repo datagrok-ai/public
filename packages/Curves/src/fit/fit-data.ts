@@ -175,6 +175,22 @@ export const fitSeriesProperties: Property[] = [
 ];
 
 
+export function createFitFunction(seriesFitFunc: string | IFitFunction): FitFunction {
+  if (fitFunctions[seriesFitFunc as string] !== undefined)
+    return fitFunctions[seriesFitFunc as string];
+
+  seriesFitFunc = seriesFitFunc as IFitFunction;
+  const name = seriesFitFunc.name;
+  const paramNames = seriesFitFunc.parameterNames;
+  const fitFunctionParts = seriesFitFunc.function.split('=>').map(elem => elem.trim());
+  const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map(elem => elem.trim());
+  const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1), `return ${fitFunctionParts[1]}`);
+  const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1), `return ${getInitParamsParts[1]}`);
+  const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
+    (getInitParamsFunc as (x: number[], y: number[]) => number[]), paramNames);
+  return fitFunc;
+}
+
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: Property[]): any {
   const o: any = {};
@@ -248,46 +264,25 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
   return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
 }
 
-function createFitFunction(seriesFitFunc: string | IFitFunction): FitFunction {
-  if (seriesFitFunc === 'sigmoid')
-    return new SigmoidFunction();
-  else if (seriesFitFunc === 'linear')
-    return new LinearFunction();
-  else {
-    seriesFitFunc = seriesFitFunc as IFitFunction;
-    const name = seriesFitFunc.name;
-    const paramNames = seriesFitFunc.parameterNames;
-    const fitFunctionParts = seriesFitFunc.function.split('=>').map(elem => elem.trim());
-    const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map(elem => elem.trim());
-    const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1), `return ${fitFunctionParts[1]}`);
-    const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1), `return ${getInitParamsParts[1]}`);
-    const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
-      (getInitParamsFunc as (x: number[], y: number[]) => number[]), paramNames);
-    return fitFunc;
-  } 
-}
 
-export function getCurve(series: IFitSeries): any {
-  const fitFunc = createFitFunction(series.fitFunction!);
+export function getCurve(series: IFitSeries, fitFunc: FitFunction): any {
   return getFittedCurve(fitFunc.y, series.parameters!);
 }
 
 /** Fits the series data according to the series fitting settings */
-export function fitSeries(series: IFitSeries): any {
+export function fitSeries(series: IFitSeries, fitFunc: FitFunction): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  const fitFunc = createFitFunction(series.fitFunction!);
   return fitData(data, fitFunc, FitErrorModel.Constant);
 }
 
-export function getSeriesConfidenceInterval(series: IFitSeries): any {
-  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  const fitFunc = createFitFunction(series.fitFunction!);
+export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction, userParamsFlag: boolean): any {
+  const data = userParamsFlag ? {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)} :
+    {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
   return getCurveConfidenceIntervals(data, series.parameters!, fitFunc.y, 0.05, FitErrorModel.Constant);
 }
 
-export function getSeriesStatistics(series: IFitSeries): any {
+export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): any {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  const fitFunc = createFitFunction(series.fitFunction!);
   return getStatistics(data, series.parameters!, fitFunc.y, 0.05, true);
 }
 

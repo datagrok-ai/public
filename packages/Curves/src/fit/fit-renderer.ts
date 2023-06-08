@@ -13,7 +13,7 @@ import {
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
-import {fitSeries, getChartData, getChartBounds, IFitChartData, IFitSeries,
+import {fitSeries, getChartData, getChartBounds, IFitChartData, IFitSeries, createFitFunction,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics, IFitFunction, getCurve} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -140,13 +140,16 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (const series of data.series!) {
       series.points.sort((a, b) => a.x - b.x);
+      let userParamsFlag = true;
+      const fitFunc = createFitFunction(series.fitFunction!);
       let curve: (x: number) => number;
       if (series.parameters)
-        curve = getCurve(series);
+        curve = getCurve(series, fitFunc);
       else {
-        const fitResult = fitSeries(series);
+        const fitResult = fitSeries(series, fitFunc);
         curve = fitResult.fittedCurve;
         series.parameters = fitResult.parameters;
+        userParamsFlag = false;
       }
 
       if (series.showPoints ?? true) {
@@ -201,7 +204,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
-        const confidenceIntervals = getSeriesConfidenceInterval(series);
+        const confidenceIntervals = getSeriesConfidenceInterval(series, fitFunc, userParamsFlag);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport);
@@ -209,7 +212,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
 
       if (data.chartOptions?.showStatistics) {
-        const statistics = getSeriesStatistics(series);
+        const statistics = getSeriesStatistics(series, fitFunc);
         for (let i = 0; i < data.chartOptions.showStatistics.length; i++) {
           const statName = data.chartOptions.showStatistics[i];
           const prop = fitResultProperties.find(p => p.name === statName);

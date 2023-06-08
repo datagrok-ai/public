@@ -62,14 +62,14 @@ export enum FitErrorModel {
   Proportional
 }
 
-export const FIT_FUNCTION_SIGMOID = 'Sigmoid';
-export const FIT_FUNCTION_LINEAR = 'Linear';
+export const FIT_FUNCTION_SIGMOID = 'sigmoid';
+export const FIT_FUNCTION_LINEAR = 'linear';
 
 // export const FIT_STATS_RSQUARED = 'rSquared';
 // export const FIT_STATS_AUC = 'auc';
 
 
-export type FitFunctionType = 'Sigmoid' | 'Linear';
+export type FitFunctionType = 'sigmoid' | 'linear';
 
 export abstract class FitFunction {
   abstract get name(): string;
@@ -164,8 +164,8 @@ export class JsFunction extends FitFunction {
 }
 
 export const fitFunctions: {[index: string]: FitFunction} = {
-  'Linear': new LinearFunction(),
-  'Sigmoid': new SigmoidFunction(),
+  'linear': new LinearFunction(),
+  'sigmoid': new SigmoidFunction(),
 };
 
 
