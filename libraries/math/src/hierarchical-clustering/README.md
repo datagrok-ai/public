@@ -1,4 +1,4 @@
-## Web Assembly
+# Web Assembly
 
 Package contains webAssembly code (compiled from cpp) of hierarchical clustering using reduced distance matrix.
 the files are contained in ```wasm``` folder and corresponding cpp files are in ```wasm/cpp```. to modify the cpp code and compile it, following steps are to be done. 
