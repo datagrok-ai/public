@@ -19,6 +19,8 @@ import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {TableView, VIEWER} from 'datagrok-api/dg';
 import {FuzzyFilter} from './fuzzy-filter';
+import {windowsSidebar} from './windows-manager';
+import {windowsStatusbar} from './windows-manager';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -171,6 +173,16 @@ export async function powerPackInit() {
   _properties = await _package.getProperties();
 }
 
+//description: Windows Manager
+export function windowsManagerSidebar() {
+  windowsSidebar();
+}
+
+//description: Windows Manager
+export function windowsManagerStatusbar() {
+  windowsStatusbar();
+}
+
 //description: ViewerGallery
 //tags: autostart
 export function viewerGallery(): void {
@@ -199,3 +211,4 @@ export function viewerGallery(): void {
 export function fuzzyFilter(): FuzzyFilter {
   return new FuzzyFilter();
 }
+

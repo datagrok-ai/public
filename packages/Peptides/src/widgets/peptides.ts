@@ -11,7 +11,6 @@ import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 /** Peptide analysis widget.
  *
@@ -40,9 +39,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         viewer.root.style.setProperty('height', '130px');
         return viewer.root;
       }));
-      //TODO: remove when new version of datagrok-api is available
-      //@ts-ignore
-    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions);
+      //TODO: add when new version of datagrok-api is available
+    }); //, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions);
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
@@ -98,9 +96,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
       DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
     activityScalingMethod.fireChanged();
   };
-  //TODO: remove when new version of datagrok-api is available
-  //@ts-ignore
-  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
+  //TODO: add when new version of datagrok-api is available
+  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState); //, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
   const clustersColumnChoice = ui.columnInput('Clusters', df, null);
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
