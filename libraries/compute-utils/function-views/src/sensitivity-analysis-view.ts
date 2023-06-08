@@ -132,8 +132,7 @@ export class SensitivityAnalysisView {
           lvlInput: ui.intInput('Levels', 3, (v: number) => numericStore.lvl = v),
           distribInput: ui.choiceInput('Distribution', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => numericStore.distrib = v),
           isChangingInput: (() => {
-            //const input = ui.switchInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));
-            const input = ui.boolInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));
+            const input = ui.switchInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));            
             $(input.root).css({'min-width': '50px', 'width': '50px'});
             $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
             return input;
@@ -418,14 +417,44 @@ export class SensitivityAnalysisView {
     };
     console.log(options);
     const analysis = new VarianceBasedSenstivityAnalysis(options.func, options.fixedInputs, options.variedInputs, options.samplesCount);
-    const df = await analysis.perform();
-    this.comparisonView.dataFrame = df;
+    const analysisResults = await analysis.perform();
 
-    // TODO (Viktor Makarichev): provide better implementation 
-    const names = df.columns.names();
-    const xName: string = names[0];
-    const yName: string = names[names.length - 1];
-    this.comparisonView.addViewer(DG.Viewer.scatterPlot(df, {x: xName, y: yName}));
+    const funcEvalResults = analysisResults.funcEvalResults;
+    const firstOrderIndeces = analysisResults.firstOrderSobolIndeces;
+    const totalOrderIndeces = analysisResults.totalOrderSobolIndeces;
+
+    /*grok.shell.addTableView(firstOrderIndeces);
+    grok.shell.addTableView(totalOrderIndeces);*/
+
+    this.comparisonView.dataFrame = funcEvalResults;        
+
+    // add barchart with 1-st order Sobol' indeces
+    const firstOrderIndecesNames = firstOrderIndeces.columns.names();
+    this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces, 
+      { title: firstOrderIndeces.name, 
+        split: firstOrderIndecesNames[0], 
+        value: firstOrderIndecesNames[1], 
+        valueAggrType: 'avg'
+      }
+    ));
+
+    // add barchart with totsl order Sobol' indeces
+    const totalOrderIndecesNames = totalOrderIndeces.columns.names();
+    this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces, 
+      { title: totalOrderIndeces.name, 
+        split: totalOrderIndecesNames[0], 
+        value: totalOrderIndecesNames[1], 
+        valueAggrType: 'avg'
+      }
+    ));
+
+    // add scatterplot
+    const evalDataframeNames = funcEvalResults.columns.names();
+    this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults, 
+      {x: evalDataframeNames[0], 
+       y: evalDataframeNames[evalDataframeNames.length - 1]
+      }
+    ));
   }
 
   private async runSimpleAnalysis() {
