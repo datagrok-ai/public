@@ -18,7 +18,6 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {TableView, VIEWER} from 'datagrok-api/dg';
-import {FuzzyFilter} from './fuzzy-filter';
 import {windowsSidebar} from './windows-manager';
 import {windowsStatusbar} from './windows-manager';
 
@@ -200,15 +199,3 @@ export function viewerGallery(): void {
     }
   });
 }
-
-//name: FuzzyFilter
-//friendlyName: Fuzzy Filter
-//description: search related texts
-//tags: filter
-//output: filter result
-//meta.semType: Text
-//meta.primaryFilter: true
-export function fuzzyFilter(): FuzzyFilter {
-  return new FuzzyFilter();
-}
-
