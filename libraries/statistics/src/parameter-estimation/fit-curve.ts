@@ -25,15 +25,15 @@ export type FitParam = {
 
 export type FitResult = {
   parameters: number[],
-  fittedCurve: (x:number)=> number,
-  confidenceTop: (x:number)=> number,
-  confidenceBottom: (x:number)=> number,
+  fittedCurve: (x: number)=> number,
+  confidenceTop: (x: number)=> number,
+  confidenceBottom: (x: number)=> number,
 
   rSquared?: number,
   auc?: number,
-  inverted?: (y:number)=> number,
-  invertedTop?: (y:number)=> number,
-  invertedBottom?: (y:number)=> number,
+  inverted?: (y: number)=> number,
+  invertedTop?: (y: number)=> number,
+  invertedBottom?: (y: number)=> number,
   interceptX: number, // parameters[2]
   interceptY: number, // fittedCurve[parameters[2]]
   slope: number, // parameters[1]
@@ -41,8 +41,28 @@ export type FitResult = {
   bottom: number, // parameters[3]
 };
 
-/** Properties that describe {@link FitResult}. Useful for editing, initialization, transformations, etc. */
-export const fitResultProperties: Property[] = [
+export type FitCurve = {
+  fittedCurve: (x: number) => number;
+  parameters: number[];
+};
+
+export type FitConfidenceIntervals = {
+  confidenceTop: (x: number) => number;
+  confidenceBottom: (x: number) => number;
+};
+
+export type FitStatistics = {
+  rSquared?: number,
+  auc?: number,
+  interceptX: number, // parameters[2]
+  interceptY: number, // fittedCurve[parameters[2]]
+  slope: number, // parameters[1]
+  top: number, // parameters[0]
+  bottom: number, // parameters[3]
+};
+
+/** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
+export const statisticsProperties: Property[] = [
   Property.js('rSquared', TYPE.FLOAT, {userEditable: false}),
   Property.js('auc', TYPE.FLOAT, {userEditable: false}),
   Property.js('interceptY', TYPE.FLOAT, {userEditable: false}),
@@ -65,8 +85,8 @@ export enum FitErrorModel {
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
 export const FIT_FUNCTION_LINEAR = 'linear';
 
-// export const FIT_STATS_RSQUARED = 'rSquared';
-// export const FIT_STATS_AUC = 'auc';
+export const FIT_STATS_RSQUARED = 'rSquared';
+export const FIT_STATS_AUC = 'auc';
 
 
 export type FitFunctionType = 'sigmoid' | 'linear';
@@ -77,7 +97,6 @@ export abstract class FitFunction {
   abstract y(params: number[], x: number): number;
   abstract getInitialParameters(x: number[], y: number[]): number[];
 }
-
 
 export class LinearFunction extends FitFunction {
   get name(): string {
@@ -195,6 +214,7 @@ export function getDataBounds(data: {x: number[], y: number[]}): DG.Rect {
 
 function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
   let of: ObjectiveFunction;
+
   switch (errorModel) {
   case FitErrorModel.Constant:
     of = objectiveNormalConstant;
@@ -210,8 +230,8 @@ function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
   return of;
 }
 
-function createOptimizable(data: {x: number[], y: number[]},
-  curveFunction: (params: number[], x: number) => number, of: ObjectiveFunction): Optimizable {
+function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (params: number[], x: number) => number,
+  of: ObjectiveFunction): Optimizable {
   let iterations = 0;
   const fixed: number[] = [];
 
@@ -235,13 +255,14 @@ function createOptimizable(data: {x: number[], y: number[]},
 }
 
 export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel):
-  {parameters: number[], fittedCurve: (x: number) => number} {
+  FitCurve {
   const curveFunction = fitFunction.y;
   const paramValues = fitFunction.getInitialParameters(data.x, data.y);
 
   const of = createObjectiveFunction(errorModel);
   const optimizable = createOptimizable(data, curveFunction, of);
 
+  // const fixed: number[] = [];
   let overLimits = true;
 
   while (overLimits) {
@@ -268,8 +289,8 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
 
   return {
-    parameters: paramValues,
     fittedCurve: fittedCurve,
+    parameters: paramValues,
   };
 }
 
@@ -284,30 +305,30 @@ export function getFittedCurve(curveFunction: (params: number[], x: number) => n
 
 export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: number[],
   curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModel):
-  {confidenceTop: (x: number) => number, confidenceBottom: (x: number) => number} {
+  FitConfidenceIntervals {
   const of = createObjectiveFunction(errorModel);
 
-  const error = errorModel == FitErrorModel.Proportional ?
+  const error = errorModel === FitErrorModel.Proportional ?
     of(curveFunction, data, paramValues).mult :
     of(curveFunction, data, paramValues).const;
 
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel/2, data.x.length - paramValues.length);
+  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
 
   const top = (x: number) =>{
     const value = curveFunction(paramValues, x);
-    if (errorModel == FitErrorModel.Constant) {
-      return value + studentQ*error/Math.sqrt(data.x.length);
+    if (errorModel === FitErrorModel.Constant) {
+      return value + studentQ * error / Math.sqrt(data.x.length);
     } else {
-      return value + studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
+      return value + studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
     }
   };
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel == FitErrorModel.Constant) {
-      return value - studentQ*error/Math.sqrt(data.x.length);
+    if (errorModel === FitErrorModel.Constant) {
+      return value - studentQ * error / Math.sqrt(data.x.length);
     } else {
-      return value - studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
+      return value - studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
     }
   };
 
@@ -315,10 +336,23 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 }
 
 export function getStatistics(data: {x: number[], y: number[]}, paramValues: number[],
-  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, statistics: boolean = true) {
+  curveFunction: (params: number[], x: number) => number, statistics: boolean = true): FitStatistics {
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
 
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel/2, data.x.length - paramValues.length);
+  return {
+    rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
+    auc: statistics ? getAuc(fittedCurve, data) : undefined,
+    interceptX: paramValues[2],
+    interceptY: fittedCurve(paramValues[2]),
+    slope: paramValues[1],
+    top: paramValues[0],
+    bottom: paramValues[3],
+  };
+}
+
+export function getInvertedFunctions(data: {x: number[], y: number[]}, paramValues: number[],
+  confidenceLevel: number = 0.05, statistics: boolean = true) {
+  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
 
   let inv: (y: number) => number = (y: number) => {
     return 0;
@@ -333,33 +367,26 @@ export function getStatistics(data: {x: number[], y: number[]}, paramValues: num
   if (statistics) {
     inv = (y: number) => {
       //should check if more than bottom and less than top
-      return paramValues[2]/Math.pow((paramValues[0] - y)/(y - paramValues[3]), 1/paramValues[1]);
+      return paramValues[2] / Math.pow((paramValues[0] - y) / (y - paramValues[3]), 1 / paramValues[1]);
     };
 
     const error = getInvError(inv, data);
 
-    invTop = (y: number) =>{
+    invTop = (y: number) => {
       const value = inv(y);
-      return value + studentQ*error/Math.sqrt(data.y.length);
+      return value + studentQ * error / Math.sqrt(data.y.length);
     };
 
     invBottom = (y: number) => {
       const value = inv(y);
-      return value - studentQ*error/Math.sqrt(data.y.length);
+      return value - studentQ * error / Math.sqrt(data.y.length);
     };
   }
 
   return {
-    rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
-    auc: statistics ? getAuc(fittedCurve, data) : undefined,
     inverted: statistics ? inv : undefined,
     invertedTop: statistics ? invTop : undefined,
     invertedBottom: statistics ? invBottom : undefined,
-    interceptX: paramValues[2],
-    interceptY: fittedCurve(paramValues[2]),
-    slope: paramValues[1],
-    top: paramValues[0],
-    bottom: paramValues[3],
   };
 }
 
@@ -434,7 +461,7 @@ export function getStatistics(data: {x: number[], y: number[]}, paramValues: num
 //     return curveFunction(paramValues, x);
 //   };
 
-//   const error = errorModel == FitErrorModel.Proportional ?
+//   const error = errorModel === FitErrorModel.Proportional ?
 //     of(curveFunction, data, paramValues).mult :
 //     of(curveFunction, data, paramValues).const;
 
@@ -442,7 +469,7 @@ export function getStatistics(data: {x: number[], y: number[]}, paramValues: num
 
 //   const top = (x: number) =>{
 //     const value = curveFunction(paramValues, x);
-//     if (errorModel == FitErrorModel.Constant) {
+//     if (errorModel === FitErrorModel.Constant) {
 //       return value + studentQ*error/Math.sqrt(data.x.length);
 //     } else {
 //       return value + studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
@@ -451,7 +478,7 @@ export function getStatistics(data: {x: number[], y: number[]}, paramValues: num
 
 //   const bottom = (x: number) => {
 //     const value = curveFunction(paramValues, x);
-//     if (errorModel == FitErrorModel.Constant) {
+//     if (errorModel === FitErrorModel.Constant) {
 //       return value - studentQ*error/Math.sqrt(data.x.length);
 //     } else {
 //       return value - studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
@@ -512,18 +539,17 @@ export function sigmoid(params: number[], x: number): number {
   const B = params[1];
   const C = params[2];
   const D = params[3];
-  const res = D + (A - D)/(1 + Math.pow(10, (x - C)*B));
+  const res = D + (A - D) / (1 + Math.pow(10, (x - C) * B));
   return res;
 }
 
 function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: number[], x: number) => number,
   data: {x: number[], y: number[]}, params: number[], selectedParam: number): number {
-  let step = params[selectedParam]*0.0001;
-  step = step == 0 ? 0.001 : step;
+  const step = (params[selectedParam] * 0.0001) === 0 ? 0.001 : (params[selectedParam] * 0.0001);
   const paramsTop: number[] = [];
   const paramsBottom: number[] = [];
   for (let i = 0; i < params.length; i++) {
-    if (i == selectedParam) {
+    if (i === selectedParam) {
       paramsTop.push(params[i] + step);
       paramsBottom.push(params[i] - step);
     } else {
@@ -534,26 +560,24 @@ function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: n
   const drvTop = of(curveFunction, data, paramsTop).value;
   const drvBottom = of(curveFunction, data, paramsBottom).value;
 
-  return (drvTop - drvBottom)/(2*step);
+  return (drvTop - drvBottom) / (2 * step);
 }
 
-export function getAuc(fittedCurve: (x: number) => number,
-  data: {x: number[], y: number[]}): number {
+export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
   let auc = 0;
 
   const min = Math.min(...data.x);
   const max = Math.max(...data.x);
-  const integrationStep = (max - min)/1000;
+  const integrationStep = (max - min) / 1000;
 
   for (let x = min; x < max; x+= integrationStep) {
-    auc += integrationStep*fittedCurve(x);
+    auc += integrationStep * fittedCurve(x);
   }
 
   return auc;
 }
 
-export function getDetCoeff(fittedCurve: (x: number) => number,
-  data: {x: number[], y: number[]}): number {
+export function getDetCoeff(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
   let ssRes = 0;
   let ssTot = 0;
 
@@ -564,13 +588,10 @@ export function getDetCoeff(fittedCurve: (x: number) => number,
     ssTot += Math.pow(data.y[i] - yMean, 2);
   }
 
-  return 1 - ssRes/ssTot;
+  return 1 - ssRes / ssTot;
 }
 
-function getInvError(
-  targetFunc: (y: number) => number,
-  data: {y: number[], x: number[]},
-): number {
+function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: number[]}): number {
   const pi = Math.PI;
   let sigma = 0;
   let sigmaSq = 0;
@@ -591,11 +612,8 @@ function getInvError(
   return sigma;
 }
 
-function objectiveNormalConstant(
-  targetFunc: (params: number[], x: number) => number,
-  data: {y: number[], x: number[]},
-  params: number[],
-): Likelihood {
+function objectiveNormalConstant(targetFunc: (params: number[], x: number) => number,
+  data: {y: number[], x: number[]}, params: number[]): Likelihood {
   //assure observed and args same length
   const pi = Math.PI;
   let sigma = 0;
@@ -616,17 +634,14 @@ function objectiveNormalConstant(
   sigma = Math.sqrt(sigmaSq);
 
   for (let i = 0; i < residuesSquares.length; i++) {
-    likelihood += residuesSquares[i]/sigmaSq + Math.log(2 * pi * sigmaSq);
+    likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
   }
 
   return {value: -likelihood, const: sigma, mult: 0};
 }
 
-function objectiveNormalProportional(
-  targetFunc: (params: number[], x: number) => number,
-  data: {y: number[], x: number[]},
-  params: number[],
-): Likelihood {
+function objectiveNormalProportional(targetFunc: (params: number[], x: number) => number,
+  data: {y: number[], x: number[]}, params: number[]): Likelihood {
   //assure observed and args same length
   const pi = Math.PI;
   let sigma = 0;
@@ -647,7 +662,7 @@ function objectiveNormalProportional(
   sigma = Math.sqrt(sigmaSq);
 
   for (let i = 0; i < residuesSquares.length; i++) {
-    likelihood += residuesSquares[i]/sigmaSq + Math.log(2*pi*sigmaSq);
+    likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
   }
 
   return {value: -likelihood, const: sigma, mult: 0};

@@ -2,20 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {
-  FitFunction,
-  FitResult,
-  fitResultProperties,
-  getFittedCurve,
-  JsFunction,
-  LinearFunction,
-  SigmoidFunction,
-} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {statisticsProperties, FitConfidenceIntervals} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
-import {fitSeries, getChartData, getChartBounds, IFitChartData, IFitSeries, createFitFunction,
+import {fitSeries, getChartData, getChartBounds, IFitChartData, createFitFunction,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
-  TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics, IFitFunction, getCurve} from './fit-data';
+  TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics, getCurve, FIT_CELL_TYPE} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {Viewport} from './transform';
 import {MultiCurveViewer} from './multi-curve-viewer';
@@ -32,8 +24,7 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 }
 
 /** Performs a curve confidence interval drawing */
-function drawConfidenceInterval(g: CanvasRenderingContext2D, 
-  confIntervals: {confidenceTop: (x: number) => number, confidenceBottom: (x: number) => number},
+function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
   screenBounds: DG.Rect, transform: Viewport, confidenceType: string): void {
   g.beginPath();
   for (let i = 0; i <= screenBounds.width; i++) {
@@ -50,7 +41,7 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D,
 }
 
 /** Performs a curve confidence interval color filling */
-function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: {confidenceTop: (x: number) => number, confidenceBottom: (x: number) => number},
+function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
   screenBounds: DG.Rect, transform: Viewport): void {
   g.beginPath();
   for (let i = 0; i <= screenBounds.width; i++) {
@@ -73,9 +64,9 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: {con
 }
 
 export class FitChartCellRenderer extends DG.GridCellRenderer {
-  get name() { return 'fit'; }
+  get name() { return FIT_CELL_TYPE; }
 
-  get cellType() { return 'fit'; }
+  get cellType() { return FIT_CELL_TYPE; }
 
   getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
     return {width: 160, height: 100};
@@ -215,7 +206,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         const statistics = getSeriesStatistics(series, fitFunc);
         for (let i = 0; i < data.chartOptions.showStatistics.length; i++) {
           const statName = data.chartOptions.showStatistics[i];
-          const prop = fitResultProperties.find(p => p.name === statName);
+          const prop = statisticsProperties.find(p => p.name === statName);
           if (prop) {
             const s = StringUtils.formatNumber(prop.get(statistics));
             g.fillStyle = series.fitLineColor ?? 'black';

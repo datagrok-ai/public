@@ -93,7 +93,7 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
   return df;
 }
 
-export async function curveDemo() {
+export async function curveDemo(): Promise<void> {
   const df = createDemoDataFrame(30, 5, 2);
   const tableView = grok.shell.addTableView(df);
   tableView.addViewer('MultiCurveViewer');
