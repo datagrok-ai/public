@@ -1,5 +1,4 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
 import { RuleId } from '../panels/structural-alerts';
 import * as DG from 'datagrok-api/dg';
@@ -35,42 +34,77 @@ export class RdKitService {
       console.log('RDKit Service was initialized');
   }
 
-  async _doParallel(
-    map: (i: number, workerCount: number) => Promise<any>,
-    reduce: (_: any) => any = (_: any) => []): Promise<any> {
+    /**
+   * Performs parallelization of function execution using web-workers.
+   * @async
+   * @param {function (workerIdx: number, workerCount: number): Promise<TMap>} map - splits the data by number of workers
+   * and calls function from rdkit service worker client (basicaly action which we need to perform inside worker -
+   * getFingerprints, searchSubstructure etc.)
+   * @param {function (_: TMap[]): TReduce} reduce - fucntion which combines results collected from web workers into single result
+   * */
+  async _doParallel<TMap, TReduce>(
+    map: (workerIdx: number, workerCount: number) => Promise<TMap>,
+    reduce: (_: TMap[]) => TReduce = (_: TMap[]) => [] as TReduce): Promise<TReduce> { //(_: TMap[]) => [] as TReduce is a default function
     const promises = [];
     const workerCount = this.workerCount;
-    for (let i = 0; i < workerCount; i++)
-      promises[i] = map(i, workerCount);
+    for (let workerIdx = 0; workerIdx < workerCount; workerIdx++)
+      promises[workerIdx] = map(workerIdx, workerCount);
 
     const data = await Promise.all(promises);
     return reduce(data);
   }
 
-  async _initParallelWorkers(molecules: string[], func: any, postFunc: any): Promise<any> {
+
+   /**
+   * Calls _doParallel with pre-defined map function which splits data by number of workers
+   * @async
+   * @param {string[]} molecules - list of molecules to split by workers
+   * @param {function (workerIdx: number, workerCount: number): Promise<TMap>} workerFunc - function from rdkit service worker
+   *  client (basicaly action which we need to perform inside worker - getFingerprints, searchSubstructure etc.)
+   * @param {function (_: TMap[]): TReduce} reduce - function which combines results collected from web workers into single result
+   * */
+  async _initParallelWorkers<TMap, TReduce>(molecules: string[],
+    workerFunc: (workerIdx: number, moleculesSegment: string[]) => Promise<TMap>,
+    reduce: (_: TMap[]) => TReduce): Promise<TReduce> {
     const t = this;
     return this._doParallel(
-      (i: number, nWorkers: number) => {
+      (workerIdx: number, nWorkers: number) => {
         const length = molecules.length;
         const segmentLength = Math.floor(length / nWorkers);
         t.segmentLength = segmentLength;
-        const segment = i < (nWorkers - 1) ?
-          molecules.slice(i * segmentLength, (i + 1) * segmentLength) :
-          molecules.slice(i * segmentLength, length);
-        t.moleculesSegmentsLengths![i] = segment.length;
-        return func(i, segment);
+        const segment = workerIdx < (nWorkers - 1) ?
+          molecules.slice(workerIdx * segmentLength, (workerIdx + 1) * segmentLength) :
+          molecules.slice(workerIdx * segmentLength, length);
+        t.moleculesSegmentsLengths![workerIdx] = segment.length;
+        return workerFunc(workerIdx, segment);
       },
-      postFunc,
+      reduce,
     );
   }
 
-  async initMoleculesStructures(molecules: string[], useSubstructLib?: boolean)
-    : Promise<number> {
-    return this._initParallelWorkers(molecules, (i: number, segment: any) =>
+   /**
+   * Fills array of mols or SubstructLibrary object in each worker
+   * @async
+   * @param {string[]} molecules - list of molecules to save in each worker
+   * @param {boolean} useSubstructLib - optional parameter, if set to true SubstructLibrary object if filled with mols,
+   * otherwise array of mols is used
+   * */
+  async initMoleculesStructures<TReduce>(molecules: string[], useSubstructLib?: boolean)
+    : Promise<TReduce | void> {
+    return this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
       this.parallelWorkers[i].initMoleculesStructures(segment, useSubstructLib),
     () => {});
   }
 
+   /**
+   * Filters molecules by substructure
+   * @async
+   * @param {string} query - smiles/molblock to filter by
+   * @param {string} queryMolBlockFailover - smart to filter by (is used if creation of RDMol object from query parameter failed)
+   * @param {boolean} molecules - optional parameter, if passed RDMols objects are created on the fly (neither array of
+   * predefined RDMols nor SubstructLibrary are used) 
+   * @param {boolean} useSubstructLib - optional parameter, if set to true SubstructLibrary is used for search
+   * */
   async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], 
     useSubstructLib?: boolean): Promise<DG.BitSet> {
     const t = this;
@@ -92,19 +126,25 @@ export class RdKitService {
       (data: Array<Uint32Array>) => {
         const segmentsLengths = molecules ? t.moleculesSegmentsLengthsPatternFp : t.moleculesSegmentsLengths;
         const totalLength = segmentsLengths.reduce((acc, cur) => acc + cur, 0);
-        const bitArray = DG.BitSet.create(totalLength);
+        const bitset = DG.BitSet.create(totalLength);
         let counter = 0;
         for (let i = 0; i < segmentsLengths.length; i++) {
           for (let j = 0; j < segmentsLengths[i]; j++) {
-            bitArray.set(counter++, !!(data[i][0] >> j & 1));
+            bitset.set(counter++, !!(data[i][0] >> j & 1));
           }
         }
-        return bitArray;
+        return bitset;
       });
   }
 
-
-  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Uint8Array[]> {
+   /**
+   * Returns fingerprints for provied molecules
+   * @async
+   * @param {Fingerprint} fingerprintType - type of fingerprint (Morgan or Pattern)
+   * @param {boolean} molecules - optional parameter, if passed RDMols objects are created on the fly (array of
+   * predefined RDMols is not used) 
+   * */
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Array<Uint8Array | null>[]> {
     const t = this;
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
