@@ -1,8 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, delay} from '@datagrok-libraries/utils/src/test';
 import {createDemoDataFrame} from '../fit/fit-demo';
+import {category, test, delay} from '@datagrok-libraries/utils/src/test';
+
 
 export async function scrollTable(el: HTMLElement, delta: number, cycles: number, secDelay: number) {
   for (let i = 0; i < cycles; i++) {
