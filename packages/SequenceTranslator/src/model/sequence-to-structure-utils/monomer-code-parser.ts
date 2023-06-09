@@ -45,6 +45,7 @@ export class MonomerSequenceParser {
         monomerSymbolSequence.push(P_LINKAGE);
       }
     }
+    // console.log('monomerSymbolSequence:', monomerSymbolSequence);
     return monomerSymbolSequence;
   }
 
