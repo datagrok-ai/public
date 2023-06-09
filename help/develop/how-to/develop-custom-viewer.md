@@ -572,7 +572,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 * Scripting viewers (R, Python, Julia):
   * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
     Python and R code using scripting viewers for the respective programming languages
-  * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
+  * [Demo]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
   browser: [https://public.datagrok.ai/scripts?q=%23viewers](https://public.datagrok.ai/scripts?q=%23viewers)
@@ -591,4 +591,4 @@ See also:
 * [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
+[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

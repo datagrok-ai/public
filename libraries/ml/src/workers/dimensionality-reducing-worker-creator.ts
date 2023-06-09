@@ -22,6 +22,7 @@ export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method
       parallelDistanceWorkers: parallelDistanceWorkers,
     });
     worker.onmessage = ({data: {error, distance, embedding}}) => {
+      worker.terminate();
       if (error)
         reject(error);
       else
