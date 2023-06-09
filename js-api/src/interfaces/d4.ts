@@ -788,6 +788,8 @@ export interface IBarChartLookSettings {
   /// Only works for cumulative aggregations such as count.
   showSelectedRows: boolean;
 
+  showMouseOverRect: boolean;
+
   maxCategoryWidth: number;
 
   categoryValueWidth: number;
@@ -829,6 +831,10 @@ export interface IBarChartLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  addFilteredBars: boolean;
+
+  drawLabelsInsideBars: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1387,7 +1393,10 @@ export interface ITrellisPlotLookSettings {
 
   categoryLabelFont: string;
 
-  //Map innerViewerLookState;
+  globalScale: boolean;
+
+  addLines: boolean;
+
   showXAxes: boolean;
 
   showYAxes: boolean;
