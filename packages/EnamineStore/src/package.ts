@@ -50,6 +50,9 @@ const searchModeToCommandMap = {
 type EnamineMolProperties =
   {'ID': string, 'Formula': string, 'MW': number, 'Availability': number, 'Delivery': string};
 
+const WIDTH = 150;
+const HEIGHT = 75;
+
 //tags: app
 //name: Enamine Store
 export function enamineStoreApp(): void {
@@ -129,9 +132,14 @@ function createSearchPanel(panelName: SEARCH_MODE, smiles: string): HTMLDivEleme
       compsHost.appendChild(ui.divText('No matches'));
       return;
     }
+
+
     for (const comp of data) {
       const smiles = comp['smile'];
-      const mol = grok.chem.svgMol(smiles, 150, 75);
+      const molHost = ui.div();
+      grok.functions.call('Chem:drawMolecule', {'molStr': smiles, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+        .then((res: HTMLElement) => molHost.append(res));
+
       const id = comp['Id'];
       const props: EnamineMolProperties = {
         'ID': id,
@@ -144,11 +152,9 @@ function createSearchPanel(panelName: SEARCH_MODE, smiles: string): HTMLDivEleme
         //@ts-ignore: idk how to properly define type of props so that it has both required fields and optional any field
         props[`${pack['amount']} ${pack['measure']}`] = `${pack['price']} ${currency}`;
       }
-      ui.tooltip.bind(mol, () => ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]));
-      mol.addEventListener('click', function() {
-        window.open(comp['productUrl'], '_blank');
-      });
-      compsHost.appendChild(mol);
+      ui.tooltip.bind(molHost, () => ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]));
+      molHost.addEventListener('click', () => window.open(comp['productUrl'], '_blank'));
+      compsHost.appendChild(molHost);
     }
     headerHost.appendChild(ui.iconFA('arrow-square-down', () =>
       grok.shell.addTableView(dataToTable(data, `EnamineStore ${panelName}`)), 'Open compounds as table'));
