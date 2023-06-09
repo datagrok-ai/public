@@ -13,7 +13,7 @@ import {Viewport} from './transform';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
-function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
+export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
   if (rect.width < 100 || rect.height < 100)
     return [rect, undefined, undefined];
   return [
