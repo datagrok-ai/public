@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {analyzePeptidesUI} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
-import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
+import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {IDendrogramService, getDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -127,8 +127,8 @@ export function monomerPosition(): MonomerPosition {
 //tags: viewer
 //meta.icon: files/icons/peptide-sar-vertical-viewer.svg
 //output: viewer result
-export function mostPotentResidues(): MostPotentResiduesViewer {
-  return new MostPotentResiduesViewer();
+export function mostPotentResidues(): MostPotentResidues {
+  return new MostPotentResidues();
 }
 
 //name: Logo Summary Table
@@ -176,6 +176,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //name: Macromolecule SAR Analysis
 //description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
+//meta.isDemoScript: True
 export async function macromoleculeSarFastaDemo(): Promise<void> {
   return macromoleculeSarFastaDemoUI();
 }

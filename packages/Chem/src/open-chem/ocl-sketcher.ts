@@ -1,13 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import {chem} from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
-import { convertMolNotation } from '../package';
+import {convertMolNotation} from '../package';
 import * as DG from 'datagrok-api/dg';
 
 let sketcherId = 0;
 
 export class OpenChemLibSketcher extends grok.chem.SketcherBase {
-
   _sketcher: OCL.StructureEditor | null = null;
   mouseDown = false;
   savedMolecule: string | null = null;
@@ -37,14 +36,14 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     Using pointerup instead of mouseup here since at the moment of mouseup event molecule is already removed
     TODO!!!:  create issue on openChemLib github*/
 
-    const canvas = this.root.querySelectorAll("canvas")[1];
-    canvas!.addEventListener("pointerdown", (e) => {
+    const canvas = this.root.querySelectorAll('canvas')[1];
+    canvas!.addEventListener('pointerdown', (e) => {
       this.mouseDown = true;
     });
-    canvas!.addEventListener("pointerup", (e) => {
-      if (this.mouseDown) {
+    canvas!.addEventListener('pointerup', (e) => {
+      if (this.mouseDown)
         this.mouseDown = false;
-      } else {
+      else {
         this.setSavedMolecule = true;
         this.savedMolecule = this.molFile;
       }
@@ -64,7 +63,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get molFile() {
-      return this._sketcher ? this._sketcher.getMolFile() : '';
+    return this._sketcher ? this._sketcher.getMolFile() : '';
   }
 
   set molFile(s) {
@@ -72,7 +71,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get molV3000() {
-      return this._sketcher ? this._sketcher.getMolFileV3() : '';
+    return this._sketcher ? this._sketcher.getMolFileV3() : '';
   }
 
   set molV3000(s) {

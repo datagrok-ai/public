@@ -8,6 +8,7 @@ import {TYPE} from 'datagrok-api/src/const';
 import {
   fit,
   FitErrorModel,
+  FitParam,
   FitResult, fitResultProperties,
   sigmoid
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
@@ -73,7 +74,6 @@ export interface IFitSeriesOptions {
   showIntercept?: boolean;
   showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
   showConfidenceForX?: number;
-
   clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
 }
 
@@ -88,10 +88,10 @@ export interface IFitSeries extends IFitSeriesOptions {
 /** Chart options. For fitted curves, this object is stored in the grid column tags and is
  * used by the renderer. */
 export interface IFitChartOptions {
-  minX? : number;
-  minY? : number;
-  maxX? : number;
-  maxY? : number;
+  minX?: number;
+  minY?: number;
+  maxX?: number;
+  maxY?: number;
 
   xAxisName?: string;
   yAxisName?: string;
@@ -111,6 +111,7 @@ export interface IFitChartData {
 }
 
 
+/** Class that implements {@link IFitChartData} interface */
 export class FitChartData implements IFitChartData {
   chartOptions: IFitChartOptions = {};
   seriesOptions: IFitSeriesOptions = {};  // Default series options. Individual series can override it.
@@ -159,7 +160,7 @@ export const fitSeriesProperties: Property[] = [
 function createFromProperties(properties: Property[]): any {
   const o: any = {};
   for (const p of properties) {
-    if (p.defaultValue != null)
+    if (p.defaultValue !== null)
       o[p.name] = p.defaultValue;
   }
   return o;
@@ -169,7 +170,7 @@ function createFromProperties(properties: Property[]): any {
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
-export function mergeProperties(properties: Property[], source: any, target: any) {
+export function mergeProperties(properties: Property[], source: any, target: any): void {
   if (!source || !target)
     return;
 
@@ -179,7 +180,7 @@ export function mergeProperties(properties: Property[], source: any, target: any
   }
 }
 
-
+/** Creates default {@link IFitChartData} object */
 function createDefaultChartData(): IFitChartData {
   return {
     chartOptions: createFromProperties(fitChartDataProperties),
@@ -194,6 +195,7 @@ export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData 
 }
 
 
+/** Returns the bounds of an {@link IFitChartData} object */
 export function getChartBounds(chartData: IFitChartData): DG.Rect {
   const o = chartData.chartOptions;
   if (o?.minX && o.minY && o.maxX && o.maxY)
@@ -210,6 +212,7 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
 
 
 //TODO: move to DG.Rect
+/** Gets the bounds of provided points */
 export function getDataBounds(points: IFitPoint[]): DG.Rect {
   let minX = points[0].x;
   let minY = points[0].y;
@@ -229,18 +232,9 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
 
 /** Fits the series data according to the series fitting settings */
 export function fitSeries(series: IFitSeries, statistics: boolean = false): FitResult {
-  //TODO: optimize the calculation of the initial parameters
   const dataBounds = getDataBounds(series.points);
-  // const ys = series.points.map((p) => p.y);
-  // const medY = ys[Math.floor(series.points.length / 2)];
   const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
-  let xAtMedY = -1;
-  // for (let i = 0; i < series.points.length; i++) {
-  //   if (series.points[i].y === medY) {
-  //     xAtMedY = series.points[i].x;
-  //     break;
-  //   }
-  // }
+
   let maxYInterval = dataBounds.bottom - dataBounds.top;
   let nearestXIndex = 0;
   for (let i = 0; i < series.points.length; i++) {
@@ -250,38 +244,37 @@ export function fitSeries(series: IFitSeries, statistics: boolean = false): FitR
       nearestXIndex = i;
     }
   }
-  xAtMedY = series.points[nearestXIndex].x;
-
-  let slope = series.points[0].y > series.points[series.points.length - 1].y ? 1.2 : -1.2;
+  const xAtMedY = series.points[nearestXIndex].x;
+  const slope = series.points[0].y > series.points[series.points.length - 1].y ? 1.2 : -1.2;
 
   // params are: [max, tan, IC50, min]
-  const initialParams = [{value: dataBounds.bottom}, {value: slope}, {value: xAtMedY}, {value: dataBounds.top}];
+  const initialParams: FitParam[] = [{value: dataBounds.bottom}, {value: slope}, {value: xAtMedY}, {value: dataBounds.top}];
 
   return fit(
     {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)},
     initialParams, sigmoid, FitErrorModel.Constant, 0.05, statistics);
 }
 
-/** Returns a curve function, either using the pre-computed parameters
- * or by fitting on-the-fly */
-export function getFittedCurve(series: IFitSeries): (x: number) => number {
-  if (series.parameters)
-    return (x) => sigmoid(series.parameters!, x);
-  else
-    return fitSeries(series).fittedCurve;
-}
+// /** Returns a curve function, either using the pre-computed parameters
+//  * or by fitting on-the-fly */
+// export function getFittedCurve(series: IFitSeries): (x: number) => number {
+//   if (series.parameters)
+//     return (x) => sigmoid(series.parameters!, x);
+//   else
+//     return fitSeries(series).fittedCurve;
+// }
 
-/** Returns confidence interval functions */
-export function getConfidenceIntrevals(series: IFitSeries): {top: (x: number) => number, bottom: (x: number) => number} {
-  const confTop = fitSeries(series).confidenceTop;
-  const confBottom = fitSeries(series).confidenceBottom;
-  return {top: confTop, bottom: confBottom};
-}
+// /** Returns confidence interval functions */
+// export function getConfidenceIntervals(series: IFitSeries): {top: (x: number) => number, bottom: (x: number) => number} {
+//   const confTop = fitSeries(series).confidenceTop;
+//   const confBottom = fitSeries(series).confidenceBottom;
+//   return {top: confTop, bottom: confBottom};
+// }
 
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
  * chart and fit settings potentially defined on the dataframe and column level. */
 export function getChartData(gridCell: DG.GridCell): IFitChartData {
-  const cellChartData: IFitChartData = gridCell.cell?.column?.type == DG.TYPE.STRING ?
+  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
     (JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
 
   const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
@@ -289,7 +282,7 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
   cellChartData.series ??= [];
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
 
-    // merge cell options with column options
+  // merge cell options with column options
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   for (const series of cellChartData.series)
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);

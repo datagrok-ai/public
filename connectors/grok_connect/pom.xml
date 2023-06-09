@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grok_connect</artifactId>
-    <version>2.0.13</version>
+    <version>2.0.14</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>connectors</groupId>
         <artifactId>build</artifactId>
-        <version>2.0.13</version>
+        <version>2.0.14</version>
     </parent>
 
     <properties>
@@ -216,7 +216,7 @@
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.41.2.1</version>
+            <version>3.41.2.2</version>
         </dependency>
 
         <dependency>
@@ -553,7 +553,7 @@
         <dependency>
             <groupId>net.snowflake</groupId>
             <artifactId>snowflake-jdbc</artifactId>
-            <version>3.13.27</version>
+            <version>3.13.29</version>
         </dependency>
         <dependency>
             <groupId>javassist</groupId>

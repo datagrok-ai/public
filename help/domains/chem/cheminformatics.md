@@ -64,7 +64,7 @@ representations, planar and 3D.
 
 ### Importing molecular data in Datagrok<!--corr: should it be here?-->
 
-[Import the dataset](../../access/file-shares.mdx), as you normally would, by opening a file, querying a
+[Import the dataset](../../access/files/files.mdx), as you normally would, by opening a file, querying a
 database, connecting to a webservice, or by any other method. The platform is smart enough to automatically recognize
 chemical structures.
 ![representations1](../../uploads/chem/representations1.png "graphs")
@@ -268,7 +268,7 @@ chemical space.
 expansion of the reactants. If not checked, reactants 1 and 2 will be combined sequentially, with the longer list
 determining the number of output rows.
 
-Corresponding function: #{x.demo:demoscripts:TwoComponentReaction}
+Corresponding function: #{x.demo:TwoComponentReaction}
 
 See details [here](functions/reactions.md).
 
@@ -436,7 +436,7 @@ will bring up this molecule's properties to the context panel. The following pan
 
 In addition to these predefined info panels, users can develop their own using any
 [scripting language](../../compute/scripting.md)
-supported by the Grok platform. For example,`#{x.demo:demoscripts:GasteigerPartialCharges}`.
+supported by the Grok platform. For example,`#{x.demo:GasteigerPartialCharges}`.
 
 #### Accessing cheminformatics tools for a molecule column
 

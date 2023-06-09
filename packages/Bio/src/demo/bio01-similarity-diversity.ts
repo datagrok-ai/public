@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
@@ -36,7 +35,7 @@ export async function demoBio01UI() {
         // TODO: Fix column width
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
-        delay: 2000
+        delay: 2000,
       })
       .step('Find the most similar sequences to the current one', async () => {
         const simViewer = await df.plot.fromType('Sequence Similarity Search', {
@@ -46,17 +45,17 @@ export async function demoBio01UI() {
         view.dockManager.dock(simViewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity search', 0.35);
       }, {
         description: `Add 'Sequence Similarity Search' viewer.`,
-        delay: 2000
+        delay: 2000,
       })
       .step('Explore most diverse sequences in a dataset', async () => {
         const divViewer = await df.plot.fromType('Sequence Diversity Search', {
           moleculeColumnName: 'sequence',
-          diverseColumnLabel: 'Top diverse sequences of all data'
+          diverseColumnLabel: 'Top diverse sequences of all data',
         }) as SequenceDiversityViewer;
         view.dockManager.dock(divViewer, DG.DOCK_TYPE.DOWN, null, 'Diversity search', 0.27);
       }, {
         description: `Add 'Sequence Deversity Search' viewer.`,
-        delay: 2000
+        delay: 2000,
       })
       .step('Choose another sequence for similarity search', async () => {
         df.currentRowIdx = 3;

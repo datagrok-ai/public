@@ -5,15 +5,15 @@ import {_package} from '../package';
 
 
 const VIEWER_TABLES_PATH: {[key: string]: string} = {
-  Chord: 'energy_uk.csv',
-  Globe: 'geo/earthquakes.csv',
-  Radar: 'demog.csv',
-  Sankey: 'energy_uk.csv',
-  Sunburst: 'demog.csv',
-  SurfacePlot: 'files/surface-plot.csv',
-  Timelines: 'files/ae.csv',
-  Tree: 'demog.csv',
-  WordCloudViewer: 'word_cloud.csv',
+  'Chord': 'energy_uk.csv',
+  'Globe': 'geo/earthquakes.csv',
+  'Radar': 'demog.csv',
+  'Sankey': 'energy_uk.csv',
+  'Sunburst': 'demog.csv',
+  'SurfacePlot': 'files/surface-plot.csv',
+  'Timelines': 'files/ae.csv',
+  'Tree': 'demog.csv',
+  'Word cloud': 'word_cloud.csv',
 };
 
 
@@ -45,7 +45,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
   const rootNode = tableView.dockManager.rootNode;
 
-  if (viewerName === 'WordCloudViewer') {
+  if (viewerName === DG.VIEWER.WORD_CLOUD) {
     tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
     tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
     return;

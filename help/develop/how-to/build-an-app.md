@@ -166,7 +166,7 @@ There's a variety of data sources which Datagrok can handle out of the box:
 * Web Services (REST endpoints) specified via Swagger / OpenAPI ([link](../../access/open-api.md))
 * Arbitrary REST APIs (including these outside host's domain) ([link](access-data.md#rest-endpoints))
 * Access a file from the Datagrok server space (either shared or Home) ([link](access-data.md#file-shares))
-* Reading from databases: Datagrok supports more than 30 connectors ([link](../../access/supported-connectors.md))
+* Reading from databases: Datagrok supports more than 30 connectors ([link](../../access/databases/connectors/connectors.md))
 * Access a file from a network file share (Windows Shares, SAMBA and the like) ([link](access-data.md#file-shares))
 
 Connections to databases, respective database queries, and file shares connections live in Datagrok
@@ -507,7 +507,7 @@ When the script is run, here is what happens under the hood:
 * The script execution is fully stateless and isolated
 
 You can even return graphics from the script! Check it
-with [this exercise on Scripting Viewers](../exercises/exercises.md#exercise-5-creating-a-scripting-viewer).
+with [this exercise on Scripting Viewers](../exercises/exercises.md#exercise-6-creating-a-scripting-viewer).
 
 To add a script (in R, Python, Julia, Octave) to the package, put it into its `scripts` folder as a separate file. When
 it comes to JavaScript scripts, simply any JavaScript function in your package may become one. Just add a preamble to it

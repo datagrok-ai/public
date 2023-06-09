@@ -4,7 +4,7 @@
 # Tests: Data query
 
 [Data query](access.md#data-query) defines which data should be extracted from the
-[data source](supported-connectors.md). For databases, that would typically be the SQL query; for Excel file, that
+[data source](databases/connectors/connectors.md). For databases, that would typically be the SQL query; for Excel file, that
 would be sheet name, etc. The system allows you to create parameterized and non-parameterized [queries](access.md#data-query).
 
 ## Testing scenarios

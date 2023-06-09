@@ -3,7 +3,8 @@
   "friendlyName": "PowerPack",
   "sources": [
     "css/power-pack.css",
-    "css/viewers-gallery.css"
+    "css/viewers-gallery.css",
+    "css/windows-manager.css"
   ],
   "version": "1.0.7",
   "author": {
@@ -21,6 +22,7 @@
     "cash-dom": "latest",
     "datagrok-api": "^1.6.9",
     "dayjs": "^1.11.7",
+    "fuse.js": "^6.6.2",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {

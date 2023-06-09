@@ -1,9 +1,7 @@
 import {category, expectArray, test, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-
+import * as grok from 'datagrok-api/grok';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../package';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
@@ -37,11 +35,18 @@ category('converters', async () => {
     const result = [];
     for (const mol of molecules[srcNotation])
       result.push(_convertMolNotation(mol, srcNotation, tgtNotation, getRdKitModule()));
-    expectArray(result.map((it) => it.replaceAll('\r', '')), molecules[tgtNotation].map((it) => it.replaceAll('\r', '')));
+    expectArray(result.map((it) => it.replaceAll('\r', '')),
+      molecules[tgtNotation].map((it) => it.replaceAll('\r', '')));
   }
 
   test('SMILES to Molfile V2000', async () => {
-    _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+    if (DG.Test.isInBenchmark) {
+      const df = await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip");
+      const rdkitModule = getRdKitModule();
+      for (let i = 0; i < df.rowCount; i++)
+        _convertMolNotation(df.get('smiles', i), DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule);
+    } else
+      _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   });
 
   test('SMILES to SMARTS', async () => {

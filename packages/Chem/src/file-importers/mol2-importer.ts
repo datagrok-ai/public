@@ -45,7 +45,7 @@ export function _importTripos(bytes: Uint8Array): DG.DataFrame[] {
   const parser = new TriposToMolfileConverter(str);
 
   const molfileArray: string[] = [];
-  
+
   while (parser.next())
     molfileArray.push(parser.getNextMolFile());
 
@@ -301,7 +301,7 @@ class TriposToMolfileConverter {
         pairOfAtoms.push(atomIdx);
         this.jumpToNextColumn();
       }
-      
+
       if (pairHasHydrogen)
         continue; // we don't need atom pairs with hydrogens
       else {

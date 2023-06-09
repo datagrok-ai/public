@@ -4,13 +4,13 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Cheminformatics',
 			children: [
 				{
-					name: 'Molecule3D in Grid',
+					name: 'Proteins',
 				},
 				{
-					name: 'Databases',
+					name: 'Chemical Databases',
 				},
 				{
-					name: 'Docking NGL',
+					name: 'Docking Conformations',
 				},
 				{
 					name: 'Molecule Activity Cliffs',
@@ -22,7 +22,7 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'R Group Analysis',
 				},
 				{
-					name: 'Similarity Search',
+					name: 'Similarity & Diversity Search',
 				},
 				{
 					name: 'Scaffold Tree',
@@ -61,10 +61,13 @@ export const DEMO_APP_HIERARCHY = {
 				{
 					name: 'Databases',
 				},
+				{
+					name: 'Table Linking',
+				},
 			]
 		},
 		{
-			name: 'Viewers',
+			name: 'Visualization',
 			children: [
 				{
 					name: 'Data flow and hierarchy',
@@ -108,6 +111,9 @@ export const DEMO_APP_HIERARCHY = {
 						},
 						{
 							name: 'Density Plot',
+						},
+						{
+							name: 'Filters',
 						},
 						{
 							name: 'Heatmap',
@@ -211,7 +217,7 @@ export const DEMO_APP_HIERARCHY = {
 			]
 		},
 		{
-			name: 'Data analysis',
+			name: 'Compute',
 			children: [
 				{
 					name: 'Multivariate analysis',

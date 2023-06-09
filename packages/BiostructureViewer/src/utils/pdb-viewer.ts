@@ -12,7 +12,8 @@
 //     const bsView: DG.TableView = grok.shell.tv;
 //
 //     const ligandSelection = {};
-//     let ligands = ['R', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'S', 'T', 'U', 'V', 'W'];
+//     let ligands = ['R', 'C', 'D', 'E', 'F', 'G', 'H',
+//  'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'S', 'T', 'U', 'V', 'W'];
 //     for (let i = 0; i < ligands.length; i++)
 //       ligandSelection[ligands[i]] = [false, 400 + i];
 //

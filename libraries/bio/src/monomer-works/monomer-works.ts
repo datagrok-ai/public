@@ -1,9 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {sequenceToMolFileST} from './to-atomic-level';
 
-import {IMonomerLib, Monomer} from '../types';
+import {IMonomerLib} from '../types';
 
 
 /** Hypothetical interface to convert mol block notation.
@@ -33,12 +32,5 @@ export class MonomerWorks {
       return monomer.molfile; //TODO cap
 
     return null;
-  }
-
-  /** Consumes a list of monomer symbols and restores molfileV3K (SequenceTranslator/ST version) */
-  public getAtomicLevel(monomers: string[], polymerType: string): string | null {
-    return sequenceToMolFileST(
-      monomers, this.monomerLib.getMonomerMolsByType(polymerType)!
-    );
   }
 }

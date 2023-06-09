@@ -9,13 +9,45 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 const pdbCsvFn: string = 'pdb_data.csv';
 const pdbColName: string = 'pdb';
 
+export async function demoBio07NoScript(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Demo Proteins ...');
+  try {
+    grok.shell.windows.showContextPanel = false;
+    grok.shell.windows.showProperties = false;
+
+    const df = await _package.files.readCsv(pdbCsvFn);
+    const view = grok.shell.addTableView(df);
+    view.grid.columns.byName('id')!.width = 0;
+
+    df.currentCell = df.cell(0, pdbColName);
+    const pdbStr: string = df.currentCell.value;
+    const viewer = (await df.plot.fromType('Biostructure', {
+      pdb: pdbStr,
+    }));
+    view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.5);
+
+    grok.shell.windows.showHelp = true;
+    // TODO: Dependency on datagrok-api ^1.15.0
+    // @ts-ignore
+    if (grok.shell.windows.help) {
+      // @ts-ignore
+      grok.shell.windows.help.showHelp(viewer.helpUrl);
+    }
+  } finally {
+    pi.close();
+  }
+}
+
 export async function demoBio07UI(): Promise<void> {
   let view: DG.TableView;
   let df: DG.DataFrame;
   let viewer: DG.Viewer & IBiostructureViewer;
 
   try {
-    await new DemoScript('Demo', 'View structures PDB in grid')
+    await new DemoScript(
+      'Molecule3D in Grid',
+      'View structures PDB in grid',
+    )
       .step('Loading structures', async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;

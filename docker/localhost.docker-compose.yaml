@@ -36,8 +36,9 @@ services:
     environment:
       X_API_KEY: test-x-api-key
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
+      GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-false}
     ports:
-      - "${DATAGROK_GROK_SPAWNER_PORT:-8000}:8000/tcp"
+      - "${GROK_SPAWNER_PORT:-8000}:8000/tcp"
     networks:
       datagrok:
         aliases:
@@ -130,11 +131,11 @@ services:
     profiles: ["all", "db"]
 
   northwind:
-    image: datagrok/demo_db:latest
+    image: datagrok/demo_db_postgres:12-1.1.0
     environment:
       POSTGRES_DB: northwind
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND:-5433}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND_PORT:-5433}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -145,11 +146,11 @@ services:
     profiles: ["demo", "postgres_northwind", "northwind"]
 
   chembl:
-    image: datagrok/demo_db_chembl:latest
+    image: datagrok/demo_db_chembl:12.9-rdkit2022032-32
     environment:
       POSTGRES_DB: chembl
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_CHEMBL:-5434}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_CHEMBL_PORT:-5434}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -160,11 +161,11 @@ services:
     profiles: ["demo", "postgres_chembl", "chembl"]
 
   unichem:
-    image: datagrok/demo_db_unichem:latest
+    image: datagrok/demo_db_postgres:12-1.1.0
     environment:
       POSTGRES_DB: unichem
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_UNICHEM:-5435}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_UNICHEM_PORT:-5435}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -175,11 +176,11 @@ services:
     profiles: ["demo", "postgres_unichem", "unichem"]
 
   starbucks:
-    image: datagrok/demo_db:latest
+    image: datagrok/demo_db_postgres:latest-1.1.0
     environment:
       POSTGRES_DB: starbucks
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS:-5436}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS_PORT:-5436}:5432/tcp"
     networks:
       datagrok:
         aliases:
@@ -190,11 +191,11 @@ services:
     profiles: ["demo", "postgres_starbucks", "starbucks"]
 
   world:
-    image: datagrok/demo_db:latest
+    image: datagrok/demo_db_postgres:12-1.1.0
     environment:
       POSTGRES_DB: world
     ports:
-      - "${DATAGROK_DEMO_POSTGRES_WORLD:-5437}:5432/tcp"
+      - "${DATAGROK_DEMO_POSTGRES_WORLD_PORT:-5437}:5432/tcp"
     networks:
       datagrok:
         aliases:

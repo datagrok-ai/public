@@ -37,27 +37,27 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
           } else if (argsX > maxLengthWordsSum[mid + 1]) {
             left = mid + 1;
           }
-          if (left == right) {
+          if (left == right)
             found = true;
-          }
         }
       }
       left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
       const monomers = findMonomers(gridCell.cell.value);
-      let s: string = gridCell.cell.value ?? '';
-      let subParts: string[] = parseHelm(s);
-      let allParts: string[] = getParts(subParts, s);
-      let tooltipMessage: HTMLElement[] = [];
+      const s: string = gridCell.cell.value ?? '';
+      const subParts: string[] = parseHelm(s);
+      const allParts: string[] = getParts(subParts, s);
+      const tooltipMessage: HTMLElement[] = [];
       for (let i = 0; i < allParts.length; ++i) {
-        if (monomers.has(allParts[i]))
+        if (monomers.has(allParts[i])) {
           tooltipMessage[i] = ui.divV([
             ui.divText(`Monomer ${allParts[i]} not found.`),
             ui.divText('Open the Context Panel, then expand Manage Libraries')
           ]);
+        }
       }
-      (((tooltipMessage[left]?.childNodes.length ?? 0) > 0))
-        ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16)
-        : ui.tooltip.hide();
+      (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) ?
+        ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) :
+        ui.tooltip.hide();
     } catch (err: any) {
       const errMsg: string = errorToConsole(err);
       console.error('Helm: HelmCellRenderer.onMouseMove() error:\n' + errMsg);
@@ -71,8 +71,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
     const undefinedColor = 'rgb(100,100,100)';
     const grayColor = '#808080';
     const monomers = findMonomers(gridCell.cell.value);
-    let s: string = gridCell.cell.value ?? '';
-    let subParts: string[] = parseHelm(s);
+    const s: string = gridCell.cell.value ?? '';
+    const subParts: string[] = parseHelm(s);
     if (monomers.size == 0 && grid) {
       const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
@@ -96,20 +96,20 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       g.font = '12px monospace';
       g.textBaseline = 'top';
       let x1 = x;
-      let maxLengthWords: any = {};
-      let maxLengthWordSum: any = {};
-      let allParts: string[] = getParts(subParts, s);
+      const maxLengthWords: any = {};
+      const maxLengthWordSum: any = {};
+      const allParts: string[] = getParts(subParts, s);
       for (let i = 0; i < allParts.length; ++i) {
         maxLengthWords[i] = allParts[i].length * 7;
-        let color = monomers.has(allParts[i]) ? 'red' : grayColor;
+        const color = monomers.has(allParts[i]) ? 'red' : grayColor;
         g.fillStyle = undefinedColor;
         x1 = printLeftOrCentered(x1, y, w, h, g, allParts[i], color, 0, true, 1.0);
       }
 
       maxLengthWordSum[0] = maxLengthWords[0];
-      for (let i = 1; i < allParts.length; i++) {
+      for (let i = 1; i < allParts.length; i++)
         maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
-      }
+
       gridCell.cell.column.temp = {
         'helm-sum-maxLengthWords': maxLengthWordSum,
         'helm-maxLengthWords': maxLengthWords

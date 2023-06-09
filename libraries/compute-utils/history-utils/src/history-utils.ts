@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {getDataFrame} from '../../function-views/src/shared/utils';
 import {DIRECTION} from '../../function-views/src/shared/consts';
 
 type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
@@ -76,7 +75,7 @@ export namespace historyUtils {
    * Thus, we should load them separately, and it is time-consuming. If you don't need actual values of DF-s,
    * you can skip DF loading using {@link skipDfLoad} param.
    * @param funcCallId FuncCall ID to load
-   * @param skipDfLoad If true, skips replacing TableInfo with th actual dataframe
+   * @param skipDfLoad If true, skips replacing TableInfo with the actual dataframe
    * @returns Requested FuncCall
    */
   export async function loadRun(funcCallId: string, skipDfLoad = false) {
@@ -109,19 +108,23 @@ export namespace historyUtils {
   /**
    * Saved given FuncCall.
    * FuncCall is only stores references to actual dataframes. Thus, we should upload them separately
-   * @param funcCallcallToSaveId FuncCall to save
+   * @param callToSave FuncCall to save
    * @returns Saved FuncCall
    */
   export async function saveRun(callToSave: DG.FuncCall) {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs)
-      await grok.dapi.tables.uploadDataFrame(getDataFrame(callToSave, output.name, DIRECTION.OUTPUT));
+    for (const output of dfOutputs) {
+      callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
+      await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
+    }
 
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
       .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs)
-      await grok.dapi.tables.uploadDataFrame(getDataFrame(callToSave, input.name, DIRECTION.INPUT));
+    for (const input of dfInputs) {
+      callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
+      await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
+    }
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }

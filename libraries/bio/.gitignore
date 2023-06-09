@@ -14,3 +14,4 @@ src/**/*.d.ts.map
 /index.d.ts
 /index.d.ts.map
 /index.js
+test-console-output.log

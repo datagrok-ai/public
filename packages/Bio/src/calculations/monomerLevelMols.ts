@@ -1,8 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
-import * as C from '../utils/constants';
 import {getHelmMonomers} from '../package';
 import {TAGS as bioTAGS, getSplitter, getStats} from '@datagrok-libraries/bio/src/utils/macromolecule';
 

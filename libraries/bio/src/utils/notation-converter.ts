@@ -58,14 +58,14 @@ export class NotationConverter extends UnitsHandler {
    */
   private getHelmWrappers(): string[] {
     const prefix = (this.isDna()) ? 'DNA1{' :
-      (this.isRna()) ? 'RNA1{' :
+      (this.isRna() || this.isHelmCompatible()) ? 'RNA1{' :
         (this.isPeptide()) ? 'PEPTIDE1{' :
           'Unknown'; // this case should be handled as exceptional
 
     if (prefix === 'Unknown')
       throw new Error('Neither peptide, nor nucleotide');
 
-    const postfix = '}$$$';
+    const postfix = '}$$$$';
     const leftWrapper = (this.isDna()) ? 'D(' :
       (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
     const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides

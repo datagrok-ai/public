@@ -52,7 +52,9 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.typesMap = new HashMap<String, String>() {{
             put("long", Types.INT);
             put("float", Types.FLOAT);
-            put("number", Types.FLOAT);
+            put("#number\\([1-9], 0\\)", Types.INT);
+            put("#number\\((3[0-8]|[1-2][0-9]), 0\\)", Types.BIG_INT);
+            put("#number\\((3[0-8]|[1-2][0-9]|[1-9]), -?[^0]+\\)", Types.FLOAT);
             put("binary_float", Types.FLOAT);
             put("binary_double", Types.FLOAT);
             put("#.*char.*", Types.STRING);
@@ -204,7 +206,9 @@ public class OracleDataProvider extends JdbcDataProvider {
         if (schema != null)
             whereClause = whereClause + " AND (COL.OWNER = '" + schema + "')";
 
-        return "SELECT COL.OWNER as TABLE_SCHEMA, COL.TABLE_NAME AS TABLE_NAME, COL.COLUMN_NAME AS COLUMN_NAME, COL.DATA_TYPE AS DATA_TYPE, " +
+        return "SELECT COL.OWNER as TABLE_SCHEMA, COL.TABLE_NAME AS TABLE_NAME, COL.COLUMN_NAME AS COLUMN_NAME, " +
+                "CASE WHEN DATA_PRECISION IS NOT NULL AND DATA_SCALE IS NOT NULL " +
+                "THEN CONCAT(COL.DATA_TYPE, CONCAT(CONCAT(CONCAT(CONCAT('(', DATA_PRECISION), ', '), DATA_SCALE), ')')) ELSE COL.DATA_TYPE END AS DATA_TYPE, " +
                 "CASE WHEN O.OBJECT_TYPE = 'VIEW' THEN 1 ELSE 0 END AS IS_VIEW" +
                 " FROM ALL_TAB_COLUMNS COL INNER JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME " + whereClause +
                 " ORDER BY TABLE_NAME";
