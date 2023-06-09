@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {searchWidget, drugNameMoleculeConvert} from '../widgets';
+import {searchWidget, drugNameMoleculeConvert, SEARCH_TYPE} from '../widgets';
 import * as CONST from './const';
 
 category('DrugBank', () => {
@@ -20,16 +20,16 @@ category('DrugBank', () => {
 
   test('similarity-search', async () => {
     for (const molString of molStrings)
-      await searchWidget(molString, 'similarity', dbdf);
+      await searchWidget(molString, SEARCH_TYPE.SIMILARITY, dbdf);
   });
 
   test('substructure-search', async () => {
     for (const molString of molStrings)
-      await searchWidget(molString, 'substructure', dbdf);
+      await searchWidget(molString, SEARCH_TYPE.SUBSTRUCTURE, dbdf);
   });
 
   test('drugNameMolecule', async () => {
-    drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, moleculeCol)
+    drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, moleculeCol);
     // expect(drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, smilesCol), 'CC(Oc(cccc1)c1C(O)=O)=O');
     // expect(drugNameMoleculeConvert('db:carbono', dbdfRowCount, synonymsCol, smilesCol), '[C]');
     // expect(drugNameMoleculeConvert('db:gadolinio', dbdfRowCount, synonymsCol, smilesCol), '[Gd]');
