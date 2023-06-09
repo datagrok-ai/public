@@ -27,10 +27,13 @@ import {
  *   - Uses BFGS optimization algorithm (multi-threading for performance).
  *     For dose-response curves, we are typically fitting the sigmoid function
  *   - Ability to dynamically register custom fitting functions
+ *     - Automatic fit function determination
+ *     - Caching of custom fitting functions
  *   - Ability to get fitting performance characteristics (r-squared, classification, etc)
  * - Deep integration with the Datagrok grid
  *   - Either fitting on the fly, or using the supplied function + parameters
  *   - Multiple series in one cell
+ *   - Confidence intervals drawing
  *   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
  *     on the column level, with the ability to override it on a grid cell or point level
  *   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
@@ -39,7 +42,6 @@ import {
  * - Work with series stored in multiple formats (binary for performance, json for flexibility, etc)
 */
 
-// TODO: document functionality, screenshot, also JSON structure and how to use your data in README.md
 // TODO: add tests on fit
 
 export const FIT_SEM_TYPE = 'fit';
