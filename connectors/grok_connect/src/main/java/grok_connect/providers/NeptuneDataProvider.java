@@ -89,7 +89,7 @@ public class NeptuneDataProvider extends JdbcDataProvider {
 
     private Driver getDriver(String name) {
         String baseDir = getBaseDirName();
-        File file = new File( String.format("%s/lib/%s", baseDir, name));
+        File file = new File( String.format("%s/neptune-drivers/%s", baseDir, name));
         try {
             URLClassLoader child = new URLClassLoader (new URL[] {file.toURI().toURL()},
                     this.getClass().getClassLoader());

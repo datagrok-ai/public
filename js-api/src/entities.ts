@@ -1201,22 +1201,6 @@ export class Property {
   }
 }
 
-/*
-export class DateTime {
-  public dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static fromDate(date: Date): DateTime {
-    return DateTime.fromMillisecondsSinceEpoch(date.getTime());
-  }
-
-  static fromMillisecondsSinceEpoch(millisecondsSinceEpoch: number): DateTime {
-    return new DateTime(api.grok_DateTime_FromMillisecondsSinceEpoch(millisecondsSinceEpoch));
-  }
-}*/
 
 export class HistoryEntry {
   public dart: any;
