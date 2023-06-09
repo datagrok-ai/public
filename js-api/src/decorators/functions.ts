@@ -87,7 +87,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/file-exporters}
    */
-  export function grokFileExporter(options?: {
+  export function fileExporter(options?: {
     name?: string,
     description?: string,
     extension: string,
@@ -104,7 +104,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/file-handlers}
    */
-  export function grokFileImporter(options?: {
+  export function fileImporter(options?: {
     name?: string,
     description?: string,
     extensions: string | string[],
@@ -120,7 +120,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/create-custom-file-viewers}
    */
-  export function grokFileViewer(options?: {
+  export function fileViewer(options?: {
     name?: string,
     description?: string,
     extensions: string | string[],
@@ -134,7 +134,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/custom-package-settings-editors}
    */
-  export function grokSettingsEditor(options?: {
+  export function settingsEditor(options?: {
     name?: string,
     description?: string,
   }) {
