@@ -1,5 +1,5 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { BitArrayMetricsNames } from './typed-metrics/consts';
+import {BitArrayMetricsNames} from './typed-metrics/consts';
 
 export const similarityMetric: { [name: string]: (x: BitArray, y: BitArray) => number } = {
   [BitArrayMetricsNames.Tanimoto]: tanimotoSimilarity,
@@ -39,7 +39,7 @@ export const SEQ_SPACE_SIMILARITY_METRICS = [
   BitArrayMetricsNames.Tanimoto,
   BitArrayMetricsNames.Asymmetric,
   BitArrayMetricsNames.Cosine,
-  BitArrayMetricsNames.Sokal ];
+  BitArrayMetricsNames.Sokal];
 
 export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
@@ -175,4 +175,8 @@ export function getSimilarityFromDistance(distance: number) {
 
 export function getDistanceFromSimilarity(similarity: number) {
   return 1 / similarity - 1;
+}
+
+export function numericDistance(x: number, y: number) {
+  return Math.abs(x - y);
 }

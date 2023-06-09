@@ -20,6 +20,13 @@ for %%I in ("%script_name%") do set "script_dir=%%~dpI"
 set compose_config_path="%script_dir%\%compose_config_name%"
 echo %compose_config_path%
 
+call :check_docker_daemon
+if %errorlevel% neq 0 (
+    call :message "Docker daemon is not running, please launch Docker Desktop application."
+    pause
+    exit /b
+)
+
 if "%~1"=="" goto :run_application
 
 echo Waiting ...
@@ -169,3 +176,10 @@ goto :%action%
 :help
   echo usage: %script_name% install^|start^|stop^|reset^|purge
   exit /b
+
+:check_docker_daemon
+  docker info > nul 2>&1
+  if %errorlevel% neq 0 (
+    exit /b 1
+  )
+  exit /b 0

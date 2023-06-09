@@ -24,50 +24,32 @@ export function isSmarts(molString: string): boolean {
 }
 
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule,
-  warnOff: boolean = true): IMolContext {
+  warnOff: boolean = true, checkIfSmarts: boolean = true): IMolContext {
   let isQMol = false;
-  let kekulize: boolean = true;
+  const kekulizeProp = (details as any).kekulize;
+  let kekulize: boolean = typeof kekulizeProp === 'boolean' ? kekulizeProp : true;
   let useMolBlockWedging: boolean = false;
   let mol: RDMol | null = null;
 
   try {
-    const _isSmarts = isSmarts(molString);
+    const _isSmarts = checkIfSmarts && isSmarts(molString);
     mol = _isSmarts ? rdKitModule.get_qmol(molString) : rdKitModule.get_mol(molString, JSON.stringify(details));
     isQMol = _isSmarts;
-  } catch (e) {
-    if (mol !== null) {
-      mol.delete();
-      mol = null;
-    }
-
-    kekulize = false;
-    try {mol = rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize}));} catch (e2) {
-      if (mol !== null) {
-        mol.delete();
-        mol = null;
-      }
-
-      try {mol = rdKitModule.get_qmol(molString);} catch (e3) {
-        if (mol !== null) {
-          mol.delete();
-          mol = null;
-        }
-        if (!warnOff)
-          console.error('Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molString + '`');
-        return {mol, kekulize, isQMol, useMolBlockWedging};
-      }
-      return {mol, kekulize, isQMol, useMolBlockWedging};
-    }
-    if (mol?.is_valid())
-      useMolBlockWedging = (mol.has_coords() === 2);
-
-    return {mol, kekulize, isQMol, useMolBlockWedging};
+  } catch (e) {}
+  if (!mol && kekulize) {
+    kekulize = false; //Pyrrole cycles
+    try {
+      mol = rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize}));
+    } catch (e) {}
   }
-  if (mol?.is_valid())
+  if (!mol) {
+    try {
+      mol = rdKitModule.get_qmol(molString);
+    } catch (e) {}
+  }
+  if (mol)
     useMolBlockWedging = (mol.has_coords() === 2);
-  else {
-    mol?.delete();
-    mol = null;
-  }
+  else if (!warnOff)
+    console.error('Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molString + '`');
   return {mol, kekulize, isQMol, useMolBlockWedging};
 }

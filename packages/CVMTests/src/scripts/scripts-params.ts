@@ -8,7 +8,7 @@ import {_package} from '../package-test';
 const langs = ['Python', 'R', 'Octave', 'Grok', 'Julia', 'JavaScript']; // NodeJS, Julia
 
 for (const l of langs) {
-  category(`Scripts: Parameters: ${l}`, () => {
+  category(`Script parameters: ${l}`, () => {
     let call: DG.FuncCall;
 
     before(async () => {

@@ -88,6 +88,12 @@ interface IAnalyzedColumn {
   gridColName?: string
 }
 
+
+@grok.decorators.viewer({
+  name: 'Group Analysis',
+  description: 'Creates a group analysis viewer',
+  icon: 'icons/groupanalysis-viewer.svg',
+})
 export class GroupAnalysisViewer extends DG.JsViewer {
   initialized: boolean = false;
   name = 'group';

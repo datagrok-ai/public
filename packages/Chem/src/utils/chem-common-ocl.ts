@@ -12,8 +12,8 @@ export function renderDescription(description: OCL.IParameterizedString[]): HTML
 
   let lastMolCanvas: null | HTMLCanvasElement = null;
   let scaffoldMolString: null | string = null;
-  for (const entry of description) {
-    if (entry.type == 2 || entry.type == 3) {
+  description.forEach((entry, idx) => {
+    if (entry.type === 2 && ![0, 1].includes(idx) || entry.type === 3) {
       const divElement = ui.div(
         [ui.label(entry.value), lastMolCanvas], lastMolCanvas ? {classes: 'd4-flex-col', style: {margin: '5px'}} : null,
       );
@@ -21,12 +21,12 @@ export function renderDescription(description: OCL.IParameterizedString[]): HTML
       lastMolCanvas = null;
       scaffoldMolString = null;
     }
-    if (entry.type == 1) {
+    if (entry.type === 1) {
       scaffoldMolString = entry.value;
       const mol = OCL.Molecule.fromIDCode(scaffoldMolString);
       lastMolCanvas = _molToCanvas(mol, width, height);
     }
-  }
+  });
   host.append(molsHost);
   return host;
 }

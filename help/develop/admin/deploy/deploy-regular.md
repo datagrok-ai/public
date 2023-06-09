@@ -1,5 +1,6 @@
 ---
-title: "Deployment on a regular machine"
+title: "Regular machine"
+sidebar_position: 6
 ---
 
 Datagrok is based on Docker containers, [database](../infrastructure.md#database)
@@ -26,7 +27,7 @@ More information about Datagrok design and components:
 * [Infrastructure](../infrastructure.md)
 
 In case you want to jump-start using Datagrok with minimum manual effort on a local machine,
-check [Local Deployment with Docker Compose](docker-compose.md).
+check [Local Deployment with Docker Compose](docker-compose.mdx).
 
 ## Prerequisites
 

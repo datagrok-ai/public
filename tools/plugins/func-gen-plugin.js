@@ -86,7 +86,7 @@ class FuncGeneratorPlugin {
     for (let i = 0; i < imports.length; i++) {
       const importStatement = imports[i];
       const exportStatement = exports[i];
-      if (!content.includes(importStatement))
+      if (!content.includes(importStatement.trim()))
         content = importStatement + content + exportStatement;
     }
     fs.writeFileSync(filePath, content, 'utf-8');

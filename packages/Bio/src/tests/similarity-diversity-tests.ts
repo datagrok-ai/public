@@ -10,13 +10,13 @@ category('similarity/diversity', async () => {
   });
 
   after(async () => {
-
     grok.shell.closeAll();
   });
 
   test('similaritySearchViewer', async () => {
     await _testSimilaritySearchViewer();
   });
+
   test('diversitySearchViewer', async () => {
     await _testDiversitySearchViewer();
   });

@@ -210,6 +210,8 @@ MWRSWY-CKHP`;
   test('Negative2', async () => { await _testNeg(readCsv(csvTests.neg2), 'col1'); });
   test('Negative3', async () => { await _testNeg(readCsv(csvTests.neg3), 'col1'); });
   test('NegativeSmiles', async () => { await _testNeg(readCsv(csvTests.negSmiles), 'col1'); });
+  test('NegativeStartEnd', async () => { await _testNegList(['START', 'END']); });
+  test('NegativeStartEndIntermediate', async () => { await _testNegList(['START', 'END', 'INTERMEDIATE']); });
 
   test('FastaDna1', async () => {
     await _testPos(readCsv(csvTests.fastaDna1), 'seq',
@@ -362,6 +364,15 @@ MWRSWY-CKHP`;
   });
 });
 
+export async function _testNegList(list: string[]): Promise<void> {
+  const col: DG.Column = DG.Column.fromList(DG.TYPE.STRING, 'col1', list);
+  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+  if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
+    const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
+    throw new Error(msg);
+  }
+}
+
 export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.getCol(colName)!;
@@ -373,9 +384,6 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
     const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
     throw new Error(msg);
-    // col.semType = '';
-    // col.setTag(DG.TAGS.UNITS, '');
-    // col.setTag(NOTATION.SEPARATOR, '');
   }
 }
 

@@ -52,19 +52,26 @@ export class LogoSummaryTable extends DG.JsViewer {
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
   render(): void {
-    if (this.initialized) {
-      $(this.root).empty();
-      const df = this.viewerGrid.dataFrame;
-      if (!df.filter.anyTrue) {
-        const emptyDf = ui.divText('No clusters to satisfy the threshold. ' +
-          'Please, lower the threshold in viewer proeperties to include clusters');
-        this.root.appendChild(ui.divV([this._titleHost, emptyDf]));
-        return;
-      }
-      this.viewerGrid.root.style.width = 'auto';
-      this.root.appendChild(ui.divV([this._titleHost, this.viewerGrid.root]));
-      this.viewerGrid.invalidate();
+    if (!this.initialized)
+      return;
+    $(this.root).empty();
+    const df = this.viewerGrid.dataFrame;
+    if (!df.filter.anyTrue) {
+      const emptyDf = ui.divText('No clusters to satisfy the threshold. ' +
+        'Please, lower the threshold in viewer proeperties to include clusters');
+      this.root.appendChild(ui.divV([this._titleHost, emptyDf]));
+      return;
     }
+    const expand = ui.iconFA('expand-alt', () => {
+      const dialog = ui.dialog('Logo Summary Table');
+      dialog.add(this.viewerGrid.root);
+      dialog.onCancel(() => this.render());
+      dialog.showModal(true);
+    }, 'Show Logo Summary Table in full screen');
+    $(expand).addClass('pep-help-icon');
+    this.viewerGrid.root.style.width = 'auto';
+    this.root.appendChild(ui.divV([ui.divH([this._titleHost, expand], {style: {alignSelf: 'center', lineHeight: 'normal'}}), this.viewerGrid.root]));
+    this.viewerGrid.invalidate();
   }
 
   onPropertyChanged(property: DG.Property): void {
