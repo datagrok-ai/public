@@ -13,6 +13,9 @@
          LINK: https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis 
 
      [3] Negative Sobol indices, https://github.com/SALib/SALib/issues/102
+
+     [4] Unexpected Sobol indeces, 
+         https://www.researchgate.net/post/Is-it-ever-possible-to-have-the-sum-of-first-order-Sobol-indices-greater-than-one
 */
 
 import * as grok from 'datagrok-api/grok';
@@ -29,6 +32,8 @@ type SobolIndeces = {
   firstOrder: DG.Column,
   totalOrder: DG.Column
 };
+
+const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
 
 export type ResultOfVarianceBasedSenstivityAnalysis = {
   funcEvalResults: DG.DataFrame,
@@ -129,31 +134,36 @@ export class VarianceBasedSenstivityAnalysis {
     for (let i = 0; i < len; ++i) {
       sum += arr[i];
       sumOfSquares += arr[i] * arr[i];
-    }
-
-    // TODO (Viktor Makarichev): the following expressions can be reduced.
+    }    
 
     const mean = sum / len;
-    const variance = sumOfSquares / len - mean * mean;   
-    
-    // TODO (Viktor Makarichev): add processing the case variance = 0 or its small values
-   
+    const variance = sumOfSquares / len - mean * mean; 
+
     // Compute Sobol' indeces 
-    for (let i = 0; i < d; ++i) {
-      let sumForFisrtOrderIndex = 0;
-      let sumForTotalOrderIndex = 0;
 
-      let buf = 0;
+    // check variance: default values are used if variance is zero 
+    if (variance === 0) {
+      firstOrderIndeces.fill(DEFAULT_VALUE_OF_SOBOL_INDEX);
+      totalOrderIndeces.fill(DEFAULT_VALUE_OF_SOBOL_INDEX);
+    }
+    else
+      for (let i = 0; i < d; ++i) {
+        let sumForFisrtOrderIndex = 0;
+        let sumForTotalOrderIndex = 0;
 
-      for (let j = 0; j < N; ++j) {        
-        buf = arr[(2 + i) * N + j] - arr[j];
-        sumForFisrtOrderIndex += arr[N + j] * buf;
-        sumForTotalOrderIndex += buf * buf;
-      }
+        let buf = 0;
 
-      firstOrderIndeces[i] = sumForFisrtOrderIndex / (N * variance);
-      totalOrderIndeces[i] = sumForTotalOrderIndex / (2 * N * variance);      
-    }    
+        for (let j = 0; j < N; ++j) {        
+          buf = arr[(2 + i) * N + j] - arr[j];
+          sumForFisrtOrderIndex += arr[N + j] * buf;
+          sumForTotalOrderIndex += buf * buf;
+
+          console.log(sumForFisrtOrderIndex);
+        }
+
+        firstOrderIndeces[i] = sumForFisrtOrderIndex / (N * variance);
+        totalOrderIndeces[i] = sumForTotalOrderIndex / (2 * N * variance);        
+      }    
 
     return {
       firstOrder: DG.Column.fromFloat32Array(outputColumn.name, firstOrderIndeces), 

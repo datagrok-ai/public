@@ -423,38 +423,38 @@ export class SensitivityAnalysisView {
     const firstOrderIndeces = analysisResults.firstOrderSobolIndeces;
     const totalOrderIndeces = analysisResults.totalOrderSobolIndeces;
 
-    /*grok.shell.addTableView(firstOrderIndeces);
-    grok.shell.addTableView(totalOrderIndeces);*/
+    const outoutNames = firstOrderIndeces.columns.names();
+    const evalDataframeNames = funcEvalResults.columns.names();    
 
-    this.comparisonView.dataFrame = funcEvalResults;        
+    this.comparisonView.dataFrame = funcEvalResults;
 
-    // add barchart with 1-st order Sobol' indeces
-    const firstOrderIndecesNames = firstOrderIndeces.columns.names();
-    this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces, 
-      { title: firstOrderIndeces.name, 
-        split: firstOrderIndecesNames[0], 
-        value: firstOrderIndecesNames[1], 
-        valueAggrType: 'avg'
-      }
-    ));
+    // add correlation plot
+    this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
 
-    // add barchart with totsl order Sobol' indeces
-    const totalOrderIndecesNames = totalOrderIndeces.columns.names();
-    this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces, 
-      { title: totalOrderIndeces.name, 
-        split: totalOrderIndecesNames[0], 
-        value: totalOrderIndecesNames[1], 
-        valueAggrType: 'avg'
-      }
-    ));
-
-    // add scatterplot
-    const evalDataframeNames = funcEvalResults.columns.names();
+    // add scatterplot    
     this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults, 
       {x: evalDataframeNames[0], 
-       y: evalDataframeNames[evalDataframeNames.length - 1]
+       y: outoutNames[1]
       }
     ));
+
+    // add barchart with 1-st order Sobol' indeces    
+    this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces, 
+      { title: firstOrderIndeces.name, 
+        split: outoutNames[0], 
+        value: outoutNames[1], 
+        valueAggrType: 'avg'
+      }
+    ));
+
+    // add barchart with total order Sobol' indeces    
+    this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces, 
+      { title: totalOrderIndeces.name, 
+        split: outoutNames[0], 
+        value: outoutNames[1], 
+        valueAggrType: 'avg'
+      }
+    ));        
   }
 
   private async runSimpleAnalysis() {
