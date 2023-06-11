@@ -1,8 +1,8 @@
 export const GROUP_TYPE = {
   NUCLEOSIDE: 'nucleoside',
-  LINKAGE: 'linkage',
+  LINKAGE: 'phosphateBackbone',
 } as const;
 
 export const EDGES = 'edges';
 export const CENTER = 'center';
-export const PHOSPHORUS = 'p';
+export const PHOSPHATE = 'p';

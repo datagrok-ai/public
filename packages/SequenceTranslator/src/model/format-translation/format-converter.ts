@@ -3,7 +3,7 @@ import {DELIMITER} from '../const';
 import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {FORMAT} from '../const';
-import {GROUP_TYPE, EDGES, CENTER, PHOSPHORUS} from './const';
+import {GROUP_TYPE, EDGES, CENTER, PHOSPHATE} from './const';
 import {KeyToValue, CodesInfo} from '../data-loading-utils/types';
 import {formatDictionary, codesToHelmDictionary} from '../data-loading-utils/json-loader';
 
@@ -151,11 +151,11 @@ function formatToHelm(sequence: string, sourceFormat: FORMAT): string {
     new Set(Object.values(codesInfoObject[GROUP_TYPE.LINKAGE]))
   ).sort(sortCallback);
   const phosphateHELMPattern = getRegExpPattern(phosphateHELMCodes);
-  const phosphateRegExp = new RegExp(`${PHOSPHORUS}\.(${phosphateHELMPattern})`, 'g');
+  const phosphateRegExp = new RegExp(`${PHOSPHATE}\.(${phosphateHELMPattern})`, 'g');
 
   let helm = sequence.replace(formatRegExp, (match) => dict[match] + '.');
   helm = helm.slice(0, -1); // strip last dot
-  if (helm[helm.length - 1] === PHOSPHORUS) 
+  if (helm[helm.length - 1] === PHOSPHATE) 
     helm = helm.slice(0, -1);
   helm = helm.replace(phosphateRegExp, (match, group) => group);
   return `${HELM_WRAPPER.LEFT + helm + HELM_WRAPPER.RIGHT}`;
