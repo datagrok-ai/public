@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix'
+import {DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 
 export async function calcMmDistanceMatrix(column: DG.Column<any>): Promise<Float32Array> {
   const values = column.toList();

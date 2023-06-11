@@ -70,8 +70,7 @@ category('detectors:weak-and-likely', () => {
     [csvTests.fastaUn2LikelyName]: `protein
 Boombastic
 Megafantastic
-"just-a-random-thought,oy!"
-`,
+"just-a-random-thought,oy!"`,
     [csvTests.fastaUnMsa1LikelyName]: `id,seq
 1,word
 2,male

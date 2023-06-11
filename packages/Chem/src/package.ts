@@ -421,7 +421,9 @@ export function searchSubstructureEditor(call: DG.FuncCall) {
   } else if (molColumns.length === 1)
     call.func.prepare({molecules: molColumns[0]}).call(true);
   else {
-    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0], null, {'predicate': (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+    //TODO: remove when the new version of datagrok-api is available
+    //@ts-ignore
+    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0], null, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
     ui.dialog({title: 'Substructure search'})
       .add(colInput)
       .onOK(async () => {
@@ -728,6 +730,11 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
   ): Promise<void> {
+  if (col.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${col.name} is not of Molecule semantic type`);
+    return;
+  }
+
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -739,8 +746,10 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Colum
   const progress = DG.TaskBarProgressIndicator.create('Detecting structural alerts...');
   try {
     const resultDf = await runStructuralAlertsDetection(col, ruleSet, alertsDf, rdkitService);
-    for (const resultCol of resultDf.columns)
+    for (const resultCol of resultDf.columns) {
+      resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${col.name})`);
       table.columns.add(resultCol);
+    }
   } catch (e) {
     grok.shell.error('Structural alerts detection failed');
     grok.log.error(`Structural alerts detection failed: ${e}`);

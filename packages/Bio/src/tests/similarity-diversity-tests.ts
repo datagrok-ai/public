@@ -6,7 +6,7 @@ import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
 category('similarity/diversity', async () => {
   before(async () => {
-    // grok.shell.closeAll(); // Causes Bio.Unhandled exceptions.exceptions : NullError: method not found: 'Q' on null
+    // grok.shell.closeAll();
   });
 
   after(async () => {

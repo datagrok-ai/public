@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getBy, smilesToPubChem} from './pubchem';
-import {getSearchWidget, buildAccordion} from './widget';
+import {getBy} from './pubchem';
+import {getSearchWidget} from './widget';
 import {pubChemRest} from './tests/const';
 
 export const _package = new DG.Package();

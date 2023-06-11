@@ -743,8 +743,8 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {predicate?: Function | null}): InputBase<Column | null> {
-  const filter = options && typeof options.predicate === 'function' ? (x: any) => options.predicate!(toJs(x)) : null;
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {filter?: Function | null}): InputBase<Column | null> {
+  const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
   return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
 }
 
@@ -763,6 +763,10 @@ export function textInput(name: string, value: string, onValueChanged: Function 
 
 export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+}
+
+export function radioInput(name: string, value: string, items: string[], onValueChanged: Function | null = null): InputBase<string | null> {
+  return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
 }
 
 /**

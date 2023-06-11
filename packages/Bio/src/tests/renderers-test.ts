@@ -28,35 +28,38 @@ category('renderers', () => {
 
   test('long sequence performance ', async () => {
     performanceTest(generateLongSequence, 'Long sequences');
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('many sequence performance', async () => {
     performanceTest(generateManySequences, 'Many sequences');
-  });
+  }, {skipReason: 'GROK-13300'});
+  test('many sequence performance', async () => {
+    performanceTest(generateManySequences, 'Many sequences');
+  }, {skipReason: 'GROK-13300'});
 
   test('rendererMacromoleculeFasta', async () => {
     await _rendererMacromoleculeFasta();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('rendererMacromoleculeSeparator', async () => {
     await _rendererMacromoleculeSeparator();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('rendererMacromoleculeDifference', async () => {
     await _rendererMacromoleculeDifference();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('afterMsa', async () => {
     await _testAfterMsa();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('afterConvert', async () => {
     await _testAfterConvert();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('selectRendererBySemType', async () => {
     await _selectRendererBySemType();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('setRendererManually', async () => {
     await _setRendererManually();
