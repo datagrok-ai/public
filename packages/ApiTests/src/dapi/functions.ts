@@ -5,7 +5,7 @@ import {category, test, expect, expectTable} from '@datagrok-libraries/utils/src
 
 const GDF = grok.dapi.functions;
 
-category('Dapi: functions.calls', async () => {
+category('Dapi: functions calls', async () => {
   const xValue = 1.5;
 
   test('clone DFs', async () => {

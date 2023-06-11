@@ -11,7 +11,7 @@ import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecul
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 export interface ISequenceSpaceResult {
-  distance: Matrix;
+  distance?: Float32Array;
   coordinates: DG.ColumnList;
 }
 
@@ -69,11 +69,16 @@ export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promi
     } else {
       distanceFName = nc.getDistanceFunctionName();
     }
+    for (let i = 0; i < seqList.length; i++) {
+      // toList puts empty values in array and it causes downstream errors. replace with null
+      seqList[i] = spaceParams.seqCol.isNone(i) ? null : seqList[i];
+    }
     const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
       seqList,
       spaceParams.methodName,
       distanceFName,
-      spaceParams.options);
+      spaceParams.options,
+      true);
     const cols: DG.Column[] = spaceParams.embedAxesNames.map(
       (name: string, index: number) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
     return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};

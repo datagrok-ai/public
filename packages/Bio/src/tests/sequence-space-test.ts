@@ -24,7 +24,7 @@ category('sequenceSpace', async () => {
   });
 
   test('sequenceSpaceWithEmptyRows', async () => {
-    testHelmWithEmptyRows = await readDataframe('tests/100_3_clustests.csv');
+    testHelmWithEmptyRows = await readDataframe('tests/100_3_clustests_empty_vals.csv');
     testHelmWithEmptyRowsTableView = grok.shell.addTableView(testHelmWithEmptyRows);
     await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, DimReductionMethods.UMAP, 'sequence');
     grok.shell.closeTable(testHelmWithEmptyRows);

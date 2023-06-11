@@ -1,6 +1,5 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {syncQueryAromatics} from '../utils/aromatic-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -24,15 +23,6 @@ Malformed
 
   0  0  0  0  0  0            999 V3000
 M  END`;
-
-function validateMol(mol: RDMol | null, molString: string) : void {
-  if (mol === null)
-    throw new Error('FATAL RDKit Error: Created a null molecule with no exception ' + molString);
-  if (!mol.is_valid()) {
-    mol.delete();
-    throw new Error('FATAL RDKit Error: Created a not valid molecule with no exception ' + molString);
-  }
-}
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   constructor(module: RDModule, webRoot: string) {
@@ -58,43 +48,31 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return malformed;
   }
 
-  getQMol(molString: string) : RDMol | null {
-    let mol = null;
-    try {mol = this._rdKitModule.get_qmol(molString);} catch (e) {
-      if (mol !== null)
-        mol.delete();
-      return null;
-    }
-    validateMol(mol, molString);
-    return mol;
-  }
-
   searchSubstructure(queryMolString: string, queryMolBlockFailover: string, bitset?: boolean[]): string {
     const matches: number[] = [];
     if (this._rdKitMols === null)
       return '[' + matches.join(', ') + ']';
 
-    let queryMol: RDMol | null;
+    let queryMol = null;
 
     if (isMolBlock(queryMolString)) {
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
         queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
       else {
-        const molTmp = getMolSafe(queryMolString, {'mergeQueryHs': true, 'kekulize': true}, this._rdKitModule).mol;
-        if (molTmp !== null) {
-          let molBlockAroma: string | null;
-          try {molBlockAroma = molTmp!.get_aromatic_form();} catch (e) {
-            // looks like we get here when the molecule is already aromatic, so we just re-assign the block
-            molBlockAroma = queryMolString;
+        try {
+          queryMol = this._rdKitModule.get_qmol(queryMolString);
+          queryMol.set_aromatic_form();
+        } catch (e) {
+          if (queryMol) {
+            queryMol.delete();
+            queryMol = null;
           }
-
-          molTmp.delete();
-          queryMolString = syncQueryAromatics(molBlockAroma, queryMolString);
         }
-        queryMol = this.getQMol(queryMolString);
       }
     } else { // not a molblock
-      queryMol = this.getQMol(queryMolString);
+      try {
+        queryMol = this._rdKitModule.get_qmol(queryMolString);
+      } catch (e) {}
       if (queryMol !== null) {
         const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
         if (mol !== null) { // check the qmol is proper
@@ -185,8 +163,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     for (let rule of rules) {
       const ruleLength = alerts[rule]!.length;
       ruleSmartsMap[rule] = new Array(ruleLength);
-      for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++)
-        ruleSmartsMap[rule]![smartsIdx] = this.getQMol(alerts[rule]![smartsIdx]);
+      for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++) {
+        let qmol = null;
+        try {
+          qmol = this._rdKitModule.get_qmol(alerts[rule]![smartsIdx]);
+        } catch {}
+        ruleSmartsMap[rule]![smartsIdx] = qmol;
+      }
     }
 
     const molsCount = molecules?.length ?? this._rdKitMols!.length;

@@ -1,23 +1,17 @@
-import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
 import {ValidTypes} from '../typed-metrics/typed-metrics';
+import {IReduceDimensionalityResult} from '../reduce-dimensionality';
 
 /**
  * A worker to perform dimensionality reduction.
  *
  * @param {ValidTypes} dataMetric The data to process.
  * @param {string} method A method of dimensionality reduction.
- * @param options - key-value pairs
- * @param returnDistanceMatrix
+ * @param {any}options - key-value pairs
+ * @param {boolean}parallelDistanceWorkers - whether to use parallel distance matrix workers
  * @return {Promise<IReduceDimensionalityResult>} Resulting embedding and distance matrix.
  */
-export interface IReduceDimensionalityResult {
-  distance: Matrix;
-  embedding: Matrix;
-}
-
 export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
-      options?: any): Promise<IReduceDimensionalityResult> {
-
+  options?: any, parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
   return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
     worker.postMessage({
@@ -25,8 +19,10 @@ export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method
       method: method,
       measure: dataMetric.metric,
       options: options,
+      parallelDistanceWorkers: parallelDistanceWorkers,
     });
     worker.onmessage = ({data: {error, distance, embedding}}) => {
+      worker.terminate();
       if (error)
         reject(error);
       else

@@ -5,6 +5,7 @@ export namespace decorators {
    * @param description - function description in UI.
    * @param icon - path to an icon file from the package root.
    * @param toolbox - set to true to add the viewer icon to the toolbox.
+   * @param trellisable - a flag that indicates whether this viewer can be an inner viewer of [DG.VIEWER.TRELLIS_PLOT]
    * @param viewerPath - viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | \<ViewerPath\>).
    *   The default path is "Add > JavaScript Viewers > \<Package Name\> > \<Friendly Viewer Name\>".
    * 
@@ -13,14 +14,14 @@ export namespace decorators {
    * Usage examples:
    * 
    * ```ts
-   * @grokViewer()
+   * @viewer()
    * class TestViewer {
    *   constructor() {
    *     console.log('Viewer constructed');
    *   }
    * }
    * 
-   * @grokViewer({
+   * @viewer({
    *   name: 'Test Viewer',
    *   description: 'Creates a Test Viewer instance',
    *   icon: 'images/icon.png',
@@ -33,11 +34,12 @@ export namespace decorators {
    * }
    * ```
    */
-  export function grokViewer(options?: {
+  export function viewer(options?: {
     name?: string,
     description?: string,
     icon?: string,
     toolbox?: boolean,
+    trellisable?: boolean,
     viewerPath?: string,
   }) {
     return function(constructor: Function) {};
@@ -50,7 +52,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/custom-filters}
    */
-  export function grokFilter(options?: {
+  export function filter(options?: {
     name?: string,
     description?: string,
     semType?: string,
@@ -68,7 +70,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/custom-cell-renderers}
    */
-  export function grokCellRenderer(options?: {
+  export function cellRenderer(options?: {
     name?: string,
     description?: string,
     cellType: string,

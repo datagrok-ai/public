@@ -6,4 +6,4 @@
 #output: graphics pic
 #condition: "F3" == signal.name
 
-pic = DemoScripts:Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)
+pic = Demo:Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)

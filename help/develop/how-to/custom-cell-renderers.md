@@ -23,10 +23,10 @@ export function piechartCellRenderer() {
 
 :::tip
 
-If you are on version `^4.10.x` of `datagrok-tools`, you can use class decorators to register cell renderers:
+If you are on version `^4.12.x` of `datagrok-tools`, you can use class decorators to register cell renderers:
 
 ```ts
-@grok.functions.decorators.grokCellRenderer({
+@grok.decorators.cellRenderer({
   cellType: 'piechart',
   virtual: true,
 })

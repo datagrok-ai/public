@@ -632,6 +632,12 @@ export class FileInfo extends Entity {
   /** Returns file URL */
   get url(): string { return api.grok_FileInfo_Get_Url(this.dart); }
 
+  /** Checks if file */
+  get isFile(): boolean { return api.grok_FileInfo_Get_IsFile(this.dart); }
+
+  /** Checks if directory */
+  get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
+
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
@@ -1195,22 +1201,6 @@ export class Property {
   }
 }
 
-/*
-export class DateTime {
-  public dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static fromDate(date: Date): DateTime {
-    return DateTime.fromMillisecondsSinceEpoch(date.getTime());
-  }
-
-  static fromMillisecondsSinceEpoch(millisecondsSinceEpoch: number): DateTime {
-    return new DateTime(api.grok_DateTime_FromMillisecondsSinceEpoch(millisecondsSinceEpoch));
-  }
-}*/
 
 export class HistoryEntry {
   public dart: any;

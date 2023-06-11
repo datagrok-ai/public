@@ -13,7 +13,7 @@ import re
 result = {}
 molecules = df[molecules].tolist()
 length = len(molecules)
-core = Chem.MolFromMolBlock(core, sanitize = True) if ("M  END" in core) else Chem.MolFromSmiles(core, sanitize = True)
+core = Chem.MolFromMolBlock(core, sanitize = True) if ("M  END" in core) else Chem.MolFromSmarts(core)
 if core is not None:
   fragments = dict()
   r_group = 1

@@ -7,7 +7,7 @@ import {
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
-import {getEmbeddingColsNames, getSequenceSpace} from './analysis/sequence-space';
+import {ISequenceSpaceResult, getEmbeddingColsNames, getSequenceSpace} from './analysis/sequence-space';
 import {ISequenceSpaceParams, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
@@ -285,7 +285,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
   const nc = new NotationConverter(macroMolecule);
-  let columnDistanceMetric: BitArrayMetricsNames | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto;
+  let columnDistanceMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto;
   let seqCol = macroMolecule;
   if (nc.isFasta() || (nc.isSeparator() && nc.alphabet && nc.alphabet !== ALPHABET.UN)) {
     if (nc.isFasta()) {
@@ -297,25 +297,49 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
       tags.units = NOTATION.FASTA;
     }
   }
-  const sp = await getActivityCliffs(
-    df,
-    seqCol,
-    null,
-    axesNames,
-    'Activity cliffs', //scatterTitle
-    activities,
-    similarity,
-    columnDistanceMetric, //similarityMetric
-    methodName,
-    DG.SEMTYPE.MACROMOLECULE,
-    tags,
-    getSequenceSpace,
-    getChemSimilaritiesMatrix,
-    createTooltipElement,
-    createPropPanelElement,
-    createLinesGrid,
-    options);
-  return sp;
+  const runCliffs = async () => {
+    const sp = await getActivityCliffs(
+      df,
+      seqCol,
+      null,
+      axesNames,
+      'Activity cliffs', //scatterTitle
+      activities,
+      similarity,
+      columnDistanceMetric, //similarityMetric
+      methodName,
+      DG.SEMTYPE.MACROMOLECULE,
+      tags,
+      getSequenceSpace,
+      getChemSimilaritiesMatrix,
+      createTooltipElement,
+      createPropPanelElement,
+      createLinesGrid,
+      options);
+    return sp;
+  };
+
+  const allowedRowCount = 20000;
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+  if (df.rowCount > allowedRowCount) {
+    grok.shell.warning(`Too many rows, maximum for sequence activity cliffs is ${allowedRowCount}`);
+    return;
+  };
+
+  if (df.rowCount > fastRowCount) {
+    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
+        const res = await runCliffs();
+        progressBar.close();
+        return res;
+      })
+      .show();
+  } else {
+    const res = await runCliffs();
+    return res;
+  }
 }
 
 //name: SequenceSpaceEditor
@@ -362,18 +386,44 @@ export async function sequenceSpaceTopMenu(
     embedAxesNames: embedColsNames,
     options: options,
   };
-  const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
-  const embeddings = sequenceSpaceRes.coordinates;
-  for (const col of embeddings) {
-    const listValues = col.toList();
-    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
+
+  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
+  // number of rows which will be processed relatively fast
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+  if (table.rowCount > allowedRowCount) {
+    grok.shell.warning(`Too many rows, maximum for sequence space is ${allowedRowCount}`);
+    return;
   }
-  if (plotEmbeddings) {
-    return grok.shell
-      .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+
+  if (table.rowCount > fastRowCount) {
+    ui.dialog().add(ui.divText(`Sequence space analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running Sequence space...`);
+        const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
+        progressBar.close();
+        return processResult(sequenceSpaceRes);
+      })
+      .show();
+  } else {
+    const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
+    return processResult(sequenceSpaceRes);
   }
+
+  function processResult(sequenceSpaceRes: ISequenceSpaceResult): DG.ScatterPlotViewer | undefined {
+    const embeddings = sequenceSpaceRes.coordinates;
+    for (const col of embeddings) {
+      const listValues = col.toList();
+      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+      table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
+    }
+    if (plotEmbeddings) {
+      return grok.shell
+        .tableView(table.name)
+        .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+    }
+  }
+
 
   /*   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
@@ -673,7 +723,7 @@ export function saveAsFasta() {
   saveAsFastaUI();
 }
 
-//name: BioSubstructureFilter
+//name: Bio Substructure Filter
 //description: Substructure filter for macromolecules
 //tags: filter
 //output: filter result

@@ -5,6 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
+const MAX_ROWS_FOR_DISTANCE_MATRIX = 22000;
 export class SequenceSearchBaseViewer extends DG.JsViewer {
   name: string = '';
   distanceMetric: string;
@@ -16,7 +17,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
   moleculeColumnName: string;
   initialized: boolean = false;
   tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet];
-
+  preComputeDistanceMatrix: boolean = false;
   constructor(name: string) {
     super();
     this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0], {choices: this.fingerprintChoices});
@@ -38,6 +39,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
     this.init();
 
     if (this.dataFrame) {
+      this.preComputeDistanceMatrix = this.dataFrame.rowCount <= MAX_ROWS_FOR_DISTANCE_MATRIX;
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_: any) => await this.render()));
       const compute = this.name !== 'diversity';
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)

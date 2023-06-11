@@ -11,7 +11,7 @@ const MORE_ICON_FONT_WEIGHT = '500';
 export function structure2dWidget(molecule: string): DG.Widget {
   const rdKitModule = getRdKitModule();
   const mol = getMolSafe(molecule, {}, rdKitModule).mol;
-  const resultWidget = mol && mol.is_valid() ?
+  const resultWidget = mol ?
     new DG.Widget(get2dMolecule(molecule)) : new DG.Widget(ui.divText('Molecule is possibly malformed'));
   mol?.delete();
   return resultWidget;

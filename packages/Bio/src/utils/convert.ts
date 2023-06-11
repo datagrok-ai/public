@@ -16,18 +16,56 @@ let convertDialogSubs: Subscription[] = [];
  *
  * @param {DG.column} col Column with 'Macromolecule' semantic type
  */
-export function convert(col: DG.Column): void {
-  const converter = new NotationConverter(col);
-  const currentNotation: NOTATION = converter.notation;
-  //TODO: read all notations
+export function convert(col?: DG.Column): void {
+
+  let tgtCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
+  if (!tgtCol)
+    throw new Error('No column with Macromolecule semantic type found');
+  let converter = new NotationConverter(tgtCol);
+  let currentNotation: NOTATION = converter.notation;
+  const dialogHeader =  ui.divText(
+    'Current notation: ' + currentNotation,
+    {
+      style: {
+        'text-align': 'center',
+        'font-weight': 'bold',
+        'font-size': '14px',
+        'padding': '5px',
+      },
+    },
+  );
   const notations = [
     NOTATION.FASTA,
     NOTATION.SEPARATOR,
     NOTATION.HELM,
   ];
+  const toggleColumn = (newCol: DG.Column) => {
+    if (newCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
+      targetColumnInput.value = tgtCol;
+      return;
+    }
+
+    tgtCol = newCol;
+    converter = new NotationConverter(tgtCol);
+    currentNotation = converter.notation;
+    dialogHeader.textContent = 'Current notation: ' + currentNotation;
+    filteredNotations = notations.filter((e) => e !== currentNotation);
+    targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
+    toggleSeparator();
+    convertDialog?.clear();
+    convertDialog?.add(ui.div([
+      dialogHeader,
+      targetColumnInput.root,
+      targetNotationInput.root,
+      separatorInput.root
+    ]))
+  };
+
+  const targetColumnInput = ui.columnInput('Column', grok.shell.t, tgtCol, toggleColumn);
+
   const separatorArray = ['-', '.', '/'];
-  const filteredNotations = notations.filter((e) => e !== currentNotation);
-  const targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
+  let filteredNotations = notations.filter((e) => e !== currentNotation);
+  let targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
 
   const separatorInput = ui.choiceInput('Separator', separatorArray[0], separatorArray);
 
@@ -49,17 +87,8 @@ export function convert(col: DG.Column): void {
   if (convertDialog == null) {
     convertDialog = ui.dialog('Convert Sequence Notation')
       .add(ui.div([
-        ui.divText(
-          'Current notation: ' + currentNotation,
-          {
-            style: {
-              'text-align': 'center',
-              'font-weight': 'bold',
-              'font-size': '14px',
-              'padding': '5px',
-            },
-          },
-        ),
+        dialogHeader,
+        targetColumnInput.root,
         targetNotationInput.root,
         separatorInput.root,
       ]))
@@ -67,7 +96,7 @@ export function convert(col: DG.Column): void {
         const targetNotation = targetNotationInput.value as NOTATION;
         const separator: string | null = separatorInput.value;
 
-        await convertDo(col, targetNotation, separator);
+        await convertDo(tgtCol, targetNotation, separator);
       })
       .show({x: 350, y: 100});
 

@@ -52,10 +52,10 @@ In addition to that, it might contain the following folders:
 
 * `environments`: [environment configurations](../compute/scripting.md#environments)
   for [scripts](../compute/scripting.md).
-  Examples: [DemoScripts]
+  Examples: [Demo]
 * `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  , [DemoScripts]
+  , [Demo]
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
@@ -365,7 +365,7 @@ our [public packages](https://github.com/datagrok-ai/public/tree/master/packages
 
 To test a package in CI, you need the following:
 
-1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/deploy/docker-compose.md)
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/deploy/docker-compose.mdx)
 2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
 4. Run tests using [grok test](how-to/test-packages.md#local-testing)
@@ -511,4 +511,4 @@ See also:
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
+[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

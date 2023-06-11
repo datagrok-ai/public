@@ -302,7 +302,10 @@ export const InputType = {
   List: 'List',
   Color: 'Color',
   Column: 'Column',
-  Radio: 'Radio'
+  Radio: 'Radio',
+  Choice: 'Choice',
+  MultiChoice: 'MultiChoice',
+  Table: 'Table',
 }
 
 export const FUNC_TYPES = {

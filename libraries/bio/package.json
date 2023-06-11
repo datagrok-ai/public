@@ -36,7 +36,7 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/gridext",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/gridext @datagrok-libraries/ml",
     "build-bio": "git clean -f -X -d ./src && tsc",
     "build": "git clean -f -X -d ./src && tsc",
     "lint": "eslint \"./src/**/*.ts\"",

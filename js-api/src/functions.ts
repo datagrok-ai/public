@@ -5,7 +5,6 @@ import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
-import {decorators} from "./decorators/functions";
 import * as rxjs from "rxjs";
 import dayjs from "dayjs";
 declare let grok: any;
@@ -101,9 +100,6 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 /** Grok functions */
 export class Functions {
-  get decorators() {
-    return decorators;
-  }
 
   register(func: Func): void {
     api.grok_RegisterFunc(func);
@@ -214,6 +210,13 @@ export class Context {
   }
 }
 
+class FuncCallParams {
+  [name: string]: FuncCallParam,
+
+  //@ts-ignore
+  public values(): FuncCallParam[];
+}
+
 /** Represents a function call
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
@@ -221,16 +224,16 @@ export class FuncCall extends Entity {
   public readonly dart: any;
 
   /** Named input values. See {@link inputParams} for parameter metadata. */
-  public inputs: {[name: string]: FuncCallParam};
+  public inputs: {[name: string]: any};
 
   /** Named output values. See {@link outputParams} for parameter metadata. */
-  public outputs: {[name: string]: FuncCallParam};
+  public outputs: {[name: string]: any};
 
   /** Input parameter metadata. See {@link inputs} for parameter values. */
-  public inputParams: {[name: string]: FuncCallParam};
+  public inputParams: FuncCallParams;
 
   /** Output parameter metadata. See {@link outputs} for parameter values. */
-  public outputParams: {[name: string]: FuncCallParam};
+  public outputParams: FuncCallParams;
 
   public aux: any;
   public options: any;
