@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 export function isExceptionElement(action: string):void {
   const exceptionElement = document.getElementsByClassName('grok-global-exception');
   if (exceptionElement.length != 0)
-    throw 'exception was thrown after action: ' + action;
+    throw new Error('exception was thrown after action: ' + action);
 }
 
 export function isColumnPresent(columns:DG.ColumnList, columnName:string): void {
@@ -12,7 +12,7 @@ export function isColumnPresent(columns:DG.ColumnList, columnName:string): void 
   if (columns.byName(columnName) == null)
     check = true;
   if (check == true)
-    throw 'column ' + columnName + ' not found';
+    throw new Error('column ' + columnName + ' not found');
 }
 
 export function isViewerPresent(viewers:DG.Viewer[], viewerName:string): void {
@@ -24,15 +24,15 @@ export function isViewerPresent(viewers:DG.Viewer[], viewerName:string): void {
     }
   }
   if (check == false)
-    throw viewerName + ' not found';
+    throw new Error(viewerName + ' not found');
 }
 
 export function isErrorBallon(ballonText: string):void {
   const exceptionElement = document.getElementsByClassName('d4-balloon-content')[0] as HTMLElement;
   if (exceptionElement == undefined)
-    throw 'Error ballon didn\'t appear where it should have.';
+    throw new Error('Error ballon didn\'t appear where it should have.');
   if (exceptionElement.textContent != ballonText)
-    throw 'Wrong error message on balloon';
+    throw new Error('Wrong error message on balloon');
   exceptionElement.click();
 }
 
@@ -45,7 +45,7 @@ export function isDialogPresent(dialogTitle:string):void {
     }
   }
   if (check == false)
-    throw 'Dialog ' + dialogTitle + ' not found';
+    throw new Error('Dialog ' + dialogTitle + ' not found');
 }
 
 export function returnDialog(dialogTitle:string):DG.Dialog | undefined {
@@ -58,51 +58,52 @@ export function returnDialog(dialogTitle:string):DG.Dialog | undefined {
   }
 }
 
-export function setDialogInputValue(dialogTitle:string, inputName:string, value:string | number | boolean | DG.Column | DG.Column[]):void {
+export function setDialogInputValue(dialogTitle:string, inputName:string,
+  value:string | number | boolean | DG.Column | DG.Column[]):void {
     returnDialog(dialogTitle)!.input(inputName).value = value;
 }
 
-export async function uploadProject(projectName:string, tableInfo:DG.TableInfo, view:DG.TableView, df:DG.DataFrame):Promise<void> {
-  let project = DG.Project.create();
+export async function uploadProject(projectName:string, tableInfo:DG.TableInfo,
+  view:DG.TableView, df:DG.DataFrame):Promise<void> {
+  const project = DG.Project.create();
   project.name = projectName;
   project.addChild(tableInfo);
-  project.addChild(view.saveLayout());  
+  project.addChild(view.saveLayout());
   await grok.dapi.layouts.save(view.saveLayout());
   await grok.dapi.tables.uploadDataFrame(df);
   await grok.dapi.tables.save(tableInfo);
   await grok.dapi.projects.save(project);
 }
 
-export function findViewer(viewerName:string, view:DG.TableView,):DG.Viewer | undefined {
+export function findViewer(viewerName:string, view:DG.TableView):DG.Viewer | undefined {
   let viewer:DG.Viewer;
   for (let i:number = 0; i < Array.from(view.viewers).length; i++) {
     if (Array.from(view.viewers)[i].type == viewerName) {
-        viewer = Array.from(view.viewers)[i];
-        return viewer;
+      viewer = Array.from(view.viewers)[i];
+      return viewer;
     }
   }
 }
 
 export function checkHTMLElementbyInnerText(className:string, innerText:string):void {
-  let elements = document.getElementsByClassName(className);
+  const elements = document.getElementsByClassName(className);
   let check = false;
   let element;
-  for (let i = 0; i < elements.length; i++ ){        
-      element = elements[i] as HTMLElement
-      if (element.innerText == innerText)
-        check = true;
+  for (let i = 0; i < elements.length; i++ ) {
+    element = elements[i] as HTMLElement;
+    if (element.innerText == innerText)
+      check = true;
   }
-  if (check == false){
-      throw 'element with innerText = "' + innerText + '" not found';
-  }
+  if (check == false)
+    throw new Error('element with innerText = "' + innerText + '" not found');
 }
 
 export function getHTMLElementbyInnerText(className:string, innerText:string):HTMLElement | undefined {
-  let elements = document.getElementsByClassName(className);
+  const elements = document.getElementsByClassName(className);
   let element;
-  for (let i = 0; i < elements.length; i++ ){        
-      element = elements[i] as HTMLElement
-      if (element.innerText == innerText)
-        return element;
+  for (let i = 0; i < elements.length; i++ ) {
+    element = elements[i] as HTMLElement;
+    if (element.innerText == innerText)
+      return element;
   }
 }

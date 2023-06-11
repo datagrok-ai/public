@@ -1,12 +1,20 @@
 import * as DG from 'datagrok-api/dg';
-import {PinnedColumn} from "../pinned/PinnedColumn";
 import * as GridUtils from '../utils/GridUtils';
+import {PinnedColumn} from "../pinned/PinnedColumn";
 import {RendererUIManager} from '../renderer/RendererUIManager';
 import {TooltipManager} from "../tooltip/TooltipManager";
 
 export class GridCellRendererEx extends DG.GridCellRenderer { // temporary to address a bug of importing during tests | extends DG.GridCellRenderer {
   constructor() {
     super();
+  }
+
+  getPreferredWidth(cell: DG.GridCell) : number | null {
+    return this.defaultWidth;
+  }
+
+  getPreferredHeight(cell: DG.GridCell) : number | null {
+    return this.defaultHeight;
   }
 
   onMouseDownEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {

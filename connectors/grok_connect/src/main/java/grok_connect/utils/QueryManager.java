@@ -7,12 +7,12 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.handlers.SessionHandler;
 import grok_connect.providers.JdbcDataProvider;
-import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.*;
@@ -122,6 +122,10 @@ public class QueryManager {
                 resultSet.setFetchSize((int)fetchSize);
                 LOGGER.trace("Set new fetch size to {}", fetchSize);
             }
+        }
+        if (provider.descriptor.type.equals("Oracle")) {
+            df.tags = new LinkedHashMap<>();
+            df.tags.put("ALLOW_COL_TYPE_CHANGE", "true");
         }
         return df;
     }

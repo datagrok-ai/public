@@ -9,7 +9,7 @@ import {PdbHelper} from './utils/pdb-helper';
 
 // -- _package --
 
-class Package extends DG.Package {
+export class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
 
   get logger(): DG.PackageLogger {
@@ -26,8 +26,6 @@ class Package extends DG.Package {
     return this._pLogger;
   }
 }
-
-export const _package = new Package();
 
 // -- _getNglGlService, _getPdbHelper--
 

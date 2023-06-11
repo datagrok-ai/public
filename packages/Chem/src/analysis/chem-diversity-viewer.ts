@@ -6,13 +6,14 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
-import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
+import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint,
+  rdKitFingerprintToBitArray} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
-import { malformedDataWarning } from '../utils/malformed-data-utils';
-import { getRdKitModule } from '../package';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { getMolSafe } from '../utils/mol-creation_rdkit';
+import {malformedDataWarning} from '../utils/malformed-data-utils';
+import {getRdKitModule} from '../package';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
@@ -38,7 +39,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
       if (computeData) {
         this.renderMolIds =
           await chemDiversitySearch(
-            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint, this.tooltipUse);
+            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
+            this.fingerprint as Fingerprint, this.tooltipUse);
       }
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -53,7 +55,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
-            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: !this.tooltipUse}),
+            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height,
+              popupMenu: !this.tooltipUse}),
           molProps],
         {style: {margin: '5px', padding: '3px', position: 'relative'}},
         );
@@ -98,29 +101,29 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
   limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false): Promise<number[]> {
-
   let fingerprintArray: (BitArray | null)[];
   if (tooltipUse) {
     const size = Math.min(moleculeColumn.length, 1000);
     fingerprintArray = new Array<BitArray | null>(size).fill(null);
-    const randomIndexes = Array.from({ length: size }, () => Math.floor(Math.random() * moleculeColumn.length));
+    const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
     for (let i = 0; i < randomIndexes.length; ++i) {
-      let mol: RDMol | null = getMolSafe(moleculeColumn.get(randomIndexes[i]), {}, getRdKitModule()).mol;
-      if (mol && mol.is_valid()) {
+      const mol = getMolSafe(moleculeColumn.get(randomIndexes[i]), {}, getRdKitModule()).mol;
+      if (mol) {
         try {
-          let fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
+          const fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
             radius: defaultMorganFpRadius,
             nBits: defaultMorganFpLength,
           }));
           fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
         } catch (e) {
-        } 
+        } finally {
+          mol.delete();
+        }
       }
-      mol?.delete();
     }
-  } else {
+  } else
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, true, false);
-  }
+
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
   if (!tooltipUse)
     malformedDataWarning(fingerprintArray, moleculeColumn);

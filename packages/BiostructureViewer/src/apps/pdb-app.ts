@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {_getPdbHelper} from '../package-utils';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+
+import {_getPdbHelper} from '../package-utils';
 
 /** The app for .pdb file handler */
 export class PdbApp {
@@ -12,7 +13,10 @@ export class PdbApp {
 
   constructor() {}
 
-  /** {@link df} created with pdbToDf() */
+  /**
+   * @param {DG.DataFrame} df dataframe created with pdbToDf()
+   * @param {string} funcName name of the function that will be called on the server
+   */
   async init(df: DG.DataFrame, funcName: string = 'pdbApp'): Promise<void> {
     this._funcName = funcName;
     await this.loadData(df);

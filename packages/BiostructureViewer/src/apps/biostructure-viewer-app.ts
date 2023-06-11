@@ -3,7 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {_package, _getPdbHelper} from '../package-utils';
+import {_getPdbHelper} from '../package-utils';
+
+import {_package} from '../package';
 
 /** The app for biostructureViewer */
 export class BiostructureViewerApp {

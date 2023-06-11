@@ -21,10 +21,10 @@ export async function heatmapDemo() {
 
     const rootNode = tv.dockManager.rootNode;
     const extraViewerNode = tv.dockManager.dock(
-      tv.addViewer(DG.VIEWER.SCATTER_PLOT), DG.DOCK_TYPE.DOWN, rootNode, DG.VIEWER.SCATTER_PLOT, 0.3
+      tv.addViewer(DG.VIEWER.SCATTER_PLOT), DG.DOCK_TYPE.DOWN, rootNode, DG.VIEWER.SCATTER_PLOT, 0.25,
     );
     tv.dockManager.dock(
-      tv.addViewer(DG.VIEWER.HISTOGRAM), DG.DOCK_TYPE.RIGHT, extraViewerNode, DG.VIEWER.HISTOGRAM, 0.5
+      tv.addViewer(DG.VIEWER.HISTOGRAM), DG.DOCK_TYPE.RIGHT, extraViewerNode, DG.VIEWER.HISTOGRAM, 0.5,
     );
     // const viewerNode = tv.dockManager.dock(tv.grid, DG.DOCK_TYPE.TOP, null, DG.VIEWER.HEAT_MAP, 0.7);
     tv.dockManager.dock(tv.filters(), DG.DOCK_TYPE.LEFT, rootNode, DG.VIEWER.FILTERS, 0.2);

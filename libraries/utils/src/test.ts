@@ -7,7 +7,7 @@ import {DataFrame} from 'datagrok-api/dg';
 export const tests: {
   [key: string]: {
     tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
-    beforeStatus?: string, afterStatus?: string
+    beforeStatus?: string, afterStatus?: string, clear?: boolean
   }
 } = {};
 
@@ -175,9 +175,11 @@ export function expectArray(actual: ArrayLike<any>, expected: ArrayLike<any>) {
 }
 
 /* Defines a test suite. */
-export function category(category: string, tests: () => void): void {
+export function category(category: string, tests_: () => void, clear: boolean = true): void {
   currentCategory = category;
-  tests();
+  tests_();
+  if (tests[currentCategory])
+    tests[currentCategory].clear = clear;
 }
 
 /* Defines a function to be executed before the tests in this category are executed. */
@@ -201,40 +203,45 @@ function addNamespace(s: string, f: DG.Func): string {
 export async function initAutoTests(packageId: string, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
-  if (moduleTests[autoTestsCatName] !== undefined) {
+  if (moduleTests[autoTestsCatName] !== undefined ||
+    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
-  const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)/g);
+  const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)/g);
   for (const f of packFunctions) {
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {
       const res = (tests[i] as string).matchAll(reg);
-      const map: {skip?: string, wait?: number} = {};
+      const map: {skip?: string, wait?: number, cat?: string} = {};
       Array.from(res).forEach((arr) => {
         if (arr[0].startsWith('skip')) map['skip'] = arr[1];
         else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
+        else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
       });
-      moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
-        try {
-          const res = await grok.functions.eval(addNamespace(tests[i], f));
-          if (map.wait) await delay(map.wait);
-          // eslint-disable-next-line no-throw-literal
-          if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        } catch (e) {
-          throw e;
-        } finally {
-          grok.shell.closeAll();
-        }
-      }, {skipReason: map.skip}));
+      const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
+        const res = await grok.functions.eval(addNamespace(tests[i], f));
+        if (map.wait) await delay(map.wait);
+        // eslint-disable-next-line no-throw-literal
+        if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
+      }, {skipReason: map.skip});
+      if (map.cat) {
+        const cat: string = autoTestsCatName + ': ' + map.cat;
+        test.category = cat;
+        if (moduleTests[cat] === undefined)
+          moduleTests[cat] = {tests: [], clear: true};
+        moduleTests[cat].tests.push(test);
+      } else {
+        moduleAutoTests.push(test);
+      }
     }
   }
   wasRegistered[packageId] = true;
   if (!moduleAutoTests.length) return;
-  moduleTests[autoTestsCatName] = {tests: moduleAutoTests};
+  moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
 }
 
 export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
@@ -260,8 +267,16 @@ export async function runTests(options?: {category?: string, test?: string, test
     }
     const t = value.tests ?? [];
     const res = [];
-    for (let i = 0; i < t.length; i++)
-      res.push(await execTest(t[i], options?.test));
+    if (value.clear) {
+      for (let i = 0; i < t.length; i++) {
+        res.push(await execTest(t[i], options?.test));
+        grok.shell.closeAll();
+        DG.Balloon.closeAll();
+      }
+    } else {
+      for (let i = 0; i < t.length; i++)
+        res.push(await execTest(t[i], options?.test));
+    }
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
       if (value.after)
@@ -269,6 +284,9 @@ export async function runTests(options?: {category?: string, test?: string, test
     } catch (x: any) {
       value.afterStatus = x.toString();
     }
+    // Clear after category
+    // grok.shell.closeAll();
+    // DG.Balloon.closeAll();
     if (value.afterStatus)
       data.push({category: key, name: 'init', result: value.afterStatus, success: false, ms: 0, skipped: false});
     if (value.beforeStatus)
@@ -315,13 +333,11 @@ async function execTest(t: Test, predicate: string | undefined) {
     if (skip)
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     else
-      r = {success: true, result: await t.test() ?? 'OK', ms: 0, skipped: false};
+      r = {success: true, result: await timeout(t.test) ?? 'OK', ms: 0, skipped: false};
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
   const stop = new Date();
-  // grok.shell.closeAll();
-  // DG.Balloon.closeAll();
   // @ts-ignore
   r.ms = stop - start;
   if (!skip)
@@ -351,6 +367,23 @@ export async function awaitCheck(checkHandler: () => boolean,
       }
     }, interval);
   });
+}
+
+async function timeout(func: () => Promise<any>): Promise<any> {
+  let timeout: Timeout | null = null;
+  const timeoutPromise = new Promise<any>((_, reject) => {
+    //@ts-ignore
+    timeout = setTimeout(() => {
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject('EXECUTION TIMEOUT');
+    }, 30000);
+  });
+  try {
+    return await Promise.race([func(), timeoutPromise]);
+  } finally {
+    if (timeout)
+      clearTimeout(timeout);
+  }
 }
 
 export function isDialogPresent(dialogTitle: string): boolean {

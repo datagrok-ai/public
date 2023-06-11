@@ -105,6 +105,7 @@ export async function BioreactorDemo(initial: number, final: number, step: numbe
 //name: Bioreactor Demo
 //description: In-browser simulation of complex phenomena.
 //meta.demoPath: Bioreactors | Bioreactor
+//test: demoBioreactor() //wait: 100
 export async function demoBioreactor(): Promise<any>  {
   /*const demoScript = new DemoScript('Bioreactor', 
     'No-code construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool.'); */

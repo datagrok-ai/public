@@ -15,7 +15,7 @@ export async function findSimilar(molStr: string, limit: number, cutoff: number,
 ): Promise<DG.DataFrame | null> {
   const searchdf = await grok.chem.findSimilar(dbdf.getCol('molecule'), molStr, {'limit': limit, 'cutoff': cutoff});
 
-  if (searchdf == null)
+  if (searchdf === null)
     return null;
 
   if (dbdf.col('index') === null)

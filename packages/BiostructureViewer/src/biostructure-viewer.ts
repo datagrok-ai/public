@@ -2,8 +2,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from './package-utils';
 import {TwinPviewer} from './viewers/twin-p-viewer';
+
+import {_package} from './package';
+
 
 export class BioStructureViewer {
   bsView: DG.TableView;

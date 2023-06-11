@@ -1,8 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, T_SNE, UMAP, UMAPOptions } from '../reduce-dimensionality';
+import { DimReductionMethods, IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
 import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
+import { BitArrayMetricsNames } from '../typed-metrics/consts';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 export const SEQ_COL_NAMES = {
     [DG.SEMTYPE.MOLECULE]: 'Molecules',
@@ -17,8 +19,8 @@ export class SequenceSpaceBaseFuncEditor {
     methodSettingsIcon: HTMLElement;
     methodSettingsDiv = ui.inputs([]);
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
-      [UMAP]: new UMAPOptions(),
-      [T_SNE]: new TSNEOptions()
+      [DimReductionMethods.UMAP]: new UMAPOptions(),
+      [DimReductionMethods.T_SNE]: new TSNEOptions()
     };
     similarityMetricInput: DG.InputBase;
   
@@ -36,10 +38,11 @@ export class SequenceSpaceBaseFuncEditor {
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
-  
-      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
+      //TODO: remove when the new version of datagrok-api is available
+      //@ts-ignore
+      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
       this.molColInputRoot = this.molColInput.root;
-      this.methodInput = ui.choiceInput('Method', UMAP, [UMAP, T_SNE], () => {
+      this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         }
@@ -57,7 +60,7 @@ export class SequenceSpaceBaseFuncEditor {
       this.methodSettingsDiv = ui.inputs([]);
       let settingsOpened = false;
 
-      this.similarityMetricInput = ui.choiceInput('Similarity', 'Tanimoto', SEQ_SPACE_SIMILARITY_METRICS);
+      this.similarityMetricInput = ui.choiceInput('Similarity', BitArrayMetricsNames.Tanimoto, SEQ_SPACE_SIMILARITY_METRICS);
     }
   
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {

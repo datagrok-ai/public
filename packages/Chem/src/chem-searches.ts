@@ -13,6 +13,7 @@ import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import { getMolSafe } from './utils/mol-creation_rdkit';
 
 const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
@@ -72,7 +73,6 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   const diverseIndexes = getDiverseSubset(indexes.length, limit,
     (i1: number, i2: number) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]]!, fingerprints[indexes[i2]]!));
 
-  const molIds: number[] = [];
   const diversities = new Array(limit).fill('');
 
   for (let i = 0; i < limit; i++)
@@ -83,7 +83,7 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
 
 function colInvalidated(col: DG.Column, createMols: boolean): Boolean {
   return (lastColumnInvalidated == col.name &&
-    col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version)  &&
+    col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version) &&
     (!createMols || col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version)));
 }
 
@@ -112,7 +112,8 @@ function checkForFingerprintsColumn(col: DG.Column, fingerprintsType: Fingerprin
   return null;
 }
 
-function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsType: Fingerprint, createdMols: boolean): void {
+function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[],
+  fingerprintsType: Fingerprint, createdMols: boolean): void {
   if (!col.dataFrame)
     throw new Error('Column has no parent dataframe');
 
@@ -128,14 +129,15 @@ function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsTy
   newCol.init((i) => fgs[i]);
 
   col.setTag(colNameTag, fingerprintColumnName);
-  if(createdMols)
+  if (createdMols)
     col.setTag(FING_COL_TAGS.molsCreatedForVersion, String(col.version + 3));
   col.setTag(colVerTag, String(col.version + 2));
   col.setTag(FING_COL_TAGS.invalidatedForVersion, String(col.version + 1));
 }
 
 async function getUint8ArrayFingerprints(
-  molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, useSection = true, createMols = true): Promise<Uint8Array[]> {
+  molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan,
+  useSection = true, createMols = true): Promise<Uint8Array[]> {
   if (useSection)
     await chemBeginCriticalSection();
   try {
@@ -182,7 +184,8 @@ function substructureSearchPatternsMatch(molString: string, querySmarts: string,
   return result;
 }
 
-export async function chemGetFingerprints(...args: [DG.Column, Fingerprint?, boolean?, boolean?]): Promise<(BitArray | null)[]> {
+export async function chemGetFingerprints(...args: [DG.Column, Fingerprint?, boolean?, boolean?]):
+  Promise<(BitArray | null)[]> {
   return (await getUint8ArrayFingerprints(...args)).map((el) => el ? rdKitFingerprintToBitArray(el) : null);
 }
 
@@ -205,7 +208,8 @@ export async function chemGetDiversities(molStringsColumn: DG.Column, limit: num
 
   const fingerprints = await chemGetFingerprints(molStringsColumn, Fingerprint.Morgan, true, false)!;
 
-  return DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'molecule', _chemGetDiversities(limit, molStringsColumn, fingerprints));
+  return DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'molecule',
+    _chemGetDiversities(limit, molStringsColumn, fingerprints));
 }
 
 export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolString = '',
@@ -246,19 +250,22 @@ export async function chemSubstructureSearchLibrary(
 export function chemGetFingerprint(molString: string, fingerprint: Fingerprint): BitArray {
   let mol = null;
   try {
-    mol = getRdKitModule().get_mol(molString);
-    let fp;
-    if (fingerprint == Fingerprint.Morgan) {
-      fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
-        radius: defaultMorganFpRadius,
-        nBits: defaultMorganFpLength,
-      }));
-    } else if (fingerprint == Fingerprint.Pattern)
-      fp = mol.get_pattern_fp_as_uint8array();
-    else
-      throw new Error(`${fingerprint} does not match any fingerprint`);
-
-    return rdKitFingerprintToBitArray(fp) as BitArray;
+    mol = getMolSafe(molString, {}, getRdKitModule()).mol;
+    if (mol) {
+      let fp;
+      if (fingerprint == Fingerprint.Morgan) {
+        fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
+          radius: defaultMorganFpRadius,
+          nBits: defaultMorganFpLength,
+        }));
+      } else if (fingerprint == Fingerprint.Pattern)
+        fp = mol.get_pattern_fp_as_uint8array();
+      else
+        throw new Error(`${fingerprint} does not match any fingerprint`);
+  
+      return rdKitFingerprintToBitArray(fp) as BitArray;
+    } else
+      throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } finally {

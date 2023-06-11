@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 import {
   getAlphabetSimilarity,
   getStats,
@@ -19,8 +19,7 @@ category('bio', () => {
   const csvDfN1: string = `seq
 ACGTCT
 CAGTGT
-TTCAAC
-`;
+TTCAAC`;
 
   /** 2 - is an error monomer
    * This sequence set should be classified as nucleotides sequences.
@@ -29,44 +28,39 @@ TTCAAC
   const csvDfN1e: string = `seq
 ACGTAT
 CAGTTG
-TTCG2C
-`;
+TTCG2C`;
 
   /** Pure amino acids sequence */
   const csvDfAA1: string = `seq
 FWPHEYV
 YNRQWYV
-MKPSEYV
-`;
+MKPSEYV`;
 
   /** A - alanine, G - glycine, T -= threonine, C - cysteine, W - tryptophan
    * This sequence set should be detected as amino acids more than nucleotides.
    */
-  const csvDfAA2: string = `seq
+  const _csvDfAA2: string = `seq
 AGTCAT
 AGTCGC
-AGTCATW
-`;
+AGTCATW`;
 
   /** This sequence set should be recognized as unknown. */
   const csvDfX: string = `seq
 XZJ{}2
 5Z4733
 3Z6></
-675687
-`;
+675687`;
 
   // anonymous functions specified in test() registering must return Promise<any>
   test('testGetStatsHelm1', async () => {
     const csv = `seq
-PEPTIDE1{meI}$$$$
-`;
+PEPTIDE1{meI}$$$$`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const seqCol: DG.Column = df.getCol('seq')!;
     const stats = getStats(seqCol, 1, splitterAsHelm);
 
     expectObject(stats.freq, {
-      'meI': 1
+      'meI': 1,
     });
     expect(stats.sameLength, true);
   });
@@ -82,19 +76,19 @@ PEPTIDE1{meI}$$$$
 
 category('WebLogo.monomerToShort', () => {
   test('longMonomerSingle', async () => {
-    await expect(monomerToShort('S', 5), 'S');
+    expect(monomerToShort('S', 5), 'S');
   });
   test('longMonomerShort', async () => {
-    await expect(monomerToShort('Short', 5), 'Short');
+    expect(monomerToShort('Short', 5), 'Short');
   });
   test('longMonomerLong56', async () => {
-    await expect(monomerToShort('Long56', 5), 'Long5…');
+    expect(monomerToShort('Long56', 5), 'Long5…');
   });
   test('longMonomerComplexFirstPartShort', async () => {
-    await expect(monomerToShort('Long-long', 5), 'Long…');
+    expect(monomerToShort('Long-long', 5), 'Long…');
   });
   test('longMonomerComplexFirstPartLong56', async () => {
-    await expect(monomerToShort('Long56-long', 5), 'Long5…');
+    expect(monomerToShort('Long56-long', 5), 'Long5…');
   });
 });
 
@@ -108,7 +102,7 @@ export async function _testGetStats(csvDfN1: string) {
     'A': 4,
     'C': 5,
     'G': 3,
-    'T': 6
+    'T': 6,
   });
   expect(stats.sameLength, true);
 }
@@ -119,7 +113,7 @@ export async function _testGetAlphabetSimilarity() {
     'C': 3015,
     'G': 3015,
     'T': 2048,
-    '-': 1000
+    '-': 1000,
   };
   const alphabet: Set<string> = new Set(Object.keys(Nucleotides.Names));
   const res = getAlphabetSimilarity(freq, alphabet);

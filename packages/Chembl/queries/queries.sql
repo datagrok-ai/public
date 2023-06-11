@@ -1,9 +1,12 @@
 --name: _protein classification
+--friendlyName: Misc | Protein Classification
 --connection: Chembl
 select protein_class_id, parent_id, pref_name, definition, class_level from protein_classification
 --end
 
+
 --name: _bioactivity data for bacterial targets for @organism
+--friendlyName: Browse | Bioactivity for bacterial targets for @organism
 --connection: Chembl
 --input: string organism = "Shigella" {suggestions: Chembl:organisms}
 --tags: unit-test
@@ -24,7 +27,9 @@ FROM target_dictionary td
     AND oc.L1 = 'Bacteria';
 --end
 
+
 --name: _compounds which are selective to one target over a second target
+--friendlyName: Browse | Compounds selective to one target over a second target
 --connection: Chembl
 --input: string selectiveFor = "CHEMBL301"
 --input: string over = "CHEMBL4036"
@@ -55,7 +60,9 @@ AND act.standard_value        > 200
 AND td.chembl_id              = @over;
 --end
 
+
 --name: _PK data from 'Curated Drug Pharmacokinetic Data' source for @drug
+--friendlyName: Browse | PK for @drug
 --connection: Chembl
 --input: string drug = "LEVOFLOXACIN"
 SELECT DISTINCT
@@ -95,7 +102,9 @@ GROUP BY d.title, a.assay_id, a.description, cr.molregno, cr.compound_name, act.
 ORDER BY cr.compound_name, act.toid, act.standard_type;
 --end
 
+
 --name: compound activity details for all targets containing @protein
+--friendlyName: Browse | Compound activity details for all targets containing @protein
 --connection: Chembl
 --input: string protein = "P08172"
 SELECT DISTINCT
@@ -124,7 +133,9 @@ FROM compound_structures s
     AND cs.accession = @protein;
 --end
 
+
 --name: compound activity details for @target
+--friendlyName: Browse | Compound activity details for @target
 --connection: Chembl
 --input: string target = "CHEMBL1827"
 --meta.cache: true
@@ -155,60 +166,74 @@ AND a.tid            = t.tid
 AND t.chembl_id      = @target;
 --end
 
+
 --name: unichemUnitTestQuery
+--friendlyName: Misc | Unichem Test
 --connection: Unichem
 --tags: unit-test
 --meta.testExpected: 1
 select count(from_id) from src10src11
 --end
 
---name: _compoundNames
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct compound_name from compound_structures
-where compound_name ilike '%' || @sub || '%'
-limit 50
+
+--name: FracClassification
+--friendlyName: Search | FRAC classification
+--connection: Chembl 
+--input: string level1 = 'MITOSIS AND CELL DIVISION' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
+--input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
+--input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
+--input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+SELECT s.*
+FROM compound_structures s
+JOIN molecule_frac_classification m
+ON s.molregno = m.molregno
+JOIN frac_classification f
+ON m.frac_class_id = f.frac_class_id
+WHERE
+  (@level1 is null or @level1 = '' or f.level1_description = @level1) and
+  (@level2 is null or @level2 = '' or f.level2_description = @level2) and
+  (@level3 is null or @level3 = '' or f.level3_description = @level3) and
+  (@level4 is null or @level4 = '' or f.level4_description = @level4)
 --end
 
---name: _organisms
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct organism from target_dictionary
-where organism ilike '%' || @sub || '%'
-limit 50
+
+--name: QueryBySubstructure
+--friendlyName: Search | By substructure, country and action type
+--connection: Chembl 
+--meta.batchMode: true
+--input: string substructure = 'c1ccccc1' {semType: Molecule}
+--input: string threshold = '0.1' 
+--input: string actionType = 'BLOCKER' {choices: Query("SELECT DISTINCT action_type from drug_mechanism")}
+--input: string mechanismOfAction = 'Amiloride-sensitive sodium channel, ENaC blocker' {choices: Query("SELECT DISTINCT mechanism_of_action from drug_mechanism where action_type = @actionType")}
+--input: string country = 'UK' {choices: Query("SELECT DISTINCT country from research_companies")}
+--input: list<string> company = ['GlaxoSmithKline'] {choices: Query("SELECT DISTINCT company from research_companies where country = @country")}
+SELECT set_config('rdkit.tanimoto_threshold', @threshold, true);
+--batch
+SELECT s.*
+FROM compound_structures s
+INNER JOIN drug_mechanism d
+ON s.molregno = d.molregno
+INNER JOIN molecule_synonyms m
+ON s.molregno = m.molregno
+INNER JOIN research_companies r
+ON m.res_stem_id = r.res_stem_id
+WHERE s.molregno IN (SELECT molregno FROM get_mfp2_neighbors(@substructure))
+AND d.action_type = @actionType
+AND d.mechanism_of_action = @mechanismOfAction
+AND r.country = @country
+AND r.company IN (
+  SELECT unnest(@company)
+)
 --end
 
---name: _proteinTypes
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct short_name from protein_classification
-where short_name ilike '%' || @sub || '%'
-limit 50
---end
 
---name: _targetTypes
---connection: Chembl
---input: string sub
-select target_type from target_type
-where target_type ilike '%' || @sub || '%'
-limit 50
---end
-
---name: _assayTypes
---connection: Chembl
---input: string sub
-select assay_type from assay_type
-where assay_type ilike '%' || @sub || '%'
-limit 50
---end
-
---name: _relationshipTypes
---connection: Chembl
---input: string sub
-select relationship_type from relationship_type
-where relationship_type ilike '%' || @sub || '%'
-limit 50
+--name: ByChemblIds
+--friendlyName: Search | By ChEMBL ids
+--connection: Chembl 
+--input: list<string> chemblIds = ['CHEMBL1185', 'CHEMBL1186'] {inputType: TextArea}
+SELECT *
+FROM molecule_dictionary
+WHERE chembl_id IN (
+  SELECT unnest(@chemblIds)
+);
 --end

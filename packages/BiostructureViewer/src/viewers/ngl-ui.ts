@@ -13,7 +13,10 @@ export async function viewNglUI(fileContent: string): Promise<void> {
   handleResize(host, stage);
 }
 
-/** @returns {DG.View} */
+/**
+ * @param {any} file
+ * @return {DG.View}
+ */
 export function previewNglUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
   const view = DG.View.create();
   const host = ui.div([], 'd4-ngl-viewer');

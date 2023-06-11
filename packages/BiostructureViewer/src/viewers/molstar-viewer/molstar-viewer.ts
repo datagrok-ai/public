@@ -18,15 +18,17 @@ import {
   PluginLayoutControlsDisplayType,
   RegionStateOptionsType,
   RepresentationType,
-  SimpleRegionStateOptionsType
+  SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {defaults, molecule3dFileExtensions} from './consts';
 
-import {_package, _getPdbHelper} from '../../package-utils';
+import {_getPdbHelper} from '../../package-utils';
 import {parseAndVisualsData} from './molstar-viewer-open';
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
+
+import {_package} from '../../package';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -84,7 +86,7 @@ export enum PROPS {
   // -- Controls --
   showWelcomeToast = 'showWelcomeToast',
   showImportControls = 'showImportControls',
-   // -- Behaviour --
+  // -- Behaviour --
   showSelectedRowsLigands = 'showSelectedRowsLigands',
   showCurrentRowLigand = 'showCurrentRowLigand',
   showMouseOverRowLigand = 'showMouseOverRowLigand',
@@ -144,7 +146,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
-    this.data = this.addProperty(PROPS.data, DG.TYPE.OBJECT, defaults.data, {userEditable: false});
     this.pdb = this.string(PROPS.pdb, pdbDefault,
       {category: PROPS_CATS.DATA, userEditable: false});
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
@@ -168,13 +169,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.layoutRegionStateLeft = this.string(PROPS.layoutRegionStateLeft, defaults.layoutRegionStateLeft,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType)}) as RegionStateOptionsType;
     this.layoutRegionStateTop = this.string(PROPS.layoutRegionStateTop, defaults.layoutRegionStateTop,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateRight = this.string(PROPS.layoutRegionStateRight, defaults.layoutRegionStateRight,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutRegionStateBottom = this.string(PROPS.layoutRegionStateBottom, defaults.layoutRegionStateBottom,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)},
     ) as SimpleRegionStateOptionsType;
     this.layoutControlsDisplay = this.string(PROPS.layoutControlsDisplay, defaults.layoutControlsDisplay,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType)});
@@ -241,47 +242,47 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
       const plugin: PluginContext = this.viewer.plugin;
       switch (property.name) {
-      case PROPS.layoutShowLog: {
-        //plugin.layout.setProps({layoutShowLog: value;});
+        case PROPS.layoutShowLog: {
+          //plugin.layout.setProps({layoutShowLog: value;});
 
-        //PluginCommands.Layout.Update(plugin, );
-        const _k = 11;
-      }
-        break;
-      case PROPS.layoutShowControls: {
-        // eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
-        const _k = 11;
-      }
-        break;
-      case PROPS.layoutIsExpanded: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
-      }
-        break;
-      case PROPS.layoutRegionStateLeft:
-      case PROPS.layoutRegionStateTop:
-      case PROPS.layoutRegionStateRight:
-      case PROPS.layoutRegionStateBottom: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {
-          state: {
-            regionState: {
-              left: this.layoutRegionStateLeft,
-              top: this.layoutRegionStateTop,
-              right: this.layoutRegionStateRight,
-              bottom: this.layoutRegionStateBottom
-            }
-          }
-        });
-      }
-        break;
-      case PROPS.layoutControlsDisplay: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin,
-          {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
-      }
-        break;
+          //PluginCommands.Layout.Update(plugin, );
+          const _k = 11;
+        }
+          break;
+        case PROPS.layoutShowControls: {
+          // eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
+          const _k = 11;
+        }
+          break;
+        case PROPS.layoutIsExpanded: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
+        }
+          break;
+        case PROPS.layoutRegionStateLeft:
+        case PROPS.layoutRegionStateTop:
+        case PROPS.layoutRegionStateRight:
+        case PROPS.layoutRegionStateBottom: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {
+            state: {
+              regionState: {
+                left: this.layoutRegionStateLeft,
+                top: this.layoutRegionStateTop,
+                right: this.layoutRegionStateRight,
+                bottom: this.layoutRegionStateBottom,
+              },
+            },
+          });
+        }
+          break;
+        case PROPS.layoutControlsDisplay: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin,
+            {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
+        }
+          break;
         // case PROPS.viewportShowExpand: {
         //   await PluginCommands.State.ToggleExpanded(plugin,
         //     {state: {isExpanded: this.viewportShowExpand}})
@@ -291,18 +292,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     };
 
     switch (property.name) {
-    case PROPS.representation:
-      break;
-    case PROPS.showImportControls:
-      break;
-    case PROPS.layoutIsExpanded:
-      this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
-      break;
-    case PROPS.showSelectedRowsLigands:
-    case PROPS.showCurrentRowLigand:
-    case PROPS.showMouseOverRowLigand:
-      this.rebuildViewLigands();
-      break;
+      case PROPS.representation:
+        break;
+      case PROPS.showImportControls:
+        break;
+      case PROPS.layoutIsExpanded:
+        this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
+        break;
+      case PROPS.showSelectedRowsLigands:
+      case PROPS.showCurrentRowLigand:
+      case PROPS.showMouseOverRowLigand:
+        this.rebuildViewLigands();
+        break;
     }
 
     const propName: string = property.name;
@@ -514,7 +515,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       onClick: (event: PointerEvent) => {
         event.preventDefault();
         $(fileEl).trigger('click');
-      }
+      },
     });
     this.splashDiv = ui.div([fileLink, fileEl],
       {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
@@ -559,6 +560,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     _package.logger.debug('MolstarViewer.dataFrameOnCurrentRowChanged() ');
     this.rebuildViewLigands();
   }
+
   private dataFrameOnMouseOverRowChanged(_value: any): void {
     _package.logger.debug('BiostructureViewer.dataFrameOnMouseOverRowChanged() ');
     this.rebuildViewLigands();
@@ -569,7 +571,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   private ligands: LigandMap = {selected: [], current: null, hovered: null};
   private ligandsPromise: Promise<void> = Promise.resolve();
 
-  /** Unify get mol* component key/ref, not static for performance */
+  /** Unify get mol* component key/ref, not static for performance
+   * @param {StructureComponentRef} comp
+   * @return {string | null}*/
   getCompKey(comp: StructureComponentRef): string | null {
     return comp.cell.sourceRef ?? null; // comp.version
   }
@@ -581,6 +585,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     // return ligandBlob;
     return ligandStr;
   }
+
   private rebuildViewLigands(): void {
     this.viewPromise = this.viewPromise.then(async () => {
       await this.destroyViewLigands();
@@ -595,7 +600,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     const allLigands: LigandMapItem[] = [
       ...this.ligands.selected,
       ...(this.ligands.current ? [this.ligands.current] : []),
-      ...(this.ligands.hovered ? [this.ligands.hovered] : [])
+      ...(this.ligands.hovered ? [this.ligands.hovered] : []),
     ];
 
     const refRemovingPromises: Promise<void>[] = [];
@@ -603,8 +608,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       if (!ligand.structureRefs) continue;
       for (const lingandRef of ligand.structureRefs) {
         refRemovingPromises.push(this.viewer!.plugin.commands.dispatch(PluginCommands.State.RemoveObject,
-          {state: this.viewer!.plugin.state.data,
-            ref: lingandRef}));
+          {
+            state: this.viewer!.plugin.state.data,
+            ref: lingandRef
+          }));
       }
     }
     for (const ligand of allLigands) ligand.structureRefs = null; // unbind with this.stage.compList
@@ -624,7 +631,9 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.ligands.hovered = !this.showMouseOverRowLigand ? null :
       this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, structureRefs: null} : null;
 
-    /** Adds ligand and returns component key */
+    /** Adds ligand and returns component keys. single component has multiple refs when created manually
+     * @param {number} rowIdx
+     * @param {DG.Color | null} _color*/
     const addLigandOnStage = async (rowIdx: number, _color: DG.Color | null): Promise<Array<string> | null> => {
       const plugin = this.viewer!.plugin;
       const ligandLabel: string = `<Ligand at row ${rowIdx}>`;
@@ -635,7 +644,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       const _model = await plugin.builders.structure.createModel(_moltraj);
       const _structure = await plugin.builders.structure.createStructure(_model);
       const _component = await plugin.builders.structure.tryCreateComponentStatic(
-        _structure, 'ligand', {label: ligandLabel}
+        _structure, 'ligand', {label: ligandLabel},
       );
       await plugin.builders.structure.hierarchy.applyPreset(_moltraj, 'default',
         {representationPreset: 'polymer-and-ligand'});

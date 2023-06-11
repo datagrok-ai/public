@@ -2,12 +2,13 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package-utils';
 import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 import {NglForGridTestApp} from '../apps/ngl-for-grid-test-app';
 
+import {_package} from '../package';
+
 export async function biostructureInGridApp(appName: string, pi: TaskBarProgressIndicator): Promise<void> {
-  const piMsg = pi.description;
+  const _piMsg = pi.description;
   const dfCsv: string = await _package.files.readAsText('pdb_data.csv');
 
   const df: DG.DataFrame = DG.DataFrame.fromCsv(dfCsv);

@@ -2,9 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {BiostructureAndTrackViewer} from '../viewers/twins/molstar-twin-viewer';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {_package, _getPdbHelper} from '../package-utils';
+
+import {BiostructureAndTrackViewer} from '../viewers/twins/molstar-twin-viewer';
+import {_getPdbHelper} from '../package-utils';
+
+import {_package} from '../package';
 
 /** The app for biostructure viewer and biotrack viewer */
 export class BiostructureAndTrackViewerApp {

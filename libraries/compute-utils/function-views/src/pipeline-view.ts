@@ -6,6 +6,7 @@ import {zipSync, Zippable} from 'fflate';
 import {Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import $ from 'cash-dom';
+import ExcelJS from 'exceljs';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
 import {historyUtils} from '../../history-utils';
@@ -14,10 +15,16 @@ import {RunComparisonView} from './run-comparison-view';
 import {CARD_VIEW_TYPE} from './shared/consts';
 import wu from 'wu';
 
+type StepState = {
+  func: DG.Func, editor: string, view: FunctionView, idx: number, options?: {friendlyName?: string}
+}
+
+const getVisibleStepName = (step: StepState) => {
+  return step.options?.friendlyName ?? step.func.name;
+};
+
 export class PipelineView extends ComputationView {
-  public steps = {} as {[scriptNqName: string]: {
-    func: DG.Func, editor: string, view: FunctionView, idx: number, options?: {friendlyName?: string}
-  }};
+  public steps = {} as {[scriptNqName: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
   private stepTabs: DG.TabControl | null = null;
@@ -32,32 +39,77 @@ export class PipelineView extends ComputationView {
   protected pipelineViewExportExtensions: () => Record<string, string> = () => {
     return {
       'Archive': 'zip',
+      'Single Excel': 'xlsx',
     };
   };
 
   protected pipelineViewExportFormats = () => {
-    return ['Archive'];
+    return ['Archive', 'Single Excel'];
   };
 
   protected pipelineViewExport = async (format: string) => {
-    if (format !== 'Archive')
-      throw new Error('This export format is not supported');
-
     if (!this.stepTabs)
       throw new Error('Set step tabs please for export');
 
-    const zipConfig = {} as Zippable;
+    if (format === 'Archive') {
+      const zipConfig = {} as Zippable;
 
-    for (const step of Object.values(this.steps)) {
-      this.stepTabs.currentPane = this.stepTabs.getPane(step.options?.friendlyName ?? step.func.name);
+      for (const step of Object.values(this.steps)) {
+        this.stepTabs.currentPane = this.stepTabs.getPane(getVisibleStepName(step));
 
-      await new Promise((r) => setTimeout(r, 100));
-      const stepBlob = await step.view.exportConfig!.export('Excel');
+        await new Promise((r) => setTimeout(r, 100));
+        const stepBlob = await step.view.exportConfig!.export('Excel');
 
-      zipConfig[step.view.exportConfig!.filename('Excel')] = [new Uint8Array(await stepBlob.arrayBuffer()), {level: 0}];
-    };
+        zipConfig[step.view.exportConfig!.filename('Excel')] =
+          [new Uint8Array(await stepBlob.arrayBuffer()), {level: 0}];
+      };
 
-    return new Blob([zipSync(zipConfig)]);
+      return new Blob([zipSync(zipConfig)]);
+    }
+
+    if (format === 'Single Excel') {
+      const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+      const exportWorkbook = new ExcelJS.Workbook();
+
+      const generateUniqueName = (wb: ExcelJS.Workbook, initialName: string, step: StepState) => {
+        let name = `${getVisibleStepName(step)}>${initialName}`;
+        if (name.length > 31)
+          name = `${name.slice(0, 31)}`;
+        let i = 1;
+        while (wb.worksheets.some((sheet) => sheet.name === name)) {
+          let truncatedName = `${getVisibleStepName(step)}>${initialName}`;
+          if (truncatedName.length > (31 - `-${i}`.length))
+            truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;
+          name = `${truncatedName}-${i}`;
+          i++;
+        }
+        return name;
+      };
+
+      for (const step of Object.values(this.steps)) {
+        const temp = new ExcelJS.Workbook();
+        this.stepTabs!.currentPane = this.stepTabs!.getPane(getVisibleStepName(step));
+
+        await new Promise((r) => setTimeout(r, 100));
+        await temp.xlsx.load(await (await step.view.exportConfig!.export('Excel')).arrayBuffer());
+        temp.eachSheet((sheet) => {
+          const name = generateUniqueName(exportWorkbook, sheet.name, step);
+          const t = exportWorkbook.addWorksheet('New sheet');
+          t.model = sheet.model;
+          t.name = name;
+          sheet.getImages().forEach((image) => {
+            //@ts-ignore
+            const newImageId = exportWorkbook.addImage(temp.getImage(image.imageId));
+
+            t.addImage(newImageId, image.range);
+          });
+        });
+      };
+
+      return new Blob([await exportWorkbook.xlsx.writeBuffer()], {type: BLOB_TYPE});
+    }
+
+    throw new Error('This format is not supported');
   };
 
   exportConfig = {
@@ -215,6 +267,13 @@ export class PipelineView extends ComputationView {
     await this.onFuncCallReady();
   }
 
+  public override async onAfterSaveRun() {
+    this.stepTabs!.panes.forEach((stepTab) => {
+      $(stepTab.header).removeClass('d4-disabled');
+      ui.tooltip.bind(stepTab.header, '');
+    });
+  }
+
   public override async onComparisonLaunch(funcCallIds: string[]) {
     const parentCall = grok.shell.v.parentCall;
 
@@ -252,7 +311,7 @@ export class PipelineView extends ComputationView {
     const tabs = Object.values(this.steps)
       .reduce((prev, step) => ({
         ...prev,
-        [step.options?.friendlyName ?? step.func.name]: step.view.root,
+        [getVisibleStepName(step)]: step.view.root,
       }), {} as Record<string, HTMLElement>);
 
     const pipelineTabs = ui.tabControl(tabs);

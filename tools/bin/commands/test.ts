@@ -3,6 +3,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import puppeteer from 'puppeteer';
+import {Browser, Page} from 'puppeteer';
+import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -11,7 +13,8 @@ import * as testUtils from '../utils/test-utils';
 
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  const commandOptions = ['host', 'csv', 'gui', 'skip-build', 'skip-publish', 'category'];
+  const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled',
+    'report', 'skip-build', 'skip-publish', 'category', 'record'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -94,8 +97,9 @@ export function test(args: TestArgs): boolean {
   function test(): void {
     color.info('Starting tests...');
     const P_START_TIMEOUT: number = 3600000;
-    let browser: puppeteer.Browser;
-    let page: puppeteer.Page;
+    let browser: Browser;
+    let page: Page;
+    let recorder: PuppeteerScreenRecorder;
     type resultObject = { failReport: string, skipReport: string, passReport: string, failed: boolean, csv?: string };
 
     function init(timeout: number): Promise<void> {
@@ -107,21 +111,36 @@ export function test(args: TestArgs): boolean {
           let out = await testUtils.getBrowserPage(puppeteer, params);
           browser = out.browser;
           page = out.page;
+          recorder = new PuppeteerScreenRecorder(page, testUtils.recorderConfig);
         } catch (e) {
           throw e;
         }
       })
     }
 
-    function runTest(timeout: number, options: {category?: string} = {}): Promise<resultObject> {
+    function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
+      report?: boolean, record?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
+        let consoleLog: string = '';
+        if (options.record) {
+          await recorder.start('./test-record.mp4');
+          page.on('console', msg => consoleLog += `CONSOLE LOG ENTRY: ${msg.text()}\n`);
+          page.on('pageerror', error => {
+            consoleLog += `CONSOLE LOG ERROR: ${error.message}\n`;
+          });
+          page.on('response', response => {
+            consoleLog += `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`;
+          });
+        }
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
 
-        let r: resultObject = await page.evaluate((targetPackage, options): Promise<resultObject> => {
-          return new Promise<resultObject>((resolve, reject) => {
-            const testCall = `${targetPackage}:test(${options.category ? `category="${options.category}"` : ''})`;
-            (<any>window).grok.functions.eval(testCall).then((df: any) => {
+        let r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
+          return new Promise<resultObject>((resolve, reject) => {            
+            (<any>window).grok.functions.call(`${targetPackage}:test`, {
+              'category': options.category,
+              'testContext': testContext,
+            }).then((df: any) => {
               let failed = false;
               let skipReport = '';
               let passReport = '';
@@ -155,8 +174,12 @@ export function test(args: TestArgs): boolean {
               resolve({failReport, skipReport, passReport, failed, csv});
             }).catch((e: any) => reject(e));
           });
-        }, targetPackage, options);
+        }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
 
+        if (options.record) {
+          await recorder.stop();
+          fs.writeFileSync('./test-console-output.log', consoleLog)
+        }
         return r;
       });
     }
@@ -170,7 +193,8 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000, {category: args.category});
+      const r = await runTest(7200000, { category: args.category,
+        catchUnhandled: args.catchUnhandled, report: args.report, record: args.record });
 
       if (r.csv && args.csv) {
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
@@ -207,6 +231,9 @@ interface TestArgs {
   host?: string,
   csv?: boolean,
   gui?: boolean,
+  catchUnhandled?: boolean,
+  report?: boolean,
+  record?: boolean,
   'skip-build'?: boolean,
   'skip-publish'?: boolean,
 }

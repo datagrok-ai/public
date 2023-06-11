@@ -4,10 +4,22 @@ on:
   push:
     paths:
       - 'connectors/**'
+  pull_request:
+    paths:
+      - 'connectors/**'
+
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   build:
     name: Build maven
+    needs: common-check
     runs-on: ubuntu-20.04
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       image_exists: ${{ steps.get_version.outputs.image_exists }}
@@ -63,8 +75,9 @@ jobs:
 
   docker:
     name: Build Docker
-    needs: build
+    needs: [build, common-check]
     runs-on: ubuntu-20.04
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -130,7 +143,7 @@ jobs:
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Build and push bleeding-edge
-        if: startsWith(github.ref, 'refs/heads/release/') != true
+        if: github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v3
         with:
           context: ./connectors

@@ -6,14 +6,14 @@ import {category, test, testViewer, expect, awaitCheck} from '@datagrok-librarie
 import {readDataframe} from '../gui-utils';
 
 category('Viewers: Scatter Plot', () => {
-  test('NX #1613', async () => {
-    await testViewer(DG.VIEWER.SCATTER_PLOT, await readDataframe('scatter.plot.broken.csv'), {readOnly: true});
+  test('Wrong range #1613', async () => {
+    await testViewer(DG.VIEWER.SCATTER_PLOT, await readDataframe('#1613.csv'), {readOnly: true});
   });
 
-  test('NX #1744', async () => {
-    const df = await readDataframe('fruits_.csv');
-    const col = df.getCol('Col');
+  test('Table is unexpectedly filtered after empty column creation #1744', async () => {
+    const df = await readDataframe('#1744.csv');
     const tv = grok.shell.addTableView(df);
+    const col = df.getCol('Col');
     for (let i = 0; i < 6; i++) col.set(i, null);
     tv.addViewer(DG.VIEWER.SCATTER_PLOT, {xColumnName: 'Col', xAxisType: 'logarithmic', yAxisType: 'logarithmic'});
     await awaitCheck(() => document.querySelector('[name=viewer-Scatter-plot i] canvas') !== null,
@@ -21,11 +21,11 @@ category('Viewers: Scatter Plot', () => {
     expect(df.filter.trueCount, 7);
   });
 
-  test('NX #1764', async () => {
-    await testViewer(DG.VIEWER.SCATTER_PLOT, await readDataframe('BrokenScatterPlots.csv'), {readOnly: true});
+  test('Wrong min/max in log scale if near-zero values present #1764', async () => {
+    await testViewer(DG.VIEWER.SCATTER_PLOT, await readDataframe('#1764.csv'), {readOnly: true});
   });
 
-  test('NX #1858', async () => {
-    await testViewer(DG.VIEWER.SCATTER_PLOT, await readDataframe('scatter.plot.broken2.csv'), {readOnly: true});
+  test('Wrong range #1858', async () => {
+    await testViewer(DG.VIEWER.SCATTER_PLOT, await readDataframe('#1858.csv'), {readOnly: true});
   });
 });

@@ -1,14 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 import {_package} from '../package';
 import {TAGS} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export class TreeForGridApp {
@@ -86,7 +84,7 @@ export class TreeForGridApp {
   async buildView() {
     if (!this.tableView) {
       const dataDf: DG.DataFrame = this.dataDf;
-      dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
+      dataDf.columns.addNewInt('Cluster').init((_rowI) => null);
 
       const clusterColName: string = 'Cluster';
       const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
@@ -97,12 +95,12 @@ export class TreeForGridApp {
       this.tableView = grok.shell.addTableView(dataDf);
       this.tableView.path = this.tableView.basePath = `/func/${_package.name}.treeForGridApp`;
 
-      const cutOpts: TreeCutOptions = {
-        clusterColName: clusterColName,
-        dataDf: dataDf, clusterDf: clusterDf
-      };
+      // const cutOpts: TreeCutOptions = {
+      //   clusterColName: clusterColName,
+      //   dataDf: dataDf, clusterDf: clusterDf,
+      // };
       this.gridN = injectTreeForGridUI2(
-        this.tableView.grid, this.newickRoot, this.leafCol.name, 250
+        this.tableView.grid, this.newickRoot, this.leafCol.name, 250,
         /* cutOpts */);
 
       // const activityCol = this.dataDf.col('Activity');

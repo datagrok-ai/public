@@ -2,8 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package-utils';
 import {PROPS as msPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+
+import {_package} from '../package';
 
 export class MolstarViewerApp {
   private readonly appFuncName: string;

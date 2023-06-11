@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PdbHelper} from '../utils/pdb-helper';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {_getPdbHelper} from '../package-utils';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+
+import {_getPdbHelper} from '../package-utils';
 
 /** The app for .pdb file handler, builds up PdbResDataFrame */
 export class BiostructureApp {

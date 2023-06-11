@@ -228,6 +228,7 @@ export abstract class Tutorial extends DG.Widget {
     }, `Copy the tutorial link`);
 
     closeTutorial.style.minWidth = '30px';
+    this.header.textContent = this.name;
     this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
     this.headerDiv.append(closeTutorial);
   }
@@ -243,53 +244,26 @@ export abstract class Tutorial extends DG.Widget {
     div.scrollIntoView();
   }
 
-  _placeHint(hint: HTMLElement) {
-    hint.classList.add('tutorials-target-hint');
-    const hintIndicator = ui.element('div', 'blob');
-    hint.append(hintIndicator);
-
-    const width = hint ? hint.clientWidth : 0;
-    const height = hint ? hint.clientHeight : 0;
-
-    const hintNode = hint.getBoundingClientRect();
-    const indicatorNode = hintIndicator.getBoundingClientRect();
-
-    const hintPosition = $(hint).css('position');
-
-    if (hintPosition == 'absolute') {
-      $(hintIndicator).css('position', 'absolute');
-      $(hintIndicator).css('left', '0');
-      $(hintIndicator).css('top', '0');
+  _placeHints(hint: HTMLElement | HTMLElement[]) {
+    if (hint instanceof HTMLElement) {
+      this.activeHints.push(hint);
+      ui.hints.addHintIndicator(hint, false);
+    } else if (Array.isArray(hint)) {
+      this.activeHints.push(...hint);
+      hint.forEach((h) => {
+        if (h != null)
+          ui.hints.addHintIndicator(h, false);
+      });
     }
-    if (hintPosition == 'relative') {
-      $(hintIndicator).css('position', 'absolute');
-      $(hintIndicator).css('left', '0');
-      $(hintIndicator).css('top', '0');
-    }
-
-    if (hintPosition == 'static') {
-      $(hintIndicator).css('position', 'absolute');
-      $(hintIndicator).css('margin-left',
-        hintNode.left + 1 == indicatorNode.left ? 0 : -width);
-      $(hintIndicator).css('margin-top',
-        hintNode.top + 1 == indicatorNode.top ? 0 : -height);
-    }
-
-    if ($(hint).hasClass('d4-ribbon-item'))
-      $(hintIndicator).css('margin-left', '0px');
   }
 
   _removeHints(hint: HTMLElement | HTMLElement[]) {
-    const removeHint = (h: HTMLElement) => {
-      $(h).find('div.blob')[0]?.remove();
-      h.classList.remove('tutorials-target-hint');
-    };
     if (hint instanceof HTMLElement)
-      removeHint(hint);
+      ui.hints.remove(hint);
     else if (Array.isArray(hint)) {
       hint.forEach((h) => {
         if (h != null)
-          removeHint(h);
+          ui.hints.remove(h);
       });
     }
   }
@@ -300,16 +274,8 @@ export abstract class Tutorial extends DG.Widget {
       return;
 
     this.activeHints.length = 0;
-    if (hint instanceof HTMLElement) {
-      this.activeHints.push(hint);
-      this._placeHint(hint);
-    } else if (Array.isArray(hint)) {
-      this.activeHints.push(...hint);
-      hint.forEach((h) => {
-        if (h != null)
-          this._placeHint(h);
-      });
-    }
+    if (hint != null)
+      this._placeHints(hint);
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const descriptionDiv = ui.divText('', {classes: 'grok-tutorial-step-description', style: {

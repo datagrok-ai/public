@@ -20,11 +20,19 @@ export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends
 
   get rightPadding(): number { return this._rightPadding; }
 
-  /** treeRoot can be null in case of the grid.dataFrame.rowCount is zero */
+  /** treeRoot can be null in case of the grid.dataFrame.rowCount is zero
+   * @param {DG.Grid}grid - grid to render tree for
+   * @param {TNode}treeRoot - tree root node
+   * @param {GridTreePlacer<TNode>}placer - tree placer
+   * @param {ITreeStyler<TNode>}mainStyler - main tree styler
+   * @param {ITreeStyler<TNode>}lightStyler - light tree styler
+   * @param {ITreeStyler<TNode>}currentStyler - current tree styler
+   * @param {ITreeStyler<TNode>}mouseOverStyler - mouse over tree styler
+   * @param {ITreeStyler<TNode>}selectionStyler - selection tree styler*/
   protected constructor(
     grid: DG.Grid, treeRoot: TNode | null, placer: GridTreePlacer<TNode>,
     mainStyler: ITreeStyler<TNode>, lightStyler: ITreeStyler<TNode>,
-    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>
+    currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>,
   ) {
     super(treeRoot, placer,
       mainStyler, lightStyler,

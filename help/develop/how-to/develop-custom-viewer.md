@@ -497,6 +497,7 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //tags: viewer
 //meta.icon: images/icon.svg
 //meta.toolbox: true
+//meta.trellisable: true
 //meta.viewerPath: Subcategory Name | Friendly Viewer Name
 //output: viewer result
 export function awesome() {
@@ -504,11 +505,32 @@ export function awesome() {
 }
 ```
 
-The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, and `meta.viewerPath`,
-can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and replaces the default icon
-with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox in a table view. The
-`meta.viewerPath` parameter defines a path under which the viewer is shown in the top menu. The default path is
-`Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`.
+The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, `meta.trellisable`, and
+`meta.viewerPath`, can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and
+replaces the default icon with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox
+in a table view. The `meta.trellisable` parameter indicates whether this viewer can be an inner viewer of
+[DG.VIEWER.TRELLIS_PLOT]. The `meta.viewerPath` parameter defines a path under which the viewer is shown in the top
+menu. The default path is `Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`.
+
+:::tip
+
+If you are on version `^4.12.x` of `datagrok-tools`, you can use class decorators to register viewers:
+
+```ts
+@grok.decorators.viewer({
+  icon: 'images/icon.png',
+  toolbox: true,
+})
+export class AwesomeViewer extends DG.JsViewer {
+  /* AwesomeViewer contents */
+}
+```
+
+This is equivalent to adding a function to `package.ts`. There is no need to add anything other than the class itself.
+When you run the `build` script for your package, the webpack plugin called `FuncGeneratorPlugin` will add a special
+`package.g.ts` file to your project. Note that it is not on the ignore list, so you are supposed to commit this file.
+
+:::
 
 There is also a less common form to register a viewer:
 
@@ -550,7 +572,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 * Scripting viewers (R, Python, Julia):
   * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
     Python and R code using scripting viewers for the respective programming languages
-  * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
+  * [Demo]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
   browser: [https://public.datagrok.ai/scripts?q=%23viewers](https://public.datagrok.ai/scripts?q=%23viewers)
@@ -569,4 +591,4 @@ See also:
 * [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
+[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

@@ -11,6 +11,7 @@ import {_package} from '../package';
 import {multipleSequenceAlginmentUIOptions} from './types';
 import {kalignVersion, msaDefaultOptions} from './constants';
 import '../../css/msa.css';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 export class MsaWarning extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -18,7 +19,7 @@ export class MsaWarning extends Error {
 }
 
 export async function multipleSequenceAlignmentUI(
-  options: multipleSequenceAlginmentUIOptions = {}
+  options: multipleSequenceAlginmentUIOptions = {},
 ): Promise<DG.Column> {
   return new Promise(async (resolve, reject) => {
     options.clustersCol ??= null;
@@ -53,15 +54,17 @@ export async function multipleSequenceAlignmentUI(
     const pepseaInputRootStyles: CSSStyleDeclaration[] = [methodInput.root.style];
     const kalignInputRootStyles: CSSStyleDeclaration[] = [terminalGapInput.root.style, kalignVersionDiv.style];
 
-    let performAlignment: (() => Promise<DG.Column<string>>) | undefined;
+    let performAlignment: (() => Promise<DG.Column<string> | null>) | undefined;
 
-    // TODO: allow only macromolecule colums to be chosen
+    //TODO: remove when the new version of datagrok-api is available
+    //TODO: allow only macromolecule colums to be chosen
     const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
       performAlignment = await onColInputChange(
         colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
-        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
       );
-    }
+      //@ts-ignore
+    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
     const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
@@ -71,13 +74,13 @@ export async function multipleSequenceAlignmentUI(
     if (options.col) {
       performAlignment = await onColInputChange(
         options.col, table, pepseaInputRootStyles, kalignInputRootStyles,
-        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
       );
 
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
       return;
     }
-    const dlg = ui.dialog('MSA')
+    const _dlg = ui.dialog('MSA')
       .add(colInput)
       .add(clustersColInput)
       .add(methodInput)
@@ -93,9 +96,9 @@ export async function multipleSequenceAlignmentUI(
 async function onDialogOk(
   colInput: DG.InputBase< DG.Column<any>>,
   table: DG.DataFrame,
-  performAlignment: (() => Promise<DG.Column<string>>) | undefined,
+  performAlignment: (() => Promise<DG.Column<string> | null>) | undefined,
   resolve: (value: DG.Column<any>) => void,
-  reject: (reason: any) => void
+  reject: (reason: any) => void,
 ): Promise<void> {
   let msaCol: DG.Column<string> | null = null;
   const pi = DG.TaskBarProgressIndicator.create('Analyze for MSA ...');
@@ -107,7 +110,7 @@ async function onDialogOk(
       throw new Error('Invalid column format');
     msaCol = await performAlignment(); // progress
     if (msaCol == null)
-      return grok.shell.warning('Wrong column format');
+      return reject('PepSeA container has not started');
 
     table.columns.add(msaCol);
     await grok.data.detectSemanticTypes(table);
@@ -128,8 +131,8 @@ async function onColInputChange(
   pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[],
   methodInput: DG.InputBase<string | null>, clustersColInput: DG.InputBase<DG.Column<any> | null>,
   gapOpenInput: DG.InputBase<number | null>, gapExtendInput: DG.InputBase<number | null>,
-  terminalGapInput: DG.InputBase<number | null>
-): Promise<(() => Promise<DG.Column<string>>) | undefined> {
+  terminalGapInput: DG.InputBase<number | null>,
+): Promise<(() => Promise<DG.Column<string> | null>) | undefined> {
   try {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
       return;
@@ -182,7 +185,7 @@ async function onColInputChange(
 type MSADialogType = 'kalign' | 'pepsea';
 
 function switchDialog(
-  pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[], dialogType: MSADialogType
+  pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[], dialogType: MSADialogType,
 ) {
   if (dialogType === 'kalign') {
     for (const inputRootStyle of pepseaInputRootStyles)

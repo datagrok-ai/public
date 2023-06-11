@@ -2,24 +2,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { welcomeView } from './welcome-view';
-import { compareColumns } from './compare-columns';
-import { AddNewColumnDialog } from './dialogs/add-new-column';
-import { FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions } from './dialogs/formula-lines';
-import { DistributionProfilerViewer } from './distribution-profiler';
-import { SystemStatusWidget } from './widgets/system-status-widget';
-import { RecentProjectsWidget } from './widgets/recent-projects-widget';
-import { CommunityWidget } from './widgets/community-widget';
-import { WebWidget } from './widgets/web-widget';
-import { LearningWidget } from './widgets/learning-widget';
-import { AboutWidget } from './widgets/about-widget';
-import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch } from './search/entity-search';
-import { KpiWidget } from './widgets/kpi-widget';
-import { HtmlWidget } from './widgets/html-widget';
-import { PowerPackSettingsEditor } from './settings-editor';
-import { viewersDialog } from './viewers-gallery';
-import { TableView, VIEWER } from 'datagrok-api/dg';
-import { FuzzyFilter } from './fuzzy-filter';
+import {welcomeView} from './welcome-view';
+import {compareColumns} from './compare-columns';
+import {AddNewColumnDialog} from './dialogs/add-new-column';
+import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/formula-lines';
+import {DistributionProfilerViewer} from './distribution-profiler';
+import {SystemStatusWidget} from './widgets/system-status-widget';
+import {RecentProjectsWidget} from './widgets/recent-projects-widget';
+import {CommunityWidget} from './widgets/community-widget';
+import {WebWidget} from './widgets/web-widget';
+import {LearningWidget} from './widgets/learning-widget';
+import {AboutWidget} from './widgets/about-widget';
+import {functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch} from './search/entity-search';
+import {KpiWidget} from './widgets/kpi-widget';
+import {HtmlWidget} from './widgets/html-widget';
+import {viewersDialog} from './viewers-gallery';
+import {TableView, VIEWER} from 'datagrok-api/dg';
+import {windowsSidebar} from './windows-manager';
+import {windowsStatusbar} from './windows-manager';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -159,16 +159,27 @@ export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesD
 // Adds "Formula Lines" menu group to the Scatter Plot context menu:
 grok.events.onContextMenu.subscribe((args) => {
   const src = args.args.context;
-  if (src instanceof DG.ScatterPlotViewer || (src instanceof DG.Viewer && src.getOptions()['type'] == VIEWER.LINE_CHART)) {
+  if (src instanceof DG.ScatterPlotViewer ||
+     (src instanceof DG.Viewer && src.getOptions()['type'] == VIEWER.LINE_CHART)) {
     const menu = args.args.menu.find('Tools');
     if (menu != null)
-      menu.item('Formula Lines...', () => { formulaLinesDialog(src); });
+      menu.item('Formula Lines...', () => {formulaLinesDialog(src);});
   }
 });
 
 //tags: init
 export async function powerPackInit() {
   _properties = await _package.getProperties();
+}
+
+//description: Windows Manager
+export function windowsManagerSidebar() {
+  windowsSidebar();
+}
+
+//description: Windows Manager
+export function windowsManagerStatusbar() {
+  windowsStatusbar();
 }
 
 //description: ViewerGallery
@@ -179,7 +190,7 @@ export function viewerGallery(): void {
       const panel = view.getRibbonPanels();
       panel[0][1].remove();
 
-      const icon = ui.iconFA('', () => { viewersDialog(view as TableView, (view as TableView).table!); }, 'Add viewer');
+      const icon = ui.iconFA('', () => {viewersDialog(view as TableView, (view as TableView).table!);}, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
 
       const btn = ui.div([icon]);
@@ -187,12 +198,4 @@ export function viewerGallery(): void {
       panel[0][0].after(btn);
     }
   });
-}
-
-//name: FuzzyFilter
-//description: search related texts
-//tags: filter
-//output: filter result
-export function fuzzyFilter(): FuzzyFilter {
-  return new FuzzyFilter();
 }

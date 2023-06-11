@@ -19,13 +19,15 @@ The first step is to initialize a `DemoScript`:
 
 ```typescript
 export function demo() {
-  const demoScript = new DemoScript('Demo', 'Demo description', true);
+  const demoScript = new DemoScript('Demo', 'Demo description', true, {autoStartFirstStep: true});
   // ...
 }
 ```
 
 Each demo script should have a `name`, `description`, and an `isAutomatic`
-flag that sets the type of script.
+flag that sets the type of script. Additionally, there are optional
+parameters, such as `autoStartFirstStep`, that automatically initiate the
+first step in manual scripts.
 
 After initialization, you need to add steps using the `step()` function:
 
@@ -53,9 +55,11 @@ await demoScript.start();
 
 Every demo script should be registered as a package demo function. To do
 that, add a function to your `package.ts` file. It should have the
-`meta.demoPath` parameter, where you specify the path of the demo. There
-is also an optional parameter, `description`, which contents are displayed
-in the UI tooltip in the demo application.
+`meta.demoPath` parameter, where you specify the path of the demo. Also,
+you have to specify the demo script type with a `meta.isDemoScript`
+parameter, which can be either set to True or False. There is also an
+optional parameter, `description`, which contents are displayed in the UI
+tooltip in the demo application.
 
 ```typescript
 import {demo} from './demo-app/demo-script';
@@ -64,6 +68,7 @@ import {demo} from './demo-app/demo-script';
 //name: Demo script
 //description: Illustrates the work of the demo script 
 //meta.demoPath: Viewers | Demo Script
+//meta.isDemoScript: True
 export function demoScript() {
   return new demo();
 }
@@ -71,7 +76,9 @@ export function demoScript() {
 
 Without a specified `demoPath`, the demo script won't be included in the
 demo application and will only exist as a [package](../develop.md#packages)
-function.
+function. Similarly, if you don't specify the `isDemoScript` parameter,
+it won't be rendered as a demo script in the app, and it won't have a
+dedicated view.
 
 See also:
 
