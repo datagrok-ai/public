@@ -4,27 +4,31 @@ import * as DG from 'datagrok-api/dg';
 
 // import {Viewer as rcsbViewer, ViewerProps as rcsbViewerProps} from '@rcsb/rcsb-molstar/src/viewer';
 import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
-import {_package} from '../package';
+
 import $ from 'cash-dom';
 import wu from 'wu';
 import {Unsubscribable} from 'rxjs';
+
+import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
+import {PluginContext} from 'molstar/lib/mol-plugin/context';
+import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
+
 import {
-  BiostructureProps,
-  BiostructurePropsDefault,
-  IBiostructureViewer,
+  IBiostructureViewer, MolstarDataType,
   PluginLayoutControlsDisplayType,
   RegionStateOptionsType,
   RepresentationType,
   SimpleRegionStateOptionsType,
 } from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
-import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
-import {PluginContext} from 'molstar/lib/mol-plugin/context';
-import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
-import {Color as msColor} from 'molstar/lib/mol-util/color';
-import {getPdbHelper, IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
+import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {defaults, molecule3dFileExtensions} from './consts';
+
+import {_getPdbHelper} from '../../package-utils';
+import {parseAndVisualsData} from './molstar-viewer-open';
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
-import {BuiltInTrajectoryFormat, BuiltInTrajectoryFormats} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+
+import {_package} from '../../package';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -51,6 +55,7 @@ const enum PROPS_CATS {
 
 export enum PROPS {
   // -- Data --
+  data = 'data',
   pdb = 'pdb',
   pdbTag = 'pdbTag',
   ligandColumnName = 'ligandColumnName',
@@ -81,34 +86,13 @@ export enum PROPS {
   // -- Controls --
   showWelcomeToast = 'showWelcomeToast',
   showImportControls = 'showImportControls',
-   // -- Behaviour --
+  // -- Behaviour --
   showSelectedRowsLigands = 'showSelectedRowsLigands',
   showCurrentRowLigand = 'showCurrentRowLigand',
   showMouseOverRowLigand = 'showMouseOverRowLigand',
 }
 
-// const MolstarViewerDefaultOptions: Partial<RcsbViewerProps> = {
-//   // extensions: [],
-//   layoutIsExpanded: false,
-//   layoutShowControls: false,
-//   // layoutControlsDisplay: 'outside',
-//   // layoutShowRemoteState: false,
-//   layoutShowSequence: false,
-//   layoutShowLog: false,
-//   // layoutShowLeftPanel: false,
-//   // collapseLeftPanel: true,
-//   // collapseRightPanel: true,
-//   //
-//   // viewportShowExpand: false,
-//   // viewportShowControls: false,
-//   //
-//   // pdbProvider: 'rcsb',
-//   // emdbProvider: 'rcsb',
-//   showWelcomeToast: false
-// };
-
 const pdbDefault: string = '';
-const defaults: BiostructureProps = BiostructurePropsDefault;
 
 export type LigandMapItem = { rowIdx: number, structureRefs: Array<string> | null };
 export type LigandMap = { selected: LigandMapItem[], current: LigandMapItem | null, hovered: LigandMapItem | null };
@@ -117,6 +101,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   private viewed: boolean = false;
 
   // -- Data --
+  [PROPS.data]: MolstarDataType | null;
   [PROPS.pdb]: string;
   [PROPS.pdbTag]: string;
   [PROPS.ligandColumnName]: string;
@@ -226,6 +211,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.showMouseOverRowLigand = this.bool(PROPS.showMouseOverRowLigand, true,
       {category: PROPS_CATS.BEHAVIOUR});
 
+    // --
+    this.root.style.textAlign = 'center';
     this.subs.push(
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
   }
@@ -255,47 +242,47 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
       const plugin: PluginContext = this.viewer.plugin;
       switch (property.name) {
-      case PROPS.layoutShowLog: {
-        //plugin.layout.setProps({layoutShowLog: value;});
+        case PROPS.layoutShowLog: {
+          //plugin.layout.setProps({layoutShowLog: value;});
 
-        //PluginCommands.Layout.Update(plugin, );
-        const _k = 11;
-      }
-        break;
-      case PROPS.layoutShowControls: {
-        // eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
-        const _k = 11;
-      }
-        break;
-      case PROPS.layoutIsExpanded: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
-      }
-        break;
-      case PROPS.layoutRegionStateLeft:
-      case PROPS.layoutRegionStateTop:
-      case PROPS.layoutRegionStateRight:
-      case PROPS.layoutRegionStateBottom: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {
-          state: {
-            regionState: {
-              left: this.layoutRegionStateLeft,
-              top: this.layoutRegionStateTop,
-              right: this.layoutRegionStateRight,
-              bottom: this.layoutRegionStateBottom,
+          //PluginCommands.Layout.Update(plugin, );
+          const _k = 11;
+        }
+          break;
+        case PROPS.layoutShowControls: {
+          // eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
+          const _k = 11;
+        }
+          break;
+        case PROPS.layoutIsExpanded: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
+        }
+          break;
+        case PROPS.layoutRegionStateLeft:
+        case PROPS.layoutRegionStateTop:
+        case PROPS.layoutRegionStateRight:
+        case PROPS.layoutRegionStateBottom: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {
+            state: {
+              regionState: {
+                left: this.layoutRegionStateLeft,
+                top: this.layoutRegionStateTop,
+                right: this.layoutRegionStateRight,
+                bottom: this.layoutRegionStateBottom,
+              },
             },
-          },
-        });
-      }
-        break;
-      case PROPS.layoutControlsDisplay: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin,
-          {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
-      }
-        break;
+          });
+        }
+          break;
+        case PROPS.layoutControlsDisplay: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin,
+            {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
+        }
+          break;
         // case PROPS.viewportShowExpand: {
         //   await PluginCommands.State.ToggleExpanded(plugin,
         //     {state: {isExpanded: this.viewportShowExpand}})
@@ -305,18 +292,18 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     };
 
     switch (property.name) {
-    case PROPS.representation:
-      break;
-    case PROPS.showImportControls:
-      break;
-    case PROPS.layoutIsExpanded:
-      this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
-      break;
-    case PROPS.showSelectedRowsLigands:
-    case PROPS.showCurrentRowLigand:
-    case PROPS.showMouseOverRowLigand:
-      this.rebuildViewLigands();
-      break;
+      case PROPS.representation:
+        break;
+      case PROPS.showImportControls:
+        break;
+      case PROPS.layoutIsExpanded:
+        this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
+        break;
+      case PROPS.showSelectedRowsLigands:
+      case PROPS.showCurrentRowLigand:
+      case PROPS.showMouseOverRowLigand:
+        this.rebuildViewLigands();
+        break;
     }
 
     const propName: string = property.name;
@@ -328,15 +315,16 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     }
 
     switch (property.name) {
-    case PROPS.pdb:
-    case PROPS.pdbTag:
-      this.setData();
-      break;
+      case PROPS.data:
+      case PROPS.pdb:
+      case PROPS.pdbTag:
+        this.setData();
+        break;
     }
   }
 
   // effective PDB value (to plot)
-  private pdbStr: string | null = null;
+  private dataEff: MolstarDataType | null = null;
 
   override onTableAttached(): void {
     _package.logger.debug('MolstarViewer.onTableAttached(), ');
@@ -347,10 +335,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       .filter((tagName: string) => tagName.startsWith('.')).toArray();
     this.props.getProperty(PROPS.pdbTag).choices = ['', ...dfTagNameList];
 
-    this.viewPromise = this.viewPromise.then(async () => { // onTableAttached
-      superOnTableAttached();
-      await this.setData();
-    });
+    superOnTableAttached();
+    this.setData();
   }
 
   override detach(): void {
@@ -384,10 +370,19 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
       // -- PDB data --
+      this.dataEff = null;
       let pdbTag: string = pdbTAGS.PDB;
+      let pdb: string | null = null;
       if (this.pdbTag) pdbTag = this.pdbTag;
-      this.pdbStr = this.dataFrame.getTag(pdbTag);
-      if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+      if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
+      if (this.pdb) pdb = this.pdb;
+      if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
+      if (this.data) {
+        this.dataEff = this.data;
+        // TODO: Fix receiving property object value
+        // @ts-ignore
+        if ('a' in this.data) this.dataEff = this.data['a'];
+      }
 
       // -- Ligand --
       if (!this.ligandColumnName) {
@@ -443,14 +438,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
   private async buildView(purpose: string): Promise<void> {
     _package.logger.debug(`MolstarViewer.buildView( purpose='${purpose}' ) `);
-    if (this.pdbStr)
-      await this.buildViewWithPdb();
+    if (this.dataEff)
+      await this.buildViewWithData();
     else
-      await this.buildViewWithoutPdb();
+      await this.buildViewWithoutData();
   }
 
-  private async buildViewWithPdb() {
-    if (!this.pdbStr) throw new Error('MolstarViewer.buildViewWithPdb() pdbStr is empty');
+  private async buildViewWithData() {
+    if (!this.dataEff) throw new Error('MolstarViewer.buildViewWithPdb() dataEff is empty');
 
     // Fill in viewer
     if (!this.viewerDiv) {
@@ -469,8 +464,14 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
     const df: DG.DataFrame = this.dataFrame;
 
-    await this.viewer.loadStructureFromData(this.pdbStr, 'pdb', false);
-    const plugin: PluginContext = this.viewer.plugin;
+    if (!(this.dataEff.ext in molecule3dFileExtensions))
+      throw new Error(`Unsupported file extension '${this.dataEff.ext}'.`);
+
+    const plugin = this.viewer.plugin;
+    await parseAndVisualsData(plugin, this.dataEff);
+    // await this.viewer.loadStructureFromData(this.dataEff.data, format, binary);
+
+
     this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
 
     }));
@@ -482,7 +483,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     await this.buildViewLigands();
   }
 
-  private async buildViewWithoutPdb() {
+  private async buildViewWithoutData() {
     if (this.viewerDiv) {
       await this.viewer!.clear();
       delete this.viewer;
@@ -498,9 +499,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     fileEl.addEventListener('change', async (_event) => {
       const _k = 11;
       if (fileEl.files != null && fileEl.files.length == 1) {
-        const [pdbStr, _pdbHelper]: [string, IPdbHelper] = await Promise.all([
-          await fileEl.files[0]!.text(), getPdbHelper()]);
-        this.setOptions({pdb: pdbStr});
+        const [[fileExt, dataStr], pdbHelper]: [[string, string], IPdbHelper] = await Promise.all([
+          (async () => {
+            const file = fileEl.files![0];
+            const fileExt: string = file.name.split('.').slice(-1)[0];
+            return [fileExt, await file.text()];
+          })(),
+          _getPdbHelper()
+        ]);
+        this.setOptions({data: {ext: fileExt, data: dataStr}});
       }
     });
     const fileLink = ui.link('Open...', '', '', {
@@ -520,16 +527,21 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   }
 
   private calcSize(): void {
-    if (!this.viewer || !this.viewerDiv) return;
-
     const cw: number = this.root.clientWidth;
     const ch: number = this.root.clientHeight;
     _package.logger.debug(`MolstarViewer.calcSize( ${cw.toString()} x ${ch.toString()} )`);
 
-    this.viewerDiv.style.width = `${cw}px`;
-    this.viewerDiv.style.height = `${ch}px`;
+    if (this.viewerDiv && this.viewer) {
+      this.viewerDiv.style.width = `${cw}px`;
+      this.viewerDiv.style.height = `${ch}px`;
+      this.viewer.handleResize();
+    }
 
-    this.viewer.handleResize();
+    if (this.splashDiv) {
+      this.splashDiv.style.width = `${cw}px`;
+      this.splashDiv.style.height = `${ch}px`;
+      this.splashDiv.style.lineHeight = `${ch}px`;
+    }
   }
 
   // -- Handle events --
@@ -548,6 +560,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     _package.logger.debug('MolstarViewer.dataFrameOnCurrentRowChanged() ');
     this.rebuildViewLigands();
   }
+
   private dataFrameOnMouseOverRowChanged(_value: any): void {
     _package.logger.debug('BiostructureViewer.dataFrameOnMouseOverRowChanged() ');
     this.rebuildViewLigands();
@@ -572,6 +585,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     // return ligandBlob;
     return ligandStr;
   }
+
   private rebuildViewLigands(): void {
     this.viewPromise = this.viewPromise.then(async () => {
       await this.destroyViewLigands();
@@ -594,8 +608,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       if (!ligand.structureRefs) continue;
       for (const lingandRef of ligand.structureRefs) {
         refRemovingPromises.push(this.viewer!.plugin.commands.dispatch(PluginCommands.State.RemoveObject,
-          {state: this.viewer!.plugin.state.data,
-            ref: lingandRef}));
+          {
+            state: this.viewer!.plugin.state.data,
+            ref: lingandRef
+          }));
       }
     }
     for (const ligand of allLigands) ligand.structureRefs = null; // unbind with this.stage.compList
@@ -662,128 +678,4 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       this.ligands.hovered.structureRefs = await addLigandOnStage(this.ligands.hovered.rowIdx, color);
     }
   }
-}
-
-export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer> {
-  const view = grok.shell.newView(viewName);
-  const viewerContainer = view.root;
-  const viewer = new RcsbViewer(viewerContainer, castProps(defaults));
-  return viewer;
-}
-
-/**
- * Creates an instance of Mol* viewer.
- *
- * @param {string} pdbId ID of an entity in PDB.
- */
-export async function byId(pdbId: string) {
-  await initViewer()
-    .then((v: RcsbViewer) => {
-      v.loadPdbId(pdbId);
-    });
-  //v.handleResize();
-}
-
-/**
- * Creates an instance of Mol* viewer.
- * @param {string} data Data in PDB
- * @param {string} name Name of the view
- * @param {BuiltInTrajectoryFormat} format Format of the data*/
-export async function byData(data: string, name: string = 'Mol*', format: BuiltInTrajectoryFormat = 'pdb') {
-  await initViewer(name)
-    .then(async (viewer: RcsbViewer) => {
-      // detecting format by data content
-      let binary: boolean = false;
-      if (data.includes('mmcif_pdbx.dic')) {
-        format = 'mmcif';
-        binary = false;
-      }
-
-      await viewer.loadStructureFromData(data, format, binary);
-    });
-  //v.handleResize();
-}
-
-export async function viewMolstarUI(content: string, name?: string, format?: BuiltInTrajectoryFormat): Promise<void> {
-  await byData(content, name, format);
-}
-
-/** Creates view with Molstar viewer to preview Biostructure (PDB)
- * returns the view immidiately, but the viewer is created asynchronously and promise
- * for that is returned separately which resolves once the viewer is initialized.
- * @param {DG.FileInfo} file
- * @return {{view: DG.View, loadingPromise: Promise<void>}}
-*/
-export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
-  const builtinFormats = BuiltInTrajectoryFormats.map((obj) => obj[0]) as string[];
-  const extendedFormats = ['cif', 'mcif'];
-  if (!isSupportedFormat()) {
-    grok.shell.error(`Unsupported format: ${file.extension}`);
-    throw new Error(`Unsupported format: ${file.extension}`);
-  }
-
-  const formatLoader = extendedFormats.includes(file.extension) ? 'mmcif' : file.extension;
-
-  const view = DG.View.create();
-  const viewer = new RcsbViewer(view.root, castProps(defaults));
-  const subs: Unsubscribable[] = [];
-  subs.push(ui.onSizeChanged(view.root).subscribe((_value: any) => {
-    viewer.handleResize();
-  }));
-  subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
-    if (evtView.id === view.id)
-      for (const sub of subs) sub.unsubscribe();
-  }));
-
-  function isSupportedFormat() {
-    return [...builtinFormats, ...extendedFormats].includes(file.extension);
-  }
-  async function loadString(data: string) {
-    const binary: boolean = false;
-    await viewer.loadStructureFromData(data, formatLoader as BuiltInTrajectoryFormat, binary);
-  }
-
-  async function loadBytes(bytes: any) {
-    const binary: boolean = false;
-    await viewer.loadStructureFromData(bytes, formatLoader as BuiltInTrajectoryFormat, binary);
-  }
-
-  const loadingPromise = new Promise<void>(async (resolve, reject) => {
-    try {
-      if (isSupportedFormat())
-        await loadString(await file.readAsString());
-      else
-        await loadBytes(await file.readAsBytes());
-      resolve();
-    } catch (e) {
-      reject(e);
-    }
-  });
-
-  return {view, loadingPromise};
-}
-
-function castProps(src: BiostructureProps): Partial<RcsbViewerProps> {
-  const res: Partial<RcsbViewerProps> = {
-    showImportControls: src.showImportControls,
-    showWelcomeToast: src.showWelcomeToast,
-    layoutIsExpanded: src.layoutIsExpanded,
-    layoutShowLog: src.layoutShowLog,
-    layoutControlsDisplay: src.layoutControlsDisplay,
-    layoutShowControls: src.layoutShowControls,
-    layoutShowSequence: src.layoutShowSequence,
-    backgroundColor: src.backgroundColor as msColor,
-    detachedFromSierra: src.detachedFromSierra,
-    showExportControls: src.showExportControls,
-    showMembraneOrientationPreset: src.showMembraneOrientationPreset,
-    showSessionControls: src.showSessionControls,
-    showStructureSourceControls: src.showStructureSourceControls,
-    viewportShowExpand: src.viewportShowExpand,
-    showSuperpositionControls: src.showSuperpositionControls,
-    viewportShowSelectionMode: src.viewportShowSelectionMode,
-    volumeStreamingServer: src.volumeStreamingServer,
-    modelUrlProviders: [],
-    extensions: [],
-  };
-  return res;
 }
