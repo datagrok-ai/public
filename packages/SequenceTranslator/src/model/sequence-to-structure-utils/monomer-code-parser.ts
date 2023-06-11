@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {LINKER_CODES, P_LINKAGE} from './const';
+import {PHOSPHATE_SYMBOL} from './const';
 import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 
@@ -29,22 +29,23 @@ export class MonomerSequenceParser {
 
   private addLinkers(parsedRawCodes: string[]) {
     const monomerSymbolSequence: string[] = [];
-    for (let i = 0; i < parsedRawCodes.length; i++) {
-      const code = parsedRawCodes[i];
+    parsedRawCodes.forEach((code, i) => {
       const monomerSymbol = this.getSymbolForCode(code);
       monomerSymbolSequence.push(monomerSymbol);
 
-      const isLinker = LINKER_CODES.includes(code);
-      const attachedToLink = isMonomerAttachedToLink(code);
+      // todo: to be deleted
+      const LINKER_CODES = ['s', 'ps', '*', 'Rpn', 'Spn', 'Rps', 'Sps']
+
+      const isPhosphate = LINKER_CODES.includes(code);
+      const hasPhosphate = isMonomerWithPhosphate(code);
       const lastMonomer = i === parsedRawCodes.length - 1;
-      const nextMonomerIsLinker = (i + 1 < parsedRawCodes.length && LINKER_CODES.includes(parsedRawCodes[i + 1]));
+      const nextMonomerIsPhosphate = (i + 1 < parsedRawCodes.length && LINKER_CODES.includes(parsedRawCodes[i + 1]));
 
       // todo: refactor as molfile-specific
-      if (!isLinker && !attachedToLink && !nextMonomerIsLinker && !lastMonomer) {
-        // todo: replace by phosphate linkage ID
-        monomerSymbolSequence.push(P_LINKAGE);
+      if (!isPhosphate && !hasPhosphate && !nextMonomerIsPhosphate && !lastMonomer) {
+        monomerSymbolSequence.push(PHOSPHATE_SYMBOL);
       }
-    }
+    });
     // console.log('monomerSymbolSequence:', monomerSymbolSequence);
     return monomerSymbolSequence;
   }
@@ -81,7 +82,7 @@ export class MonomerSequenceParser {
 }
 
 // todo: eliminate this strange legacy condition, leads to bugs
-function isMonomerAttachedToLink(code: string) {
+function isMonomerWithPhosphate(code: string) {
   const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   return legacyList.includes(code);
 }

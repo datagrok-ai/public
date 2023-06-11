@@ -56,15 +56,6 @@ export class FormatConverter {
     return this.sequence.replace(regexp, (code) => codeMapping[code]);
   }
 
-  private bioSpringToGcrs(codeMapping: KeyToValue): string {
-    let count: number = -1;
-    const regexp = new RegExp(getRegExpPattern(Object.keys(codeMapping)), 'g');
-    return this.sequence.replace(regexp, (x: string) => {
-        count++;
-        return (count === 4) ? codeMapping[x].slice(0, -3) + 'ps' : (count === 14) ? codeMapping[x].slice(0, -2) + 'nps' : codeMapping[x];
-      });
-  }
-
   private gcrsToLcms(codeMapping: KeyToValue): string {
     try {
       const lib = MonomerLibWrapper.getInstance();
