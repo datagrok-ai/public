@@ -31,61 +31,51 @@ category('detectors:weak-and-likely', () => {
 1,TTTTT
 2,TTTTT
 3,TTTTT
-4,TTTTT
-`,
+4,TTTTT`,
     [csvTests.fastaDnaWeak1LikelyName]: `id,seq
 1,TTTTT
 2,TTTTT
 3,TTTTT
-4,TTTTT
-`,
+4,TTTTT`,
     [csvTests.fastaRnaWeak1]: `id,colName
 1,UUUUU
 2,UUUUU
 3,UUUUU
-4,UUUUU
-`,
+4,UUUUU`,
     [csvTests.fastaRnaWeak1LikelyName]: `id,seq
 1,UUUUU
 2,UUUUU
 3,UUUUU
-4,UUUUU
-`,
+4,UUUUU`,
     [csvTests.fastaPtWeak1]: `id,colName
 1,SLSLSPGK
 2,SLSLSPGK
 3,SLSLSPGK
-4,SLSLSPGK
-`,
+4,SLSLSPGK`,
     [csvTests.fastaPtWeak1LikelyName]: `id,seq
 1,SLSLSPGK
 2,SLSLSPGK
 3,SLSLSPGK
-4,SLSLSPGK
-`,
+4,SLSLSPGK`,
     [csvTests.fastaUn1]: `id,colName
 1,word
 2,other
 3,some
-4,another
-`,
+4,another`,
     [csvTests.fastaUn1LikelyName]: `id,seq
 1,word
 2,other
 3,some
-4,another
-`,
+4,another`,
     [csvTests.fastaUn2LikelyName]: `protein
 Boombastic
 Megafantastic
-"just-a-random-thought,oy!"
-`,
+"just-a-random-thought,oy!"`,
     [csvTests.fastaUnMsa1LikelyName]: `id,seq
 1,word
 2,male
 3,bare
-4,core
-`,
+4,core`,
   };
 
   const readCsv: (key: csvTests) => DfReaderFunc = (key: keyof typeof csvData) => {

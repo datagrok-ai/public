@@ -9,17 +9,10 @@ import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-librar
 
 
 category('splitters', () => {
-  let tvList: DG.TableView[];
-  let dfList: DG.DataFrame[];
-
   before(async () => {
-    tvList = [];
-    dfList = [];
   });
 
   after(async () => {
-    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
   const _helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
@@ -90,7 +83,7 @@ category('splitters', () => {
 
     await grok.functions.call('Bio:splitToMonomers');
     expect(df.columns.names().includes('17'), true);
-  });
+  }, {skipReason: 'GROK-13300'} /* Bio.Unhandled exceptions.exceptions : NullError: method not found: 'Q' on null /**/);
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(

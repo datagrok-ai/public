@@ -19,8 +19,7 @@ category('bio', () => {
   const csvDfN1: string = `seq
 ACGTCT
 CAGTGT
-TTCAAC
-`;
+TTCAAC`;
 
   /** 2 - is an error monomer
    * This sequence set should be classified as nucleotides sequences.
@@ -29,15 +28,13 @@ TTCAAC
   const csvDfN1e: string = `seq
 ACGTAT
 CAGTTG
-TTCG2C
-`;
+TTCG2C`;
 
   /** Pure amino acids sequence */
   const csvDfAA1: string = `seq
 FWPHEYV
 YNRQWYV
-MKPSEYV
-`;
+MKPSEYV`;
 
   /** A - alanine, G - glycine, T -= threonine, C - cysteine, W - tryptophan
    * This sequence set should be detected as amino acids more than nucleotides.
@@ -45,22 +42,19 @@ MKPSEYV
   const _csvDfAA2: string = `seq
 AGTCAT
 AGTCGC
-AGTCATW
-`;
+AGTCATW`;
 
   /** This sequence set should be recognized as unknown. */
   const csvDfX: string = `seq
 XZJ{}2
 5Z4733
 3Z6></
-675687
-`;
+675687`;
 
   // anonymous functions specified in test() registering must return Promise<any>
   test('testGetStatsHelm1', async () => {
     const csv = `seq
-PEPTIDE1{meI}$$$$
-`;
+PEPTIDE1{meI}$$$$`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const seqCol: DG.Column = df.getCol('seq')!;
     const stats = getStats(seqCol, 1, splitterAsHelm);

@@ -95,44 +95,36 @@ category('toAtomicLevel', async () => {
     [csvTests.fastaDna]: `seq
 ACGTC
 CAGTGT
-TTCAAC
-`,
+TTCAAC`,
     [csvTests.fastaRna]: `seq
 ACGUC
 CAGUGU
-UUCAAC
-`,
+UUCAAC`,
     [csvTests.fastaPt]: `seq
 FWPHEY
 YNRQWYV
-MKPSEYV
-`,
+MKPSEYV`,
     [csvTests.separatorDna]: `seq
 A/C/G/T/C
 C/A/G/T/G/T
-T/T/C/A/A/C
-`,
+T/T/C/A/A/C`,
     [csvTests.separatorRna]: `seq
 A*C*G*U*C
 C*A*G*U*G*U
-U*U*C*A*A*C
-`,
+U*U*C*A*A*C`,
     [csvTests.separatorPt]: `seq
 F-W-P-H-E-Y
 Y-N-R-Q-W-Y-V
-M-K-P-S-E-Y-V
-`,
+M-K-P-S-E-Y-V`,
     [csvTests.separatorUn]: `seq
 meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D
 meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
-Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
-`,
+Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2`,
 
     [csvTests.helm]: `seq
 PEPTIDE1{meI.D-gGlu.Aca.N.T.dE.Thr_PO3H2.Aca.D}$$$
 PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
-PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
-`,
+PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$`,
   };
 
   /** Also detects semantic types
