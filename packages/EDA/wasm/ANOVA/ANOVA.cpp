@@ -5,6 +5,13 @@
 using namespace Eigen;
 using namespace std;
 
+/* One-way Analysis of Variance (ANOVA) is a statistical method for testing for
+   differences in the means of three or more groups.
+   https://www.cuemath.com/anova-formula
+   columns - arrays of observations or measurements taken at different time points or conditions;
+   rowCount - number of levels (groups) of the factor;
+   columnCount - number of observations in each group. */
+
 extern "C" {
   double oneWayAnova(float * columns, int rowCount, int columnCount);
 }

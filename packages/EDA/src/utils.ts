@@ -52,8 +52,8 @@ export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: num
 
 // Check columns (ANOVA)
 export function checkColumns(columns: DG.ColumnList): void {
-  if (Array.from(columns.numerical).length < columns.length)
-    throw new Error('non numerical columns are selected');
+  if (columns.categorical[Symbol.iterator]().next().value)
+    throw new Error('Non numerical columns are selected');
 
   if (columns.toList().some((col) => col.stats.missingValueCount > 0))
     grok.shell.warning('Columns with missing values are selected, the calculation results may not be accurate.\
