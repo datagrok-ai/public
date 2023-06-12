@@ -519,7 +519,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private async onSALaunch(): Promise<void> {
-    new SensitivityAnalysis(this.func);
+    await SensitivityAnalysis.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {

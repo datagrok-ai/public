@@ -8,6 +8,7 @@ import {BehaviorSubject} from 'rxjs';
 import {getPropViewers} from './shared/utils';
 import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {VarianceBasedSenstivityAnalysis} from './variance-based-analysis/sensitivityAnalysis';
+import {RunComparisonView} from './run-comparison-view';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const RUN_ID_COL_LABEL = 'RunId' as const;
@@ -132,7 +133,7 @@ export class SensitivityAnalysisView {
           lvlInput: ui.intInput('Levels', 3, (v: number) => numericStore.lvl = v),
           distribInput: ui.choiceInput('Distribution', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => numericStore.distrib = v),
           isChangingInput: (() => {
-            const input = ui.switchInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));            
+            const input = ui.switchInput(' ', numericStore.isChanging.value, (v: boolean) => numericStore.isChanging.next(v));
             $(input.root).css({'min-width': '50px', 'width': '50px'});
             $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
             return input;
@@ -192,87 +193,55 @@ export class SensitivityAnalysisView {
   isVarianceBasedInput = ui.switchInput('Use variance based analysis', false);
   samplesInput = ui.intInput('Samples', 100);
   inputConfig = this.generateFormRows(this.func);
-  comparisonView!: DG.TableView;
+  comparisonView: DG.TableView;
+
+  static async fromEmpty(
+    func: DG.Func,
+    options: {
+      parentView?: DG.View,
+      parentCall?: DG.FuncCall,
+    } = {
+      parentView: undefined,
+      parentCall: undefined,
+    },
+  ) {
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
+
+    const v = await RunComparisonView.fromComparedRuns([], func,
+      {
+        parentView: cardView,
+        parentCall: options.parentCall,
+      });
+    grok.shell.addView(v);
+
+    new this(
+      func,
+      v,
+      options,
+    );
+  }
 
   constructor(
     public func: DG.Func,
+    baseView: DG.TableView,
     public options: {
-      name?: string,
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
     } = {
-      name: undefined,
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
     },
   ) {
-    const configFunc = options.configFunc ?? func;
-
-    const allParamViewers = [
-      ...configFunc.inputs,
-      ...configFunc.outputs,
-    ]
-      .map((prop) => getPropViewers(prop))
-      .reduce((acc, config) => {
-        if (!acc[config.name])
-          acc[config.name] = config.config;
-        else
-          acc[config.name].push(...config.config);
-        return acc;
-      }, {} as Record<string, Record<string, string | boolean>[]>);
-
-
-    const comparisonDf = DG.DataFrame.create(0);
-
-    const addColumnsFromProp = (configProp: DG.Property): DG.Column[] => {
-      if (configProp.propertyType === DG.TYPE.DATA_FRAME) {
-        const requestedViewersConfigs = allParamViewers[configProp.name];
-
-        const viewerColumns = requestedViewersConfigs.map((config) => {
-          let columnName = configProp.caption ?? configProp.name;
-          const newColumn = DG.Column.fromType(DG.TYPE.DATA_FRAME, columnName, 0);
-          const unusedName = comparisonDf.columns.getUnusedName(newColumn.name);
-          newColumn.name = unusedName;
-          columnName = unusedName;
-          newColumn.temp[VIEWER_PATH] = config;
-          comparisonDf.columns.add(newColumn);
-
-          return newColumn;
-        });
-
-        return viewerColumns;
-      } else {
-        let columnName = configProp.caption ?? configProp.name;
-        //@ts-ignore
-        const newColumn = DG.Column.fromType(configProp.propertyType, columnName, 0);
-        const unusedName = comparisonDf.columns.getUnusedName(newColumn.name);
-        newColumn.name = unusedName;
-        columnName = unusedName;
-        comparisonDf.columns.add(newColumn);
-        return [newColumn];
-      }
-    };
-
-    configFunc.inputs.forEach((prop) => addColumnsFromProp(prop));
-    configFunc.outputs.forEach((prop) => addColumnsFromProp(prop));
-
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12878
-    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE || view.type === SCRIPTS_VIEW_TYPE || view.type === FUNCTIONS_VIEW_TYPE);
-    if (cardView) grok.shell.v = cardView;
-
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12879
-    this.comparisonView = grok.shell.addTableView(comparisonDf);
-    this.comparisonView.temp = {'isComparison': true};
-
     const form = this.buildFormWithBtn();
+    this.comparisonView = baseView;
 
     this.comparisonView.dockManager.dock(
       form,
       DG.DOCK_TYPE.LEFT,
       null,
-      this.options.name ?? `${this.func.name} - Sensitivity Analysis`,
+      `${this.func.name} - Sensitivity Analysis`,
       0.25,
     );
   }
@@ -415,7 +384,7 @@ export class SensitivityAnalysisView {
       }),
       samplesCount: this.samplesInput.value || 1,
     };
-    console.log(options);
+
     const analysis = new VarianceBasedSenstivityAnalysis(options.func, options.fixedInputs, options.variedInputs, options.samplesCount);
     const analysisResults = await analysis.perform();
 
@@ -424,37 +393,37 @@ export class SensitivityAnalysisView {
     const totalOrderIndeces = analysisResults.totalOrderSobolIndeces;
 
     const outoutNames = firstOrderIndeces.columns.names();
-    const evalDataframeNames = funcEvalResults.columns.names();    
+    const evalDataframeNames = funcEvalResults.columns.names();
 
     this.comparisonView.dataFrame = funcEvalResults;
 
     // add correlation plot
     this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
 
-    // add scatterplot    
-    this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults, 
-      {x: evalDataframeNames[0], 
-       y: outoutNames[1]
-      }
+    // add scatterplot
+    this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults,
+      {x: evalDataframeNames[0],
+        y: outoutNames[1],
+      },
     ));
 
-    // add barchart with 1-st order Sobol' indeces    
-    this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces, 
-      { title: firstOrderIndeces.name, 
-        split: outoutNames[0], 
-        value: outoutNames[1], 
-        valueAggrType: 'avg'
-      }
+    // add barchart with 1-st order Sobol' indeces
+    this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces,
+      {title: firstOrderIndeces.name,
+        split: outoutNames[0],
+        value: outoutNames[1],
+        valueAggrType: 'avg',
+      },
     ));
 
-    // add barchart with total order Sobol' indeces    
-    this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces, 
-      { title: totalOrderIndeces.name, 
-        split: outoutNames[0], 
-        value: outoutNames[1], 
-        valueAggrType: 'avg'
-      }
-    ));        
+    // add barchart with total order Sobol' indeces
+    this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces,
+      {title: totalOrderIndeces.name,
+        split: outoutNames[0],
+        value: outoutNames[1],
+        valueAggrType: 'avg',
+      },
+    ));
   }
 
   private async runSimpleAnalysis() {
@@ -515,7 +484,7 @@ export class SensitivityAnalysisView {
     const calledFuncCalls = await Promise.all(funccalls.map(async (funccall) => await funccall.call()));
     pi.close();
 
-    const configFunc = calledFuncCalls[0].func;
+    const configFunc = this.func;
 
     const allParamViewers = [
       ...configFunc.inputs,
@@ -581,7 +550,7 @@ export class SensitivityAnalysisView {
       RUN_NAME_COL_LABEL,
       uniqueRunNames,
     ));
-    comparisonDf.name = this.options.parentCall?.func.name ? `${this.options.parentCall?.func.name} - comparison` : `${calledFuncCalls[0].func.name} - comparison`;
+    comparisonDf.name = this.options.parentCall?.func.name ? `${this.options.parentCall?.func.name} - comparison` : `${this.func.name} - comparison`;
 
     configFunc.inputs.forEach((prop) => addColumnsFromProp(prop));
     configFunc.outputs.forEach((prop) => addColumnsFromProp(prop));
