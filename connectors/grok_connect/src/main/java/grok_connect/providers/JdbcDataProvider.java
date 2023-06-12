@@ -128,7 +128,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
-    public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout, Logger queryLogger)
+    public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout,
+                                  Logger queryLogger, int fetchSize)
             throws SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
         queryLogger.trace(EventType.MISC.getMarker(), "Provider supports transactions: {}", supportsTransactions);
@@ -181,6 +182,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACING.getMarker(EventType.Stage.END), "Parameters were replaced by: {}", stringValues);
                 setQueryTimeOut(statement, timeout);
                 queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.START), "Executing statement");
+                statement.setFetchSize(fetchSize);
                 if(statement.execute())
                     resultSet = statement.getResultSet();
                 queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.END), "Statement was executed");
@@ -189,22 +191,24 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(EventType.Stage.START), "Query will be manually interpolated");
                 query = manualQueryInterpolation(query, dataQuery);
                 queryLogger.debug(EventType.QUERY_INTERPOLATING.getMarker(EventType.Stage.END), "Interpolated query");
-                resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId);
+                resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
             }
         } else {
             queryLogger.debug(EventType.QUERY_PARSING.getMarker(), "Query without parameters");
-            resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId);
+            resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
         }
 
         return resultSet;
     }
 
-    private ResultSet executeStatement(String query, Connection connection, Logger queryLogger, int timeout, String mainCallId) throws SQLException {
+    private ResultSet executeStatement(String query, Connection connection, Logger queryLogger,
+                                       int timeout, String mainCallId, int fetchSize) throws SQLException {
         ResultSet resultSet = null;
         PreparedStatement statement = connection.prepareStatement(query);
         providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
         queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.START), "Executing statement");
+        statement.setFetchSize(fetchSize);
         if(statement.execute())
             resultSet = statement.getResultSet();
         queryLogger.info(EventType.STATEMENT_EXECUTING.getMarker(EventType.Stage.END), "Statement was executed");
@@ -329,7 +333,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger) throws QueryCancelledByUser, SQLException {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
@@ -347,12 +351,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
-                resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger);
+                resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
             } else {
                 queryLogger.debug(EventType.MISC.getMarker(), "Executing batch mode");
                 String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
                 for (String currentQuery : queries)
-                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger); // IT WON'T WORK?
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger, fetchSize); // IT WON'T WORK?
             }
 
             return resultSet;
@@ -669,7 +673,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         Connection connection = null;
         try {
             connection = getConnection(queryRun.func.connection);
-            ResultSet resultSet = getResultSet(queryRun, connection, logger);
+            ResultSet resultSet = getResultSet(queryRun, connection, logger, 100);
 
             if (resultSet == null)
                 return new DataFrame();

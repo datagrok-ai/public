@@ -52,7 +52,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
 
         DataQuery dataQuery = queryRun.func;
         Connection connection = getConnection(dataQuery.connection);
-        ResultSet resultSet = getResultSet(queryRun, connection, logger);
+        ResultSet resultSet = getResultSet(queryRun, connection, logger, 100);
         List<Column> columns = getTypedColumns(resultSet);
         DataFrame dataFrame = getResultSetSubDf(queryRun, resultSet, columns,
                 new ArrayList<>(), new ArrayList<>(), 0, null, 1);
@@ -60,7 +60,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger logger) {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger logger, int fetchSize) {
         try {
             PreparedStatement statement = connection.prepareStatement(queryRun.func.query);
             return statement.executeQuery();

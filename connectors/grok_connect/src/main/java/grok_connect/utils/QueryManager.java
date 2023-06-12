@@ -30,12 +30,11 @@ public class QueryManager {
     private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
     private static final int MAX_FETCH_SIZE = 100000;
     private static final int MIN_FETCH_SIZE = 100;
-    private static final int FIRST_FETCH_SIZE = 100;
     public boolean isDryRun = false;
     private final JdbcDataProvider provider;
     private final FuncCall query;
     private final Logger logger;
-    private int currentFetchSize = FIRST_FETCH_SIZE;
+    private int currentFetchSize = MIN_FETCH_SIZE;
     private int chunkSize = -1;
     private SchemeInfo schemeInfo;
     private ResultSet resultSet;
@@ -72,7 +71,7 @@ public class QueryManager {
         logger.debug(EventType.CONNECTION_RECEIVING.getMarker(EventType.Stage.START), "Receiving connection to db");
         connection = provider.getConnection(query.func.connection);
         logger.debug(EventType.CONNECTION_RECEIVING.getMarker(EventType.Stage.END), "Connection was received");
-        resultSet = provider.getResultSet(query, connection, logger);
+        resultSet = provider.getResultSet(query, connection, logger, currentFetchSize);
         logger.debug(EventType.RESULT_SET_INIT.getMarker(EventType.Stage.END), "Finished resultSet init");
         supportTransactions = connection.getMetaData().supportsTransactions();
     }
