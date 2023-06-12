@@ -68,7 +68,8 @@ export function enamineStoreApp(): void {
     ui.choiceInput('Mode', SEARCH_MODE.SIMILAR, Object.keys(searchModeToCommandMap)) as DG.InputBase<SEARCH_MODE>;
   const currency = ui.choiceInput('Currency', CURRENCY.USD, Object.values(CURRENCY)) as DG.InputBase<string>;
   const similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']) as DG.InputBase<string>;
-  const catalog = ui.choiceInput('Catalog', CATALOG_TYPE.EMPTY, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
+  const catalog =
+    ui.choiceInput('Catalog', CATALOG_TYPE.EMPTY, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
   const filterForm = ui.form([molecule, searchMode, currency, similarity, catalog]);
   const filtersHost = ui.div([filterForm], 'enamine-store-controls,pure-form');
 
@@ -126,7 +127,7 @@ export function enamineStorePanel(smiles: string): DG.Widget {
     const substructureExpanded = substructurePanel?.expanded ?? false;
     for (const pane of acc.panes)
       acc.removePane(pane);
-    
+
     acc.addPane(SEARCH_MODE.EXACT, () => {
       catalogToData[catalog.value] ??= {};
       catalogToData[catalog.value]![SEARCH_MODE.EXACT] ??= createSearchPanel(SEARCH_MODE.EXACT, smiles, catalog.value);
@@ -134,12 +135,14 @@ export function enamineStorePanel(smiles: string): DG.Widget {
     }, exactExpanded);
     acc.addPane(SEARCH_MODE.SIMILAR, () => {
       catalogToData[catalog.value] ??= {};
-      catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??= createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
+      catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??=
+        createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
       return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
     }, similarExpanded);
     acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
       catalogToData[catalog.value] ??= {};
-      catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??= createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
+      catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??=
+        createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
       return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
     }, substructureExpanded);
   }) as DG.InputBase<CATALOG_TYPE>;
@@ -152,7 +155,8 @@ export function enamineStorePanel(smiles: string): DG.Widget {
 }
 
 //description: Creates search panel
-function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.EMPTY): HTMLDivElement {
+function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.EMPTY,
+): HTMLDivElement {
   const currency = CURRENCY.USD;
   const headerHost = ui.divH([/*ui.h2(searchMode)*/], 'enamine-store-panel-header');
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
