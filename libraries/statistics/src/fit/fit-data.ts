@@ -1,13 +1,8 @@
 /* eslint-disable valid-jsdoc */
-/* eslint-disable no-multi-spaces */
-
 import * as DG from 'datagrok-api/dg';
-import {Property} from 'datagrok-api/src/entities';
-import {TYPE} from 'datagrok-api/src/const';
 
 import {
   FitErrorModel,
-  statisticsProperties,
   fitData,
   getCurveConfidenceIntervals,
   getStatistics,
@@ -16,161 +11,18 @@ import {
   FitStatistics,
   FitConfidenceIntervals,
   FitCurve,
-  IFitFunctionDescription,
   getOrCreateFitFunction,
+  IFitPoint,
+  IFitChartData,
+  IFitSeries,
+  fitSeriesProperties,
+  fitChartDataProperties,
+  TAG_FIT,
 } from './fit-curve';
 
-/**
- *  Datagrok curve fitting
- *
- * - Fitting: computing parameters of the specified function to best fit the data
- *   - Uses BFGS optimization algorithm (multi-threading for performance).
- *     For dose-response curves, we are typically fitting the sigmoid function
- *   - Ability to dynamically register custom fitting functions
- *     - Automatic fit function determination
- *     - Caching of custom fitting functions
- *   - Ability to get fitting performance characteristics (r-squared, classification, etc)
- * - Deep integration with the Datagrok grid
- *   - Either fitting on the fly, or using the supplied function + parameters
- *   - Multiple series in one cell
- *   - Confidence intervals drawing
- *   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
- *     on the column level, with the ability to override it on a grid cell or point level
- *   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
- *   - Ability to specify a chart as "reference" so that it is shown on every other chart for comparison
- * - Ability to overlay curves from multiple grid cells (special viewer)
- * - Work with series stored in multiple formats (binary for performance, json for flexibility, etc)
-*/
-
-// TODO: add tests on fit
-
-export const FIT_SEM_TYPE = 'fit';
-export const FIT_CELL_TYPE = 'fit';
-export const TAG_FIT = '.fit';
-export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
-export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
-
-export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.7)';
-export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
-
-export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
-  TOP: 'top',
-  BOTTOM: 'bottom',
-};
-
-export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
-
-/** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
-export interface IFitPoint {
-  x: number;
-  y: number;
-  outlier?: boolean;       // if true, renders as 'x' and gets ignored for curve fitting
-  minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
-  color?: string;          // overrides the marker color defined in IFitSeriesOptions
-}
-
-
-/** Series options can be either applied globally on a column level, or partially overridden in particular series */
-export interface IFitSeriesOptions {
-  name?: string;
-  fitFunction?: string | IFitFunctionDescription;
-  parameters?: number[];         // auto-fitting when not defined
-  pointColor?: string;
-  fitLineColor?: string;
-  confidenceIntervalColor?: string;
-  showFitLine?: boolean;
-  showPoints?: boolean;
-  showCurveConfidenceInterval?: boolean;   // show ribbon
-  showIntercept?: boolean;
-  showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
-  showConfidenceForX?: number;
-  clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
-}
-
-
-/** A series consists of points, has a name, and options.
- * If defined, seriesOptions are merged with {@link IFitChartData.seriesOptions} */
-export interface IFitSeries extends IFitSeriesOptions {
-  points: IFitPoint[];
-}
-
-
-/** Chart options. For fitted curves, this object is stored in the grid column tags and is
- * used by the renderer. */
-export interface IFitChartOptions {
-  minX?: number;
-  minY?: number;
-  maxX?: number;
-  maxY?: number;
-
-  xAxisName?: string;
-  yAxisName?: string;
-
-  logX?: boolean;
-  logY?: boolean;
-
-  showStatistics?: string[];
-}
-
-
-/** Data for the fit chart. */
-export interface IFitChartData {
-  chartOptions?: IFitChartOptions;
-  seriesOptions?: IFitSeriesOptions;  // Default series options. Individual series can override it.
-  series?: IFitSeries[];
-}
-
-
-/** Class that implements {@link IFitChartData} interface */
-export class FitChartData implements IFitChartData {
-  chartOptions: IFitChartOptions = {};
-  seriesOptions: IFitSeriesOptions = {};  // Default series options. Individual series can override it.
-  series: IFitSeries[] = [];
-}
-
-
-/** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */
-export const fitChartDataProperties: Property[] = [
-  // Style and zoom
-  Property.js('minX', TYPE.FLOAT, {description: 'Minimum value of the X axis', nullable: true}),
-  Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
-  Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
-  Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
-  Property.js('xAxisName', TYPE.STRING, {description:
-    'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
-  Property.js('yAxisName', TYPE.STRING, {description:
-    'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
-  Property.js('logX', TYPE.BOOL, {defaultValue: false}),
-  Property.js('logY', TYPE.BOOL, {defaultValue: false}),
-  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name)}),
-];
-
-
-/** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
-export const fitSeriesProperties: Property[] = [
-  Property.js('name', TYPE.STRING),
-  Property.js('fitFunction', TYPE.STRING,
-    {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
-  Property.js('pointColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
-  Property.js('fitLineColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
-  Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
-    'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
-  Property.js('autoFit', TYPE.BOOL,
-    {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
-  Property.js('showFitLine', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
-  Property.js('showPoints', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether points should be rendered', defaultValue: true}),
-  Property.js('showBoxPlot', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
-];
 
 /** Creates new object with the default values specified in {@link properties} */
-function createFromProperties(properties: Property[]): any {
+function createFromProperties(properties: DG.Property[]): any {
   const o: any = {};
   for (const p of properties) {
     if (p.defaultValue !== null)
@@ -179,11 +31,10 @@ function createFromProperties(properties: Property[]): any {
   return o;
 }
 
-
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
-export function mergeProperties(properties: Property[], source: any, target: any): void {
+export function mergeProperties(properties: DG.Property[], source: any, target: any): void {
   if (!source || !target)
     return;
 
@@ -201,12 +52,10 @@ function createDefaultChartData(): IFitChartData {
   };
 }
 
-
 /** Returns existing, or creates new column default chart options. */
 export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData {
   return gridColumn.temp[TAG_FIT] ??= createDefaultChartData();
 }
-
 
 /** Returns points arrays from {@link IFitPoint} array */
 export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[]} {
@@ -237,6 +86,24 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
   }
 }
 
+/** Constructs {@link IFitChartData} from the grid cell, taking into account
+ * chart and fit settings potentially defined on the dataframe and column level. */
+export function getChartData(gridCell: DG.GridCell): IFitChartData {
+  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
+    (JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
+
+  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
+
+  cellChartData.series ??= [];
+  cellChartData.chartOptions ??= columnChartOptions.chartOptions;
+
+  // merge cell options with column options
+  mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
+  for (const series of cellChartData.series)
+    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
+
+  return cellChartData;
+}
 
 /** Returns series fit function */
 export function getSeriesFitFunction(series: IFitSeries): FitFunction {
@@ -270,59 +137,3 @@ export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): F
     y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
   return getStatistics(data, series.parameters!, fitFunc.y, true);
 }
-
-/** Constructs {@link IFitChartData} from the grid cell, taking into account
- * chart and fit settings potentially defined on the dataframe and column level. */
-export function getChartData(gridCell: DG.GridCell): IFitChartData {
-  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
-    (JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
-
-  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
-
-  cellChartData.series ??= [];
-  cellChartData.chartOptions ??= columnChartOptions.chartOptions;
-
-  // merge cell options with column options
-  mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
-  for (const series of cellChartData.series)
-    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
-
-  return cellChartData;
-}
-
-
-const sample: IFitChartData = {
-  // chartOptions could be retrieved either from the column, or from the cell
-  'chartOptions': {
-    'minX': 0, 'minY': 0, 'maxX': 5, 'maxY': 10,
-    'xAxisName': 'concentration',
-    'yAxisName': 'activity',
-    'logX': false,
-    'logY': false,
-  },
-  // These options are used as default options for the series. They could be overridden in series.
-  'seriesOptions': {
-    'fitFunction': 'sigmoid',
-    // parameters not specified -> auto-fitting by default
-    'pointColor': 'blue',
-    'fitLineColor': 'red',
-    'clickToToggle': true,
-    'showPoints': true,
-    'showFitLine': true,
-    'showCurveConfidenceInterval': true,
-  },
-  'series': [
-    {
-      'fitFunction': 'sigmoid',
-      // parameters specified -> use them, no autofitting
-      'parameters': [1.86011e-07, -0.900, 103.748, -0.001],
-      'points': [
-        {'x': 0, 'y': 0},
-        {'x': 1, 'y': 0.5},
-        {'x': 2, 'y': 1},
-        {'x': 3, 'y': 10, 'outlier': true},
-        {'x': 4, 'y': 0},
-      ],
-    },
-  ],
-};

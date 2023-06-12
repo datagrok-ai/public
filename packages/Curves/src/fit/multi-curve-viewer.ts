@@ -2,14 +2,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {CellRenderViewer} from './cell-render-viewer';
 import {FitChartCellRenderer} from './fit-renderer';
-import {
-  FIT_SEM_TYPE,
-  FitChartData,
-  fitChartDataProperties,
-  getChartData,
-  IFitChartData,
-  mergeProperties
-} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {getChartData, mergeProperties} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {FIT_SEM_TYPE, FitChartData, fitChartDataProperties, IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';

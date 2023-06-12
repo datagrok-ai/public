@@ -3,8 +3,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {IFitChartData, FIT_SEM_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-data';
-import * as fitMath from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {IFitChartData, FIT_SEM_TYPE, sigmoid} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import wu from 'wu';
 
@@ -26,7 +25,7 @@ function createSigmoidPoints(length: number, step: number, pointsPerX: number = 
   for (let num = start, i = 0; num <= end; num += step, i++) {
     for (let j = 0; j < pointsPerX; j++) {
       x[i * pointsPerX + j] = num - start + 0.1;
-      y[i * pointsPerX + j] = fitMath.sigmoid(params, num);
+      y[i * pointsPerX + j] = sigmoid(params, num);
     }
   }
 

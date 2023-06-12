@@ -5,13 +5,10 @@ import {
   fitSeries,
   getChartData,
   getColumnChartOptions,
-  fitSeriesProperties,
-  fitChartDataProperties,
   getSeriesStatistics,
   getSeriesFitFunction,
-  FIT_CELL_TYPE
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {statisticsProperties} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 

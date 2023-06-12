@@ -2,7 +2,15 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {statisticsProperties, FitConfidenceIntervals} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {
+  statisticsProperties,
+  FitConfidenceIntervals,
+  IFitChartData,
+  CONFIDENCE_INTERVAL_FILL_COLOR,
+  CONFIDENCE_INTERVAL_STROKE_COLOR,
+  CURVE_CONFIDENCE_INTERVAL_BOUNDS,
+  FIT_CELL_TYPE,
+} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
@@ -10,21 +18,19 @@ import {
   fitSeries,
   getChartData,
   getChartBounds,
-  IFitChartData,
   getSeriesFitFunction,
-  CONFIDENCE_INTERVAL_FILL_COLOR,
-  CONFIDENCE_INTERVAL_STROKE_COLOR,
-  CURVE_CONFIDENCE_INTERVAL_BOUNDS,
-  TAG_FIT_CHART_FORMAT,
-  TAG_FIT_CHART_FORMAT_3DX,
   getSeriesConfidenceInterval,
   getSeriesStatistics,
   getCurve,
-  FIT_CELL_TYPE
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
 import {MultiCurveViewer} from './multi-curve-viewer';
+
+
+export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
+export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
+
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
@@ -254,3 +260,39 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
   }
 }
+
+const sample: IFitChartData = {
+  // chartOptions could be retrieved either from the column, or from the cell
+  'chartOptions': {
+    'minX': 0, 'minY': 0, 'maxX': 5, 'maxY': 10,
+    'xAxisName': 'concentration',
+    'yAxisName': 'activity',
+    'logX': false,
+    'logY': false,
+  },
+  // These options are used as default options for the series. They could be overridden in series.
+  'seriesOptions': {
+    'fitFunction': 'sigmoid',
+    // parameters not specified -> auto-fitting by default
+    'pointColor': 'blue',
+    'fitLineColor': 'red',
+    'clickToToggle': true,
+    'showPoints': true,
+    'showFitLine': true,
+    'showCurveConfidenceInterval': true,
+  },
+  'series': [
+    {
+      'fitFunction': 'sigmoid',
+      // parameters specified -> use them, no autofitting
+      'parameters': [1.86011e-07, -0.900, 103.748, -0.001],
+      'points': [
+        {'x': 0, 'y': 0},
+        {'x': 1, 'y': 0.5},
+        {'x': 2, 'y': 1},
+        {'x': 3, 'y': 10, 'outlier': true},
+        {'x': 4, 'y': 0},
+      ],
+    },
+  ],
+};

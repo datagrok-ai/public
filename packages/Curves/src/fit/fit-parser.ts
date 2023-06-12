@@ -3,10 +3,10 @@ import {
   IFitChartOptions,
   IFitSeriesOptions,
   IFitSeries,
-  IFitPoint
-} from '@datagrok-libraries/statistics/src/fit/fit-data';
+  IFitPoint,
+  FIT_FUNCTION_SIGMOID
+} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
-import {FIT_FUNCTION_SIGMOID} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};
