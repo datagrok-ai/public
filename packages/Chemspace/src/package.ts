@@ -5,6 +5,9 @@ import * as DG from 'datagrok-api/dg';
 const host = 'https://api.chem-space.com';
 let token: string | null = null;
 
+const WIDTH = 150;
+const HEIGHT = 75;
+
 enum SEARCH_MODE {
   SIMILAR = 'Similar',
   SUBSTRUCTURE = 'Substructure',
@@ -33,8 +36,8 @@ export async function app(): Promise<void> {
   const similarity = ui.choiceInput('Similarity', '0.6', ['0.2', '0.4', '0.6', '0.8']) as DG.InputBase<string>;
   const catalog =
     ui.choiceInput('Catalog', CATALOG_TYPE.SCR, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
-  const filterForm = ui.form([molecule, mode, similarity, catalog]);
-  const filtersHost = ui.div([filterForm], 'chemspace-controls,pure-form');
+  const filterForm = ui.form([mode, similarity, catalog]);
+  const filtersHost = ui.div([molecule, filterForm], 'chemspace-controls,pure-form');
 
   const emptyTable = DG.DataFrame.create();
   const view = grok.shell.addTableView(emptyTable);
@@ -119,12 +122,12 @@ export function createSearchPanel(panelName: SEARCH_MODE, smiles: string): HTMLD
 
       for (let n = 0; n < Math.min(t.rowCount, 20); n++) {
         const smiles = t.get('smiles', n);
-        const mol = grok.chem.svgMol(smiles, 150, 75);
-        ui.tooltip.bind(mol, () => getTooltip(n));
-        mol.addEventListener('click', function() {
-          window.open(t.get('link', n), '_blank');
-        });
-        compsHost.appendChild(mol);
+        const molHost = ui.div();
+        grok.functions.call('Chem:drawMolecule', {'molStr': smiles, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+          .then((res: HTMLElement) => molHost.append(res));
+        ui.tooltip.bind(molHost, () => getTooltip(n));
+        molHost.addEventListener('click', () => window.open(t.get('link', n), '_blank'));
+        compsHost.appendChild(molHost);
       }
       headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
         t.name = `Chemspace ${panelName}`;
