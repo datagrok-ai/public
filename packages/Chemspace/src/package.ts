@@ -80,24 +80,38 @@ export async function app(): Promise<void> {
   acc.addPane('Chemspace', () => filtersHost, true, acc.panes[0]);
 }
 
-//name: Chemspace Samples
+//name: Databases | Chemspace
 //description: Chemspace Samples
 //tags: panel, widgets
 //input: string smiles {semType: Molecule}
 //output: widget result
 //condition: true
-export function samplesPanel(smiles: string): DG.Widget {
-  const panels = ui.div();
-  getApiToken().then(() => {
-    panels.appendChild(createSearchPanel(SEARCH_MODE.SIMILAR, smiles));
-    panels.appendChild(createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles));
-  });
+export async function samplesPanel(smiles: string): Promise<DG.Widget> {
+  const token = await getApiToken();
+  const acc = ui.accordion();
+  const catalog = ui.choiceInput('Catalog', CATALOG_TYPE.SCR, Object.values(CATALOG_TYPE), () => {
+    const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
+    const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
+    const similarExpanded = similarPanel?.expanded ?? false;
+    const substructureExpanded = substructurePanel?.expanded ?? false;
+    for (const pane of acc.panes)
+      acc.removePane(pane);
+
+    acc.addPane(SEARCH_MODE.SIMILAR,
+      () => createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value), similarExpanded);
+    acc.addPane(SEARCH_MODE.SUBSTRUCTURE,
+      () => createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value), substructureExpanded);
+  }) as DG.InputBase<CATALOG_TYPE>;
+  catalog.fireChanged();
+
+  const form = ui.form([catalog]);
+  const panels = ui.divV([form, acc.root]);
   return new DG.Widget(panels);
 }
 
 //description: Creates search panel
-export function createSearchPanel(panelName: SEARCH_MODE, smiles: string): HTMLDivElement {
-  const headerHost = ui.divH([ui.h2(panelName)], 'chemspace-panel-header');
+export function createSearchPanel(panelName: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.BB): HTMLDivElement {
+  const headerHost = ui.divH([/*ui.h2(panelName)*/], 'chemspace-panel-header');
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
   const panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
 
