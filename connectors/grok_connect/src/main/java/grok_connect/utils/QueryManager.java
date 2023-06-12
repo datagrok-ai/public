@@ -100,6 +100,7 @@ public class QueryManager {
         if (!connection.isClosed() && !resultSet.isClosed()) {
             df = getResultSetSubDf(dfNumber, columns);
             if (isDryRun) {
+                serializeDf(df, dfNumber);
                 logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing was finished");
             }
         }
@@ -113,6 +114,7 @@ public class QueryManager {
                     column.empty();
                 }
                 df = getResultSetSubDf(dfNumber, columns);
+                serializeDf(df, dfNumber);
                 logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing was finished");
                 changeFetchSize(df, dfNumber);
             }
@@ -178,5 +180,14 @@ public class QueryManager {
             changedFetchSize = true;
             currentFetchSize = Integer.parseInt(optionValue);
         }
+    }
+
+    private byte[] serializeDf(DataFrame df, int dfNumber) {
+        Marker start = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.START);
+        Marker finish = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.END);
+        logger.debug(start, "Converting dataframe to byteArray");
+        byte[] bytes = df.toByteArray();
+        logger.debug(finish, "DataFrame with id {} was converted to byteArray", dfNumber);
+        return bytes;
     }
 }
