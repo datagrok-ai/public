@@ -16,7 +16,7 @@ import {
   FitStatistics,
   FitConfidenceIntervals,
   FitCurve,
-  IFitFunction,
+  IFitFunctionDescription,
   getOrCreateFitFunction
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
@@ -43,6 +43,8 @@ import {
 */
 
 // TODO: add tests on fit
+// TODO: move transform to utils in transform.ts
+// TODO: move all fit-connected funcs to library
 
 export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
@@ -75,7 +77,7 @@ export interface IFitPoint {
 /** Series options can be either applied globally on a column level, or partially overridden in particular series */
 export interface IFitSeriesOptions {
   name?: string;
-  fitFunction?: string | IFitFunction;
+  fitFunction?: string | IFitFunctionDescription;
   parameters?: number[];         // auto-fitting when not defined
   pointColor?: string;
   fitLineColor?: string;

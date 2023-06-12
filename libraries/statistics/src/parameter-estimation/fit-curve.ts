@@ -43,7 +43,7 @@ type Likelihood = {
 //   bottom: number, // parameters[3]
 // };
 
-export interface IFitFunction {
+export interface IFitFunctionDescription {
   name: string;
   function: string;
   getInitialParameters: string;
@@ -204,7 +204,7 @@ export interface IFitOptions {
 }
 
 
-export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunction): FitFunction {
+export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescription): FitFunction {
   if (typeof seriesFitFunc === 'string') {
     return fitFunctions[seriesFitFunc];
   } else if (!fitFunctions[seriesFitFunc.name]) {
@@ -225,7 +225,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunction): Fi
 }
 
 
-// TODO: move to DG.Rect
+// TODO: move to DG.Rect (static fromXYArrays) without data
 /** Gets the bounds of provided points */
 export function getDataBounds(data: {x: number[], y: number[]}): DG.Rect {
   let minX = data.x[0];
