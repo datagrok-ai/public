@@ -140,7 +140,7 @@ export class SigmoidFunction extends FitFunction {
   }
 
   getInitialParameters(x: number[], y: number[]): number[] {
-    const dataBounds = getDataBounds({x: x, y: y});
+    const dataBounds = DG.Rect.fromXYArrays(x, y);
     const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
     let maxYInterval = dataBounds.bottom - dataBounds.top;
     let nearestXIndex = 0;
@@ -224,24 +224,6 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   return fitFunctions[seriesFitFunc.name];
 }
 
-
-// TODO: move to DG.Rect (static fromXYArrays) without data
-/** Gets the bounds of provided points */
-export function getDataBounds(data: {x: number[], y: number[]}): DG.Rect {
-  let minX = data.x[0];
-  let minY = data.y[0];
-  let maxX = data.x[0];
-  let maxY = data.y[0];
-
-  for (let i = 1; i < data.x.length; i++) {
-    minX = Math.min(minX, data.x[i]);
-    minY = Math.min(minY, data.y[i]);
-    maxX = Math.max(maxX, data.x[i]);
-    maxY = Math.max(maxY, data.y[i]);
-  }
-
-  return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
-}
 
 function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
   let of: ObjectiveFunction;

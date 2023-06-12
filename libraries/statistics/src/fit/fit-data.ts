@@ -208,6 +208,17 @@ export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData 
 }
 
 
+/** Returns points arrays from {@link IFitPoint} array */
+export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[]} {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let i = 0; i < points.length; i++) {
+    xs[i] = points[i].x;
+    ys[i] = points[i].y;
+  }
+  return {xs: xs, ys: ys};
+}
+
 /** Returns the bounds of an {@link IFitChartData} object */
 export function getChartBounds(chartData: IFitChartData): DG.Rect {
   const o = chartData.chartOptions;
@@ -216,31 +227,16 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
   if (!chartData.series?.length || chartData.series.length === 0)
     return new DG.Rect(0, 0, 1, 1);
   else {
-    let bounds = getDataBounds(chartData.series[0].points);
-    for (let i = 1; i < chartData.series!.length; i++)
-      bounds = bounds.union(getDataBounds(chartData.series[i].points));
+    const {xs, ys} = getPointsArrays(chartData.series[0].points);
+    let bounds = DG.Rect.fromXYArrays(xs, ys);
+    for (let i = 1; i < chartData.series!.length; i++) {
+      const {xs, ys} = getPointsArrays(chartData.series[i].points);
+      bounds = bounds.union(DG.Rect.fromXYArrays(xs, ys));
+    }
     return bounds;
   }
 }
 
-
-// TODO: move to DG.Rect
-/** Gets the bounds of provided points */
-export function getDataBounds(points: IFitPoint[]): DG.Rect {
-  let minX = points[0].x;
-  let minY = points[0].y;
-  let maxX = points[0].x;
-  let maxY = points[0].y;
-
-  for (let i = 1; i < points.length; i++) {
-    minX = Math.min(minX, points[i].x);
-    minY = Math.min(minY, points[i].y);
-    maxX = Math.max(maxX, points[i].x);
-    maxY = Math.max(maxY, points[i].y);
-  }
-
-  return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
-}
 
 /** Returns series fit function */
 export function getSeriesFitFunction(series: IFitSeries): FitFunction {
