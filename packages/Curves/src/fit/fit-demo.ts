@@ -3,8 +3,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {IFitChartData, FIT_SEM_TYPE} from './fit-data';
-import * as fitMath from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {IFitChartData, FIT_SEM_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import * as fitMath from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import wu from 'wu';
 

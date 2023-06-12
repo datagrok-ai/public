@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {FIT_SEM_TYPE, TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from '../fit/fit-data';
+import {FIT_SEM_TYPE, TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 

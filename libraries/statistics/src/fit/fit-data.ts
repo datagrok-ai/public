@@ -17,8 +17,8 @@ import {
   FitConfidenceIntervals,
   FitCurve,
   IFitFunctionDescription,
-  getOrCreateFitFunction
-} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+  getOrCreateFitFunction,
+} from './fit-curve';
 
 /**
  *  Datagrok curve fitting
@@ -43,8 +43,6 @@ import {
 */
 
 // TODO: add tests on fit
-// TODO: move transform to utils in transform.ts
-// TODO: move all fit-connected funcs to library
 
 export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
@@ -57,7 +55,7 @@ export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
 
 export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
   TOP: 'top',
-  BOTTOM: 'bottom'
+  BOTTOM: 'bottom',
 };
 
 export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
@@ -146,7 +144,7 @@ export const fitChartDataProperties: Property[] = [
     'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('logX', TYPE.BOOL, {defaultValue: false}),
   Property.js('logY', TYPE.BOOL, {defaultValue: false}),
-  Property.js('showStatistics', TYPE.STRING_LIST, { choices: statisticsProperties.map(frp => frp.name) }),
+  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name)}),
 ];
 
 
@@ -199,7 +197,7 @@ export function mergeProperties(properties: Property[], source: any, target: any
 function createDefaultChartData(): IFitChartData {
   return {
     chartOptions: createFromProperties(fitChartDataProperties),
-    seriesOptions: createFromProperties(fitSeriesProperties)
+    seriesOptions: createFromProperties(fitSeriesProperties),
   };
 }
 
@@ -215,9 +213,9 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
   const o = chartData.chartOptions;
   if (o?.minX && o.minY && o.maxX && o.maxY)
     return new DG.Rect(o.minX, o.minY, o.maxX - o.minX, o.maxY - o.minY);
-  if (!chartData.series?.length || chartData.series.length === 0) {
+  if (!chartData.series?.length || chartData.series.length === 0)
     return new DG.Rect(0, 0, 1, 1);
-  } else {
+  else {
     let bounds = getDataBounds(chartData.series[0].points);
     for (let i = 1; i < chartData.series!.length; i++)
       bounds = bounds.union(getDataBounds(chartData.series[i].points));
@@ -249,38 +247,33 @@ export function getSeriesFitFunction(series: IFitSeries): FitFunction {
   return getOrCreateFitFunction(series.fitFunction!);
 }
 
-/** Returns series curve function */
+/** Returns a curve function, either using the pre-computed parameters or by fitting on-the-fly */
 export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) => number {
   return getFittedCurve(fitFunc.y, series.parameters!);
 }
 
 /** Fits the series data according to the series fitting settings */
 export function fitSeries(series: IFitSeries, fitFunc: FitFunction): FitCurve {
-  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
+    y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
   return fitData(data, fitFunc, FitErrorModel.Constant);
 }
 
 /** Returns series confidence interval functions */
-export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction, userParamsFlag: boolean): FitConfidenceIntervals {
+export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction,
+  userParamsFlag: boolean): FitConfidenceIntervals {
   const data = userParamsFlag ? {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)} :
-    {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+    {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
+      y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
   return getCurveConfidenceIntervals(data, series.parameters!, fitFunc.y, 0.05, FitErrorModel.Constant);
 }
 
 /** Returns series statistics */
 export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): FitStatistics {
-  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x), y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
+    y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
   return getStatistics(data, series.parameters!, fitFunc.y, true);
 }
-
-// /** Returns a curve function, either using the pre-computed parameters
-//  * or by fitting on-the-fly */
-// export function getFittedCurve(series: IFitSeries): (x: number) => number {
-//   if (series.parameters)
-//     return (x) => sigmoid(series.parameters!, x);
-//   else
-//     return fitSeries(series).fittedCurve;
-// }
 
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
  * chart and fit settings potentially defined on the dataframe and column level. */
@@ -320,7 +313,7 @@ const sample: IFitChartData = {
     'clickToToggle': true,
     'showPoints': true,
     'showFitLine': true,
-    'showCurveConfidenceInterval': true
+    'showCurveConfidenceInterval': true,
   },
   'series': [
     {
@@ -332,8 +325,8 @@ const sample: IFitChartData = {
         {'x': 1, 'y': 0.5},
         {'x': 2, 'y': 1},
         {'x': 3, 'y': 10, 'outlier': true},
-        {'x': 4, 'y': 0}
-      ]
-    }
-  ]
+        {'x': 4, 'y': 0},
+      ],
+    },
+  ],
 };

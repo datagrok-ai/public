@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
-import {CellRenderViewer} from "./cell-render-viewer";
-import {FitChartCellRenderer} from "./fit-renderer";
+import {CellRenderViewer} from './cell-render-viewer';
+import {FitChartCellRenderer} from './fit-renderer';
 import {
   FIT_SEM_TYPE,
   FitChartData,
@@ -9,7 +9,7 @@ import {
   getChartData,
   IFitChartData,
   mergeProperties
-} from "./fit-data";
+} from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';

@@ -4,9 +4,9 @@ import {
   IFitSeriesOptions,
   IFitSeries,
   IFitPoint
-} from './fit-data';
+} from '@datagrok-libraries/statistics/src/fit/fit-data';
 
-import {FIT_FUNCTION_SIGMOID} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {FIT_FUNCTION_SIGMOID} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};

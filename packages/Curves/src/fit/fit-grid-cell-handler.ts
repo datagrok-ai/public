@@ -10,8 +10,8 @@ import {
   getSeriesStatistics,
   getSeriesFitFunction,
   FIT_CELL_TYPE
-} from './fit-data';
-import {statisticsProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {statisticsProperties} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 
