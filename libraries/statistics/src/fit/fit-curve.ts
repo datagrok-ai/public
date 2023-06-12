@@ -205,9 +205,9 @@ export interface IFitOptions {
 
 
 export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescription): FitFunction {
-  if (typeof seriesFitFunc === 'string') {
+  if (typeof seriesFitFunc === 'string')
     return fitFunctions[seriesFitFunc];
-  } else if (!fitFunctions[seriesFitFunc.name]) {
+  else if (!fitFunctions[seriesFitFunc.name]) {
     const name = seriesFitFunc.name;
     const paramNames = seriesFitFunc.parameterNames;
     const fitFunctionParts = seriesFitFunc.function.split('=>').map((elem) => elem.trim());
@@ -270,9 +270,8 @@ function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (par
       return of(curveFunction, data, parameters).value;
     },
     getGradient: (parameters: number[], gradient: number[]) => {
-      for (let i = 0; i < parameters.length; i++) {
+      for (let i = 0; i < parameters.length; i++)
         gradient[i] = fixed.includes(i) ? 0 : getObjectiveDerivative(of, curveFunction, data, parameters, i);
-      }
 
       return gradient;
     },
@@ -343,20 +342,18 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 
   const top = (x: number) =>{
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.Constant) {
+    if (errorModel === FitErrorModel.Constant)
       return value + studentQ * error / Math.sqrt(data.x.length);
-    } else {
+    else
       return value + studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
-    }
   };
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.Constant) {
+    if (errorModel === FitErrorModel.Constant)
       return value - studentQ * error / Math.sqrt(data.x.length);
-    } else {
+    else
       return value - studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
-    }
   };
 
   return {confidenceTop: top, confidenceBottom: bottom};
@@ -597,9 +594,8 @@ export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y
   const max = Math.max(...data.x);
   const integrationStep = (max - min) / 1000;
 
-  for (let x = min; x < max; x+= integrationStep) {
+  for (let x = min; x < max; x+= integrationStep)
     auc += integrationStep * fittedCurve(x);
-  }
 
   return auc;
 }
@@ -629,9 +625,9 @@ function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: n
     residuesSquares[i] = Math.pow(obs - pred, 2);
   }
 
-  for (let i = 0; i < residuesSquares.length; i++) {
+  for (let i = 0; i < residuesSquares.length; i++)
     sigmaSq += residuesSquares[i];
-  }
+
   sigmaSq /= residuesSquares.length;
   sigma = Math.sqrt(sigmaSq);
 
@@ -653,15 +649,14 @@ function objectiveNormalConstant(targetFunc: (params: number[], x: number) => nu
     residuesSquares[i] = Math.pow(obs - pred, 2);
   }
 
-  for (let i = 0; i < residuesSquares.length; i++) {
+  for (let i = 0; i < residuesSquares.length; i++)
     sigmaSq += residuesSquares[i];
-  }
+
   sigmaSq /= residuesSquares.length;
   sigma = Math.sqrt(sigmaSq);
 
-  for (let i = 0; i < residuesSquares.length; i++) {
+  for (let i = 0; i < residuesSquares.length; i++)
     likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
-  }
 
   return {value: -likelihood, const: sigma, mult: 0};
 }
@@ -681,15 +676,14 @@ function objectiveNormalProportional(targetFunc: (params: number[], x: number) =
     residuesSquares[i] = Math.pow(obs - pred, 2);
   }
 
-  for (let i = 0; i < residuesSquares.length; i++) {
+  for (let i = 0; i < residuesSquares.length; i++)
     sigmaSq += residuesSquares[i];
-  }
+
   sigmaSq /= residuesSquares.length;
   sigma = Math.sqrt(sigmaSq);
 
-  for (let i = 0; i < residuesSquares.length; i++) {
+  for (let i = 0; i < residuesSquares.length; i++)
     likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
-  }
 
   return {value: -likelihood, const: sigma, mult: 0};
 }
