@@ -29,7 +29,8 @@ import {toxicityWidget} from './widgets/toxicity';
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
-import { ScaffoldTreeFilter, ScaffoldTreeViewer} from "./widgets/scaffold-tree";
+import {ScaffoldTreeViewer} from "./widgets/scaffold-tree";
+import {ScaffoldTreeFilter} from "./widgets/scaffold-tree-filter";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, isSmarts} from './utils/mol-creation_rdkit';

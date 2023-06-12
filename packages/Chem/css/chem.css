@@ -359,3 +359,7 @@
 .chem-hide-filter {
   display: none;
 }
+
+.d4-flex-row.ui-div.chem-scaffold-tree-scrollbar {
+  overflow: hidden!important;
+}
