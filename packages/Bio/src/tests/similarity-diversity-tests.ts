@@ -6,7 +6,7 @@ import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
 category('similarity/diversity', async () => {
   before(async () => {
-    grok.shell.closeAll();
+    // grok.shell.closeAll();
   });
 
   after(async () => {
@@ -16,6 +16,7 @@ category('similarity/diversity', async () => {
   test('similaritySearchViewer', async () => {
     await _testSimilaritySearchViewer();
   });
+
   test('diversitySearchViewer', async () => {
     await _testDiversitySearchViewer();
   });
@@ -42,10 +43,10 @@ async function _testSimilaritySearchViewer() {
       'meI/hHis//Aca/meM/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
     molecules.dataFrame.currentRowIdx = 1;
     await awaitCheck(() => similaritySearchViewer.targetMoleculeIdx === 1, 'Target molecule has not been changed', 5000);
-    await awaitCheck(() => similaritySearchViewer.molCol!.get(0) === 
-    'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me',
-    'Incorrect first similar molecule', 5000);
-    
+    await awaitCheck(() => similaritySearchViewer.molCol!.get(0) ===
+        'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me',
+      'Incorrect first similar molecule', 5000);
+
   } finally {
     grok.shell.closeAll();
   }

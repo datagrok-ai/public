@@ -32,12 +32,13 @@ let object = {
   textArea: "Bins rise and they fall,\nDistribution's gentle dance,\nHistogram unveils",
   text: 'Only text',
   //date: '2023/10/30', //dayjs(1977, 10, 2),
-  //map: { key1: 'value1', key2: 'value2'},
+  map: { key1: 'value1', key2: 'value2'},
   color: '#e66465',
   list: ['1', '2', '4'],
   table: df,
   column: df.columns.byName('race'),
   choice: ['Apple'],
+  radio: 'Apple',
 };
 
 ui.divV([

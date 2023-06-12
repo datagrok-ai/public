@@ -9,6 +9,7 @@ import {
   IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+import {_package} from '../package';
 
 const _HELM_REQUIRED_FIELDS_ARRAY = [
   REQ.SYMBOL, REQ.NAME, REQ.MOLFILE, REQ.AUTHOR, REQ.ID,
@@ -27,8 +28,12 @@ export type LibSettings = {
 }
 
 export async function getLibFileNameList(): Promise<string[]> {
-  const res: string[] = (await grok.dapi.files.list(`${LIB_PATH}`, false, ''))
-    .map((it) => it.fileName);
+  // list files recursively because permissions are available for folders only
+  const res: string[] = await Promise.all((await grok.dapi.files.list(LIB_PATH, true, ''))
+    .map(async (it) => {
+      // Get relative path (to LIB_PATH)
+      return it.fullPath.substring(LIB_PATH.length);
+    }));
   return res;
 }
 
@@ -47,11 +52,14 @@ export async function setUserLibSetting(value: LibSettings): Promise<void> {
 }
 
 export class MonomerLib implements IMonomerLib {
+  public readonly error: string | undefined;
+
   private _monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
 
-  constructor(monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } }) {
+  constructor(monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } }, error?: string) {
     this._monomers = monomers;
+    this.error = error;
   }
 
   getMonomer(polymerType: string, monomerSymbol: string): Monomer | null {
@@ -107,7 +115,7 @@ export class MonomerLib implements IMonomerLib {
 
   public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
     if (reload) this._monomers = {};
-    for (const lib of libList) this._updateInt(lib);
+    for (const lib of libList) if (!lib.error) this._updateInt(lib);
     this._onChanged.next();
   }
 
@@ -125,29 +133,46 @@ export class MonomerLibHelper implements IMonomerLibHelper {
 
   /** Singleton monomer library
    * @return {MonomerLibHelper} MonomerLibHelper instance
-  */
+   */
   getBioLib(): IMonomerLib {
     return this._monomerLib;
   }
 
-  private loadLibrariesPromise: Promise<void> = Promise.resolve();
+  /** Allows syncing with managing settings/loading libraries */
+  public loadLibrariesPromise: Promise<void> = Promise.resolve();
 
   /** Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME}
    * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]
    */
   async loadLibraries(reload: boolean = false): Promise<void> {
     return this.loadLibrariesPromise = this.loadLibrariesPromise.then(async () => {
-      const [libFileNameList, settings]: [string[], LibSettings] = await Promise.all([
-        getLibFileNameList(),
-        getUserLibSettings(),
-      ]);
-      const libs: IMonomerLib[] = await Promise.all(libFileNameList
-        .filter((libFileName) => !settings.exclude.includes(libFileName))
-        .map((libFileName) => {
-          //TODO handle whether files are in place
-          return this.readLibrary(LIB_PATH, libFileName);
-        }));
-      this._monomerLib.updateLibs(libs, reload);
+      // This function is not allowed to throw any exception,
+      // because it will prevent further handling monomer library settings
+      // through blocking this.loadLibrariesPromise
+      try {
+        const [libFileNameList, settings]: [string[], LibSettings] = await Promise.all([
+          getLibFileNameList(),
+          getUserLibSettings(),
+        ]);
+        const libs: IMonomerLib[] = await Promise.all(libFileNameList
+          .filter((libFileName) => !settings.exclude.includes(libFileName))
+          .map((libFileName) => {
+            //TODO handle whether files are in place
+            return this.readLibrary(LIB_PATH, libFileName).catch((err: any) => {
+              const errMsg: string = `Loading monomers from '${libFileName}' error: ` +
+                `${err instanceof Error ? err.message : err.toString()}`;
+              return new MonomerLib({}, errMsg);
+            });
+          }));
+        this._monomerLib.updateLibs(libs, reload);
+      } catch (err: any) {
+        const errMsg: string = 'Loading monomer libraries error: ' +
+          `${err instanceof Error ? err.message : err.toString()}`;
+        grok.shell.warning(errMsg);
+
+        const errStack = err instanceof Error ? err.stack : undefined;
+        _package.logger.error(errMsg, undefined, errStack);
+      }
     });
   }
 
@@ -155,7 +180,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
    * @param {string} path Path to library file
    * @param {string} fileName Name of library file
    * @return {Promise<IMonomerLib>} Promise of IMonomerLib
-  */
+   */
   async readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
     let rawLibData: any[] = [];
     let file;

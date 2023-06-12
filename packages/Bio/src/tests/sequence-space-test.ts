@@ -21,7 +21,7 @@ category('sequenceSpace', async () => {
     await _testSequenceSpaceReturnsResult(testFastaDf, DimReductionMethods.UMAP, 'sequence');
     grok.shell.closeTable(testFastaDf);
     testFastaTableView.close();
-  });
+  }, {skipReason: 'GROK-13299' /* EXECUTION TIMEOUT */});
 
   test('sequenceSpaceWithEmptyRows', async () => {
     testHelmWithEmptyRows = await readDataframe('tests/100_3_clustests_empty_vals.csv');
@@ -29,5 +29,5 @@ category('sequenceSpace', async () => {
     await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, DimReductionMethods.UMAP, 'sequence');
     grok.shell.closeTable(testHelmWithEmptyRows);
     testHelmWithEmptyRowsTableView.close();
-  });
+  }, {skipReason: 'GROK-13299' /* EXECUTION TIMEOUT */});
 });

@@ -306,6 +306,9 @@ export class TestManager extends DG.ViewBase {
         .item('Run', async () => {
           this.runAllTests(node, tests, nodeType);
         })
+        .item('Copy', async () => {
+          navigator.clipboard.writeText(node.captionLabel.innerText.trim());
+        })
         .show();
       e.preventDefault();
       e.stopPropagation();
@@ -513,7 +516,7 @@ export class TestManager extends DG.ViewBase {
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
     const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
-    acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType)), true);
+    acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
     acc.addPane('Results', () => ui.div(grid), true);
     return acc.root;
   };

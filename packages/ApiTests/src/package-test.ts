@@ -6,6 +6,7 @@ import './dataframe/calculated-columns';
 import './dataframe/events';
 import './dataframe/datetime-columns-join';
 import './dataframe/dataframe-join';
+import './dataframe/dataframe-link';
 import './functions/functions';
 import './functions/conversion-functions';
 import './functions/date-functions';

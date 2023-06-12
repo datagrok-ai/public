@@ -164,7 +164,7 @@ class BioPackageDetectors extends DG.Package {
 
       if (statsAsChars.sameLength) {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
-        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.15 : 0);
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.20 : 0);
         if (alphabet === ALPHABET.UN) return null;
 
         col.setTag(DG.TAGS.UNITS, units);
@@ -328,7 +328,7 @@ class BioPackageDetectors extends DG.Package {
     const freqA = [];
     const alphabetA = [];
     for (const m of keys) {
-      freqA.push(m in freq ? freq[m] : 0);
+      freqA.push(m in freq ? freq[m] : -0.10);
       alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
