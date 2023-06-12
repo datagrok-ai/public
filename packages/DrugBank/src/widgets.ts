@@ -46,26 +46,13 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
   const moleculeCol: DG.Column<string> = table.getCol('molecule');
   const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
   const nameCol: DG.Column<string> = table.getCol('COMMON_NAME');
-  const r = window.devicePixelRatio;
-
-  const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-  if (renderFunctions.length === 0)
-    throw new Error('RDKit renderer is not available');
 
   for (let n = 0; n < molCount; n++) {
     const piv = bitsetIndexes[n];
     const molfile = moleculeCol.get(piv)!;
-
-    const molHost = ui.canvas(WIDTH, HEIGHT);
-    molHost.classList.add('chem-canvas');
-    molHost.width = WIDTH * r;
-    molHost.height = HEIGHT * r;
-    molHost.style.width = (WIDTH).toString() + 'px';
-    molHost.style.height = (HEIGHT).toString() + 'px';
-
-    renderFunctions[0].apply().then((rendndererObj) => {
-      rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT, DG.GridCell.fromValue(molfile));
-    });
+    const molHost = ui.div();
+    grok.functions.call('Chem:drawMolecule', {'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+      .then((res: HTMLElement) => molHost.append(res));
 
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));

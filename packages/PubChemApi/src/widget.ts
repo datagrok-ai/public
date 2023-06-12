@@ -153,26 +153,13 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     return new DG.Widget(resultMap);
   }
 
-  const r = window.devicePixelRatio;
   const molCount = Math.min(moleculesJson.length, 20);
-  const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-  if (renderFunctions.length === 0)
-    throw new Error('RDKit renderer is not available');
 
   for (let idx = 0; idx < molCount; idx++) {
     const molEntry = moleculesJson[idx] as {'CanonicalSMILES': string, 'CID': number};
-
-    const molHost = ui.canvas(WIDTH, HEIGHT);
-    molHost.classList.add('chem-canvas');
-    molHost.width = WIDTH * r;
-    molHost.height = HEIGHT * r;
-    molHost.style.width = `${WIDTH}px`;
-    molHost.style.height = `${HEIGHT}px`;
-
-    renderFunctions[0].apply().then((rendndererObj) => {
-      rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT,
-        DG.GridCell.fromValue(molEntry['CanonicalSMILES']));
-    });
+    const molHost = ui.div();
+    grok.functions.call('Chem:drawMolecule', {'molStr': molEntry['CanonicalSMILES'], 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+      .then((res: HTMLElement) => molHost.append(res));
 
     ui.tooltip.bind(molHost, () => ui.divText(`CID: ${molEntry['CID']}\nClick to open in PubChem`));
     molHost.addEventListener('click',

@@ -72,25 +72,12 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
 
     const moleculeCol = table.getCol(COLUMN_NAMES.SMILES);
     const chemblIdCol = table.getCol(COLUMN_NAMES.CHEMBL_ID);
-
     const molCount = Math.min(table.rowCount, 20);
-    const r = window.devicePixelRatio;
-
-    const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
-    if (renderFunctions.length === 0)
-      throw new Error('RDKit renderer is not available');
 
     for (let i = 0; i < molCount; i++) {
-      const molHost = ui.canvas(WIDTH, HEIGHT);
-      molHost.classList.add('chem-canvas');
-      molHost.width = WIDTH * r;
-      molHost.height = HEIGHT * r;
-      molHost.style.width = `${WIDTH}px`;
-      molHost.style.height = `${HEIGHT}px`;
-
-      renderFunctions[0].apply().then((rendndererObj) => {
-        rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT, DG.GridCell.fromValue(moleculeCol.get(i)));
-      });
+      const molHost = ui.div();
+      grok.functions.call('Chem:drawMolecule', {'molStr': moleculeCol.get(i), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+        .then((res: HTMLElement) => molHost.append(res));
 
       ui.tooltip.bind(molHost,
         () => ui.divText(`ChEMBL ID: ${chemblIdCol.get(i)}\nClick to open in ChEMBL Database`));
