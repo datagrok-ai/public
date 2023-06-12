@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
+import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {layoutChart} from '../fit/fit-renderer';
-import {Viewport} from '../fit/transform';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 

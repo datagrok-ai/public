@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "../../libraries/statistics",
-    "@datagrok-libraries/utils": "^4.0.7",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/wu": "^2.1.42",
     "cash-dom": "latest",
     "datagrok-api": "^1.15.0",

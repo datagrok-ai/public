@@ -3,13 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {statisticsProperties, FitConfidenceIntervals} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 import {fitSeries, getChartData, getChartBounds, IFitChartData, getSeriesFitFunction,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getSeriesConfidenceInterval, getSeriesStatistics, getCurve, FIT_CELL_TYPE} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
-import {Viewport} from './transform';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
