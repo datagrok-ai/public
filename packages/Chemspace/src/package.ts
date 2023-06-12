@@ -22,7 +22,6 @@ enum CATALOG_TYPE {
 //TODO: Replace with acuatl type
 type Price = any;
 
-const searchModeToCommand = {'Similar': 'smarts/bb/sim', 'Substructure': 'smarts/bb/sub'};
 const catalogToParam = {'BB': 'smarts/bb', 'SCR': 'smarts/sc', 'REAL': 'advanced/1'};
 const modeToParam = {[SEARCH_MODE.SIMILAR]: 'sim', [SEARCH_MODE.SUBSTRUCTURE]: 'sub'};
 
@@ -89,6 +88,7 @@ export async function app(): Promise<void> {
 export async function samplesPanel(smiles: string): Promise<DG.Widget> {
   const token = await getApiToken();
   const acc = ui.accordion();
+  const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};
   const catalog = ui.choiceInput('Catalog', CATALOG_TYPE.SCR, Object.values(CATALOG_TYPE), () => {
     const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
     const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
@@ -97,10 +97,16 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
     for (const pane of acc.panes)
       acc.removePane(pane);
 
-    acc.addPane(SEARCH_MODE.SIMILAR,
-      () => createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value), similarExpanded);
-    acc.addPane(SEARCH_MODE.SUBSTRUCTURE,
-      () => createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value), substructureExpanded);
+    acc.addPane(SEARCH_MODE.SIMILAR, () => {
+      catalogToData[catalog.value] ??= {};
+      catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??= createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
+      return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
+    }, similarExpanded);
+    acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
+      catalogToData[catalog.value] ??= {};
+      catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??= createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
+      return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
+    }, substructureExpanded);
   }) as DG.InputBase<CATALOG_TYPE>;
   catalog.fireChanged();
 
@@ -110,13 +116,13 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
 }
 
 //description: Creates search panel
-export function createSearchPanel(panelName: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.BB): HTMLDivElement {
+export function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.BB): HTMLDivElement {
   const headerHost = ui.divH([/*ui.h2(panelName)*/], 'chemspace-panel-header');
   const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
   const panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
 
-  queryMultipart(`search/${searchModeToCommand[panelName]}`, smiles,
-    panelName === SEARCH_MODE.SIMILAR ? {'simThreshold': 40} : null, token!)
+  queryMultipart(`search/${catalogToParam[catalog]}/${modeToParam[searchMode]}`, smiles,
+    searchMode === SEARCH_MODE.SIMILAR ? {'simThreshold': 40} : null, token!)
     .then((t) => {
       compsHost.firstChild?.remove();
       if (t.rowCount === 0) {
@@ -144,7 +150,7 @@ export function createSearchPanel(panelName: SEARCH_MODE, smiles: string, catalo
         compsHost.appendChild(molHost);
       }
       headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-        t.name = `Chemspace ${panelName}`;
+        t.name = `Chemspace ${searchMode}`;
         grok.shell.addTableView(t);
       }, 'Open compounds as table'));
       compsHost.style.overflowY = 'auto';
