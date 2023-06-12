@@ -18,8 +18,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {TableView, VIEWER} from 'datagrok-api/dg';
-import {windowsSidebar} from './windows-manager';
-import {windowsStatusbar} from './windows-manager';
+import {windowsManagerPanel} from './windows-manager';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -173,13 +172,9 @@ export async function powerPackInit() {
 }
 
 //description: Windows Manager
-export function windowsManagerSidebar() {
-  windowsSidebar();
-}
-
-//description: Windows Manager
-export function windowsManagerStatusbar() {
-  windowsStatusbar();
+//tags: autostart
+export function windowsManager() {
+  windowsManagerPanel();
 }
 
 //description: ViewerGallery
