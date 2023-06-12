@@ -8,11 +8,11 @@
     "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "^1.1.7",
-    "@datagrok-libraries/utils": "^4.0.7",
+    "@datagrok-libraries/statistics": "../../libraries/statistics",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@types/wu": "^2.1.42",
     "cash-dom": "latest",
-    "datagrok-api": "^1.15.0",
+    "datagrok-api": "../../js-api",
     "rxjs": "6.5.5",
     "dayjs": "latest"
   },
