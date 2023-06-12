@@ -6,13 +6,13 @@ category('Chemspace', () => {
 
   test('Prices panel', async () => {
     pricesPanel(mol);
-  });
+  }, {skipReason: 'Requires API key'});
 
   test('Samples panel', async () => {
     samplesPanel(mol);
-  });
+  }, {skipReason: 'Requires API key'});
 
   test('App', async () => {
     app();
-  });
+  }, {skipReason: 'Requires API key'});
 });
