@@ -42,10 +42,13 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   protected async onFuncCallReady() {
     this.changeViewName(this.funcCall.func.friendlyName);
-    this.build();
 
-    if (this.getStartId()) {
-      await this.loadRun(this.funcCall.id);
+    this.build();
+    const runId = this.getStartId();
+    if (runId && !this.options.isTabbed) {
+      ui.setUpdateIndicator(this.root, true);
+      this.linkFunccall(await this.loadRun(this.funcCall.id));
+      ui.setUpdateIndicator(this.root, false);
       this.setAsLoaded();
     }
   }
@@ -165,7 +168,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this._funcCall = funcCall;
 
     if (!this.options.isTabbed) {
-      if (funcCall.options['isHistorical']) {
+      if (this.isHistorical) {
         if (!isPreviousHistorical)
           this.changeViewName(`${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
         else
@@ -265,7 +268,11 @@ export abstract class FunctionView extends DG.ViewBase {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
     this.subs.push(
-      newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id))),
+      newHistoryBlock.onRunChosen.subscribe(async (id) => {
+        ui.setUpdateIndicator(this.root, true);
+        this.linkFunccall(await this.loadRun(id));
+        ui.setUpdateIndicator(this.root, false);
+      }),
       newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v === this) {

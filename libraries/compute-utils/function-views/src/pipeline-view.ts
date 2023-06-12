@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
-import {Subject} from 'rxjs';
+import {Subject, BehaviorSubject} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
@@ -12,11 +12,16 @@ import {ComputationView} from './computation-view';
 import {historyUtils} from '../../history-utils';
 import '../css/pipeline-view.css';
 import {RunComparisonView} from './run-comparison-view';
-import {CARD_VIEW_TYPE} from './shared/consts';
+import {CARD_VIEW_TYPE, VISIBILITY_STATE} from './shared/consts';
 import wu from 'wu';
 
 type StepState = {
-  func: DG.Func, editor: string, view: FunctionView, idx: number, options?: {friendlyName?: string}
+  func: DG.Func,
+  editor: string,
+  view: FunctionView,
+  idx: number,
+  visibility: BehaviorSubject<VISIBILITY_STATE>,
+  options?: {friendlyName?: string}
 }
 
 const getVisibleStepName = (step: StepState) => {
@@ -121,9 +126,10 @@ export class PipelineView extends ComputationView {
 
   constructor(
     funcName: string,
-    private stepsConfig: {
+    private initialConfig: {
       funcName: string,
-      friendlyName?: string
+      friendlyName?: string,
+      hiddenOnInit?: VISIBILITY_STATE,
     }[],
   ) {
     super(
@@ -135,9 +141,15 @@ export class PipelineView extends ComputationView {
   public override async init() {
     await this.loadFuncCallById();
 
-    this.stepsConfig.forEach((stepConfig, idx) => {
+    this.initialConfig.forEach((stepConfig, idx) => {
       //@ts-ignore
-      this.steps[stepConfig.funcName] = {idx, options: {friendlyName: stepConfig.friendlyName}};
+      this.steps[stepConfig.funcName] = {
+        idx,
+        visibility: new BehaviorSubject(
+          stepConfig.hiddenOnInit === VISIBILITY_STATE.HIDDEN ? VISIBILITY_STATE.HIDDEN: VISIBILITY_STATE.VISIBLE,
+        ),
+        options: {friendlyName: stepConfig.friendlyName},
+      };
     });
 
     this.subs.push(
@@ -145,7 +157,8 @@ export class PipelineView extends ComputationView {
         filter((run) => Object.values(this.steps).some(({view}) => (view?.funcCall?.id === run?.id) && !!run)),
       ).subscribe((run) => {
         this.onStepCompleted.next(run);
-        if (run.func.nqName === this.stepsConfig[this.stepsConfig.length-1].funcName) this.run();
+        if (run.func.options['isMain'] === 'true' ||
+          run.func.nqName === this.initialConfig[this.initialConfig.length-1].funcName) this.run();
       }),
     );
 
@@ -235,9 +248,17 @@ export class PipelineView extends ComputationView {
             const sub = grok.functions.onAfterRunAction.pipe(
               filter((run) => step.view.funcCall.id === run.id && !!run),
             ).subscribe((run) => {
-              if (step.idx + 1 < this.stepTabs!.panes.length) {
-                $(this.stepTabs!.panes[step.idx + 1].header).removeClass('d4-disabled');
-                ui.tooltip.bind(this.stepTabs!.panes[step.idx + 1].header, '');
+              const findNextDisabledStepIdx = () => {
+                return Object.values(this.steps).find((iteratedStep) =>
+                  iteratedStep.idx > step.idx && iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE,
+                );
+              };
+
+              const idxToEnable = findNextDisabledStepIdx()?.idx;
+
+              if (idxToEnable && idxToEnable < this.stepTabs!.panes.length) {
+                $(this.stepTabs!.panes[idxToEnable].header).removeClass('d4-disabled');
+                ui.tooltip.bind(this.stepTabs!.panes[idxToEnable].header, '');
               }
             });
             this.subs.push(sub);
@@ -288,7 +309,8 @@ export class PipelineView extends ComputationView {
           (childRun) => childRun.func.options['isMain'] === 'true',
         ) ??
         res.childRuns.find(
-          (childRun) => childRun.func.nqName === this.stepsConfig[this.stepsConfig.length - 1].funcName,
+          (childRun) => childRun.func.nqName ===
+            this.initialConfig[this.initialConfig.length - 1].funcName,
         )!,
       )
       .map((mainChildRun) => historyUtils.loadRun(mainChildRun.id)));
@@ -337,6 +359,24 @@ export class PipelineView extends ComputationView {
 
     this.stepTabs = pipelineTabs;
 
+    this.initialConfig.forEach((stepConfig) => {
+      this.subs.push(
+        this.steps[stepConfig.funcName].visibility.subscribe((newValue) => {
+          if (newValue === VISIBILITY_STATE.VISIBLE)
+            $(this.stepTabs?.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).show();
+
+          if (newValue === VISIBILITY_STATE.HIDDEN)
+            $(this.stepTabs?.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();
+        }),
+      );
+    });
+
+    this.hideSteps(
+      ...this.initialConfig
+        .filter((config) => config.hiddenOnInit === VISIBILITY_STATE.HIDDEN)
+        .map((config) => config.funcName),
+    );
+
     return pipelineTabs.root;
   }
 
@@ -350,6 +390,7 @@ export class PipelineView extends ComputationView {
     pi.close();
 
     const stepsSaving = Object.values(this.steps)
+      .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
       .map(async (step) => {
         const scriptCall = step.view.funcCall;
 
@@ -379,17 +420,48 @@ export class PipelineView extends ComputationView {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
+    const idxBeforeLoad = this.stepTabs!.panes
+      .filter((tab) => ($(tab.header).css('display') !== 'none'))
+      .findIndex((tab) => tab.name === this.stepTabs!.currentPane.name);
+
     await this.onBeforeLoadRun();
 
-    pulledChildRuns.forEach(async (pulledChildRun) => {
-      const childRun = await historyUtils.loadRun(pulledChildRun.id);
-      this.steps[pulledChildRun.func.nqName].view.linkFunccall(childRun);
-      this.steps[pulledChildRun.func.nqName].view.lastCall = childRun;
-    });
+    for (const step of Object.values(this.steps)) {
+      const corrChildRun = pulledChildRuns.find((pulledChildRun) => {
+        // DEALING WITH THE BUG: TODO
+        const realNqName = `${pulledChildRun.func.package.name}:${pulledChildRun.func.name}`;
+        return realNqName === step.func.nqName;
+      });
+
+      if (corrChildRun) {
+        const childRun = await historyUtils.loadRun(corrChildRun.id);
+        step.view.linkFunccall(childRun);
+        step.view.lastCall = childRun;
+
+        step.visibility.next(VISIBILITY_STATE.VISIBLE);
+      } else
+        step.visibility.next(VISIBILITY_STATE.HIDDEN);
+    };
+
     this.lastCall = pulledParentRun;
+
+    this.stepTabs!.currentPane = this.stepTabs!.panes
+      .filter((tab) => ($(tab.header).css('display') !== 'none'))[idxBeforeLoad];
 
     await this.onAfterLoadRun(pulledParentRun);
 
     return pulledParentRun;
+  }
+
+  public async hideSteps(...nqFuncNames: string[]) {
+    nqFuncNames.forEach((nqName) => {
+      this.steps[nqName].visibility.next(VISIBILITY_STATE.HIDDEN);
+    });
+  }
+
+  public async showSteps(...nqFuncNames: string[]) {
+    nqFuncNames.forEach((nqName) => {
+      this.steps[nqName].visibility.next(VISIBILITY_STATE.VISIBLE);
+    });
   }
 }
