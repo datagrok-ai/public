@@ -50,6 +50,13 @@ const searchModeToCommandMap = {
 type EnamineMolProperties =
   {'ID': string, 'Formula': string, 'MW': number, 'Availability': number, 'Delivery': string};
 
+enum CATALOG_TYPE {
+  EMPTY = '',
+  SCR = 'SCR',
+  REAL = 'REAL',
+  BB = 'BB',
+}
+
 const WIDTH = 150;
 const HEIGHT = 75;
 
@@ -61,7 +68,7 @@ export function enamineStoreApp(): void {
     ui.choiceInput('Mode', SEARCH_MODE.SIMILAR, Object.keys(searchModeToCommandMap)) as DG.InputBase<SEARCH_MODE>;
   const currency = ui.choiceInput('Currency', CURRENCY.USD, Object.values(CURRENCY)) as DG.InputBase<string>;
   const similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']) as DG.InputBase<string>;
-  const catalog = ui.choiceInput('Catalog', '', ['', 'BB', 'SCR', 'REAL']) as DG.InputBase<string>;
+  const catalog = ui.choiceInput('Catalog', CATALOG_TYPE.EMPTY, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
   const filterForm = ui.form([molecule, searchMode, currency, similarity, catalog]);
   const filtersHost = ui.div([filterForm], 'enamine-store-controls,pure-form');
 
@@ -101,31 +108,62 @@ export function enamineStoreApp(): void {
   acc.addPane('Enamine Store', () => filtersHost, true, acc.panes[0]);
 }
 
-//name: Enamine Store
+//name: Databases | Enamine Store
 //description: Enamine Store Samples
 //tags: panel, widgets
 //input: string smiles {semType: Molecule}
 //output: widget result
 //condition: true
 export function enamineStorePanel(smiles: string): DG.Widget {
-  const panels = ui.div([
-    createSearchPanel(SEARCH_MODE.EXACT, smiles),
-    createSearchPanel(SEARCH_MODE.SIMILAR, smiles),
-    createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles),
-  ]);
+  const acc = ui.accordion();
+  const catalogToData: {[catalogType in CATALOG_TYPE]?: {[searchMode in SEARCH_MODE]?: HTMLDivElement}} = {};
+  const catalog = ui.choiceInput('Catalog', CATALOG_TYPE.SCR, Object.values(CATALOG_TYPE), () => {
+    const exactPanel = acc.getPane(SEARCH_MODE.EXACT);
+    const similarPanel = acc.getPane(SEARCH_MODE.SIMILAR);
+    const substructurePanel = acc.getPane(SEARCH_MODE.SUBSTRUCTURE);
+    const exactExpanded = exactPanel?.expanded ?? false;
+    const similarExpanded = similarPanel?.expanded ?? false;
+    const substructureExpanded = substructurePanel?.expanded ?? false;
+    for (const pane of acc.panes)
+      acc.removePane(pane);
+    
+    acc.addPane(SEARCH_MODE.EXACT, () => {
+      catalogToData[catalog.value] ??= {};
+      catalogToData[catalog.value]![SEARCH_MODE.EXACT] ??= createSearchPanel(SEARCH_MODE.EXACT, smiles, catalog.value);
+      return catalogToData[catalog.value]![SEARCH_MODE.EXACT]!;
+    }, exactExpanded);
+    acc.addPane(SEARCH_MODE.SIMILAR, () => {
+      catalogToData[catalog.value] ??= {};
+      catalogToData[catalog.value]![SEARCH_MODE.SIMILAR] ??= createSearchPanel(SEARCH_MODE.SIMILAR, smiles, catalog.value);
+      return catalogToData[catalog.value]![SEARCH_MODE.SIMILAR]!;
+    }, similarExpanded);
+    acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
+      catalogToData[catalog.value] ??= {};
+      catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE] ??= createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, catalog.value);
+      return catalogToData[catalog.value]![SEARCH_MODE.SUBSTRUCTURE]!;
+    }, substructureExpanded);
+  }) as DG.InputBase<CATALOG_TYPE>;
+  catalog.fireChanged();
+
+  const form = ui.form([catalog]);
+  const panels = ui.divV([form, acc.root]);
+
   return DG.Widget.fromRoot(panels);
 }
 
 //description: Creates search panel
-function createSearchPanel(panelName: SEARCH_MODE, smiles: string): HTMLDivElement {
+function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.EMPTY): HTMLDivElement {
   const currency = CURRENCY.USD;
-  const headerHost = ui.divH([ui.h2(panelName)], 'enamine-store-panel-header');
-  const compsHost = ui.divH([ui.loader()], 'd4-flex-wrap');
+  const headerHost = ui.divH([/*ui.h2(searchMode)*/], 'enamine-store-panel-header');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
   const panel = ui.divV([headerHost, compsHost], 'enamine-store-panel');
-  grok.data.callQuery('EnamineStore:Search', {
-    'code': `search_${smiles}_${searchModeToCommandMap[panelName]}`,
+  const options: {[key: string]: any} = {
+    'code': `search_${smiles}_${searchModeToCommandMap[searchMode]}`,
     'currency': currency,
-  }, true, 100).then((fc) => {
+  };
+  if (catalog !== CATALOG_TYPE.EMPTY)
+    options['mode'] = catalog;
+  grok.data.callQuery('EnamineStore:Search', options, true, 100).then((fc) => {
     compsHost.firstChild?.remove();
     const data = JSON.parse(fc.getParamValue('stringResult'))['data'] as EnamineStoreSearchResult[];
     if (data === null) {
@@ -157,7 +195,7 @@ function createSearchPanel(panelName: SEARCH_MODE, smiles: string): HTMLDivEleme
       compsHost.appendChild(molHost);
     }
     headerHost.appendChild(ui.iconFA('arrow-square-down', () =>
-      grok.shell.addTableView(dataToTable(data, `EnamineStore ${panelName}`)), 'Open compounds as table'));
+      grok.shell.addTableView(dataToTable(data, `EnamineStore ${searchMode}`)), 'Open compounds as table'));
     compsHost.style.overflowY = 'auto';
   }).catch((err) => {
     compsHost.firstChild?.remove();
