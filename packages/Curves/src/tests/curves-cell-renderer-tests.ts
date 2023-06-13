@@ -17,6 +17,7 @@ category('creation', () => {
 	test('fit curve creation', async () => {
 		const df = DG.Test.isInBenchmark ? createDemoDataFrame(1000, 5, 2) : createDemoDataFrame(100, 5, 2);
 		grok.shell.addTableView(df);
+		await delay(50);
 	});
 });
 
