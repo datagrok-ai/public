@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.5",
+  "version": "3.4.6",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1119,9 +1119,12 @@
         },
         "1.0.8": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.0.12": {
+          "datagrok-api": "^1.11.1"
         }
       },
-      "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "description": "Molecular similarity and substructure search capabilities in the [DrugBank](https://go.drugbank.com/) [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
