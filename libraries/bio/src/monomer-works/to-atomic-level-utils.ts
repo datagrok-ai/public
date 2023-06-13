@@ -1,5 +1,3 @@
-/* Do not change these import lines to match external modules in webpack configuration */
-/* eslint-disable valid-jsdoc */
 import {monomerWorksConsts as C} from './consts';
 import {LoopConstants, LoopVariables,
   MolGraph} from './types';
@@ -41,7 +39,12 @@ export function getFormattedMonomerLib(
   return map;
 }
 
-/** Translate a sequence of monomer symbols into Molfile V3000 */
+/** Translate a sequence of monomer symbols into Molfile V3000
+ * @param {string[]} monomerSeq - Sequence of monomer symbols
+ * @param {Map<string, MolGraph>} monomersDict - Mapping of monomer symbols to MolGraph objects
+ * @param {ALPHABET} alphabet - Alphabet of the column
+ * @param {HELM_POLYMER_TYPE} polymerType - Polymer type
+ * @return {string} - Molfile V3000*/
 export function monomerSeqToMolfile(
   monomerSeq: string[], monomersDict: Map<string, MolGraph>,
   alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
@@ -121,7 +124,11 @@ export function monomerSeqToMolfile(
   return result;
 }
 
-/** Cap the resulting (after sewing up all the monomers) molfile with 'O' */
+/** Cap the resulting (after sewing up all the monomers) molfile with 'O'
+ * @param {string[]} molfileAtomBlock - Array of lines of the resulting molfile atom block
+ * @param {string[]} molfileBondBlock - Array of lines of the resulting molfile bond block
+ * @param {LoopVariables} v - Loop variables
+ * @param {LoopConstants} LC - Loop constants*/
 function capResultingMolblock(
   molfileAtomBlock: string[], molfileBondBlock: string[],
   v: LoopVariables, LC: LoopConstants
@@ -281,7 +288,12 @@ function fillBackboneToBranchBond(branchMonomer: MolGraph, molfileBondBlock: str
 }
 
 /** Compute the atom/bond counts for the resulting molfile, depending on the
-   * type of polymer (peptide/nucleotide) */
+    * type of polymer (peptide/nucleotide)
+    * @param {string[]}monomerSeq - the sequence of monomers
+    * @param {Map<string, MolGraph>}monomersDict - the dictionary of monomers
+    * @param {ALPHABET}alphabet - the alphabet of the monomers
+    * @param {HELM_POLYMER_TYPE}polymerType - the type of polymer
+    * @return {{atomCount: number, bondCount: number}} - the atom/bond counts*/
 function getResultingAtomBondCounts(
   monomerSeq: string[], monomersDict: Map<string, MolGraph>,
   alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
@@ -333,7 +345,10 @@ function getResultingAtomBondCounts(
   return {atomCount, bondCount};
 }
 
-/** Keep precision upon floating point operations over atom coordinates */
+/** Keep precision upon floating point operations over atom coordinates
+ * @param {number}x - the floating point number
+ * @return {number} - the floating point number with the same precision
+*/
 export function keepPrecision(x: number): number {
   return Math.round(C.PRECISION_FACTOR * x) / C.PRECISION_FACTOR;
 }
