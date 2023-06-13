@@ -4,6 +4,8 @@ import {_package} from '../package-test';
 import {searchWidget, drugNameMoleculeConvert, SEARCH_TYPE} from '../widgets';
 import * as CONST from './const';
 
+//NOTE: Skip reason here requires manual check of the test results. The tests are disabled for GH Actions.
+
 category('DrugBank', () => {
   const molStrings = [CONST.SMILES, CONST.SMARTS, CONST.MOL2000, CONST.MOL3000, CONST.EMPTY];
   let dbdf: DG.DataFrame;
@@ -21,17 +23,17 @@ category('DrugBank', () => {
   test('similarity-search', async () => {
     for (const molString of molStrings)
       await searchWidget(molString, SEARCH_TYPE.SIMILARITY, dbdf);
-  });
+  }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
 
   test('substructure-search', async () => {
     for (const molString of molStrings)
       await searchWidget(molString, SEARCH_TYPE.SUBSTRUCTURE, dbdf);
-  });
+  }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
 
   test('drugNameMolecule', async () => {
     drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, moleculeCol);
     // expect(drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, smilesCol), 'CC(Oc(cccc1)c1C(O)=O)=O');
     // expect(drugNameMoleculeConvert('db:carbono', dbdfRowCount, synonymsCol, smilesCol), '[C]');
     // expect(drugNameMoleculeConvert('db:gadolinio', dbdfRowCount, synonymsCol, smilesCol), '[Gd]');
-  });
+  }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
 });
