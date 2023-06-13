@@ -8,30 +8,22 @@ import * as CONST from './const';
 
 category('DrugBank', () => {
   const molStrings = [CONST.SMILES, CONST.SMARTS, CONST.MOL2000, CONST.MOL3000, CONST.EMPTY];
-  let dbdf: DG.DataFrame;
-  let synonymsCol: DG.Column<string>;
-  let moleculeCol: DG.Column<string>;
-  let dbdfRowCount: number;
-
-  before(async () => {
-    dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
-    synonymsCol = dbdf.getCol('SYNONYMS');
-    moleculeCol = dbdf.getCol('molecule');
-    dbdfRowCount = dbdf.rowCount;
-  });
 
   test('similarity-search', async () => {
+    const dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
     for (const molString of molStrings)
       await searchWidget(molString, SEARCH_TYPE.SIMILARITY, dbdf);
   }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
 
   test('substructure-search', async () => {
+    const dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
     for (const molString of molStrings)
       await searchWidget(molString, SEARCH_TYPE.SUBSTRUCTURE, dbdf);
   }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
 
   test('drugNameMolecule', async () => {
-    drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, moleculeCol);
+    const dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
+    drugNameMoleculeConvert('db:aspirin', dbdf.rowCount, dbdf.getCol('SYNONYMS'), dbdf.getCol('molecule'));
     // expect(drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, smilesCol), 'CC(Oc(cccc1)c1C(O)=O)=O');
     // expect(drugNameMoleculeConvert('db:carbono', dbdfRowCount, synonymsCol, smilesCol), '[C]');
     // expect(drugNameMoleculeConvert('db:gadolinio', dbdfRowCount, synonymsCol, smilesCol), '[Gd]');
