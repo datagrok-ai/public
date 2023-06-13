@@ -10,7 +10,7 @@ import {IReduceDimensionalityResult} from '../reduce-dimensionality';
  * @param {boolean}parallelDistanceWorkers - whether to use parallel distance matrix workers
  * @return {Promise<IReduceDimensionalityResult>} Resulting embedding and distance matrix.
  */
-export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
+export async function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
   options?: any, parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
   return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
@@ -22,11 +22,12 @@ export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method
       parallelDistanceWorkers: parallelDistanceWorkers,
     });
     worker.onmessage = ({data: {error, distance, embedding}}) => {
-      worker.terminate();
       if (error)
         reject(error);
       else
         resolve({distance: distance, embedding: embedding});
+      // terminate the worker after some time. immidiate termination causes crashes.
+      setTimeout(() => worker.terminate(), 0);
     };
   });
 }
