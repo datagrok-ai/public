@@ -6,6 +6,7 @@ import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
 import {PackageLogger} from "./logger";
 import * as Module from "module";
+import dayjs from "dayjs";
 
 declare var grok: any;
 let api = <any>window;
@@ -58,10 +59,10 @@ export class Entity {
   get path(): string { return api.grok_Entity_Path(this.dart); }
 
   /** Time when entity was created **/
-  get createdOn(): string { return api.grok_Entity_Get_CreatedOn(this.dart); }
+  get createdOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_CreatedOn(this.dart)); }
 
   /** Time when entity was updated **/
-  get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.dart); }
+  get updatedOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_UpdatedOn(this.dart)); }
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
