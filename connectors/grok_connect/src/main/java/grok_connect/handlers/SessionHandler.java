@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import grok_connect.GrokConnect;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import serialization.DataFrame;
@@ -81,7 +82,7 @@ public class SessionHandler {
                     logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
                     queryManager.closeConnection();
                     logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
-                    session.getRemote().sendString("COMPLETED");
+                    session.getRemote().sendString("COMPLETED 0");
                     return;
                 }
                 dataFrame = queryManager.getSubDF(dfNumber);
@@ -116,7 +117,9 @@ public class SessionHandler {
                 oneDfSent = true;
                 if (queryManager.isResultSetInitialized()) {
                     dataFrame = fdf.get();
-                    dfNumber++;
+                    if (dataFrame != null && dataFrame.rowCount != 0) {
+                        dfNumber++;
+                    }
                 }
             }
         }
@@ -130,10 +133,10 @@ public class SessionHandler {
             session.getRemote().sendString(checksumMessage(bytes.length));
             logger.debug(EventType.CHECKSUM_SENDING.getMarker(dfNumber, EventType.Stage.END), "CheckSum message was sent");
         } else {
-            logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame is empty. Processing has finished");
+            logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber + 1, EventType.Stage.END), "DataFrame is empty. Processing has finished");
             queryManager.closeConnection();
             logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
-            session.getRemote().sendString("COMPLETED");
+            session.getRemote().sendString(String.format("COMPLETED %s", dfNumber));
         }
     }
 

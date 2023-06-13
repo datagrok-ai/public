@@ -88,13 +88,16 @@ public class QueryManager {
     }
 
     public DataFrame getSubDF(int dfNumber) throws IOException, SQLException, QueryCancelledByUser {
+        DataFrame df = new DataFrame();
+        if (resultSet.isAfterLast() && !resultSet.isBeforeFirst()) {
+            return df;
+        }
         logger.trace(EventType.MISC.getMarker(), "getSubDF was called with argument");
         logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.START), "DataFrame processing was started");
         List<Column> columns = schemeInfo.columns;
         for (Column column : columns) {
             column.empty();
         }
-        DataFrame df = new DataFrame();
 
         if (!connection.isClosed() && !resultSet.isClosed()) {
             df = getResultSetSubDf(dfNumber, columns);
@@ -107,7 +110,7 @@ public class QueryManager {
         changeFetchSize(df, dfNumber);
 
         if (isDryRun && df.rowCount != 0) {
-            while (df.rowCount != 0) {
+            while (df.rowCount != 0 && !resultSet.isAfterLast()) {
                 logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(++dfNumber, EventType.Stage.START), "DataFrame processing was started");
                 for (Column column : columns) {
                     column.empty();
