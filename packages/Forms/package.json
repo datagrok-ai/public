@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/forms",
 	"friendlyName": "Forms",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Forms viewer provides a convenient way to visualize a set of selected rows.",
 	"author": {
 		"name": "Dmytro Kovalyov",
