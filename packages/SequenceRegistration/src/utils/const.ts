@@ -59,6 +59,7 @@ export const COL_NAMES = {
   OWNER: 'Owner',
 };
 
+
 export const GENERATED_COL_NAMES = [
   COL_NAMES.COMPOUND_NAME,
   COL_NAMES.COMPOUND_COMMENTS,

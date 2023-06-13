@@ -7,6 +7,12 @@ import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getJsonData} from './model/data-loading-utils/json-loader';
+import {FORMAT} from './model/const';
+import {SequenceToMolfileConverter} from './model/sequence-to-structure-utils/sequence-to-molfile';
+import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transformations';
+import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
+import {FormatDetector} from './model/parsing-validation/format-detector';
+import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
@@ -54,3 +60,29 @@ export async function sequenceTranslatorApp(): Promise<void> {
   }
 }
 
+//name: getCodeToNameMap
+export function getCodeToNameMap(): Map<string, number> {
+  return MonomerLibWrapper.getInstance().getCodesToWeightsMap();
+}
+
+//name: validateSequence
+//input: string sequence
+export function validateSequence(sequence: string): boolean {
+  const validator = new SequenceValidator(sequence);
+  const format = (new FormatDetector(sequence).getFormat());
+  return (format === null) ? false : validator.isValidSequence(format!);
+}
+
+//name: validateSequence
+//input: string sequence
+//input: bool invert
+export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): string {
+  return (new SequenceToMolfileConverter(sequence, invert, FORMAT.GCRS)).convert();
+}
+
+//name: linkStrands
+//input: object strands
+//input: bool invert
+export function linkStrands(strands: { senseStrands: string[], antiStrands: string[] }): string {
+  return linkStrandsV3000(strands, true);
+}

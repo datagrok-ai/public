@@ -42,7 +42,7 @@ export async function initSequenceTranslator(): Promise<void> {
 }
 
 //name: engageViewForOligoSdFile()
-//description: Function to modify the view for SequenceTranslator registration
+//description: Function to modify the view for oligo batch registration
 export async function engageViewForOligoSdFile(view: DG.TableView): Promise<void> {
   await engageViewForOligoSdFileUI(view);
 }

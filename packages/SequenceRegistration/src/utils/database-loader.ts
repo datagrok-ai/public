@@ -60,7 +60,7 @@ export class DataLoaderDB extends DBLoaderBase {
       usersDQ.prepare().call().then((fc) => { this._users = fc.getOutputParamValue(); }),
       icdsDQ.prepare().call().then((fc) => { this._ICDs = fc.getOutputParamValue(); }),
       idpsDQ.prepare().call().then((fc) => { this._IDPs = fc.getOutputParamValue(); }),
-      sourcesDQ.prepare().call().then((fc) => {this._sources = fc.getOutputParamValue(); }),
+      sourcesDQ.prepare().call().then((fc) => { this._sources = fc.getOutputParamValue(); }),
       saltsDQ.prepare().call().then((fc) => { this._salts = fc.getOutputParamValue(); }),
     ]);
   };

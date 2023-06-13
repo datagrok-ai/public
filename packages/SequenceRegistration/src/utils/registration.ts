@@ -2,16 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
-import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
+import {_package} from '../package';
+import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './const';
 import {getSaltMass, getSaltMolWeigth, getBatchMolWeight} from './calculations';
-import {stringify} from '../helpers';
+import {stringify} from './helpers';
 
 import {RegistrationColumnsHandler} from './add-columns';
 import {sdfSaveTable} from './save-table';
 import {PREFIXES, SEQ_TYPE, SEQ_TYPE_CATEGORY, seqTypeToCategoryDict} from './const';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {DBLoaderBase} from '../data-loading-utils/database-loader';
+import {DBLoaderBase} from '../utils/database-loader';
 import {Unsubscribable} from 'rxjs';
 
 /** Style used for cells in 'Type' column  */
@@ -153,12 +153,12 @@ export async function oligoSdFile(dl: DBLoaderBase, table: DG.DataFrame) {
       d.append(
         ui.divH([
           ui.button('Add columns',
-            () => {
+            async () => {
               const rch = new RegistrationColumnsHandler(
                 table,
                 (rowI, err) => { sdfHandleErrorUI('Error on ', table, rowI, err); }
               );
-              newDf = rch.addColumns(saltNamesList, saltsMolWeightList);
+              newDf = await rch.addColumns(saltNamesList, saltsMolWeightList);
               // newDf = sdfAddColumns(table, saltNamesList, saltsMolWeightList,
               //   (rowI, err) => { sdfHandleErrorUI('Error on ', table, rowI, err); });
               grok.shell.getTableView(newDf.name).grid.columns.setOrder(Object.values(COL_NAMES));
