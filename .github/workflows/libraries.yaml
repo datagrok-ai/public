@@ -166,17 +166,14 @@ jobs:
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
             git add libraries/${{ matrix.project }}/package-lock.json
+            skip_ci=""
             if [ ${{ github.ref }} == 'refs/heads/master' ]; then
-              git commit -m 'GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]
-  
-              Workflow ${{ github.workflow }} ${{ github.run_number }}
-              https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
-            else
-              git commit -m 'GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json
-  
-              Workflow ${{ github.workflow }} ${{ github.run_number }}
-              https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+              skip_ci="[skip ci]"
             fi
+            git commit -m 'GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json $skip_ci
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
             count=0
             retries=10
             until git push; do
