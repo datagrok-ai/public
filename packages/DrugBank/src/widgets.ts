@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {findSimilar, searchSubstructure} from './searches';
+import { findSimilar, searchSubstructure } from './searches';
 
 const WIDTH = 200;
 const HEIGHT = 100;
@@ -21,14 +21,14 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
   let table: DG.DataFrame | null;
   try {
     switch (searchType) {
-    case SEARCH_TYPE.SIMILARITY:
-      table = await findSimilar(molString, 20, 0, dbdf);
-      break;
-    case SEARCH_TYPE.SUBSTRUCTURE:
-      table = await searchSubstructure(molString, dbdf);
-      break;
-    default:
-      throw new Error(`DrugBankSearch: No such search type ${searchType}`);
+      case SEARCH_TYPE.SIMILARITY:
+        table = await findSimilar(molString, 20, 0, dbdf);
+        break;
+      case SEARCH_TYPE.SUBSTRUCTURE:
+        table = await searchSubstructure(molString, dbdf);
+        break;
+      default:
+        throw new Error(`DrugBankSearch: No such search type ${searchType}`);
     }
   } catch (e) {
     return new DG.Widget(ui.divText('Error occurred during search. Molecule is possible malformed'));
@@ -51,7 +51,7 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
     const piv = bitsetIndexes[n];
     const molfile = moleculeCol.get(piv)!;
     const molHost = ui.div();
-    grok.functions.call('Chem:drawMolecule', {'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+    grok.functions.call('Chem:drawMolecule', { 'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true })
       .then((res: HTMLElement) => molHost.append(res));
 
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
