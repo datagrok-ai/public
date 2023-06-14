@@ -10,7 +10,6 @@ const HELM_WRAPPER = {
   RIGHT: '}$$$$',
 };
 
-// todo: remove strange legacy logic with magic numbers
 export class FormatConverter {
   constructor(private readonly sequence: string, private readonly sourceFormat: FORMAT) { };
 
@@ -51,6 +50,7 @@ export class FormatConverter {
     return this.sequence.replace(regexp, (code) => codeMapping[code]);
   }
 
+  // todo: remove strange legacy logic with magic numbers
   private nucleotidesToBioSpring(edgeCodeMapping: KeyToValue, centerCodeMapping: KeyToValue): string {
     let count: number = -1;
     const regexp = new RegExp(getRegExpPattern(Object.keys(edgeCodeMapping)), 'g')
@@ -132,4 +132,3 @@ function formatToHelm(sequence: string, sourceFormat: FORMAT): string {
   helm = helm.replace(phosphateRegExp, (match, group) => group);
   return `${HELM_WRAPPER.LEFT + helm + HELM_WRAPPER.RIGHT}`;
 }
-
