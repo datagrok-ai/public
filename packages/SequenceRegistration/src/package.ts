@@ -18,7 +18,7 @@ class Package extends DG.Package {
   public async initDBLoader(): Promise<void> {
     if (this._dbLoader === undefined) {
       const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
-        'Initializing Sequence Translator data loader ...');
+        'Initializing Sequence Registration data loader ...');
       try {
         const dl = new DataLoaderDB();
         await dl.init();
@@ -26,7 +26,7 @@ class Package extends DG.Package {
       } catch (err: any) {
         const errMsg = err.hasOwnProperty('message') ? err.message : err.toString();
         grok.shell.error(errMsg);
-        throw new Error('Initializing Sequence Translator data loader error: ' + errMsg);
+        throw new Error('Initializing Sequence Registration data loader error: ' + errMsg);
       } finally {
         pi.close();
       }
@@ -37,12 +37,15 @@ class Package extends DG.Package {
 export const _package = new Package();
 
 //tags: init
-export async function initSequenceTranslator(): Promise<void> {
+export async function initSequenceRegistration(): Promise<void> {
   _package.initDBLoader().then(() => {}); // Do not wait for lists loaded from the database
 }
 
 //name: engageViewForOligoSdFile()
 //description: Function to modify the view for oligo batch registration
 export async function engageViewForOligoSdFile(view: DG.TableView): Promise<void> {
+  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
+    'Processing table for Sequence Registration...');
   await engageViewForOligoSdFileUI(view);
+  pi.close();
 }

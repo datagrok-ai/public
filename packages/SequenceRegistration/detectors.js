@@ -28,7 +28,7 @@ const COL_NAMES = {
   OWNER: 'Owner',
 };
 
-class SequenceRegistrationPackageDetectors extends DG.Package {
+class SequenceregistrationPackageDetectors extends DG.Package {
   isMatchView(view) {
     if (view.type !== DG.VIEW_TYPE.TABLE_VIEW) return false;
     const colNameList = view.dataFrame.columns.names();
@@ -45,7 +45,7 @@ class SequenceRegistrationPackageDetectors extends DG.Package {
         grok.functions.call('SequenceRegistration:engageViewForOligoSdFile', {view: view})
           .catch((err) => {
             const errMsg = err.hasOwnProperty('message') ? err.message : err.toString();
-            grok.shell.error('Engaging view for SequenceTranslator OligoSdFile error: ' + errMsg);
+            grok.shell.error('Engaging view for SequenceRegistration OligoSdFile error: ' + errMsg);
           });
       }
     };

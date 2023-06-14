@@ -1,8 +1,12 @@
 {
-  "name": "sequenceregistration",
-  "friendlyName": "SequenceRegistration",
+  "name": "@datagrok/sequence-registration",
+  "friendlyName": "Sequence Registration",
   "version": "0.0.1",
-  "description": "",
+  "author": {
+    "name": "Alexey Choposky",
+    "email": "achopovsky@datagrok.ai"
+  },
+  "description": "Sequence Registration is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used for bulk registration of [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences.",
   "dependencies": {
     "datagrok-api": "latest",
     "cash-dom": "latest",
