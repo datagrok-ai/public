@@ -891,7 +891,7 @@ export class LogEventParameterValue extends Entity {
  */
 export class Package extends Entity {
   public webRoot: string = '';
-  public version: string = '';
+  public _version: string = '';
 
   constructor(dart: any | undefined = undefined) {
     super(dart);
@@ -908,6 +908,20 @@ export class Package extends Entity {
   init(): Promise<null> { return Promise.resolve(null); }
 
   private _name: string = '';
+
+  get version(): string {
+    if (this.dart != null)
+      return api.grok_Package_Get_Version(this.dart);
+    else
+      return this._version;
+  }
+
+  set version(x) {
+    if (this.dart != null)
+      api.grok_Package_Set_Version(this.dart, x);
+    else
+      this._version = x;
+  }
 
   /** Package short name */
   get name(): string {
