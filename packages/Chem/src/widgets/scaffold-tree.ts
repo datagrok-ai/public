@@ -854,6 +854,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!isFiltering) {
       this.bitset = null;
       this.dataFrame.rows.requestFilter();
+      return;
     }
 
     const checkedNodes = this.tree.items.filter((v) => v.checked);
