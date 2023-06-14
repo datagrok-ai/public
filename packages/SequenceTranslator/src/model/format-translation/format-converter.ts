@@ -1,7 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {DELIMITER} from '../const';
 import {sortByReverseLength} from '../helpers';
-import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {FORMAT} from '../const';
 import {GROUP_TYPE, EDGES, CENTER, PHOSPHATE} from './const';
 import {KeyToValue, CodesInfo} from '../data-loading-utils/types';
@@ -17,14 +15,15 @@ export class FormatConverter {
   constructor(private readonly sequence: string, private readonly sourceFormat: FORMAT) { };
 
   convertTo(targetFormat: FORMAT): string {
-    const formatsConvertableToHelm = Object.keys(codesToHelmDictionary);
+    const formatsConvertibleToHelm = Object.keys(codesToHelmDictionary);
 
-    if (this.sourceFormat === FORMAT.HELM && formatsConvertableToHelm.includes(targetFormat))
+    if (this.sourceFormat === FORMAT.HELM && formatsConvertibleToHelm.includes(targetFormat))
       return helmToFormat(this.sequence, targetFormat);
-    if (formatsConvertableToHelm.includes(this.sourceFormat) && targetFormat === FORMAT.HELM)
+
+    if (formatsConvertibleToHelm.includes(this.sourceFormat) && targetFormat === FORMAT.HELM)
       return formatToHelm(this.sequence, this.sourceFormat);
 
-    if ([this.sourceFormat, targetFormat].every((el) => formatsConvertableToHelm.includes(el))) {
+    if ([this.sourceFormat, targetFormat].every((el) => formatsConvertibleToHelm.includes(el))) {
       const helm = formatToHelm(this.sequence, this.sourceFormat);
       return helmToFormat(helm, targetFormat);
     }
@@ -35,9 +34,6 @@ export class FormatConverter {
       throw new Error (`ST: unsupported translation direction ${this.sourceFormat} -> ${targetFormat}`);
     }
 
-    if (this.sourceFormat === FORMAT.GCRS && targetFormat === FORMAT.LCMS)
-      return this.gcrsToLcms(codeMapping as KeyToValue);
-
     if (this.sourceFormat === FORMAT.NUCLEOTIDES) {
       const edgeCodeMapping = codeMapping[EDGES] as KeyToValue;
       const centerCodeMapping = codeMapping[CENTER] as KeyToValue;
@@ -47,36 +43,12 @@ export class FormatConverter {
         return this.nucleotidesToGCRS(edgeCodeMapping, centerCodeMapping);
       }
     } else
-      console.log('simple conversion is used for:', this.sourceFormat, '-->', targetFormat);
-      return this.simpleConversion(codeMapping as KeyToValue);
+      return this.gcrsToNucleotides(codeMapping as KeyToValue);
   }
 
-  private simpleConversion(codeMapping: KeyToValue) {
+  private gcrsToNucleotides(codeMapping: KeyToValue) {
     const regexp = new RegExp(getRegExpPattern(sortByReverseLength(Object.keys(codeMapping))), 'g');
     return this.sequence.replace(regexp, (code) => codeMapping[code]);
-  }
-
-  private gcrsToLcms(codeMapping: KeyToValue): string {
-    try {
-      const lib = MonomerLibWrapper.getInstance();
-      codeMapping[DELIMITER] = DELIMITER;
-      const codes = Object.keys(codeMapping)
-        .concat(DELIMITER)
-        .concat(lib.getModificationGCRSCodes());
-      const sortedCodes = sortByReverseLength(codes);
-      let i = 0;
-      let r1 = '';
-      while (i < this.sequence.length) {
-        const matchedCode = sortedCodes.find((c) => c === this.sequence.slice(i, i + c.length))!;
-        r1 += codeMapping[this.sequence.slice(i, i + matchedCode.length)];
-        i += matchedCode.length;
-      }
-      while (r1.indexOf('//') !== -1)
-        r1 = r1.replace('//', '/');
-      return r1;
-    } catch {
-      return '<error>';
-    }
   }
 
   private nucleotidesToBioSpring(edgeCodeMapping: KeyToValue, centerCodeMapping: KeyToValue): string {
