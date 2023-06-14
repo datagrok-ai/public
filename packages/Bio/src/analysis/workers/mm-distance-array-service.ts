@@ -9,7 +9,7 @@ export async function calculateMMDistancesArray(
   const values = macromoleculeCol.toList();
   if (macromoleculeCol.semType !== DG.SEMTYPE.MACROMOLECULE)
     throw new Error('Column has to be of macromolecule type');
-  const uh = new UnitsHandler(macromoleculeCol);
+  const uh = UnitsHandler.getOrCreate(macromoleculeCol);
   const fnName = uh.getDistanceFunctionName();
   const threadCount = Math.min(Math.max(navigator.hardwareConcurrency - 2, 1), values.length);
   const workers = new Array(threadCount).fill(null).map((_i) =>

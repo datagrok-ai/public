@@ -406,7 +406,7 @@ export async function _testPos(
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
 
-  const uh = new UnitsHandler(col);
+  const uh = UnitsHandler.getOrCreate(col);
   expect(uh.getAlphabetSize(), alphabetSize);
   expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
   if (!uh.isHelm()) {

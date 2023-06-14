@@ -27,6 +27,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   computeCompleted = new Subject<boolean>();
   distanceMatrixComputed: boolean = false;
   mmDistanceMatrix: Float32Array;
+
   constructor() {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
@@ -46,7 +47,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const uh = new UnitsHandler(this.moleculeColumn!);
+        const uh = UnitsHandler.getOrCreate(this.moleculeColumn!);
 
         await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :

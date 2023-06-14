@@ -27,7 +27,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.dataFrame) {
       if (computeData && this.moleculeColumn) {
-        const uh = new UnitsHandler(this.moleculeColumn);
+        const uh = UnitsHandler.getOrCreate(this.moleculeColumn);
         await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
 
         const diverseColumnName: string = this.diverseColumnLabel != null ? this.diverseColumnLabel :

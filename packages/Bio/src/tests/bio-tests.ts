@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 import {
   getAlphabetSimilarity,
-  getStats,
   monomerToShort,
   pickUpPalette,
   splitterAsFasta,
@@ -14,6 +13,8 @@ import {
 import {Nucleotides, NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {UnknownSeqPalette} from '@datagrok-libraries/bio/src/unknown';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {getStatsForCol} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 category('bio', () => {
   const csvDfN1: string = `seq
@@ -57,7 +58,7 @@ XZJ{}2
 PEPTIDE1{meI}$$$$`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const seqCol: DG.Column = df.getCol('seq')!;
-    const stats = getStats(seqCol, 1, splitterAsHelm);
+    const stats = getStatsForCol(seqCol, 1, splitterAsHelm);
 
     expectObject(stats.freq, {
       'meI': 1,
@@ -96,7 +97,7 @@ category('WebLogo.monomerToShort', () => {
 export async function _testGetStats(csvDfN1: string) {
   const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const seqCol: DG.Column = dfN1.col('seq')!;
-  const stats = getStats(seqCol, 5, splitterAsFasta);
+  const stats = getStatsForCol(seqCol, 5, splitterAsFasta);
 
   expectObject(stats.freq, {
     'A': 4,

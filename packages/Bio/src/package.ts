@@ -27,7 +27,7 @@ import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {
-  getStats, splitterAsHelm, TAGS as bioTAGS, ALPHABET, NOTATION,
+  TAGS as bioTAGS, ALPHABET, NOTATION,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -49,6 +49,7 @@ import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-u
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {WebLogoApp} from './apps/web-logo-app';
 
 export const _package = new DG.Package();
 
@@ -283,7 +284,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
       columnDistanceMetric = nc.getDistanceFunctionName();
     } else {
       seqCol = nc.convert(NOTATION.FASTA);
-      const uh = new UnitsHandler(seqCol);
+      const uh = UnitsHandler.getOrCreate(seqCol);
       columnDistanceMetric = uh.getDistanceFunctionName();
       tags.units = NOTATION.FASTA;
     }
@@ -315,7 +316,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   if (df.rowCount > allowedRowCount) {
     grok.shell.warning(`Too many rows, maximum for sequence activity cliffs is ${allowedRowCount}`);
     return;
-  };
+  }
 
   if (df.rowCount > fastRowCount) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
@@ -499,7 +500,7 @@ export async function compositionAnalysis(): Promise<void> {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
 
-    const _colUH = new UnitsHandler(col);
+    const _colUH = UnitsHandler.getOrCreate(col);
     // TODO: prevent for cyclic, branched or multiple chains in Helm
     return true;
   });
@@ -518,7 +519,7 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const selectedCol = colList.find((c) => { return (new UnitsHandler(c)).isMsa(); });
+    const selectedCol = colList.find((c) => { return UnitsHandler.getOrCreate(c).isMsa(); });
     const colInput: DG.InputBase = ui.choiceInput(
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
@@ -650,7 +651,8 @@ export function splitToMonomers(): void {
   for (const tempCol of tempDf.columns) {
     const newCol = originalDf.columns.add(tempCol);
     newCol.semType = C.SEM_TYPES.MONOMER;
-    newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
+    // TODO: GROK-
+    //newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
     newCol.setTag(bioTAGS.alphabet, col.getTag(bioTAGS.alphabet));
   }
   grok.shell.tv.grid.invalidate();
@@ -659,7 +661,8 @@ export function splitToMonomers(): void {
 //name: Bio: getHelmMonomers
 //input: column sequence {semType: Macromolecule}
 export function getHelmMonomers(sequence: DG.Column<string>): string[] {
-  const stats = getStats(sequence, 1, splitterAsHelm);
+  const uh = UnitsHandler.getOrCreate(sequence);
+  const stats = uh.stats;
   return Object.keys(stats.freq);
 }
 
@@ -722,6 +725,22 @@ export function saveAsFasta() {
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
 }
+
+// -- Test apps --
+
+//name: webLogoLargeApp
+export async function webLogoLargeApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('WebLogo');
+  try {
+    const app = new WebLogoApp();
+    const df: DG.DataFrame = await _package.files.readCsv('data/sample_PT_10000.csv');
+    await grok.data.detectSemanticTypes(df);
+    await app.init(df, 'webLogoLargeApp');
+  } finally {
+    pi.close();
+  }
+}
+
 
 // -- Demo --
 

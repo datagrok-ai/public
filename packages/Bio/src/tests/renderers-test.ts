@@ -158,7 +158,7 @@ category('renderers', () => {
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     // check newColumn with UnitsHandler constructor
-    const _uh: UnitsHandler = new UnitsHandler(msaSeqCol);
+    const _uh: UnitsHandler = UnitsHandler.getOrCreate(msaSeqCol);
 
     dfList.push(df);
     tvList.push(tv);
@@ -186,7 +186,7 @@ category('renderers', () => {
     expect(resCellRenderer, 'sequence');
 
     // check tgtCol with UnitsHandler constructor
-    const _uh: UnitsHandler = new UnitsHandler(tgtCol);
+    const _uh: UnitsHandler = UnitsHandler.getOrCreate(tgtCol);
   }
 
   async function _selectRendererBySemType() {

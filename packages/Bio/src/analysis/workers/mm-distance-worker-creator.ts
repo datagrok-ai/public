@@ -8,7 +8,7 @@ export async function calcMmDistanceMatrix(column: DG.Column<any>): Promise<Floa
   const values = column.toList();
   if (column.semType !== DG.SEMTYPE.MACROMOLECULE)
     throw new Error('Column has to be of macromolecule type');
-  const uh = new UnitsHandler(column);
+  const uh = UnitsHandler.getOrCreate(column);
   const fnName = uh.getDistanceFunctionName();
   const distanceMatrixService = new DistanceMatrixService(true, false);
   const dm = await distanceMatrixService.calc(values, fnName);
