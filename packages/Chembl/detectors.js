@@ -1,5 +1,3 @@
-const { chem } = require("datagrok-api/dg");
-
 class ChemblPackageDetectors extends DG.Package {
 
   //tags: semTypeDetector
@@ -15,9 +13,9 @@ class ChemblPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectChembl(col) {
-    const chembl = col.getRawData().map((value) => value.startsWith('CHEMBL'));
+    const chembl = Array.from(col.values()).filter((val) => val.startsWith('CHEMBL'));
     if (chembl.length == col.length)
-      return 'chemblId';
+      return 'chembl';
     return null;
   }
 }
