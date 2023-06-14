@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import grok_connect.GrokConnect;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import serialization.DataFrame;
@@ -76,8 +75,8 @@ public class SessionHandler {
             queryManager.initResultSet();
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
-                if (queryManager.isDryRun) {
-                    logger.info(EventType.MISC.getMarker(), "Running DRY RUN");
+                if (queryManager.withoutSending || queryManager.dryRun) {
+                    logger.info(EventType.MISC.getMarker(), "Running without sending data to server");
                     dataFrame = queryManager.getSubDF(dfNumber);
                     logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
                     queryManager.closeConnection();
@@ -91,12 +90,9 @@ public class SessionHandler {
             }
         } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
             fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
-            Marker start = EventType.CHUNK_SENDING.getMarker(dfNumber, EventType.Stage.START);
-            Marker end = EventType.CHUNK_SENDING.getMarker(dfNumber, EventType.Stage.END);
+            Marker start = EventType.DATA_SENDING.getMarker(dfNumber, EventType.Stage.START);
             logger.debug(start, "Sending binary dataframe with id {}", dfNumber);
             session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
-            logger.debug(end, "Binary dataframe with id {} was sent to the server", dfNumber);
-            logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing has finished");
             return;
         } else if (message.startsWith(COMPLETED_OK)) {
             sendLog();
@@ -131,9 +127,7 @@ public class SessionHandler {
             logger.debug(finish, "DataFrame with id {} was converted to byteArray", dfNumber);
             logger.debug(EventType.CHECKSUM_SENDING.getMarker(dfNumber, EventType.Stage.START), "Sending checkSum message with bytes length of {}", bytes.length);
             session.getRemote().sendString(checksumMessage(bytes.length));
-            logger.debug(EventType.CHECKSUM_SENDING.getMarker(dfNumber, EventType.Stage.END), "CheckSum message was sent");
         } else {
-            logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber + 1, EventType.Stage.END), "DataFrame is empty. Processing has finished");
             queryManager.closeConnection();
             logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
             session.getRemote().sendString(String.format("COMPLETED %s", dfNumber));
@@ -153,7 +147,7 @@ public class SessionHandler {
     }
 
     private void sendLog() throws IOException {
-        logger.debug(EventType.MISC.getMarker(), "Converting logs to byteArray");
+        logger.debug(EventType.LOG_SENDING.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
         byte[] logs = queryLogger.dumpLogMessages().toByteArray();
         session.getRemote().sendBytes(ByteBuffer.wrap(logs));
     }

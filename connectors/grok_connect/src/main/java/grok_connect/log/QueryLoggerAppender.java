@@ -59,7 +59,7 @@ public class QueryLoggerAppender extends AppenderBase<ILoggingEvent> {
         logs.columns.get(EVENT_SUB_DF_NUMBER_INDEX).add(null);
         logs.columns.get(EVENT_STAGE_INDEX).add(split[2]);
         String destination = type.equals(EventType.CHECKSUM_SENDING.toString())
-                || type.equals(EventType.CHUNK_SENDING.toString()) ? DESTINATION : "";
+                || type.equals(EventType.DATA_SENDING.toString()) || type.equals(EventType.LOG_SENDING.toString()) ? DESTINATION : "";
         logs.columns.get(EVENT_DESTINATION_INDEX).add(destination);
     }
 

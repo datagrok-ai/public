@@ -26,15 +26,19 @@ public class QueryManager {
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
     public static final String FETCH_SIZE_KEY = "connectFetchSize";
+    public static final String INIT_FETCH_SIZE_KEY = "initConnectFetchSize";
     public static final String DRY_RUN_KEY = "dryRun";
+    public static final String WITHOUT_SENDING_KEY = "withoutSending";
     private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
     private static final int MAX_FETCH_SIZE = 100000;
     private static final int MIN_FETCH_SIZE = 100;
-    public boolean isDryRun = false;
+    public boolean withoutSending = false;
+    public boolean dryRun = false;
     private final JdbcDataProvider provider;
     private final FuncCall query;
     private final Logger logger;
     private int currentFetchSize = MIN_FETCH_SIZE;
+    private int initFetchSize = MIN_FETCH_SIZE;
     private int chunkSize = -1;
     private SchemeInfo schemeInfo;
     private ResultSet resultSet;
@@ -50,29 +54,39 @@ public class QueryManager {
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
         if (query.func.options != null) {
             if (query.func.options.containsKey(FETCH_SIZE_KEY)) {
-                setInitFetchSize(query.func.options.get(FETCH_SIZE_KEY).toString());
+                setFetchSize(query.func.options.get(FETCH_SIZE_KEY).toString());
+            }
+            if (query.func.options.containsKey(WITHOUT_SENDING_KEY)) {
+                withoutSending = Boolean.parseBoolean(query.func.options.get(WITHOUT_SENDING_KEY).toString());
             }
             if (query.func.options.containsKey(DRY_RUN_KEY)) {
-                isDryRun = Boolean.parseBoolean(query.func.options.get(DRY_RUN_KEY).toString());
+                dryRun = Boolean.parseBoolean(query.func.options.get(WITHOUT_SENDING_KEY).toString());
+            }
+            if (query.func.options.containsKey(INIT_FETCH_SIZE_KEY)) {
+                setInitFetchSize(query.func.options.get(INIT_FETCH_SIZE_KEY).toString());
             }
         }
         if (query.func.aux != null) {
             if (query.func.aux.containsKey(FETCH_SIZE_KEY)) {
-                setInitFetchSize(query.func.aux.get(FETCH_SIZE_KEY).toString());
+                setFetchSize(query.func.aux.get(FETCH_SIZE_KEY).toString());
+            }
+            if (query.func.aux.containsKey(WITHOUT_SENDING_KEY)) {
+                withoutSending = (Boolean) query.func.aux.get(WITHOUT_SENDING_KEY);
             }
             if (query.func.aux.containsKey(DRY_RUN_KEY)) {
-                isDryRun = (Boolean) query.func.aux.get(DRY_RUN_KEY);
+                dryRun = (Boolean) query.func.aux.get(DRY_RUN_KEY);
+            }
+            if (query.func.aux.containsKey(INIT_FETCH_SIZE_KEY)) {
+                setInitFetchSize(query.func.aux.get(INIT_FETCH_SIZE_KEY).toString());
             }
         }
     }
 
     public void initResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
-        logger.debug(EventType.RESULT_SET_INIT.getMarker(EventType.Stage.START), "Initializing resultSet");
         logger.debug(EventType.CONNECTION_RECEIVING.getMarker(EventType.Stage.START), "Receiving connection to db");
         connection = provider.getConnection(query.func.connection);
         logger.debug(EventType.CONNECTION_RECEIVING.getMarker(EventType.Stage.END), "Connection was received");
-        resultSet = provider.getResultSet(query, connection, logger, currentFetchSize);
-        logger.debug(EventType.RESULT_SET_INIT.getMarker(EventType.Stage.END), "Finished resultSet init");
+        resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
         supportTransactions = connection.getMetaData().supportsTransactions();
     }
 
@@ -93,7 +107,6 @@ public class QueryManager {
             return df;
         }
         logger.trace(EventType.MISC.getMarker(), "getSubDF was called with argument");
-        logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.START), "DataFrame processing was started");
         List<Column> columns = schemeInfo.columns;
         for (Column column : columns) {
             column.empty();
@@ -101,23 +114,22 @@ public class QueryManager {
 
         if (!connection.isClosed() && !resultSet.isClosed()) {
             df = getResultSetSubDf(dfNumber, columns);
-            if (isDryRun) {
+            if (withoutSending && !dryRun) {
                 serializeDf(df, dfNumber);
-                logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing was finished");
             }
         }
 
         changeFetchSize(df, dfNumber);
 
-        if (isDryRun && df.rowCount != 0) {
-            while (df.rowCount != 0 && !resultSet.isAfterLast()) {
-                logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(++dfNumber, EventType.Stage.START), "DataFrame processing was started");
+        if (dryRun || withoutSending) {
+            while (!resultSet.isAfterLast()) {
                 for (Column column : columns) {
                     column.empty();
                 }
-                df = getResultSetSubDf(dfNumber, columns);
-                serializeDf(df, dfNumber);
-                logger.debug(EventType.DATAFRAME_PROCESSING.getMarker(dfNumber, EventType.Stage.END), "DataFrame processing was finished");
+                df = getResultSetSubDf(++dfNumber, columns);
+                if (!dryRun) {
+                    serializeDf(df, dfNumber);
+                }
                 changeFetchSize(df, dfNumber);
             }
         }
@@ -147,16 +159,15 @@ public class QueryManager {
     }
 
     private DataFrame getResultSetSubDf(int dfNumber, List<Column> columns) throws QueryCancelledByUser, SQLException, IOException {
-        Marker start = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.START);
-        Marker end = EventType.RESULT_SET_PROCESSING.getMarker(dfNumber, EventType.Stage.END);
-        logger.debug(start, "ResultSet processing was started");
-        DataFrame df = provider.getResultSetSubDf(query, resultSet, columns,
-                schemeInfo.supportedType, schemeInfo.initColumn, currentFetchSize, logger, dfNumber);
-        logger.debug(end, "ResultSet processing has finished");
-        return df;
+        int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
+        return provider.getResultSetSubDf(query, resultSet, columns,
+                schemeInfo.supportedType, schemeInfo.initColumn, rowsNumber, logger, dfNumber, dryRun);
     }
 
     private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
+        if (supportTransactions && dryRun) {
+            resultSet.setFetchSize(currentFetchSize);
+        }
         if (supportTransactions && df.rowCount != 0 && !changedFetchSize) {
             currentFetchSize = getFetchSize(df);
             logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size: {}", currentFetchSize);
@@ -172,8 +183,11 @@ public class QueryManager {
         return Math.min(Math.max(MIN_FETCH_SIZE, fetchSize), MAX_FETCH_SIZE);
     }
 
-    private void setInitFetchSize(String optionValue) {
-        logger.debug(EventType.MISC.getMarker(), "Setting manual fetch size {}", optionValue);
+    private void setFetchSize(String optionValue) {
+        if (optionValue.isEmpty()) {
+            return;
+        }
+        logger.debug(EventType.MISC.getMarker(), "Setting fetch size {}", optionValue);
         Pattern pattern = Pattern.compile("(\\d+) MB");
         Matcher matcher = pattern.matcher(optionValue);
         if (matcher.find()) {
@@ -182,6 +196,14 @@ public class QueryManager {
             changedFetchSize = true;
             currentFetchSize = Integer.parseInt(optionValue);
         }
+    }
+
+    private void setInitFetchSize(String optionValue) {
+        if (optionValue.isEmpty()) {
+            return;
+        }
+        logger.debug(EventType.MISC.getMarker(), "Setting init fetch size {}", optionValue);
+        initFetchSize = Integer.parseInt(optionValue);
     }
 
     private byte[] serializeDf(DataFrame df, int dfNumber) {

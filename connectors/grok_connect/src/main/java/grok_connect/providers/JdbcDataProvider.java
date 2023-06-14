@@ -432,7 +432,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
                                        List<Boolean> supportedType,List<Boolean> initColumn,
-                                       int maxIterations, Logger queryLogger, int operationNumber)
+                                       int maxIterations, Logger queryLogger, int operationNumber, boolean dryRun)
             throws IOException, SQLException, QueryCancelledByUser {
         if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
             queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
@@ -464,6 +464,9 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 for (int c = 1; c < columnCount + 1; c++) {
                     Object value = getObjectFromResultSet(resultSet, c);
+                    if (dryRun) {
+                        continue;
+                    }
 
                     if (outputCsv != null) {
                         if (value != null)
@@ -652,9 +655,10 @@ public abstract class JdbcDataProvider extends DataProvider {
             queryLogger.debug(EventType.COLUMN_FILLING.getMarker(operationNumber, EventType.Stage.END),
                     "Column filling was finished");
             DataFrame dataFrame = new DataFrame();
-            queryLogger.debug(EventType.DATAFRAME_FILLING.getMarker(operationNumber, EventType.Stage.START), "Filling dataFrame was started");
+            if (dryRun) {
+                return dataFrame;
+            }
             dataFrame.addColumns(columns);
-            queryLogger.debug(EventType.DATAFRAME_FILLING.getMarker(operationNumber, EventType.Stage.END), "Filling dataFrame was finished");
             return dataFrame;
         } catch (Exception e) {
             queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);
@@ -679,7 +683,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 return new DataFrame();
 
             SchemeInfo schemeInfo = resultSetScheme(queryRun, resultSet, logger);
-            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1, logger, 1);
+            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1, logger, 1, false);
         }
         catch (SQLException e) {
             if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))

@@ -4,36 +4,26 @@ import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
 public enum EventType {
-    MISC("MISC", null),
+    MISC("MISC"),
+    SCHEME_INFO_INIT("SCHEME_INFO_INIT"),
 
-    SCHEME_INFO_INIT("SCHEME_INFO_INIT", null),
-
-    ERROR("ERROR", null),
-
-    LOG_PROCESSING("LOG_PROCESSING", null),
-
-    DATAFRAME_PROCESSING("DATAFRAME_PROCESSING", null),
-    CHECKSUM_SENDING("CHECKSUM_SENDING", DATAFRAME_PROCESSING),
-    DATAFRAME_TO_BYTEARRAY_CONVERTING("DATAFRAME_TO_BYTEARRAY_CONVERTING", DATAFRAME_PROCESSING),
-    RESULT_SET_PROCESSING("RESULT_SET_PROCESSING", DATAFRAME_PROCESSING),
-    COLUMN_FILLING("COLUMN_FILLING", RESULT_SET_PROCESSING),
-    DATAFRAME_FILLING("DATAFRAME_FILLING", RESULT_SET_PROCESSING),
-    CHUNK_SENDING("CHUNK_SENDING", DATAFRAME_PROCESSING),
-
-    RESULT_SET_INIT("RESULT_SET_INIT", null),
-    CONNECTION_RECEIVING("CONNECTION_RECEIVING", RESULT_SET_INIT),
-    QUERY_PARSING("QUERY_PARSING", RESULT_SET_INIT),
-    QUERY_INTERPOLATING("QUERY_INTERPOLATING", RESULT_SET_INIT),
-    STATEMENT_PARAMETERS_REPLACING("STATEMENT_PARAMETERS_REPLACING", RESULT_SET_INIT),
-    STATEMENT_EXECUTING("STATEMENT_EXECUTING", RESULT_SET_INIT);
+    ERROR("ERROR"),
+    LOG_SENDING("LOG_SENDING"),
+    CHECKSUM_SENDING("CHECKSUM_SENDING"),
+    DATAFRAME_TO_BYTEARRAY_CONVERTING("DATAFRAME_TO_BYTEARRAY_CONVERTING"),
+    COLUMN_FILLING("COLUMN_FILLING"),
+    DATA_SENDING("DATA_SENDING"),
+    CONNECTION_RECEIVING("CONNECTION_RECEIVING"),
+    QUERY_PARSING("QUERY_PARSING"),
+    QUERY_INTERPOLATING("QUERY_INTERPOLATING"),
+    STATEMENT_PARAMETERS_REPLACING("STATEMENT_PARAMETERS_REPLACING"),
+    STATEMENT_EXECUTING("STATEMENT_EXECUTING");
 
     private final String name;
     private final Marker marker;
-    private final EventType parent;
 
-    EventType(String name, EventType parent) {
+    EventType(String name) {
         this.name = name;
-        this.parent = parent;
         this.marker = MarkerFactory.getMarker(String.format("%s| | ", this));
     }
 
@@ -62,8 +52,7 @@ public enum EventType {
 
     @Override
     public String toString() {
-        String parentStr = parent == null ? "" : String.format("%s.", parent);
-        return String.format("%s%s", parentStr, name);
+        return name;
     }
 
     public enum Stage {
