@@ -654,7 +654,10 @@ export class RichFunctionView extends FunctionView {
       // check if the value is not the same for floats, otherwise we
       // will overwrite a user input with a lower precicsion decimal
       // representation
-      else if (((typeof newValue === 'number') && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) || typeof newValue !== 'number') {
+      else if (
+        ((val.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
+        val.property.propertyType !== DG.TYPE.FLOAT
+      ) {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
