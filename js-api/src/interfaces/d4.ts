@@ -832,9 +832,9 @@ export interface IBarChartLookSettings {
 
   outerMarginBottom: number;
 
-  addFilteredBars: boolean;
+  showEmptyBars: boolean;
 
-  drawLabelsInsideBars: string;
+  showLabels: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1155,9 +1155,6 @@ export interface IGridLookSettings {
 
   showColumnLabels: boolean;
 
-  /// Orientation of the column header text.
-  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
-  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Column header height. If not specified, it is calculated automatically.
   /// See also *Col Labels Orientation*, *Horz Col Labels Height*
   colHeaderHeight: number;
@@ -1261,6 +1258,9 @@ export interface IGridLookSettings {
 
   colHeaderFont: string;
 
+  /// Orientation of the column header text.
+  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
+  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Resizing column header by dragging the border between the header and the first row
   allowColHeaderResizing: boolean;
 
@@ -1395,7 +1395,7 @@ export interface ITrellisPlotLookSettings {
 
   globalScale: boolean;
 
-  addLines: boolean;
+  showGridlines: string;
 
   showXAxes: boolean;
 
@@ -1490,6 +1490,12 @@ export interface IPcPlotLookSettings {
   showDensity: boolean;
 
   showMinMax: boolean;
+
+  showLabels: boolean;
+
+  maxCategories: number;
+
+  horzMargin: number;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

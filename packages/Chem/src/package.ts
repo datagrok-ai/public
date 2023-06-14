@@ -167,7 +167,6 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
 //name: Scaffold Tree
 //tags: viewer
-//meta.trellisable: true
 //meta.icon: files/icons/scaffold-tree-icon.svg
 //output: viewer result
 export function scaffoldTreeViewer() : ScaffoldTreeViewer {
