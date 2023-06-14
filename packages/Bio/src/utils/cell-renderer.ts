@@ -251,6 +251,21 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     g.fillStyle = color;
     g.fillText(monomerToShort(s, 3), x + (w / 2), y + (h / 2), w);
   }
+
+  svgMolOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+
+  onMouseEnter(gridCell: DG.GridCell, e: MouseEvent) {
+    super.onMouseEnter(gridCell, e);
+
+    // TODO: Display monomer structure within tooltip
+    // const monomerName = gridCell.cell.value;
+    // const mw = getMonomerWorksInstance();
+    // // TODO: Display monomer structure in Tooltip
+    // const nameDiv = ui.div(monomerName);
+    // const molDiv = grok.chem.svgMol(monomerMol, undefined, undefined, svgMolOptions);
+    //
+    // ui.tooltip.show(ui.divV([nameDiv, molEl,]), x, y);
+  }
 }
 
 export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {

@@ -27,45 +27,45 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Phe_ab-dehyd
 PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H2.N.D-Orn.D-aThr.Phe_4Me}$$$$
 PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H2.N.D-Orn.D-aThr.Phe_4Me}$$$$`;
 
-category('UnitsHandler', () =>{
-  test('Seq-Fasta', async () =>{
+category('UnitsHandler', () => {
+  test('Seq-Fasta', async () => {
     const [_df, uh] = await loadCsvWithDetection(seqDna);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), false);
   });
 
-  test('Seq-Fasta-MSA', async () =>{
+  test('Seq-Fasta-MSA', async () => {
     const [_df, uh] = await loadCsvWithDetection(seqDnaMsa);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), true);
   });
 
-  test('Seq-Fasta-units', async () =>{
+  test('Seq-Fasta-units', async () => {
     const [_df, uh] = await loadCsvWithTag(seqDna, DG.TAGS.UNITS, NOTATION.FASTA);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), false);
   });
 
-  test('Seq-Fasta-MSA-units', async () =>{
+  test('Seq-Fasta-MSA-units', async () => {
     const [_df, uh] = await loadCsvWithTag(seqDnaMsa, DG.TAGS.UNITS, NOTATION.FASTA);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), true);
   });
 
-  test('Seq-Helm', async () =>{
+  test('Seq-Helm', async () => {
     const [_df, uh] = await loadCsvWithTag(seqHelm, DG.TAGS.UNITS, NOTATION.HELM);
     expect(uh.notation, NOTATION.HELM);
     expect(uh.isHelm(), true);
   });
 
-  test('Seq-UN', async () =>{
+  test('Seq-UN', async () => {
     const [_df, uh] = await loadCsvWithTag(seqUn, DG.TAGS.UNITS, NOTATION.SEPARATOR);
     expect(uh.notation, NOTATION.SEPARATOR);
     expect(uh.separator, '-');
     expect(uh.alphabet, ALPHABET.UN);
   });
 
-  test('Seq-UN-auto', async () =>{
+  test('Seq-UN-auto', async () => {
     const [_df, uh] = await loadCsvWithDetection(seqUn);
     expect(uh.notation, NOTATION.SEPARATOR);
     expect(uh.separator, '-');
@@ -75,7 +75,7 @@ category('UnitsHandler', () =>{
   async function loadCsvWithDetection(csv: string): Promise<[df: DG.DataFrame, uh: UnitsHandler]> {
     const df = DG.DataFrame.fromCsv(csv);
     await grok.data.detectSemanticTypes(df);
-    const uh = new UnitsHandler(df.getCol('seq'));
+    const uh = UnitsHandler.getOrCreate(df.getCol('seq'));
     return [df, uh];
   }
 
@@ -87,7 +87,7 @@ category('UnitsHandler', () =>{
     col.semType = DG.SEMTYPE.MACROMOLECULE;
     if (value === NOTATION.SEPARATOR)
       col.setTag(TAGS.separator, '-');
-    const uh = new UnitsHandler(df.getCol('seq'));
+    const uh = UnitsHandler.getOrCreate(df.getCol('seq'));
     return [df, uh];
   }
 });

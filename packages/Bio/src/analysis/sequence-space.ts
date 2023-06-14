@@ -64,7 +64,7 @@ export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promi
     if (nc.isSeparator()) {
       const fastaCol = nc.convert(NOTATION.FASTA);
       seqList = fastaCol.toList();
-      const uh = new UnitsHandler(fastaCol);
+      const uh = UnitsHandler.getOrCreate(fastaCol);
       distanceFName = uh.getDistanceFunctionName();
     } else {
       distanceFName = nc.getDistanceFunctionName();

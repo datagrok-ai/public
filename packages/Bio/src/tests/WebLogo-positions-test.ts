@@ -9,6 +9,7 @@ import {
   PositionMonomerInfo as PMI,
   WebLogoViewer,
 } from '../viewers/web-logo-viewer';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('WebLogo-positions', () => {
   const csvDf1 = `seq
@@ -177,9 +178,9 @@ ATC-G-TTGC--
       expectPositionInfo(resPos, tgtPos);
     }
 
-    const splitter: SplitterFunc = wlViewer['splitter']!;
     const atPI1: PI = resPosList[1];
-    const countAt1 = countForMonomerAtPosition(df, seqCol, df.filter, splitter, 'G', atPI1);
+    const uh = UnitsHandler.getOrCreate(seqCol);
+    const countAt1 = countForMonomerAtPosition(df, uh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
   }, {skipReason: 'GROK-13300'});
 });

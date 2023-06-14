@@ -91,6 +91,7 @@ category('splitters', () => {
 PEPTIDE1{hHis.N.T}$$$,5.30751
 PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 `);
+    await grok.data.detectSemanticTypes(df);
     const expectedMonomerList = ['hHis', 'Aca', 'Cys_SEt', 'N', 'T'];
 
     const helmCol: DG.Column = df.getCol('HELM');
