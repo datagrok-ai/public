@@ -468,7 +468,8 @@ export class RichFunctionView extends FunctionView {
     try {
       await this.run();
     } catch (e: any) {
-      grok.shell.error(e);
+      grok.shell.error(e.toString());
+      console.log(e);
     } finally {
       this.isRunning = false;
       this.checkDisability.next();
