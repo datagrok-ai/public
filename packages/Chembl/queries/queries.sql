@@ -238,7 +238,7 @@ WHERE chembl_id IN (
 );
 --end
 
---name: InfoPanel
+--name: MolregnoInfo
 --connection: Chembl
 --tags: panel, widget
 --input: string molregno {semType: molregno}
@@ -251,4 +251,21 @@ ON s.molregno = m.molregno
 INNER JOIN research_companies r
 ON m.res_stem_id = r.res_stem_id
 WHERE s.molregno = CAST(@molregno as INTEGER)
+--end
+
+--name: ChemblInfo
+--connection: Chembl
+--tags: panel, widget
+--input: string chemblId {semType: chembl}
+SELECT s.canonical_smiles as smiles, r.country as country
+FROM molecule_dictionary md
+INNER JOIN compound_structures s
+ON md.molregno = s.molregno
+INNER JOIN drug_mechanism d
+ON s.molregno = d.molregno
+INNER JOIN molecule_synonyms m
+ON s.molregno = m.molregno
+INNER JOIN research_companies r
+ON m.res_stem_id = r.res_stem_id
+WHERE md.chembl_id = @chemblId
 --end
