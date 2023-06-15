@@ -6,6 +6,8 @@ import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, RUN_NAME_COL_LABEL,
   SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {getDfFromRuns} from './shared/utils';
 
+const api: any = window;
+
 /**
  * View designed to compare several FuncCalls.
  * See {@link fromComparedRuns} for limitations and creation.
@@ -40,12 +42,7 @@ export class RunComparisonView extends DG.TableView {
       view.type === FUNCTIONS_VIEW_TYPE);
     if (cardView) grok.shell.v = cardView;
 
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12879
-    const tempView = grok.shell.addTableView(comparisonDf);
-    tempView.temp = {'isComparison': true};
-    tempView.close();
-
-    const view = new this(tempView.dart, options);
+    const view = new this(comparisonDf, options);
     const comparatorFunc: string = func.options['comparator'];
 
     setTimeout(async () => {
@@ -60,13 +57,13 @@ export class RunComparisonView extends DG.TableView {
    * Constructor requires Dart object, so practically cannot be used. Use {@link fromComparedRuns} instead.
    */
   private constructor(
-    dartForParent: any,
+    dataFrame: DG.DataFrame,
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
     } = {},
   ) {
-    super(dartForParent);
+    super(api.grok_TableView(dataFrame.dart, false));
 
     if (options.parentView) this.parentView = options.parentView;
     this.parentCall = options.parentCall || grok.functions.getCurrentCall();
