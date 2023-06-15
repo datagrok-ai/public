@@ -75,7 +75,7 @@ public class SessionHandler {
             queryManager.initResultSet();
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
-                if (queryManager.withoutSending || queryManager.dryRun) {
+                if (queryManager.dryRun) {
                     logger.info(EventType.MISC.getMarker(), "Running without sending data to server");
                     dataFrame = queryManager.getSubDF(dfNumber);
                     logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");

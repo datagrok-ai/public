@@ -16,7 +16,6 @@ import grok_connect.providers.JdbcDataProvider;
 import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.slf4j.Marker;
 import serialization.Column;
 import serialization.DataFrame;
 
@@ -28,11 +27,9 @@ public class QueryManager {
     public static final String FETCH_SIZE_KEY = "connectFetchSize";
     public static final String INIT_FETCH_SIZE_KEY = "initConnectFetchSize";
     public static final String DRY_RUN_KEY = "dryRun";
-    public static final String WITHOUT_SENDING_KEY = "withoutSending";
     private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
     private static final int MAX_FETCH_SIZE = 100000;
     private static final int MIN_FETCH_SIZE = 100;
-    public boolean withoutSending = false;
     public boolean dryRun = false;
     private final JdbcDataProvider provider;
     private final FuncCall query;
@@ -56,11 +53,8 @@ public class QueryManager {
             if (query.func.options.containsKey(FETCH_SIZE_KEY)) {
                 setFetchSize(query.func.options.get(FETCH_SIZE_KEY).toString());
             }
-            if (query.func.options.containsKey(WITHOUT_SENDING_KEY)) {
-                withoutSending = Boolean.parseBoolean(query.func.options.get(WITHOUT_SENDING_KEY).toString());
-            }
             if (query.func.options.containsKey(DRY_RUN_KEY)) {
-                dryRun = Boolean.parseBoolean(query.func.options.get(WITHOUT_SENDING_KEY).toString());
+                dryRun = Boolean.parseBoolean(query.func.options.get(DRY_RUN_KEY).toString());
             }
             if (query.func.options.containsKey(INIT_FETCH_SIZE_KEY)) {
                 setInitFetchSize(query.func.options.get(INIT_FETCH_SIZE_KEY).toString());
@@ -69,9 +63,6 @@ public class QueryManager {
         if (query.func.aux != null) {
             if (query.func.aux.containsKey(FETCH_SIZE_KEY)) {
                 setFetchSize(query.func.aux.get(FETCH_SIZE_KEY).toString());
-            }
-            if (query.func.aux.containsKey(WITHOUT_SENDING_KEY)) {
-                withoutSending = (Boolean) query.func.aux.get(WITHOUT_SENDING_KEY);
             }
             if (query.func.aux.containsKey(DRY_RUN_KEY)) {
                 dryRun = (Boolean) query.func.aux.get(DRY_RUN_KEY);
@@ -114,22 +105,16 @@ public class QueryManager {
 
         if (!connection.isClosed() && !resultSet.isClosed()) {
             df = getResultSetSubDf(dfNumber, columns);
-            if (withoutSending && !dryRun) {
-                serializeDf(df, dfNumber);
-            }
         }
 
         changeFetchSize(df, dfNumber);
 
-        if (dryRun || withoutSending) {
+        if (dryRun) {
             while (!resultSet.isAfterLast()) {
                 for (Column column : columns) {
                     column.empty();
                 }
                 df = getResultSetSubDf(++dfNumber, columns);
-                if (!dryRun) {
-                    serializeDf(df, dfNumber);
-                }
                 changeFetchSize(df, dfNumber);
             }
         }
@@ -204,14 +189,5 @@ public class QueryManager {
         }
         logger.debug(EventType.MISC.getMarker(), "Setting init fetch size {}", optionValue);
         initFetchSize = Integer.parseInt(optionValue);
-    }
-
-    private byte[] serializeDf(DataFrame df, int dfNumber) {
-        Marker start = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.START);
-        Marker finish = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.END);
-        logger.debug(start, "Converting dataframe to byteArray");
-        byte[] bytes = df.toByteArray();
-        logger.debug(finish, "DataFrame with id {} was converted to byteArray", dfNumber);
-        return bytes;
     }
 }
