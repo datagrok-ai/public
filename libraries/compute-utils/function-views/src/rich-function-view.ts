@@ -267,6 +267,7 @@ export class RichFunctionView extends FunctionView {
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
+      let prevDfBlockTitle = '';
       const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
         this.dfToViewerMapping[dfProp.name] = [];
 
@@ -330,7 +331,8 @@ export class RichFunctionView extends FunctionView {
           return loadedViewer;
         }));
 
-        const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
+        const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: '';
+        prevDfBlockTitle = dfBlockTitle;
 
         if (tabLabel === 'Input') {
           const subscribeOnFcChanges = () => {
