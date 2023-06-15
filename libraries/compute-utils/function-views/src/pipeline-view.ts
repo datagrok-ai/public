@@ -59,7 +59,10 @@ export class PipelineView extends ComputationView {
     if (format === 'Archive') {
       const zipConfig = {} as Zippable;
 
-      for (const step of Object.values(this.steps)) {
+      for (
+        const step of Object.values(this.steps)
+          .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+      ) {
         this.stepTabs.currentPane = this.stepTabs.getPane(getVisibleStepName(step));
 
         await new Promise((r) => setTimeout(r, 100));
@@ -91,7 +94,10 @@ export class PipelineView extends ComputationView {
         return name;
       };
 
-      for (const step of Object.values(this.steps)) {
+      for (
+        const step of Object.values(this.steps)
+          .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+      ) {
         const temp = new ExcelJS.Workbook();
         this.stepTabs!.currentPane = this.stepTabs!.getPane(getVisibleStepName(step));
 
