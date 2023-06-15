@@ -428,7 +428,7 @@ export class PipelineView extends ComputationView {
 
     for (const step of Object.values(this.steps)) {
       const corrChildRun = pulledChildRuns.find((pulledChildRun) => {
-        // DEALING WITH THE BUG: TODO
+        // DEALING WITH THE BUG: https://reddata.atlassian.net/browse/GROK-13335
         const realNqName = `${pulledChildRun.func.package.name}:${pulledChildRun.func.name}`;
         return realNqName === step.func.nqName;
       });
