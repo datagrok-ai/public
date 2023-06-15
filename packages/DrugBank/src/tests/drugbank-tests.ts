@@ -1,5 +1,4 @@
-import * as DG from 'datagrok-api/dg';
-import {category, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchWidget, drugNameMoleculeConvert, SEARCH_TYPE} from '../widgets';
 import * as CONST from './const';
@@ -13,13 +12,13 @@ category('DrugBank', () => {
     const dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
     for (const molString of molStrings)
       await searchWidget(molString, SEARCH_TYPE.SIMILARITY, dbdf);
-  }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
+  });
 
   test('substructure-search', async () => {
     const dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
     for (const molString of molStrings)
       await searchWidget(molString, SEARCH_TYPE.SUBSTRUCTURE, dbdf);
-  }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
+  });
 
   test('drugNameMolecule', async () => {
     const dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
@@ -27,5 +26,5 @@ category('DrugBank', () => {
     // expect(drugNameMoleculeConvert('db:aspirin', dbdfRowCount, synonymsCol, smilesCol), 'CC(Oc(cccc1)c1C(O)=O)=O');
     // expect(drugNameMoleculeConvert('db:carbono', dbdfRowCount, synonymsCol, smilesCol), '[C]');
     // expect(drugNameMoleculeConvert('db:gadolinio', dbdfRowCount, synonymsCol, smilesCol), '[Gd]');
-  }, {skipReason: 'GROK-13317: XMLHttpError when reading drugbank-open-structures.d42'});
+  });
 });

@@ -363,10 +363,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const tableNames = new Array(this.molColumns.length);
     for (let n = 0; n < tableNames.length; ++n)
-      tableNames[n] =this.molColumns[n][0].dataFrame.name;
+      tableNames[n] = this.molColumns[n][0].dataFrame.name;
 
-    this.tableIdx = this.molColumns.length > 0 ? 0 : -1;
     this.Table = this.addProperty('Table', DG.TYPE.DATA_FRAME, grok.shell.tv.dataFrame.name, {editor: 'table', category: 'Data'});
+
+    this.tableIdx = tableNames.length > 0 ? tableNames.indexOf(this.Table) : -1;
 
     const molColNames = new Array(this.molColumns[this.tableIdx].length);
     for (let n = 0; n < molColNames.length; ++n)
@@ -853,6 +854,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (!isFiltering) {
       this.bitset = null;
       this.dataFrame.rows.requestFilter();
+      return;
     }
 
     const checkedNodes = this.tree.items.filter((v) => v.checked);

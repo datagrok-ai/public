@@ -13,26 +13,32 @@ let presentationToggle = ui.div([ui.iconFA('presentation')], 'windows-manager-to
 
 presentationToggle.addEventListener('click', ()=> {
     window.presentationMode ? window.presentationMode = false : window.presentationMode = true;
+    setToggleState(window.presentationMode, presentationToggle);
 });
 
 topmenuToggle.addEventListener('click', ()=> {
     window.simpleMode ? window.simpleMode = false : window.simpleMode = true;
+    window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
 });
 
 propertiesToggle.addEventListener('click', ()=> {
     window.showProperties ? window.showProperties = false : window.showProperties = true;
+    setToggleState(window.showProperties, propertiesToggle);
 });
 
 helpToggle.addEventListener('click', ()=> {
     window.showHelp ? window.showHelp = false : window.showHelp = true;
+    setToggleState(window.showHelp, helpToggle);
 });
 
 vairablesToggle.addEventListener('click', ()=> {
     window.showVariables ? window.showVariables = false : window.showVariables = true;
+    setToggleState(window.showVariables, vairablesToggle); 
 });
 
 consoleToggle.addEventListener('click', ()=> {
-    window.showConsole ? window.showConsole = false : window.showConsole = true; 
+    window.showConsole ? window.showConsole = false : window.showConsole = true;
+    setToggleState(window.showConsole, consoleToggle); 
 });
 
 function setToggleState (v:boolean, toggle:HTMLDivElement) {
@@ -52,12 +58,11 @@ export function windowsManagerPanel() {
     root.className = 'windows-manager-statusbar';
     document.getElementsByClassName('d4-global-status-panel')[0].append(root);
 
-    setInterval(() => {
-        setToggleState(window.showProperties, propertiesToggle);
-        setToggleState(window.showConsole, consoleToggle);
-        setToggleState(window.showVariables, vairablesToggle);
-        setToggleState(window.showHelp, helpToggle);
-        setToggleState(window.presentationMode, presentationToggle);
-        window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
-    }, 100);
+    setToggleState(window.showProperties, propertiesToggle);
+    setToggleState(window.showConsole, consoleToggle);
+    setToggleState(window.showVariables, vairablesToggle);
+    setToggleState(window.showHelp, helpToggle);
+    setToggleState(window.presentationMode, presentationToggle);
+    window.simpleMode ? topmenuToggle.className = 'windows-manager-toggle' : topmenuToggle.className = 'windows-manager-toggle active';
+    
 }

@@ -2,13 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray, delay} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {_package, getHelmMonomers} from '../package';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 
-category('splitters', () => {
+category('splitters', async () => {
   before(async () => {
   });
 
@@ -78,12 +78,13 @@ category('splitters', () => {
     seqCol.setTag(bioTAGS.aligned, C.MSA);
 
     const _tv: DG.TableView = grok.shell.addTableView(df);
+    await delay(500); // needed to account for table adding
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 
     await grok.functions.call('Bio:splitToMonomers');
     expect(df.columns.names().includes('17'), true);
-  }, {skipReason: 'GROK-13300'} /* Bio.Unhandled exceptions.exceptions : NullError: method not found: 'Q' on null /**/);
+  });
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(
@@ -91,6 +92,7 @@ category('splitters', () => {
 PEPTIDE1{hHis.N.T}$$$,5.30751
 PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 `);
+    await grok.data.detectSemanticTypes(df);
     const expectedMonomerList = ['hHis', 'Aca', 'Cys_SEt', 'N', 'T'];
 
     const helmCol: DG.Column = df.getCol('HELM');

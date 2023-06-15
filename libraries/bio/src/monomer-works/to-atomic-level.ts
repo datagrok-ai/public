@@ -38,7 +38,7 @@ export async function _toAtomicLevel(
   }
 
   let srcCol: DG.Column<string> = seqCol;
-  const seqUh = new UnitsHandler(seqCol);
+  const seqUh = UnitsHandler.getOrCreate(seqCol);
 
   // convert 'helm' to 'separator' units
   if (seqUh.isHelm()) {
@@ -47,7 +47,7 @@ export async function _toAtomicLevel(
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
 
-  const srcUh = new UnitsHandler(srcCol);
+  const srcUh = UnitsHandler.getOrCreate(srcCol);
   const alphabet = srcUh.alphabet;
 
   // determine the polymer type according to HELM specifications
