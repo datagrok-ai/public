@@ -68,6 +68,18 @@ category('Dapi: functions calls', async () => {
     await GDF.calls.find(funcCall.id);
   });
 
+  test('load package funccall with func\'s valid nqName', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loaded = await GDF.calls.find(funcCall.id);
+    const loadedWithFunc = await GDF.calls.include('func').find(funcCall.id);
+  
+    expect(loaded.func.nqName, 'ApiTests:dummyPackageFunction');
+    expect(loadedWithFunc.func.nqName, 'ApiTests:dummyPackageFunction');
+  });
+
   test('list', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
