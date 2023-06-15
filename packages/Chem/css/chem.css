@@ -66,6 +66,10 @@
   overflow: hidden;
 }
 
+.d4-filter-element .ui-box {
+  height: 100%!important;
+}
+
 .d4-filter-element .grok-loader {
   position: absolute;
   top: 10px;
@@ -210,12 +214,26 @@
   visibility: visible;
 }
 
+.chem-scaffold-tree-toolbar.empty-tree {
+  visibility: visible;
+}
+
 .d4-viewer.d4-scaffold-tree:hover .chem-scaffold-tree-toolbar {
   visibility: visible;
 }
 
 .d4-viewer:hover .chem-scaffold-tree-toolbar {
   visibility: visible;
+}
+
+.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label {
+  border: 1px solid var(--grey-2);
+  margin-left: 8px;
+}
+
+.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label,
+.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label > .chem-mol-box {
+  flex-grow: 1;
 }
 
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
@@ -344,4 +362,8 @@
 
 .chem-hide-filter {
   display: none;
+}
+
+.d4-flex-row.ui-div.chem-scaffold-tree-scrollbar {
+  overflow: hidden!important;
 }

@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {DIRECTION} from '../../function-views/src/shared/consts';
 
 type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
 
@@ -40,31 +39,46 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   const scriptsCache = {} as Record<string, DG.Script>;
+  const packagesCache = {} as Record<string, DG.Package>;
   // TODO: add users and groups cache
+
+  async function augmentFuncWithPackage(func: DG.Func) {
+    const id = func.package.id;
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13337
+    const funcPackage = packagesCache[id] ?? await grok.dapi.packages.allPackageVersions().find(id);
+
+    if (!packagesCache[id]) packagesCache[id] = funcPackage;
+    // dirty hack to overwrite read-only property
+    func.package.dart = funcPackage.dart;
+  }
+
+  async function augmentCallWithFunc(call: DG.FuncCall) {
+    const id = call.func.id;
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
+    const func = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
+
+    if (!scriptsCache[id]) scriptsCache[id] = func;
+
+    if (!func.package.name)
+      await augmentFuncWithPackage(func);
+
+    call.func = func;
+    call.options['isHistorical'] = true;
+  }
 
   export async function loadChildRuns(
     funcCallId: string,
   ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
     const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
-    const id = parentRun.func.id;
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
-    const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
-
-    if (!scriptsCache[id]) scriptsCache[id] = script;
-    parentRun.func = script;
     parentRun.options['isHistorical'] = true;
 
+    await augmentCallWithFunc(parentRun);
+
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-      .filter(`options.parentCallId="${funcCallId}"`).list();
+      .include('func').filter(`options.parentCallId="${funcCallId}"`).list();
+    childRuns.forEach((childRun) => childRun.options['isHistorical'] = true);
 
-    await Promise.all(childRuns.map(async (childRun) => {
-      const id = childRun.func.id;
-      // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
-      const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
-
-      if (!scriptsCache[id]) scriptsCache[id] = script;
-      childRun.func = script;
-    }));
+    await Promise.all(childRuns.map(async (childRun) => augmentCallWithFunc(childRun)));
 
     return {parentRun, childRuns};
   }
@@ -82,24 +96,19 @@ export namespace historyUtils {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('inputs, outputs, session.user').find(funcCallId);
 
-    const id = pulledRun.func.id;
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
-    const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
-
-    if (!scriptsCache[id]) scriptsCache[id] = script;
-    pulledRun.func = script;
+    await augmentCallWithFunc(pulledRun);
     pulledRun.options['isHistorical'] = true;
 
     if (!skipDfLoad) {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
         .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
       for (const output of dfOutputs)
-        pulledRun.outputs[output.name] = (await grok.dapi.tables.getTable(pulledRun.outputs[output.name])).clone();
+        pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
 
       const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
         .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
       for (const input of dfInputs)
-        pulledRun.inputs[input.name] = (await grok.dapi.tables.getTable(pulledRun.inputs[input.name])).clone();
+        pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
     }
 
     return pulledRun;
@@ -114,13 +123,17 @@ export namespace historyUtils {
   export async function saveRun(callToSave: DG.FuncCall) {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs)
+    for (const output of dfOutputs) {
+      callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
+    }
 
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
       .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs)
+    for (const input of dfInputs) {
+      callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
+    }
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }
@@ -199,13 +212,8 @@ export namespace historyUtils {
         .include(`${includedFields.join(',')}`)
         .list(listOptions);
 
-    for (const pulledRun of result) {
-      const id = pulledRun.func.id;
-      const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
-
-      if (!scriptsCache[id]) scriptsCache[id] = script;
-      pulledRun.func = script;
-    }
+    for (const pulledRun of result)
+      await augmentCallWithFunc(pulledRun);
 
     if (includedFields.includes('inputs') || includedFields.includes('func.params')) {
       for (const pulledRun of result) {

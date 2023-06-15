@@ -107,8 +107,8 @@ export async function chemDiversitySearch(
     fingerprintArray = new Array<BitArray | null>(size).fill(null);
     const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
     for (let i = 0; i < randomIndexes.length; ++i) {
-      const mol: RDMol | null = getMolSafe(moleculeColumn.get(randomIndexes[i]), {}, getRdKitModule()).mol;
-      if (mol && mol.is_valid()) {
+      const mol = getMolSafe(moleculeColumn.get(randomIndexes[i]), {}, getRdKitModule()).mol;
+      if (mol) {
         try {
           const fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
             radius: defaultMorganFpRadius,
@@ -116,9 +116,10 @@ export async function chemDiversitySearch(
           }));
           fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
         } catch (e) {
+        } finally {
+          mol.delete();
         }
       }
-      mol?.delete();
     }
   } else
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, true, false);

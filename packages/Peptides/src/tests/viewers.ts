@@ -7,7 +7,7 @@ import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResiduesViewer, showTooltip} from '../viewers/sar-viewer';
+import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResidues, showTooltip} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
 import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -70,7 +70,7 @@ category('Viewers: Monomer-Position', () => {
     expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
       `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
   });
-});
+}, false);
 
 category('Viewers: Most Potent Residues', () => {
   let df: DG.DataFrame;
@@ -79,7 +79,7 @@ category('Viewers: Most Potent Residues', () => {
   let sequenceCol: DG.Column<string>;
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
-  let mprViewer: MostPotentResiduesViewer;
+  let mprViewer: MostPotentResidues;
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
@@ -94,7 +94,7 @@ category('Viewers: Most Potent Residues', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResiduesViewer;
+    mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
   });
 
   test('Tooltip', async () => {
@@ -152,4 +152,4 @@ category('Viewers: Logo Summary Table', () => {
     const tooltipElement = lstViewer.showTooltip(cluster, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
-});
+}, false);

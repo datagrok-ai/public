@@ -4,9 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {handleError} from './utils';
-import {_package} from '../package';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+
+import {_package} from '../package';
 
 const ligandsDataFn: string = 'samples/1bdq-obs-pred.sdf';
 const structureDataFn: string = 'samples/1bdq.pdb';

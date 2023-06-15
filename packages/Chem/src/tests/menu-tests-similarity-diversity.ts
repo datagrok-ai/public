@@ -88,11 +88,11 @@ category('top menu similarity/diversity', () => {
     const viewer = getSearchViewer(tv, 'Chem Similarity Search') as ChemSimilarityViewer;
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 2000);
-      expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 0.234375, 0.23076923191547394,
-        0.2222222238779068, 0.2222222238779068, 0.20253165066242218, 0.2023809552192688, 0.18309858441352844,
-        0.1818181872367859, 0.1649484485387802]);
+      expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 
+        0.2957746386528015, 0.234375, 0.23076923191547394, 0.2222222238779068, 0.2222222238779068,
+        0.20253165066242218, 0.2023809552192688, 0.18309858441352844, 0.1818181872367859]);
     } finally {
       tv.close();
       DG.Balloon.closeAll();
@@ -106,7 +106,7 @@ category('top menu similarity/diversity', () => {
     tv.addViewer('Chem Similarity Search');
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
     } finally {
       tv.close();
@@ -125,12 +125,13 @@ category('top menu similarity/diversity', () => {
   });
 
   test('testSimilaritySearch.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip") : molecules;
-    await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0), 'Tanimoto', 10, 0.01, Fingerprint.Morgan);
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') : molecules;
+    await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0),
+      BitArrayMetricsNames.Tanimoto, 10, 0.01, Fingerprint.Morgan);
   });
 
   test('testDiversitySearch.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip") : molecules;
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') : molecules;
     await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
   });
 
@@ -162,7 +163,7 @@ category('top menu similarity/diversity', () => {
     try {
       expect(viewer.renderMolIds.length, 12);
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
     } finally {
       tv.close();

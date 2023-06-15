@@ -1,0 +1,48 @@
+[
+  {
+    "monomerType": "Backbone", 
+    "smiles": "C[C@H](N[H:1])C([OH:2])=O", 
+    "name": "Alanine", 
+    "author": "Pistoia Alliance HELM project", 
+    "molfile": "HELM Core Monomer library\n     RDKit          2D\n\n  7  6  0  0  1  0  0  0  0  0999 V2000\n    2.0625    0.7145    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2375    0.7145    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.8250    1.4289    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2375    2.1434    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0\n    0.8250    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2375   -0.7145    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  2  1  1  1\n  2  3  1  0\n  3  4  1  0\n  2  5  1  0\n  5  6  1  0\n  5  7  2  0\nM  RGP  2   4   1   6   2\nM  END\n", 
+    "naturalAnalog": "A", 
+    "rgroups": [
+      {
+        "capGroupSmiles": "[*:1][H]", 
+        "alternateId": "R1-H", 
+        "capGroupName": "H", 
+        "label": "R1"
+      }, 
+      {
+        "capGroupSmiles": "O[*:2]", 
+        "alternateId": "R2-OH", 
+        "capGroupName": "OH", 
+        "label": "R2"
+      }
+    ], 
+    "createDate": null, 
+    "id": 0, 
+    "polymerType": "PEPTIDE", 
+    "symbol": "A"
+  },
+  {
+        "monomerType": "Branch", 
+        "smiles": "[H:1]n1cnc2c(N)ncnc21", 
+        "name": "Adenine", 
+        "author": "Pistoia Alliance HELM project", 
+        "molfile": "HELM Core Monomer library\n  Ketcher 10131612512D 1   1.00000     0.00000     0\n\n 11 12  0     0  0            999 V2000\n    0.9632   -3.5449    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0970   -4.0450    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0970   -5.0451    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9630   -5.5451    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    1.8291   -5.0452    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.8293   -4.0451    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8536   -5.3539    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.4413   -4.5449    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.8535   -3.7357    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    0.9632   -2.5448    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.1626   -6.3051    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1 10  1  0     0  0\n  1  6  2  0     0  0\n  1  2  1  0     0  0\n  9  2  1  0     0  0\n  2  3  2  0     0  0\n  7  3  1  0     0  0\n  3  4  1  0     0  0\n  4  5  2  0     0  0\n  5  6  1  0     0  0\n  7  8  1  0     0  0\n  7 11  1  0     0  0\n  8  9  2  0     0  0\nA   11\nR1\nM  END\n", 
+        "naturalAnalog": "A", 
+        "rgroups": [
+            {
+                "capGroupSMILES": "[*:1][H]", 
+                "alternateId": "R1-H", 
+                "capGroupName": "H", 
+                "label": "R1"
+            }
+        ], 
+        "symbol": "A", 
+        "createDate": null, 
+        "polymerType": "RNA", 
+        "id": 0
+    }
+]

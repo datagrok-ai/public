@@ -11,7 +11,6 @@ category('UI: Sharing', () => {
 
   before(async () => {
     testUser = await grok.dapi.users.filter('login = "admin"').first();
-    // DG.Dialog.getOpenDialogs().forEach((d) => d.close());
   });
 
   test('scripts.ui', async () => {

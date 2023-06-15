@@ -1,5 +1,5 @@
 //name: Lorenz Attractor
-//tags: simulation, demo
+//tags: model, demo
 //meta.domain: Nonlinear dynamics
 //description: Set of chaotic solutions of the system for weather prediction. It illustrates the phenomenon known as the Butterfly effect or (more technically) sensitive dependence on initial conditions
 //language: javascript
@@ -10,6 +10,7 @@
 //input: double z0 = 1.05 [Initial conditions for distortion (from linearity) of the vertical temperature profile]
 //output: dataframe df {caption: Lorenz attractor; viewer: 3d Scatter plot())}
 //editor: Compute:RichFunctionViewEditor
+//meta.runOnOpen: true
 //meta.runOnInput: true
 
 function lorenzEquations(x, y, z, s=10, r=28, b=2.667) {

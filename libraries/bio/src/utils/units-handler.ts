@@ -6,7 +6,6 @@ import {
   detectAlphabet,
   getSplitterForColumn,
   getSplitterWithSeparator,
-  getStats,
   splitterAsFasta,
   splitterAsHelm
 } from './macromolecule/utils';
@@ -15,6 +14,11 @@ import {mmDistanceFunctions, MmDistanceFunctionsNames}
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {HELM_POLYMER_TYPE} from './const';
+
+export const Tags = new class {
+  /** Column's temp slot name for a UnitsHandler object */
+  uhTemp = `units-handler.${DG.SEMTYPE.MACROMOLECULE}`;
+}();
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
@@ -28,37 +32,37 @@ export class UnitsHandler {
     FASTA: '-',
   };
 
-  public static setUnitsToFastaColumn(col: DG.Column) {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
+  public static setUnitsToFastaColumn(uh: UnitsHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
       throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
 
-    col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    UnitsHandler.setTags(col, splitterAsFasta);
+    uh.column.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    UnitsHandler.setTags(uh);
   }
 
-  public static setUnitsToSeparatorColumn(col: DG.Column, separator?: string) {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR)
+  public static setUnitsToSeparatorColumn(uh: UnitsHandler, separator?: string) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
     if (!separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
 
-    col.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
-    col.setTag(TAGS.separator, separator);
-    UnitsHandler.setTags(col, getSplitterWithSeparator(separator));
+    uh.column.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    uh.column.setTag(TAGS.separator, separator);
+    UnitsHandler.setTags(uh);
   }
 
-  public static setUnitsToHelmColumn(col: DG.Column) {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
+  public static setUnitsToHelmColumn(uh: UnitsHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
 
-    col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    UnitsHandler.setTags(col, splitterAsHelm);
+    uh.column.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    UnitsHandler.setTags(uh);
   }
 
   /** From detectMacromolecule */
-  public static setTags(col: DG.Column, splitter: SplitterFunc): void {
-    const units = col.getTag(DG.TAGS.UNITS) as NOTATION;
-    const stats: SeqColStats = getStats(col, 5, splitter);
+  public static setTags(uh: UnitsHandler): void {
+    const units = uh.column.getTag(DG.TAGS.UNITS) as NOTATION;
+    const stats: SeqColStats = uh.stats;
     const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
 
     if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
@@ -66,20 +70,20 @@ export class UnitsHandler {
       if (Object.keys(stats.freq).length === 0) throw new Error('Alphabet is empty');
 
       const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
-      col.setTag(TAGS.aligned, aligned);
+      uh.column.setTag(TAGS.aligned, aligned);
 
       const alphabet = detectAlphabet(stats.freq, candidateAlphabets);
-      col.setTag(TAGS.alphabet, alphabet);
+      uh.column.setTag(TAGS.alphabet, alphabet);
       if (alphabet === ALPHABET.UN) {
         const alphabetSize = Object.keys(stats.freq).length;
         const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
-        col.setTag(TAGS.alphabetSize, alphabetSize.toString());
-        col.setTag(TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+        uh.column.setTag(TAGS.alphabetSize, alphabetSize.toString());
+        uh.column.setTag(TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
       }
     }
   }
 
-  protected get units(): string { return this._units; }
+  public get units(): string { return this._units; }
 
   protected get column(): DG.Column { return this._column; }
 
@@ -127,8 +131,7 @@ export class UnitsHandler {
         alphabetSize = parseInt(alphabetSizeStr);
       } else {
         // calculate alphabetSize on demand
-        const splitter: SplitterFunc = getSplitterForColumn(this.column);
-        const stats = getStats(this.column, 1, splitter);
+        const stats = this.stats;
         alphabetSize = Object.keys(stats.freq).length;
       }
       return alphabetSize;
@@ -157,6 +160,48 @@ export class UnitsHandler {
       return this.column.getTag(TAGS.alphabetIsMultichar) === 'true';
   }
 
+  private _splitted: string[][] | null = null;
+  /** */
+  public get splitted(): string[][] {
+    if (this._splitted === null) {
+      const splitter = this.getSplitter();
+      const colLength: number = this._column.length;
+      this._splitted = new Array(colLength);
+      const catIdxList = this._column.getRawData();
+      const catList: string[] = this._column.categories;
+      for (let rowI: number = 0; rowI < colLength; rowI++) {
+        const seq: string = catList[catIdxList[rowI]];
+        this._splitted[rowI] = splitter(seq);
+      }
+    }
+    return this._splitted;
+  }
+
+  private _stats: SeqColStats | null = null;
+
+  public get stats(): SeqColStats {
+    if (this._stats === null) {
+      const freq: { [m: string]: number } = {};
+      let sameLength = true;
+      let firstLength = null;
+
+      for (const mSeq of this.splitted) {
+        if (firstLength == null)
+          firstLength = mSeq.length;
+        else if (mSeq.length !== firstLength)
+          sameLength = false;
+
+        for (const m of mSeq) {
+          if (!(m in freq))
+            freq[m] = 0;
+          freq[m] += 1;
+        }
+      }
+      this._stats = {freq: freq, sameLength: sameLength};
+    }
+    return this._stats;
+  }
+
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
 
   public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR; }
@@ -172,6 +217,7 @@ export class UnitsHandler {
   public isMsa(): boolean { return this.aligned ? this.aligned.toUpperCase().includes('MSA') : false; }
 
   public isHelmCompatible(): boolean { return this.helmCompatible === 'true'; }
+
   /** Associate notation types with the corresponding units */
   /**
    * @return {NOTATION}     Notation associated with the units type
@@ -240,7 +286,7 @@ export class UnitsHandler {
    * @return {DG.Column}
    */
   public static getNewColumn(templateCol: DG.Column): DG.Column {
-    const col: UnitsHandler = new UnitsHandler(templateCol);
+    const col: UnitsHandler = UnitsHandler.getOrCreate(templateCol);
     const targetNotation = col.notation;
     return col.getNewColumn(targetNotation);
   }
@@ -285,6 +331,11 @@ export class UnitsHandler {
     return newColumn;
   }
 
+  /** Gets function to split seq value to monomers */
+  public getSplitter(): SplitterFunc {
+    return getSplitterForColumn(this._column);
+  }
+
   public getDistanceFunctionName(): MmDistanceFunctionsNames {
     // TODO add support for helm and separator notation
     if (!this.isFasta())
@@ -292,14 +343,14 @@ export class UnitsHandler {
     if (this.isMsa())
       return MmDistanceFunctionsNames.HAMMING;
     switch (this.alphabet) {
-    // As DNA and RNA scoring matrices are same as identity matrices(mostly),
-    // we can use very fast and optimized Levenshtein distance library
+      // As DNA and RNA scoring matrices are same as identity matrices(mostly),
+      // we can use very fast and optimized Levenshtein distance library
       case ALPHABET.DNA:
       case ALPHABET.RNA:
         return MmDistanceFunctionsNames.LEVENSHTEIN;
       case ALPHABET.PT:
         return MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
-        // For default case, let's use Levenshtein distance
+      // For default case, let's use Levenshtein distance
       default:
         return MmDistanceFunctionsNames.LEVENSHTEIN;
     }
@@ -319,7 +370,7 @@ export class UnitsHandler {
     const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
     const bioLib = monomerLibHelper.getBioLib();
     // retrieve peptides
-    const peptides = bioLib.getMonomerNamesByType(HELM_POLYMER_TYPE.PEPTIDE.toString());
+    const peptides = bioLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE.toString());
     // convert the peptides list to a set for faster lookup
     const peptidesSet = new Set(peptides);
     // get splitter for given separator and check if all monomers are in the lib
@@ -340,7 +391,7 @@ export class UnitsHandler {
     return true;
   }
 
-  public constructor(col: DG.Column) {
+  protected constructor(col: DG.Column<string>) {
     this._column = col;
     const units = this._column.getTag(DG.TAGS.UNITS);
     if (units !== null && units !== undefined)
@@ -358,12 +409,12 @@ export class UnitsHandler {
       // The following detectors and setters are to be called because the column is likely
       // as the UnitsHandler constructor was called on the column.
       if (this.isFasta()) {
-        UnitsHandler.setUnitsToFastaColumn(this.column);
+        UnitsHandler.setUnitsToFastaColumn(this);
       } else if (this.isSeparator()) {
         const separator = col.getTag(TAGS.separator);
-        UnitsHandler.setUnitsToSeparatorColumn(this.column, separator);
+        UnitsHandler.setUnitsToSeparatorColumn(this, separator);
       } else if (this.isHelm()) {
-        UnitsHandler.setUnitsToHelmColumn(this.column);
+        UnitsHandler.setUnitsToHelmColumn(this);
       } else {
         throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
       }
@@ -386,5 +437,11 @@ export class UnitsHandler {
           `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
       }
     }
+  }
+
+  /** Gets a column's UnitsHandler object from temp slot or creates a new and stores it to the temp slot. */
+  public static getOrCreate(col: DG.Column<string>): UnitsHandler {
+    if (!(Tags.uhTemp in col.temp)) col.temp[Tags.uhTemp] = new UnitsHandler(col);
+    return col.temp[Tags.uhTemp];
   }
 }

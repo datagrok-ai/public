@@ -2,66 +2,58 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray, expectObject, delay} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray, delay} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {_package, getHelmMonomers} from '../package';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 
-category('splitters', () => {
-  let tvList: DG.TableView[];
-  let dfList: DG.DataFrame[];
-
+category('splitters', async () => {
   before(async () => {
-    tvList = [];
-    dfList = [];
   });
 
   after(async () => {
-    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
-  const helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
+  const _helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
 
-  const helm2 = 'PEPTIDE1{meI.hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.N.meK}$$$';
+  const _helm2 = 'PEPTIDE1{meI.hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.N.meK}$$$';
 
   const data: { [key: string]: [string, string[]] } = {
     fastaMulti: [
       'M[MeI]YKETLL[MeF]PKTDFPMRGGL[MeA]',
       ['M', 'MeI', 'Y', 'K', 'E', 'T', 'L', 'L', 'MeF', 'P',
-        'K', 'T', 'D', 'F', 'P', 'M', 'R', 'G', 'G', 'L', 'MeA']
+        'K', 'T', 'D', 'F', 'P', 'M', 'R', 'G', 'G', 'L', 'MeA'],
     ],
     helm1: [
       'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$',
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dE', 'Thr_PO3H2', 'Aca', 'D-Tyr_Et',
-        'Tyr_ab-dehydroMe', 'dV', 'E', 'N', 'D-Orn', 'D-aThr', 'Phe_4Me']
+        'Tyr_ab-dehydroMe', 'dV', 'E', 'N', 'D-Orn', 'D-aThr', 'Phe_4Me'],
     ],
     helm2: [
       'PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.D-Dap.dV.E.N.pnG.Phe_4Me}$$$',
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'Aca',
-        'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me']
+        'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me'],
     ],
     // HELM editor dialog returns HELM string with multichar monomer names in square brackets
     helm3: [
       'PEPTIDE1{[meI].[hHis].[Aca].N.T.[dK].[Thr_PO3H2].[Aca].[D-Tyr_Et].[D-Dap].[dV].E.N.[pnG].[Phe_4Me]}$$$',
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'Aca',
-        'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me']
+        'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me'],
     ],
 
     testHelm1: [
       'RNA1{R(U)P.R(T)P.R(G)P.R(C)P.R(A)}$$$$',
-      ['R(U)P', 'R(T)P', 'R(G)P', 'R(C)P', 'R(A)']
+      ['R(U)P', 'R(T)P', 'R(G)P', 'R(C)P', 'R(A)'],
     ],
 
     testHelm2: [
       'RNA1{P.R(U)P.R(T)}$$$$',
-      ['P', 'R(U)P', 'R(T)']
+      ['P', 'R(U)P', 'R(T)'],
     ],
     testHelm3: [
       'RNA1{P.R(U).P.R(T)}$$$$',
-      ['P', 'R(U)', 'P', 'R(T)']
+      ['P', 'R(U)', 'P', 'R(T)'],
     ],
   };
 
@@ -85,7 +77,8 @@ category('splitters', () => {
       seqCol.semType = semType;
     seqCol.setTag(bioTAGS.aligned, C.MSA);
 
-    const tv: DG.TableView = grok.shell.addTableView(df);
+    const _tv: DG.TableView = grok.shell.addTableView(df);
+    await delay(500); // needed to account for table adding
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 
@@ -99,6 +92,7 @@ category('splitters', () => {
 PEPTIDE1{hHis.N.T}$$$,5.30751
 PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 `);
+    await grok.data.detectSemanticTypes(df);
     const expectedMonomerList = ['hHis', 'Aca', 'Cys_SEt', 'N', 'T'];
 
     const helmCol: DG.Column = df.getCol('HELM');

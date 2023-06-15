@@ -302,7 +302,10 @@ export const InputType = {
   List: 'List',
   Color: 'Color',
   Column: 'Column',
-  Radio: 'Radio'
+  Radio: 'Radio',
+  Choice: 'Choice',
+  MultiChoice: 'MultiChoice',
+  Table: 'Table',
 }
 
 export const FUNC_TYPES = {
@@ -404,7 +407,8 @@ export enum VIEWER {
   WORD_CLOUD = 'Word cloud',
   TIMELINES = 'TimelinesViewer',
   RADAR_VIEWER = 'RadarViewer',
-  SURFACE_PLOT = 'SurfacePlot'
+  SURFACE_PLOT = 'SurfacePlot',
+  SCAFFOLD_TREE = 'Scaffold Tree'
 }
 
 /** @enum {LINE_CHART_SERIES_TYPE} */

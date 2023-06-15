@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {TwinPviewer} from '../viewers/twin-p-viewer';
+
 import {_package} from '../package';
 
 export class DockingApp {
@@ -17,9 +18,9 @@ export class DockingApp {
 
   private changeId = async (): Promise<void> => {
     const chains = ['A', 'B'];
-    let pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
+    const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
-    let pdbStr: string = await _package.files.readAsText('samples/1bdq.pdb');
+    const pdbStr: string = await _package.files.readAsText('samples/1bdq.pdb');
 
     if (!this.twinPviewer) {
       this.twinPviewer = new TwinPviewer();
@@ -39,7 +40,8 @@ export class DockingApp {
     this.bsView = grok.shell.addTableView(table);
 
     this.ligandSelection = {};
-    let ligands = ['R', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'S', 'T', 'U', 'V', 'W'];
+    const ligands = ['R', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+      'M', 'N', 'O', 'P', 'Q', 'S', 'T', 'U', 'V', 'W'];
     for (let i = 0; i < ligands.length; i++)
       this.ligandSelection[ligands[i]] = [false, 400 + i];
 
@@ -51,7 +53,7 @@ export class DockingApp {
           ui.boolInput('', false, () => {
             this.ligandSelection[gc.cell.value][0] = !this.ligandSelection[gc.cell.value][0];
             this.twinPviewer.changeLigands(this.bsView, this.ligandSelection);
-          })
+          }),
         ], {style: {alignItems: 'center'}});
       }
     });

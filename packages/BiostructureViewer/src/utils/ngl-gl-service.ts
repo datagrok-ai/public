@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import * as NGL from 'NGL';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
+import {_package} from '../package';
 
 export class NglGlService implements NglGlServiceBase {
   readonly nglDiv: HTMLDivElement;
@@ -19,8 +19,6 @@ export class NglGlService implements NglGlServiceBase {
   private _busy: boolean = false;
 
   constructor() {
-    const r = window.devicePixelRatio;
-
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
 
     this.ngl = new NGL.Stage(this.nglDiv);
@@ -101,7 +99,6 @@ export class NglGlService implements NglGlServiceBase {
     //TODO: HTMLCanvas.toBlob()
     if (this.emptyPaintingSize === undefined) {
       this.emptyPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
-      let k = 11;
     } else {
       const currentPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
       if (currentPaintingSize > this.emptyPaintingSize * 2) {
@@ -136,7 +133,7 @@ export class NglGlService implements NglGlServiceBase {
   }
 
   public renderOnGridCell(
-    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource
+    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource,
   ): void {
     gCtx.save();
     try {
@@ -159,9 +156,11 @@ export class NglGlService implements NglGlServiceBase {
       // gCtx.fillStyle = '#E0E0FF';
       // gCtx.fillRect(bd.x + 1, bd.y + 1, bd.width - 2, bd.height - 2);
 
-      const cw: number = canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number;
-      const ch: number = canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number;
-
+      const cw = 'width' in canvas && (
+        canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number);
+      const ch = 'height' in canvas && (
+        canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number);
+      if (!cw || !ch) throw new Error('NglGlService.renderOnGridCell() canvas size is not available');
       gCtx.transform(bd.width / cw, 0, 0, bd.height / ch, bd.x, bd.y);
 
       gCtx.drawImage(canvas, 0 + 1, 0 + 1);

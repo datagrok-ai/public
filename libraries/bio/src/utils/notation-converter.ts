@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {UnitsHandler} from './units-handler';
 import {SeqColStats, SplitterFunc} from './macromolecule/types';
 import {NOTATION, TAGS} from './macromolecule/consts';
-import {getSplitterForColumn, getStats} from './macromolecule/utils';
+import {getSplitterForColumn} from './macromolecule/utils';
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
 export class NotationConverter extends UnitsHandler {
@@ -83,7 +83,7 @@ export class NotationConverter extends UnitsHandler {
   ): string {
     const monomerArray = this.splitter(sourcePolymer);
     const monomerHelmArray: string[] = monomerArray.map((mm: string) => {
-      if (mm === sourceGapSymbol)
+      if (!mm || mm === sourceGapSymbol)
         return UnitsHandler._defaultGapSymbolsDict.HELM;
       else
         return `${leftWrapper}${mm}${rightWrapper}`;
@@ -234,8 +234,7 @@ export class NotationConverter extends UnitsHandler {
 
     // TAGS.aligned is mandatory for columns of NOTATION.FASTA and NOTATION.SEPARATOR
     const splitter: SplitterFunc = getSplitterForColumn(newColumn);
-    const stats: SeqColStats = getStats(newColumn, 5, splitter);
-    const aligned = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+    const aligned = this.stats.sameLength ? 'SEQ.MSA' : 'SEQ';
     newColumn.setTag(TAGS.aligned, aligned);
 
     return newColumn;
