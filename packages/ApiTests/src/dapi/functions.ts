@@ -126,3 +126,21 @@ category('Dapi: functions calls', async () => {
     expect(await GDF.calls.find(funcCall.id) === undefined, true, 'funcCall was not deleted');
   });
 });
+
+category('Dapi: functions', async () => {
+  test('Load package function with package', async () => {
+    const func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const loadedFunc = await GDF.include('package').find(func!.id);
+    
+    console.log(loadedFunc);
+    expect(loadedFunc.package.name, 'ApiTests');
+  });
+
+  test('Load script function with package', async () => {
+    const func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const loadedFunc = await GDF.include('package').find(func!.id);
+  
+    console.log(loadedFunc);
+    expect(loadedFunc.package.name, 'ApiTests');  
+  });
+});
