@@ -3,8 +3,10 @@ import {
   IFitChartOptions,
   IFitSeriesOptions,
   IFitSeries,
-  IFitPoint
-} from './fit-data';
+  IFitPoint,
+  FIT_FUNCTION_SIGMOID
+} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+
 
 const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};
@@ -39,7 +41,7 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
   // params there are: [IC50, min, max, tan] (also log IC50) - so we place them correctly: [max, tan, IC50, min]
   const newParams = [params[2], params[3], Math.log10(params[0]), params[1]];
   let funcType = series.getElementsByTagName('function')[0].getAttribute('type')!;
-  funcType = funcType === 'sigif' ? 'Sigmoid': funcType;
+  funcType = funcType === 'sigif' ? FIT_FUNCTION_SIGMOID: funcType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;
   const lineColor = series.getElementsByTagName('settings')[0].getAttribute('color')!;
   const drawLine = !!series.getElementsByTagName('settings')[0].getAttribute('drawLine')!;

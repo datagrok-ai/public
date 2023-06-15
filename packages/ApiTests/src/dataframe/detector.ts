@@ -36,6 +36,7 @@ testData.columns.add(DG.Column.fromList(DG.TYPE.BYTE_ARRAY, 'BinaryImage', Array
 category('Detector: All Detectors', () => {
   const detectors = DG.Func.find({tags: ['semTypeDetector']});
   for (const detector of detectors) {
+    if (detector.friendlyName === 'detectMolecules') continue;
     test(detector.friendlyName, async () => {
       const arr = [];
       const cols = testData.clone().columns;

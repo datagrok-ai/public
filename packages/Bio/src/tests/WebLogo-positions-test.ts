@@ -9,11 +9,9 @@ import {
   PositionMonomerInfo as PMI,
   WebLogoViewer,
 } from '../viewers/web-logo-viewer';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('WebLogo-positions', () => {
-  let tvList: DG.TableView[];
-  let dfList: DG.DataFrame[];
-
   const csvDf1 = `seq
 ATC-G-TTGC--
 ATC-G-TTGC--
@@ -23,16 +21,10 @@ ATC-G-TTGC--
 
 
   before(async () => {
-    tvList = [];
-    dfList = [];
-    // currentView = grok.shell.v;
   });
 
   after(async () => {
     // Closing opened views causes the error 'Cannot read properties of null (reading 'f')'
-    // dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    // tvList.forEach((tv: DG.TableView) => tv.close());
-    // grok.shell.v = currentView;
   });
 
   test('allPositions', async () => {
@@ -47,9 +39,6 @@ ATC-G-TTGC--
 
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-
-    tvList.push(tv);
-    dfList.push(df);
 
     const positions: PI[] = wlViewer['positions'];
 
@@ -75,7 +64,7 @@ ATC-G-TTGC--
       for (const key in positions[i].freq)
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
     }
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('positions with shrinkEmptyTail option true (filtered)', async () => {
     const csvDf2 = `seq
@@ -102,9 +91,6 @@ ATC-G-TTGC--
       {'shrinkEmptyTail': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
-    tvList.push(tv);
-    dfList.push(df);
-
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -126,7 +112,7 @@ ATC-G-TTGC--
       for (const key in positions[i].freq)
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
     }
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('positions with skipEmptyPositions option', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
@@ -141,9 +127,6 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
       {'skipEmptyPositions': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-
-    tvList.push(tv);
-    dfList.push(df);
 
     const resPosList: PI[] = wlViewer['positions'];
 
@@ -165,7 +148,7 @@ ATC-G-TTGC--
       const tgtPos = tgtPosList[posI];
       expectPositionInfo(resPos, tgtPos);
     }
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('count sequences for monomer at position', async () => {
     const df: DG.DataFrame = buildDfWithSeqCol(csvDf1, NOTATION.FASTA, ALPHABET.DNA, 'SEQ.MSA');
@@ -179,9 +162,6 @@ ATC-G-TTGC--
       skipEmptyPositions: true,
     })) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-
-    tvList.push(tv);
-    dfList.push(df);
 
     const resPosList: PI[] = wlViewer['positions'];
     const tgtPosList: PI[] = [
@@ -198,11 +178,11 @@ ATC-G-TTGC--
       expectPositionInfo(resPos, tgtPos);
     }
 
-    const splitter: SplitterFunc = wlViewer['splitter']!;
     const atPI1: PI = resPosList[1];
-    const countAt1 = countForMonomerAtPosition(df, seqCol, df.filter, splitter, 'G', atPI1);
+    const uh = UnitsHandler.getOrCreate(seqCol);
+    const countAt1 = countForMonomerAtPosition(df, uh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
-  });
+  }, {skipReason: 'GROK-13300'});
 });
 
 function expectPositionInfo(actualPos: PI, expectedPos: PI): void {

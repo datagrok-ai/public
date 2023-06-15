@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
-category('Dapi: properties', () => { 
+category('Dapi: entities', () => { 
   let group: DG.Group;
 
   before(async () => {
@@ -15,7 +15,6 @@ category('Dapi: properties', () => {
       property: 'myProp',
       value: 'value',
     };
-    //@ts-ignore
     await group.setProperties(properties);
   });
 
@@ -26,7 +25,6 @@ category('Dapi: properties', () => {
   });
 
   test('setProperties', async () => {
-    //@ts-ignore
     await group.setProperties({testProp1: 'prop1', testProp2: 'prop2'});
     expect(Object.keys(await group.getProperties()).length, 5);
   });

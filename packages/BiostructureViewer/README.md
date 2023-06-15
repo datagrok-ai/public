@@ -42,7 +42,7 @@ component based on the NGL Viewer [nglviewer.org](https://nglviewer.org/) librar
 
 ### <a name="BiostructureViewer">BiostructureViewer</a>
 
-[BiostructureViewer](./src/viewers/molstar-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
+[BiostructureViewer](./src/viewers/molstar-viewer/molstar-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
 component based on the [RCSB PDB implementation](https://github.com/molstar/rcsb-molstar) of
 [Mol*](https://github.com/molstar/molstar). Documentation for
 the Mol project can be found [here](https://molstar.org/docs/).

@@ -41,7 +41,7 @@ export async function multipleSequenceAlignmentUI(
     methodInput.setTooltip('Alignment method');
 
     // UI for Kalign alignment
-    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? null);
+    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? msaDefaultOptions.kalign.terminalGap);
     terminalGapInput.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
     const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
 
@@ -142,9 +142,9 @@ async function onColInputChange(
       [NOTATION.FASTA, NOTATION.SEPARATOR], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)
     ) { // Kalign - natural alphabets. if the notation is separator, convert to fasta and then run kalign
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'kalign');
-      gapOpenInput.value = null;
-      gapExtendInput.value = null;
-      terminalGapInput.value = null;
+      gapOpenInput.value ??= msaDefaultOptions.kalign.gapOpen;
+      gapExtendInput.value ??= msaDefaultOptions.kalign.gapExtend;
+      terminalGapInput.value ??= msaDefaultOptions.kalign.terminalGap;
       const potentialColNC = new NotationConverter(col);
       const performCol: DG.Column<string> = potentialColNC.isFasta() ? col :
         potentialColNC.convert(NOTATION.FASTA);
@@ -153,8 +153,8 @@ async function onColInputChange(
       [NOTATION.HELM], [], false)
     ) { // PepSeA branch - Helm notation or separator notation with unknown alphabets
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
-      gapOpenInput.value = msaDefaultOptions.pepsea.gapOpen;
-      gapExtendInput.value = msaDefaultOptions.pepsea.gapExtend;
+      gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
+      gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
 
       return async () => await runPepsea(col, unusedName, methodInput.value!,
           gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
@@ -165,8 +165,8 @@ async function onColInputChange(
         return;
       const helmCol = potentialColNC.convert(NOTATION.HELM);
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
-      gapOpenInput.value = msaDefaultOptions.pepsea.gapOpen;
-      gapExtendInput.value = msaDefaultOptions.pepsea.gapExtend;
+      gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
+      gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
       // convert to helm and assign alignment function to PepSea
 
       return async () => await runPepsea(helmCol, unusedName, methodInput.value!,

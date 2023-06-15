@@ -87,3 +87,18 @@ of the dashboard. In addition, you can manage scaffold trees manually:
   file be downloaded to your local drive.
 * To load a previously saved tree, click on the **Open** icon on the toolbar, and select
   the previously saved file.
+
+## Extending the filters panel with Scaffold Tree
+
+To enhance the functionality of the filters panel, you can incorporate it with the Scaffold Tree. By following a few simple steps, you can seamlessly achieve it. Here's how:
+
+* Open the dataset you are currently working with.
+* Toggle the filters panel to access the filter options.
+* Select the "Add External" button to explore additional filter options.
+* Choose the "Scaffold Tree Filter" from the available options.
+* Select the molecular column.
+
+By integrating Scaffold Tree into the filters panel, you unlock a broader spectrum of available operations and functionalities.
+
+Here is an example on how to do it:
+![scaffold-tree-filter-panel](scaffold-tree-filter-panel.gif)

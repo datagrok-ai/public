@@ -7,7 +7,7 @@ import {
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
-import {getEmbeddingColsNames, getSequenceSpace} from './analysis/sequence-space';
+import {ISequenceSpaceResult, getEmbeddingColsNames, getSequenceSpace} from './analysis/sequence-space';
 import {ISequenceSpaceParams, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
@@ -27,7 +27,7 @@ import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {
-  getStats, splitterAsHelm, TAGS as bioTAGS, ALPHABET, NOTATION,
+  TAGS as bioTAGS, ALPHABET, NOTATION,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -49,6 +49,7 @@ import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-u
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {WebLogoApp} from './apps/web-logo-app';
 
 export const _package = new DG.Package();
 
@@ -76,14 +77,9 @@ export class SeqPaletteCustom implements SeqPalette {
   }
 }
 
-// let loadLibrariesPromise: Promise<void> = Promise.resolve();
-
 //tags: init
 export async function initBio() {
-  // loadLibrariesPromise = loadLibrariesPromise.then(() => {
-  await MonomerLibHelper.instance.loadLibraries(); // from initBio()
-  // });
-  // await loadLibrariesPromise;
+  await MonomerLibHelper.instance.loadLibraries();
   const monomerLib = MonomerLibHelper.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
@@ -148,7 +144,7 @@ export async function manageFiles() {
 export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
   const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  const divInputs: HTMLDivElement = ui.div();
+  const inputsForm: HTMLDivElement = ui.inputs([]);
   const libFileNameList: string[] = await getLibFileNameList();
 
   let userStoragePromise: Promise<void> = Promise.resolve();
@@ -169,13 +165,9 @@ export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
           grok.shell.info('Monomer library user settings saved.');
         });
       });
-    divInputs.append(libInput.root);
+    inputsForm.append(libInput.root);
   }
-
-  return new DG.Widget(ui.splitV([
-    divInputs,
-    ui.divV([filesButton]),
-  ]));
+  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
 }
 
 //name: fastaSequenceCellRenderer
@@ -285,37 +277,61 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
   const nc = new NotationConverter(macroMolecule);
-  let columnDistanceMetric: BitArrayMetricsNames | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto;
+  let columnDistanceMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto;
   let seqCol = macroMolecule;
   if (nc.isFasta() || (nc.isSeparator() && nc.alphabet && nc.alphabet !== ALPHABET.UN)) {
     if (nc.isFasta()) {
       columnDistanceMetric = nc.getDistanceFunctionName();
     } else {
       seqCol = nc.convert(NOTATION.FASTA);
-      const uh = new UnitsHandler(seqCol);
+      const uh = UnitsHandler.getOrCreate(seqCol);
       columnDistanceMetric = uh.getDistanceFunctionName();
       tags.units = NOTATION.FASTA;
     }
   }
-  const sp = await getActivityCliffs(
-    df,
-    seqCol,
-    null,
-    axesNames,
-    'Activity cliffs', //scatterTitle
-    activities,
-    similarity,
-    columnDistanceMetric, //similarityMetric
-    methodName,
-    DG.SEMTYPE.MACROMOLECULE,
-    tags,
-    getSequenceSpace,
-    getChemSimilaritiesMatrix,
-    createTooltipElement,
-    createPropPanelElement,
-    createLinesGrid,
-    options);
-  return sp;
+  const runCliffs = async () => {
+    const sp = await getActivityCliffs(
+      df,
+      seqCol,
+      null,
+      axesNames,
+      'Activity cliffs', //scatterTitle
+      activities,
+      similarity,
+      columnDistanceMetric, //similarityMetric
+      methodName,
+      DG.SEMTYPE.MACROMOLECULE,
+      tags,
+      getSequenceSpace,
+      getChemSimilaritiesMatrix,
+      createTooltipElement,
+      createPropPanelElement,
+      createLinesGrid,
+      options);
+    return sp;
+  };
+
+  const allowedRowCount = 20000;
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+  if (df.rowCount > allowedRowCount) {
+    grok.shell.warning(`Too many rows, maximum for sequence activity cliffs is ${allowedRowCount}`);
+    return;
+  }
+
+  if (df.rowCount > fastRowCount) {
+    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
+        const res = await runCliffs();
+        progressBar.close();
+        return res;
+      })
+      .show();
+  } else {
+    const res = await runCliffs();
+    return res;
+  }
 }
 
 //name: SequenceSpaceEditor
@@ -362,18 +378,44 @@ export async function sequenceSpaceTopMenu(
     embedAxesNames: embedColsNames,
     options: options,
   };
-  const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
-  const embeddings = sequenceSpaceRes.coordinates;
-  for (const col of embeddings) {
-    const listValues = col.toList();
-    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
+
+  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
+  // number of rows which will be processed relatively fast
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+  if (table.rowCount > allowedRowCount) {
+    grok.shell.warning(`Too many rows, maximum for sequence space is ${allowedRowCount}`);
+    return;
   }
-  if (plotEmbeddings) {
-    return grok.shell
-      .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+
+  if (table.rowCount > fastRowCount) {
+    ui.dialog().add(ui.divText(`Sequence space analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running Sequence space...`);
+        const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
+        progressBar.close();
+        return processResult(sequenceSpaceRes);
+      })
+      .show();
+  } else {
+    const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
+    return processResult(sequenceSpaceRes);
   }
+
+  function processResult(sequenceSpaceRes: ISequenceSpaceResult): DG.ScatterPlotViewer | undefined {
+    const embeddings = sequenceSpaceRes.coordinates;
+    for (const col of embeddings) {
+      const listValues = col.toList();
+      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+      table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
+    }
+    if (plotEmbeddings) {
+      return grok.shell
+        .tableView(table.name)
+        .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+    }
+  }
+
 
   /*   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
@@ -458,7 +500,7 @@ export async function compositionAnalysis(): Promise<void> {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
 
-    const _colUH = new UnitsHandler(col);
+    const _colUH = UnitsHandler.getOrCreate(col);
     // TODO: prevent for cyclic, branched or multiple chains in Helm
     return true;
   });
@@ -477,7 +519,7 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const selectedCol = colList.find((c) => { return (new UnitsHandler(c)).isMsa(); });
+    const selectedCol = colList.find((c) => { return UnitsHandler.getOrCreate(c).isMsa(); });
     const colInput: DG.InputBase = ui.choiceInput(
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
@@ -609,7 +651,8 @@ export function splitToMonomers(): void {
   for (const tempCol of tempDf.columns) {
     const newCol = originalDf.columns.add(tempCol);
     newCol.semType = C.SEM_TYPES.MONOMER;
-    newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
+    // TODO: GROK-
+    //newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
     newCol.setTag(bioTAGS.alphabet, col.getTag(bioTAGS.alphabet));
   }
   grok.shell.tv.grid.invalidate();
@@ -618,7 +661,8 @@ export function splitToMonomers(): void {
 //name: Bio: getHelmMonomers
 //input: column sequence {semType: Macromolecule}
 export function getHelmMonomers(sequence: DG.Column<string>): string[] {
-  const stats = getStats(sequence, 1, splitterAsHelm);
+  const uh = UnitsHandler.getOrCreate(sequence);
+  const stats = uh.stats;
   return Object.keys(stats.freq);
 }
 
@@ -681,6 +725,22 @@ export function saveAsFasta() {
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
 }
+
+// -- Test apps --
+
+//name: webLogoLargeApp
+export async function webLogoLargeApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('WebLogo');
+  try {
+    const app = new WebLogoApp();
+    const df: DG.DataFrame = await _package.files.readCsv('data/sample_PT_10000.csv');
+    await grok.data.detectSemanticTypes(df);
+    await app.init(df, 'webLogoLargeApp');
+  } finally {
+    pi.close();
+  }
+}
+
 
 // -- Demo --
 

@@ -1,4 +1,4 @@
-import {isNil} from '.';
+import {isNil} from './utils';
 import {Measure} from '../typed-metrics';
 
 onmessage = (event) => {

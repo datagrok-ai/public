@@ -18,9 +18,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {TableView, VIEWER} from 'datagrok-api/dg';
-import {FuzzyFilter} from './fuzzy-filter';
-import {windowsSidebar} from './windows-manager';
-import {windowsStatusbar} from './windows-manager';
+import {windowsManagerPanel} from './windows-manager';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -174,13 +172,9 @@ export async function powerPackInit() {
 }
 
 //description: Windows Manager
-export function windowsManagerSidebar() {
-  windowsSidebar();
-}
-
-//description: Windows Manager
-export function windowsManagerStatusbar() {
-  windowsStatusbar();
+//tags: autostart
+export function windowsManager() {
+  windowsManagerPanel();
 }
 
 //description: ViewerGallery
@@ -200,15 +194,3 @@ export function viewerGallery(): void {
     }
   });
 }
-
-//name: FuzzyFilter
-//friendlyName: Fuzzy Filter
-//description: search related texts
-//tags: filter
-//output: filter result
-//meta.semType: Text
-//meta.primaryFilter: true
-export function fuzzyFilter(): FuzzyFilter {
-  return new FuzzyFilter();
-}
-

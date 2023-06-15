@@ -43,3 +43,7 @@ export enum DIRECTION {
 };
 
 export const EXPERIMENTAL_TAG = 'experimental';
+export enum VISIBILITY_STATE {
+  HIDDEN = 'hidden',
+  VISIBLE = 'visible',
+}

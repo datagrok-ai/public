@@ -2,13 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix'
+import {DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 
 export async function calcMmDistanceMatrix(column: DG.Column<any>): Promise<Float32Array> {
   const values = column.toList();
   if (column.semType !== DG.SEMTYPE.MACROMOLECULE)
     throw new Error('Column has to be of macromolecule type');
-  const uh = new UnitsHandler(column);
+  const uh = UnitsHandler.getOrCreate(column);
   const fnName = uh.getDistanceFunctionName();
   const distanceMatrixService = new DistanceMatrixService(true, false);
   const dm = await distanceMatrixService.calc(values, fnName);

@@ -1,5 +1,6 @@
 #name: pkpd
 #language: r
+#tags: model
 #input: double dosage = 1000 {category: Dosing options} 
 #input: double doseInterval = 12 {category: Dosing options} 
 #input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']} 
@@ -13,6 +14,7 @@
 #output: graphics PKPD
 #output: double Cmax {units: nM}
 #meta.domain: PKPD
+#editor: Compute:RichFunctionViewEditor
 #meta.runOnOpen: true
 #meta.runOnInput: true
 

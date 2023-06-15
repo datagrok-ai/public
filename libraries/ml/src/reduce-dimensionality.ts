@@ -219,7 +219,7 @@ class UMAPReducer extends Reducer {
           throw e;
         }
       })() :
-        (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); ret.normalize(); return ret.data; })();
+        (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); return ret.data; })();
     }
     const embedding = this.reducer.fit(this.vectors);
 

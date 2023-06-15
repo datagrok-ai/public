@@ -29,7 +29,8 @@ import {toxicityWidget} from './widgets/toxicity';
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
-import { ScaffoldTreeFilter, ScaffoldTreeViewer} from "./widgets/scaffold-tree";
+import {ScaffoldTreeViewer} from "./widgets/scaffold-tree";
+import {ScaffoldTreeFilter} from "./widgets/scaffold-tree-filter";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, isSmarts} from './utils/mol-creation_rdkit';
@@ -166,7 +167,6 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
 //name: Scaffold Tree
 //tags: viewer
-//meta.trellisable: true
 //meta.icon: files/icons/scaffold-tree-icon.svg
 //output: viewer result
 export function scaffoldTreeViewer() : ScaffoldTreeViewer {
@@ -730,6 +730,11 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
   ): Promise<void> {
+  if (col.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${col.name} is not of Molecule semantic type`);
+    return;
+  }
+
   if (table.rowCount > 1000)
     grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -741,8 +746,10 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Colum
   const progress = DG.TaskBarProgressIndicator.create('Detecting structural alerts...');
   try {
     const resultDf = await runStructuralAlertsDetection(col, ruleSet, alertsDf, rdkitService);
-    for (const resultCol of resultDf.columns)
+    for (const resultCol of resultDf.columns) {
+      resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${col.name})`);
       table.columns.add(resultCol);
+    }
   } catch (e) {
     grok.shell.error('Structural alerts detection failed');
     grok.log.error(`Structural alerts detection failed: ${e}`);

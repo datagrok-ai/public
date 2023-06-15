@@ -28,11 +28,11 @@
 }
 
 .windows-manager-toggle.active {
-    background: #EBE9E8;
+    background: var(--warm-grey-2);
 }
+
 .windows-manager-toggle.active:hover {
     cursor: pointer;
-    background: var(--warm-grey-2);
 }
 
 .windows-manager-statusbar {

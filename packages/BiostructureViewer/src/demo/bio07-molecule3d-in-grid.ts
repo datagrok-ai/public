@@ -1,10 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
-import {_package} from '../package';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+
+import {_package} from '../package';
 
 const pdbCsvFn: string = 'pdb_data.csv';
 const pdbColName: string = 'pdb';
