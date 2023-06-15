@@ -99,6 +99,12 @@ function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
     (c[0] as HTMLElement).style.visibility = enable ? 'visible' : 'hidden';
 }
 
+function enableToolbar(thisViewer: ScaffoldTreeViewer): void {
+  const toolbar = thisViewer.root.querySelector('.chem-scaffold-tree-toolbar ') as HTMLElement;
+  if (thisViewer.tree.items.length = 0)
+    toolbar.style.visibility = 'visible';
+}
+
 function filterNodesIter(rootGroup: TreeViewGroup, recordCount : number, hitsThresh: number) {
   if (hitsThresh < 0)
     hitsThresh = 0;
@@ -1338,6 +1344,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const c = this.root.getElementsByClassName('grok-icon fal fa-filter grok-icon-filter');
     if (c.length > 0)
       (c[0] as HTMLElement).style.visibility = this.bitset === null ? 'hidden' : 'visible';
+    enableToolbar(this);
   }
 
   render() {
@@ -1371,6 +1378,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this._bitOpInput.root,
     ], 'chem-scaffold-tree-scrollbar'), 'chem-scaffold-tree-toolbar');
     this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
+    enableToolbar(thisViewer);
 
     this._message = ui.divText('', 'chem-scaffold-tree-generate-message-hint');
     this.root.appendChild(this._message);
