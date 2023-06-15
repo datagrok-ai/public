@@ -114,7 +114,7 @@ export class MainTabUI {
     this.outputTableDiv.innerHTML = '';
     // todo: does not detect correctly (U-A)(U-A)
     const indexOfInvalidChar = (!this.format) ? 0 : (new SequenceValidator(this.sequence)).getInvalidCodeIndex(this.format!);
-    const translatedSequences = getTranslatedSequences(this.sequence, indexOfInvalidChar, this.format);
+    const translatedSequences = getTranslatedSequences(this.sequence, indexOfInvalidChar, this.format!);
     const tableRows = [];
 
     for (const key of Object.keys(translatedSequences)) {

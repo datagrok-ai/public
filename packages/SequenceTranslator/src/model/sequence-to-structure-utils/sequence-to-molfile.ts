@@ -22,17 +22,16 @@ export class SequenceToMolfileConverter {
   convert(): string {
     const parsedSequence = this.parser.parseSequence();
     const monomerMolfiles: string[] = [];
-    for (let idx = 0; idx < parsedSequence.length; idx++) {
-      const monomerName = parsedSequence[idx];
-      const monomerMolfile = this.getMonomerMolfile(monomerName, idx);
+    parsedSequence.forEach((monomerSymbol, idx) => {
+      const monomerMolfile = this.getMonomerMolfile(monomerSymbol, idx);
       monomerMolfiles.push(monomerMolfile);
-    }
+    })
     return this.getPolymerMolfile(monomerMolfiles);
   }
 
-  private getMonomerMolfile(monomerName: string, idx: number): string {
-    const molBlock = this.lib.getMolfileBySymbol(monomerName);
-    if (this.lib.isModification(monomerName))
+  private getMonomerMolfile(monomerSymbol: string, idx: number): string {
+    const molBlock = this.lib.getMolfileBySymbol(monomerSymbol);
+    if (this.lib.isModification(monomerSymbol))
       return (idx === 0) ? this.reflect(molBlock) : molBlock;
     else
       return this.rotateNucleotidesV3000(molBlock);

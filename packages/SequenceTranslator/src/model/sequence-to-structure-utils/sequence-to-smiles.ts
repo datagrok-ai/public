@@ -27,7 +27,7 @@ export class SequenceToSmilesConverter {
       const monomerSmiles = this.getMonomerSmiles(monomerSymbol, idx);
       monomerSmilesArray.push(monomerSmiles);
     }
-    console.log('monomer Smiles array:', monomerSmilesArray);
+    // console.log('monomer Smiles array:', monomerSmilesArray);
     return this.getPolymerSmiles(monomerSmilesArray);
   }
 

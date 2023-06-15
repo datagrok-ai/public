@@ -125,7 +125,6 @@ function oligoSdFileGrid(view: DG.TableView): void {
 }
 
 export async function engageViewForOligoSdFileUI(view: DG.TableView) {
-  console.log('From engageViewForOligoSdFile')
   await _package.initDBLoader();
   oligoSdFileGrid(view);
   await oligoSdFile(_package.dbLoader, view.dataFrame);
