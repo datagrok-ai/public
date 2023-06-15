@@ -214,6 +214,10 @@
   visibility: visible;
 }
 
+.chem-scaffold-tree-toolbar.empty-tree {
+  visibility: visible;
+}
+
 .d4-viewer.d4-scaffold-tree:hover .chem-scaffold-tree-toolbar {
   visibility: visible;
 }

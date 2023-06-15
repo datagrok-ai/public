@@ -101,8 +101,7 @@ function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
 
 function enableToolbar(thisViewer: ScaffoldTreeViewer): void {
   const toolbar = thisViewer.root.querySelector('.chem-scaffold-tree-toolbar ') as HTMLElement;
-  if (thisViewer.tree.items.length = 0)
-    toolbar.style.visibility = 'visible';
+  toolbar.classList.toggle('empty-tree', thisViewer.tree.items.length === 0);
 }
 
 function filterNodesIter(rootGroup: TreeViewGroup, recordCount : number, hitsThresh: number) {
@@ -408,7 +407,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       category: 'Scaffold Generation',
       description: 'Remove charges and radicals from scaffolds',
     });
-
+    
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
