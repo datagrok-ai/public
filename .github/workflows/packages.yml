@@ -175,7 +175,7 @@ jobs:
             DATAGROK_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
-          export GROK_COMPUTE_VERSION=bleeding-edge
+          export GROK_COMPUTE_VERSION=1.5.1
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
