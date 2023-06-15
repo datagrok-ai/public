@@ -150,10 +150,11 @@ public class QueryManager {
     }
 
     private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
-        if (supportTransactions && dryRun) {
+        if (supportTransactions && dryRun || supportTransactions && changedFetchSize) {
             resultSet.setFetchSize(currentFetchSize);
+            return;
         }
-        if (supportTransactions && df.rowCount != 0 && !changedFetchSize) {
+        if (supportTransactions && df.rowCount != 0) {
             currentFetchSize = getFetchSize(df);
             logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size: {}", currentFetchSize);
             if (!provider.descriptor.type.equals("Virtuoso")) {
