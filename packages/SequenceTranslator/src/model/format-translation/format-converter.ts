@@ -106,9 +106,11 @@ function helmToFormat(helmSequence: string, targetFormat: FORMAT): string {
 
   const helmCodes = Object.keys(dict)
     .sort(sortCallback);
-  const helmRegExp = new RegExp(getRegExpPattern(helmCodes), 'g');
-  result = result.replace(helmRegExp, (match) => dict[match]);
-  result = result.replace(/p\.|\./g, '');
+  const helmRegExp = new RegExp(getRegExpPattern(helmCodes) + '|.', 'g');
+  result = result.replace(helmRegExp, (match) => {
+    return helmCodes.includes(match) ? dict[match] :
+      (match === 'p' || match === '.') ? match : '?';
+  }).replace(/\?+/g, '<?>').replace(/p\.|\./g, '');
   return result;
 }
 

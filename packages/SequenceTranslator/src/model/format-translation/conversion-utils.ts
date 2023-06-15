@@ -23,7 +23,7 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
         translation = null;
       }
       return [format, translation];
-    }).filter(([format, translation]) => translation !== null)
+    }).filter(([format, translation]) => translation)
   )
   return result;
 }
