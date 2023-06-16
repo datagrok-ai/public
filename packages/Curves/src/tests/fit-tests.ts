@@ -42,6 +42,7 @@ category('fit', () => {
 		expect(polynomialCurve(3.99876), 6.09328601677405);
 	});
 
+	// TODO: add benchmark on it
 	test('fitSeries', async () => {
 		const sigmoidFitSeries = fitSeries(sigmoidSeries, sigmoidFitFunc);
 		const polynomialFitSeries = fitSeries(polynomialSeries, polynomialFitFunc);
@@ -79,8 +80,8 @@ category('fit', () => {
 		expect(boxPlotStats.q1, 0.8199243545532227);
 		expect(boxPlotStats.q2, 0.8257747292518616);
 		expect(boxPlotStats.q3, 0.9558155536651611);
-		expect(boxPlotStats.adjacentValues.lowerAdjacentValue, 0.7654603719711304);
-		expect(boxPlotStats.adjacentValues.upperAdjacentValue, 0.9558155536651611);
+		expect(boxPlotStats.lowerAdjacentValue, 0.7654603719711304);
+		expect(boxPlotStats.upperAdjacentValue, 0.9558155536651611);
 	});
 
 	test('sigmoid', async () => {

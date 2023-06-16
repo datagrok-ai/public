@@ -1,14 +1,10 @@
 /* eslint-disable no-tabs */
-export type AdjacentValues = {
-  upperAdjacentValue: number,
-	lowerAdjacentValue: number,
-};
-
 type BoxPlotStatistics = {
   q1: number,
 	q2: number,
 	q3: number,
-	adjacentValues: AdjacentValues,
+	lowerAdjacentValue: number,
+	upperAdjacentValue: number,
 };
 
 
@@ -42,10 +38,8 @@ export function calculateBoxPlotStatistics(values: number[]): BoxPlotStatistics 
     q1: q1,
     q2: q2,
     q3: q3,
-    adjacentValues: {
-      lowerAdjacentValue: lowerAdjacentValue,
-      upperAdjacentValue: upperAdjacentValue,
-    },
+    lowerAdjacentValue: lowerAdjacentValue,
+    upperAdjacentValue: upperAdjacentValue,
   };
 }
 

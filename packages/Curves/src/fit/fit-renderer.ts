@@ -11,7 +11,7 @@ import {
   CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   FIT_CELL_TYPE,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {calculateBoxPlotStatistics, AdjacentValues} from '@datagrok-libraries/statistics/src/box-plot-statistics';
+import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
@@ -52,11 +52,12 @@ function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentV
 }
 
 /** Performs candlestick drawing */
-function drawCandlestick(g: CanvasRenderingContext2D, x: number, adjacentValues: AdjacentValues, transform: Viewport): void {
-  drawCandlestickBorder(g, x, adjacentValues.lowerAdjacentValue, transform);
-  g.moveTo(transform.xToScreen(x), transform.yToScreen(adjacentValues.lowerAdjacentValue));
-  g.lineTo(transform.xToScreen(x), transform.yToScreen(adjacentValues.upperAdjacentValue));
-  drawCandlestickBorder(g, x, adjacentValues.upperAdjacentValue, transform);
+function drawCandlestick(g: CanvasRenderingContext2D, x: number, lowerAdjacentValue: number,
+  upperAdjacentValue: number, transform: Viewport): void {
+  drawCandlestickBorder(g, x, lowerAdjacentValue, transform);
+  g.moveTo(transform.xToScreen(x), transform.yToScreen(lowerAdjacentValue));
+  g.lineTo(transform.xToScreen(x), transform.yToScreen(upperAdjacentValue));
+  drawCandlestickBorder(g, x, upperAdjacentValue, transform);
 }
 
 /** Performs a curve confidence interval drawing */
@@ -75,6 +76,14 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   }
   g.stroke();
 }
+
+// TODO: Denis will look at axes
+// TODO: change input type on colors
+// TODO: make show points as one parameter - show points/candles/nothing
+// TODO: automatic output of parameters
+// TODO: fix calculating column
+// TODO: add candlesticks to Curves documentation
+// TODO: add how to control options - series opitons, chart options, etc.
 
 /** Performs a curve confidence interval color filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
@@ -191,10 +200,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
               values[ind] = series.points[j].y;
             }
-            const {adjacentValues} = calculateBoxPlotStatistics(values);
+            const {lowerAdjacentValue, upperAdjacentValue} = calculateBoxPlotStatistics(values);
 
             g.beginPath();
-            drawCandlestick(g, p.x, adjacentValues, viewport);
+            drawCandlestick(g, p.x, lowerAdjacentValue, upperAdjacentValue, viewport);
             g.stroke();
 
             candleStart = null;
