@@ -2,8 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {
-  MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer, MonomerCellRenderer,
+  MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
@@ -18,8 +19,6 @@ import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomi
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 
-import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
-import * as C from './utils/constants';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {substructureSearchDialog} from './substructure-search/substructure-search';
@@ -39,6 +38,7 @@ import {getMacromoleculeColumn} from './utils/ui-utils';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
+
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -50,6 +50,9 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {WebLogoApp} from './apps/web-logo-app';
+import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomers-editor';
+import {splitToMonomersUI} from './utils/split-to-monomers';
+import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 
 export const _package = new DG.Package();
 
@@ -248,7 +251,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
   ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {
-      call.func.prepare(funcEditor.funcParams).call(true);
+      return call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
 }
@@ -342,7 +345,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
   ui.dialog({title: 'Sequence Space'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {
-      call.func.prepare(funcEditor.funcParams).call(true);
+      return call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
 }
@@ -364,8 +367,7 @@ export async function sequenceSpaceTopMenu(
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
-  if (!checkInputColumnUI(macroMolecule, 'Sequence space'))
-    return;
+  if (!checkInputColumnUI(macroMolecule, 'Sequence space')) return;
 
   const embedColsNames = getEmbeddingColsNames(table);
   const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
@@ -586,6 +588,7 @@ export function convertDialog() {
 //name: monomerCellRenderer
 //tags: cellRenderer
 //meta.cellType: Monomer
+//meta.columnTags: quality=Monomer
 //output: grid_cell_renderer result
 export function monomerCellRenderer(): MonomerCellRenderer {
   return new MonomerCellRenderer();
@@ -642,20 +645,27 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   return resDf;
 }
 
-//top-menu: Bio | Split to monomers
-//name: splitToMonomers
-export function splitToMonomers(): void {
-  const col = getMacromoleculeColumn();
-  const tempDf = splitAlignedSequences(col);
-  const originalDf = col.dataFrame;
-  for (const tempCol of tempDf.columns) {
-    const newCol = originalDf.columns.add(tempCol);
-    newCol.semType = C.SEM_TYPES.MONOMER;
-    // TODO: GROK-
-    //newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
-    newCol.setTag(bioTAGS.alphabet, col.getTag(bioTAGS.alphabet));
-  }
-  grok.shell.tv.grid.invalidate();
+//name: SplitToMonomersEditor
+//tags: editor
+//input: funccall call
+export function SplitToMonomersEditor(call: DG.FuncCall): void {
+  const funcEditor = new SplitToMonomersFunctionEditor();
+  ui.dialog({title: 'Split to Monomers'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {
+      return call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
+}
+
+//top-menu: Bio | Split to Monomers
+//name: Split to Monomers
+//input: dataframe table
+//input: column sequence { semType: Macromolecule }
+//output: dataframe result
+//editor: Bio:SplitToMonomersEditor
+export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.Column): Promise<void> {
+  await splitToMonomersUI(table, sequence);
 }
 
 //name: Bio: getHelmMonomers

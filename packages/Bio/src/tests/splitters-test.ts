@@ -6,6 +6,7 @@ import {after, before, category, test, expect, expectArray, delay} from '@datagr
 import * as C from '../utils/constants';
 import {_package, getHelmMonomers} from '../package';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {splitToMonomersUI} from '../utils/split-to-monomers';
 
 
 category('splitters', async () => {
@@ -77,13 +78,14 @@ category('splitters', async () => {
       seqCol.semType = semType;
     seqCol.setTag(bioTAGS.aligned, C.MSA);
 
-    const _tv: DG.TableView = grok.shell.addTableView(df);
-    await delay(500); // needed to account for table adding
-    // call to calculate 'cell.renderer' tag
-    await grok.data.detectSemanticTypes(df);
+    const newDf = await splitToMonomersUI(df, seqCol);
+    expect(newDf.columns.names().includes('17'), true);
 
-    await grok.functions.call('Bio:splitToMonomers');
-    expect(df.columns.names().includes('17'), true);
+    // TODO: Check cell.renderer for columns of monomers
+    // const _tv: DG.TableView = grok.shell.addTableView(df);
+    // await delay(500); // needed to account for table adding
+    // // call to calculate 'cell.renderer' tag
+    // await grok.data.detectSemanticTypes(df);
   });
 
   test('getHelmMonomers', async () => {
