@@ -10,10 +10,9 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
-import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
+import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';

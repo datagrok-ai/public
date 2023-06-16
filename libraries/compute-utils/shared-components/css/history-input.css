@@ -1,12 +1,12 @@
-.no-elements-label {
+.hi-no-elements-label {
     margin: 8px;
 }
 
-.arrow-box {
+.hi-arrow-box {
     position: relative;
 }
 
-.arrow-box:before {
+.hi-arrow-box:before {
     left: -6px;
     top: 55px;
     content: "";
