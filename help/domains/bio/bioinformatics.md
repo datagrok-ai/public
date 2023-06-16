@@ -20,9 +20,7 @@ These are just a few examples, and there are many more applications of bioinform
 
 ## Datagrok, the Swiss Army knife for data, has blades for bioinformatics
 
-Datagrok is a platform of choice for analyzing data
-in a few big pharma companies and in several smaller biotech
-companies. Datagrok provides extensive support for bioinformatics capabilities,
+Datagrok provides a full-scale bioinformatics data interpretation in a wide range of applications,
 particularly in analyzing the relationship
 between macromolecules sequence and activity (**SAR analysis**).
 
@@ -31,7 +29,7 @@ we are also expanding our capabilities to **polymer design**.
 Our molecular toolkit used across our applications
 allows to work efficiently with macromolecules
 both on the macro (sequence) level
-and going all the way down to atoms if necessary.
+and atomic level that could fit cheminformatics purposes.
 
 ## Macromolecules data format support
 
@@ -45,9 +43,10 @@ Datagrok has a convenient feature that automatically detects the data format
 and offers custom loaders for various biological data formats:
 
 * FASTA (DNA/RNA/protein)
-* Separated FASTA
-* HELM
-* PDB
+* Delimiter-separated FASTA
+* [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules)
+  (universal macromolecule sequence notation)
+* [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)) (3D conformations)
 
 This functionality is not limited to specific file types.
 Datagrok identifies columns that contain sequence data within any dataframe,
@@ -130,10 +129,10 @@ alignment is.
 
 Datagrok offers custom data editing capabilities directly within the dataframe for certain data types:
 
-* For DNA, RNA, and protein sequences in FASTA-like format, you can edit the sequences as needed.
-* If you have loaded the HELM monomer library, you can edit HELM sequences.
-This includes adding or removing monomers and modifying connections.
-The editor supports circular and branching structures.
+* For DNA, RNA, and protein sequences in FASTA-like format, you can edit the sequences.
+* For HELM notation if you have loaded the HELM monomer library,
+  you can add or remove monomers and modifying connections.
+  The editor supports circular and branching structures.
 
 ![HELM editor](img/HELM_editor.png)
 
@@ -178,8 +177,8 @@ It is an open-source tool under GNU GPL, so it can be modified
 to work with custom substitution matrices for
 sequences.
 
-When dealing with peptides containing non-natural amino acids,
-Datagrok employs [PepSeA](https://github.com/Merck/PepSeA) for alignment purposes.
+For non-natural sequences Datagrok uses
+[PepSeA](https://github.com/Merck/PepSeA) for alignment purposes.
 It allows for alignment of multiple linear peptide sequences in HELM notation, with lengths up
 to 256 non-natural amino acids. _PepSeA_ uses a substitution matrix calculated with Rapid Overlay of Chemical Structures
 Similarities Across ChEMBL 28 HELM Monomers.
@@ -213,17 +212,14 @@ Datagrok reflects all user actions as filtering and selection.
 
 -->
 
-### Similarity search
+### Similarity and diversity search
 
-A linked dataframe displaying the most similar sequences to a selected sequence from the initial table.
+**Similarity search** creates
+a linked dataframe displaying the most similar sequences to a selected sequence from the initial table.
 You have the flexibility to adjust the number of sequences displayed and set a similarity cutoff
 in the dataframe properties.
 
-### Diversity search
-
-Creates a new dataframe containing the most diverse sequences within a given dataframe.
-Unlike the [similarity search] feature, this dataframe is not interactive
-and does not respond to sequence selections in the initial dataframe.
+**Diversity search** creates a new dataframe containing the most diverse sequences within a given dataframe.
 
 ### Sequence space
 
@@ -249,8 +245,9 @@ such as Tanimoto and Sokal, and offers two methods of dimensionality reduction: 
 
 By using Sequence Space, you can uncover clusters of similar sequences,
 facilitating the identification of groups with shared characteristics.
-For example, it can help to identify clusters of antibodies with similar CDRs
-(complementarity-determining regions).
+
+It is mostly used to separate the groups of sequences with common motifs
+like different variants of complementarity-determining regions (CDRs) for antibodies
 
 ![Results of Sequence space run on the sample peptides data](img/Sequence_Space_results.png)
 
@@ -345,6 +342,10 @@ section of Datagrok documentation.
 
 We have developed an algorithm to generate the atomic structure of the sequences
 based on a specific monomer library or from natural monomers.
+You can easily run this feature for any sequence data using the Bio package and accessing it from the top menu.
+
+![Restoring structure atomic level](../../uploads/macromolecules/restoreStructures.gif)
+
 Datagrok has two options of reproducing the structure:
 
 1. Direct generation from HELM using HelmWebEditor, resulting in the unordered molecule graph.
@@ -356,14 +357,7 @@ This approach could be used for any given case of HELM notation
 in order to get a visually appropriate form of monomers
 in cycles etc. Structure at atomic level could be saved in available notations.
 
-![Datagrok-generated atom structure for the ATGCATGC sequence](../../uploads/macromolecules/macromolecules-7.png "Datagrok-generated atom structure for the ATGCATGC sequence")
-
-You can easily run this feature for any sequence data using the Bio package and accessing it from the top menu.
-
-![Restoring structure atomic level](../../uploads/macromolecules/restoreStructures.gif)
-
 ## Scripting and bioinformatics libraries integration
-
 Datagrok offers you unlimited capabilities for extending its functionality
 through custom scripts, plugins, and packages,
 
