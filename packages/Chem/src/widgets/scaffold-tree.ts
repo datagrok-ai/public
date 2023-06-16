@@ -314,6 +314,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   tree: DG.TreeViewGroup;
   bitset: DG.BitSet | null = null;
   wrapper: SketcherDialogWrapper | null = null;
+  molCol: DG.Column | null = null;
   molColumns: Array<DG.Column[]> = [];
   molColumnIdx: number = -1;
   tableIdx: number = -1;
@@ -660,7 +661,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   get molColumn(): DG.Column | null {
-    return this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx];
+    return this.molCol !== null 
+      ? this.molCol 
+      : (this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx]);
   }
 
   private openEditSketcher(group: TreeViewGroup) {
@@ -1184,7 +1187,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.molColumnIdx >= 0)
+    if (this.molColumnIdx >= 0 && this.MoleculeColumn == null)
       this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
 
     const thisViewer = this;

@@ -81,6 +81,7 @@
   font-size: 14px;
 }
 
+.d4-viewer.d4-filters .scaffold-tree-viewer .grok-icon:hover,
 .scaffold-tree-viewer .grok-icon:hover {
   filter: brightness(1.2);
   -webkit-filter: brightness(1.2);

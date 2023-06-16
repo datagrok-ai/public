@@ -167,10 +167,6 @@ async function onColInputChange(
     } else if (checkInputColumnUI(col, col.name, [NOTATION.SEPARATOR], [ALPHABET.UN], false)) {
       //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
       const potentialColNC = new NotationConverter(col);
-      if (!await potentialColNC.checkHelmCompatibility()) {
-        switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
-        return;
-      }
       const helmCol = potentialColNC.convert(NOTATION.HELM);
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
       gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
