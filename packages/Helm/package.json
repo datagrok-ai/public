@@ -1,14 +1,14 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.32.1",
+    "@datagrok-libraries/bio": "^5.32.3",
     "@datagrok-libraries/utils": "^1.19.1",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.10.2",
