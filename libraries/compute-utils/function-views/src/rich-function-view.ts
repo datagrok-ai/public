@@ -601,8 +601,12 @@ export class RichFunctionView extends FunctionView {
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
-          if (this.runningOnInput)
-            this.runOnInput(t, val);
+          if (this.runningOnInput) {
+            if (prop.propertyType === DG.TYPE.DATA_FRAME)
+              this.runOnDgInput(t, val);
+            else
+              this.runOnInput(t, val);
+          }
 
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
@@ -640,12 +644,9 @@ export class RichFunctionView extends FunctionView {
     const prop = val.property;
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
-        this.dfInputRecreate(t, val, newValue);
-      else {
-        t.value = newValue;
-        this.funcCall!.inputs[val.name] = newValue;
-      }
+
+      t.value = newValue;
+      this.funcCall!.inputs[val.name] = newValue;
     });
     this.subs.push(sub);
   }
@@ -653,13 +654,12 @@ export class RichFunctionView extends FunctionView {
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     const syncSub = () => {
       const newValue = this.funcCall!.inputs[val.name];
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
-        this.dfInputRecreate(t, val, newValue);
+
       // there is no notify for DG.FuncCallParam, so we need to
       // check if the value is not the same for floats, otherwise we
       // will overwrite a user input with a lower precicsion decimal
       // representation
-      else if (
+      if (
         ((val.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
         val.property.propertyType !== DG.TYPE.FLOAT
       ) {
@@ -701,24 +701,6 @@ export class RichFunctionView extends FunctionView {
     await this.saveRun(expFuncCall);
   }
 
-  // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
-  private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
-    const prop = val.property;
-    const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
-    $(newTableInput.root).css({
-      'width': `${prop.options['block'] ?? '100'}%`,
-      'box-sizing': 'border-box',
-      'padding-right': '5px',
-    });
-
-    t.root.replaceWith(newTableInput.root);
-    t = newTableInput;
-    this.syncOnInput(t, val);
-    if (this.runningOnInput)
-      this.runOnDgInput(t, val);
-    this.afterInputPropertyRender.next({prop, input: t});
-  }
-
   private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     t.onInput(() => {
       this.funcCall!.inputs[val.name] = t.value;
@@ -737,7 +719,9 @@ export class RichFunctionView extends FunctionView {
   }
 
   private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
-    t.onInput(async () => await this.doRun());
+    t.onInput(async () => {
+      if (this.isRunnable()) await this.doRun();
+    });
 
     // DataFrame inputs have internal mutability, so we need check for it
     const ref = t.value as DG.DataFrame | null;
