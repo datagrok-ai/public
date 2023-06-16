@@ -15,13 +15,14 @@ export async function scrollTable(el: HTMLElement, delta: number, cycles: number
 
 category('creation', () => {
 	test('fit curve creation', async () => {
-		const df = DG.Test.isInBenchmark ? createDemoDataFrame(1000, 5, 2) : createDemoDataFrame(100, 5, 2);
+		const df = createDemoDataFrame(DG.Test.isInBenchmark ? 1000 : 100, 5, 2);
 		grok.shell.addTableView(df);
 		await delay(50);
 	});
 });
 
-category('rendering', () => {
+// TODO: benchmark test for rendering - just render in a custom canvas
+category('rendering in grid', () => {
 	test('fit curve cell rendering', async () => {
 		const df = createDemoDataFrame(30, 5, 2);
 		const tv = grok.shell.addTableView(df);
