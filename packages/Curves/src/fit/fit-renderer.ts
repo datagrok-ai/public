@@ -45,7 +45,7 @@ export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
   ];
 }
 
-/** Perofrms candlestick border drawing */
+/** Performs candlestick border drawing */
 function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentValue: number, transform: Viewport): void {
   g.moveTo(transform.xToScreen(x) - (CANDLESTICK_BORDER_PX_SIZE / 2), transform.yToScreen(adjacentValue));
   g.lineTo(transform.xToScreen(x) + (CANDLESTICK_BORDER_PX_SIZE / 2), transform.yToScreen(adjacentValue));
