@@ -68,7 +68,7 @@ public class SessionHandler {
     }
 
     public void onMessage(String message) throws Throwable {
-        logger.debug(EventType.MISC.getMarker(), "Received message {}", message);
+        logger.debug(EventType.MISC.getMarker(), "Received message {}", message.startsWith("QUERY") ? "QUERY" : message);
         if (message.startsWith(MESSAGE_START)) {
             message = message.substring(6);
             queryManager = new QueryManager(message, queryLogger.getLogger());

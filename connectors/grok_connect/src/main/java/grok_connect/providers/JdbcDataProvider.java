@@ -447,32 +447,18 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             queryLogger.debug(EventType.MISC.getMarker(), "Received resultSet meta data");
-            BufferedWriter csvWriter = null;
-            if (outputCsv != null) {
-                csvWriter = new BufferedWriter(new FileWriter(outputCsv));
-
-                for (int c = 1; c < columnCount + 1; c++) {
-                    csvWriter.append(resultSetMetaData.getColumnLabel(c));
-                    csvWriter.append(c == columnCount ? '\n' : ',');
-                }
-            }
             queryLogger.debug(EventType.COLUMN_FILLING.getMarker(operationNumber, EventType.Stage.START),
                     "Column filling was started");
+
             int rowCount = 0;
             while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
                     Object value = getObjectFromResultSet(resultSet, c);
+
                     if (dryRun) {
                         continue;
-                    }
-
-                    if (outputCsv != null) {
-                        if (value != null)
-                            csvWriter.append(StringEscapeUtils.escapeCsv(value.toString()));
-
-                        csvWriter.append(c == columnCount ? '\n' : ',');
                     }
 
                     int type = resultSetMetaData.getColumnType(c);
@@ -649,9 +635,6 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             }
 
-            if (outputCsv != null) {
-                csvWriter.close();
-            }
             queryLogger.debug(EventType.COLUMN_FILLING.getMarker(operationNumber, EventType.Stage.END),
                     "Column filling was finished");
             DataFrame dataFrame = new DataFrame();

@@ -107,15 +107,19 @@ public class QueryManager {
             df = getResultSetSubDf(dfNumber, columns);
         }
 
-        changeFetchSize(df, dfNumber);
+        if (dfNumber == 1 && supportTransactions && changedFetchSize) {
+            logger.debug(EventType.MISC.getMarker(), "Manual fetch size was set for all chunks {}", currentFetchSize);
+            resultSet.setFetchSize(currentFetchSize);
+        } else if (!changedFetchSize && !dryRun){
+            changeFetchSize(df, dfNumber);
+        }
 
         if (dryRun) {
             while (!resultSet.isAfterLast()) {
                 for (Column column : columns) {
                     column.empty();
                 }
-                df = getResultSetSubDf(++dfNumber, columns);
-                changeFetchSize(df, dfNumber);
+                getResultSetSubDf(++dfNumber, columns);
             }
         }
 
@@ -150,13 +154,9 @@ public class QueryManager {
     }
 
     private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
-        if (supportTransactions && dryRun || supportTransactions && changedFetchSize) {
-            resultSet.setFetchSize(currentFetchSize);
-            return;
-        }
         if (supportTransactions && df.rowCount != 0) {
             currentFetchSize = getFetchSize(df);
-            logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size: {}", currentFetchSize);
+            logger.debug(EventType.MISC.getMarker(dfNumber), "Calculated fetch size: {}", currentFetchSize);
             if (!provider.descriptor.type.equals("Virtuoso")) {
                 resultSet.setFetchSize(currentFetchSize);
             }
@@ -173,7 +173,6 @@ public class QueryManager {
         if (optionValue.isEmpty()) {
             return;
         }
-        logger.debug(EventType.MISC.getMarker(), "Setting fetch size {}", optionValue);
         Pattern pattern = Pattern.compile("(\\d+) MB");
         Matcher matcher = pattern.matcher(optionValue);
         if (matcher.find()) {
