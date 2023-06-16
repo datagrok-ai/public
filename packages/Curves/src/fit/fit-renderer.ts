@@ -11,6 +11,7 @@ import {
   CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   FIT_CELL_TYPE,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {calculateBoxPlotStatistics, AdjacentValues} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
@@ -30,6 +31,7 @@ import {MultiCurveViewer} from './multi-curve-viewer';
 
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
+export const CANDLESTICK_BORDER_PX_SIZE = 4;
 
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
@@ -41,6 +43,20 @@ export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
     rect.getBottom(30).cutLeft(30),
     rect.getLeft(30).cutBottom(30)
   ];
+}
+
+/** Perofrms candlestick border drawing */
+function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentValue: number, transform: Viewport): void {
+  g.moveTo(transform.xToScreen(x) - (CANDLESTICK_BORDER_PX_SIZE / 2), transform.yToScreen(adjacentValue));
+  g.lineTo(transform.xToScreen(x) + (CANDLESTICK_BORDER_PX_SIZE / 2), transform.yToScreen(adjacentValue));
+}
+
+/** Performs candlestick drawing */
+function drawCandlestick(g: CanvasRenderingContext2D, x: number, adjacentValues: AdjacentValues, transform: Viewport): void {
+  drawCandlestickBorder(g, x, adjacentValues.lowerAdjacentValue, transform);
+  g.moveTo(transform.xToScreen(x), transform.yToScreen(adjacentValues.lowerAdjacentValue));
+  g.lineTo(transform.xToScreen(x), transform.yToScreen(adjacentValues.upperAdjacentValue));
+  drawCandlestickBorder(g, x, adjacentValues.upperAdjacentValue, transform);
 }
 
 /** Performs a curve confidence interval drawing */
@@ -171,16 +187,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           if (!candleStart && nextSame)
             candleStart = i;
           else if ((series.showBoxPlot ?? false) && candleStart !== null && !nextSame) {
-            let minY = series.points[candleStart].y;
-            let maxY = minY;
-            for (let j = candleStart; j < i; j++) {
-              minY = Math.min(minY, series.points[j].y);
-              maxY = Math.max(minY, series.points[j].y);
+            const values: number[] = [];
+            for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
+              values[ind] = series.points[j].y;
             }
+            const {adjacentValues} = calculateBoxPlotStatistics(values);
 
             g.beginPath();
-            g.moveTo(viewport.xToScreen(p.x), viewport.yToScreen(minY));
-            g.lineTo(viewport.xToScreen(p.x), viewport.yToScreen(maxY));
+            drawCandlestick(g, p.x, adjacentValues, viewport);
             g.stroke();
 
             candleStart = null;
