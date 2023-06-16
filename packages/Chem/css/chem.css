@@ -66,8 +66,9 @@
   overflow: hidden;
 }
 
-.d4-filter-element .ui-box {
-  height: 100%!important;
+.d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar) {
+  position: relative;
+  height: 100%;
 }
 
 .d4-filter-element .grok-loader {
