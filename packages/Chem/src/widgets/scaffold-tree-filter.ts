@@ -1,8 +1,15 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ScaffoldTreeViewer} from "./scaffold-tree";
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
+
+const COLUMN_NAME_CHANGED = 'column-name-changed';
+
+interface IScaffoldFilterState {
+  colName: string;
+}
 
 export class ScaffoldTreeFilter extends DG.Filter {
   viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
@@ -26,7 +33,6 @@ export class ScaffoldTreeFilter extends DG.Filter {
     super.attach(dataFrame);
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name;
-    this.createViewer(dataFrame);
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => !this.isFiltering), debounce(_ => interval(100)))
       .subscribe((_) => {
@@ -34,6 +40,11 @@ export class ScaffoldTreeFilter extends DG.Filter {
         this.viewer.updateFilters(this.isFiltering);
       })
     );
+    this.subs.push(grok.events.onCustomEvent(COLUMN_NAME_CHANGED).subscribe((state: IScaffoldFilterState) => {
+      if (state.colName === this.columnName) {
+        this.createViewer(dataFrame);
+      }
+    }));
   }
 
   saveState(): any {
@@ -44,6 +55,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   applyState(state: any): void {
     super.applyState(state);
+    grok.events.fireCustomEvent(COLUMN_NAME_CHANGED, {
+      colName: state.columnName,
+    });
     this.viewer.loadTreeStr(state.savedTree);
   }
 
@@ -58,6 +72,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
   createViewer(dataFrame: DG.DataFrame) {
     this.viewer.allowGenerate = false;
     this.viewer.size = 'small';
+    this.viewer.molCol = this.column;
+    this.viewer.MoleculeColumn = this.columnName!;
     this.viewer.dataFrame = dataFrame;
     this.root.appendChild(this.viewer.root);
   }
