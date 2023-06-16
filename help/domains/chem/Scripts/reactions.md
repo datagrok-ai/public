@@ -10,7 +10,7 @@ from two sets, or sequentially depending from **matrixExpansion** flag.
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 

@@ -17,7 +17,7 @@ milliseconds and allows the inclusion of complex query parameters.
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 

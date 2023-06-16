@@ -8,7 +8,7 @@ Visualizes atomic charges in a molecule.
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 

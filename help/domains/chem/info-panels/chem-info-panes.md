@@ -24,7 +24,7 @@ The following actions are available from the **Actions** info pane:
 * **Add to variables**: Adds a cell value as a variable which can be then be used in [scripts](../../../compute/scripting.md)
 * **Copy value**: Copies a cell value
 * **Add to favorites**: [To be deleted????]
-* **Sketch**: Opens a [sketcher](../cheminformatics.md)
+* **Sketch**: Opens a [sketcher](../chem.md)
 
 ## Chemistry
 

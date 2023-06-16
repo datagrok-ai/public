@@ -119,5 +119,5 @@ other *in silico* approaches including but not limited to:
 See also:
 
 - [Cheminformatics in Datagrok](https://datagrok.ai/cheminformatics)
-- [Cheminformatics API](cheminformatics.md)
+- [Cheminformatics API](chem.md)
 - [Cheminformatics 101](https://openbabel.org/docs/dev/Cheminf101/index.html)

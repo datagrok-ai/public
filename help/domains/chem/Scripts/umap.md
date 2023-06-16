@@ -11,7 +11,7 @@ also for general non-linear dimension reduction.
 See also:
 
 * [tSNE](tsne.md)
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 
