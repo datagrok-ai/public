@@ -62,10 +62,8 @@ export class FileInput {
       this.visibleInput.input.classList.add('default');
 
       const handleFiles = async (files: FileList | null) => {
-        if (!files || !files.length) {
-          this.uploadedFile$.next(null);
+        if (!files || !files.length)
           return;
-        }
 
         if (files.length > 1) {
           this.isValid.next(false);
