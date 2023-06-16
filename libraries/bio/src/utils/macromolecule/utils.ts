@@ -53,12 +53,14 @@ function getStats(splitted: Iterable<string[]>, minLength: number): SeqColStats 
  * @return {string[]} array of monomers
  */
 export function splitterAsFasta(seq: any): string[] {
-  return wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
-    .map((ma: RegExpMatchArray) => {
-      const m: string = ma[0];
-      const mRes = m === '-' ? '' : m.length > 1 ? ma[1] : m;
-      return mRes;
-    }).toArray();
+  return seq.toString().replace(monomerRe, '.$1').slice(1).split('.').map((monomer: string) => {
+    if (monomer.startsWith('[') && monomer.endsWith(']'))
+      return monomer.slice(1, -1);
+    else if (monomer === '-')
+      return '';
+    else
+      return monomer;
+  });
 }
 
 /** Gets method to split sequence by separator

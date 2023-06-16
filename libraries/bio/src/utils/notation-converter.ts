@@ -58,12 +58,12 @@ export class NotationConverter extends UnitsHandler {
    */
   private getHelmWrappers(): string[] {
     const prefix = (this.isDna()) ? 'DNA1{' :
-      (this.isRna() || this.isHelmCompatible()) ? 'RNA1{' :
-        (this.isPeptide()) ? 'PEPTIDE1{' :
-          'Unknown'; // this case should be handled as exceptional
+      (this.isRna() || this.isHelmCompatible()) ? 'RNA1{' : 'PEPTIDE1{';
+    // (this.isPeptide()) ? 'PEPTIDE1{' :
+    // 'Unknown'; // this case should be handled as exceptional
 
-    if (prefix === 'Unknown')
-      throw new Error('Neither peptide, nor nucleotide');
+    // if (prefix === 'Unknown')
+    //   throw new Error('Neither peptide, nor nucleotide');
 
     const postfix = '}$$$$';
     const leftWrapper = (this.isDna()) ? 'D(' :
@@ -185,9 +185,9 @@ export class NotationConverter extends UnitsHandler {
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
     }
 
-    if (!tgtSeparator) {
+    if (!tgtSeparator)
       tgtSeparator = (this.toFasta(tgtNotation as NOTATION)) ? '' : this.separator;
-    }
+
     const helmWrappersRe = /(R\(|D\(|\)|P)/g;
     const isNucleotide = helmPolymer.startsWith('DNA') || helmPolymer.startsWith('RNA');
     // items can be monomers or helms
@@ -258,19 +258,11 @@ export class NotationConverter extends UnitsHandler {
     if (this.toSeparator(tgtNotation) && tgtSeparator === null)
       throw new Error('tgt separator is not specified');
 
-    if (this.isFasta() && this.toSeparator(tgtNotation) && tgtSeparator !== null)
-      return this.convertFastaToSeparator(tgtSeparator);
-    else if ((this.isFasta() || this.isSeparator()) && this.toHelm(tgtNotation))
-      return this.convertToHelm();
-    else if (this.isSeparator() && this.toFasta(tgtNotation))
-      return this.convertSeparatorToFasta();
-    else if (this.isHelm() && this.toFasta(tgtNotation)) // the case of HELM
-      return this.convertHelm(tgtNotation);
-    else if (this.isHelm() && this.toSeparator(tgtNotation))
-      return this.convertHelm(tgtNotation, tgtSeparator!);
-    else
+    if (this.isFasta() && this.toSeparator(tgtNotation) && tgtSeparator !== null) { return this.convertFastaToSeparator(tgtSeparator); } else if ((this.isFasta() || this.isSeparator()) && this.toHelm(tgtNotation)) { return this.convertToHelm(); } else if (this.isSeparator() && this.toFasta(tgtNotation)) { return this.convertSeparatorToFasta(); } else if (this.isHelm() && this.toFasta(tgtNotation)) // the case of HELM
+    { return this.convertHelm(tgtNotation); } else if (this.isHelm() && this.toSeparator(tgtNotation)) { return this.convertHelm(tgtNotation, tgtSeparator!); } else {
       throw new Error('Not supported conversion ' +
         `from source notation '${this.notation}' to target notation '${tgtNotation}'.`);
+    }
   }
 
   public constructor(col: DG.Column) {
