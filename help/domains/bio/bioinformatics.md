@@ -84,6 +84,12 @@ For PDB structures, Datagrok generates graphical previews directly within the da
 You can click on a cell to open a separate 3D viewer,
 which allows you to rotate, zoom, and change the color scheme.
 
+![PDB viewer](img/PDB_viewer.apng)
+
+Also you can open individual PDB files together with small molecules
+(for example to explore docking results) using
+[standalone NGL viewer](../../visualize/viewers/ngl.md).
+
 ### Trees
 
 [Newick trees](https://en.wikipedia.org/wiki/Newick_format) are parsed
