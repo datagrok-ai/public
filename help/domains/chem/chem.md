@@ -363,7 +363,7 @@ consists of the scaffold and ligand attachment points represented by R-groups.
 <summary> How to use </summary>
 
 1. Go to **Chem** > **Analyze SAR** > **R-Groups Analysis...**
-A [sketcher](sketcher.md) opens.
+A [sketcher](chem.md) opens.
 1. In the sketcher, specify the common core (scaffold) for the selected molecular column using one of this methods:
    * Draw or paste a scaffold in the sketcher.
    * Click **MCS** to automatically identify the most common substructure.
