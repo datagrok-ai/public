@@ -7,6 +7,7 @@ import {
 	getPointsArrays,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {sigmoid, FIT_FUNCTION_SIGMOID} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 
 
@@ -69,6 +70,17 @@ category('fit', () => {
 		expect(polynomialSeriesStatistics.auc, 36.52554692824738);
 		expect(sigmoidSeriesStatistics.rSquared, 0.9781915962446398);
 		expect(polynomialSeriesStatistics.rSquared, 0.8460557736673078);
+	});
+
+	test('calculateBoxPlotStatistics', async () => {
+		const values = [0.7654603719711304, 0.8199243545532227, 0.8257747292518616, 0.9558155536651611, 0.9596694707870483];
+		const boxPlotStats = calculateBoxPlotStatistics(values);
+
+		expect(boxPlotStats.q1, 0.8199243545532227);
+		expect(boxPlotStats.q2, 0.8257747292518616);
+		expect(boxPlotStats.q3, 0.9558155536651611);
+		expect(boxPlotStats.adjacentValues.lowerAdjacentValue, 0.7654603719711304);
+		expect(boxPlotStats.adjacentValues.upperAdjacentValue, 0.9558155536651611);
 	});
 
 	test('sigmoid', async () => {
