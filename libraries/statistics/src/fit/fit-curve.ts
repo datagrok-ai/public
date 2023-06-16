@@ -346,7 +346,7 @@ function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (par
   of: ObjectiveFunction): Optimizable {
   const fixed: number[] = [];
 
-  const optimizable = {
+  return {
     getValue: (parameters: number[]) => {
       return of(curveFunction, data, parameters).value;
     },
@@ -357,8 +357,6 @@ function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (par
       return gradient;
     },
   };
-
-  return optimizable;
 }
 
 export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescription): FitFunction {
@@ -423,11 +421,9 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
 
 export function getFittedCurve(curveFunction: (params: number[], x: number) => number, paramValues: number[]):
  (x: number) => number {
-  const fittedCurve = (x: number) => {
+  return (x: number) => {
     return curveFunction(paramValues, x);
   };
-
-  return fittedCurve;
 }
 
 export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: number[],
@@ -522,8 +518,7 @@ export function sigmoid(params: number[], x: number): number {
   const B = params[1];
   const C = params[2];
   const D = params[3];
-  const res = D + (A - D) / (1 + Math.pow(10, (x - C) * B));
-  return res;
+  return (D + (A - D) / (1 + Math.pow(10, (x - C) * B)));
 }
 
 export function getAuc(fittedCurve: (x: number) => number, data: {x: number[], y: number[]}): number {
