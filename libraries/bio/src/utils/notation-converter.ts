@@ -83,10 +83,12 @@ export class NotationConverter extends UnitsHandler {
   ): string {
     const monomerArray = this.splitter(sourcePolymer);
     const monomerHelmArray: string[] = monomerArray.map((mm: string) => {
-      if (!mm || mm === sourceGapSymbol)
+      if (!mm || mm === sourceGapSymbol) {
         return UnitsHandler._defaultGapSymbolsDict.HELM;
-      else
-        return `${leftWrapper}${mm}${rightWrapper}`;
+      } else {
+        return mm.length == 1 ? `${leftWrapper}${mm}${rightWrapper}` :
+          `${leftWrapper}[${mm}]${rightWrapper}`;
+      }
     });
     return `${prefix}${monomerHelmArray.join('.')}${postfix}`;
   }
@@ -258,8 +260,17 @@ export class NotationConverter extends UnitsHandler {
     if (this.toSeparator(tgtNotation) && tgtSeparator === null)
       throw new Error('tgt separator is not specified');
 
-    if (this.isFasta() && this.toSeparator(tgtNotation) && tgtSeparator !== null) { return this.convertFastaToSeparator(tgtSeparator); } else if ((this.isFasta() || this.isSeparator()) && this.toHelm(tgtNotation)) { return this.convertToHelm(); } else if (this.isSeparator() && this.toFasta(tgtNotation)) { return this.convertSeparatorToFasta(); } else if (this.isHelm() && this.toFasta(tgtNotation)) // the case of HELM
-    { return this.convertHelm(tgtNotation); } else if (this.isHelm() && this.toSeparator(tgtNotation)) { return this.convertHelm(tgtNotation, tgtSeparator!); } else {
+    if (this.isFasta() && this.toSeparator(tgtNotation) && tgtSeparator !== null) {
+      return this.convertFastaToSeparator(tgtSeparator);
+    } else if ((this.isFasta() || this.isSeparator()) && this.toHelm(tgtNotation)) {
+      return this.convertToHelm();
+    } else if (this.isSeparator() && this.toFasta(tgtNotation)) {
+      return this.convertSeparatorToFasta();
+    } else if (this.isHelm() && this.toFasta(tgtNotation)) { // the case of HELM
+      return this.convertHelm(tgtNotation);
+    } else if (this.isHelm() && this.toSeparator(tgtNotation)) {
+      return this.convertHelm(tgtNotation, tgtSeparator!);
+    } else {
       throw new Error('Not supported conversion ' +
         `from source notation '${this.notation}' to target notation '${tgtNotation}'.`);
     }
