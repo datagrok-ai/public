@@ -37,7 +37,7 @@ The default table view contains a set of columns corresponding to the positions 
 
 ### Monomer structure rendering
 
-The position columns contain monomers at that positions and render the monomers according to amino acid residues classification highlighting hydrophobic/hydrophilic regions. You can hover over any cell with a monomer and the tooltip with its structure will pop up. The structure for non-natural amino acid residues is provided with a monomer library. More about the monomer library can be found [here]().
+The position columns contain monomers at that positions and render the monomers according to amino acid residues classification highlighting hydrophobic/hydrophilic regions. You can hover over any cell with a monomer and the tooltip with its structure will pop up. The structure for non-natural amino acid residues is provided with a monomer library. More about the monomer library can be found here.
 
 ![Monomer structure](img/monomer-structure-tooltip.png)
 
