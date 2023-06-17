@@ -55,7 +55,7 @@ and [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) for
 that SMARTS is the same thing as regular expressions in cheminformatics. Datagrok uses SMARTS for
 finding [structural alerts](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/info-panels/structural-alerts.md)
 , performing substructure
-search, [R-group analysis](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/r-group-analysis.md) (*
+search, [R-group analysis](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/chem.md#r-groups-analysis) (*
 revision required*).
 
 ## Operating with chemical information
@@ -72,10 +72,10 @@ chemical spaces.
 
 Descriptors are frequently used for proceeding [similar](https://en.wikipedia.org/wiki/Chemical_similarity) chemical
 structures. These principles yield
-in [similarity search](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/similarity-search.md)
-and [diversity search](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/diversity-search.md)
+in [similarity search](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/chem.md#similarity-and-diversity-search)
+and [diversity search](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/chem.md#similarity-and-diversity-search)
 . In combination with clustering and self-organizing maps, methods such
-as [stochastic proximity embedding](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/similarity-spe.md)
+as [stochastic proximity embedding](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/chem.md#chemical-space)
 allow to reduce dimensionality of used vectors and to separate the most significant features of the molecule. It helps
 us to visualize the chemical space in [2D maps](https://public.datagrok.ai/script/c7e74227-ca12-5337-b7d0-8c4d1bacfbb9).
 
@@ -91,7 +91,7 @@ All described methods are implemented in different analysis pipelines, and assum
 molecule perfectly. Data-associated errors lead to biases in descriptors, wrong interpretations of modeling outputs, and
 irrelevance of the whole work. The most sensitive cases are duplicated vectors in the training set, and errors derived
 from the incorrect structure representation.
-Thus, [curation](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/chem-curate.md)
+Thus, [curation](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/chem.md#curation)
 of chemical data is usually integrated to analysis pipeline.
 
 ## Freely available tools and public databases
