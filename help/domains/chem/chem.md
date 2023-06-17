@@ -694,6 +694,7 @@ To learn more about extending and customizing Datagrok, see the
 
 ## Resources
 
+* [Cheminformatics tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
 * [Demo app](https://public.datagrok.ai/apps/Tutorials/Demo)
 * Videos
   * [Cheminformatics](https://www.youtube.com/watch?v=k1NVdTRpYOM)
