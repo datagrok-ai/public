@@ -17,13 +17,12 @@ let convertDialogSubs: Subscription[] = [];
  * @param {DG.column} col Column with 'Macromolecule' semantic type
  */
 export function convert(col?: DG.Column): void {
-
   let tgtCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
   if (!tgtCol)
     throw new Error('No column with Macromolecule semantic type found');
   let converter = new NotationConverter(tgtCol);
   let currentNotation: NOTATION = converter.notation;
-  const dialogHeader =  ui.divText(
+  const dialogHeader = ui.divText(
     'Current notation: ' + currentNotation,
     {
       style: {
@@ -48,9 +47,11 @@ export function convert(col?: DG.Column): void {
     tgtCol = newCol;
     converter = new NotationConverter(tgtCol);
     currentNotation = converter.notation;
+    if (currentNotation === NOTATION.HELM)
+      separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
     dialogHeader.textContent = 'Current notation: ' + currentNotation;
     filteredNotations = notations.filter((e) => e !== currentNotation);
-    targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
+    targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations, toggleSeparator);
     toggleSeparator();
     convertDialog?.clear();
     convertDialog?.add(ui.div([
@@ -58,14 +59,13 @@ export function convert(col?: DG.Column): void {
       targetColumnInput.root,
       targetNotationInput.root,
       separatorInput.root
-    ]))
+    ]));
   };
 
   const targetColumnInput = ui.columnInput('Column', grok.shell.t, tgtCol, toggleColumn);
 
   const separatorArray = ['-', '.', '/'];
   let filteredNotations = notations.filter((e) => e !== currentNotation);
-  let targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
 
   const separatorInput = ui.choiceInput('Separator', separatorArray[0], separatorArray);
 
@@ -76,6 +76,7 @@ export function convert(col?: DG.Column): void {
     else
       $(separatorInput.root).show();
   };
+  let targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations, toggleSeparator);
 
   // set correct visibility on init
   toggleSeparator();
