@@ -24,9 +24,10 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
   
     constructor(semtype: DG.SemType){
       super(semtype);
+      const numericalColumns = this.tableInput.value!.columns.numerical;
       //TODO: remove when the new version of datagrok-api is available
       //@ts-ignore
-      this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
+      this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(numericalColumns), null, {filter: (col: DG.Column) => Array.from(numericalColumns).includes(col)} as ColumnInputOptions);
       this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.intInput('Similarity cutoff', 80);
       ui.tooltip.bind(this.similarityInput.root, `Pairs of similar (cutoff is used) molecules with high difference in activity are considered 'cliffs'`)
@@ -45,9 +46,10 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
     onTableInputChanged(semtype: DG.SemType) {
         super.onTableInputChanged(semtype);
         ui.empty(this.activitiesInputRoot);
+        const numericalColumns = this.tableInput.value!.columns.numerical;
         //TODO: remove when the new version of datagrok-api is available
         //@ts-ignore
-        this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(this.tableInput.value!.columns.numerical), null, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
+        this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, DG.Utils.firstOrNull(numericalColumns), null, {filter: (col: DG.Column) => Array.from(numericalColumns).includes(col)} as ColumnInputOptions);
         Array.from(this.activitiesInput.root.children).forEach((it) => this.activitiesInputRoot.append(it));
     }
   }

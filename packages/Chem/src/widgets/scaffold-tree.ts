@@ -101,8 +101,7 @@ function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
 
 function enableToolbar(thisViewer: ScaffoldTreeViewer): void {
   const toolbar = thisViewer.root.querySelector('.chem-scaffold-tree-toolbar ') as HTMLElement;
-  if (thisViewer.tree.items.length = 0)
-    toolbar.style.visibility = 'visible';
+  toolbar.classList.toggle('empty-tree', thisViewer.tree.items.length === 0);
 }
 
 function filterNodesIter(rootGroup: TreeViewGroup, recordCount : number, hitsThresh: number) {
@@ -315,6 +314,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   tree: DG.TreeViewGroup;
   bitset: DG.BitSet | null = null;
   wrapper: SketcherDialogWrapper | null = null;
+  molCol: DG.Column | null = null;
   molColumns: Array<DG.Column[]> = [];
   molColumnIdx: number = -1;
   tableIdx: number = -1;
@@ -408,7 +408,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       category: 'Scaffold Generation',
       description: 'Remove charges and radicals from scaffolds',
     });
-
+    
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
@@ -661,7 +661,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   get molColumn(): DG.Column | null {
-    return this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx];
+    return this.molCol !== null 
+      ? this.molCol 
+      : (this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx]);
   }
 
   private openEditSketcher(group: TreeViewGroup) {
@@ -1185,7 +1187,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.molColumnIdx >= 0)
+    if (this.molColumnIdx >= 0 && this.MoleculeColumn == null)
       this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
 
     const thisViewer = this;

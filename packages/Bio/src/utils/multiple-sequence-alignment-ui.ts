@@ -11,7 +11,7 @@ import {_package} from '../package';
 import {multipleSequenceAlginmentUIOptions} from './types';
 import {kalignVersion, msaDefaultOptions} from './constants';
 import '../../css/msa.css';
-import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
 export class MsaWarning extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -41,7 +41,7 @@ export async function multipleSequenceAlignmentUI(
     methodInput.setTooltip('Alignment method');
 
     // UI for Kalign alignment
-    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? msaDefaultOptions.kalign.terminalGap);
+    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? null);
     terminalGapInput.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
     const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
 
@@ -51,6 +51,13 @@ export async function multipleSequenceAlignmentUI(
     const gapExtendInput = ui.floatInput('Gap extend', options.pepsea.gapExtend);
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
 
+    const msaParamsDiv = ui.inputs([gapOpenInput, gapExtendInput, terminalGapInput]);
+    const msaParamsButton = ui.button('Alignment parameters', () => {
+      msaParamsDiv.hidden = !msaParamsDiv.hidden;
+    }, 'Adjust alignment parameters such as penalties for opening and extending gaps');
+    msaParamsButton.classList.add('msa-params-button');
+    msaParamsDiv.hidden = true;
+    msaParamsButton.prepend(ui.icons.settings(() => null));
     const pepseaInputRootStyles: CSSStyleDeclaration[] = [methodInput.root.style];
     const kalignInputRootStyles: CSSStyleDeclaration[] = [terminalGapInput.root.style, kalignVersionDiv.style];
 
@@ -84,9 +91,8 @@ export async function multipleSequenceAlignmentUI(
       .add(colInput)
       .add(clustersColInput)
       .add(methodInput)
-      .add(gapOpenInput)
-      .add(gapExtendInput)
-      .add(terminalGapInput)
+      .add(msaParamsDiv)
+      .add(msaParamsButton)
       .add(kalignVersionDiv)
       .onOK(async () => { await onDialogOk(colInput, table, performAlignment, resolve, reject); })
       .show();
@@ -142,9 +148,9 @@ async function onColInputChange(
       [NOTATION.FASTA, NOTATION.SEPARATOR], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)
     ) { // Kalign - natural alphabets. if the notation is separator, convert to fasta and then run kalign
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'kalign');
-      gapOpenInput.value ??= msaDefaultOptions.kalign.gapOpen;
-      gapExtendInput.value ??= msaDefaultOptions.kalign.gapExtend;
-      terminalGapInput.value ??= msaDefaultOptions.kalign.terminalGap;
+      gapOpenInput.value = null;
+      gapExtendInput.value = null;
+      terminalGapInput.value = null;
       const potentialColNC = new NotationConverter(col);
       const performCol: DG.Column<string> = potentialColNC.isFasta() ? col :
         potentialColNC.convert(NOTATION.FASTA);
@@ -161,8 +167,6 @@ async function onColInputChange(
     } else if (checkInputColumnUI(col, col.name, [NOTATION.SEPARATOR], [ALPHABET.UN], false)) {
       //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
       const potentialColNC = new NotationConverter(col);
-      if (!await potentialColNC.checkHelmCompatibility())
-        return;
       const helmCol = potentialColNC.convert(NOTATION.HELM);
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
       gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
@@ -172,6 +176,9 @@ async function onColInputChange(
       return async () => await runPepsea(helmCol, unusedName, methodInput.value!,
             gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
     } else {
+      gapOpenInput.value = null;
+      gapExtendInput.value = null;
+      terminalGapInput.value = null;
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'kalign');
       return;
     }

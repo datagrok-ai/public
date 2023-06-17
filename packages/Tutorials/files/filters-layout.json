@@ -4,16 +4,16 @@
     "containerType": "horizontal",
     "state": {
       "width": 1129,
-      "height": 881
+      "height": 913
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
           "width": 314,
-          "height": 881,
+          "height": 913,
           "element": {
-            "id": "ec7458a0-ed50-11ed-bd44-d5b5c8cba400",
+            "id": "31df41a0-ed50-11ed-b77d-7f77c8ad1292",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -34,6 +34,12 @@
                   "mode": "or",
                   "gridNames": null,
                   "gridValues": null,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "R3 fmla",
+                  "active": true,
                   "boolInput": null
                 },
                 {
@@ -58,7 +64,7 @@
         "containerType": "fill",
         "state": {
           "width": 814,
-          "height": 881,
+          "height": 913,
           "documentManager": true
         },
         "children": [
@@ -66,9 +72,9 @@
             "containerType": "panel",
             "state": {
               "width": 814,
-              "height": 881,
+              "height": 913,
               "element": {
-                "id": "ec747fb0-ed50-11ed-89d5-232925a572cb",
+                "id": "31df68b0-ed50-11ed-fb15-b51059a778f9",
                 "type": "Grid",
                 "look": {
                   "#type": "GridLook",
@@ -116,7 +122,7 @@
       }
     ],
     "floating": [],
-    "tableId": "be617470-ed50-11ed-8d26-fd695deece47",
+    "tableId": "01f09890-ed50-11ed-fbc0-053b3a362c69",
     "tableName": "Table"
   },
   "name": "Table",
@@ -124,5 +130,5 @@
   "author": {
     "id": "2d57fcc0-ed50-11ed-c95c-ab167febf0fd"
   },
-  "createdOn": "2023-06-15T11:22:33.638Z"
+  "createdOn": "2023-06-16T16:16:48.312Z"
 }
