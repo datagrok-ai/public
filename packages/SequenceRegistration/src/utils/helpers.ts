@@ -1,7 +1,6 @@
-import * as DG from 'datagrok-api/dg';
-
-export function sortByReverseLength(array: string[]): string[] {
-  return array.sort((a, b) => b.length - a.length);
+/** Builds JSON-like string from string array and doubles back-slash specifically for DG.Column '.choices' tag */
+export function stringify(items: string[]): string {
+  return '["' + items.map((v) => v.replace('\\', '\\\\')).join('", "') + '"]';
 }
 
 export function download(name: string, href: string): void {

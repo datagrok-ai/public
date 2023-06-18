@@ -1,3 +1,34 @@
+// todo: trim duplicates if any
+
+export const enum PREFIXES {
+  AS = 'AS',
+  SS = 'SS',
+  AS1 = 'AS1',
+  AS2 = 'AS2'
+}
+
+export const enum SEQ_TYPE {
+  AS = 'AS',
+  SS = 'SS',
+  DUPLEX = 'Duplex',
+  DIMER = 'Dimer',
+}
+
+/** Computable categories of sequence types */
+export const enum SEQ_TYPE_CATEGORY {
+  AS_OR_SS,
+  DUPLEX,
+  DIMER,
+}
+
+/** Map between types and their categories inferrable from 'Sequence' column */
+export const seqTypeToCategoryDict = {
+  [SEQ_TYPE.AS]: SEQ_TYPE_CATEGORY.AS_OR_SS,
+  [SEQ_TYPE.SS]: SEQ_TYPE_CATEGORY.AS_OR_SS,
+  [SEQ_TYPE.DIMER]: SEQ_TYPE_CATEGORY.DIMER,
+  [SEQ_TYPE.DUPLEX]: SEQ_TYPE_CATEGORY.DUPLEX,
+};
+
 export const SEQUENCE_TYPES = {
   SENSE_STRAND: 'SS',
   ANTISENSE_STRAND: 'AS',
@@ -27,6 +58,7 @@ export const COL_NAMES = {
   ICD: 'ICD',
   OWNER: 'Owner',
 };
+
 
 export const GENERATED_COL_NAMES = [
   COL_NAMES.COMPOUND_NAME,

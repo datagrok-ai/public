@@ -1,7 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 
-import {sortByReverseLength} from '../helpers';
-
 export function getSaltMass(
   saltNames: string[], saltsMolWeightList: number[], equivalentsCol: DG.Column, i: number, saltCol: DG.Column
 ): number {
@@ -39,3 +37,8 @@ export function getMolWeight(sequence: string, codesToWeightsMap: Map<string, nu
   }
   return weight - 61.97;
 }
+
+export function sortByReverseLength(array: string[]): string[] {
+  return array.sort((a, b) => b.length - a.length);
+}
+
