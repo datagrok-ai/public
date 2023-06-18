@@ -10,6 +10,7 @@ The info panes are displayed automatically in the **Context Panel** when you sel
 
 To add info pane as a column, hover over the first descriptor shown, click the **more actions** icon > **Add as column**. This adds a column with
 
+:::
 
 :::note developers
 
@@ -61,13 +62,4 @@ The following info panes and actions are available form the **Biology** info pan
 
 ## Structure
 
-
-
-
-
-
-
-
 ## Databases
-
-

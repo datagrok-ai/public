@@ -358,6 +358,7 @@ in order to get a visually appropriate form of monomers
 in cycles etc. Structure at atomic level could be saved in available notations.
 
 ## Scripting and bioinformatics libraries integration
+
 Datagrok offers you unlimited capabilities for extending its functionality
 through custom scripts, plugins, and packages,
 
