@@ -25,7 +25,7 @@ Molecular Descriptors used in model:
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 

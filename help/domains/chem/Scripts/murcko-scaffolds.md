@@ -20,7 +20,7 @@ Here is how the resulting scaffolds look like:
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 

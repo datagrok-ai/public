@@ -654,7 +654,7 @@ property setter).
 
 [109]: ../../discover/semantic-types.md "Semantic types"
 
-[110]: ../domains/chem/cheminformatics.md "Cheminformatics overview"
+[110]: ../domains/chem/chem.md "Cheminformatics overview"
 
 [111]: https://github.com/datagrok-ai/public/blob/1393df83ef2eea80dc2c19b5e6e541cb35d60f91/packages/Chem/detectors.js#L6 "Chem Molecule detector"
 
