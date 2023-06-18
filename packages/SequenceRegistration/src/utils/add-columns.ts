@@ -3,9 +3,6 @@ import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './const';
 import * as grok from 'datagrok-api/grok';
 import {RegistrationSequenceParser} from './sequence-parser';
 import {getBatchMolWeight, getMolWeight, getSaltMass, getSaltMolWeigth} from './calculations';
-import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
-import {FormatDetector} from '../parsing-validation/format-detector';
-import {SequenceValidator} from '../parsing-validation/sequence-validator';
 
 export class SdfColumnsExistsError extends Error {
   constructor(message: string) {
@@ -35,12 +32,12 @@ export class RegistrationColumnsHandler {
   private typeCol: DG.Column;
   private chemistryNameCol: DG.Column;
 
-  addColumns(
+  async addColumns(
     saltNamesList: string[], saltsMolWeightList: number[]
-  ): DG.DataFrame {
+  ): Promise<DG.DataFrame> {
     this.addCompoundNameCol();
     this.addCompoundCommentsCol();
-    this.addCompoundMolWeightCol();
+    await this.addCompoundMolWeightCol();
     this.addSaltMassCol(saltNamesList, saltsMolWeightList);
     this.addSaltMolWeightCol(saltNamesList, saltsMolWeightList);
     this.addBatchMolWeightCol();
@@ -52,8 +49,9 @@ export class RegistrationColumnsHandler {
     this.df.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
       let cellValue: string = '';
       try {
-        const seqTypeSpecified = [SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(this.typeCol.get(i));
-        cellValue = (seqTypeSpecified) ?  this.chemistryNameCol.get(i) : this.sequenceCol.get(i);
+        const seqTypeSpecified = [SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX]
+          .includes(this.typeCol.get(i));
+        cellValue = (seqTypeSpecified) ? this.chemistryNameCol.get(i) : this.sequenceCol.get(i);
       } catch (err) {
         this.onError(i, err);
       }
@@ -83,26 +81,26 @@ export class RegistrationColumnsHandler {
     });
   }
 
-  private addCompoundMolWeightCol(): void {
-    this.df.columns.addNewFloat(COL_NAMES.COMPOUND_MOL_WEIGHT).init((i: number) => {
+  private async addCompoundMolWeightCol(): Promise<void> {
+    this.df.columns.addNewFloat(COL_NAMES.COMPOUND_MOL_WEIGHT).init(async (i: number) => {
       let res: number = Number.NaN;
       const seqType = this.typeCol.get(i);
       const parser = new RegistrationSequenceParser();
-      const codesToWeightsMap = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
+      const codesToWeightsMap = await getCodeToNameMap();
       try {
         if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(seqType)) {
           const seq = this.sequenceCol.get(i);
-          res = (isValid(seq)) ? getMolWeight(seq, codesToWeightsMap) : DG.FLOAT_NULL;
+          res = (await validateSequence(seq)) ? getMolWeight(seq, codesToWeightsMap) : DG.FLOAT_NULL;
         } else if (seqType === SEQUENCE_TYPES.DUPLEX) {
           const seq = this.sequenceCol.get(i);
           const obj = parser.getDuplexStrands(seq);
           const strands = Object.values(obj);
-          res = strands.every((seq) => isValid(seq)) ?
+          res = strands.every(async (seq) => await validateSequence(seq)) ?
             getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as, codesToWeightsMap) : DG.FLOAT_NULL;
         } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(seqType)) {
           const seq = this.sequenceCol.get(i);
           const obj = parser.getDimerStrands(seq);
-          res = (Object.values(obj).every((seq) => isValid(seq))) ?
+          res = (Object.values(obj).every((seq) => validateSequence(seq))) ?
             getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as1, codesToWeightsMap) +
             getMolWeight(obj.as2, codesToWeightsMap) :
             DG.FLOAT_NULL;
@@ -112,7 +110,6 @@ export class RegistrationColumnsHandler {
       }
       return res;
     });
-
   }
 
   private addSaltMassCol(saltNamesList: string[], saltsMolWeightList: number[]): void {
@@ -125,7 +122,6 @@ export class RegistrationColumnsHandler {
       }
       return res;
     });
-
   }
 
   private addSaltMolWeightCol(saltNamesList: string[], saltsMolWeightList: number[]): void {
@@ -167,8 +163,11 @@ export class RegistrationColumnsHandler {
   }
 }
 
-function isValid(sequence: string): boolean {
-  const validator = new SequenceValidator(sequence);
-  const format = (new FormatDetector(sequence).getFormat());
-  return (format === null) ? false : validator.isValidSequence(format!);
+async function getCodeToNameMap(): Promise<Map<string, number>> {
+  return await grok.functions.call('SequenceTranslator:getCodeToNameMap');
 }
+
+async function validateSequence(sequence: string): Promise<boolean> {
+  return await grok.functions.call('SequenceTranslator:validateSequence', {sequence: sequence});
+}
+

@@ -2,25 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DBLoaderBase, DataLoaderDB} from './model/data-loading-utils/database-loader';
-
-import {engageViewForOligoSdFileUI} from './model/registration/registration';
 import {SequenceTranslatorUI} from './view/view';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-// import {JsonLoader} from './model/data-loading-utils/json-loader';
 import {getJsonData} from './model/data-loading-utils/json-loader';
+import {FORMAT} from './model/const';
+import {SequenceToMolfileConverter} from './model/sequence-to-structure-utils/sequence-to-molfile';
+import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transformations';
+import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
+import {FormatDetector} from './model/parsing-validation/format-detector';
+import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 
 class StPackage extends DG.Package {
-  private _dbLoader?: DBLoaderBase;
   private _monomerLib?: IMonomerLib;
-
-  get dbLoader(): DBLoaderBase {
-    if (!this._dbLoader)
-      throw new Error('ST: dataLoader is not initialized');
-    return this._dbLoader!;
-  };
 
   get monomerLib(): IMonomerLib {
     if (!this._monomerLib)
@@ -43,32 +38,9 @@ class StPackage extends DG.Package {
       }
     }
   }
-
-  public async initDBLoader(): Promise<void> {
-    if (this._dbLoader === undefined) {
-      const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
-        'Initializing Sequence Translator data loader ...');
-      try {
-        const dl = new DataLoaderDB();
-        await dl.init();
-        this._dbLoader = dl;
-      } catch (err: any) {
-        const errMsg = err.hasOwnProperty('message') ? err.message : err.toString();
-        grok.shell.error(errMsg);
-        throw new Error('Initializing Sequence Translator data loader error: ' + errMsg);
-      } finally {
-        pi.close();
-      }
-    }
-  }
 }
 
 export const _package: StPackage = new StPackage();
-
-//tags: init
-export async function initSequenceTranslator(): Promise<void> {
-  _package.initDBLoader().then(() => {}); // Do not wait for lists loaded from the database
-}
 
 //name: Sequence Translator
 //tags: app
@@ -88,8 +60,29 @@ export async function sequenceTranslatorApp(): Promise<void> {
   }
 }
 
-//name: engageViewForOligoSdFile()
-//description: Function to modify the view for SequenceTranslator registration
-export async function engageViewForOligoSdFile(view: DG.TableView): Promise<void> {
-  await engageViewForOligoSdFileUI(view);
+//name: getCodeToNameMap
+export function getCodeToNameMap(): Map<string, number> {
+  return MonomerLibWrapper.getInstance().getCodesToWeightsMap();
+}
+
+//name: validateSequence
+//input: string sequence
+export function validateSequence(sequence: string): boolean {
+  const validator = new SequenceValidator(sequence);
+  const format = (new FormatDetector(sequence).getFormat());
+  return (format === null) ? false : validator.isValidSequence(format!);
+}
+
+//name: validateSequence
+//input: string sequence
+//input: bool invert
+export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): string {
+  return (new SequenceToMolfileConverter(sequence, invert, FORMAT.GCRS)).convert();
+}
+
+//name: linkStrands
+//input: object strands
+//input: bool invert
+export function linkStrands(strands: { senseStrands: string[], antiStrands: string[] }): string {
+  return linkStrandsV3000(strands, true);
 }
