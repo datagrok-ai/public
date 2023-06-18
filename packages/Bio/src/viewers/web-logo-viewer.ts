@@ -10,10 +10,10 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
   getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc,
-  TAGS as bioTAGS
+  TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
-  WebLogoPropsDefault, WebLogoProps, IWebLogoViewer,
+  WebLogoPropsDefault, WebLogoProps,
   PositionHeight,
   positionSeparator,
   VerticalAlignments,
@@ -23,6 +23,7 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {TAGS as wlTAGS} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {_package} from '../package';
 
 declare global {
   interface HTMLCanvasElement {
@@ -68,13 +69,14 @@ export class PositionInfo {
   sumForHeightCalc: number;
 
   /** freq = {}, rowCount = 0
+   * @param {number} pos Position in sequence
    * @param {string} name Name of position ('111A', '111.1', etc)
-   * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
-   * @param {number} rowCount Count of elements in column
    * @param {string[]} freq frequency of monomers in position
+   * @param {number} rowCount Count of elements in column
+   * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
    */
   constructor(pos: number, name: string,
-    freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0
+    freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0,
   ) {
     this.pos = pos;
     this.name = name;
@@ -125,6 +127,8 @@ export class WebLogoViewer extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
   private static viewerCount: number = -1;
 
+  private viewed: boolean = false;
+
   private readonly viewerId: number = -1;
   private unitsHandler: UnitsHandler | null;
   private initialized: boolean = false;
@@ -141,7 +145,6 @@ export class WebLogoViewer extends DG.JsViewer {
   private axisHeight: number = 12;
 
   private seqCol: DG.Column<string> | null = null;
-  private splitter: SplitterFunc | null = null;
   // private maxLength: number = 100;
   private positions: PositionInfo[] = [];
 
@@ -184,21 +187,21 @@ export class WebLogoViewer extends DG.JsViewer {
   private get filter(): DG.BitSet {
     let res: DG.BitSet;
     switch (this.filterSource) {
-    case FilterSources.Filtered:
-      res = this.dataFrame.filter;
-      break;
-    case FilterSources.Selected:
-      res = this.dataFrame.selection;
-      break;
+      case FilterSources.Filtered:
+        res = this.dataFrame.filter;
+        break;
+      case FilterSources.Selected:
+        res = this.dataFrame.selection;
+        break;
     }
     return res;
   }
 
   /** For startPosition equals to endPosition Length is 1 */
   private get Length(): number {
-    if (this.skipEmptyPositions) {
+    if (this.skipEmptyPositions)
       return this.positions.length;
-    }
+
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
@@ -208,27 +211,26 @@ export class WebLogoViewer extends DG.JsViewer {
   }
 
   private get positionMarginValue() {
-    if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true)) {
+    if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true))
       return this.positionMargin;
-    }
-    if (this.positionMarginState === 'enable') {
+
+    if (this.positionMarginState === 'enable')
       return this.positionMargin;
-    }
+
 
     return 0;
   }
 
   /** Count of position rendered for calculations countOfRenderPositions */
   private get countOfRenderPositions() {
-    if (this.host == null) {
+    if (this.host == null)
       return 0;
-    }
+
     const r = window.devicePixelRatio;
-    if (r > 1) {
+    if (r > 1)
       return this.canvasWidthWithRatio / this.positionWidthWithMargin;
-    } else {
+    else
       return this.canvas.width / (this.positionWidthWithMargin * r);
-    }
   }
 
   private get canvasWidthWithRatio() {
@@ -306,7 +308,7 @@ export class WebLogoViewer extends DG.JsViewer {
 
   private init(): void {
     if (this.initialized) {
-      console.error('Bio: WebLogoViewer.init() second initialization!');
+      _package.logger.error('Bio: WebLogoViewer.init() second initialization!');
       return;
     }
 
@@ -353,6 +355,53 @@ export class WebLogoViewer extends DG.JsViewer {
     this.render(true);
   }
 
+  // -- Data --
+
+  setData(): void {
+    if (this.viewed) {
+      this.destroyView();
+      this.viewed = false;
+    }
+
+    this.updateSeqCol();
+
+    if (!this.viewed) {
+      this.buildView();
+      this.viewed = true;
+    }
+  }
+
+  // -- View --
+
+  private destroyView() {
+    const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
+    super.detach();
+
+    this.viewSubs.forEach((sub) => sub.unsubscribe());
+    this.host!.remove();
+    this.msgHost = undefined;
+    this.host = undefined;
+
+    this.initialized = false;
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView() end`);
+  }
+
+  private buildView() {
+    super.onTableAttached();
+
+    const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
+
+    if (this.dataFrame !== undefined) {
+      this.viewSubs.push(this.dataFrame.filter.onChanged.subscribe(this.dataFrameFilterOnChanged.bind(this)));
+      this.viewSubs.push(this.dataFrame.selection.onChanged.subscribe(this.dataFrameSelectionOnChanged.bind(this)));
+    }
+
+    this.init();
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached() end`);
+  }
+
   /** Handler of changing size WebLogo */
   private rootOnSizeChanged(): void {
     this._calculate(window.devicePixelRatio);
@@ -370,19 +419,25 @@ export class WebLogoViewer extends DG.JsViewer {
         this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
       }
       if (this.seqCol) {
-        const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
-        const separator: string = this.seqCol!.getTag(bioTAGS.separator);
-        this.splitter = getSplitter(units, separator);
-        this.unitsHandler = new UnitsHandler(this.seqCol);
+        try {
+          const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
+          const separator: string = this.seqCol!.getTag(bioTAGS.separator);
+          this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
 
-        this.updatePositions();
-        this.cp = pickUpPalette(this.seqCol);
-      } else {
-        this.splitter = null;
-        this.positionNames = [];
-        this.startPosition = -1;
-        this.endPosition = -1;
-        this.cp = null;
+          this.updatePositions();
+          this.cp = pickUpPalette(this.seqCol);
+        } catch (err: any) {
+          this.seqCol = null;
+          this.msgHost!.innerText = `${err}`;
+          this.msgHost!.style.setProperty('display', null);
+        }
+        if (!this.seqCol) {
+          this.unitsHandler = null;
+          this.positionNames = [];
+          this.startPosition = -1;
+          this.endPosition = -1;
+          this.cp = null;
+        }
       }
     }
     this.render();
@@ -402,8 +457,7 @@ export class WebLogoViewer extends DG.JsViewer {
     } else {
       categories = this.seqCol.categories;
     }
-    const maxLength = categories.length > 0 ? Math.max(...categories.map(
-      (s) => s !== null ? this.splitter!(s).length : 0)) : 0;
+    const maxLength = categories.length > 0 ? Math.max(...this.unitsHandler!.splitted.map((mList) => mList.length)) : 0;
 
     // Get position names from data column tag 'positionNames'
     const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
@@ -439,10 +493,11 @@ export class WebLogoViewer extends DG.JsViewer {
     let showSliderWithFitArea = true;
     const minScale = Math.min(this.xScale, this.yScale);
 
-    if (((minScale == this.xScale) || (minScale <= 1)) && (this.fitArea)) {
+    if (((minScale == this.xScale) || (minScale <= 1)) && (this.fitArea))
       showSliderWithFitArea = false;
-    }
-    return ((this.fixWidth || Math.ceil(this.canvas.width / this.positionWidthWithMargin) >= this.Length) || (showSliderWithFitArea));
+
+    return ((this.fixWidth || Math.ceil(this.canvas.width / this.positionWidthWithMargin) >= this.Length) ||
+      (showSliderWithFitArea));
   }
 
   setSliderVisibility(visible: boolean): void {
@@ -457,16 +512,17 @@ export class WebLogoViewer extends DG.JsViewer {
 
   /** Updates {@link slider}, needed to set slider options and to update slider position. */
   private updateSlider(): void {
-    if (this.checkIsHideSlider()) {
+    if (this.checkIsHideSlider())
       this.setSliderVisibility(false);
-    } else {
+    else
       this.setSliderVisibility(true);
-    }
+
     if ((this.slider != null) && (this.canvas != null)) {
       const diffEndScrollAndSliderMin = Math.max(0,
         Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length);
       let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
-      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
+      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) +
+        Math.floor(this.canvas.width / this.positionWidthWithMargin);
       if (this.checkIsHideSlider()) {
         newMin = 0;
         newMax = Math.max(newMin, this.Length - 1);
@@ -477,30 +533,32 @@ export class WebLogoViewer extends DG.JsViewer {
     }
   }
 
-  /** Handler of property change events. */
+  /** Handler of property change events.
+   * @param {DG.Property} property - property which was changed.
+   */
   public override onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
 
     switch (property.name) {
-    case PROPS.sequenceColumnName:
-    case PROPS.startPositionName:
-    case PROPS.endPositionName:
-    case PROPS.filterSource:
-      this.updateSeqCol();
-      break;
-    case PROPS.positionWidth:
-      this._positionWidth = this.positionWidth;
-      this.updateSlider();
-      break;
-    case PROPS.fixWidth:
-    case PROPS.fitArea:
-    case PROPS.positionMargin:
-      this.updateSlider();
-      break;
-    case PROPS.shrinkEmptyTail:
-    case PROPS.skipEmptyPositions:
-      this.updatePositions();
-      break;
+      case PROPS.sequenceColumnName:
+      case PROPS.startPositionName:
+      case PROPS.endPositionName:
+      case PROPS.filterSource:
+        this.updateSeqCol();
+        break;
+      case PROPS.positionWidth:
+        this._positionWidth = this.positionWidth;
+        this.updateSlider();
+        break;
+      case PROPS.fixWidth:
+      case PROPS.fitArea:
+      case PROPS.positionMargin:
+        this.updateSlider();
+        break;
+      case PROPS.shrinkEmptyTail:
+      case PROPS.skipEmptyPositions:
+        this.updatePositions();
+        break;
     }
 
     this.render(true);
@@ -508,35 +566,20 @@ export class WebLogoViewer extends DG.JsViewer {
 
   /** Add filter handlers when table is a attached  */
   public override onTableAttached() {
+    _package.logger.debug('Bio: WebLogoViewer.onTableAttached(), ');
+
+    // -- Props editors --
+
     super.onTableAttached();
-
-    const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
-
-    this.updateSeqCol();
-
-    if (this.dataFrame !== undefined) {
-      this.viewSubs.push(this.dataFrame.filter.onChanged.subscribe(this.dataFrameFilterOnChanged.bind(this)));
-      this.viewSubs.push(this.dataFrame.selection.onChanged.subscribe(this.dataFrameSelectionOnChanged.bind(this)));
-    }
-
-    this.init();
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached() end`);
+    this.setData();
   }
 
   /** Remove all handlers when table is a detach  */
   public override async detach() {
-    const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
-    super.detach();
-
-    this.viewSubs.forEach((sub) => sub.unsubscribe());
-    this.host!.remove();
-    this.msgHost = undefined;
-    this.host = undefined;
-
-    this.initialized = false;
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached() end`);
+    if (this.viewed) {
+      this.destroyView();
+      this.viewed = false;
+    }
   }
 
   // -- Routines --
@@ -557,7 +600,10 @@ export class WebLogoViewer extends DG.JsViewer {
     return [jPos, monomer, position.freq[monomer]];
   };
 
-  /** Helper function for rendering */
+  /** Helper function for rendering
+   * @param {boolean} fillerResidue
+   * @return {string} - string with null sequence
+   */
   protected _nullSequence(fillerResidue = 'X'): string {
     if (!this.skipEmptySequences)
       return new Array(this.Length).fill(fillerResidue).join('');
@@ -582,15 +628,14 @@ export class WebLogoViewer extends DG.JsViewer {
 
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
-    if (this.skipEmptyPositions) {
+    if (this.skipEmptyPositions)
       this.removeWhere(this.positions, (item) => item?.freq['-']?.count === item.rowCount);
-    }
   }
 
   protected _calculate(r: number) {
     if (!this.host || !this.seqCol || !this.dataFrame)
       return;
-    this.unitsHandler = new UnitsHandler(this.seqCol);
+    this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
 
     this.calcSize();
 
@@ -602,22 +647,14 @@ export class WebLogoViewer extends DG.JsViewer {
     }
 
     // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
-    const indices = this.filter.getSelectedIndexes();
+    const selRowIndices = this.filter.getSelectedIndexes();
     // const indices = this.dataFrame.selection.trueCount > 0 ? this.dataFrame.selection.getSelectedIndexes() :
     //   this.dataFrame.filter.getSelectedIndexes();
 
-    this.rowsMasked = indices.length;
-    this.rowsNull = 0;
+    this.rowsMasked = selRowIndices.length;
 
-    for (const i of indices) {
-      let s: string = <string>(this.seqCol.get(i));
-
-      if (!s) {
-        s = this._nullSequence();
-        ++this.rowsNull;
-      }
-
-      const seqM: string[] = this.splitter!(s);
+    for (const rowI of selRowIndices) {
+      const seqM: string[] = this.unitsHandler.splitted[rowI];
       for (let jPos = 0; jPos < this.Length; jPos++) {
         const pmInfo = this.positions[jPos].freq;
         const m: string = seqM[this.startPosition + jPos] || '-';
@@ -652,9 +689,9 @@ export class WebLogoViewer extends DG.JsViewer {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
       const alphabetSize = this.getAlphabetSize();
-      if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null)) {
+      if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
         grok.shell.error('WebLogo: alphabet is undefined.');
-      }
+
 
       const alphabetSizeLog = Math.log2(alphabetSize);
       const maxHeight = (this.positionHeight == PositionHeight.Entropy) ?
@@ -698,7 +735,8 @@ export class WebLogoViewer extends DG.JsViewer {
       }
     }
 
-    if (!this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 || this.endPosition === -1 || this.host == null || this.slider == null)
+    if (!this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 ||
+      this.endPosition === -1 || this.host == null || this.slider == null)
       return;
 
     const g = this.canvas.getContext('2d');
@@ -734,7 +772,8 @@ export class WebLogoViewer extends DG.JsViewer {
       g.resetTransform();
       g.setTransform(
         hScale, 0, 0, 1,
-        jPos * this.positionWidthWithMargin + this._positionWidth / 2 - this.positionWidthWithMargin * firstVisibleIndex, 0);
+        jPos * this.positionWidthWithMargin + this._positionWidth / 2 -
+        this.positionWidthWithMargin * firstVisibleIndex, 0);
       g.fillText(pos.name, 0, 0);
     }
     //#endregion Plot positionNames
@@ -813,34 +852,34 @@ export class WebLogoViewer extends DG.JsViewer {
       // vertical alignment
       let hostTopMargin = 0;
       switch (this.verticalAlignment) {
-      case 'top':
-        hostTopMargin = 0;
-        break;
-      case 'middle':
-        hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
-        break;
-      case 'bottom':
-        hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
-        break;
+        case 'top':
+          hostTopMargin = 0;
+          break;
+        case 'middle':
+          hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
+          break;
+        case 'bottom':
+          hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
+          break;
       }
       // horizontal alignment
       let hostLeftMargin = 0;
       switch (this.horizontalAlignment) {
-      case 'left':
-        hostLeftMargin = 0;
-        break;
-      case 'center':
-        hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
-        break;
-      case 'right':
-        hostLeftMargin = Math.max(0, this.root.clientWidth - width);
-        break;
+        case 'left':
+          hostLeftMargin = 0;
+          break;
+        case 'center':
+          hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
+          break;
+        case 'right':
+          hostLeftMargin = Math.max(0, this.root.clientWidth - width);
+          break;
       }
       this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
       this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
-      if (this.slider != null) {
+      if (this.slider != null)
         this.slider.root.style.setProperty('margin-top', `${hostTopMargin + canvasHeight}px`, 'important');
-      }
+
 
       if (this.root.clientHeight <= height) {
         this.host.style.setProperty('height', `${this.root.clientHeight}px`);
@@ -857,7 +896,7 @@ export class WebLogoViewer extends DG.JsViewer {
 
   // -- Handle events --
 
-  private sliderOnValuesChanged(value: any): void {
+  private sliderOnValuesChanged(_value: any): void {
     if ((this.host == null)) return;
 
     try {
@@ -874,30 +913,30 @@ export class WebLogoViewer extends DG.JsViewer {
       this.render(true);
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer.sliderOnValuesChanged() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer.sliderOnValuesChanged() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
-  private dataFrameFilterOnChanged(value: any): void {
-    console.debug('Bio: WebLogoViewer.dataFrameFilterChanged()');
+  private dataFrameFilterOnChanged(_value: any): void {
+    _package.logger.debug('Bio: WebLogoViewer.dataFrameFilterChanged()');
     try {
       this.updatePositions();
       this.render();
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer.dataFrameFilterOnChanged() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer.dataFrameFilterOnChanged() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
-  private dataFrameSelectionOnChanged(value: any): void {
-    console.debug('Bio: WebLogoViewer.dataFrameSelectionOnChanged()');
+  private dataFrameSelectionOnChanged(_value: any): void {
+    _package.logger.debug('Bio: WebLogoViewer.dataFrameSelectionOnChanged()');
     try {
       this.render();
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer.dataFrameSelectionOnChanged() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer.dataFrameSelectionOnChanged() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -916,10 +955,10 @@ export class WebLogoViewer extends DG.JsViewer {
       //   const tooltipEl = ui.div([ui.div(`pos: ${jPos}`), preEl]);
       //   ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
       // } else
-      if (this.dataFrame && this.seqCol && this.splitter && monomer) {
+      if (this.dataFrame && this.seqCol && monomer) {
         const atPI: PositionInfo = this.positions[jPos];
         const monomerAtPosSeqCount = countForMonomerAtPosition(
-          this.dataFrame, this.seqCol, this.filter, this.splitter, monomer, atPI);
+          this.dataFrame, this.unitsHandler!, this.filter, monomer, atPI);
 
         const tooltipEl = ui.div([
           // ui.div(`pos ${jPos}`),
@@ -931,7 +970,7 @@ export class WebLogoViewer extends DG.JsViewer {
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer.canvasOnMouseMove() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer.canvasOnMouseMove() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -943,7 +982,7 @@ export class WebLogoViewer extends DG.JsViewer {
       const [jPos, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, r));
 
       // prevents deselect all rows if we miss monomer bounds
-      if (this.dataFrame && this.seqCol && this.splitter && monomer) {
+      if (this.dataFrame && this.seqCol && this.unitsHandler && monomer) {
         const atPI: PositionInfo = this.positions[jPos];
 
         // this.dataFrame.selection.init((rowI: number) => {
@@ -952,14 +991,13 @@ export class WebLogoViewer extends DG.JsViewer {
         // });
         // Calculate a new BitSet object for selection to prevent interfering with existing
         const selBS: DG.BitSet = DG.BitSet.create(this.dataFrame.selection.length, (rowI: number) => {
-          return checkSeqForMonomerAtPos(
-            this.dataFrame, this.seqCol!, this.filter, rowI, this.splitter!, monomer, atPI);
+          return checkSeqForMonomerAtPos(this.dataFrame, this.unitsHandler!, this.filter, rowI, monomer, atPI);
         });
         this.dataFrame.selection.init((i) => selBS.get(i));
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer.canvasOnMouseDown() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer.canvasOnMouseDown() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -972,34 +1010,31 @@ export class WebLogoViewer extends DG.JsViewer {
       this.slider.scrollBy(this.slider.min + countOfScrollPositions);
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer.canvasOnWheel() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer.canvasOnWheel() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 }
 
 export function checkSeqForMonomerAtPos(
-  df: DG.DataFrame, seqCol: DG.Column, filter: DG.BitSet, rowI: number,
-  splitter: SplitterFunc, monomer: string, at: PositionInfo
+  df: DG.DataFrame, unitsHandler: UnitsHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
   // if (!filter.get(rowI)) return false;
   // TODO: Use BitSet.get(idx)
   if (!filter.getSelectedIndexes().includes(rowI)) return false;
 
-  const seq = seqCol!.get(rowI);
-  const seqM = seq ? splitter!(seq)[at.pos] : null;
+  const seqMList: string[] = unitsHandler.splitted[rowI];
+  const seqM = at.pos < seqMList.length ? seqMList[at.pos] : null;
   return ((seqM === monomer) || (seqM === '' && monomer === '-'));
 }
 
 export function countForMonomerAtPosition(
-  df: DG.DataFrame, seqCol: DG.Column, filter: DG.BitSet,
-  splitter: SplitterFunc, monomer: string, at: PositionInfo
+  df: DG.DataFrame, uh: UnitsHandler, filter: DG.BitSet, monomer: string, at: PositionInfo
 ): number {
   const posMList: (string | null)[] = wu.count(0).take(df.rowCount)
     .filter((rowI) => filter.get(rowI))
     .map((rowI) => {
-      const seq: string | null = seqCol!.get(rowI);
-      const seqMList: string[] = seq ? splitter!(seq) : [];
+      const seqMList: string[] = uh.splitted[rowI];
       const seqMPos: number = at.pos;
       const seqM: string | null = seqMPos < seqMList.length ? seqMList[seqMPos] : null;
       return seqM;
@@ -1007,6 +1042,6 @@ export function countForMonomerAtPosition(
   // wu.count().take(this.dataFrame.rowCount).filter(function(iRow) {
   //   return correctMonomerFilter(iRow, monomer, jPos);
   // }).reduce<number>((count, iRow) => count + 1, 0);
-  const monomerAtPosRowCount = posMList.filter((m) => m == monomer).reduce((count, m) => count + 1, 0);
+  const monomerAtPosRowCount = posMList.filter((m) => m == monomer).reduce((count, _m) => count + 1, 0);
   return monomerAtPosRowCount;
 }

@@ -4,7 +4,15 @@ import * as ui from 'datagrok-api/ui';
 
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
-/** */
+/**
+ * Checks if the column is suitable for the analysis.
+ * @param {DG.Column} col macromolecule coulumn.
+ * @param {string} name column name
+ * @param {string[]} allowedNotations allowed notations
+ * @param {string[]} allowedAlphabets allowed alphabets
+ * @param {boolean} notify show warning message if the column is not suitable for the analysis
+ * @return {boolean} True if the column is suitable for the analysis.
+ */
 export function checkInputColumnUI(col: DG.Column, name: string, allowedNotations: string[] = [],
   allowedAlphabets: string[] = [], notify: boolean = true): boolean {
   const [res, msg]: [boolean, string] = checkInputColumn(col, name, allowedNotations, allowedAlphabets);
@@ -13,14 +21,21 @@ export function checkInputColumnUI(col: DG.Column, name: string, allowedNotation
   return res;
 }
 
-/** */
+/**
+ * Checks if the column is suitable for the analysis.
+ * @param {DG.Column} col macromolecule coulumn.
+ * @param {string} name column name
+ * @param {string[]} allowedNotations allowed notations
+ * @param {string[]} allowedAlphabets allowed alphabets
+ * @return {[boolean, string]} [True if the column is suitable for the analysis, warning message].
+ */
 export function checkInputColumn(
-  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
+  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = [],
 ): [boolean, string] {
   let res: boolean = true;
   let msg: string = '';
 
-  const uh = new UnitsHandler(col);
+  const uh = UnitsHandler.getOrCreate(col);
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     res = false;

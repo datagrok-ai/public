@@ -8,7 +8,7 @@ import * as rxjs from 'rxjs';
 
 import {Unsubscribable} from 'rxjs';
 import {isLeaf, TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
-import {HoverType, ITreePlacer, ITreeStyler, markupNode, MarkupNodeType, TreeStylerBase} from './tree-renderers/markup';
+import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {CanvasTreeRenderer} from './tree-renderers/canvas-tree-renderer';
 import {RectangleTreeHoverType, RectangleTreePlacer} from './tree-renderers/rectangle-tree-placer';
 import {TreeHelper} from '../utils/tree-helper';
@@ -23,25 +23,25 @@ export const NODE_SIZE = 4;
 export const TRANS_ALPHA = 0.5;
 
 // Obtained with DG.Color.toRgb(DG.Color.categoricalPalette[12])
-const categoricalPaletteList: string[] = [
-  'rgb(31,119,180)',
-  'rgb(255,187,120)',
-  'rgb(44,160,44)',
-  'rgb(152,223,138)',
-  'rgb(214,39,40)',
-  'rgb(255,152,150)',
-  'rgb(148,103,189)',
-  'rgb(197,176,213)',
-  'rgb(140,86,75)',
-  'rgb(196,156,148)',
-  'rgb(227,119,194)',
-  'rgb(247,182,210)',
-  'rgb(127,127,127)',
-  'rgb(199,199,199)',
-  'rgb(188,189,34)',
-  'rgb(219,219,141)',
-  'rgb(23,190,207)',
-  'rgb(158,218,229)'];
+// const categoricalPaletteList: string[] = [
+//   'rgb(31,119,180)',
+//   'rgb(255,187,120)',
+//   'rgb(44,160,44)',
+//   'rgb(152,223,138)',
+//   'rgb(214,39,40)',
+//   'rgb(255,152,150)',
+//   'rgb(148,103,189)',
+//   'rgb(197,176,213)',
+//   'rgb(140,86,75)',
+//   'rgb(196,156,148)',
+//   'rgb(227,119,194)',
+//   'rgb(247,182,210)',
+//   'rgb(127,127,127)',
+//   'rgb(199,199,199)',
+//   'rgb(188,189,34)',
+//   'rgb(219,219,141)',
+//   'rgb(23,190,207)',
+//   'rgb(158,218,229)'];
 
 export enum PROPS_CATS {
   STYLE = 'Style',
@@ -360,7 +360,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
         width: `${this.root.clientWidth}px`,
         height: `${this.root.clientHeight}px`,
         // backgroundColor: '#A0A0FF',
-      }
+      },
     });
     this.treeDiv.style.setProperty('overflow', 'hidden', 'important');
     this.root.appendChild(this.treeDiv);
@@ -392,7 +392,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   }
 
   private onContextMenuHandler(menu: DG.Menu): void {
-    menu.item('Reset view', () =>{
+    menu.item('Reset view', () => {
       this._renderer?.onResetZoom();
     });
   }
@@ -457,7 +457,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
 
       const oldSelection: DG.BitSet = this.dataFrame.selection.clone();
       if (this._renderer.selectedNodes.length == 0) {
-        this.dataFrame.selection.init((rowI) => { return false; }, false);
+        this.dataFrame.selection.init((_rowI) => { return false; }, false);
       } else {
         if (this.nodeColumnName) {
           const nodeCol: DG.Column = this.dataFrame.getCol(this.nodeColumnName);
@@ -494,7 +494,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     }, 0 /* next event cycle*/);
   }
 
-  private dataFrameOnSelectionChanged(value: any): void {
+  private dataFrameOnSelectionChanged(_value: any): void {
     if (!this._renderer || !this._placer) return;
 
     /* Here we get selected rows from dataFrame.
@@ -568,7 +568,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     }
   }
 
-  private dataFrameOnCurrentRowChanged(value: any): void {
+  private dataFrameOnCurrentRowChanged(_value: any): void {
     if (!this._renderer) return;
 
     if (this.nodeColumnName) {
@@ -580,14 +580,14 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
         .find((node) => currentNodeName == node.name) ?? null;
       const current: RectangleTreeHoverType<MarkupNodeType> | null = currentNode ? {
         node: currentNode,
-        nodeHeight: this._placer!.getNodeHeight(this._renderer.treeRoot, currentNode)!
+        nodeHeight: this._placer!.getNodeHeight(this._renderer.treeRoot, currentNode)!,
       } : null;
 
       this._renderer.current = current;
     }
   }
 
-  private dataFrameOnMouseOverRowChanged(value: any): void {
+  private dataFrameOnMouseOverRowChanged(_value: any): void {
     if (!this._renderer) return;
 
     if (this.nodeColumnName) {
@@ -599,7 +599,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
         .find((node) => mouseOverNodeName == node.name) ?? null;
       const mouseOver: RectangleTreeHoverType<MarkupNodeType> | null = mouseOverNode ? {
         node: mouseOverNode,
-        nodeHeight: this._placer!.getNodeHeight(this._renderer.treeRoot, mouseOverNode)!
+        nodeHeight: this._placer!.getNodeHeight(this._renderer.treeRoot, mouseOverNode)!,
       } : null;
 
       this._renderer.mouseOver = mouseOver;

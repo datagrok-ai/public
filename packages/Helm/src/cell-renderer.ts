@@ -50,7 +50,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       for (let i = 0; i < allParts.length; ++i) {
         if (monomers.has(allParts[i])) {
           tooltipMessage[i] = ui.divV([
-            ui.divText(`Monomer ${allParts[i]} not found.`),
+            ui.divText(`Monomer '${allParts[i]}' not found.`),
             ui.divText('Open the Context Panel, then expand Manage Libraries')
           ]);
         }
@@ -85,7 +85,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       if (!grid) {
         const r = window.devicePixelRatio;
         h = 28;
-        g.canvas.height = h*r;
+        g.canvas.height = h * r;
         g.canvas.style.height = `${h}px`;
       }
       w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;

@@ -2,21 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 
 export async function calcMmDistanceMatrix(column: DG.Column<any>): Promise<Float32Array> {
   const values = column.toList();
-  const worker = new Worker(new URL('./mm-distance-worker.ts', import.meta.url));
   if (column.semType !== DG.SEMTYPE.MACROMOLECULE)
     throw new Error('Column has to be of macromolecule type');
-  const uh = new UnitsHandler(column);
+  const uh = UnitsHandler.getOrCreate(column);
   const fnName = uh.getDistanceFunctionName();
-  worker.postMessage({values, fnName});
-  return new Promise((resolve, reject) => {
-    worker.onmessage = ({data: {error, distanceMatrixData}}): void => {
-      worker.terminate();
-      error ? reject(error) : resolve(distanceMatrixData);
-    };
-  });
+  const distanceMatrixService = new DistanceMatrixService(true, false);
+  const dm = await distanceMatrixService.calc(values, fnName);
+  distanceMatrixService.terminate();
+  return dm;
 }
 
 // gets index of compressed distance matrix from 2d coordinates

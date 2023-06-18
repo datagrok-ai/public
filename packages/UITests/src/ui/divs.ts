@@ -1,10 +1,10 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {checkHTMLElement} from './utils';
 
-category('UI - div', () => {
+category('UI: Div', () => {
   const htmlElement = ui.divText('test');
   let v: DG.View;
   const divs: {[key: string]: {'element': HTMLDivElement, 'selectors': string[]}} = {
@@ -40,10 +40,5 @@ category('UI - div', () => {
   test('div.root', async () => {
     for (const [key, value] of Object.entries(divs))
       checkHTMLElement(key, value['element'], v, value['selectors']);
-  });
-
-  after(async () => {
-    v.close();
-    grok.shell.closeAll();
   });
 });

@@ -55,7 +55,7 @@ category('DistanceMatrix', () => {
   test('initializeWithInvalidData', async () => {
     let error: any = null;
     try {
-      const dm = new DistanceMatrix(new Float32Array(invalidDistanceMatrix));
+      const _dm = new DistanceMatrix(new Float32Array(invalidDistanceMatrix));
     } catch (e) {
       error = e;
     } finally {
@@ -66,7 +66,7 @@ category('DistanceMatrix', () => {
   test('initializeWithInvalidSize', async () => {
     let error: any = null;
     try {
-      const dm = new DistanceMatrix(undefined, invalidDistanceMatrixSize);
+      const _dm = new DistanceMatrix(undefined, invalidDistanceMatrixSize);
     } catch (e) {
       error = e;
     } finally {
@@ -85,7 +85,7 @@ category('DistanceMatrix', () => {
     dm.normalize();
     expectArray(
       mapToFixed(dm.data),
-      mapToFixed(validDistanceMatrix5x5Normalized)
+      mapToFixed(validDistanceMatrix5x5Normalized),
     );
   });
 
@@ -94,7 +94,7 @@ category('DistanceMatrix', () => {
     dm.sqrt();
     expectArray(
       mapToFixed(dm.data),
-      mapToFixed(validDistanceMatrix5x5SquareRoot)
+      mapToFixed(validDistanceMatrix5x5SquareRoot),
     );
   });
 
@@ -107,7 +107,7 @@ category('DistanceMatrix', () => {
 
   test('calcDistanceMatrixNumeric', async () => {
     const dm = DistanceMatrix.calc(arrayToCalcDistance, (a, b) =>
-      Math.abs(a - b)
+      Math.abs(a - b),
     );
     expectArray(mapToFixed(dm.data), mapToFixed(calculatedDistanceMatrix));
   });

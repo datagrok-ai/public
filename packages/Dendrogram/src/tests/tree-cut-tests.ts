@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 import {TreeHelper} from '../utils/tree-helper';
 import {NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
@@ -11,7 +11,8 @@ import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 /*
 R code to plot picture explaining tests
 
-nwk <- '((l1:1,(l2:1.2,l3:1.4)node-l2-l3:0.2)node-l1-l2-l3:1,((l4:0.3,l5:0.7)node-l4-l5:0.3,l6:0.3)node-l4-l5-l6:1.6)root:0.1;';
+nwk <- '((l1:1,(l2:1.2,l3:1.4)node-l2-l3:0.2)
+node-l1-l2-l3:1,((l4:0.3,l5:0.7)node-l4-l5:0.3,l6:0.3)node-l4-l5-l6:1.6)root:0.1;';
 tree <- ape::read.tree(text=nwk);
 ape::plot.phylo(tree, show.node.label = TRUE, root.edge = TRUE, x.lim=c(0,4.0));
 axis(1);
@@ -53,9 +54,9 @@ category('treeCut', () => {
                 children: [
                   {name: 'l2', branch_length: 1.2},
                   {name: 'l3', branch_length: 1.4},
-                ]
-              }
-            ]
+                ],
+              },
+            ],
           },
           {
             name: 'node-l4-l5-l6',
@@ -70,8 +71,8 @@ category('treeCut', () => {
                 ],
               },
               {name: 'l6', branch_length: 0.3},
-            ]
-          }
+            ],
+          },
         ],
       },
       tgt: [
@@ -99,9 +100,9 @@ category('treeCut', () => {
                           children: [
                             {name: 'l2', branch_length: 1.2},
                             {name: 'l3', branch_length: 1.4},
-                          ]
-                        }
-                      ]
+                          ],
+                        },
+                      ],
                     },
                     {
                       name: 'node-l4-l5-l6',
@@ -116,10 +117,10 @@ category('treeCut', () => {
                           ],
                         },
                         {name: 'l6', branch_length: 0.3},
-                      ]
-                    }
+                      ],
+                    },
                   ],
-                }
+                },
               ],
               cuttedLeafNameList: ['l1', 'l2', 'l3', 'l4', 'l5', 'l6'],
             } as NodeCuttedType,
@@ -153,8 +154,8 @@ category('treeCut', () => {
                         {name: 'l3', branch_length: 1.4},
                       ],
                     }],
-                    cuttedLeafNameList: ['l2', 'l3']
-                  } as NodeCuttedType
+                    cuttedLeafNameList: ['l2', 'l3'],
+                  } as NodeCuttedType,
                 ],
               },
               {
@@ -174,12 +175,12 @@ category('treeCut', () => {
                       ],
                     },
                     {name: 'l6', branch_length: 0.3},
-                  ]
+                  ],
                 }],
                 cuttedLeafNameList: ['l4', 'l5', 'l6'],
-              } as NodeCuttedType
+              } as NodeCuttedType,
             ],
-          }
+          },
         },
         {cutLevel: 1.5, leafNameList: [['l1'], ['l2'], ['l3'], ['l4', 'l5', 'l6']]},
         {cutLevel: 1.8, leafNameList: [['l1'], ['l2'], ['l3'], ['l4', 'l5'], ['l6']]},
@@ -203,7 +204,7 @@ category('treeCut', () => {
                   cuttedChildren: [{
                     'name': 'l3.cutted',
                     'branch_length': 0.1,
-                    'children': []
+                    'children': [],
                   }],
                   cuttedLeafNameList: ['l3'],
                 } as NodeCuttedType],
@@ -222,26 +223,26 @@ category('treeCut', () => {
                     {
                       'name': 'l5.cutted',
                       'branch_length': 0.4,
-                      'children': []
-                    }
+                      'children': [],
+                    },
                   ],
                   cuttedLeafNameList: ['l5'],
                 } as NodeCuttedType],
               }],
             }],
-          }
+          },
         },
         {
           cutLevel: 3.0,
           leafNameList: [['l5']],
-          tree: null
+          tree: null,
         },
         {
           cutLevel: 3.1,
           leafNameList: [],
           tree: null,
         },
-      ]
+      ],
     },
   };
 

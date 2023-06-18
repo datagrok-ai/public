@@ -46,7 +46,7 @@ category('top menu activity cliffs', async () => {
       'canonical_smiles', 'FractionCSP3', 24);
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
     } finally {
       grok.shell.closeAll();

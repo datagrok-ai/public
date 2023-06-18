@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.88",
+  "version": "3.4.19",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -274,6 +274,15 @@
           "datagrok-api": "^1.15.0"
         },
         "1.3.3": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.3.4": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.3.5": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.3.6": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -841,6 +850,9 @@
         },
         "1.1.9": {
           "datagrok-api": "^1.14.1"
+        },
+        "1.1.10": {
+          "datagrok-api": "^1.14.1"
         }
       },
       "description": "Integration with the PubChem web service.",
@@ -987,6 +999,9 @@
         },
         "1.9.2": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.9.3": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1110,9 +1125,15 @@
         },
         "1.0.8": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.0.12": {
+          "datagrok-api": "^1.11.1"
+        },
+        "1.0.13": {
+          "datagrok-api": "^1.11.1"
         }
       },
-      "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "description": "Molecular similarity and substructure search capabilities in the [DrugBank](https://go.drugbank.com/) [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1206,6 +1227,9 @@
           "datagrok-api": "^1.14.0"
         },
         "1.7.4": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.5": {
           "datagrok-api": "^1.14.0"
         }
       },
@@ -1416,6 +1440,27 @@
         },
         "1.6.2": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.6.3": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.6.4": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.0": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.2": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.3": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.8.0": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.8.2": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1486,6 +1531,9 @@
           "datagrok-api": "^1.14.1"
         },
         "1.0.27": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.28": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -1689,6 +1737,9 @@
           "datagrok-api": "^1.11.1"
         },
         "1.0.8": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.9": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -2089,6 +2140,24 @@
         },
         "2.4.31": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.4.39": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.40": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.41": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.42": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.43": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.44": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2222,9 +2291,12 @@
         },
         "0.2.1": {
           "datagrok-api": "^0.151.6"
+        },
+        "1.0.0": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Enamine Store API demo",
+      "description": "Integration with Enamine. Allows to search for molecules available in Enamine, and provides contextual information for the current molecule.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2239,9 +2311,12 @@
         },
         "0.2.1": {
           "datagrok-api": "^0.151.6"
+        },
+        "1.0.0": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Chemspace API demo",
+      "description": "Integration with Chemspace. Allows to search for molecules available in Chemspace, and provides contextual information for the current molecule.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2489,6 +2564,9 @@
         },
         "2.1.9": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.10": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
@@ -2515,6 +2593,12 @@
         },
         "1.1.1": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.1.2": {
+          "datagrok-api": "^1.15.2"
+        },
+        "1.1.3": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
@@ -2661,6 +2745,9 @@
         },
         "1.2.15": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.16": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -2769,6 +2856,9 @@
         },
         "1.0.2": {
           "datagrok-api": "latest"
+        },
+        "1.0.3": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated tests for JDBC Providers",
@@ -2789,6 +2879,12 @@
         },
         "1.0.2": {
           "datagrok-api": "latest"
+        },
+        "1.0.3": {
+          "datagrok-api": "latest"
+        },
+        "1.0.4": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -2796,7 +2892,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/UITests"
-      }
+      },
+      "category": "Development"
     },
     "curves": {
       "dependencies": {
@@ -2844,6 +2941,9 @@
     "cvm-tests": {
       "dependencies": {
         "1.0.0": {
+          "datagrok-api": "latest"
+        },
+        "1.0.1": {
           "datagrok-api": "latest"
         }
       },

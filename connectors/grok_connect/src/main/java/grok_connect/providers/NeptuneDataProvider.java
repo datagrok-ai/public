@@ -1,29 +1,17 @@
 package grok_connect.providers;
 
-import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.*;
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Properties;
 
 public class NeptuneDataProvider extends JdbcDataProvider {
-    private static final Map<String, String> SUPPORTED_VERSIONS = new HashMap<>();
-
-    static {
-        SUPPORTED_VERSIONS.put("< 1.2.0.0", "neptune-jdbc-2.0.0-all.jar");
-        SUPPORTED_VERSIONS.put(">= 1.2.0.0", "amazon-neptune-jdbc-driver-3.0.0-all.jar");
-    }
-
     public NeptuneDataProvider(ProviderManager providerManager) {
         super(providerManager);
         driverClassName = "software.aws.neptune.NeptuneDriver";
@@ -31,16 +19,12 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         descriptor.type = "Neptune";
         descriptor.commentStart = "//";
         descriptor.description = "Amazon Neptune is a fully managed graph database service";
-        Property engine = new Property(Property.STRING_TYPE, DbCredentials.ENGINE_VERSION,
-                "Amazon Neptune engine version");
-        engine.choices = new ArrayList<>(SUPPORTED_VERSIONS.keySet());
         descriptor.connectionTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
             add(new Property(Property.INT_TYPE, DbCredentials.PORT, new Prop()));
             add(new Property(Property.STRING_TYPE, "serviceRegion"));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(engine);
             add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
             add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
             add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
@@ -72,33 +56,9 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         return properties;
     }
 
-    public Connection getConnection(DataConnection conn) throws SQLException {
-        String engineVersion = conn.get(DbCredentials.ENGINE_VERSION);
-        if (engineVersion == null) {
-            throw new RuntimeException("Engine version is mandatory");
-        }
-        Driver driver = getDriver(SUPPORTED_VERSIONS.get(engineVersion));
-        return driver.connect(getConnectionString(conn), getProperties(conn));
-    }
-
-    private Driver getDriver(String name) {
-        String baseDir = getBaseDirName();
-        File file = new File( String.format("%s/lib/%s", baseDir, name));
-        try {
-            URLClassLoader child = new URLClassLoader (new URL[] {file.toURI().toURL()},
-                    this.getClass().getClassLoader());
-            Class<?> aClass = Class.forName(driverClassName, true, child);
-            return (Driver) aClass.getConstructor().newInstance();
-        } catch (MalformedURLException | ClassNotFoundException | InvocationTargetException
-                 | InstantiationException |
-                 IllegalAccessException | NoSuchMethodException e) {
-            throw new RuntimeException("Something went wrong when getting driver", e);
-        }
-    }
-
-    private String getBaseDirName() {
-        Properties props = GrokConnect.properties;
-        return props.get("basedir").toString();
+    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
+        prepareProvider();
+        return CustomDriverManager.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

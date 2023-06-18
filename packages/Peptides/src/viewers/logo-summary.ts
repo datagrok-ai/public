@@ -30,8 +30,7 @@ export class LogoSummaryTable extends DG.JsViewer {
   initialized: boolean = false;
   webLogoMode: string;
   membersRatioThreshold: number;
-  webLogoDfPlot: DG.DataFrame[] = [];
-  distributionDfPlot: DG.DataFrame[] = [];
+  bitsets: DG.BitSet[] = [];
 
   constructor() {
     super();
@@ -43,20 +42,8 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-
     this.model = PeptidesModel.getInstance(this.dataFrame);
-    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
-      this.createLogoSummaryGrid();
-      this.render();
-    }));
-    this.subs.push(this.model.onNewCluster.subscribe(() => this.clusterFromSelection()));
-    this.subs.push(this.model.onRemoveCluster.subscribe(() => this.removeCluster()));
-    this.subs.push(this.model.onFilterChanged.subscribe(() => {
-      this.createLogoSummaryGrid();
-      this.render();
-    }));
-
-    this.createLogoSummaryGrid();
+    this.createLogoSummaryTableGrid();
     this.initialized = true;
     this.render();
   }
@@ -64,19 +51,26 @@ export class LogoSummaryTable extends DG.JsViewer {
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
   render(): void {
-    if (this.initialized) {
-      $(this.root).empty();
-      const df = this.viewerGrid.dataFrame;
-      if (!df.filter.anyTrue) {
-        const emptyDf = ui.divText('No clusters to satisfy the threshold. ' +
-          'Please, lower the threshold in viewer proeperties to include clusters');
-        this.root.appendChild(ui.divV([this._titleHost, emptyDf]));
-        return;
-      }
-      this.viewerGrid.root.style.width = 'auto';
-      this.root.appendChild(ui.divV([this._titleHost, this.viewerGrid.root]));
-      this.viewerGrid.invalidate();
+    if (!this.initialized)
+      return;
+    $(this.root).empty();
+    const df = this.viewerGrid.dataFrame;
+    if (!df.filter.anyTrue) {
+      const emptyDf = ui.divText('No clusters to satisfy the threshold. ' +
+        'Please, lower the threshold in viewer proeperties to include clusters');
+      this.root.appendChild(ui.divV([this._titleHost, emptyDf]));
+      return;
     }
+    const expand = ui.iconFA('expand-alt', () => {
+      const dialog = ui.dialog('Logo Summary Table');
+      dialog.add(this.viewerGrid.root);
+      dialog.onCancel(() => this.render());
+      dialog.showModal(true);
+    }, 'Show Logo Summary Table in full screen');
+    $(expand).addClass('pep-help-icon');
+    this.viewerGrid.root.style.width = 'auto';
+    this.root.appendChild(ui.divV([ui.divH([this._titleHost, expand], {style: {alignSelf: 'center', lineHeight: 'normal'}}), this.viewerGrid.root]));
+    this.viewerGrid.invalidate();
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -86,7 +80,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.render();
   }
 
-  createLogoSummaryGrid(): DG.Grid {
+  createLogoSummaryTableGrid(): DG.Grid {
     const clustersColName = this.model.settings.clustersColumnName!;
     const isDfFiltered = this.dataFrame.filter.anyFalse;
     const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
@@ -132,8 +126,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     }
 
     // BEGIN: fill LST part with custom clusters
-    const customWebLogoTables: DG.DataFrame[] = new Array(customClustColList.length);
-    const customDistTables: DG.DataFrame[] = new Array(customClustColList.length);
+    const customBitsets: DG.BitSet[] = new Array(customClustColList.length);
 
     for (let rowIdx = 0; rowIdx < customClustColList.length; ++rowIdx) {
       const customClustCol = customClustColList[rowIdx];
@@ -145,8 +138,7 @@ export class LogoSummaryTable extends DG.JsViewer {
         this.model.clusterStats[CLUSTER_TYPE.CUSTOM][customClustCol.name];
 
       customMembersColData[rowIdx] = stats.count;
-      customWebLogoTables[rowIdx] = this.createWebLogoPlot(pepCol, bsMask);
-      customDistTables[rowIdx] = this.createDistributionPlot(activityCol, customClustColList[rowIdx]);
+      customBitsets[rowIdx] = bsMask;
       customMDColData[rowIdx] = stats.meanDifference;
       customPValColData[rowIdx] = stats.pValue;
       customRatioColData[rowIdx] = stats.ratio;
@@ -176,9 +168,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const origMDColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.MEAN_DIFFERENCE).getRawData();
     const origPValColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.P_VALUE).getRawData();
     const origRatioColData = origLSTCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
-
-    const origWebLogoTables: DG.DataFrame[] = new Array(origLSTLen);
-    const origDistTables: DG.DataFrame[] = new Array(origLSTLen);
+    const origBitsets: DG.BitSet[] = new Array(origLSTLen);
 
     const origClustMasks = Array.from({length: origLSTLen},
       () => BitArray.fromSeq(filteredDfRowCount, () => false));
@@ -197,9 +187,7 @@ export class LogoSummaryTable extends DG.JsViewer {
         this.model.clusterStats[CLUSTER_TYPE.ORIGINAL][origLSTClustColCat[rowIdx]];
 
       origMembersColData[rowIdx] = stats.count;
-      origWebLogoTables[rowIdx] = this.createWebLogoPlot(pepCol, bsMask);
-      origDistTables[rowIdx] = this.createDistributionPlot(activityCol,
-        DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, bsMask));
+      origBitsets[rowIdx] = bsMask;
       origMDColData[rowIdx] = stats.meanDifference;
       origPValColData[rowIdx] = stats.pValue;
       origRatioColData[rowIdx] = stats.ratio;
@@ -211,8 +199,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     // combine LSTs and create a grid
     const summaryTable = origLST.append(customLST);
-    this.webLogoDfPlot = origWebLogoTables.concat(customWebLogoTables);
-    this.distributionDfPlot = origDistTables.concat(customDistTables);
+    this.bitsets = origBitsets.concat(customBitsets);
 
     this.viewerGrid = summaryTable.plot.grid();
     this.viewerGrid.sort([C.LST_COLUMN_NAMES.MEMBERS], [false]);
@@ -225,31 +212,39 @@ export class LogoSummaryTable extends DG.JsViewer {
       C.LST_COLUMN_NAMES.P_VALUE, C.LST_COLUMN_NAMES.RATIO, ...aggColNames]);
     this.viewerGrid.columns.rowHeader!.visible = false;
     this.viewerGrid.props.rowHeight = 55;
+
+    const webLogoCache = new DG.LruCache<number, HTMLElement>();
+    const distCache = new DG.LruCache<number, HTMLElement>();
     this.viewerGrid.onCellPrepare((cell) => {
       const currentRowIdx = cell.tableRowIndex;
       if (!cell.isTableCell || currentRowIdx === null || currentRowIdx === -1)
         return;
 
       const height = cell.bounds.height;
+      const clusterBitSet = this.bitsets[currentRowIdx];
+
       if (cell.tableColumn?.name === C.LST_COLUMN_NAMES.WEB_LOGO) {
-        const webLogoTable = this.webLogoDfPlot[currentRowIdx];
-        const webLogoTableRowCount = webLogoTable.rowCount;
-        const webLogoTablePepCol = webLogoTable.getCol(pepCol.name);
-        const webLogoTablePepColData = webLogoTablePepCol.getRawData();
-        const webLogoTablePepColCat = webLogoTablePepCol.categories;
-        const splitter = getSplitterForColumn(webLogoTablePepCol);
-        let maxSequenceLength = 0;
-        for (let i = 0; i < webLogoTableRowCount; ++i) {
-          maxSequenceLength = Math.max(maxSequenceLength,
-            splitter(webLogoTablePepColCat[webLogoTablePepColData[i]]).length);
+        if (webLogoCache.has(currentRowIdx)) {
+          cell.element = webLogoCache.get(currentRowIdx)!;
+          return;
         }
+        const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
+        const maxSequenceLength = this.model.splitSeqDf.columns.length;
         const positionWidth = Math.floor((cell.bounds.width - 2 - (4 * (maxSequenceLength - 1))) / maxSequenceLength);
         webLogoTable.plot
           .fromType('WebLogo', {positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
             maxHeight: 1000, minHeight: height - 2, positionWidth: positionWidth})
-          .then((viewer) => cell.element = viewer.root);
+          .then((viewer) => {
+            cell.element = viewer.root;
+            webLogoCache.set(currentRowIdx, viewer.root);
+          });
       } else if (cell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {
-        const viewerRoot = this.distributionDfPlot[currentRowIdx].plot.histogram({
+        if (distCache.has(currentRowIdx)) {
+          cell.element = distCache.get(currentRowIdx)!;
+          return;
+        }
+        const distributionDf = this.createDistributionDf(activityCol, clusterBitSet);
+        const viewerRoot = distributionDf.plot.histogram({
           filteringEnabled: false,
           valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
           splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
@@ -265,6 +260,7 @@ export class LogoSummaryTable extends DG.JsViewer {
         viewerRoot.style.width = 'auto';
         viewerRoot.style.height = `${height-2}px`;
         cell.element = viewerRoot;
+        distCache.set(currentRowIdx, viewerRoot);
       }
     });
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -336,27 +332,8 @@ export class LogoSummaryTable extends DG.JsViewer {
     const activityScaledCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     const bitArray = BitArray.fromString(selection.toBinaryString());
     const stats = getStats(activityScaledCol.getRawData(), bitArray);
-    const distributionTable =
-      DG.DataFrame.fromColumns([activityScaledCol, filteredDf.getCol(this.model.splitCol.name)]);
 
-    const peptideCol: DG.Column<string> = filteredDf.getCol(this.model.settings.sequenceColumnName!);
-    const peptideColData = peptideCol.getRawData();
-    const peptideColCategories = peptideCol.categories;
-    const peptideColTags = peptideCol.tags;
-    const selectedIndexes = selection.getSelectedIndexes();
-    const tCol = DG.Column.string('peptides', selectedIndexes.length);
-
-    for (let i = 0; i < selectedIndexes.length; ++i)
-      tCol.set(i, peptideColCategories[peptideColData[selectedIndexes[i]]]);
-    for (const tag of peptideColTags)
-      tCol.setTag(tag[0], tag[1]);
-
-    const uh = new UnitsHandler(tCol);
-    tCol.setTag(bioTAGS.alphabetSize, uh.getAlphabetSize().toString());
-
-    const webLogoTable = DG.DataFrame.fromColumns([tCol]);
-    this.webLogoDfPlot.push(webLogoTable);
-    this.distributionDfPlot.push(distributionTable);
+    this.bitsets.push(selection.clone());
 
     const newClusterName = viewerDfCols.getUnusedName('New Cluster');
 
@@ -407,8 +384,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       delete this.model.clusterStats[CLUSTER_TYPE.CUSTOM][cluster];
       const clustIdx = clustColCat.indexOf(cluster);
       viewerDfRows.removeAt(clustIdx);
-      this.webLogoDfPlot.splice(clustIdx, 1);
-      this.distributionDfPlot.splice(clustIdx, 1);
+      this.bitsets.splice(clustIdx, 1);
     }
 
     clustCol.compact();
@@ -461,11 +437,15 @@ export class LogoSummaryTable extends DG.JsViewer {
     return tooltip;
   }
 
-  createWebLogoPlot(pepCol: DG.Column<string>, mask: DG.BitSet): DG.DataFrame {
-    return DG.DataFrame.fromColumns([pepCol]).clone(mask);
+  createWebLogoDf(pepCol: DG.Column<string>, mask: DG.BitSet): DG.DataFrame {
+    const newDf = DG.DataFrame.fromColumns([pepCol]);
+    newDf.filter = mask;
+    return newDf;
   }
 
-  createDistributionPlot(activityCol: DG.Column<number>, splitCol: DG.Column<boolean>): DG.DataFrame {
+  createDistributionDf(activityCol: DG.Column<number>, splitCol: DG.Column<boolean> | DG.BitSet): DG.DataFrame {
+    if (splitCol instanceof DG.BitSet)
+      splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitCol);
     return DG.DataFrame.fromColumns([activityCol, splitCol]);
   }
 }

@@ -3,16 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package-test';
-import {
-  after,
-  before,
-  category,
-  test,
-  expect,
-  expectArray,
-  expectObject,
-  awaitCheck
-} from '@datagrok-libraries/utils/src/test';
+import {category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 /** Tests for package functions, test apps, file previews, file handlers, ... */
 category('packageFuncs', () => {

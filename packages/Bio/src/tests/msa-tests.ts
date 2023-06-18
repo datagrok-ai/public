@@ -94,13 +94,13 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   test('isCorrectSeparator', async () => {
     await _testMSAOnColumn(
-      SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT
+      SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
   }, {skipReason: 'GROK-13221'});
 
   test('isCorrectSeparatorLong', async () => {
     await _testMSAOnColumn(
-      SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT
+      SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
   }, {skipReason: 'GROK-13221'});
 });
@@ -122,7 +122,7 @@ async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> 
 
 async function _testMSAOnColumn(
   srcCsv: string, tgtCsv: string,
-  srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string
+  srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
 ): Promise<void> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);

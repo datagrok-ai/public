@@ -4,20 +4,23 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
 
-// category('Viewers: Core Viewers', () => {
-//   const df = grok.data.demo.demog(100);
-//   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
-//     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') && v !== 'Google map');
-//   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
-//   const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
-//   //@ts-ignore
-//   coreViewers.push('Leaflet', 'distributionProfiler');
-//   for (const v of coreViewers) {
-//     test(v, async () => {
-//       await testViewer(v, df.clone());
-//     });
-//   }
-// });
+category('Viewers: Core Viewers', () => {
+  const skip: {[key: string]: string} = {'Form': 'GROK-11708',
+    'Heat map': 'GROK-11705', 'Network diagram': 'GROK-11707'};
+  const df = grok.data.demo.demog(100);
+  const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
+    !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
+    v !== 'Google map' && v !== 'Markup');
+  const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
+  const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
+  coreViewers.push('Leaflet', 'distributionProfiler');
+
+  for (const v of coreViewers) {
+    test(v, async () => {
+      await testViewer(v, df.clone());
+    }, {skipReason: skip[v]});
+  }
+});
 
 category('Viewers', () => {
   let df: DG.DataFrame;
@@ -50,21 +53,21 @@ category('Viewers', () => {
       closeViewers(tv);
     }
   });
-  */
 
-  // test('addViewer(Viewer)', async () => {
-  //   try {
-  //     for (const viewerType of coreViewerTypes) {
-  //       console.log(`Adding ${viewerType}`);
-  //       const viewer = await addViewerAndWait(tv, DG.Viewer.fromType(viewerType, df));
-  //       await delay(200);
-  //       viewer.removeFromView();
-  //       console.log(`Removed ${viewerType}`);
-  //     }
-  //   } finally {
-  //     closeViewers(tv);
-  //   }
-  // });
+  test('addViewer(Viewer)', async () => {
+    try {
+      for (const viewerType of coreViewerTypes) {
+        console.log(`Adding ${viewerType}`);
+        const viewer = await addViewerAndWait(tv, DG.Viewer.fromType(viewerType, df));
+        await delay(200);
+        viewer.removeFromView();
+        console.log(`Removed ${viewerType}`);
+      }
+    } finally {
+      closeViewers(tv);
+    }
+  });
+  */
 
   test('close', async () => {
     tv.scatterPlot();
@@ -208,6 +211,7 @@ category('Viewers', () => {
 
   after(async () => {
     grok.shell.closeAll();
+    DG.Balloon.closeAll();
 
     for (const viewer of viewerList) {
       try {
@@ -219,7 +223,7 @@ category('Viewers', () => {
     }
     viewerList = [];
   });
-});
+}, false);
 
 function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());

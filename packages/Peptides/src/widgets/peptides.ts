@@ -39,7 +39,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         viewer.root.style.setProperty('height', '130px');
         return viewer.root;
       }));
-    });
+      //TODO: add when new version of datagrok-api is available
+    }); //, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions);
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
@@ -95,7 +96,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
       DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
     activityScalingMethod.fireChanged();
   };
-  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState);
+  //TODO: add when new version of datagrok-api is available
+  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState); //, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
   const clustersColumnChoice = ui.columnInput('Clusters', df, null);
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
@@ -158,8 +160,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   targetColumn: DG.Column<string> | null = null): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
-  if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT ||
-    activityColumn.type === DG.COLUMN_TYPE.BIG_INT || activityColumn.type === DG.COLUMN_TYPE.QNUM) {
+  if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
     //prepare new DF
     const newDf = DG.DataFrame.create(currentDf.rowCount);
     const newDfCols = newDf.columns;

@@ -9,11 +9,22 @@ on:
   push:
     paths:
       - 'libraries/**'
+  pull_request:
+    paths:
+      - 'libraries/**'
 
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   metadata:
     name: Check changes
+    needs: common-check
     runs-on: ubuntu-20.04
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -94,8 +105,8 @@ jobs:
 
   publish:
     name: Build and publish to npm
-    needs: metadata
-    if: needs.metadata.outputs.continue == 'yes'
+    needs: [metadata, common-check]
+    if: needs.metadata.outputs.continue == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -155,10 +166,14 @@ jobs:
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
             git add libraries/${{ matrix.project }}/package-lock.json
-            git commit -m 'GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]
+            skip_ci=""
+            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+              skip_ci="[skip ci]"
+            fi
+            git commit -m "GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json $skip_ci
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
             count=0
             retries=10
             until git push; do

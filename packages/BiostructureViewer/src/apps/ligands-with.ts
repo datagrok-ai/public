@@ -2,20 +2,16 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {IViewer} from '@datagrok-libraries/bio/src/viewers/viewer';
-import {NglProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {INglViewer, NglProps} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {Observable} from 'rxjs';
 
-interface INglViewer extends IViewer {
-    get onAfterBuildView(): Observable<void>;
-    setOptions(options: Partial<NglProps>): void;
-}
+import {_package} from '../package';
 
 export abstract class LigandsWithBase {
   constructor(
-    private readonly appFuncName: string
+    private readonly appFuncName: string,
   ) { }
 
   async init(): Promise<void> {
@@ -74,7 +70,7 @@ export class LigandsWithNglApp extends LigandsWithBase {
 
   override async buildViewViewer(): Promise<void> {
     const viewer: DG.Viewer & INglViewer = (await this.df!.plot.fromType('NGL', {
-      pdb: this.pdb
+      pdb: this.pdb,
     })) as DG.Viewer & INglViewer;
     this.view!.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.35);
   }
