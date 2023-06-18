@@ -337,7 +337,7 @@ See [Peptides plugin](https://public.datagrok.ai/apps/Peptides) in action.
 Since atomic-level structure is available for each monomer and macromolecule, all the cheminformatics features of
 Datagrok can be used. Namely: similarity search for chemical structures,
 chemical substructure filtering, structure curation.
-For details, see the [Cheminformatics](../chem/cheminformatics.md)
+For details, see the [Cheminformatics](../chem/chem.md)
 section of Datagrok documentation.
 
 We have developed an algorithm to generate the atomic structure of the sequences

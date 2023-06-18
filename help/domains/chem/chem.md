@@ -1,4 +1,6 @@
-# Cheminformatics
+---
+title: "Cheminformatics"
+---
 
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
@@ -41,7 +43,7 @@ with chemical data:
   * [ADME/Tox calculators](#admetox).
   * Property and descriptor [calculators](#calculators).
   * Flexible reporting and sharing options, including [dynamic
-    dashboards](../../access/databases.mdx/#sharing-query-results).
+    dashboards](../../access/databases/databases.mdx#sharing-query-results).
 * [QSAR and QSPR modeling support](#qsar-and-qspr-modeling)
 * Common utilities: [identifier conversion](#molecule-identifier-conversions), [structure curation](#curation), [dataset mutation](#mutation), and [virtual synthesis](#virtual-synthesis).
 * [Extensible environment](#customizing-and-extending-the-platform)
@@ -50,14 +52,14 @@ with chemical data:
 
 ## Data access
 
-Datagrok provides a single, unified access point for organizations. You can connect to any of the [30+ supported data sources](../../access/supported-connectors.md), retrieve data, and securely share data with others.
+Datagrok provides a single, unified access point for organizations. You can connect to any of the [30+ supported data sources](../../access/databases/connectors/connectors.md), retrieve data, and securely share data with others.
 
 Chemical queries against data sources require a chemical cartridge, such as [RDKit Postgres cartridge](https://www.rdkit.org/docs/Cartridge.html) or [JChem cartridge](https://docs.chemaxon.com/display/docs/JChem+Cartridge). These cartridges allow molecule-specific operations (like substructure or similarity searches) to be integrated into SQL queries using SQL syntax.
 
 <details>
 <summary> Example: Substructure search in a database </summary>
 
-To create a chemically-aware query, use the SQL syntax specific to your cartridge. [Annotate parameters](../../access/databases.mdx#parameterized-queries) like you would for a function. Here is an example of querying ChEMBL on Postgres with the RDKit cartridge installed:
+To create a chemically-aware query, use the SQL syntax specific to your cartridge. [Annotate parameters](../../access/databases/databases.mdx#parameterized-queries) like you would for a function. Here is an example of querying ChEMBL on Postgres with the RDKit cartridge installed:
 
 Substructure search:
 
@@ -116,7 +118,7 @@ The following info panes are shown by default for the current molecule:
 * Identifiers (shows [all known identifiers](#molecule-identifier-conversions) for the selected structure).
 * 3D Structure
 * 2D Structure
-* Databases (performs substracture and similarity searches for the selected sctructure against all connected data sources).
+* Databases (performs substructure and similarity searches for the selected structure against all connected data sources).
 
 The following info panes are shown by default for the current molecular column:
 
@@ -127,7 +129,7 @@ The following info panes are shown by default for the current molecular column:
   * Aligned to a scaffold defined in the specified column (**Scaffold column**).
   * Highlight the scaffold (**Highlight from column**).
   * Force regeneration for atom coordinates, even if the molecule is defined as a MOLBLOCK (**Regenerate coords**).
-  * Type of the filter for that column (skether, or categorical)(**Filter type**).
+  * Type of the filter for that column (sketcher, or categorical)(**Filter type**).
 
 :::note developers
 
@@ -165,7 +167,7 @@ To learn how to customize and extend the platform programmatically, see the [Dev
   * Copy as SMILES, SMARTS, MOLFILE V2000, MOLFILE V3000
 
 * **Context actions for a current column**
-  * **Filter**: Use [a skether](#molecule-sketcher) to filter.
+  * **Filter**: Use [a sketcher](#molecule-sketcher) to filter.
   * **Calculate descriptors**: Calculates specified [descriptors](descriptors.md).
   * **Calculate fingerprints**: Calculates specified [fingerprints](fingerprints.md).
   * **Convert identifiers**: Converts molecule identifiers. 
@@ -174,7 +176,7 @@ To learn how to customize and extend the platform programmatically, see the [Dev
   * **Similarity search**: Shows N most similar molecules to the current one.
   * **Diversity search**: Shows N most diverse structures in a dataset.
   * [**Chemical space**](#similarity-analysis-using-distance-based-dimensionality-reduction-algorithms): Visualizes molecular similarity using a scatterplot.
-  * [**Elemental analsyis**](#elemental-analysis): Analyzes the elemental composition and visualizes the results using a radar viewer.
+  * [**Elemental analysis**](#elemental-analysis): Analyzes the elemental composition and visualizes the results using a radar viewer.
   * [**Scaffold tree**](#scaffold-tree-analysis): Generates a molecule hierarchy.
   * [**R-group analysis**](#r-groups-analysis): Decomposes a set of molecules into a core and R-groups, and visualizes the results using a trellis plot.
   * **Activity cliffs**: Identifies and visualizes pairs of molecules that have similar structures but different levels of activity.
@@ -192,7 +194,7 @@ Datagrok _viewers_ recognize and display chemical data. The viewers were built f
 
 In addition to the chemical spreadsheet, examples of viewers include a [scatterplot](../../visualize/viewers/scatter-plot.md), a [network diagram](../../visualize/viewers/network-diagram.md), a [tile viewer](../../visualize/viewers/tile-viewer.md),a [bar chart](../../visualize/viewers/bar-chart.md), a [form viewer](../../visualize/viewers/form.md), and [trellis plot](../../visualize/viewers/trellis-plot.md), and [others](chemically-aware-viewers.md). All viewers can be saved as part of the [layout](../../visualize/view-layout.md) or a dashboard.
 
-To learn how to use viewers to explore chemical data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../visualize/) section of our documentation. 
+To learn how to use viewers to explore chemical data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../visualize/viewers/viewers.md) section of our documentation. 
 
 :::note developers
 
@@ -224,17 +226,17 @@ You can sketch a molecule or retrieve one by entering SMILES, compound identifie
 <details>
 <summary> Supported identifier systems </summary>
 
-| |  |  |
-|--|--|--|--|
-|actor        |drugbank   |lipidmaps   |pubchem|
-|atlas        |drugcentral|mcule       |pubchem_dotf|
-|bindingdb    |emolecules |metabolights|pubchem_tpharma|
-|brenda       |fdasrs     |molport     |recon|
-|carotenoiddb |gtopdb     |nih_ncc     |rhea|
-|chebi        |hmdb       |nikkaji     |selleck|
-|chembl       |ibm        |nmrshiftdb2 |surechembl|
-|chemicalbook |kegg_ligand|pdb         |zinc|
-|comptox      |lincs      |pharmgkb    | |
+|              |             |              |                 |
+|--------------|-------------|--------------|-----------------|
+| actor        | drugbank    | lipidmaps    | pubchem         |
+| atlas        | drugcentral | mcule        | pubchem_dotf    |
+| bindingdb    | emolecules  | metabolights | pubchem_tpharma |
+| brenda       | fdasrs      | molport      | recon           |
+| carotenoiddb | gtopdb      | nih_ncc      | rhea            |
+| chebi        | hmdb        | nikkaji      | selleck         |
+| chembl       | ibm         | nmrshiftdb2  | surechembl      |
+| chemicalbook | kegg_ligand | pdb          | zinc            |
+| comptox      | lincs       | pharmgkb     |                 |
 
 </details>
 
@@ -327,7 +329,7 @@ Similarity search finds structures similar to the current molecule. To change th
 1. Click the molecule in the spreadsheet, or within the similarity or diversity viewers.
 1. Sketch it by clicking the **Edit** icon on top of the reference molecule.
 
-To change search parameters like the similarity cutoff, fingerprints type<!--we only have Morgan?-->, or distance metric, edit the viewer's properties properties by clicking the **Gear** icon (to reveal, hover over the top of the viewer).
+To change search parameters like the similarity cutoff, fingerprints type<!--we only have Morgan?-->, or distance metric, edit the viewer's properties by clicking the **Gear** icon (to reveal, hover over the top of the viewer).
 
 You can customize each molecule tile in the similarity and diversity viewers to display data from any dataset column. To add column data, open the viewer properties and select the desired column using the **Molecule Properties** control. Color-coding applied to the selected column will be picked up and displayed in the viewers. You can choose between background or text color-coding using the **Apply Color To** control. To remove highlighting, clear the color-coding from the respective column in the dataset.
 
@@ -433,7 +435,7 @@ To filter a dataset using a scaffold tree, do the following:
 
 * To exclusively filter by a particular scaffold, select the checkbox
   to the left of the molecule. This action automatically clears any other checkboxes and helps to navigate quickly within the dataset.
-* To add another scaffold to the filtered subset, select the corresponding checkbox. Use the **AND/OR** control in the **Toolbar** to set the desired logical operation. If needed, you can invert the function of a individual checkbox to exclude the scaffold from the subset instead of adding it. To invert the checkbox mode, click the **Doesn't equal** icon located in the top left corner of the scaffold tile. The change in the state of an individual checkbox doesn't affect the state of other checkboxes.
+* To add another scaffold to the filtered subset, select the corresponding checkbox. Use the **AND/OR** control in the **Toolbar** to set the desired logical operation. If needed, you can invert the function of an individual checkbox to exclude the scaffold from the subset instead of adding it. To invert the checkbox mode, click the **Doesn't equal** icon located in the top left corner of the scaffold tile. The change in the state of an individual checkbox doesn't affect the state of other checkboxes.
 * To clear all filters, click the **Filter** icon in the **Toolbar**.
 
 ![scaffold-tree-controls](img/scaffold-tree-toolbar-actions-1.png)
@@ -483,14 +485,14 @@ The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules w
    1. Set the similarity cutoff.
    1. Select a dimensionality reduction algorithm and adjust its parameters using the **Gear** icon next to the **Method** control.
 1. Click **OK** to execute the analysis. A scatterlpot visualization is added to the view.
-1. Optional. In the scatterplot, click the link with the detected number of cliffs to open an **Activity Cliffs** table containing all pairs of molecules identified as cliffs. The tables also has a detailed information such as similarity score, activity difference score, and other data.
+1. Optional. In the scatterplot, click the link with the detected number of cliffs to open an **Activity Cliffs** table containing all pairs of molecules identified as cliffs. The tables also has detailed information such as similarity score, activity difference score, and other data.
 
 In the scatterplot, the marker color corresponds to the level of molecule activity, and the size represents the maximum detected activity cliff for that molecule. The opacity of the line connecting molecule pairs corresponds to the size of the activity cliff.
 
 To explore the molecule pairs:
 
-* Click a molecule in the source dataframe to zoom in on the scatterplot and focus on the pair that includes the selected molecule. Hover over molecules pairs and connecting lines to see a summary information about them.
-* Click the line connecting molecules in the scatterplot to select a corresponding pair of molecules in the underlying dataframe and **Activity Cliffs** table. The reverse also applies: clicking a pair in the **Activity Cliffs** table updates the scatterplot and selects the corresponding rows in the unerlying dataframe.
+* Click a molecule in the source dataframe to zoom in on the scatterplot and focus on the pair that includes the selected molecule. Hover over molecules pairs and connecting lines to see summary information about them.
+* Click the line connecting molecules in the scatterplot to select a corresponding pair of molecules in the underlying dataframe and **Activity Cliffs** table. The reverse also applies: clicking a pair in the **Activity Cliffs** table updates the scatterplot and selects the corresponding rows in the underlying dataframe.
 
 As you browse the dataset, the **Context Panel** updates with relevant information.
 
@@ -498,14 +500,14 @@ As you browse the dataset, the **Context Panel** updates with relevant informati
 
 ### ADME/Tox
 
-The **ADME/Tox** tool predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties for chemical structures. The tool obtains predictions for either a single chemical structure (implemeted as a chemical info pane) or for an entire column of structures (available from the context menu). Under the hood, the tool uses publicly available [ADMETlab](https://github.com/ifyoungnet/ADMETlab) models.
+The **ADME/Tox** tool predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties for chemical structures. The tool obtains predictions for either a single chemical structure (implemented as a chemical info pane) or for an entire column of structures (available from the context menu). Under the hood, the tool uses publicly available [ADMETlab](https://github.com/ifyoungnet/ADMETlab) models.
 
 <!--[gif placeholder]-->
 
 <details>
 <summary>How to use</summary>
 
-For indiviual molecules, the ADME/Tox prediction happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available predictions in the **ADME/Tox** info pane. 
+For individual molecules, the ADME/Tox prediction happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available predictions in the **ADME/Tox** info pane. 
 
 To predict properties for the entire column:
 
@@ -555,33 +557,41 @@ A simple yet efficient way to deploy models is through the use of [info panes](.
 
 ## Chemical scripts
 
-Chem package comes with a number of scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated in larger scripts and workflows accross the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
+Chem package comes with a number of scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated in larger scripts and workflows across the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
 
+```mdx-code-block
 <Tabs>
 <TabItem value="script" label="Script" default>
+```
 
 ![Gasteiger partial charges script](img/script-gasteiger-part-charges-0.png)
 
+```mdx-code-block
 </TabItem>
 <TabItem value="script-output" label="Script output">
+```
 
 ![Gasteiger partial charges script output](img/script-output-gasteiger-part-charges-0.png)
 
+```mdx-code-block
 </TabItem>
 <TabItem value="script-output-in-info-pane" label="Script output in info pane">
+```
 
 ![Script-based info pane](img/script-output-info-pane-0.png)
-</TabItem>
 
+```mdx-code-block
+</TabItem>
 </Tabs>
+```
 
 In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0) is used to visualize Gasteiger partial charges. When you run the script explicitly, Datagrok shows the autogenerated parameter input dialog, allowing you to sketch the input structure. In this example, script is also tagged as `panel`, and that instructs Datagrok to show the results in the [info pane](../../discover/info-panels.md) when a user clicks a molecule.
 
-To view the chemical sripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
+To view the chemical scripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
 
 :::note
 
-For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](functions/chem-functions.md). To learn more about scripting, see [Scripting](../../compute/scripting.md).
+For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](Scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../compute/scripting.md).
 
 :::
 
@@ -602,26 +612,26 @@ For individual molecules, descriptors are calculated in real-time and presented 
 
 #### Molecule identifier conversions
 
-Datagrok supports conversion of various molecule identifiers, including proprietary identifiers, allowing you to work with muliple data sources and tools. For example, you can convert a SMILES string to an InChI and vice versa.
+Datagrok supports conversion of various molecule identifiers, including proprietary identifiers, allowing you to work with multiple data sources and tools. For example, you can convert a SMILES string to an InChI and vice versa.
 
 <details>
 <summary> Supported data sources</summary>
 
-|             |            |             |        |
-|-------------|------------|-------------|--------|
-|actor        | drugbank   | lipidmaps   | pubchem|
-|atlas        | drugcentral| mcule       | pubchem_dotf|
-|bindingdb    | emolecules | metabolights| pubchem_tpharma|
-|brenda       | fdasrs     | molport     | recon|
-|carotenoiddb | gtopdb     | nih_ncc     | rhea|
-|chebi        | hmdb       | nikkaji     | selleck|
-|chembl       | ibm        | nmrshiftdb2 | surechembl|
-|chemicalbook | kegg_ligand| pdb         | zinc|
-|comptox      | lincs      | pharmgkb    | |
+|              |             |              |                 |
+|--------------|-------------|--------------|-----------------|
+| actor        | drugbank    | lipidmaps    | pubchem         |
+| atlas        | drugcentral | mcule        | pubchem_dotf    |
+| bindingdb    | emolecules  | metabolights | pubchem_tpharma |
+| brenda       | fdasrs      | molport      | recon           |
+| carotenoiddb | gtopdb      | nih_ncc      | rhea            |
+| chebi        | hmdb        | nikkaji      | selleck         |
+| chembl       | ibm         | nmrshiftdb2  | surechembl      |
+| chemicalbook | kegg_ligand | pdb          | zinc            |
+| comptox      | lincs       | pharmgkb     |                 |
 
 </details>
 
-For indiviual molecules, the coversion happens automatically as you interact with molecules, and the **Context Panel** shows all available identifiers in the **Identifiers** info pane (**Context Panel** > **Structure** > **Identifiers**). You can also perfrom conversion on the entire column by choosing the corresponding option from the **Chem** > **Calculate** menu.
+For individual molecules, the conversion happens automatically as you interact with molecules, and the **Context Panel** shows all available identifiers in the **Identifiers** info pane (**Context Panel** > **Structure** > **Identifiers**). You can also perform conversion on the entire column by choosing the corresponding option from the **Chem** > **Calculate** menu.
 
 :::note developers
 
@@ -631,7 +641,7 @@ To run programmatically, use the `#{x.ChemMapIdentifiers}` function.
 
 ### Curation
 
-Datagrok supports [chemical structure curation](https://pubs.acs.org/doi/10.1021/ci100176x), including kekulization, normalization, reionization,  neutralization, tautomerization, and the selection of the main component.
+Datagrok supports [chemical structure curation](https://pubs.acs.org/doi/10.1021/ci100176x), including kekulization, normalization, reorganization,  neutralization, tautomerization, and the selection of the main component.
 
 <details>
 <summary> How to use </summary>
@@ -669,12 +679,12 @@ You can use the `Chem: TwoComponentReaction` function to apply specified chemica
 <details>
 <summary>How to use</summary>
 
-1. Open the **Two Component Reaction** dialog by exuting the `Chem: TwoComponentReaction` function in the **Console**. This opens a parameter input dialog.
+1. Open the **Two Component Reaction** dialog by executing the `Chem: TwoComponentReaction` function in the **Console**. This opens a parameter input dialog.
 1. In the dialog:
    1. Select the reactants to use.
    1. Enter reaction in the filed provided.
    1. Choose whether to combine the reactants from two sets, or sequentially, and whether to randomize, by checking or clearing the Matrix Expansion and Randomize checkboxes.
-   1. Set other paramters, such as seed, the number of maximum random reactions.
+   1. Set other parameters, such as seed, the number of maximum random reactions.
    1. Click **OK** to execute.
 
 </details>
@@ -689,8 +699,8 @@ For instance, you can add new data formats, apply custom models, and perform oth
 All of your customizations and actions can be recorded as macros and incorporated into pipelines.
 
 To learn more about extending and customizing Datagrok, see the
-[Develop](../develop/) section of the documentation, including this
-[cheminformatics-specific section](../../develop/doamins/chem).
+[Develop](../../develop/develop.md) section of the documentation, including this
+[cheminformatics-specific section](./chem.md).
 
 ## Resources
 
