@@ -25,10 +25,8 @@ export class SequenceTranslatorUI {
 
     // top panel icons
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
-    const viewHint = ui.iconFA('lightbulb', () => {}, 'About the app');
     this.topPanel = [
       viewMonomerLibIcon,
-      // viewHint
     ];
     this.view.setRibbonPanels([this.topPanel]);
 
@@ -67,7 +65,7 @@ class TabLayout {
     const control = ui.tabControl({
       [MAIN_TAB]: await this.mainTab.getHtmlElement(),
       [AXOLABS_TAB]: this.axolabsTab.htmlDivElement,
-      [SDF_TAB]: this.sdfTab.htmlDivElement,
+      [SDF_TAB]: await this.sdfTab.getHtmlDivElement(),
     });
 
     // bind tooltips to each tab

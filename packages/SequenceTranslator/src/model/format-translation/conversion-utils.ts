@@ -3,7 +3,7 @@ import {FormatConverter} from './format-converter';
 import {codesToHelmDictionary} from '../data-loading-utils/json-loader';
 
 export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar: number, sourceFormat: FORMAT): {[key: string]: string} {
-  const supportedFormats = Object.keys(codesToHelmDictionary).concat([FORMAT.NUCLEOTIDES, FORMAT.HELM]) as FORMAT[];
+  const supportedFormats = Object.keys(codesToHelmDictionary).concat([FORMAT.HELM]) as FORMAT[];
 
   if (!sequence || (indexOfFirstInvalidChar !== -1 && sourceFormat !== FORMAT.HELM))
     return {};

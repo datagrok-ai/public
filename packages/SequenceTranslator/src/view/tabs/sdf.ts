@@ -15,6 +15,7 @@ import {getLinkedMolfile, saveSdf} from '../../model/sequence-to-structure-utils
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {MoleculeImage} from '../utils/molecule-img';
 import {StrandData} from '../../model/sequence-to-structure-utils/sdf-tab';
+import {DEFAULT_AXOLABS_INPUT} from '../const/view';
 
 const enum DIRECTION {
   STRAIGHT = '5′ → 3′',
@@ -27,7 +28,7 @@ export class SdfTabUI {
     this.onInput = new rxjs.Subject<string>();
     this.inputBase = Object.fromEntries(
       STRANDS.map(
-        (key) => [key, ui.textInput('', '', () => { this.onInput.next(); })]
+        (key) => [key, ui.textInput('', DEFAULT_AXOLABS_INPUT, () => { this.onInput.next(); })]
       )
     );
     this.useChiralInput = ui.boolInput('Use chiral', true);
@@ -51,10 +52,10 @@ export class SdfTabUI {
   private directionInversion: {[key: string]: boolean};
   private moleculeImgDiv: HTMLDivElement;
 
-  get htmlDivElement(): HTMLDivElement {
+  async getHtmlDivElement(): Promise<HTMLDivElement> {
     const tableLayout = this.getTableInput();
     const boolInputsAndButton = this.getBoolInputsAndButton();
-
+    await this.updateMoleculeImg();
     const bottomDiv = ui.divH([boolInputsAndButton, this.moleculeImgDiv]);
     $(bottomDiv).addClass('st-sdf-bottom');
 

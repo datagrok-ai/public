@@ -9,28 +9,30 @@ import $ from 'cash-dom';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
-import {INPUT_FORMATS} from '../../model/const';
 import {FORMAT} from '../../model/const';
 import {SequenceToSmilesConverter} from '../../model/sequence-to-structure-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
 import {getTranslatedSequences} from '../../model/format-translation/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
-import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
+import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../const/main-tab';
+import {DEFAULT_AXOLABS_INPUT} from '../const/view';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
 import {FormatConverter} from '../../model/format-translation/format-converter';
+import {codesToHelmDictionary} from '../../model/data-loading-utils/json-loader';
 
 export class MainTabUI {
   constructor() {
+    const INPUT_FORMATS = Object.keys(codesToHelmDictionary).concat(['HELM']);
     this.moleculeImgDiv = ui.block([]);
     this.outputTableDiv = ui.div([]);
-    this.formatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS), async () => {
+    this.formatChoiceInput = ui.choiceInput('', 'HELM', INPUT_FORMATS, async () => {
       this.format = this.formatChoiceInput.value;
       this.updateTable();
       await this.updateMolImg();
     });
-    this.sequenceInputBase = ui.textInput('', DEFAULT_INPUT,
+    this.sequenceInputBase = ui.textInput('', DEFAULT_AXOLABS_INPUT,
       () => { this.onInput.next(); });
 
     this.init();
@@ -164,8 +166,8 @@ export class MainTabUI {
     if (!this.format)
       return '';
     if (this.format === FORMAT.HELM) {
-      const gcrs = (new FormatConverter(this.sequence, this.format).convertTo(FORMAT.GCRS));
-      return (new SequenceToMolfileConverter(gcrs, false, FORMAT.GCRS).convert());
+      const axolabs = (new FormatConverter(this.sequence, this.format).convertTo(FORMAT.AXOLABS));
+      return (new SequenceToMolfileConverter(axolabs, false, FORMAT.AXOLABS).convert());
     }
     const molfile = (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
     return molfile;

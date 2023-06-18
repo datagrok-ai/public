@@ -13,15 +13,6 @@ export const TECHNOLOGIES = {
   SI_RNA: 'siRNA',
 };
 
-export enum INPUT_FORMATS {
-  HELM = 'HELM',
-  NUCLEOTIDES = 'Nucleotides',
-  BIOSPRING = 'BioSpring',
-  GCRS = 'GCRS',
-  AXOLABS = 'Axolabs',
-  MERMADE_12 = 'Mermade12',
-};
-
 export enum FORMAT {
   HELM = 'HELM', // helm is not a synthesizer, rename enum
   NUCLEOTIDES = 'Nucleotides',

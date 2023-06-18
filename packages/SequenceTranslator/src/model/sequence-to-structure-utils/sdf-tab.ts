@@ -18,8 +18,7 @@ export type StrandData = {
 export function getMolfileForStrand(strand: string, invert: boolean): string {
   if (strand === '')
     return '';
-  // restrict to GCRS codes only
-  const format = FORMAT.GCRS;
+  const format = FORMAT.AXOLABS;
   let molfile = '';
   try {
     molfile = (new SequenceToMolfileConverter(strand, invert, format)).convert();

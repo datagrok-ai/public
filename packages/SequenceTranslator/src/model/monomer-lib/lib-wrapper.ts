@@ -162,7 +162,8 @@ export class MonomerLibWrapper {
     const meta = sourceObj[OPT.META] as Meta;
     const codes = meta[MET.CODES] as Codes;
 
-    for (const synthesizer of Object.values(FORMAT)) {
+    const publicFormats = [FORMAT.AXOLABS, FORMAT.BIOSPRING, FORMAT.MERMADE_12]
+    for (const synthesizer of publicFormats) {
       const fieldName = synthesizer;
       const valuesList = [];
       if (codes[synthesizer] !== undefined) {
