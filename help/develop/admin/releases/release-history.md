@@ -24,25 +24,33 @@ See also:
 
 ### Addressed Issues
 
-* (Enhancement) [#1988](https://github.com/datagrok-ai/public/issues/1988): Trellis Plot: Enhancements (WIP)
-* (Bug) [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views 
-* (Bug) [#1985](https://github.com/datagrok-ai/public/issues/1985): Box plot: Y axis zoom slider behaviour is inverted
-* (Bug) [#1986](https://github.com/datagrok-ai/public/issues/1986): Dragging a column to filter panel moves it to the beginning of the table
-* (Bug) [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue
-* (Bug) [#1983](https://github.com/datagrok-ai/public/issues/1983): Categorical colours cannot be changed
-* (Bug) [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases
-* (Bug) [#1959](https://github.com/datagrok-ai/public/issues/1959): Cannot adjust legend width for a Trellis plot
-* (Bug) [#1230](https://github.com/datagrok-ai/public/issues/1230): Filters: custom filters not synced
-* (Enhancement) [#1378](https://github.com/datagrok-ai/public/issues/1378): PC Plot: context menu harmonization
-* (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1778): Viewers: Organize properties consistently in the context panel
-* (Bug) [#2009](https://github.com/datagrok-ai/public/issues/2009): Correlation Plot shows wrong axises
-* (Bug) [#2028](https://github.com/datagrok-ai/public/issues/2028): Handling the layout save with a viewer loading error
-* (Enhancement) [#1951](https://github.com/datagrok-ai/public/issues/1951): Add Global scale option to Trellis plot
-* (Bug) GROK-12902: Chem | Context Pane | Actions: Add to favorites doesn't work 
-* (Bug) GROK-13238: Adding new columns fails in the presence of virtual columns 
-* (Bug) [#1838](https://github.com/datagrok-ai/public/issues/1838): Error on adding a custom viewer 
-* [#1998](https://github.com/datagrok-ai/public/issues/1998): Scaffold Tree: Show a confirmation dialog before dropping all trees on the clear icon click 
-* (Enhancement) [#2011](https://github.com/datagrok-ai/public/issues/2011): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied (WIP)
+* Improvements:  
+  * [#1988](https://github.com/datagrok-ai/public/issues/1988): Trellis Plot: Enhancements:
+     * Added a column filter to the properties for column selection. X and Y axes accept categorical columns only
+     * Removed the "Viewer Type" property from the context panel (users can switch it via the dropdown in the viewer itself)
+     * Added the ability to resize a legend for Trellis
+     * Adjusted labels apprearance on the Y axis. Use ellipsis for long names
+     * Added Show GridLines property (when enabled, makes the inner viewer borders visible)
+  * [#1951](https://github.com/datagrok-ai/public/issues/1951): Add Global scale option to Trellis plot
+  * [#2011](https://github.com/datagrok-ai/public/issues/2011): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied
+  * [#1378](https://github.com/datagrok-ai/public/issues/1378): PC Plot: context menu harmonization: added "..." for the Columns item 
+  * [#1778](https://github.com/datagrok-ai/public/issues/1778): Viewers: Organize properties consistently in the context panel: moved **Col Label Orientation** to the **Styles** category for heatmap and grid 
+* Fixed:
+  * [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views 
+  * [#1985](https://github.com/datagrok-ai/public/issues/1985): Box plot: Y axis zoom slider behaviour is inverted 
+  * [#1986](https://github.com/datagrok-ai/public/issues/1986): Dragging a column to filter panel moves it to the beginning of the table 
+  * [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue 
+  * [#1983](https://github.com/datagrok-ai/public/issues/1983): Categorical coloring colors cannot be changed 
+  * [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases 
+  * [#1959](https://github.com/datagrok-ai/public/issues/1959): Cannot adjust legend width for a Trellis plot 
+  * [#1230](https://github.com/datagrok-ai/public/issues/1230): Filters: custom filters not synced 
+  * [#2009](https://github.com/datagrok-ai/public/issues/2009): Correlation Plot shows wrong axes
+  * [#2028](https://github.com/datagrok-ai/public/issues/2028): Handling the layout save with a viewer loading error 
+  * GROK-12902: Chem | Context Pane | Actions: Add to favorites doesn't work 
+  * GROK-13238: Adding new columns fails in the presence of virtual columns 
+  * [#1838](https://github.com/datagrok-ai/public/issues/1838): Error on adding a custom viewer 
+  * GROK-13321: Filter Panel: 'Unsupported operation: NaN.round()' error occurs when hovering the Board Id tab
+  * GROK-13343: Trellis plot is not loading from the layout in some cases
 
 
 ## 2023-06-02 1.15.2
