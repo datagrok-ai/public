@@ -93,7 +93,7 @@ category('Dapi: functions calls', async () => {
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     await GDF.calls.save(funcCall);
-    const loadedFuncCalls = await GDF.calls.filter(`func.id="${funcCall.func.id}"`).list();
+    const loadedFuncCalls = await GDF.calls.filter(`id="${funcCall.id}"`).list({pageSize: 5});
     expect(loadedFuncCalls.some((loadedCall) => loadedCall.id === funcCall.id), true);
   });
 

@@ -3,17 +3,17 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1391,
+      "width": 1129,
       "height": 913
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 388,
+          "width": 314,
           "height": 913,
           "element": {
-            "id": "db2b5640-ed50-11ed-ee0f-091f6147daf5",
+            "id": "31df41a0-ed50-11ed-b77d-7f77c8ad1292",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -27,11 +27,13 @@
                   "boolInput": null
                 },
                 {
-                  "type": "PowerPack:fuzzyFilter",
+                  "type": "text",
                   "column": "text",
                   "active": true,
-                  "columnName": "text",
-                  "input": "",
+                  "value": "",
+                  "mode": "or",
+                  "gridNames": null,
+                  "gridValues": null,
                   "boolInput": null
                 },
                 {
@@ -61,7 +63,7 @@
       {
         "containerType": "fill",
         "state": {
-          "width": 1002,
+          "width": 814,
           "height": 913,
           "documentManager": true
         },
@@ -69,10 +71,10 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 1002,
+              "width": 814,
               "height": 913,
               "element": {
-                "id": "db2ba460-ed50-11ed-c3c6-d53e4a6a2280",
+                "id": "31df68b0-ed50-11ed-fb15-b51059a778f9",
                 "type": "Grid",
                 "look": {
                   "#type": "GridLook",
@@ -120,13 +122,13 @@
       }
     ],
     "floating": [],
-    "tableId": "c9a2f6d0-ed50-11ed-a08b-f9009aac641a",
+    "tableId": "01f09890-ed50-11ed-fbc0-053b3a362c69",
     "tableName": "Table"
   },
   "name": "Table",
   "friendlyName": "Table",
   "author": {
-    "id": "fb93def0-7820-11ed-a90e-d5cadbc9618b"
+    "id": "2d57fcc0-ed50-11ed-c95c-ab167febf0fd"
   },
-  "createdOn": "2023-05-25T08:05:04.544Z"
+  "createdOn": "2023-06-16T16:16:48.312Z"
 }

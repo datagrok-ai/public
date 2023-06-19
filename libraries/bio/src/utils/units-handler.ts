@@ -252,7 +252,7 @@ export class UnitsHandler {
       if (!separator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
       newColumn.setTag(TAGS.separator, separator);
     }
-    newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
+    newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule'); // cell.renderer
 
     const srcAligned = col.getTag(TAGS.aligned);
     if (srcAligned)

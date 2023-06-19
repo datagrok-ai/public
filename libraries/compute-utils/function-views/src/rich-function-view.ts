@@ -267,7 +267,10 @@ export class RichFunctionView extends FunctionView {
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
+      let prevDfBlockTitle = '';
       const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
+        this.dfToViewerMapping[dfProp.name] = [];
+
         const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}) => {
           const initialValue: DG.DataFrame = this.funcCall.outputs[dfProp.name]?.value ?? this.funcCall.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
 
@@ -275,7 +278,7 @@ export class RichFunctionView extends FunctionView {
           const viewer = Object.values(viewerTypesMapping).includes(viewerType) ? DG.Viewer.fromType(viewerType, initialValue): await initialValue.plot.fromType(viewerType) as DG.Viewer;
           viewer.setOptions(viewerDesc);
 
-          if (this.dfToViewerMapping[dfProp.name]) this.dfToViewerMapping[dfProp.name].push(viewer); else this.dfToViewerMapping[dfProp.name] = [viewer];
+          this.dfToViewerMapping[dfProp.name].push(viewer);
 
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
@@ -328,7 +331,8 @@ export class RichFunctionView extends FunctionView {
           return loadedViewer;
         }));
 
-        const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
+        const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: '';
+        prevDfBlockTitle = dfBlockTitle;
 
         if (tabLabel === 'Input') {
           const subscribeOnFcChanges = () => {
@@ -597,8 +601,12 @@ export class RichFunctionView extends FunctionView {
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
-          if (this.runningOnInput)
-            this.runOnInput(t, val);
+          if (this.runningOnInput) {
+            if (prop.propertyType === DG.TYPE.DATA_FRAME)
+              this.runOnDgInput(t, val);
+            else
+              this.runOnInput(t, val);
+          }
 
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
@@ -636,12 +644,9 @@ export class RichFunctionView extends FunctionView {
     const prop = val.property;
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
-        this.dfInputRecreate(t, val, newValue);
-      else {
-        t.value = newValue;
-        this.funcCall!.inputs[val.name] = newValue;
-      }
+
+      t.value = newValue;
+      this.funcCall!.inputs[val.name] = newValue;
     });
     this.subs.push(sub);
   }
@@ -649,13 +654,12 @@ export class RichFunctionView extends FunctionView {
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     const syncSub = () => {
       const newValue = this.funcCall!.inputs[val.name];
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
-        this.dfInputRecreate(t, val, newValue);
+
       // there is no notify for DG.FuncCallParam, so we need to
       // check if the value is not the same for floats, otherwise we
       // will overwrite a user input with a lower precicsion decimal
       // representation
-      else if (
+      if (
         ((val.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
         val.property.propertyType !== DG.TYPE.FLOAT
       ) {
@@ -697,24 +701,6 @@ export class RichFunctionView extends FunctionView {
     await this.saveRun(expFuncCall);
   }
 
-  // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
-  private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
-    const prop = val.property;
-    const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
-    $(newTableInput.root).css({
-      'width': `${prop.options['block'] ?? '100'}%`,
-      'box-sizing': 'border-box',
-      'padding-right': '5px',
-    });
-
-    t.root.replaceWith(newTableInput.root);
-    t = newTableInput;
-    this.syncOnInput(t, val);
-    if (this.runningOnInput)
-      this.runOnDgInput(t, val);
-    this.afterInputPropertyRender.next({prop, input: t});
-  }
-
   private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     t.onInput(() => {
       this.funcCall!.inputs[val.name] = t.value;
@@ -733,7 +719,9 @@ export class RichFunctionView extends FunctionView {
   }
 
   private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
-    t.onInput(async () => await this.doRun());
+    t.onInput(async () => {
+      if (this.isRunnable()) await this.doRun();
+    });
 
     // DataFrame inputs have internal mutability, so we need check for it
     const ref = t.value as DG.DataFrame | null;
@@ -753,6 +741,28 @@ export class RichFunctionView extends FunctionView {
 
     if (this.outputsTabsElem.getPane('Input')) this.outputsTabsElem.currentPane = this.outputsTabsElem.getPane('Input');
   }
+
+  private sheetNamesCache = {} as Record<string, string>;
+
+  private getSheetName(initialName: string, wb: ExcelJS.Workbook) {
+    if (this.sheetNamesCache[initialName]) return this.sheetNamesCache[initialName];
+
+    let name = `${initialName}`;
+    if (name.length > 31)
+      name = `${name.slice(0, 31)}`;
+    let i = 1;
+    while (wb.worksheets.some((sheet) => sheet.name === name)) {
+      let truncatedName = `${initialName}`;
+      if (truncatedName.length > (31 - `-${i}`.length))
+        truncatedName = `${initialName.slice(0, 31 - `-${i}`.length)}`;
+      name = `${truncatedName}-${i}`;
+      i++;
+    }
+
+    this.sheetNamesCache[initialName] = name;
+
+    return name;
+  };
 
   /**
    * RichFunctionView know everything about its UI, so it exports not only data, but also viewer screenshots.
@@ -786,7 +796,9 @@ export class RichFunctionView extends FunctionView {
 
     dfInputs.forEach((dfInput) => {
       const visibleTitle = dfInput.options.caption || dfInput.name;
-      const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT));
+      const currentDfSheet =
+        exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
+        exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
 
       const currentDf = lastCall.inputs[dfInput.name];
       dfToSheet(currentDfSheet, currentDf);
@@ -803,7 +815,9 @@ export class RichFunctionView extends FunctionView {
 
     dfOutputs.forEach((dfOutput) => {
       const visibleTitle = dfOutput.options.caption || dfOutput.name;
-      const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
+      const currentDfSheet =
+        exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
+        exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
 
       const currentDf = lastCall.outputs[dfOutput.name];
       dfToSheet(currentDfSheet, currentDf);
@@ -832,13 +846,13 @@ export class RichFunctionView extends FunctionView {
             .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
           const dfInput = dfInputs.find((input) => input.name === inputParam.name)!;
-          const visibleTitle = dfInput!.options.caption || inputParam.name;
+          const visibleTitle: string = dfInput!.options.caption || inputParam.name;
           const currentDf = lastCall.inputs[dfInput.name];
 
           for (const [index, viewer] of nonGridViewers.entries()) {
             await plotToSheet(
               exportWorkbook,
-              exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)),
+              exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
               viewer.root,
               currentDf.columns.length + 2,
               (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
@@ -849,7 +863,7 @@ export class RichFunctionView extends FunctionView {
         for (const outputParam of outputParams.filter(
           (outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME &&
           (
-            (tabLabel === 'Output' && outputParam.property.category === 'Misc' || outputParam.property.category === 'Output') ||
+            (tabLabel === 'Output' && (outputParam.property.category === 'Misc' || outputParam.property.category === 'Output')) ||
             (tabLabel !== 'Output' && outputParam.property.category === tabLabel)
           ),
         )) {
@@ -874,7 +888,7 @@ export class RichFunctionView extends FunctionView {
                 DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
               ]);
               dfToSheet(
-                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
+                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
                 stats,
                 currentDf.columns.length + 2,
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
@@ -882,7 +896,7 @@ export class RichFunctionView extends FunctionView {
             } else {
               await plotToSheet(
                 exportWorkbook,
-                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
+                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
                 viewer.root,
                 currentDf.columns.length + 2,
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
@@ -904,11 +918,6 @@ export class RichFunctionView extends FunctionView {
     filename: this.defaultExportFilename,
   };
 }
-
-const getSheetName = (name: string, direction: DIRECTION) => {
-  const idealName = `${name}`;
-  return (idealName.length > 31) ? name.substring(0, 32) : idealName;
-};
 
 const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
   sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};

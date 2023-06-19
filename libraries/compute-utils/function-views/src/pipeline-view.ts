@@ -59,7 +59,10 @@ export class PipelineView extends ComputationView {
     if (format === 'Archive') {
       const zipConfig = {} as Zippable;
 
-      for (const step of Object.values(this.steps)) {
+      for (
+        const step of Object.values(this.steps)
+          .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+      ) {
         this.stepTabs.currentPane = this.stepTabs.getPane(getVisibleStepName(step));
 
         await new Promise((r) => setTimeout(r, 100));
@@ -91,7 +94,10 @@ export class PipelineView extends ComputationView {
         return name;
       };
 
-      for (const step of Object.values(this.steps)) {
+      for (
+        const step of Object.values(this.steps)
+          .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+      ) {
         const temp = new ExcelJS.Workbook();
         this.stepTabs!.currentPane = this.stepTabs!.getPane(getVisibleStepName(step));
 
@@ -428,7 +434,7 @@ export class PipelineView extends ComputationView {
 
     for (const step of Object.values(this.steps)) {
       const corrChildRun = pulledChildRuns.find((pulledChildRun) => {
-        // DEALING WITH THE BUG: TODO
+        // DEALING WITH THE BUG: https://reddata.atlassian.net/browse/GROK-13335
         const realNqName = `${pulledChildRun.func.package.name}:${pulledChildRun.func.name}`;
         return realNqName === step.func.nqName;
       });

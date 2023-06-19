@@ -44,7 +44,7 @@ export namespace historyUtils {
 
   async function augmentFuncWithPackage(func: DG.Func) {
     const id = func.package.id;
-    // DEALING WITH BUG: TODO
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13337
     const funcPackage = packagesCache[id] ?? await grok.dapi.packages.allPackageVersions().find(id);
 
     if (!packagesCache[id]) packagesCache[id] = funcPackage;
