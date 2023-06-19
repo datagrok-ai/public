@@ -396,8 +396,8 @@ export class SensitivityAnalysisView {
     const analysisResults = await analysis.perform();
 
     const funcEvalResults = analysisResults.funcEvalResults;
-    const firstOrderIndeces = analysisResults.firstOrderSobolIndeces;
-    const totalOrderIndeces = analysisResults.totalOrderSobolIndeces;
+    const firstOrderIndeces = analysisResults.firstOrderSobolIndices;
+    const totalOrderIndeces = analysisResults.totalOrderSobolIndices;
 
     const outoutNames = firstOrderIndeces.columns.names();
     const evalDataframeNames = funcEvalResults.columns.names();
@@ -416,7 +416,7 @@ export class SensitivityAnalysisView {
       },
     ));
 
-    // add barchart with 1-st order Sobol' indeces
+    // add barchart with 1-st order Sobol' indices
     const bChartSobol1 = this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces,
       {title: firstOrderIndeces.name,
         split: outoutNames[0],
@@ -427,7 +427,7 @@ export class SensitivityAnalysisView {
 
     this.comparisonView.dockManager.dock(bChartSobol1, 'right', undefined, '', 0.2);
 
-    // add barchart with total order Sobol' indeces
+    // add barchart with total order Sobol' indices
     const bChartSobolT = this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces,
       {title: totalOrderIndeces.name,
         split: outoutNames[0],
