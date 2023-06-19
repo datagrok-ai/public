@@ -435,7 +435,7 @@ At the moment some limitations are exists:
 
 See also:
 
-* [Cheminformatics](../../domains/chem/cheminformatics.md)
+* [Cheminformatics](../../domains/chem/chem.md)
 
 ## Storage
 

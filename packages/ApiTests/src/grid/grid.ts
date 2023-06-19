@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, after, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
 export function hasTag(colTags: string[], colTagValue: string): boolean {
@@ -15,23 +15,20 @@ export function hasTag(colTags: string[], colTagValue: string): boolean {
 }
 
 category('Grid', () => {
-  let v: DG.TableView;
   let grid: DG.Grid;
-  const demog = grok.data.demo.demog(1000);
+  const demog = grok.data.demo.demog(100);
   demog.columns.byName('study').name = '~study';
 
   before(async () => {
-    v = grok.shell.addTableView(demog);
-    grid = v.grid;
+    grid = demog.plot.grid();
   });
 
   test('setOrder', async () => {
     grid.columns.setOrder(['race', 'age']);
     const firstCol = grid.columns.byIndex(4);
     const secondCol = grid.columns.byIndex(6);
-    if (firstCol?.name != 'race' || secondCol?.name != 'age')
-      
-      throw new Error('grid.setOrder does not work');
+    expect(firstCol?.name, 'race');
+    expect(secondCol?.name, 'age');
   });
 
   test('resizeColumn', async () => {
@@ -41,9 +38,7 @@ category('Grid', () => {
 
   test('filter', async () => {
     demog.rows.match('sex = M').filter();
-    if (demog.filter.trueCount != 605)
-      
-      throw new Error('Filtering error');
+    expect(demog.filter.trueCount, 73);
   });
 
   test('colorCoding', async () => {
@@ -88,17 +83,10 @@ category('Grid', () => {
 
   test('columnVisibility', async () => {
     const studyColVisible = grid.columns.byName('~study')!.visible;
-
     grid.columns.setVisible(['age', 'sex', 'race', 'height', 'weight', 'site', 'subj', 'started']);
     const diseaseColVisible = grid.columns.byName('disease')!.visible;
-
-    if (studyColVisible)
-      
-      throw new Error('Hiding a column by adding ~ to the name doesn\'t work');
-
-    if (diseaseColVisible)
-      
-      throw new Error('Hiding a column by using columns.setVisible doesn\'t work');
+    expect(studyColVisible, false, 'Hiding a column by adding ~ to the name doesn\'t work');
+    expect(diseaseColVisible, false, 'Hiding a column by using columns.setVisible doesn\'t work');
   });
 
   test('columnControlledValues', async () => {
@@ -123,7 +111,12 @@ category('Grid', () => {
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
   });
 
-  after(async () => {
-    grok.shell.closeAll();
+  test('getOptions', async () => {
+    expect(Object.keys(grid.getOptions().look).length, 2);
   });
-}, false);
+
+  test('setOptions', async () => {
+    grid.setOptions({allowEdit: false, showColumnLabels: false, colHeaderHeight: 100});
+    expect(Object.keys(grid.getOptions().look).length, 5);
+  });
+});

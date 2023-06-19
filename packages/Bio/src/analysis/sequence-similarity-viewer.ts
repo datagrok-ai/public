@@ -10,6 +10,7 @@ import {Subject} from 'rxjs';
 import {TAGS as bioTAGS, getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {calcMmDistanceMatrix, dmLinearIndex} from './workers/mm-distance-worker-creator';
+import {calculateMMDistancesArray} from './workers/mm-distance-array-service';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
@@ -46,7 +47,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const uh = new UnitsHandler(this.moleculeColumn!);
+        const uh = UnitsHandler.getOrCreate(this.moleculeColumn!);
 
         await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
@@ -93,16 +94,22 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   }
 
   private async computeByMM() {
-    if (!this.distanceMatrixComputed) {
+    let distanceArray = new Float32Array();
+    if (!this.distanceMatrixComputed && this.preComputeDistanceMatrix) {
       this.mmDistanceMatrix = await calcMmDistanceMatrix(this.moleculeColumn!);
       this.distanceMatrixComputed = true;
+    } else if (!this.preComputeDistanceMatrix) {
+      // use fast distance array calculation if matrix will take too much space
+      distanceArray = await calculateMMDistancesArray(this.moleculeColumn!, this.targetMoleculeIdx);
     }
     const len = this.moleculeColumn!.length;
     const linearizeFunc = dmLinearIndex(len);
     // array that keeps track of the indexes and scores together
     const indexWScore = Array(len).fill(0)
       .map((_, i) => ({idx: i, score: i === this.targetMoleculeIdx ? 1 :
-        1 - this.mmDistanceMatrix[linearizeFunc(this.targetMoleculeIdx, i)]}));
+        this.preComputeDistanceMatrix ? 1 - this.mmDistanceMatrix[linearizeFunc(this.targetMoleculeIdx, i)] :
+          1 - distanceArray[i]
+      }));
     indexWScore.sort((a, b) => b.score - a.score);
     // get the most similar molecules
     const actualLimit = Math.min(this.limit, len);

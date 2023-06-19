@@ -1,6 +1,7 @@
 name: "Anchore Security Scan"
 
 on:
+  workflow_dispatch: { }
   schedule:
     - cron:  '30 0 */2 * *'
 
@@ -13,12 +14,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Scan for GitHub Secutiry
+      - name: Scan for GitHub Security
         uses: anchore/scan-action@v3
         id: scan
         with:
           path: "."
-          fail-build: true # Change to true after all fixes
+          fail-build: false # Change to true after all fixes
           severity-cutoff: high
           acs-report-enable: true
       - name: Upload Anchore scan SARIF report

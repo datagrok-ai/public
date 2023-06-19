@@ -19,7 +19,6 @@ export {
   splitterAsFasta,
   getSplitterWithSeparator,
   splitterAsHelm,
-  getStats,
   getAlphabet,
   getAlphabetSimilarity,
   monomerToShort,

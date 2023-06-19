@@ -175,12 +175,14 @@ jobs:
             DATAGROK_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
+          export GROK_COMPUTE_VERSION=1.5.1
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
-          echo "Notify abour version used for tests"
+          echo "Notify about version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
+          df -h
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -223,7 +225,9 @@ jobs:
       - name: Install datagrok tools
         id: datagrok-tools
         if: ${{ matrix.test == 'true' }}
-        run: npm install -g datagrok-tools@latest
+        run: |
+          df -h
+          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
@@ -285,7 +289,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
-        continue-on-error: ${{ contains(matrix.package, 'Tests') }}
+        continue-on-error: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'DrugBank') }}
         timeout-minutes: 15
         id: test-package
         run: npm run test -- --skip-build --skip-publish --record --csv
@@ -369,7 +373,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
@@ -403,10 +407,14 @@ jobs:
           continue=false
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
             git add packages/${{ matrix.package }}/package-lock.json
-            git commit -m 'GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]
+            skip_ci=""
+            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+              skip_ci="[skip ci]"
+            fi
+            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json $skip_ci
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then

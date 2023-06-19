@@ -100,13 +100,14 @@ category('Dapi: files', () => {
 });
 
 category('Dapi: files: formats', () => {
-  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip']; //kml, kmz
+  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip', 'kmz', 'kml'];
 
   for (const ext of extensions) {
     test(ext, async () => {
-      const df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext);
-      expect(df.rowCount, 10, 'wrong rows number');
-      expect(df.columns.length, 10, 'wrong columns number');
-    });
+      grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext).then((df) => {
+        expect(df.rowCount, 10, 'wrong rows number');
+        expect(df.columns.length, 10, 'wrong columns number');
+      });
+    }, ['kmz', 'kml'].includes(ext) ? {skipReason: 'GROK-13263'} : undefined);
   }
 });

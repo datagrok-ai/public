@@ -164,7 +164,7 @@ class BioPackageDetectors extends DG.Package {
 
       if (statsAsChars.sameLength) {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
-        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.15 : 0);
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.20 : 0);
         if (alphabet === ALPHABET.UN) return null;
 
         col.setTag(DG.TAGS.UNITS, units);
@@ -187,7 +187,9 @@ class BioPackageDetectors extends DG.Package {
             this.checkForbiddenMultichar(stats.freq)) ||
           ((units === NOTATION.FASTA && !alphabetIsMultichar) &&
             this.checkForbiddenSinglechar(stats.freq))
-        ) return null;
+        ) {
+          return null;
+        }
 
         const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
@@ -258,7 +260,8 @@ class BioPackageDetectors extends DG.Package {
    */
   checkForbiddenMultichar(freq) {
     const forbiddenRe = /[ .:]|^\d+$/i;
-    return Object.keys(freq).some((m) => forbiddenRe.test(m));
+    const forbiddenMonomerList = Object.keys(freq).filter((m) => forbiddenRe.test(m));
+    return forbiddenMonomerList.length > 0;
   }
 
   /** Space, dot, colon, semicolon, digit, underscore are not allowed as singe char monomer names.*/
@@ -328,7 +331,7 @@ class BioPackageDetectors extends DG.Package {
     const freqA = [];
     const alphabetA = [];
     for (const m of keys) {
-      freqA.push(m in freq ? freq[m] : 0);
+      freqA.push(m in freq ? freq[m] : -0.10);
       alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
@@ -338,18 +341,21 @@ class BioPackageDetectors extends DG.Package {
 
   vectorLength(v) {
     let sqrSum = 0;
-    for (let i = 0; i < v.length; i++)
+    for (let i = 0; i < v.length; i++) {
       sqrSum += v[i] * v[i];
+    }
     return Math.sqrt(sqrSum);
   }
 
   vectorDotProduct(v1, v2) {
-    if (v1.length !== v2.length)
+    if (v1.length !== v2.length) {
       throw Error('The dimensionality of the vectors must match');
+    }
 
     let prod = 0;
-    for (let i = 0; i < v1.length; i++)
+    for (let i = 0; i < v1.length; i++) {
       prod += v1[i] * v2[i];
+    }
 
     return prod;
   }
@@ -391,10 +397,11 @@ class BioPackageDetectors extends DG.Package {
         .map((ma) => {
           let mRes;
           const m = ma[0];
-          if (m.length > 1)
+          if (m.length > 1) {
             mRes = ma[1];
-          else
+          } else {
             mRes = m;
+          }
 
           return mRes;
         }).toArray();
@@ -422,10 +429,11 @@ class BioPackageDetectors extends DG.Package {
       const mmPostProcess = (mm) => {
         this.helmPp1Re.lastIndex = 0;
         const pp1M = this.helmPp1Re.exec(mm);
-        if (pp1M && pp1M.length >= 2)
+        if (pp1M && pp1M.length >= 2) {
           return pp1M[1];
-        else
+        } else {
           return mm;
+        }
       };
 
       const mmList = inSeq ? inSeq.split('.') : [];
@@ -435,8 +443,9 @@ class BioPackageDetectors extends DG.Package {
   }
 
   sample(src, n) {
-    if (src.length < n)
+    if (src.length < n) {
       throw new Error('Sample source is less than n requested.');
+    }
 
     const idxSet = new Set();
     while (idxSet.size < n) {

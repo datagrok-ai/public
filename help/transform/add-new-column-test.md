@@ -97,7 +97,7 @@ expression (mathematical function, constants, platform objects properties and fu
 
 1.
 
-Enter `(norm2(Demo:DemoScripts:BMI($HEIGHT, $WEIGHT), $AGE)+norm2(Demo:DemoScripts:BSA($HEIGHT, $WEIGHT), $AGE))*100`
+Enter `(norm2(Demo:BMI($HEIGHT, $WEIGHT), $AGE)+norm2(Demo:BSA($HEIGHT, $WEIGHT), $AGE))*100`
 to *"Formula"* field and execute dialog
 
 * New column added to table witch result of entered formula

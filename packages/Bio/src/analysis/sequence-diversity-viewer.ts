@@ -27,7 +27,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.dataFrame) {
       if (computeData && this.moleculeColumn) {
-        const uh = new UnitsHandler(this.moleculeColumn);
+        const uh = UnitsHandler.getOrCreate(this.moleculeColumn);
         await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
 
         const diverseColumnName: string = this.diverseColumnLabel != null ? this.diverseColumnLabel :
@@ -37,7 +37,8 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
         resCol.semType = DG.SEMTYPE.MACROMOLECULE;
         this.tags.forEach((tag) => resCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([resCol]);
-        resDf.onCurrentRowChanged.subscribe((_) => {this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx];});
+        resDf.onCurrentRowChanged.subscribe(
+          (_) => { this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx]; });
         updateDivInnerHTML(this.root, resDf.plot.grid().root);
         this.computeCompleted.next(true);
       }
@@ -61,6 +62,9 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
     const len = this.moleculeColumn!.length;
     const linearizeFunc = dmLinearIndex(len);
     this.renderMolIds = getDiverseSubset(len, Math.min(len, this.limit),
-      (i1: number, i2: number) => distanceMatrixData[linearizeFunc(i1, i2)]);
+      (i1: number, i2: number) => {
+        return this.moleculeColumn!.isNone(i1) || this.moleculeColumn!.isNone(i2) ? 0 :
+          distanceMatrixData[linearizeFunc(i1, i2)];
+      });
   }
 }

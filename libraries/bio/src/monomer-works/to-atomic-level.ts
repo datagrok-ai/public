@@ -145,7 +145,7 @@ export async function _toAtomicLevel(
   }
 
   let srcCol: DG.Column<string> = seqCol;
-  const seqUh = new UnitsHandler(seqCol);
+  const seqUh = UnitsHandler.getOrCreate(seqCol);
 
   // convert 'helm' to 'separator' units
   if (seqUh.isHelm()) {
@@ -154,7 +154,7 @@ export async function _toAtomicLevel(
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
 
-  const srcUh = new UnitsHandler(srcCol);
+  const srcUh = UnitsHandler.getOrCreate(srcCol);
   const alphabet = srcUh.alphabet;
 
   // determine the polymer type according to HELM specifications
@@ -1138,14 +1138,14 @@ function capResultingMolblock(
   // add terminal oxygen
   const atomIdx = v.nodeShift + 1;
   molfileAtomBlock[C.atomCount] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
-  OXYGEN + ' ' + keepPrecision(v.backbonePositionShift[0]) + ' ' +
-  v.flipFactor * keepPrecision(v.backbonePositionShift[1]) + ' ' + '0.000000 0' + '\n';
+    OXYGEN + ' ' + keepPrecision(v.backbonePositionShift[0]) + ' ' +
+    v.flipFactor * keepPrecision(v.backbonePositionShift[1]) + ' ' + '0.000000 0' + '\n';
 
   // add terminal bond
   const firstAtom = v.backboneAttachNode;
   const secondAtom = atomIdx;
   molfileBondBlock[C.bondCount] = V3K_BEGIN_DATA_LINE + v.bondShift + ' ' +
-  1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
+    1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
 }
 
 function addAminoAcidToMolblock(monomer: MolGraph, molfileAtomBlock: string[],

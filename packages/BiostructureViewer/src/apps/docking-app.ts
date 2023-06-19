@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {TwinPviewer} from '../viewers/twin-p-viewer';
+
 import {_package} from '../package';
 
 export class DockingApp {

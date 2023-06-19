@@ -70,7 +70,7 @@ category('Viewers: Monomer-Position', () => {
     expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
       `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
   });
-});
+}, false);
 
 category('Viewers: Most Potent Residues', () => {
   let df: DG.DataFrame;
@@ -152,4 +152,4 @@ category('Viewers: Logo Summary Table', () => {
     const tooltipElement = lstViewer.showTooltip(cluster, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
-});
+}, false);
