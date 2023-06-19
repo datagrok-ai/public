@@ -1,6 +1,5 @@
 # Oligonucleotide Sequence Design
 
-
 [Sequence Translator](https://public.datagrok.ai/apps/SequenceTranslator/) is a Datagrok application that facilitates design and synthesis of [oligonucleotides](https://en.wikipedia.org/wiki/Oligonucleotide).
 
 ## Translation
@@ -11,14 +10,11 @@ To facilitate translation of oligonucleotide sequences across different notation
 
 In the provided example, the translation is performed from a sequence written in the AXOLABS format into HELM notation and formats supportable by BioSpring and MerMade12 synthesizers. Any other format can be easily added to the output list on demand. The molecular structure of the corresponding polymer is also rendered and can be saved as SMILES or Molfile.
 
-
-
 ## Design
 
 Oligonucleotides are characterized by the sequence
 of [nucleotide modifications](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#axolabs-nucleotide-modifications)
 that make up the entire molecule. The length of the oligonucleotide is usually up to 35 nucleotides long. To facilitate creation and sharing of modification patterns, the `DESIGN` tab of the application is provided.
-
 
 ## Visualisation
 
