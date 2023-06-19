@@ -6,12 +6,9 @@ import $ from 'cash-dom';
 import {ClusterType, CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {getSplitterForColumn} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {HorizontalAlignments, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {getAggregatedValue, getStats, Stats} from '../utils/statistics';
 import wu from 'wu';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
 import {getStatsSummary} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -132,7 +129,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       const customClustCol = customClustColList[rowIdx];
       customLSTClustCol.set(rowIdx, customClustCol.name);
       const bitArray = BitArray.fromUint32Array(filteredDfRowCount, customClustCol.getRawData() as Uint32Array);
-      const bsMask = DG.BitSet.create(filteredDfRowCount, (i) => bitArray.getBit(i));
+      const bsMask = DG.BitSet.fromBytes(bitArray.buffer.buffer, filteredDfRowCount);
 
       const stats: Stats = isDfFiltered ? getStats(activityColData, bitArray) :
         this.model.clusterStats[CLUSTER_TYPE.CUSTOM][customClustCol.name];
@@ -171,7 +168,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const origBitsets: DG.BitSet[] = new Array(origLSTLen);
 
     const origClustMasks = Array.from({length: origLSTLen},
-      () => BitArray.fromSeq(filteredDfRowCount, () => false));
+      () => new BitArray(filteredDfRowCount, false));
 
     for (let rowIdx = 0; rowIdx < filteredDfRowCount; ++rowIdx) {
       const filteredClustName = filteredDfClustColCat[filteredDfClustColData[rowIdx]];
@@ -181,7 +178,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     for (let rowIdx = 0; rowIdx < origLSTLen; ++rowIdx) {
       const mask = origClustMasks[rowIdx];
-      const bsMask = DG.BitSet.create(filteredDfRowCount, (i) => mask.getBit(i));
+      const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer, filteredDfRowCount);
 
       const stats = isDfFiltered ? getStats(activityColData, mask) :
         this.model.clusterStats[CLUSTER_TYPE.ORIGINAL][origLSTClustColCat[rowIdx]];
@@ -397,8 +394,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const bs = this.dataFrame.filter;
     const filteredDf = bs.anyFalse ? this.dataFrame.clone(bs) : this.dataFrame;
     const rowCount = filteredDf.rowCount;
-
-    const bitArray = new BitArray(rowCount);
+    const bitArray = new BitArray(rowCount, false);
     const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     const activityColData = activityCol.getRawData();
 
@@ -409,8 +405,11 @@ export class LogoSummaryTable extends DG.JsViewer {
       const origClustColCategories = origClustCol.categories;
       const seekValue = origClustColCategories.indexOf(clustName);
 
-      for (let i = 0; i < rowCount; ++i)
-        bitArray.setBit(i, origClustColData[i] === seekValue);
+      for (let i = 0; i < rowCount; ++i) {
+        if (origClustColData[i] === seekValue)
+          bitArray.setTrue(i);
+      }
+      bitArray.incrementVersion();
     } else {
       const clustCol: DG.Column<boolean> = filteredDf.getCol(clustName);
       bitArray.buffer = clustCol.getRawData() as Uint32Array;
@@ -421,14 +420,12 @@ export class LogoSummaryTable extends DG.JsViewer {
     if (!stats.count)
       return null;
 
-    const mask = DG.BitSet.create(rowCount, (i) => bitArray.getBit(i));
-    const distributionTable = DG.DataFrame.fromColumns(
-      [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
+    const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer, rowCount);
+    const distributionTable = this.createDistributionDf(activityCol, mask);
     const labels = getDistributionLegend(`Cluster: ${clustName}`, 'Other');
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
     const aggregatedColMap = this.model.getAggregatedColumnValues({filterDf: true, mask: mask, fractionDigits: 2});
-
     const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
     const tooltip = getStatsSummary(labels, hist, resultMap, true);
 
