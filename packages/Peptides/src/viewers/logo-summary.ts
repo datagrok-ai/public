@@ -436,7 +436,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   createWebLogoDf(pepCol: DG.Column<string>, mask: DG.BitSet): DG.DataFrame {
     const newDf = DG.DataFrame.fromColumns([pepCol]);
-    newDf.filter = mask;
+    newDf.filter.copyFrom(mask);
     return newDf;
   }
 
