@@ -40,7 +40,7 @@ with chemical data:
   * [Chemical space analysis](#similarity-and-diversity-search).
   * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
   * SAR: [activity cliffs](#structure-relationship-analysis).
-  * [ADME/Tox calculators](#admetox).
+  <!--* [ADME/Tox calculators](#admetox).-->
   * Property and descriptor [calculators](#calculators).
   * Flexible reporting and sharing options, including [dynamic
     dashboards](../../access/databases/databases.mdx#sharing-query-results).
@@ -131,19 +131,6 @@ The following info panes are shown by default for the current molecular column:
   * Force regeneration for atom coordinates, even if the molecule is defined as a MOLBLOCK (**Regenerate coords**).
   * Type of the filter for that column (sketcher, or categorical)(**Filter type**).
 
-:::note developers
-
-Info panes be extended with [functions](../../datagrok/functions/functions.md) in any supported language.
-
-:::
-
-<!--:::tip
-
-You can search for functionality using the smart search
-(press Alt+Q) [NOT APPLICABLE ANYMORE?].
-
-:::
-
 <details>
 <summary>Info pane options</summary>
 
@@ -160,27 +147,11 @@ To learn how to customize and extend the platform programmatically, see the [Dev
 
 </details>
 
-* **Context actions for a current value**
-  * Sketch
-  * Use as filter
-  * Sort by similarity
-  * Copy as SMILES, SMARTS, MOLFILE V2000, MOLFILE V3000
+:::note developers
 
-* **Context actions for a current column**
-  * **Filter**: Use [a sketcher](#molecule-sketcher) to filter.
-  * **Calculate descriptors**: Calculates specified [descriptors](descriptors.md).
-  * **Calculate fingerprints**: Calculates specified [fingerprints](fingerprints.md).
-  * **Convert identifiers**: Converts molecule identifiers. 
-  * [**Mutate**](#mutation): Mutates chemical structure and creates a new dataset based on the results.
-  * [**Curate**](#curation): Curates chemical structures.
-  * **Similarity search**: Shows N most similar molecules to the current one.
-  * **Diversity search**: Shows N most diverse structures in a dataset.
-  * [**Chemical space**](#similarity-analysis-using-distance-based-dimensionality-reduction-algorithms): Visualizes molecular similarity using a scatterplot.
-  * [**Elemental analysis**](#elemental-analysis): Analyzes the elemental composition and visualizes the results using a radar viewer.
-  * [**Scaffold tree**](#scaffold-tree-analysis): Generates a molecule hierarchy.
-  * [**R-group analysis**](#r-groups-analysis): Decomposes a set of molecules into a core and R-groups, and visualizes the results using a trellis plot.
-  * **Activity cliffs**: Identifies and visualizes pairs of molecules that have similar structures but different levels of activity.
-  * **ADME/Tox prediction**: Predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties.-->
+Info panes be extended with [functions](../../datagrok/functions/functions.md) in any supported language.
+
+:::
 
 ### Chemically aware spreadsheet
 
@@ -498,14 +469,14 @@ As you browse the dataset, the **Context Panel** updates with relevant informati
 
 </details>
 
-### ADME/Tox
+<!--### ADME/Tox-->
 
-The **ADME/Tox** tool predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties for chemical structures. The tool obtains predictions for either a single chemical structure (implemented as a chemical info pane) or for an entire column of structures (available from the context menu). Under the hood, the tool uses publicly available [ADMETlab](https://github.com/ifyoungnet/ADMETlab) models.
+<!--The **ADME/Tox** tool predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties for chemical structures. The tool obtains predictions for either a single chemical structure (implemented as a chemical info pane) or for an entire column of structures (available from the context menu). Under the hood, the tool uses publicly available [ADMETlab](https://github.com/ifyoungnet/ADMETlab) models.
 
-<!--[gif placeholder]-->
+[gif placeholder]
 
-<details>
-<summary>How to use</summary>
+[INSERT DETAILS ADMONITION]
+How to use
 
 For individual molecules, the ADME/Tox prediction happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available predictions in the **ADME/Tox** info pane. 
 
@@ -517,7 +488,7 @@ To predict properties for the entire column:
 
 You can visualize or filter these predictions using the built-in tools provided by Datagrok.
 
-</details>
+[CLOSE DETAILS ADMONITION]-->
 
 ## QSAR and QSPR modeling
 
