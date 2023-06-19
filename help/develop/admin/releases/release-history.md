@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.1](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.3](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.13](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -18,6 +18,29 @@ title: "Release History"
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../deploy/docker-compose.mdx)
+
+
+## 2023-06-19 1.15.3
+
+### Addressed Issues
+
+* (Enhancement) [#1988](https://github.com/datagrok-ai/public/issues/1732592684): Trellis Plot: Enhancements (WIP)
+* null 
+* (Bug) [#1984](https://github.com/datagrok-ai/public/issues/1732423796): Filter's missing values settings are not properly synced between different tabs/views 
+* (Bug) GROK-12902: Chem | Context Pane | Actions: Add to favorites doesn't work 
+* (Bug) GROK-13238: Adding new columns fails in the presence of virtual columns 
+* (Bug) [#1838](https://github.com/datagrok-ai/public/issues/1683247330): Error on adding a custom viewer 
+* [#1998](https://github.com/datagrok-ai/public/issues/1738034714): Scaffold Tree: Show a confirmation dialog before dropping all trees on the clear icon click 
+* (Enhancement) [#2011](https://github.com/datagrok-ai/public/issues/1744172136): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied (WIP)
+
+
+## 2023-06-02 1.15.2
+
+### Addressed Issues
+
+* (Bug) GROK-13157: Can't load table without initial permissions 
+* GROK-13075: Delete old and inactive containers 
+* (Improvement) GROK-13188: Datlas: Improve migration process 
 
 
 ## 2023-05-25 1.15.1
