@@ -1033,7 +1033,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("XMLType");
     }
 
-    private static boolean isTime(int type, String typeName) {
+    protected boolean isTime(int type, String typeName) {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
                 || type == java.sql.Types.TIMESTAMP_WITH_TIMEZONE
                 || type == java.sql.Types.TIME_WITH_TIMEZONE

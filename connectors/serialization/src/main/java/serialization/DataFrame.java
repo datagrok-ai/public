@@ -17,6 +17,17 @@ public class DataFrame {
     public DataFrame() {
     }
 
+    @SuppressWarnings("unchecked")
+    public void addRow(Object... objects) {
+        if (objects.length != columns.size())
+            throw new RuntimeException("Objects length does not match columns length");
+        for (int i = 0; i < columns.size(); i++) {
+            columns.get(i).add(objects[i]);
+        }
+        rowCount++;
+    }
+
+
     public void addColumn(Column col) {
         rowCount = col.length;
         col.name = getUniqueName(col.name);
