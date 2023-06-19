@@ -140,15 +140,6 @@ export class PeptidesModel {
     this._monomerPositionStats = mps;
   }
 
-  get matrixDf(): DG.DataFrame {
-    this._matrixDf ??= this.buildMatrixDf();
-    return this._matrixDf;
-  }
-
-  set matrixDf(df: DG.DataFrame) {
-    this._matrixDf = df;
-  }
-
   get splitSeqDf(): DG.DataFrame {
     this._splitSeqDf ??= this.buildSplitSeqDf();
     return this._splitSeqDf;
@@ -212,7 +203,7 @@ export class PeptidesModel {
         }
       }
     }
-    
+
     if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1')
       grok.shell.v = this._analysisView;
 
@@ -349,7 +340,6 @@ export class PeptidesModel {
         break;
       case 'stats':
         this.monomerPositionStats = this.calculateMonomerPositionStatistics();
-        this.monomerPositionDf = this.createMonomerPositionDf();
         this.mostPotentResiduesDf = this.createMostPotentResiduesDf();
         this.clusterStats = this.calculateClusterStatistics();
         break;
@@ -403,34 +393,23 @@ export class PeptidesModel {
   }
 
   createMonomerPositionDf(): DG.DataFrame {
-    const positions = this.splitSeqDf.columns.names();
-    const matrixDf = this.matrixDf
-      .groupBy([C.COLUMNS_NAMES.MONOMER])
-      .aggregate();
-    for (const pos of positions)
-      matrixDf.columns.addNewString(pos);
-
-    const monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    for (let i = 0; i < monomerCol.length; ++i) {
-      if (monomerCol.get(i) === '') {
-        matrixDf.rows.removeAt(i);
-        break;
+    const uniqueMonomers = new Set<string>();
+    const splitSeqCols = this.splitSeqDf.columns;
+    for (const col of splitSeqCols) {
+      const colCat = col.categories;
+      for (const cat of colCat) {
+        if (cat !== '')
+          uniqueMonomers.add(cat);
       }
     }
-    matrixDf.name = 'SAR';
 
-    return matrixDf;
-  }
+    const monomerCol = DG.Column.fromStrings(C.COLUMNS_NAMES.MONOMER, Array.from(uniqueMonomers));
+    const monomerPositionDf = DG.DataFrame.fromColumns([monomerCol]);
+    monomerPositionDf.name = 'SAR';
+    for (const col of splitSeqCols)
+      monomerPositionDf.columns.addNewBool(col.name);
 
-  buildMatrixDf(): DG.DataFrame {
-    const splitSeqDfColumns = this.splitSeqDf.columns;
-    const positionColumns = splitSeqDfColumns.names();
-    return this.splitSeqDf
-      .groupBy(positionColumns)
-      .aggregate()
-      .unpivot([], positionColumns, C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER)
-      .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER])
-      .aggregate();
+    return monomerPositionDf;
   }
 
   buildSplitSeqDf(): DG.DataFrame {
@@ -602,7 +581,12 @@ export class PeptidesModel {
         if (monomer === '')
           continue;
 
-        const bitArray = BitArray.fromSeq(sourceDfLen, (i: number) => posColData[i] === categoryIndex);
+        const boolArray: boolean[] = new Array(sourceDfLen).fill(false);
+        for (let i = 0; i < sourceDfLen; ++i) {
+          if (posColData[i] === categoryIndex)
+            boolArray[i] = true;
+        }
+        const bitArray = BitArray.fromValues(boolArray);
         const stats = getStats(activityColData, bitArray);
         currentPositionObject[monomer] = stats;
         this.getSummaryStats(currentPositionObject.general, stats);
@@ -660,12 +644,11 @@ export class PeptidesModel {
 
   calculateClusterStatistics(): ClusterTypeStats {
     const rowCount = this.df.rowCount;
-
     const origClustCol = this.df.getCol(this.settings.clustersColumnName!);
     const origClustColData = origClustCol.getRawData();
     const origClustColCat = origClustCol.categories;
     const origClustMasks: BitArray[] = Array.from({length: origClustColCat.length},
-      () => BitArray.fromSeq(rowCount, (_: number) => false));
+      () => new BitArray(rowCount, false));
     for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx)
       origClustMasks[origClustColData[rowIdx]].setTrue(rowIdx);
 
