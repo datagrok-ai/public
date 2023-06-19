@@ -86,7 +86,7 @@ category('splitters', async () => {
     // await delay(500); // needed to account for table adding
     // // call to calculate 'cell.renderer' tag
     // await grok.data.detectSemanticTypes(df);
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(
