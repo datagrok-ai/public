@@ -447,7 +447,7 @@ You can add the scaffold tree as a filter to the **Filter Panel**:
 1. In the dialog, select the molecular column and click **OK**. A scaffold tree tile is added to the **Filter Panel**.
 1. To filter, click the **Add** (**+**) icon, then paste or draw a scaffold using a sketcher.
 
-![Scaffold tree filter panel](scaffold-tree-filter-panel.gif)
+![Scaffold tree filter panel](scaffold-tree-filter.gif)
 
 Scaffold tree can be combined with other [filters](../../visualize/viewers/filters.md), where each filter eliminates rows that do not meet the filtering criteria.
 
