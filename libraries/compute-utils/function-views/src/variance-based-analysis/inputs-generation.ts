@@ -1,4 +1,4 @@
-/* inputsGeneration.ts
+/* inputs-generation.ts
 
    Generator of inputs for variance-based sensitivity analysis.
 

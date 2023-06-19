@@ -3,10 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getEachOutputItemInfo} from './outputTools';
-import {VariedNumericalInputInfo, FixedInputItem} from './inputTools';
+import {getEachOutputItemInfo} from './output-tools';
+import {VariedNumericalInputInfo, FixedInputItem} from './input-tools';
 
-import {VarianceBasedSenstivityAnalysis} from './sensitivityAnalysis';
+import {VarianceBasedSenstivityAnalysis} from './sensitivity-analysis';
 
 export const _package = new DG.Package();
 

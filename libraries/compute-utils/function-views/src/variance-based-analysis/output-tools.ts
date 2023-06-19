@@ -1,4 +1,4 @@
-// outputTools.ts
+// output-tools.ts
 
 // Tools for operating outputs for variance-based sensitivity analysis (VSA).
 

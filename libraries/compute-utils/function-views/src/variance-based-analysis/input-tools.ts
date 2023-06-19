@@ -1,4 +1,4 @@
-// inputTools.ts
+// input-tools.ts
 
 // Tools for operating inputs for variance-based sensitivity analysis (VSA).
 
@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getGeneratedColumnsData} from './inputsGeneration';
+import {getGeneratedColumnsData} from './inputs-generation';
 
 // Varied numerical input specification
 export type VariedNumericalInputInfo = {

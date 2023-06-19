@@ -1,4 +1,4 @@
-// sensitivityAnalysis.ts
+// sensitivity-analysis.ts
 
 /* Tools that perform variance-based sensitivity analysis (VSA).
 
@@ -22,8 +22,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumns} from './inputTools';
-import {getOutputColumns} from './outputTools';
+import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumns} from './input-tools';
+import {getOutputColumns} from './output-tools';
 import {checkSize} from './utils';
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
@@ -156,9 +156,7 @@ export class VarianceBasedSenstivityAnalysis {
         for (let j = 0; j < N; ++j) {        
           buf = arr[(2 + i) * N + j] - arr[j];
           sumForFisrtOrderIndex += arr[N + j] * buf;
-          sumForTotalOrderIndex += buf * buf;
-
-          console.log(sumForFisrtOrderIndex);
+          sumForTotalOrderIndex += buf * buf;          
         }
 
         firstOrderIndeces[i] = sumForFisrtOrderIndex / (N * variance);

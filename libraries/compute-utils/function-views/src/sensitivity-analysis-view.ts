@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
 import {getDfFromRuns, getPropViewers} from './shared/utils';
 import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
-import {VarianceBasedSenstivityAnalysis} from './variance-based-analysis/sensitivityAnalysis';
+import {VarianceBasedSenstivityAnalysis} from './variance-based-analysis/sensitivity-analysis';
 import {RunComparisonView} from './run-comparison-view';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
@@ -188,6 +188,8 @@ export class SensitivityAnalysisView {
     return {analysisInputs, inputs};
   };
 
+  private openedViewers = [] as DG.Viewer[];
+
   store = this.generateForm(this.func);
   comparisonView: DG.TableView;
 
@@ -240,6 +242,13 @@ export class SensitivityAnalysisView {
       `${this.func.name} - Sensitivity Analysis`,
       0.25,
     );
+  }
+
+  private closeOpenedViewers() {
+    for (const v of this.openedViewers)
+      v.close();
+    
+    this.openedViewers.splice(0);
   }
 
   private buildFormWithBtn() {
@@ -309,6 +318,8 @@ export class SensitivityAnalysisView {
       });
 
     const buttons = ui.buttonsInput([ui.bigButton('Run sensitivity analysis', async () => {
+      this.closeOpenedViewers();
+
       if (this.store.analysisInputs.analysisType.value === ANALYSIS_TYPE.SIMPLE_ANALYSIS)
         this.runSimpleAnalysis();
       else
@@ -394,17 +405,19 @@ export class SensitivityAnalysisView {
     this.comparisonView.dataFrame = funcEvalResults;
 
     // add correlation plot
-    this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
+    const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
+
+    this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.25);
 
     // add scatterplot
-    this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults,
+    const scatPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults,
       {x: evalDataframeNames[0],
         y: outoutNames[1],
       },
     ));
 
     // add barchart with 1-st order Sobol' indeces
-    this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces,
+    const bChartSobol1 = this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces,
       {title: firstOrderIndeces.name,
         split: outoutNames[0],
         value: outoutNames[1],
@@ -412,14 +425,18 @@ export class SensitivityAnalysisView {
       },
     ));
 
+    this.comparisonView.dockManager.dock(bChartSobol1, 'right', undefined, '', 0.2);
+
     // add barchart with total order Sobol' indeces
-    this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces,
+    const bChartSobolT = this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces,
       {title: totalOrderIndeces.name,
         split: outoutNames[0],
         value: outoutNames[1],
         valueAggrType: 'avg',
       },
     ));
+
+    this.openedViewers = this.openedViewers.concat([corPlot, scatPlot, bChartSobol1, bChartSobolT]);
   }
 
   private async runSimpleAnalysis() {
