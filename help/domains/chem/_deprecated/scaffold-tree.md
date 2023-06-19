@@ -101,4 +101,4 @@ To enhance the functionality of the filters panel, you can incorporate it with t
 By integrating Scaffold Tree into the filters panel, you unlock a broader spectrum of available operations and functionalities.
 
 Here is an example on how to do it:
-![scaffold-tree-filter-panel](scaffold-tree-filter-panel.gif)
+![scaffold-tree-filter](scaffold-tree-filter.gif)
