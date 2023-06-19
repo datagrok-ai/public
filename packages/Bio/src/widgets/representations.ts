@@ -2,13 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {Tags as mmcrTags, Temps as mmcrTemps, MonomerWidthMode} from '../utils/cell-renderer-consts';
+import {_package} from '../package';
+
 
 /**
  * @export
  * @param {DG.Column} col macromolecule cell.
  * @return {Promise<DG.Widget>} Widget.
  */
-export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
+export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
     (c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
@@ -20,11 +23,22 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     ['short', 'long'],
     (s: string) => {
       col.temp['monomer-width'] = s;
-      col.setTag('.calculatedCellRender', '0');
+      col.setTag(mmcrTags.calculated, '0');
       col.dataFrame.fireValuesChanged();
     });
   monomerWidth.setTooltip(
-    'In short mode, only the first character should be visible, followed by .. if there are more characters',
+    `In short mode, only the 'Max monomer length' characters are displayed, followed by .. if there are more`,
+  );
+
+  const maxMonomerLength: DG.InputBase = ui.intInput('Max monomer length',
+    col.temp[mmcrTemps.maxMonomerLength] ?? _package.properties.maxMonomerLength,
+    (value: number) => {
+      col.temp[mmcrTemps.maxMonomerLength] = value;
+      col.setTag(mmcrTags.calculated, '0');
+      col.dataFrame.fireValuesChanged();
+    });
+  maxMonomerLength.setTooltip(
+    `The max length of monomer name displayed without shortening in '${MonomerWidthMode.short}' monomer width mode.`
   );
 
   const colorCode = ui.boolInput('Color code',
@@ -53,6 +67,7 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const rdKitInputs = ui.inputs([
     monomerWidth,
+    maxMonomerLength,
     colorCode,
     referenceSequence,
     compareWithCurrent,
