@@ -312,7 +312,7 @@ difference relation).
 
 ### Peptides SAR
 
-The ["Peptides"](https://www.youtube.com/watch?v=HNSMSf2ZYsI&ab_channel=Datagrok) plugin
+The **Peptides SAR** plugin
 is a variant of macromolecule SAR analysis. Upon launching, the UI switches to a
 fit-for purpose peptide analysis mode for efficient exploration of the peptide space,
 allowing the following:
@@ -324,13 +324,9 @@ allowing the following:
 * Analyze the peptide space (UMAP based on distance, color-coded by activity)
 * Automatically identify most potent monomer/positions
 
-We are developing tools that account for the steric and surface features of macromolecules,
-calculations to support the
-knowledge on their properties, homology, toxicity.
-
-![Peptides plugin](../../uploads/macromolecules/macromolecules-12.png "Peptides plugin")
-
-See [Peptides plugin](https://public.datagrok.ai/apps/Peptides) in action.
+See the [Peptides SAR](peptides-sar.md) for details,
+or refer to the [video](https://www.youtube.com/watch?v=HNSMSf2ZYsI&ab_channel=Datagrok)
+to see the **Peptide SAR** module in action.
 
 ### Atomic-Level structures from sequences
 
@@ -356,6 +352,11 @@ Datagrok has two options of reproducing the structure:
 This approach could be used for any given case of HELM notation
 in order to get a visually appropriate form of monomers
 in cycles etc. Structure at atomic level could be saved in available notations.
+
+### Oligonucleotide Sequence Design
+
+The [Oligonucleotide Sequence Design](oligonucleotide-design.md) is a specialized application
+facilitating design and synthesis of oligonucleotides.
 
 ## Scripting and bioinformatics libraries integration
 
