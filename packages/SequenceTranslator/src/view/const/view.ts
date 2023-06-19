@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export const MAIN_TAB = 'MAIN';
-export const AXOLABS_TAB = 'AXOLABS';
-export const SDF_TAB = 'SDF';
+export const MAIN_TAB = 'TRANSLATE';
+export const AXOLABS_TAB = 'PATTERN';
+export const SDF_TAB = 'DUPLEX';
 
 export const DEFAULT_AXOLABS_INPUT = 'Afcgacsu';
