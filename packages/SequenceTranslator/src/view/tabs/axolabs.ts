@@ -496,9 +496,6 @@ export class AxolabsTabUI {
       );
     })
 
-    const firstAsPtoDiv = ui.div([]);
-    firstAsPtoDiv.append(firstPto[AS].root);
-
     const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
     const asExampleDiv = ui.div([]);
@@ -558,7 +555,7 @@ export class AxolabsTabUI {
       asLengthDiv.hidden = !v;
       asModificationDiv.hidden = !v;
       asExampleDiv.hidden = !v;
-      firstAsPtoDiv.hidden = !v;
+      firstPto[AS].root.hidden = !v;
       updateSvgScheme();
     });
     createAsStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
@@ -660,13 +657,7 @@ export class AxolabsTabUI {
       ui.div([
         ui.div([
           ui.divH([
-            ui.h1('Pattern'),
-            ui.div([
-              ui.iconFA('question-circle', () => {
-                appAxolabsDescription.innerHTML = '';
-                appAxolabsDescription.append(info);
-              }),
-            ], {style: {padding: '2px'}}),
+            ui.h1('Pattern options'),
           ]),
           ui.divH([
             ui.div([
@@ -684,7 +675,7 @@ export class AxolabsTabUI {
               createAsStrand.root,
               fullyPto.root,
               firstPto[SS].root,
-              firstAsPtoDiv,
+              firstPto[AS].root,
               terminalModification[SS][FIVE_PRIME].root,
               terminalModification[SS][THREE_PRIME].root,
               asModificationDiv,
