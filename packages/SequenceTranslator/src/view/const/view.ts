@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export const MAIN_TAB = 'TRANSLATE';
+export const MAIN_TAB = 'SEQUENCE';
 export const AXOLABS_TAB = 'PATTERN';
 export const SDF_TAB = 'DUPLEX';
 

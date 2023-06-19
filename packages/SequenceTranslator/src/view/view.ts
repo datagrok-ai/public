@@ -11,19 +11,16 @@ import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
 
 export class SequenceTranslatorUI {
   constructor() {
-    this.router = new URLRouter();
-
     this.view = DG.View.create();
+    this.urlRouter = new URLRouter(this.view);
     this.view.box = true;
     this.view.name = 'Sequence Translator';
 
-    // todo: should this code be here?
     const windows = grok.shell.windows;
     windows.showProperties = false;
     windows.showToolbox = false;
     windows.showHelp = false;
 
-    // top panel icons
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
       viewMonomerLibIcon,
@@ -33,23 +30,25 @@ export class SequenceTranslatorUI {
     this.tabs = new TabLayout(
       new MainTabUI(),
       new AxolabsTabUI(),
-      new SdfTabUI()
+      new SdfTabUI(),
+      this.urlRouter
     );
   }
 
-  /** Master view containing app's main interface elements */
   private readonly view: DG.View;
-  /** Control for 3 master tabs: Main, Axolabs, SDF */
   private readonly tabs: TabLayout;
   private readonly topPanel: HTMLElement[];
-  private readonly router: URLRouter;
+  private readonly urlRouter: URLRouter;
 
   /** Create master layout of the app  */
   public async createLayout(): Promise<void> {
     const tabControl = await this.tabs.getControl();
-    // at this point we should perform the manipulations with the tab control
 
+    const tabName = this.urlRouter.tabName;
+    if (tabName)
+      tabControl.currentPane = tabControl.getPane(tabName);
     this.view.append(tabControl);
+
     grok.shell.addView(this.view);
   }
 };
@@ -58,7 +57,8 @@ class TabLayout {
   constructor(
     private readonly mainTab: MainTabUI,
     private readonly axolabsTab: AxolabsTabUI,
-    private readonly sdfTab: SdfTabUI
+    private readonly sdfTab: SdfTabUI,
+    private readonly urlRouter: URLRouter
   ) {}
 
   async getControl(): Promise<DG.TabControl> {
@@ -68,47 +68,55 @@ class TabLayout {
       [SDF_TAB]: await this.sdfTab.getHtmlDivElement(),
     });
 
-    // bind tooltips to each tab
-    // todo: bind tooltips to Main and Axolabs
     const sdfPane = control.getPane(SDF_TAB);
     ui.tooltip.bind(sdfPane.header, 'Get atomic-level structure for SS + AS/AS2 and save SDF');
 
-    // control.onTabChanged.subscribe(() => {
-    //   if (control.currentPane.name !== MAIN_TAB)
-    //     urlParams.delete('seq');
-    //   else
-    //     urlParams.set('seq', mainSeq);
-    //   updatePath();
-    // });
+    const mainPane = control.getPane(MAIN_TAB);
+    ui.tooltip.bind(mainPane.header, 'Translate across formats');
+
+    const axolabsPane = control.getPane(AXOLABS_TAB);
+    ui.tooltip.bind(axolabsPane.header, 'Create modification pattern for SS and AS');
+
+    control.onTabChanged.subscribe(() => {
+      if (control.currentPane.name !== MAIN_TAB)
+        this.urlRouter.searchParams.delete('seq');
+      else {
+        console.log('sequence:', this.mainTab.sequence);
+        this.urlRouter.searchParams.set('seq', this.mainTab.sequence);
+        console.log('searchParams:', Object.entries(this.urlRouter.searchParams));
+      }
+      this.urlRouter.updatePath(control);
+    });
 
     return control;
   }
 }
 
 class URLRouter {
-  constructor() {
+  constructor(private readonly view: DG.View) {
     this.pathParts = window.location.pathname.split('/');
     this.searchParams = new URLSearchParams(window.location.search);
   }
 
-  private searchParams: URLSearchParams;
+  public searchParams: URLSearchParams;
   private pathParts: string[];
 
   get urlParamsString(): string {
     return Object.entries(this.searchParams)
-      .map(
-        ([key, value]) => `${key}=${encodeURIComponent(value)}`
-      ).join('&');
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
   }
 
-  // public updatePath(control: DG.TabControl) {
-  //   const urlParamsTxt: string = Object.entries(this._searchParams)
-  //     .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-  //   view.path = '/apps/SequenceTranslator' + `/${control.currentPane.name}/?${urlParamsTxt}`;
-  // }
+  public updatePath(control: DG.TabControl) {
+    const urlParamsTxt: string = Object.entries(this.searchParams)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+    this.view.path = '/apps/SequenceTranslator' + `/${control.currentPane.name}`;
+    if (urlParamsTxt)
+      this.view.path += `/?${urlParamsTxt}`;
+  }
 
-  // if (this._pathParts.length >= 4) {
-  //   const tabName: string = pathParts[3];
-  //   tabControl.currentPane = tabControl.getPane(tabName);
-  // }
+  get tabName(): string {
+    if (this.pathParts.length < 3)
+      return '';
+    return this.pathParts[3];
+  }
 }

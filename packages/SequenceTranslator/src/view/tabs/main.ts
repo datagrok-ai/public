@@ -52,7 +52,7 @@ export class MainTabUI {
   private formatChoiceInput: DG.InputBase;
   private sequenceInputBase: DG.InputBase;
   private molfile: string;
-  private sequence: string;
+  public sequence: string;
   private format: FORMAT | null;
 
   async getHtmlElement(): Promise<HTMLDivElement> {
