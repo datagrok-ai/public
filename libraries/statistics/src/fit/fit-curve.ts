@@ -191,7 +191,8 @@ export const fitChartDataProperties: Property[] = [
     'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('logX', TYPE.BOOL, {defaultValue: false}),
   Property.js('logY', TYPE.BOOL, {defaultValue: false}),
-  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name)}),
+  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name),
+    inputType: 'MultiChoice'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
@@ -200,9 +201,11 @@ export const fitSeriesProperties: Property[] = [
   Property.js('fitFunction', TYPE.STRING,
     {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
   Property.js('pointColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
+    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
+      inputType: 'Color'}),
   Property.js('fitLineColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
+    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
+      inputType: 'Color'}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
   Property.js('autoFit', TYPE.BOOL,
