@@ -24,14 +24,25 @@ See also:
 
 ### Addressed Issues
 
-* (Enhancement) [#1988](https://github.com/datagrok-ai/public/issues/1732592684): Trellis Plot: Enhancements (WIP)
-* null 
-* (Bug) [#1984](https://github.com/datagrok-ai/public/issues/1732423796): Filter's missing values settings are not properly synced between different tabs/views 
+* (Enhancement) [#1988](https://github.com/datagrok-ai/public/issues/1988): Trellis Plot: Enhancements (WIP)
+* (Bug) [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views 
+* (Bug) [#1985](https://github.com/datagrok-ai/public/issues/1985): Box plot: Y axis zoom slider behaviour is inverted
+* (Bug) [#1986](https://github.com/datagrok-ai/public/issues/1986): Dragging a column to filter panel moves it to the beginning of the table
+* (Bug) [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue
+* (Bug) [#1983](https://github.com/datagrok-ai/public/issues/1983): Categorical colours cannot be changed
+* (Bug) [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases
+* (Bug) [#1959](https://github.com/datagrok-ai/public/issues/1959): Cannot adjust legend width for a Trellis plot
+* (Bug) [#1230](https://github.com/datagrok-ai/public/issues/1230): Filters: custom filters not synced
+* (Enhancement) [#1378](https://github.com/datagrok-ai/public/issues/1378): PC Plot: context menu harmonization
+* (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1778): Viewers: Organize properties consistently in the context panel
+* (Bug) [#2009](https://github.com/datagrok-ai/public/issues/2009): Correlation Plot shows wrong axises
+* (Bug) [#2028](https://github.com/datagrok-ai/public/issues/2028): Handling the layout save with a viewer loading error
+* (Enhancement) [#1951](https://github.com/datagrok-ai/public/issues/1951): Add Global scale option to Trellis plot
 * (Bug) GROK-12902: Chem | Context Pane | Actions: Add to favorites doesn't work 
 * (Bug) GROK-13238: Adding new columns fails in the presence of virtual columns 
-* (Bug) [#1838](https://github.com/datagrok-ai/public/issues/1683247330): Error on adding a custom viewer 
-* [#1998](https://github.com/datagrok-ai/public/issues/1738034714): Scaffold Tree: Show a confirmation dialog before dropping all trees on the clear icon click 
-* (Enhancement) [#2011](https://github.com/datagrok-ai/public/issues/1744172136): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied (WIP)
+* (Bug) [#1838](https://github.com/datagrok-ai/public/issues/1838): Error on adding a custom viewer 
+* [#1998](https://github.com/datagrok-ai/public/issues/1998): Scaffold Tree: Show a confirmation dialog before dropping all trees on the clear icon click 
+* (Enhancement) [#2011](https://github.com/datagrok-ai/public/issues/2011): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied (WIP)
 
 
 ## 2023-06-02 1.15.2
@@ -104,7 +115,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
       * Added the **Selection** menu item with the **Show Current Line**, **Show Mouse Over Line**, and **Show Mouse Over Row Group**  entries.
 * [Box Plot](../../../visualize/viewers/box-plot.md)
   * [#1635](https://github.com/datagrok-ai/public/issues/1635): Added a zoom slider to adjust axes range.
-  * [#1377](https://github.com/datagrok-ai/public/issues/1635): Added Show Category Axis to the X-axis menu.
+  * [#1377](https://github.com/datagrok-ai/public/issues/1377): Added Show Category Axis to the X-axis menu.
 
 ### Data Access
 
