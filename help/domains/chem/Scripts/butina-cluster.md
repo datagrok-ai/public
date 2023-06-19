@@ -12,7 +12,7 @@ index, as the only input to the clustering program.
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 

@@ -24,7 +24,7 @@ To change the inner viewer type, click on the viewer icon in the left top corner
 the "gear" icon next to it.
 
 Trellis Plot automatically picks up element renderers for rendering categories. For instance, this is how it looks for
-chemical structures after performing [R-Group Analysis](../../domains/chem/r-group-analysis.md):
+chemical structures after performing [R-Group Analysis](../../domains/chem/chem.md#r-groups-analysis):
 
 ![R-Group Analysis](../../uploads/chem/r-group-analysis.png "R-Group Analysis")
 
@@ -36,5 +36,5 @@ See also:
 
 * [Viewers](viewers.md)
 * [Table view](../../datagrok/table-view.md)
-* [R-Group analysis](../../domains/chem/r-group-analysis.md)
+* [R-Group analysis](../../domains/chem/chem.md#r-groups-analysis)
 * [JS API: Trellis plot](https://public.datagrok.ai/js/samples/ui/viewers/types/trellis-plot)

@@ -53,10 +53,9 @@ notion of uncertain chemical structures (e.g. fragments that do not correspond t
 logical expressions are essential, (e.g. carbon or oxygen atom, double or aromatic bond)
 and [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) format provides this option. One may say
 that SMARTS is the same thing as regular expressions in cheminformatics. Datagrok uses SMARTS for
-finding [structural alerts](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/info-panels/structural-alerts.md)
+finding [structural alerts](../../../domains/chem/info-panels/structural-alerts.md)
 , performing substructure
-search, [R-group analysis](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/r-group-analysis.md) (*
-revision required*).
+search, [R-group analysis](../../../domains/chem/chem.md#r-groups-analysis) (*revision required*).
 
 ## Operating with chemical information
 
@@ -64,18 +63,18 @@ Though molecular graph is an appropriate form of data for storage it is useless 
 applications especially machine learning procedures. For such applications, molecules are represented as a set of
 molecular [descriptors](https://www.youtube.com/watch?v=0j1Eeexd1ig&ab_channel=ChemAxon) or molecular fingerprints.
 Datagrok provides generation of different sets
-of [descriptors](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/descriptors.md)
-and [fingerprints](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/fingerprints.md)
+of [descriptors](../../../domains/chem/descriptors.md)
+and [fingerprints](../../../domains/chem/fingerprints.md)
 . The objective of these representations is to satisfy linear algebra requirements applied in the majority of ML methods
 and provide a vector of values describing the molecule. Vector (linear) spaces based on molecular descriptors are called
 chemical spaces.
 
 Descriptors are frequently used for proceeding [similar](https://en.wikipedia.org/wiki/Chemical_similarity) chemical
 structures. These principles yield
-in [similarity search](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/similarity-search.md)
-and [diversity search](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/diversity-search.md)
+in [similarity search](../../../domains/chem/chem.md#similarity-and-diversity-search)
+and [diversity search](../../../domains/chem/chem.md#similarity-and-diversity-search)
 . In combination with clustering and self-organizing maps, methods such
-as [stochastic proximity embedding](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/similarity-spe.md)
+as [stochastic proximity embedding](../../../domains/chem/chem.md#chemical-space)
 allow to reduce dimensionality of used vectors and to separate the most significant features of the molecule. It helps
 us to visualize the chemical space in [2D maps](https://public.datagrok.ai/script/c7e74227-ca12-5337-b7d0-8c4d1bacfbb9).
 
@@ -91,7 +90,7 @@ All described methods are implemented in different analysis pipelines, and assum
 molecule perfectly. Data-associated errors lead to biases in descriptors, wrong interpretations of modeling outputs, and
 irrelevance of the whole work. The most sensitive cases are duplicated vectors in the training set, and errors derived
 from the incorrect structure representation.
-Thus, [curation](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/chem-curate.md)
+Thus, [curation](../../../domains/chem/chem.md#curation)
 of chemical data is usually integrated to analysis pipeline.
 
 ## Freely available tools and public databases
@@ -119,5 +118,5 @@ other *in silico* approaches including but not limited to:
 See also:
 
 - [Cheminformatics in Datagrok](https://datagrok.ai/cheminformatics)
-- [Cheminformatics API](cheminformatics.md)
+- [Cheminformatics API](../../../domains/chem/chem.md)
 - [Cheminformatics 101](https://openbabel.org/docs/dev/Cheminf101/index.html)

@@ -21,11 +21,35 @@ title: Chemical functions
 |Chemical analysis | Murcko scaffolds                   |<br /><pre>`\#{x.ChemScripts:MurckoScaffolds}`</pre>|
 |Chemical analysis | Similarity maps using fingerprints |<br /><pre>`\#{x.ChemScripts:SimilarityMapsUsingFingerprints}`</pre> |
 |Chemical analysis | Chemical space using tSNE          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingtSNE}`</pre> |
-|Chemical analysis | Reactions                          |<br /><pre>`\#{x.ChemScripts:TwoComponentReaction}`</pre> |
+|Chemical analysis | Two component reactions            |<br /><pre>`Chem:TwoComponentReaction`</pre> |
 |Chemical analysis | Chemical space using UMAP          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingUMAP}`</pre> |
 |Chemical analysis | USRCAT                             |<br /><pre>`\#{x.ChemScripts:USRCAT}`</pre> |
 |TBD               | Mutate                             |<br /><pre>`[PLACEHOLDER]`</pre> |
 |TBD               | Solubility prediction              |<br /><pre>`\#{x.18b704d0-0b50-11e9-b846-1fa94a4da5d1."Predict Solubility"}`</pre>|
+|TBD               | Curate                             |<br /><pre>`[PLACEHOLDER]`</pre> |
+
+The following table gives an indicative data for the performance of certain chemical functions:
+
+<details>
+<summary> Indicative performance of chemical functions </summary>
+
+| Function                              | Molecules | Execution time, s |
+|---------------------------------------|-----------|-------------------|
+| ChemSubstructureSearch                | 1M        | 70                |
+| ChemFindMcs                           | 100k      | 43                |
+| ChemDescriptors (201 descriptor)      | 1k        | 81                |
+| ChemDescriptors (Lipinski)            | 1M        | 164               |
+| ChemGetRGroups                        | 1M        | 233               |
+| ChemFingerprints (TopologicalTorsion) | 1M        | 782               |
+| ChemFingerprints (MACCSKeys)          | 1M        | 770               |
+| ChemFingerprints (Morgan/Circular)    | 1M        | 737               |
+| ChemFingerprints (RDKFingerprint)     | 1M        | 2421              |
+| ChemFingerprints (AtomPair)           | 1M        | 1574              |
+| ChemSmilesToInChI                     | 1M        | 946               |
+| ChemSmilesToInChIKey                  | 1M        | 389               |
+| ChemSmilesToCanonical                 | 1M        | 331               |
+
+</details>
 
 ### Butina cluster
 

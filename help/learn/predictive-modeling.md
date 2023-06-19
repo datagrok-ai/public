@@ -130,7 +130,7 @@ and [info panels](../discover/info-panels.md#predicting-molecule-solubility).
 
 See also:
 
-* [Cheminformatics predictive modeling](../domains/chem/chem-predictive-modeling.md)
+* [Cheminformatics predictive modeling](../domains/chem/chem.md#qsar-and-qspr-modeling)
 * [Predictive modeling](https://en.wikipedia.org/wiki/Predictive_modelling)
 * [Statistical classification](https://en.wikipedia.org/wiki/Statistical_classification)
 * [R Caret package](https://topepo.github.io/caret/index.html)

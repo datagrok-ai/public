@@ -58,7 +58,7 @@ public environment.
 While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
 [training a predictive model](../../learn/predictive-modeling.md),
 [running an R script](../../compute/scripting.md), or
-[computing chemical descriptors](../../domains/chem/cheminformatics.md#descriptors-and-fingerprints)
+[computing chemical descriptors](../../domains/chem/chem.md#molecular-descriptors-and-fingerprints)
 run on a [server](../../develop/admin/architecture.md#compute-engine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back to the client.
 Results of the computations reside on the server until either the client retrieves it, or an automatic cleanup happens.

@@ -13,7 +13,7 @@ mutation step.
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 

@@ -11,7 +11,7 @@ is not convex, i.e. with different initializations we can get different results.
 
 See also:
 
-* [Cheminformatics](../cheminformatics.md)
+* [Cheminformatics](../chem.md)
 
 References:
 
