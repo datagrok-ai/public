@@ -240,7 +240,7 @@ export class AxolabsTabUI {
 
     async function getCurrentUserName(): Promise<string> {
       return await grok.dapi.users.current().then((user) => {
-        return ' (created by ' + user.firstName + ' ' + user.lastName + ')';
+        return ' (created by ' + user.friendlyName + ')';
       });
     }
 
@@ -282,11 +282,14 @@ export class AxolabsTabUI {
 
         let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
 
-        const myOrOthersPatternList = ui.choiceInput('', 'Mine', ['Mine', 'Others'], (v: string) => {
-          const currentList = v === 'Mine' ? lstMy : lstOthers;
+        const currentUserName = (await grok.dapi.users.current()).friendlyName;
+        const otherUsers = 'Other users';
+
+        const patternListChoiceInput = ui.choiceInput('', currentUserName, [currentUserName, otherUsers], (v: string) => {
+          const currentList = v === currentUserName ? lstMy : lstOthers;
           loadPattern = ui.choiceInput('Load Pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
 
-          loadPattern.root.append(myOrOthersPatternList.input);
+          loadPattern.root.append(patternListChoiceInput.input);
           loadPattern.root.append(loadPattern.input);
           // @ts-ignore
           loadPattern.input.style.maxWidth = '100px';
@@ -310,7 +313,7 @@ export class AxolabsTabUI {
             ], 'ui-input-options'),
           );
         });
-        loadPattern.root.append(myOrOthersPatternList.input);
+        loadPattern.root.append(patternListChoiceInput.input);
         loadPattern.root.append(loadPattern.input);
         // @ts-ignore
         loadPattern.input.style.maxWidth = '100px';
@@ -624,14 +627,14 @@ export class AxolabsTabUI {
     updateUiForNewSequenceLength();
 
     const exampleSection = ui.div([
-      ui.h1('Example'),
+      ui.h1('Conversion preview'),
       inputExample[SS].root,
       outputExample[SS].root,
       asExampleDiv,
     ], 'ui-form');
 
     const inputsSection = ui.div([
-      ui.h1('Inputs'),
+      ui.h1('Convert options'),
       ui.divH([
         tables.root,
         inputStrandColumnDiv[SS],
