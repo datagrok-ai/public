@@ -430,9 +430,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
                                        List<Boolean> supportedType,List<Boolean> initColumn,
-                                       int maxIterations, Logger queryLogger, int operationNumber, boolean dryRun)
+                                       int maxIterations, Logger queryLogger, int operationNumber, boolean dryRun, boolean dryRunRead)
             throws IOException, SQLException, QueryCancelledByUser {
         if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
             queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
@@ -442,14 +443,11 @@ public abstract class JdbcDataProvider extends DataProvider {
         try {
             int columnCount = columns.size();
 
-            if (resultSet == null)
-                return new DataFrame();
-
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             queryLogger.debug(EventType.MISC.getMarker(), "Received resultSet meta data");
+            long startTime = System.currentTimeMillis();
             queryLogger.debug(EventType.COLUMN_FILLING.getMarker(operationNumber, EventType.Stage.START),
                     "Column filling was started");
-
             int rowCount = 0;
             while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
                 rowCount++;
@@ -457,7 +455,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 for (int c = 1; c < columnCount + 1; c++) {
                     Object value = getObjectFromResultSet(resultSet, c);
 
-                    if (dryRun) {
+                    if (dryRun && !dryRunRead) {
                         continue;
                     }
 
@@ -634,11 +632,17 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
 
             }
-
             queryLogger.debug(EventType.COLUMN_FILLING.getMarker(operationNumber, EventType.Stage.END),
                     "Column filling was finished");
+            long finishTime = System.currentTimeMillis() - startTime;
+
             DataFrame dataFrame = new DataFrame();
             if (dryRun) {
+                queryLogger.debug(EventType.MISC.getMarker(), "Single dry run execution time: {} ms, with read {}", finishTime, dryRunRead);
+                Column durationColumn = new IntColumn();
+                durationColumn.add((int) finishTime);
+                durationColumn.name = "Duration";
+                dataFrame.addColumn(durationColumn);
                 return dataFrame;
             }
             dataFrame.addColumns(columns);
@@ -666,7 +670,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 return new DataFrame();
 
             SchemeInfo schemeInfo = resultSetScheme(queryRun, resultSet, logger);
-            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1, logger, 1, false);
+            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1,
+                    logger, 1, false, true);
         }
         catch (SQLException e) {
             if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))

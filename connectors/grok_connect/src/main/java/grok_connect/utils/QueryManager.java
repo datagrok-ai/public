@@ -32,8 +32,8 @@ public class QueryManager {
     private static final int MIN_FETCH_SIZE = 100;
     public boolean dryRun = false;
     private final JdbcDataProvider provider;
-    private final FuncCall query;
     private final Logger logger;
+    private FuncCall query;
     private int currentFetchSize = MIN_FETCH_SIZE;
     private int initFetchSize = MIN_FETCH_SIZE;
     private int chunkSize = -1;
@@ -42,6 +42,7 @@ public class QueryManager {
     private Connection connection;
     private boolean changedFetchSize;
     private boolean supportTransactions;
+    String initMessage;
 
     public QueryManager(String message, Logger logger) {
         query = gson.fromJson(message, FuncCall.class);
@@ -71,6 +72,8 @@ public class QueryManager {
                 setInitFetchSize(query.func.aux.get(INIT_FETCH_SIZE_KEY).toString());
             }
         }
+        if (dryRun)
+            initMessage = message;
     }
 
     public void initResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
@@ -92,6 +95,20 @@ public class QueryManager {
         logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.END), "Finished schemeInfo init");
     }
 
+    public DataFrame run(boolean isDryRun, boolean dryRunRead) throws QueryCancelledByUser, SQLException, IOException, GrokConnectException, ClassNotFoundException {
+        // need to create new FuncCall on every run because state of params changes irrevocably after each run
+        query = gson.fromJson(initMessage, FuncCall.class);
+        query.setParamValues();
+        initResultSet();
+        initScheme();
+        if (supportTransactions && changedFetchSize) {
+            resultSet.setFetchSize(currentFetchSize);
+        }
+        return provider.getResultSetSubDf(query, resultSet, schemeInfo.columns,
+                schemeInfo.supportedType, schemeInfo.initColumn, -1, logger, 1, isDryRun, dryRunRead);
+    }
+
+
     public DataFrame getSubDF(int dfNumber) throws IOException, SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
         if (resultSet.isAfterLast() && !resultSet.isBeforeFirst()) {
@@ -104,23 +121,16 @@ public class QueryManager {
         }
 
         if (!connection.isClosed() && !resultSet.isClosed()) {
-            df = getResultSetSubDf(dfNumber, columns);
+            int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
+            return provider.getResultSetSubDf(query, resultSet, columns,
+                    schemeInfo.supportedType, schemeInfo.initColumn, rowsNumber, logger, dfNumber, false, true);
         }
 
         if (dfNumber == 1 && supportTransactions && changedFetchSize) {
             logger.debug(EventType.MISC.getMarker(), "Manual fetch size was set for all chunks {}", currentFetchSize);
             resultSet.setFetchSize(currentFetchSize);
-        } else if (!changedFetchSize && !dryRun){
+        } else if (!changedFetchSize){
             changeFetchSize(df, dfNumber);
-        }
-
-        if (dryRun) {
-            while (!resultSet.isAfterLast()) {
-                for (Column column : columns) {
-                    column.empty();
-                }
-                getResultSetSubDf(++dfNumber, columns);
-            }
         }
 
         df.tags = new LinkedHashMap<>();
@@ -145,12 +155,6 @@ public class QueryManager {
 
     public FuncCall getQuery() {
         return query;
-    }
-
-    private DataFrame getResultSetSubDf(int dfNumber, List<Column> columns) throws QueryCancelledByUser, SQLException, IOException {
-        int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
-        return provider.getResultSetSubDf(query, resultSet, columns,
-                schemeInfo.supportedType, schemeInfo.initColumn, rowsNumber, logger, dfNumber, dryRun);
     }
 
     private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {

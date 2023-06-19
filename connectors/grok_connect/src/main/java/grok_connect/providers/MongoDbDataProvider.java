@@ -55,7 +55,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         ResultSet resultSet = getResultSet(queryRun, connection, logger, 100);
         List<Column> columns = getTypedColumns(resultSet);
         DataFrame dataFrame = getResultSetSubDf(queryRun, resultSet, columns,
-                new ArrayList<>(), new ArrayList<>(), 0, null, 1, false);
+                new ArrayList<>(), new ArrayList<>(), 0, null, 1, false, true);
         return dataFrame;
     }
 
@@ -78,7 +78,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     @SuppressWarnings("unchecked")
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
                                        List<Boolean> supportedType, List<Boolean> initColumn,
-                                       int maxIterations, Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException {
+                                       int maxIterations, Logger queryLogger, int operationNumber, boolean dryRun, boolean dryRunRead) throws SQLException {
         do {
             Object object = resultSet.getObject(OBJECT_INDEX);
             if (object instanceof String) {

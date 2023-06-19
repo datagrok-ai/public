@@ -1,5 +1,6 @@
 package grok_connect.handlers;
 
+import ch.qos.logback.classic.Level;
 import com.google.gson.Gson;
 import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.log.EventType;
@@ -33,6 +34,8 @@ public class SessionHandler {
     private Boolean firstTry = true;
     private Boolean oneDfSent = false;
     private int dfNumber = 1;
+    private int dryRunDiff = 0;
+    private int dryRunCycles = 2;
     private byte[] bytes;
     private QueryManager queryManager;
 
@@ -72,18 +75,25 @@ public class SessionHandler {
         if (message.startsWith(MESSAGE_START)) {
             message = message.substring(6);
             queryManager = new QueryManager(message, queryLogger.getLogger());
+            if (queryManager.dryRun) {
+                dryRunCycles = ((Double) queryManager.getQuery().func.aux.getOrDefault("cycles", 2.0)).intValue();
+                logger.info(EventType.MISC.getMarker(), "Running dry run {} times", dryRunCycles);
+                int dryRunResult = 0;
+                int ordinaryResult = 0;
+                for (int i = 0; i < dryRunCycles; i++) {
+                    dryRunResult += (int) queryManager.run(true, false).columns.get(0).get(0);
+                    ordinaryResult += (int) queryManager.run(true, true).columns.get(0).get(0);
+                }
+                dryRunDiff = (ordinaryResult / dryRunCycles) - (dryRunResult / dryRunCycles);
+                logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
+                queryManager.closeConnection();
+                logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
+                session.getRemote().sendString("COMPLETED 0");
+                return;
+            }
             queryManager.initResultSet();
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
-                if (queryManager.dryRun) {
-                    logger.info(EventType.MISC.getMarker(), "Running without sending data to server");
-                    dataFrame = queryManager.getSubDF(dfNumber);
-                    logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
-                    queryManager.closeConnection();
-                    logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
-                    session.getRemote().sendString("COMPLETED 0");
-                    return;
-                }
                 dataFrame = queryManager.getSubDF(dfNumber);
             } else {
                 dataFrame = new DataFrame();
@@ -148,7 +158,11 @@ public class SessionHandler {
 
     private void sendLog() throws IOException {
         logger.debug(EventType.LOG_SENDING.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
-        byte[] logs = queryLogger.dumpLogMessages().toByteArray();
-        session.getRemote().sendBytes(ByteBuffer.wrap(logs));
+        DataFrame logs = queryLogger.dumpLogMessages();
+        if (queryManager.dryRun) {
+            logs.addRow(System.currentTimeMillis() * 1000.0, "GrokConnect", Level.INFO.levelStr,
+                    EventType.DRY_RUN_DIFF.getName(), EventType.Stage.END.toString(), null, null, null, String.format("Average difference in duration when read result set and not for %s cycles", dryRunCycles), dryRunDiff);
+        }
+        session.getRemote().sendBytes(ByteBuffer.wrap(logs.toByteArray()));
     }
 }
