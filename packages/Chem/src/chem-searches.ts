@@ -14,6 +14,7 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
+import { _package } from './package';
 
 const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
@@ -181,7 +182,9 @@ function substructureSearchPatternsMatch(molString: string, querySmarts: string,
         }
       }
       return result;
-    } catch { }
+    } catch (e: any) { 
+      _package.logger.error(`substructureSearchPatternsMatch failed with error: ${e.toString()}`);
+    }
   }
   return result;
 }
@@ -235,9 +238,9 @@ export async function chemSubstructureSearchLibrary(
       if (usePatternFingerprints) {
         const fgs: (Uint8Array | null)[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false);
         const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
-        const filteredMolecules: string[] = getMoleculesFiletredByPatternFp(molStringsColumn, filteredMolsIdxs);
+        const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(molStringsColumn, filteredMolsIdxs);
         const matchesBitArray: DG.BitSet = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
-        matches = restoreMatchesByFiletredIdxs(filteredMolsIdxs, matchesBitArray);
+        matches = restoreMatchesByFilteredIdxs(filteredMolsIdxs, matchesBitArray);
       } else {
         await _invalidate(molStringsColumn, true, useSubstructLib);
         matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, undefined, useSubstructLib);
@@ -249,28 +252,24 @@ export async function chemSubstructureSearchLibrary(
   }
 }
 
-function getMoleculesFiletredByPatternFp(molStringsColumn: DG.Column, filteredMolsIdxs: BitArray) {
+function getMoleculesFilteredByPatternFp(molStringsColumn: DG.Column, filteredMolsIdxs: BitArray): string[] {
   const molStrings = molStringsColumn.toList();
   const filteredMolecules = Array<string>(filteredMolsIdxs.trueCount());
   let counter = 0;
-  for (let i = 0; i < molStrings.length; i++) {
-    if (filteredMolsIdxs.getBit(i)) {
+  for (let i = filteredMolsIdxs.getBit(0) ? 0 : filteredMolsIdxs.findNext(0); i !== -1; i = filteredMolsIdxs.findNext(i)) {
       filteredMolecules[counter] = molStrings[i];
       counter++;
-    }
   }
   return filteredMolecules;
 }
 
-function restoreMatchesByFiletredIdxs(filteredMolsIdxs: BitArray, matchesBitArray: DG.BitSet): DG.BitSet {
+function restoreMatchesByFilteredIdxs(filteredMolsIdxs: BitArray, matchesBitSet: DG.BitSet): DG.BitSet {
   const matches = DG.BitSet.create(filteredMolsIdxs.length);
-  let counter = 0;
-  for (let i = 0; i < filteredMolsIdxs.length; i++) {
-    if (filteredMolsIdxs.getBit(i)) {
-      if (matchesBitArray.get(counter))
+  let matchesCounter = 0;
+  for (let i = filteredMolsIdxs.getBit(0) ? 0 : filteredMolsIdxs.findNext(0); i !== -1; i = filteredMolsIdxs.findNext(i)) {
+    if (matchesBitSet.get(matchesCounter))
         matches.set(i, true);
-      counter++;
-    }
+    matchesCounter++;
   }
   return matches;
 }
