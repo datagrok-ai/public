@@ -23,6 +23,8 @@
 		"require-jsdoc": "off",
 		"spaced-comment": "off",
 		"linebreak-style": "off",
+		"no-unused-vars": "off",
+		"@typescript-eslint/no-unused-vars": "warn",
 		"curly": [
 			"error",
 			"multi-or-nest"

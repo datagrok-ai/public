@@ -5,13 +5,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
-import {getDfFromRuns, getPropViewers} from './shared/utils';
-import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
+import {getDfFromRuns} from './shared/utils';
+import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {VarianceBasedSenstivityAnalysis} from './variance-based-analysis/sensitivity-analysis';
 import {RunComparisonView} from './run-comparison-view';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
-const RUN_ID_COL_LABEL = 'RunId' as const;
 
 enum DISTRIB_TYPE {
   LINEAR = 'Linear',
@@ -247,7 +246,7 @@ export class SensitivityAnalysisView {
   private closeOpenedViewers() {
     for (const v of this.openedViewers)
       v.close();
-    
+
     this.openedViewers.splice(0);
   }
 
