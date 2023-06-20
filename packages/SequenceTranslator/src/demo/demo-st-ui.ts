@@ -38,12 +38,14 @@ export async function demoSequenceTranslatorUI() {
       .step(`Create pattern`, async () => {
         tabControl.currentPane = panes[1];
         const senseStrandInputs: NodeListOf<HTMLSelectElement> = document.querySelectorAll('.st-pattern-choice-input > select');
-        await delay(1000);
-        senseStrandInputs[1].value = 'DNA';
-        console.log('value changed:', senseStrandInputs[1].value);
-        await delay(1000);
-        senseStrandInputs[2].value = 'invAb';
-        console.log('value changed:', senseStrandInputs[2].value);
+        const newValues = ['DNA', 'invAb', 'Z-New'];
+        newValues.forEach(async (value, idx) => {
+          await delay(1000);
+          const selectElement = senseStrandInputs[2 * idx];
+          selectElement.value = value;
+          const event = new Event('input');
+          selectElement.dispatchEvent(event);
+        });
       }, {
         description: `Create a modification pattern for a dimer`,
         delay: 2000,
