@@ -7,7 +7,8 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-## Requirements
+<details>
+<summary>Requirements</summary>
 
 To access the cheminformatics functionality, install these
 packages using the [Package Manager](https://public.datagrok.ai/packages) (on the **Sidebar**, click **Manage** > **Packages**):
@@ -23,7 +24,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
 
-## Overview
+</details>
 
 Datagrok provides an intuitive interface and a wide range of tools for working
 with chemical data:
@@ -49,6 +50,7 @@ with chemical data:
 * [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [scripts](#chemical-scripts).
   * Ability to create custom plugins and fit-for-purpose applications.
+* [Enterprise-grade platform](../../develop/admin/enterprise-evaluation-faq.md) for efficient data access and management.
 
 ## Data access
 
@@ -671,7 +673,7 @@ All of your customizations and actions can be recorded as macros and incorporate
 
 To learn more about extending and customizing Datagrok, see the
 [Develop](../../develop/develop.md) section of the documentation, including this
-[cheminformatics-specific section](./chem.md).
+[cheminformatics-specific section](../../develop/domains/chem/cheminformatics.md).
 
 ## Resources
 
