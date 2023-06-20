@@ -66,6 +66,12 @@ export async function demoSequenceTranslatorUI() {
         description: `Create a modification pattern for a dimer`,
         delay: 0,
       })
+      .step(`Visualize Duplex`, async () => {
+        tabControl.currentPane = panes[2];
+      }, {
+        description: `Get atomic-level structure for the duplex`,
+        delay: 2000,
+      })
       .start();
   } catch (err: any) {
     handleError(err);
