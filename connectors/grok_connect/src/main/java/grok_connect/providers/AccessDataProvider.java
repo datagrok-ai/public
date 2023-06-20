@@ -81,15 +81,13 @@ public class AccessDataProvider extends JdbcDataProvider {
 
     @Override
     public String testConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        boolean exists = Files.exists(Paths.get(String.format("%s/%s", GrokConnect.getInfo().get("basedir"), conn.getDb())));
+        boolean exists = Files.exists(Paths.get(String.format("%s", conn.getDb())));
         return exists ? DataProvider.CONN_AVAILABLE : "Connection is not available";
     }
 
     @Override
     public String getConnectionStringImpl(DataConnection conn) {
-        return String.format("jdbc:ucanaccess://%s/%s;sysSchema=true;memory=false",
-                GrokConnect.getInfo().get("basedir"), conn.getDb());
-
+        return String.format("jdbc:ucanaccess://%s;sysSchema=true;memory=false", conn.getDb());
     }
 
     @Override

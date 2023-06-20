@@ -12,6 +12,8 @@ ARG GROK_CONNECT_SOURCE_DIR=.
 COPY $GROK_CONNECT_SOURCE_DIR/pom.xml /tmp/connectors/pom.xml
 COPY $GROK_CONNECT_SOURCE_DIR/grok_connect/pom.xml /tmp/connectors/grok_connect/pom.xml
 COPY $GROK_CONNECT_SOURCE_DIR/serialization/pom.xml /tmp/connectors/serialization/pom.xml
+ADD $GROK_CONNECT_SOURCE_DIR/grok_connect/northwind ${HOME_DIR}/nortwind
+
 WORKDIR /tmp/connectors
 RUN mvn dependency:go-offline --fail-never
 

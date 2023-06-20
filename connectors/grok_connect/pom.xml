@@ -443,7 +443,7 @@
         <dependency>
             <groupId>net.sf.ucanaccess</groupId>
             <artifactId>ucanaccess</artifactId>
-            <version>4.0.2</version>
+            <version>5.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
