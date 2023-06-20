@@ -37,18 +37,34 @@ export async function demoSequenceTranslatorUI() {
       })
       .step(`Create pattern`, async () => {
         tabControl.currentPane = panes[1];
-        const senseStrandInputs: NodeListOf<HTMLSelectElement> = document.querySelectorAll('.st-pattern-choice-input > select');
-        const newValues = ['DNA', 'invAb', 'Z-New'];
-        newValues.forEach(async (value, idx) => {
-          await delay(1000);
-          const selectElement = senseStrandInputs[2 * idx];
+        const ssNewValues = ['DNA', 'invAb', 'Z-New'];
+
+        let len: number;
+
+        async function callback(value: string, idx: number, idxUpdate: (idx: number) => number) {
+          await delay(3000);
+
+          // warning: this redefinition is necessary because
+          // the ids of the elements can dynamically change
+          const choiceInputs: NodeListOf<HTMLSelectElement> = document.querySelectorAll('.st-pattern-choice-input > select');
+          len = choiceInputs.length;
+          const selectElement = choiceInputs[idxUpdate(idx)];
           selectElement.value = value;
           const event = new Event('input');
           selectElement.dispatchEvent(event);
+        }
+
+        ssNewValues.forEach(async (value, idx) => {
+          callback(value, idx, (i) => 2 * i);
         });
+
+        const asNewValues = ['2\'-O-Methyl', '2\'-Fluoro', '2\'-O-MOE'];
+        asNewValues.forEach(async (value, idx) => {
+          callback(value, idx, (i) => (len - 2 - 2 * i));
+        })
       }, {
         description: `Create a modification pattern for a dimer`,
-        delay: 2000,
+        delay: 0,
       })
       .start();
   } catch (err: any) {
