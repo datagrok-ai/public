@@ -128,12 +128,16 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
   const data = userParamsFlag ? {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)} :
     {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
       y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return getCurveConfidenceIntervals(data, series.parameters!, fitFunc.y, 0.05, FitErrorModel.Constant);
+  if (!series.parameters)
+    series.parameters = fitSeries(series, fitFunc).parameters;
+  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05, FitErrorModel.Constant);
 }
 
 /** Returns series statistics */
 export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction): FitStatistics {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
     y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return getStatistics(data, series.parameters!, fitFunc.y, true);
+  if (!series.parameters)
+    series.parameters = fitSeries(series, fitFunc).parameters;
+  return getStatistics(data, series.parameters, fitFunc.y, true);
 }
