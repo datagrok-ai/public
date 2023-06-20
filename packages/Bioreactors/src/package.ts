@@ -44,20 +44,52 @@ export async function init() {
 //input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
 //input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
 //input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
-//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100); category: Global solution}
+//output: double FFox {units: mmol/L; caption: FF oxidized (FFox); category: Final point}
+//output: double KKox {units: mmol/L; caption: KK oxidized (KKox); category: Final point}
+//output: double FFred {units: mmol/L; caption: FF reduced (FFred); category: Final point}
+//output: double KKred {units: mmol/L; caption: KK reduced (KKred); category: Final point}
+//output: double Ffree {units: mmol/L; caption: F free (Ffree); category: Final point}
+//output: double Kfree {units: mmol/L; caption: K free (Kfree); category: Final point}
+//output: double FKred {units: mmol/L; caption: FK reduced (FKred); category: Final point}
+//output: double FKox {units: mmol/L; caption: FK oxidized (FKox); category: Final point}
+//output: double MEA {units: mmol/L; caption: MEAthiol (MEA); category: Final point}
+//output: double CO2 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Final point}
+//output: double yO2P {units: atm; caption: Atm headspace (yO2P); category: Final point}
+//output: double CYST {units: mmol/L; caption: Cystamine (CYST); category: Final point}
+//output: double VL {units: L; caption: Liquid volume (VL); category: Final point}
 //editor: Compute:RichFunctionViewEditor
 export async function Bioreactor(initial: number, final: number, step: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
   _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
   _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CYSTInitial: number, 
   _VLInitial: number, _qinVal: number, _yO2inVal: number, _HVal: number, _TVal: number, 
-  _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<DG.DataFrame>
+  _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<any>
 {
-  return await _simulateBioreactor(initial, final, step,
+  const globalSolution: DG.DataFrame = await _simulateBioreactor(initial, final, step,
     _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 
     _KfreeInitial, _FKredInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, 
     _yO2PInitial, _CYSTInitial, _VLInitial, _qinVal, _yO2inVal, 
     _HVal, _TVal, _RVal, _PVal, _TimeToSwitchVal);
+ 
+  const lastRowIndex = globalSolution.rowCount - 1;  
+  
+  return {
+    dfSolution: globalSolution,
+    FFox: globalSolution.get('FFox(t)', lastRowIndex),
+    KKox: globalSolution.get('KKox(t)', lastRowIndex),
+    FFred: globalSolution.get('FFred(t)', lastRowIndex),
+    KKred: globalSolution.get('KKred(t)', lastRowIndex),
+    Ffree: globalSolution.get('Ffree(t)', lastRowIndex),
+    Kfree: globalSolution.get('Kfree(t)', lastRowIndex),
+    FKred: globalSolution.get('FKred(t)', lastRowIndex),
+    FKox: globalSolution.get('FKox(t)', lastRowIndex),
+    MEA: globalSolution.get('MEA(t)', lastRowIndex),
+    CO2: globalSolution.get('CO2(t)', lastRowIndex),
+    yO2P: globalSolution.get('yO2P(t)', lastRowIndex),
+    CYST: globalSolution.get('CYST(t)', lastRowIndex),
+    VL: globalSolution.get('VL(t)', lastRowIndex),
+  }
 }
 
 //name: Bioreactor Demo
