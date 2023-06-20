@@ -76,18 +76,21 @@ public class SessionHandler {
             message = message.substring(6);
             queryManager = new QueryManager(message, queryLogger.getLogger());
             if (queryManager.dryRun) {
-                dryRunCycles = ((Double) queryManager.getQuery().func.aux.getOrDefault("cycles", 2.0)).intValue();
+                dryRunCycles = ((Double) queryManager.getQuery().func.aux.getOrDefault("cycles", 3.0)).intValue();
                 logger.info(EventType.MISC.getMarker(), "Running dry run {} times", dryRunCycles);
                 int dryRunResult = 0;
                 int ordinaryResult = 0;
                 for (int i = 0; i < dryRunCycles; i++) {
-                    dryRunResult += (int) queryManager.run(true, false).columns.get(0).get(0);
-                    ordinaryResult += (int) queryManager.run(true, true).columns.get(0).get(0);
+                    DataFrame dryRunDf = queryManager.run(true, false);
+                    queryManager.closeConnection();
+                    DataFrame ordinaryDf = queryManager.run(true, true);
+                    queryManager.closeConnection();
+                    if (i > 0) {
+                        dryRunResult += (int) dryRunDf.columns.get(0).get(0);
+                        ordinaryResult += (int) ordinaryDf.columns.get(0).get(0);
+                    }
                 }
                 dryRunDiff = (ordinaryResult / dryRunCycles) - (dryRunResult / dryRunCycles);
-                logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
-                queryManager.closeConnection();
-                logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
                 session.getRemote().sendString("COMPLETED 0");
                 return;
             }
@@ -139,7 +142,6 @@ public class SessionHandler {
             session.getRemote().sendString(checksumMessage(bytes.length));
         } else {
             queryManager.closeConnection();
-            logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
             session.getRemote().sendString(String.format("COMPLETED %s", dfNumber));
         }
     }
@@ -161,7 +163,7 @@ public class SessionHandler {
         DataFrame logs = queryLogger.dumpLogMessages();
         if (queryManager.dryRun) {
             logs.addRow(System.currentTimeMillis() * 1000.0, "GrokConnect", Level.INFO.levelStr,
-                    EventType.DRY_RUN_DIFF.getName(), EventType.Stage.END.toString(), null, null, null, String.format("Average difference in duration when read result set and not for %s cycles", dryRunCycles), dryRunDiff);
+                    EventType.DRY_RUN_DIFF.getName(), EventType.Stage.END.toString(), null, null, null, String.format("Average difference in duration when read result set and not for %s cycles", dryRunCycles - 1), dryRunDiff);
         }
         session.getRemote().sendBytes(ByteBuffer.wrap(logs.toByteArray()));
     }

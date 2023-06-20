@@ -139,6 +139,7 @@ public class QueryManager {
     }
 
     public void closeConnection() throws SQLException {
+        logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
         if (connection != null && !connection.isClosed()) {
             if (!connection.getAutoCommit())
                 connection.commit();
@@ -147,6 +148,7 @@ public class QueryManager {
         } else {
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
         }
+        logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
     }
 
     public boolean isResultSetInitialized() {
