@@ -188,14 +188,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         userParamsFlag = false;
       }
 
-      if (series.showPoints ?? true) {
+      if (series.showPoints ?? 'points') {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
         for (let i = 0, candleStart = null; i < series.points.length!; i++) {
           const p = series.points[i];
           const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
           if (!candleStart && nextSame)
             candleStart = i;
-          else if ((series.showBoxPlot ?? false) && candleStart !== null && !nextSame) {
+          else if ((series.showPoints === 'candlesticks') && candleStart !== null && !nextSame) {
             const values: number[] = [];
             for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
               values[ind] = series.points[j].y;
@@ -208,7 +208,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
             candleStart = null;
           }
-          else if (!candleStart || !series.showBoxPlot) {
+          else if (!candleStart || !(series.showPoints === 'candlesticks')) {
             DG.Paint.marker(g,
               p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
               viewport.xToScreen(p.x), viewport.yToScreen(p.y),
@@ -300,7 +300,7 @@ const sample: IFitChartData = {
     'pointColor': 'blue',
     'fitLineColor': 'red',
     'clickToToggle': true,
-    'showPoints': true,
+    'showPoints': 'points',
     'showFitLine': true,
     'showCurveConfidenceInterval': true,
   },
