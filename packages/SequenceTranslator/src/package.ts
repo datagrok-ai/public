@@ -13,6 +13,7 @@ import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transfor
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
+import {demoSequenceTranslatorUI} from './demo/demo-st-ui';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
@@ -46,6 +47,7 @@ export const _package: StPackage = new StPackage();
 //tags: app
 export async function sequenceTranslatorApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
+
   try {
     await getJsonData();
     await _package.initMonomerLib();
@@ -85,4 +87,14 @@ export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): s
 //input: bool invert
 export function linkStrands(strands: { senseStrands: string[], antiStrands: string[] }): string {
   return linkStrandsV3000(strands, true);
+}
+
+// demoSequenceTranslator
+//name: demoSequenceTranslator
+//meta.demoPath: Bioinformatics | Sequence Design
+//description: Sequence Translator is an application for design and visualization of oligonucleotide sequences
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence,%20Translator
+//meta.isDemoScript: True
+export async function demoSequenceTranslator(): Promise<void> {
+  await demoSequenceTranslatorUI();
 }

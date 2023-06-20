@@ -36,7 +36,7 @@ export class SequenceTranslatorUI {
   }
 
   private readonly view: DG.View;
-  private readonly tabs: TabLayout;
+  public readonly tabs: TabLayout;
   private readonly topPanel: HTMLElement[];
   private readonly urlRouter: URLRouter;
 
@@ -55,13 +55,17 @@ export class SequenceTranslatorUI {
 
 class TabLayout {
   constructor(
-    private readonly mainTab: MainTabUI,
-    private readonly axolabsTab: AxolabsTabUI,
-    private readonly sdfTab: SdfTabUI,
+    public readonly mainTab: MainTabUI,
+    public readonly axolabsTab: AxolabsTabUI,
+    public readonly sdfTab: SdfTabUI,
     private readonly urlRouter: URLRouter
   ) {}
 
+  private control: DG.TabControl | null = null;
+
   async getControl(): Promise<DG.TabControl> {
+    if (this.control)
+      return this.control;
     const control = ui.tabControl({
       [MAIN_TAB]: await this.mainTab.getHtmlElement(),
       [AXOLABS_TAB]: this.axolabsTab.htmlDivElement,
@@ -88,7 +92,9 @@ class TabLayout {
       this.urlRouter.updatePath(control);
     });
 
-    return control;
+    this.control = control;
+
+    return this.control;
   }
 }
 
@@ -115,8 +121,9 @@ class URLRouter {
   }
 
   get tabName(): string {
-    if (this.pathParts.length < 3)
+    const idx = this.pathParts.findIndex((el) => el === 'SequenceTranslator');
+    if (idx === -1) // todo: remove after verification of validity condition
       return '';
-    return this.pathParts[3];
+    return this.pathParts[idx + 1];
   }
 }

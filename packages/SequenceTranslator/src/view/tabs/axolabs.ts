@@ -13,6 +13,7 @@ import {drawAxolabsPattern} from '../../model/axolabs/draw-svg';
 // todo: remove ts-ignore
 //@ts-ignore
 import * as svg from 'save-svg-as-png';
+import $ from 'cash-dom';
 
 type BooleanInput = DG.InputBase<boolean | null>;     
 type StringInput = DG.InputBase<string | null>;   
@@ -21,15 +22,15 @@ export class AxolabsTabUI {
   get htmlDivElement() {
     function updateModification(strand: string) {
       modificationItems[strand].innerHTML = '';
-      ptoLinkages[strand] = ptoLinkages[strand].concat(Array(maxStrandLength[strand] - bases[strand].length).fill(fullyPto));
-      bases[strand] = bases[strand].concat(Array(maxStrandLength[strand] - bases[strand].length).fill(sequenceBase));
+      ptoLinkages[strand] = ptoLinkages[strand].concat(Array(maxStrandLength[strand] - baseInputsObject[strand].length).fill(fullyPto));
+      baseInputsObject[strand] = baseInputsObject[strand].concat(Array(maxStrandLength[strand] - baseInputsObject[strand].length).fill(sequenceBase));
       let nucleotideCounter = 0;
       for (let i = 0; i < strandLengthInput[strand].value!; i++) {
         ptoLinkages[strand][i] = ui.boolInput('', ptoLinkages[strand][i].value!, () => {
           updateSvgScheme();
           updateOutputExamples();
         });
-        bases[strand][i] = ui.choiceInput('', bases[strand][i].value, baseChoices, (v: string) => {
+        baseInputsObject[strand][i] = ui.choiceInput('', baseInputsObject[strand][i].value, baseChoices, (v: string) => {
           if (!enumerateModifications.includes(v)) {
             enumerateModifications.push(v);
             isEnumerateModificationsDiv.append(
@@ -51,14 +52,15 @@ export class AxolabsTabUI {
           updateSvgScheme();
           updateOutputExamples();
         });
-        if (!isOverhang(bases[strand][i].value!))
+        $(baseInputsObject[strand][i].root).addClass('st-pattern-choice-input');
+        if (!isOverhang(baseInputsObject[strand][i].value!))
           nucleotideCounter++;
 
         modificationItems[strand].append(
           ui.divH([
-            ui.div([ui.label(isOverhang(bases[strand][i].value!) ? '' : String(nucleotideCounter))],
+            ui.div([ui.label(isOverhang(baseInputsObject[strand][i].value!) ? '' : String(nucleotideCounter))],
               {style: {width: '20px'}})!,
-            ui.block75([bases[strand][i].root])!,
+            ui.block75([baseInputsObject[strand][i].root])!,
             ui.div([ptoLinkages[strand][i]])!,
           ], {style: {alignItems: 'center'}}),
         );
@@ -96,8 +98,8 @@ export class AxolabsTabUI {
 
     function updateBases(newBasisValue: string): void {
       STRANDS.forEach((strand) => {
-        for (let i = 0; i < bases[strand].length; i++)
-          bases[strand][i].value = newBasisValue;
+        for (let i = 0; i < baseInputsObject[strand].length; i++)
+          baseInputsObject[strand][i].value = newBasisValue;
       })
       updateSvgScheme();
     }
@@ -113,7 +115,7 @@ export class AxolabsTabUI {
       const conditions = [true, createAsStrand.value];
       STRANDS.forEach((strand, i) => {
         if (conditions[i]) {
-          outputExample[strand].value = translateSequence(inputExample[strand].value, bases[strand], ptoLinkages[strand], terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
+          outputExample[strand].value = translateSequence(inputExample[strand].value, baseInputsObject[strand], ptoLinkages[strand], terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
         }
       })
     }
@@ -128,8 +130,8 @@ export class AxolabsTabUI {
             getShortName(saveAs.value),
             createAsStrand.value!,
 
-            bases[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value!),
-            bases[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value!),
+            baseInputsObject[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value!),
+            baseInputsObject[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value!),
 
             [firstPto[SS].value!].concat(ptoLinkages[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value!)),
             [firstPto[AS].value!].concat(ptoLinkages[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value!)),
@@ -176,10 +178,10 @@ export class AxolabsTabUI {
 
         let fields = [FIELD.SS_BASES, FIELD.AS_BASES];
         STRANDS.forEach((strand, i) => {
-          bases[strand] = [];
+          baseInputsObject[strand] = [];
           const field = fields[i];
           for (let j = 0; j < obj[field].length; j++)
-            bases[strand].push(ui.choiceInput('', obj[field][j], baseChoices));
+            baseInputsObject[strand].push(ui.choiceInput('', obj[field][j], baseChoices));
         })
 
         fields = [FIELD.SS_PTO, FIELD.AS_PTO];
@@ -253,8 +255,8 @@ export class AxolabsTabUI {
         USER_STORAGE_KEY,
         saveAs.value,
         JSON.stringify({
-          [FIELD.SS_BASES]: bases[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value),
-          [FIELD.AS_BASES]: bases[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value),
+          [FIELD.SS_BASES]: baseInputsObject[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value),
+          [FIELD.AS_BASES]: baseInputsObject[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value),
           [FIELD.SS_PTO]: [firstPto[SS].value].concat(ptoLinkages[SS].slice(0, strandLengthInput[SS].value!).map((e) => e.value)),
           [FIELD.AS_PTO]: [firstPto[AS].value].concat(ptoLinkages[AS].slice(0, strandLengthInput[AS].value!).map((e) => e.value)),
           [FIELD.SS_3]: terminalModification[SS][THREE_PRIME].value,
@@ -410,9 +412,12 @@ export class AxolabsTabUI {
       (strand) => [strand, Array<BooleanInput>(DEFAULT_SEQUENCE_LENGTH)
         .fill(ui.boolInput('', DEFAULT_PTO))]
     ));
-    const bases = Object.fromEntries(STRANDS.map(
-      (strand) => [strand, Array<StringInput>(DEFAULT_SEQUENCE_LENGTH)
-        .fill(ui.choiceInput('', defaultBase, baseChoices))]
+    const baseInputsObject = Object.fromEntries(STRANDS.map(
+      (strand) => {
+        const choiceInputs = Array<StringInput>(DEFAULT_SEQUENCE_LENGTH)
+        .fill(ui.choiceInput('', defaultBase, baseChoices));
+         return [strand, choiceInputs];
+      }
     ));
     const strandLengthInput = Object.fromEntries(STRANDS.map(
       (strand) => {
@@ -460,7 +465,7 @@ export class AxolabsTabUI {
 
     const outputExample = Object.fromEntries(STRANDS.map((strand) => {
       const input = ui.textInput(' ', translateSequence(
-        inputExample[strand].value, bases[strand], ptoLinkages[strand], terminalModification[strand][THREE_PRIME],terminalModification[strand][FIVE_PRIME], firstPto[strand].value!
+        inputExample[strand].value, baseInputsObject[strand], ptoLinkages[strand], terminalModification[strand][THREE_PRIME],terminalModification[strand][FIVE_PRIME], firstPto[strand].value!
       ));
       return [strand, input];
     }));
@@ -608,7 +613,7 @@ export class AxolabsTabUI {
         STRANDS.forEach((strand, i) => {
           if (condition[i])
             addColumnWithTranslatedSequences(
-              tables.value!.name, strandVar[strand], bases[strand], ptoLinkages[strand],
+              tables.value!.name, strandVar[strand], baseInputsObject[strand], ptoLinkages[strand],
               terminalModification[strand][FIVE_PRIME], terminalModification[strand][THREE_PRIME], firstPto[strand].value!);
         })
         grok.shell.v = grok.shell.getTableView(tables.value!.name);
