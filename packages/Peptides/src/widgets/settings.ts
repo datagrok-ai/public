@@ -60,7 +60,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   // General pane options
   const activityScaling =
     ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
-    () => result.scaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
+      () => result.scaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
   const bidirectionalAnalysis = ui.boolInput(GENERAL_INPUTS.BIDIRECTIONAL_ANALYSIS, currentBidirectional,
     () => result.isBidirectional = bidirectionalAnalysis.value) as DG.InputBase<boolean>;
 
@@ -117,9 +117,9 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED, typeof (currentColumns)[colName] !== 'undefined',
       () => {
         result.columns ??= {};
-        if (isIncludedInput.value) {
+        if (isIncludedInput.value)
           result.columns[colName] = aggregationInput.value;
-        } else {
+        else {
           delete result.columns[colName];
           if (Object.keys(result.columns).length === Object.keys(currentColumns).length)
             delete result.columns;
@@ -129,9 +129,9 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     const aggregationInput = ui.choiceInput(COLUMNS_INPUTS.AGGREGATION, (currentColumns)[colName] ?? DG.AGG.AVG,
       Object.values(DG.STATS), () => {
         result.columns ??= {};
-        if (isIncludedInput.value) {
+        if (isIncludedInput.value)
           result.columns[colName] = aggregationInput.value;
-        } else {
+        else {
           delete result.columns[col.name];
           if (Object.keys(result.columns).length === Object.keys(currentColumns).length)
             delete result.columns;

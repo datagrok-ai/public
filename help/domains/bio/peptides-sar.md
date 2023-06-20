@@ -1,10 +1,10 @@
 ---
-title: "Structure-Activity Relationship"
+title: "Peptides SAR"
 ---
 
-Datagrok enables performing SAR analysis with the Peptides package. "Peptides" is a Datagrok feature that aims to deal 
-with peptide sequences and associated activities. From the computational and analytical point of view, peptides are 
-considered as an intermediate case between small molecules and large proteins and thus the combination of different 
+Datagrok enables performing SAR analysis with the Peptides package. "Peptides" is a Datagrok feature that aims to deal
+with peptide sequences and associated activities. From the computational and analytical point of view, peptides are
+considered as an intermediate case between small molecules and large proteins and thus the combination of different
 analytical methods has to be used with adequate precautions.
 
 Datagrok detects such sequences in a table provided so there is no need to run an application to use it. If such
@@ -23,7 +23,7 @@ Once the options are set, you can hit the OK button to start the analysis.
 
 ![Analyze Peptides dialog](img/analyze-peptides-dialog.png)
 
-# Analysis View
+## Analysis View
 
 Analysis view consists of 4 main parts: the table view containing sequences and activities, as well as composition analysis; the monomer-position viewer which can work in two modes: Mutation Cliffs and Invariant Map; the most potent residues viewer, which shows the most potent monomers for each position; logo summary table is shown in case you chose the clusters column, which describes the clusters with WebLogo, activity distribution and other useful statistics.
 

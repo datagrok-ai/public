@@ -1030,6 +1030,9 @@ export interface PropertyOptions {
   /** Property type */
   type?: string;
 
+  /** Property input type */
+  inputType?: string;
+
   /** Whether an empty value is allowed. This is used by validators. */
   nullable?: boolean;
 
