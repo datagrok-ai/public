@@ -495,7 +495,7 @@ export class RichFunctionView extends FunctionView {
         if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
           const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
             this.funcCall.outputs[prop.name] = file;
-          });
+          }, null);
           if (prop.category !== prevCategory)
             outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
 
@@ -560,7 +560,7 @@ export class RichFunctionView extends FunctionView {
           const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
             this.funcCall.inputs[prop.name] = file;
             this.checkDisability.next();
-          });
+          }, null);
 
           if (this.runningOnInput) {
             const sub = t.onFileUploaded.subscribe(async () => await this.doRun());
