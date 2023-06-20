@@ -2,6 +2,7 @@ import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import {Fingerprint} from '../utils/chem-common';
 import { RuleId } from '../panels/structural-alerts';
 import * as DG from 'datagrok-api/dg';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export class RdKitService {
   workerCount: number;
@@ -106,7 +107,7 @@ export class RdKitService {
    * @param {boolean} useSubstructLib - optional parameter, if set to true SubstructLibrary is used for search
    * */
   async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], 
-    useSubstructLib?: boolean): Promise<DG.BitSet> {
+    useSubstructLib?: boolean): Promise<BitArray> {
     const t = this;
     if (molecules) { //need to recalculate segments lengths since when using pattern fp numbsr of molecules to search can be less that totla molecules in column
       this.segmentLengthPatternFp = Math.floor(molecules.length / this.workerCount);
@@ -126,11 +127,11 @@ export class RdKitService {
       (data: Array<Uint32Array>) => {
         const segmentsLengths = molecules ? t.moleculesSegmentsLengthsPatternFp : t.moleculesSegmentsLengths;
         const totalLength = segmentsLengths.reduce((acc, cur) => acc + cur, 0);
-        const bitset = DG.BitSet.create(totalLength);
+        const bitset = new BitArray(totalLength);
         let counter = 0;
         for (let i = 0; i < segmentsLengths.length; i++) {
           for (let j = 0; j < segmentsLengths[i]; j++) {
-            bitset.set(counter++, !!(data[i][Math.floor(j / 32)] >> j % 32 & 1));
+            bitset.setBit(counter++, !!(data[i][Math.floor(j / 32)] >> j % 32 & 1));
           }
         }
         return bitset;
