@@ -16,6 +16,14 @@
 # input: double fasta_separator = '' [Separator for a FASTA notation]
 # output: dataframe sequences
 
+"""
+The most simple options set running from command line
+  python sequence_generator.py -c 4 -s 50 > output_file.tsv
+Basic options:
+  -с number of clusters
+  -s cluster size (number of sequences per cluster)
+"""
+
 import random
 import argparse
 import sys
