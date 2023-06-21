@@ -1,7 +1,7 @@
-<!-- TITLE: Compute -->
-<!-- SUBTITLE: -->
-
-# Compute
+---
+title: "Compute"
+sidebar_position: 0
+---
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as
 [in-memory data engine](../develop/advanced/performance.md#in-memory-database),
@@ -220,11 +220,11 @@ example: `https://dev.datagrok.ai/func/Skalkin.LotkaVolterra?x0=0.5&y0=2&alpha=0
 ## Data access
 
 The platform allows to seamlessly [access](../home.md#access) any machine-readable data source, such
-as [databases](../access/data-connection.md),
+as [databases](../access/access.md#data-connection),
 [web services](../access/open-api.md),
-[files](../access/file-browser-and-file-shares.md) (either on network shares on in S3). To make a model retrieve the
+[files](../access/files/files.mdx) (either on network shares on in S3). To make a model retrieve the
 input data from the data source, annotate the input parameter with the
-corresponding [parameterized query](../access/parameterized-queries.md). Since both queries and models are functions,
+corresponding [parameterized query](../access/databases/databases.mdx#parameterized-queries). Since both queries and models are functions,
 the platform can automatically generate the UI that would contain both input- and computation-specific parts.
 
 By untangling the computation from the data access, implementing both of them as
@@ -234,22 +234,22 @@ applications also automatically benefit from all other cross-cutting features.
 
 The following examples illustrates it. Suppose we want to develop an R-based simulation against the freshest data from
 the database. This would require two steps:
-[creating a parameterized query](../access/parameterized-queries.md), and creating a computation script. Here are the
+[creating a parameterized query](../access/databases/databases.mdx#parameterized-queries), and creating a computation script. Here are the
 query, the computation, and the automatically generated end result:
 
 ![auto-ui-queries](auto-ui-queries.png)
 
 Note that the `Powder` and `Metal` inputs above have lists of allowed values that were retrieved dynamically by
 executing the specified `PowderNames` and `Metals` queries. If these queries slow the UI down,
-consider [caching](../access/data-connection.md#caching) the results.
+consider [caching](../access/databases/databases.mdx#caching-data) the results.
 
-Parameterized queries work via Datagrok's [data access](../access/data-connection.md) mechanism, allowing you to benefit
+Parameterized queries work via Datagrok's [data access](../access/access.md#data-connection) mechanism, allowing you to benefit
 from other access-related features:
 
-* [Result caching](../access/data-connection.md#caching) (very useful when working with data that changes overnight)
-* [Visual table query builder](../access/table-query-view.md)
-* [Visual schema query builder](../access/query-builder.md)
-* [DB explorer](../access/db-exploration.md)
+* [Result caching](../access/databases/databases.mdx#caching-data) (very useful when working with data that changes overnight)
+* [Visual table query builder](../access/databases/databases.mdx#query-editor)
+* [Visual schema query builder](../access/databases/databases.mdx#join-tables)
+* [DB explorer](../access/databases/databases.mdx#database-manager)
 
 ## Reproducible computations
 
@@ -267,7 +267,7 @@ As with any other objects in Datagrok, models could be annotated with tags (sing
 and parameters (key-value pairs). Parameters could also be combined in schemas. This helps keep things organized and
 discoverable. [Model browser](#model-browser) makes heavy use of this feature.
 
-Tags and parameters could either be edited manually in the model's property panel, or specified along with the model
+Tags and parameters could either be edited manually in the model's context panel, or specified along with the model
 body. Here is the corresponding section from the Lotka-Volterra model
 (full code [here](https://github.com/datagrok-ai/public/blob/master/packages/Compute/scripts/Lotka-Volterra.js)):
 
@@ -307,28 +307,28 @@ to implement these algorithms just once, and then use them everywhere. Here are 
 The fact that the typical analysis is an introspectable workflow consisting of functions passing the data helps us deal
 with that in a declarative manner.
 
-# Integration
+## Integration
 
 Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the box
 we get many platform integration capabilities such as authentication, data access, and many others. In addition to that,
 there are some capabilities specific to models: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
 
-## REST API
+### REST API
 
 Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
 input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it, click on the function and expand the `REST` pane on the property panel
+external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
 on the right. Both JavaScript and Curl samples are provided.
 
 ![rest-api](rest-api.png)
 
-## JS API
+### JS API
 
 JavaScript-based apps have access to the whole Datagrok platform via the
 [JS API](../develop/js-api.md).
 
-## Embedding as iframe
+### Embedding as iframe
 
 Sometimes, an app has to be included in the external web page. The simplest way to achieve it is via
 the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
@@ -340,14 +340,14 @@ On the bottom, you see a preview of the result ()
 
 ![embed-as-iframe](embed-as-iframe.png)
 
-# Leveraging the platform
+## Leveraging the platform
 
 The computation engine utilizes the power of the Datagrok platform, which brings plenty of benefits:
 
 * Not having to reimplement the wheel
 * Users don't have to switch tools anymore
 
-## Logging, audit, and traceability
+### Logging, audit, and traceability
 
 Out-of-the box, the platform provides audit and logging capabilities, and when the model is [deployed](#deployment), we
 get the following automatically:
@@ -361,17 +361,17 @@ in a structured, machine-readable way. We can also tune what needs to be persist
 
 ![img.png](img.png)
 
-## Privileges and visibility
+### Privileges and visibility
 
 Datagrok has the built-in [role-based privileges system](https://datagrok.ai/help/govern/authorization)
 that is used to define who can see, execute, or edit models. The same mechanism is used for the data access control.
 
-## Exploratory data analysis
+### Exploratory data analysis
 
 Perhaps the most commonly used data structure in computing is [DataFrame](../develop/advanced/data-frame.md). To analyze
 either input or output dataframe, click on the `+` ("Add to workspace")
 icon. This will open the dataframe in the [exploratory data analysis](../explore/exploratory-data-analysis.md)
-mode, allowing to [visualize](../visualize/viewers.md) the data,
+mode, allowing to [visualize](../visualize/viewers/viewers.md) the data,
 [transform](../transform/query-transformations.md)
 or perform more in-depth exploration, such as multivariate analysis.
 

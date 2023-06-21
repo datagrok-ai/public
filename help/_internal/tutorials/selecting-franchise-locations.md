@@ -27,7 +27,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
     * To get data click: "RUN" of (Context menu on "Get Starbucks US" Data Query | Run)
 
 4. Select only NY state rows (State | Column category button "≡" | Select "NY") and open as separate table
-   (Property panel | Extract rows (or Keep rows))
+   (Context panel | Extract rows (or Keep rows))
 5. Create derived column: "${street_address}, ${city}, ${state}".
 
 * Open Columns View (View | Columns)
@@ -47,7 +47,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 7. Coordinates to statistics:
 
 * Click on table view header
-* Execute: Property panel | Algorithms | Coordinates to statistics
+* Execute: Context panel | Algorithms | Coordinates to statistics
 
 8. Multivariate analysis:
 

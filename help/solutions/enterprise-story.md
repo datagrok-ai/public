@@ -1,7 +1,9 @@
-<!-- TITLE: Enterprise -->
+---
+title: "Enterprise"
+---
 <!-- SUBTITLE: -->
 
-# Problem
+## Problem
 
 Software is eating the world, and companies that best manage to understand their data better and derive actionable
 insights from it will be tomorrow’s winners. Big organizations are naturally well-positioned to take advantage of the
@@ -21,7 +23,7 @@ different purposes. Ad-hoc, built-for-purpose solutions do not play along with c
 tools are inadequate for dealing with scientific data. Once a dataset is prepared and passed around, its history is
 lost. Quite often, the most common technology denominator is an Excel file passed in an email.
 
-# Solution
+## Solution
 
 In order to address all of these issues, we developed Datagrok, a unique, next-generation data platform. Out-of-the-box,
 it offers the most popular common data-related functionality (storage, ingestion, transformation, analysis,
@@ -41,7 +43,7 @@ capabilities. From there, you can grow the ecosystem by adding new data connecti
 publishing dashboards, training predictive models, connecting with scripts developed in R, Python, and Julia, building
 applications, and a lot more.
 
-## Data retrieval and governance
+### Data retrieval and governance
 
 If your organization already has ten different databases, the last thing you want is another, all-encompassing database.
 Instead, Grok serves as an intelligence layer, and seamlessly and efficiently works with all the popular
@@ -52,7 +54,7 @@ navigated. We are big proponents of the FAIR data principles. Pipelines, data jo
 User-defined functions can be used anywhere. We support multiple popular file formats, including scientific formats like
 sdf, edf, and mat; files can simply be dragged-and-dropped into the system.
 
-## Data visualization and exploration
+### Data visualization and exploration
 
 Our unique technology lets you explore datasets faster and more efficiently than ever, allowing you to find patterns
 that were previously impossible to spot, resulting in the acceleration of data-driven decisions. For performance
@@ -75,7 +77,7 @@ data points you are looking at. This information can also be targeted. For insta
 medicinal chemists will see predictions on the compound solubility (also generated on the fly), while people from the
 legal department will see patents related to that molecule.
 
-## Machine learning and data science
+### Machine learning and data science
 
 It is estimated that data scientists spend about 80% of their time finding, cleaning, and organizing data - and this is
 exactly what our platform excels at. It is also easy to use scripts written in statistical languages, and turn them into
@@ -93,7 +95,7 @@ people in the right contexts. Again, since the platform is used for data browsin
 options available, such as explicitly running models against the datasets (including automatic model suggestions), data
 augmentation, or using models in custom applications.
 
-## Cheminformatics
+### Cheminformatics
 
 Datagrok provides first-class support for small molecules, as well as most popular building blocks for cheminformatics.
 It understands several popular notations for representing chemical
@@ -112,7 +114,7 @@ application, it enriches the ecosystem. That means that by adding cheminformatic
 get the ability to render molecules, new chemical functions are now available for use in data transformations, new
 molecule-related information panels will show up when user clicks on a molecule in the grid, etc.
 
-## Application development
+### Application development
 
 The platform provides all necessary building blocks for developing modern data-driven solutions, and a way for a
 non-developer users to put it all together. However, in terms of power and flexibility, nothing compares to developing
@@ -127,7 +129,7 @@ multiplying the platform's value.
 In addition to video lessons, samples gallery, and tutorials available to everyone we offer few other ways to help
 companies with the custom development, including on-site training for developers, or developing solutions in-house.
 
-## Enterprise customizations
+### Enterprise customizations
 
 We offer different hosting options, including on-prem, cloud, or hybrid. A flexible role-based privilege mechanism lets
 IT set up corresponding roles for users, and tweak the UI accordingly. Backup and storage settings can be handled by IT

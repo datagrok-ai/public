@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "OracleNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 21521,
+    "db": "XEPDB1"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Oracle",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

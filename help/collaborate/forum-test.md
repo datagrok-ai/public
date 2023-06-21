@@ -4,7 +4,7 @@
 # Tests: Community forum
 
 A place to socialize and ask either generic questions, or questions related to particular entities, such as
-[queries](../access/data-query.md) or [projects](../datagrok/project.md). In the latter case, entity owner will get
+[queries](../access/access.md#data-query) or [projects](../datagrok/project.md). In the latter case, entity owner will get
 notified that someone asked for help.
 
 ## Testing scenarios
@@ -28,7 +28,7 @@ notified that someone asked for help.
 * New topic created successfully
 * "Test_sub" topic appeared in the "Chats" tab for current user
 
-1. Replay to the "Test_sub" topic from the "Chats" tab on [Property Panel](../datagrok/navigation.md#properties) for
+1. Replay to the "Test_sub" topic from the "Chats" tab on [Context Panel](../datagrok/navigation.md#context-panel) for
    current
    [user](../govern/user.md)
 

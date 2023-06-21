@@ -1,0 +1,9 @@
+.kalign-version {
+    margin-bottom: 0;
+    text-align: end;
+    font-size: 12px;
+    opacity: 0.8;
+}
+button.msa-params-button.ui-btn {
+    justify-content: end;
+}

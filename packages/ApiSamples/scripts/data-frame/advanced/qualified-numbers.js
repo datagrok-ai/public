@@ -4,7 +4,7 @@
 let manual = DG.Column.qnum('manual', 3);
 manual.set(0, DG.Qnum.greater(5));
 manual.set(1, DG.Qnum.exact(5));
-manual.set(1, DG.Qnum.less(5));
+manual.set(2, DG.Qnum.less(5));
 
 // Method 2: initialize with exact values (last parameter set to true)
 // When last parameter is set to true, the last two bits of each number get set

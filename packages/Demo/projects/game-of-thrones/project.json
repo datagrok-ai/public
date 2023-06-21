@@ -1,9 +1,10 @@
 {
   "tags": [
     "demo",
-    "default"
+    "default",
+    "table-view"
   ],
-  "name": "Game of Thrones: relations",
+  "name": "Demo: Game of Thrones: relations",
   "description": "Relations between Game of Thrones characters",
   "tables": [
     {

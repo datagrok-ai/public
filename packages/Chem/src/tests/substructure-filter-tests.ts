@@ -1,4 +1,4 @@
-import {category, test, expect, delay, before, testEvent} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, before, testEvent} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -20,27 +20,12 @@ category('substructure filters', async () => {
     await grok.data.detectSemanticTypes(df);
     const sketcherDialogs: DG.Dialog[] = [];
 
-    async function initSketcher(sw: DG.chem.Sketcher) {
-      return new Promise(async (resolve, reject) => {
-        sw.sketcherCreated.subscribe(async (_: any) => {
-          try {
-            resolve(true);
-          } catch (error) {
-            reject(error);
-          }
-        });
-      });
-    }
-
     async function createFilter(colName: string): Promise<SubstructureFilter> {
       const filter = new SubstructureFilter();
       sketcherDialogs.push(ui.dialog().add(filter.sketcher).show());
       filter.attach(df);
       filter.column = df.col(colName);
       filter.columnName = colName;
-      const waitForSketcher = initSketcher(filter.sketcher);
-      if (!filter.sketcher.sketcher)
-        await waitForSketcher;
       return filter;
     }
 
@@ -76,15 +61,15 @@ M  END`;
   1  2  1  0  0  0  0
   1  5  1  0  0  0  0
 M  END
-`; 
-    await testEvent(df.onFilterChanged, (_) => {}, () => { filter1.sketcher.setMolFile(molfile1) }, 7000);
+`;
+    await testEvent(df.onFilterChanged, (_) => {}, () => {filter1.sketcher.setMolFile(molfile1);}, 7000);
     await testEvent(df.onFilterChanged, (_) => {
       expect(df.filter.trueCount, 2);
       expect(df.filter.get(4), true);
       expect(df.filter.get(5), true);
       expect(df.filter.get(0), false);
-    }, () => { filter2.sketcher.setMolFile(molfile2) }, 7000);
+    }, () => {filter2.sketcher.setMolFile(molfile2);}, 7000);
     sketcherDialogs.forEach((it) => it.close());
   });
 });
-  
+

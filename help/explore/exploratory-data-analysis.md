@@ -1,7 +1,6 @@
-<!-- TITLE: Exploratory data analysis -->
-<!-- SUBTITLE: -->
-
-# Exploratory data analysis
+---
+title: "Exploratory data analysis"
+---
 
 Before we can learn from data, we need to understand
 it. [Exploratory data analysis](https://en.wikipedia.org/wiki/Exploratory_data_analysis) (EDA) is a process of
@@ -29,8 +28,8 @@ _billions of rows_ at the speed of thought right in your browser.
 
 With Datagrok, you can:
 
-* [Seamlessly load data from any data source](../access/file-browser-and-file-shares.md). Datagrok supports all popular databases,
-  multiple [file formats](../access/supported-data-sources.md#supported-file-types) and is both data-agnostic and
+* [Seamlessly load data from any data source](../access/files/files.mdx). Datagrok supports all popular databases,
+  multiple [file formats](../access/files/supported-formats.md) and is both data-agnostic and
   domain-intelligent. <!--TODO link to a section on domains once ready-->
 
 * Visualize the data using domain-specific value renderers (such as molecules on scatter plot axes).
@@ -41,23 +40,22 @@ With Datagrok, you can:
   workspace. [Cluster data](cluster-data.md), [impute missing values](../transform/missing-values-imputation.md), find
   and treat duplicates and outliers.
 
-* Visualize data at the click of a button using [30+ native viewers](../visualize/viewers.md). We support all popular
+* Visualize data at the click of a button using [30+ native viewers](../visualize/viewers/viewers.md). We support all popular
   visualizations (
   like [scatterplots with built-in regression lines](../visualize/viewers/scatter-plot.md#regression-line)
   or [box-plots with built-in statistical tests](../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
-  viewers, such as [chemically-aware   viewers](../domains/chem/chemically-aware-viewers.md). The tabular viewer, [_
-  grid_](../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
+  viewers, such as [chemically-aware   viewers](../domains/chem/chemically-aware-viewers.md). The tabular viewer, [_grid_](../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
 
   * Viewing datasets with _millions of columns_ and _billions of rows_
   * Dataset overview, including summary statistics for numerical data columns and distribution for categorical data
     columns
   * Custom cell renderers for molecules, sequences, dose-response curves, and sparklines
-  * Editing datasets (for example, adding new molecules using [sketchers](../domains/chem/sketcher.md))
+  * Editing datasets (for example, adding new molecules using [sketchers](../domains/chem/chem.md))
 
 * Filter, zoom in and out, aggregate, pivot, and cross-link data. All our viewers work in tandem and are customizable,
   [high-performant, and interactive](../develop/advanced/performance.md#viewers).
 
-* Perform calculations on data using predefined statistical [functions](../datagrok/functions/function.md).
+* Perform calculations on data using predefined statistical [functions](../datagrok/functions/functions.md).
 * Get details on demand using a variety of [widgets](../visualize/widgets.md), including customizable
   [tooltips](../explore/select-tooltip-columns.md#viewer-tooltips) and
   context-driven [info panels](../discover/info-panels.md).
@@ -72,8 +70,8 @@ You can also leverage Datagrok's component-based architecture to extend or creat
 can [add custom viewers](../develop/how-to/develop-custom-viewer.md) or develop new functions
 in [R, Python, or Julia](../compute/scripting.md).
 
-Each of these actions can be [automated](../datagrok/functions/function.md#macros) and used in
-[pipelines](../access/data-pipeline.md). Sharing the results of your analysis is easy and
+Each of these actions can be [automated](../datagrok/functions/functions.md#macros) and used in
+pipelines. Sharing the results of your analysis is easy and
 [secure](../govern/security.md).<!--TODO rewrite for clarity-->
 
 With Datagrok, anyone can use their domain knowledge and perceptive abilities to explore data and uncover its meaning.
@@ -112,6 +110,6 @@ With Datagrok, anyone can use their domain knowledge and perceptive abilities to
 
 ## See also
 
-* [Viewers](../visualize/viewers.md)
+* [Viewers](../visualize/viewers/viewers.md)
 * [Data science](../learn/data-science.md)
 * [Predictive modeling](../learn/predictive-modeling.md)

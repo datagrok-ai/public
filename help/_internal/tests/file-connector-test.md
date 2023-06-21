@@ -19,7 +19,7 @@ indexed and can be browsed.
 
 * There is files and directories from ```.../data/demo```
 
-1. Select "northwind" folder for the [Property Panle](../../datagrok/navigation.md#properties)
+1. Select "northwind" folder for the [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "Details" tab shows file location relative to connection, size, date of creation and modification
 * In "Actions" tab folder can be downloaded locally as zip-archive
@@ -32,7 +32,7 @@ indexed and can be browsed.
 
 * There is structured list of files and folders inside "northwind" folder
 
-1. Select "Northwind.xslx" file for the [Property Panle](../../datagrok/navigation.md#properties)
+1. Select "Northwind.xslx" file for the [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "Details" tab shows file location relative to connection, size, date of creation and modification
 * In "Actions" tab file can be downloaded locally, downloaded as zip-archive or opened
@@ -56,7 +56,7 @@ indexed and can be browsed.
 * There is list of sheets inside file
 * Each sheet presented as separate table
 
-1. Select "Categories" sheet for the [Property Panle](../../datagrok/navigation.md#properties)
+1. Select "Categories" sheet for the [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "Details" tab shows number of rows and columns
 * In "Actions" tab sheet can be opened as separate table in [Workspace](../../datagrok/workspace.md)
@@ -68,7 +68,7 @@ indexed and can be browsed.
 1. Expand "Categories" sheet in Source tree
 
 * There is list of columns in "Categories" table
-* You can find columns data type selecting it on [Property Panle](../../datagrok/navigation.md#properties)
+* You can find columns data type selecting it on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 ## Connection creating
 
@@ -128,7 +128,7 @@ indexed and can be browsed.
 ## Common scenarios
 
 1. Test functionality from previous sections with different file types. Supported file types can be found
-   in [supported-formats.md](../../access/supported-formats.md) file
+   in [supported-formats.md](../../access/files/supported-formats.md) file
 
 1. Check common functionality for all data sources ([data-query-test](../../access/data-query-test.md))
 
@@ -139,7 +139,7 @@ indexed and can be browsed.
 See also:
 
 * [Files](../../access/connectors/files.md)
-* [Data connection](../../access/data-connection.md)
+* [Data connection](../../access/access.md#data-connection)
 * [Data connection Test](../../access/data-connection-test.md)
-* [Data query](../../access/data-query.md)
+* [Data query](../../access/access.md#data-query)
 * [Data query-test](../../access/data-query-test.md)

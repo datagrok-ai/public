@@ -56,7 +56,7 @@ applied with data similar in structure to training
        Remaining parameters is default
 
 1. Open "Test Data" table. Apply all created models. This can be done from different places, "
-   Models" tab on toolbox, "Models" tab in table property panel or "Apply Model" dialog from **Tools | Predictive
+   Models" tab on toolbox, "Models" tab in table context panel or "Apply Model" dialog from **Tools | Predictive
    Modeling**.
 
 * All created models are applied successfully and correctly

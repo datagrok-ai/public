@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
-export async function findMCS(molecules: string, df: DG.DataFrame, smarts?: boolean): Promise<string> {
-  const returnSmarts = !!smarts;
-  return await grok.functions.call('Chem:FindMCS', {molecules, df, returnSmarts});
+export async function findMCS(molecules: string, df: DG.DataFrame,
+  exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
+  return await grok.functions.call('Chem:FindMCS', {molecules, df, exactAtomSearch, exactBondSearch});
 }
 
 export async function findRGroups(
@@ -19,10 +19,6 @@ export async function smilesTo3DCoordinates(molecule: string): Promise<string> {
   return await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule});
 }
 
-export async function getDescriptorsTree(): Promise<any> {
-  return JSON.parse((await grok.functions.call('Chem:DescTree')).replaceAll('\\"', '\'').replaceAll('\\', ''));
-}
-
 export async function getDescriptorsPy(
   smiles: string,
   df1: DG.DataFrame,
@@ -32,7 +28,11 @@ export async function getDescriptorsPy(
 }
 
 export async function generateScaffoldTree(
-  data: DG.DataFrame, 
-  smiles: string) : Promise<string> {
-    return await grok.functions.call('Chem: GenerateScaffoldTree', {data, smiles});
+  data: DG.DataFrame,
+  smilesColumn: string,
+  ringCutoff: number = 0,
+  dischargeAndDeradicalize: boolean = false) : Promise<string> {
+  return await grok.functions.call('Chem: GenerateScaffoldTree', {
+    data, smilesColumn, ringCutoff, dischargeAndDeradicalize,
+  });
 }

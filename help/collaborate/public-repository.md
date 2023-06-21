@@ -1,7 +1,6 @@
-<!-- TITLE: Datagrok package repository -->
-<!-- SUBTITLE: -->
-
-# Datagrok package repository
+---
+title: "Datagrok package repository"
+---
 
 This is a public repository for the API, tools, and [packages](https://datagrok.ai/help/develop/develop#packages)
 available for [Datagrok™](https://datagrok.ai), a next-generation web-based data analytics platform. The platform is
@@ -29,13 +28,13 @@ very extensible, and almost anything could be implemented as a package:
 
 These open-source packages are free to use by anyone, although for the [public environment](https://public.datagrok.ai)
 there are some restrictions related to the server computational capacities. Organizations that deploy Datagrok
-[on their premises](../develop/admin/deploy.md) also can access public packages. In addition to that, enterprises
+[on their premises](../develop/admin/deploy/deploy.md) also can access public packages. In addition to that, enterprises
 typically establish their own private repositories that contain proprietary extensions.
 
 For developers: check out [getting started](../develop/develop.md)
 and [contributor's guide](https://github.com/datagrok-ai/public/tree/master/CONTRIB.md).
 
-# Academia
+## Academia
 
 Datagrok grants free license to academic institutions to use it in any context, either research or educational.
 Moreover, publishing scientific methods as Datagrok packages provides a number of unique benefits that are specifically
@@ -44,14 +43,14 @@ important to academia:
 * [Reproducible and scalable computations](../compute/compute.md)
 * Making your research globally available by using [data augmentation](../discover/data-augmentation.md) capabilities.
   The platform proactively suggests contextual actions and enriches the current object
-  using [functions](../datagrok/functions/function.md)
+  using [functions](../datagrok/functions/functions.md)
   implemented in [R, Python, Julia, Matlab, or other language](../compute/scripting.md). In other words, Datagrok not
   only can run a function, but also suggests _what_ could be derived from your dataset. This cross-pollination of
   knowledge could be transformative within and across a broad range of scientific disciplines.
 
 For academic collaborations, please email `info@datagrok.ai`.
 
-# See also
+## See also
 
 * [Datagrok home](https://datagrok.ai/)
 * [JavaScript development](../develop/develop.md)

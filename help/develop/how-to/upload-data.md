@@ -1,7 +1,6 @@
-<!-- TITLE: Upload data -->
-<!-- SUBTITLE: -->
-
-# Dataframe
+---
+title: "Upload data"
+---
 
 To upload a CSV file to the user storage, make the following POST request with the CSV content as body:
 
@@ -22,14 +21,14 @@ The server replies to this request with the URL of the uploaded project.
 To apply a layout, use the `?layout` parameter in the following way:
 
 1. Save the layout [manually](../../datagrok/table-view.md) or [programmatically](layouts.md)
-2. Go to **Manage / Layouts**, find your saved layout (see picture below). Navigate to Property Panel, hit `Links...`
+2. Go to **Manage / Layouts**, find your saved layout (see picture below). Navigate to Context Panel, hit `Links...`
 3. In the new window, copy either ID or fully qualified name of the layout. You might want to rename the layout if the
    name is ambiguous.
 4. Pass ID or Name as a `?layout` parameter to the request.
 
 ![upload-data-layout](upload-data-layout.png)
 
-# Example
+## Example
 
 ```curl
 curl --location --request POST 'http://localhost:8080/api/files/alex.aprm/uploads/from_excel/test.csv?layout=alexaprm.superlayout' \

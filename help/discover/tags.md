@@ -1,6 +1,6 @@
-<!-- TITLE: Tags -->
-
-# Tags
+---
+title: "Tags"
+---
 
 Most of the objects in Datagrok can be annotated with metadata (key-value pairs). The metadata could be set manually;
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
@@ -102,7 +102,7 @@ an [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional
 
 ## Formula
 
-Formula used for creating a derived column. Edit it in the "Formula" section on the property panel to recalculate. Note
+Formula used for creating a derived column. Edit it in the "Formula" section on the context panel to recalculate. Note
 that changing the `formula` tag does not cause recalculation.
 
 ## Layout-id
@@ -142,7 +142,7 @@ Column cell renderer.
 
 ## Query
 
-A [query](../access/data-query.md) that was used to produce this table. Applicable to tables.
+A [query](../access/access.md#data-query) that was used to produce this table. Applicable to tables.
 
 ## Import-time
 
@@ -184,7 +184,7 @@ Entity id, as it is stored in the database. Applicable to tables, columnms, and 
 
 ## Data-connection-id
 
-ID of the [data connection](../access/data-connection.md) that was used to populate the table. Applicable to tables.
+ID of the [data connection](../access/access.md#data-connection) that was used to populate the table. Applicable to tables.
 
 ## .history
 
@@ -193,8 +193,8 @@ History of all modifications applied to that table. Applies to tables.
 ## .script
 
 [Grok script](../datagrok/grok-script.md) that was used to create a table. It could represent getting a data via
-a [database query](../access/data-query.md), from a web service, from a file share, or using any
-other [function](../datagrok/functions/function.md) that returns a [table](../datagrok/table.md).
+a [database query](../access/access.md#data-query), from a web service, from a file share, or using any
+other [function](../datagrok/functions/functions.md) that returns a [table](../datagrok/table.md).
 
 If this tag is present in a table, a "data sync" option appears next to this table in the
 "Upload table" dialog. If the option is checked, the table will not be uploaded to the server. Instead, the script will

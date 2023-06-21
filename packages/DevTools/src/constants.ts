@@ -53,6 +53,10 @@ const df = await grok.data.files.openTable("${ent.fullPath}");`,
   DataConnection: (ent: DG.DataConnection) =>
     `const connection = await grok.dapi.connections.find('${ent.id}');
 
+// Test the connection
+const t = await grok.data.db.query(connection.nqName, 'select 1');
+grok.shell.addTableView(t);
+
 // Get the connection's parameters
 grok.shell.info(JSON.stringify(connection.parameters));
 
@@ -145,7 +149,7 @@ const df = await grok.data.openTable(tableId);
 const view = grok.shell.addTableView(df);
 view.loadLayout(layout);
 
-// Get layouts applicable to the dataframe 
+// Get layouts applicable to the dataframe
 const layouts = await grok.dapi.layouts.getApplicable(df);
 grok.shell.info("Layouts found: " + layouts.length);
 

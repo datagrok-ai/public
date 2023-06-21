@@ -1,6 +1,6 @@
-<!-- TITLE: Creating a package -->
-
-# Simple package example
+---
+title: "Creating a package"
+---
 
 This documents explains how to create a simple package that contains an
 [info panel](add-info-panel.md) displaying some simple statistics for a text in a selected grid cell.
@@ -12,7 +12,7 @@ Before we start, [set up development environment](../set-up-environment.md) if y
 Now, let's create a package:
 
 ```shell
-grok create TextStats --ts --jest
+grok create TextStats --test
 ```
 
 This creates a folder `TextStats` with the default [package structure](../develop.md#package-structure). For the newly
@@ -24,7 +24,7 @@ npm install
 
 ## 2. Implement the panel function
 
-Add the actual panel's code at `TextStats/src/package.js`:
+Add the actual panel's code at `TextStats/src/package.ts`:
 
 ```
 //name: Text Stats

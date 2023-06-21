@@ -207,10 +207,10 @@ Please reach out to us regarding single sign on options, if this is your preferr
 
 | Action    | Command                             | Description                                     |
 |-----------|-------------------------------------|-------------------------------------------------|
-| Start     | dart server.dart start              | Datlas starts listening to incoming connections |
-| Stop      | dart server.dart stop               |                                                 |
-| Restart   | dart server.dart restart            |                                                 |
-| Run tasks | dart server.dart deploy -c <config> |                                                 |
+| Start     | `dart server.dart start`              | Datlas starts listening to incoming connections |
+| Stop      | `dart server.dart stop`               |                                                 |
+| Restart   | `dart server.dart restart`            |                                                 |
+| Run tasks | `dart server.dart deploy -c <config>` |                                                 |
 
 For instance, to start "prod" and "test" instances:
 

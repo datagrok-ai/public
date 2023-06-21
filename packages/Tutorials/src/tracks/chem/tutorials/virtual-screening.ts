@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
-import { Tutorial } from "../../../tutorial";
-import { _package } from '../../../package';
+import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 import wu from "wu";
 
@@ -23,10 +22,10 @@ export class VirtualScreeningTutorial extends Tutorial {
   }
 
   get steps() {
-    return 46;
+    return 35;
   }
 
-  prerequisites = ['Chem', 'PowerPack'];
+  prerequisites: TutorialPrerequisites = {packages: ['Chem', 'PowerPack'], jupyter: true, grokCompute: true, h2o: true};
   demoTable: string = 'chem/tutorials/training-data.csv';
   helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
 
@@ -45,9 +44,9 @@ export class VirtualScreeningTutorial extends Tutorial {
       'is engaged in viral replication.</p><p>Your mission is to determine if there are compounds of these ' +
       'chemical classes which could be synthesized and investigated at the next iteration, and thus reduce ' +
       'the costs of following synthesis and research by excluding less potent molecules from the list.</p>' +
-      '<p>You have two datasets:' + 
+      '<p>You have two datasets:' +
       `<ol>
-        <li>A dataset with experimental results: structural information on synthesized 
+        <li>A dataset with experimental results: structural information on synthesized
           compounds and related biological activity in the <b>Ki</b> column.</li>
         <li>A generated dataset with all structures of the same chemical classes which were not yet synthesized.</li>
       </ol></p>`);
@@ -99,7 +98,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
         'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
         'body in a neutralized form.';
-      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'CurateChemStructures', chemMenu, curationInfo);
+      const curationDlg = await this.openDialog('Open "Chem | Transform | Curate"', 'Curate', chemMenu, curationInfo);
 
       const neutralizationInfo = 'Perform "Neutralization" to remove charges.';
       await this.dlgInputAction(curationDlg, 'Check "Neutralization"', 'Neutralization', 'true', neutralizationInfo);
@@ -113,30 +112,11 @@ export class VirtualScreeningTutorial extends Tutorial {
       const outputComment = '';
       await this.action('Click "OK" and wait for the procedures to complete',
         grok.functions.onAfterRunAction.pipe(filter((call) => {
-          return call.func.name === 'CurateChemStructures' &&
+          return call.func.name === 'Curate' &&
           call.inputs.get('neutralization') &&
           call.inputs.get('tautomerization') &&
           call.inputs.get('mainFragment');
         })), null, outputComment);
-
-      let ppColumn: DG.Accordion;
-      const ppDescription = 'In the property panel, you should now see all the actions ' +
-        'applicable to the column under the "Actions" section. Let\'s calculate some ' +
-        'molecular descriptors for the given dataset.';
-
-      await this.action('Click on the header of the column with curated molecules',
-        grok.events.onAccordionConstructed.pipe(filter((acc) => {
-          if (acc.context instanceof DG.Column && acc.context?.name === curatedMolColName) {
-            ppColumn = acc;
-            return true;
-          }
-          return false;
-        })), null, ppDescription);
-
-      ppColumn!.getPane('Actions').expanded = true;
-      const descriptorsLabel = $(ppColumn!.root)
-        .find('label.d4-link-action')
-        .filter((idx, el) => el.textContent == 'Chem | Descriptors...')[0];
 
       const descDlg = 'To characterize the molecules, we should calculate molecular descriptors – ' +
         'useful values that reflect the molecule\'s structure and thus have structural interpretation. ' +
@@ -144,8 +124,8 @@ export class VirtualScreeningTutorial extends Tutorial {
         'are different types of descriptors, you can select them either by category or individually. We ' +
         'will combine the ones that describe molecular graph itself, as well as the surface of the whole ' +
         'molecule and its physico-chemical properties.';
-      const descriptorDlg = await this.openDialog('Click on "Chem | Descriptors..." action in the property panel',
-        'Descriptors', descriptorsLabel, descDlg);
+      const descriptorDlg = await this.openDialog('Open "Chem | Calculate | Descriptors..."',
+        'Descriptors', chemMenu, descDlg);
 
       const groupHints = $(descriptorDlg.root)
         .find('.d4-tree-view-node')
@@ -153,7 +133,8 @@ export class VirtualScreeningTutorial extends Tutorial {
           .some((group) => group === el.textContent))
         .get();
 
-      if (hasHistory) groupHints.push($(descriptorDlg.root).find('i.fa-history.d4-command-bar-icon')[0]​!);
+      if (hasHistory)
+        groupHints.push($(descriptorDlg.root).find('i.fa-history.d4-command-bar-icon')[0]!);
 
       const groupDescription = 'To exclude <b>ExactMolWt</b>, expand the <b>Descriptors</b> group. ' +
         'The fastest way is to check the box for the entire group and unselect this particular descriptor. ' +
@@ -195,7 +176,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'descriptors are now used as features and the first dataset is now a training set. Build the ' +
       'model and create an "observed versus predicted" plot to make sure that the model adequately ' +
       'predicts activity in the training set.';
-    await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN', modelInfo);
+    await this.buttonClickAction(pmv.root, 'Click the "TRAIN" button', 'TRAIN', modelInfo);
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
       `${this.t!.toString()}"`, this.t!.toString(), null, 'The menu opens both from the status bar with the model ' +
       'name and from <b>Functions | Models</b>. The result will be available in the selected ' +
@@ -326,10 +307,10 @@ export class VirtualScreeningTutorial extends Tutorial {
       interval(3000).pipe(filter(() => chemblPane!.expanded)),
       chemblPane!.root,
       chemblSearch);
-    
+
     await this.action('Click on the second scaffold and run "ChEMBL search"',
       grok.events.onAccordionConstructed.pipe(filter((acc) => acc.context.value === scaffold2)));
-    
+
 
     this.title('Conclusions');
     this.describe('We have performed a virtual screening which yielded two compounds with ' +

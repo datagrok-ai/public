@@ -1,7 +1,6 @@
-<!-- TITLE: Cheminformatics -->
-<!-- SUBTITLE: -->
-
-# Cheminformatics development
+---
+title: "Cheminformatics"
+---
 
 In addition to being a general-purpose extensible platform for scientific computing, Datagrok provides multiple options
 for developing cheminformatics solutions on top of it. Depending on your needs, use one or more of the following ones,
@@ -213,5 +212,5 @@ rendered as SVG using the RDKit library.
 
 See also:
 
-* [Cheminformatics](../../../domains/chem/cheminformatics.md)
+* [Cheminformatics](../../../domains/chem/chem.md)
 * [JavaScript development](../../develop.md)

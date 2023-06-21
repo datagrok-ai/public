@@ -1,8 +1,0 @@
-#name: GrokDataTest
-#language: grok
-#tags: demo
-#output: double result
-
-result = TestData("cars")
-DeleteColumns(result, Named(["model", "cylinders"]))
-DeleteRows(result, CellEquals("make", "BMW"))

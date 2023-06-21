@@ -1,13 +1,15 @@
-import { Track } from '../../track';
+import { Track } from '@datagrok-libraries/tutorials/src/track';
 import { DashboardTutorial } from './tutorials/dashboard';
 import { FiltersTutorial } from './tutorials/filters';
 import { ScatterPlotTutorial } from './tutorials/scatter-plot';
 import { ViewersTutorial } from './tutorials/viewers-basics';
 import { EmbeddedViewersTutorial } from './tutorials/embedded-viewers';
+import { GridTutorial } from './tutorials/grid';
 
 
 export const tutorials = [
   ScatterPlotTutorial,
+  GridTutorial,
   ViewersTutorial,
   FiltersTutorial,
   DashboardTutorial,

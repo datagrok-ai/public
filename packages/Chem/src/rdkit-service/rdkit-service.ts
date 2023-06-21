@@ -1,7 +1,7 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
-import {BitSet} from 'datagrok-api/dg';
+import { RuleId } from '../panels/structural-alerts';
 
 export class RdKitService {
   workerCount: number;
@@ -31,7 +31,7 @@ export class RdKitService {
 
   async _doParallel(
     fooScatter: (i: number, workerCount: number) => Promise<any>,
-    fooGather = (_: any) => []): Promise<any> {
+    fooGather: (_: any) => any[] = (_: any) => []): Promise<any> {
     const promises = [];
     const workerCount = this.workerCount;
     for (let i = 0; i < workerCount; i++)
@@ -41,25 +41,25 @@ export class RdKitService {
     return fooGather(data);
   }
 
-  async _initParallelWorkers(dict: string[], func: any, postFunc: any): Promise<any> {
+  async _initParallelWorkers(molecules: string[], func: any, postFunc: any): Promise<any> {
     const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
-        const length = dict.length;
+        const length = molecules.length;
         const segmentLength = Math.floor(length / nWorkers);
         t.segmentLength = segmentLength;
         const segment = i < (nWorkers - 1) ?
-          dict.slice(i * segmentLength, (i + 1) * segmentLength) :
-          dict.slice(i * segmentLength, length);
+          molecules.slice(i * segmentLength, (i + 1) * segmentLength) :
+          molecules.slice(i * segmentLength, length);
         return func(i, segment);
       },
       postFunc,
     );
   }
 
-  async initMoleculesStructures(dict: string[])
+  async initMoleculesStructures(molecules: string[])
     : Promise<any> {
-    return this._initParallelWorkers(dict, (i: number, segment: any) =>
+    return this._initParallelWorkers(molecules, (i: number, segment: any) =>
       this.parallelWorkers[i].initMoleculesStructures(segment),
     () => {});
   }
@@ -84,17 +84,55 @@ export class RdKitService {
       });
   }
 
-  async getFingerprints(fingerprintType: Fingerprint): Promise<Uint8Array[]> {
+
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Uint8Array[]> {
     const t = this;
-    return (await this._doParallel(
-      (i: number, _: number) => {
-        return t.parallelWorkers[i].getFingerprints(fingerprintType);
+    const res = molecules ?
+      await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
+      (data: Array<Uint8Array | null>[][]) => {
+        return ([] as Array<Uint8Array | null>[]).concat(...data);
+      }) :
+      await this._doParallel(
+        (i: number, _: number) => {
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules);
+        },
+        (data: Array<Uint8Array | null>[][]) => {
+          return ([] as Array<Uint8Array | null>[]).concat(...data);
+        });
+    return res;
+  }
+
+
+  async convertMolNotation(targetNotation: string): Promise<string[]> {
+    const t = this;
+    return this._doParallel(
+      (i: number, nWorkers: number) => {
+        return t.parallelWorkers[i].convertMolNotation(targetNotation);
       },
       (data: any) => {
+        for (let k = 0; k < data.length; ++k)
+          data[k] = data[k].map((a: number) => a + t.segmentLength * k);
+
         return [].concat(...data);
-      })).map(
-      (obj: any) =>
-      // We deliberately choose Uint32Array over DG.BitSet here
-        obj.data);
+      });
+  }
+
+  async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): Promise<[RuleId, boolean[]][]> {
+    const t = this;
+    const fooGather = (data: {[rule in RuleId]?: boolean[]}[]): [RuleId, boolean[]][] => {
+      const result: {[rule in RuleId]?: boolean[]} = {};
+      for (let k = 0; k < data.length; ++k) {
+        const part = data[k];
+        for (const ruleId of Object.keys(part)) {
+          result[ruleId as RuleId] ??= [];
+          result[ruleId as RuleId] = result[ruleId as RuleId]!.concat(...part[ruleId as RuleId]!);
+        }
+      }
+      return Object.entries(result) as [RuleId, boolean[]][];
+    };
+    return molecules ? this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+        t.parallelWorkers[i].getStructuralAlerts(alerts, segment), fooGather) :
+      this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 }

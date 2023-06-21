@@ -41,12 +41,11 @@ CanvasRenderingContext2D.prototype.line = function(x1, y1, x2, y2, color) {
 CanvasRenderingContext2D.prototype.polygon = function(pa) {
   this.beginPath();
 
-  const last_p = pa[pa.length - 1]
-  this.moveTo(last_p.x, last_p.y);
+  const lastP = pa[pa.length - 1];
+  this.moveTo(lastP.x, lastP.y);
 
-  for (let p of pa) {
+  for (const p of pa)
     this.lineTo(p.x, p.y);
-  }
   this.closePath();
 
   return this;

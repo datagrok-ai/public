@@ -1,53 +1,35 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
+
+import * as NGL from 'NGL';
+import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+
 import {_package} from '../package';
-import {NglGlTask} from '@datagrok-libraries/bio';
 
-//import {Observable, Subject} from 'rxjs';
-
-
-export class NglGlService implements bio.NglGlServiceBase {
+export class NglGlService implements NglGlServiceBase {
   readonly nglDiv: HTMLDivElement;
   private readonly ngl: any;
 
   hostDn?: DG.DockNode;
 
-  //private renderQueue: Subject<bio.NglGlRenderTask>;
-  private readonly _queue: { key?: keyof any, task: bio.NglGlTask }[];
-  private readonly _queueDict: { [key: keyof any]: bio.NglGlTask };
+  private readonly _queue: { key?: keyof any, task: NglGlTask }[];
+  private readonly _queueDict: { [key: keyof any]: NglGlTask };
+  /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
+  private _busy: boolean = false;
 
   constructor() {
-    const r = window.devicePixelRatio;
-
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
-    this.nglDiv.style.width = `${300 / r}px`;
-    this.nglDiv.style.height = `${300 / r}px`;
 
-    // const blanket = ui.div();
-    // blanket.style.position = 'absolute';
-    // blanket.style.width = `${200 / r}px`;
-    // blanket.style.height = `${200 / r}px`;
-
-    // const windows = grok.shell.windows;
-    // windows.showProperties = false;
-
-    //@ts-ignore
     this.ngl = new NGL.Stage(this.nglDiv);
-    // this.ngl.viewer.renderer.domElement.width = 300;
-    // this.ngl.viewer.renderer.domElement.height = 300;
     this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     this._queue = [];
     this._queueDict = {};
   }
 
-  /* The flag allows _processQueue() on add item to the queue */
-  private _busy: boolean = false;
-
-  render(task: bio.NglGlTask, key?: keyof any): void {
-    //console.debug('BSV: NglGlService.render() start ' + `name: ${name}`);
+  render(task: NglGlTask, key?: keyof any): void {
+    //_package.logger.debug('NglGlService.render() start ' + `name: ${name}`);
 
     if (key !== undefined) {
       if (key in this._queueDict) {
@@ -66,11 +48,12 @@ export class NglGlService implements bio.NglGlServiceBase {
       const hostDiv = ui.div([this.nglDiv]);
       this.hostDn = grok.shell.tv.dockManager.dock(hostDiv, DG.DOCK_TYPE.RIGHT,
         null, 'NglGlService', 0.00);
-      console.debug('PTV: NglGlService dock()');
+      _package.logger.debug('NglGlService dock()');
 
+      // TODO: Use requestAnimationFrame()
       window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
     }
-    //console.debug('BSV: NglGlService.render() end ' + `name: ${name}`);
+    //_package.logger.debug('NglGlService.render() end ' + `name: ${name}`);
   }
 
   private async _processQueue() {
@@ -79,8 +62,10 @@ export class NglGlService implements bio.NglGlServiceBase {
 
     const r = window.devicePixelRatio;
 
+    // TODO: Convert string to Blob once converting PDB string column to Blob
     const stringBlob = new Blob([task.props.pdb], {type: 'text/plain'});
 
+    // TODO: Use canvas size switching 0/1 px to required
     this.nglDiv.style.width = `${Math.floor(task.props.width) / r}px`;
     this.nglDiv.style.height = `${Math.floor(task.props.height) / r}px`;
 
@@ -89,18 +74,15 @@ export class NglGlService implements bio.NglGlServiceBase {
     await this.ngl.compList[0].addRepresentation('cartoon');
     await this.ngl.compList[0].autoView();
 
-    const canvas = this.nglDiv.querySelector('canvas');
-    canvas!.width = Math.floor(task.props.width);
-    canvas!.height = Math.floor(task.props.height);
+    const canvas = this.nglDiv.querySelector('canvas')!;
+    canvas.width = Math.floor(task.props.width);
+    canvas.height = Math.floor(task.props.height);
 
     this.task = task;
     this.key = key;
     this.emptyPaintingSize = undefined;
 
     await this.ngl.handleResize();
-
-    // await new Promise((r) => setTimeout(r, 4000));
-    let k = 11;
   }
 
   private emptyPaintingSize?: number = undefined;
@@ -110,16 +92,17 @@ export class NglGlService implements bio.NglGlServiceBase {
   private async onNglRendered(): Promise<void> {
     if (this.task === undefined) return;
 
-    console.debug('PTV: NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
+    _package.logger.debug('NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
     let taskCompleted: boolean = false;
 
+    //TODO: Use canvas size switching 0/1 px to required to detect rendering completed
+    //TODO: HTMLCanvas.toBlob()
     if (this.emptyPaintingSize === undefined) {
       this.emptyPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
-      let k = 11;
     } else {
       const currentPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
       if (currentPaintingSize > this.emptyPaintingSize * 2) {
-        console.debug('PTV: NglGlService taskCompleted ' + `key = ${JSON.stringify(this.key)}`);
+        _package.logger.debug('NglGlService taskCompleted ' + `key = ${JSON.stringify(this.key)}`);
         taskCompleted = true;
       }
     }
@@ -144,13 +127,13 @@ export class NglGlService implements bio.NglGlServiceBase {
           grok.shell.tv.dockManager.close(this.hostDn!);
         } catch (err) {}
         delete this.hostDn;
-        console.debug('PTV: NglGlService undock()');
+        _package.logger.debug('NglGlService undock()');
       }
     }
   }
 
   public renderOnGridCell(
-    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource
+    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource,
   ): void {
     gCtx.save();
     try {
@@ -173,8 +156,12 @@ export class NglGlService implements bio.NglGlServiceBase {
       // gCtx.fillStyle = '#E0E0FF';
       // gCtx.fillRect(bd.x + 1, bd.y + 1, bd.width - 2, bd.height - 2);
 
-      //@ts-ignore
-      gCtx.transform(bd.width / canvas.width, 0, 0, bd.height / canvas.height, bd.x, bd.y);
+      const cw = 'width' in canvas && (
+        canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number);
+      const ch = 'height' in canvas && (
+        canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number);
+      if (!cw || !ch) throw new Error('NglGlService.renderOnGridCell() canvas size is not available');
+      gCtx.transform(bd.width / cw, 0, 0, bd.height / ch, bd.x, bd.y);
 
       gCtx.drawImage(canvas, 0 + 1, 0 + 1);
     } finally {

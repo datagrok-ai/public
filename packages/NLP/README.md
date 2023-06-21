@@ -1,20 +1,22 @@
+# NLP
+
 *NLP* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for natural language processing. The package provides integration with [AWS Translate](https://aws.amazon.com/translate/), a neural machine translation service, and extends Datagrok with [info panels](https://datagrok.ai/help/discover/info-panels) for text files.
 
 *Natural Language Processing*, or *NLP* for short, is a branch of artificial intelligence that builds a bridge between computers and human languages. This field has many applications, including:
 
-  * [language identification](https://en.wikipedia.org/wiki/Language_identification)
-  * [machine translation](https://en.wikipedia.org/wiki/Machine_translation)
-  * [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis)
-  * [text summarization](https://en.wikipedia.org/wiki/Automatic_summarization)
-  * [topic modeling](https://en.wikipedia.org/wiki/Topic_model)
-  * [entity extraction](https://en.wikipedia.org/wiki/Named-entity_recognition)
+* [language identification](https://en.wikipedia.org/wiki/Language_identification)
+* [machine translation](https://en.wikipedia.org/wiki/Machine_translation)
+* [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis)
+* [text summarization](https://en.wikipedia.org/wiki/Automatic_summarization)
+* [topic modeling](https://en.wikipedia.org/wiki/Topic_model)
+* [entity extraction](https://en.wikipedia.org/wiki/Named-entity_recognition)
 
 ## Text extraction
 
 It all starts with extracting text. This is a building block for other, more
 complex tasks. Due to the high demand, it is essential to support as many
 popular text file formats as possible. The platform comes with a built-in
-[file browser](https://datagrok.ai/help/access/file-browser-and-file-shares)
+[file browser](https://datagrok.ai/help/access/file-shares#files-manager)
 for easy file management. The package extends it by processing text from
 `pdf`, `doc`, `docx`, `odt`, and other text formats.
 
@@ -33,7 +35,7 @@ As with text extraction, this functionality is used in the [Translation](#neural
 The package creates a new info panel for text files. It uses [AWS Translate](https://aws.amazon.com/translate/) service, which supports over [70 languages](https://docs.aws.amazon.com/translate/latest/dg/what-is.html#what-is-languages).
 
 To translate a text, navigate to the file browser and select one of the demo files (see the `texts` folder). Alternatively, open your personal folder and drag-and-drop your file to the platform. Now, whenever you click
-on the file, you will see a suggestion to translate it in the property panel on the right.
+on the file, you will see a suggestion to translate it in the context panel on the right.
 
 ![Translate text files](./gif/nlp-machine-translation.gif)
 
@@ -47,8 +49,9 @@ into account various parameters: the average number of words per sentence or
 syllables per word, percentage of long words, etc.
 
 The `Text Statistics` info panel calculates two common formulas:
-  * [Flesch reading-ease](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests) test for English
-  * [LIX](https://en.wikipedia.org/wiki/Lix_(readability_test)) formula for other languages
+
+* [Flesch reading-ease](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests) test for English
+* [LIX](https://en.wikipedia.org/wiki/Lix_(readability_test)) formula for other languages
 
 ![Calculate text statistics](./gif/nlp-text-statistics.gif)
 
@@ -60,7 +63,7 @@ The `Text Statistics` info panel calculates two common formulas:
 
 The package demonstrates two ways of developing [info panels](https://datagrok.ai/help/discover/info-panels) for Datagrok: with panel scripts and with JavaScript panel functions.
 
-To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/compute/scripting#supported-languages), you should indicate the `panel` tag and specify conditions for the panel to be shown (in the `condition` [header parameter](https://datagrok.ai/help/compute/scripting#header-parameters)):
+To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/compute/scripting#supported-languages), you should indicate the `panel` tag and specify conditions for the panel to be shown (in the `condition` [header parameter](https://datagrok.ai/help/datagrok/functions/func-params-annotation#header-parameters)):
 
 ```python
 # name: language detection
@@ -90,6 +93,6 @@ Refer to [src/package.js](https://github.com/datagrok-ai/public/blob/master/pack
 
 See also:
 
-  * [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
-  * [Scripting](https://datagrok.ai/help/compute/scripting)
-  * [Info panels](https://datagrok.ai/help/discover/info-panels)
+* [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
+* [Scripting](https://datagrok.ai/help/compute/scripting)
+* [Info panels](https://datagrok.ai/help/discover/info-panels)

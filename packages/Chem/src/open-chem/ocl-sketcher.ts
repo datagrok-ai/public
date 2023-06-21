@@ -1,11 +1,17 @@
 import * as grok from 'datagrok-api/grok';
 import {chem} from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {convertMolNotation} from '../package';
+import * as DG from 'datagrok-api/dg';
 
 let sketcherId = 0;
 
 export class OpenChemLibSketcher extends grok.chem.SketcherBase {
+  _sketcher: OCL.StructureEditor | null = null;
+  mouseDown = false;
+  savedMolecule: string | null = null;
+  setSavedMolecule = false;
+
   constructor() {
     super();
   }
@@ -16,7 +22,31 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     this.root.id = id;
     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
     this._sketcher.setChangeListenerCallback((id: any, molecule: any) => {
-      this.onChanged.next(null);
+      if (this.setSavedMolecule) {
+        this.setSavedMolecule = false;
+        this.molFile = this.savedMolecule!;
+        this.savedMolecule = null;
+      } else
+        this.onChanged.next(null);
+    });
+
+    /* workaround for situations when mouse was down outside sketcher editor but up inside sketcher editor
+    (in this case the action selected on the toolbox is applyed unintendedly. For instance, molecule is removed).
+    stopImmediatePropagation doesn't prevent OCL editor from deleting molecule.
+    Using pointerup instead of mouseup here since at the moment of mouseup event molecule is already removed
+    TODO!!!:  create issue on openChemLib github*/
+
+    const canvas = this.root.querySelectorAll('canvas')[1];
+    canvas!.addEventListener('pointerdown', (e) => {
+      this.mouseDown = true;
+    });
+    canvas!.addEventListener('pointerup', (e) => {
+      if (this.mouseDown)
+        this.mouseDown = false;
+      else {
+        this.setSavedMolecule = true;
+        this.savedMolecule = this.molFile;
+      }
     });
   }
 
@@ -25,41 +55,39 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._sketcher ? this._sketcher.getSmiles() : this.host?.getSmiles();
+    return this._sketcher ? this._sketcher.getSmiles() : '';
   }
 
   set smiles(s) {
-    this._sketcher.setSmiles(s);
+    this._sketcher?.setSmiles(s);
   }
 
   get molFile() {
-    return this._sketcher ? this._sketcher.getMolFile() : this.host?.getMolFile();
+    return this._sketcher ? this._sketcher.getMolFile() : '';
   }
 
   set molFile(s) {
-    this._sketcher.setMolFile(s);
+    this._sketcher?.setMolFile(s);
   }
 
   get molV3000() {
-    return this._sketcher ? this._sketcher.getMolFileV3() : this.host?.getMolFile();
+    return this._sketcher ? this._sketcher.getMolFileV3() : '';
   }
 
   set molV3000(s) {
-    this._sketcher.setMolFile(s);
+    this._sketcher?.setMolFile(s);
   }
 
   async getSmarts(): Promise<string> {
-    if (this._sketcher) {
-      const mol = getRdKitModule().get_mol(this.molFile);
-      const smarts = mol.get_smarts();
-      mol?.delete();
-      return smarts;
-    } else
-      return await this.host!.getSmarts() as string;
+    return convertMolNotation(this.molFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
   }
 
   set smarts(s: string) {
     this.convertAndSetSmarts(s);
+  }
+
+  get isInitialized() {
+    return this._sketcher !== null;
   }
 
   detach(): void {
@@ -68,8 +96,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   private async convertAndSetSmarts(s: string) {
-    const mol = getRdKitModule().get_mol(s);
-    this._sketcher?.setMolFile(mol.get_molblock());
-    mol?.delete();
+    const molfile = convertMolNotation(s, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
+    this._sketcher?.setMolFile(molfile);
   }
 }

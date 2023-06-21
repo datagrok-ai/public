@@ -1,4 +1,6 @@
-# Single source of truth
+---
+title: "Single source of truth"
+---
 
 Our wiki is a single source of truth for any information about how to deploy, use, or troubleshoot Datagrok. This policy
 applies to how we communicate and share knowledge internally and externally. The rationale is simple. We want to have

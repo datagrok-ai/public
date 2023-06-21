@@ -157,6 +157,24 @@ export const dgToTsTypeMap: Indexable = {
   file: 'DG.FileInfo',
 };
 
+export const propertyTypes = [
+  'bool', 'int', 'float', 'string', 'datetime', 'object',
+  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map',
+];
+
+export const headerTags = [
+  'name', 'description', 'help-url', 'input', 'output', 'tags',
+  'sample', 'language', 'returns', 'test', 'sidebar', 'condition',
+  'top-menu', 'environment', 'require', 'editor-for', 'schedule',
+  'reference', 'editor',
+];
+
+export const paramRegex = new RegExp(`\/\/\\s*(${headerTags.join('|')}|meta\\.[^:]*): *(\\S+) ?(\\S+)?`);
+
+export const nameRegex = /(?:|static|export\s+function|export\s+async\s+function)\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?)\).*/;
+
+export const absUrlRegex = new RegExp('^(?:[a-z+]+:)?//', 'i');
+
 export function getScriptOutputType(script: string, comment: string = '#'): string {
   const regex = new RegExp(`${comment}\\s*output:\\s?([a-z_]+)\\s*`);
   const match = script.match(regex);

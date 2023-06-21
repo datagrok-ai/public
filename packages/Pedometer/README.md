@@ -1,6 +1,8 @@
+# Pedometer
+
 Pedometer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
 It showcases the ability to develop plugins that include scientific computations and a rich UI
-that leverages the platform's capabilities. 
+that leverages the platform's capabilities.
 
 Here are the files of particular interest:
 
@@ -13,11 +15,11 @@ Here are the files of particular interest:
 
 ## Detecting steps
 
-Let's take a detailed look at the header of the 
+Let's take a detailed look at the header of the
 [scripts/detect_steps.py](https://github.com/datagrok-ai/public/blob/master/packages/Pedometer/scripts/detect_steps.py) file.
 It addition to containing information such as name and
 description, it instructs the platform what the input and output parameters are, including their data types
-and semantic types:   
+and semantic types:
 
 ```
 # name: detect steps
@@ -41,12 +43,13 @@ and semantic types:
 //input: column y {semType: Accelerometer-Y} [Y axis]
 //input: column z {semType: Accelerometer-Z} [Z axis]
 //input: column timeOffset {semType: Time-Offset} [Time offset column]
-pedometer(accel, x, y, z, timeOffset) 
-``` 
+pedometer(accel, x, y, z, timeOffset)
+```
 
-See also: 
-  * [Grok API](https://datagrok.ai/help/develop/js-api)
-  * [Packages](https://datagrok.ai/help/develop/develop#packages)
-  * [Scripting](https://datagrok.ai/help/compute/scripting)
-  * [Info panels](https://datagrok.ai/help/discover/info-panels)
-  * [Semantic types](https://datagrok.ai/help/discover/semantic-types)
+See also:
+
+* [Grok API](https://datagrok.ai/help/develop/js-api)
+* [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Scripting](https://datagrok.ai/help/compute/scripting)
+* [Info panels](https://datagrok.ai/help/discover/info-panels)
+* [Semantic types](https://datagrok.ai/help/discover/semantic-types)

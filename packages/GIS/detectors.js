@@ -94,65 +94,71 @@ class GisPackageDetectors extends DG.Package {
     return null;
   }
 
-  //tags: semTypeDetector
-  //input: column col
-  //output: string semType
-  //description: detector of ZIP codes for different countries
-  detectGisZipcode(col) {
-    if ((col.type !== DG.COLUMN_TYPE.STRING)) // || (col.type !== DG.COLUMN_TYPE.INT))
-      return null;
-    let estCoeff = 0; //coefficient of estimation [0 - >100] the more value - the more probability
+  // //tags: semTypeDetector
+  // //input: column col
+  // //output: string semType
+  // //description: detector of ZIP codes for different countries
+  // detectGisZipcode(col) {
+  //   if ((col.type !== DG.COLUMN_TYPE.STRING) && (col.type !== DG.COLUMN_TYPE.INT))
+  //     return null;
+  //   let estCoeff = 0; //coefficient of estimation [0 - >100] the more value - the more probability
+  //   let colSemType = null;
 
-    const zipUS1EU1 = /[\b\d{4,6}\b|\b\d{9}\b]/i;
-    const zipUS1nodash = /\b\d{9}\b/i;
-    const zipUS2BRZ = /\b\d{5}-\d{3,4}\b/i;
-    const zipJPN = /\b\d{3}-\d{3,4}\b/i;
-    const zipCAN = /\b[a-z]\d[a-z]\s\d[a-z]\d\b/i;
-    //TODO: add checking for zip codes of other countries Great Britain, AZ, AG, GR, SW, Livan, Islands, NL, PL, PT ?
+  //   const zipcodePatterns = new Map([
+  //     ['zipUS1EU1', /[\b\d{4,6}\b|\b\d{9}\b]/i],
+  //     ['zipUS1nodash', /\b\d{9}\b/i],
+  //     ['zipUS2BRZ', /\b\d{5}-\d{3,4}\b/i],
+  //     ['zipJPN', /\b\d{3}-\d{3,4}\b/i],
+  //     ['zipCAN', /\b[a-z]\d[a-z]\s\d[a-z]\d\b/i],
+  //   ]);
 
-    const samplesNum = Math.min(col.categories.length, 30);
-    const caseWeight = 75 / (samplesNum + 1);
-    const step = Math.round(col.categories.length / (samplesNum + 1));
-    for (let i = 0; i < col.categories.length; i += step) {
-      //checking for incorrect length of column values (<3 or >10)
-      if ((col.categories[i].length < 3) || (col.categories[i].length > 10)) {
-        estCoeff -= caseWeight * 2;
-        continue;
-      }
-      //check for pattern matching
-      if ((col.categories[i].match(zipJPN) !== null) && (col.categories[i].length < 9))
-        estCoeff += caseWeight;
-      else if ((col.categories[i].match(zipCAN) !== null) && (col.categories[i].length < 8))
-        estCoeff += caseWeight;
-      else if ((col.categories[i].match(zipUS1EU1) !== null) && (col.categories[i].length < 7))
-        estCoeff += caseWeight;
-      else if ((col.categories[i].match(zipUS2BRZ) !== null) && (col.categories[i].length < 11))
-        estCoeff += caseWeight;
-      else if ((col.categories[i].match(zipUS1nodash) !== null) && (col.categories[i].length < 10))
-        estCoeff += caseWeight;
-      else
-        estCoeff -= caseWeight * 2;
+  //   const zipcodeLengthMap = new Map([
+  //     ['zipUS1EU1', 7],
+  //     ['zipUS1nodash', 10],
+  //     ['zipUS2BRZ', 11],
+  //     ['zipJPN', 9],
+  //     ['zipCAN', 8],
+  //   ]);
 
-      // if ((col.categories[i].match(zipJPN) !== null) ||
-      //   (col.categories[i].match(zipUS1EU1) !== null) ||
-      //   (col.categories[i].match(zipUS2BRZ) !== null) ||
-      //   (col.categories[i].match(zipCAN) !== null))
-      //   estCoeff += caseWeight;
-      // else
-      //   estCoeff -= caseWeight * 2;
-    }
-    //TODO: should we add checking for "Почтовый индекс"?
-    const colName = col.name.toLowerCase();
-    if (colName.includes('zip') || colName.includes('code') || colName.includes('post'))
-      estCoeff += 40;
+  //   //TODO: add checking for zip codes of other countries Great Britain, AZ, AG, GR, SW, Livan, Islands, NL, PL, PT ?
 
-    if (estCoeff > 75) {
-      col.semType = SEMTYPEGIS.GISZIPCODE;
-      return col.semType;
-    }
+  //   const samplesNum = Math.min(col.categories.length, 30);
+  //   const caseWeight = 75 / (samplesNum + 1);
+  //   const step = Math.round(col.categories.length / (samplesNum + 1));
+  //   for (let i = 0; i < col.categories.length; i += step) {
+  //     //checking for incorrect length of column values (<3 or >10)
+  //     if ((col.categories[i].length < 3) || (col.categories[i].length > 10)) {
+  //       estCoeff -= caseWeight * 2;
+  //       continue;
+  //     }
 
-    return null;
-  }
+  //     const oldValue = estCoeff;
+  //     for (const [key, value] of zipcodePatterns) {
+  //       if ((col.categories[i].match(value) !== null) && (col.categories[i].length < zipcodeLengthMap.get(key))) {
+  //         estCoeff += caseWeight;
+  //         break;
+  //       }
+  //     }
+  //     if (estCoeff === oldValue) estCoeff -= caseWeight * 2;
+  //   }
+
+  //   //TODO: should we add checking for "Почтовый индекс"?
+  //   const colName = col.name.toLowerCase();
+  //   if (colName.includes('zip') || colName.includes('code') || colName.includes('post')) {
+  //     colSemType = SEMTYPEGIS.GISZIPCODE;
+  //     estCoeff += 40;
+  //   }
+
+  //   if (colSemType === null)
+  //     return null;
+
+  //   if (estCoeff > 75) {
+  //     col.semType = colSemType;
+  //     return col.semType;
+  //   }
+
+  //   return null;
+  // }
 
   //tags: semTypeDetector
   //input: column col
@@ -162,18 +168,20 @@ class GisPackageDetectors extends DG.Package {
     if (col.type !== DG.TYPE.STRING)
       return null;
 
+    let colSemType = null;
     let estCoeff = 0; //coefficient of estimation [0-100] the more value - the more probability
     const colName = col.name.toLowerCase();
 
     if (colName.includes('address') || colName.includes('street') || colName.includes('location'))
       estCoeff += 40;
 
-    //TODO: put variants of patterns into array and perform check for array elements (?)
     //Address patterns
-    const Addr1 = /[str.|street]/i;
-    const Addr2 = /[blvd|boulevad]/i;
-    const Addr3 = /square/i;
-    const Addr4 = /[rd.|road]/i;
+    const addressPatterns = new Map([
+      ['street', /[str.|street]/i],
+      ['boulevard', /[blvd|boulevad]/i],
+      ['square', /square/i],
+      ['road', /[rd.|road]/i],
+    ]);
 
     const samplesNum = Math.min(col.categories.length, 50);
     const caseWeight = 75 / (samplesNum + 1);
@@ -182,15 +190,23 @@ class GisPackageDetectors extends DG.Package {
         estCoeff -= caseWeight * 2;
         continue;
       }
-      if (col.categories[i].match(Addr1) !== null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr2) !== null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr3) !== null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr4) !== null) estCoeff += caseWeight;
-      else estCoeff -= caseWeight * 2;
+
+      const oldValue = estCoeff;
+      for (const value of addressPatterns.values()) {
+        if ((col.categories[i].match(value) !== null)) {
+          colSemType = SEMTYPEGIS.GISADDRESS;
+          estCoeff += caseWeight;
+          break;
+        }
+      }
+      if (estCoeff === oldValue) estCoeff -= caseWeight * 2;
     }
 
+    if (colSemType === null)
+      return null;
+
     if (estCoeff > 75) {
-      col.semType = SEMTYPEGIS.GISADDRESS;
+      col.semType = colSemType;
       return col.semType;
     }
     return null;

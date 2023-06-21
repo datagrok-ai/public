@@ -1,19 +1,18 @@
-<!-- TITLE: Cheminformatics -->
-<!-- SUBTITLE: -->
-
-# Cheminformatics
+---
+title: "Cheminformatics"
+---
 
 These programming exercises are designed to introduce developers to the Datagrok platform cheminformatics capabilities.
-The exercises are based on your knowledge obtained in [exercies](./exercises.md).
+The exercises are based on your knowledge obtained in [exercises](exercises.md).
 
 ## Table of contents
 
 * [Search for most common structures](#exercise-1-search-for-most-common-structures)
 * [Model to predict activity](#exercise-3-train-model-to-predict-activity)
 
-# Basic exercises in cheminformatics
+## Basic exercises in cheminformatics
 
-## Exercise 1: Search for most common structures
+### Exercise 1: Search for most common structures
 
 _You will learn:_ How to employ functions from external packages in your own package.
 
@@ -62,7 +61,7 @@ _Input data_. Files > App Data > Chem > sars\_small.csv
    column. `df.columns.insert()` method can help with this, if we cleverly specify the index/position at which the
    insertion should take place.
 
-## Exercise 3: Train Model to Predict Activity
+### Exercise 3: Train Model to Predict Activity
 
 _You will learn:_ How to train a model inside a package and use it to predict the activity of molecules
 

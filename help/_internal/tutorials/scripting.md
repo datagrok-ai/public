@@ -10,7 +10,7 @@ Features: creating new script, different languages, navigating samples, executin
 1. Show examples and different languages:
 
 * Script View (Tools | Scripting | New Script...)
-* Open Samples menu (Click "☰" | Samples | <Languages>)
+* Open Samples menu (Click `☰` | `Samples` | `<Languages>`)
 * Select any example (for example: Scalogram)
 * Load sample table (Click "∗")
 * Run script (Click “▶” button)

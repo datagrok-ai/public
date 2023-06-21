@@ -15,13 +15,13 @@ import {
 } from './constants';
 
 
-function getGroupInput(type: string): HTMLElement {
+function getGroupInput(editor: DG.InputBase<string>, type: string): HTMLElement {
   const items = tags[type];
   const inp = ui.choiceInput('See snippets:', items.length ? items[0] : null, items, async (tag: string) => {
     const snippets = await loadSnippets(type, tag);
     const container = $('.dt-dev-pane-container > .dt-snippet-section');
     container.empty();
-    container.append(formSnippetSection(snippets));
+    container.append(formSnippetSection(editor, snippets));
   });
   return inp.root;
 }
@@ -38,16 +38,19 @@ function format(s: string): string {
   return s[0].toUpperCase() + s.slice(1);
 }
 
-function formSnippetSection(snippets: DG.Script[], count: number = 3): HTMLDivElement[] {
+function formSnippetSection(editor: DG.InputBase<string>, snippets: DG.Script[], count: number = 3): HTMLDivElement[] {
   const snippetNames = snippets.map((s) => ui.divText(format(s.friendlyName), {classes: 'd4-link-action'}));
+  const lineEndRegex = /\r\n|\r|\n/;
+  const paramAnnotationRegex = /^\/\/(name|tags|language|help-url):.+/;
   snippetNames.forEach((el, idx) => el.addEventListener('click', () => {
     let s = '';
-    const lines = snippets[idx].script.split(/\r\n|\r|\n/);
+    const lines = snippets[idx].script.split(lineEndRegex);
     for (const line of lines) {
-      if (/^\/\/(name|tags|language|help-url):.+/.test(line)) continue;
+      if (paramAnnotationRegex.test(line))
+        continue;
       s += line + '\n';
     }
-    (<HTMLTextAreaElement>document.querySelector('.dt-dev-pane-container > .dt-textarea-box textarea')).value = s;
+    editor.value = s;
   }));
   if (snippetNames.length > count) {
     const rest = snippetNames.splice(count);
@@ -63,7 +66,8 @@ function formSnippetSection(snippets: DG.Script[], count: number = 3): HTMLDivEl
 function getViewerScript(viewer: DG.Viewer): string {
   const options = viewer.getOptions(false)['look'];
   delete options['#type'];
-  const script = `grok.shell.v.addViewer(DG.VIEWER.${viewerConst[viewer.type]}, ${JSON.stringify(options, null, 2)});`;
+  const type = viewerConst[viewer.type];
+  const script = `grok.shell.v.addViewer(${type ? `DG.VIEWER.${type}` : `'${viewer.type}'`}, ${JSON.stringify(options, null, 2)});`;
   return `<pre><code>${script}</code></pre>`;
 }
 
@@ -109,6 +113,7 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
       lineWrapping: true,
       mode: 'javascript',
     });
+    editor.onChanged(() => codeMirror.setValue(editor.value));
 
     //@ts-ignore
     codeMirror.display.wrapper.style.marginTop = '10px';
@@ -130,16 +135,15 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
   $(playBtn).addClass('dt-snippet-editor-icon dt-play-icon');
 
   const clipboardBtn = ui.button(ui.iconFA('copy'), () => {
-    (editor.input as HTMLInputElement).select();
-    const copied = document.execCommand('copy');
-    if (copied) {
-      const copyIcon = clipboardBtn.removeChild(clipboardBtn.firstChild);
-      clipboardBtn.appendChild(ui.iconFA('clipboard-check'));
-      setTimeout(() => {
-        clipboardBtn.removeChild(clipboardBtn.firstChild);
-        clipboardBtn.appendChild(copyIcon);
-      }, 1000);
-    }
+    const input = editor.input as HTMLInputElement;
+    input.select();
+    navigator.clipboard.writeText(input.value);
+    const copyIcon = clipboardBtn.removeChild(clipboardBtn.firstChild);
+    clipboardBtn.appendChild(ui.iconFA('clipboard-check'));
+    setTimeout(() => {
+      clipboardBtn.removeChild(clipboardBtn.firstChild);
+      clipboardBtn.appendChild(copyIcon);
+    }, 1000);
   }, 'Copy');
   $(clipboardBtn).addClass('dt-snippet-editor-icon dt-clipboard-icon');
 
@@ -166,8 +170,8 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
     ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], {style: {'align-items': 'baseline'}}),
     ...links.map((link: HTMLAnchorElement | HTMLAnchorElement[]) =>
       Array.isArray(link) ? ui.div([ui.divText('See also:'), ...link]) : link),
-    ...((type in tags) ? [getGroupInput(type)] : []),
-    ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
+    ...((type in tags) ? [getGroupInput(editor, type)] : []),
+    ui.div(formSnippetSection(editor, snippets), 'dt-snippet-section'),
     ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),
   ], 'dt-dev-pane-container'));
 }

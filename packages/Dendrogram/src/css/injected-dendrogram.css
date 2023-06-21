@@ -1,0 +1,25 @@
+.dendrogram-close-bttn{
+    position: absolute;
+    top: 0px;
+    color: #9497a0;
+    right: 0px;
+    font-size: 18px;
+    z-index: 1000;
+    background-color: white;
+    padding-top: 3px;
+}
+
+.dendrogram-overlay{
+    position: absolute;
+    background-color: white;
+    overflow-y: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dendrogram-loader{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

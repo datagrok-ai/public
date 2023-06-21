@@ -1,11 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from '../autostart/constants';
 import * as grok from 'datagrok-api/grok';
-import {removeEmptyRows} from '../helpers';
+import {removeEmptyRows} from '../utils/helpers';
 import {parseStrandsFromDuplexCell, parseStrandsFromTriplexOrDimerCell} from './parse';
-import {isValidSequence} from '../structures-works/sequence-codes-tools';
+import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
 import {batchMolWeight, molecularWeight, saltMass, saltMolWeigth} from '../autostart/calculations';
-import {weightsObj} from '../structures-works/map';
+import {weightsObj} from '../hardcode-to-be-eliminated/map';
 
 export class SdfColumnsExistsError extends Error {
   constructor(message: string) {

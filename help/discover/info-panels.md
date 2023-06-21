@@ -1,7 +1,6 @@
-<!-- TITLE: Info panels -->
-<!-- SUBTITLE: -->
-
-# Info panels
+---
+title: "Info panels"
+---
 
 Info panels provide additional information about the current context (which can be a table, a column, or pretty much any
 other [object](../datagrok/objects.md)). Info panels are meant to be easily developed by the users of the platform, and
@@ -114,7 +113,7 @@ not included in the dataset, such as sampling rate).
 Within the Datagrok platform, a simple info panel can be developed that would understand when the data is a digital
 signal, perform all of the above-mentioned operations in the background (utilizing the metadata stored within the
 dataset), and push the results to the user. The result of the script below is a "Spectrogram" panel that would get shown
-in the property panel on the right when user clicks on a column with the digital signal.
+in the context panel on the right when user clicks on a column with the digital signal.
 
 See the following info panel (spectrogram-panel.grok) in action by opening (project:eeg)
 

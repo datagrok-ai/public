@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {convertMolNotation} from '../package';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
@@ -18,7 +19,7 @@ export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: 
 async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   const mcsDf = DG.DataFrame.create(2);
   mcsDf.columns.addNewString('smiles').init((i) => params.seqCol.get(params.line.mols[i]));
-  const mcs = await findMCS('smiles', mcsDf, true);
+  const mcs = await findMCS('smiles', mcsDf, true, true);
   params.cashedData[params.line.id] = mcs;
   drawMolecules(params, hosts);
 }
@@ -31,7 +32,12 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
     imageHost.height = canvasHeight * r;
     imageHost.style.width = (canvasWidth).toString() + 'px';
     imageHost.style.height = (canvasHeight).toString() + 'px';
-    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, params.seqCol.get(mol), params.cashedData[params.line.id],
+    let molecule = params.seqCol.get(mol);
+    if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
+      //convert to molFile to draw in coordinates similar to dataframe cell
+      molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+    }
+    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, params.cashedData[params.line.id],
       {normalizeDepiction: false, straightenDepiction: false});
     ui.empty(hosts[index]);
     if (!params.cashedData[params.line.id])
@@ -61,14 +67,15 @@ function drawTooltipElement(params: ITooltipAndPanelParams, element: HTMLDivElem
 function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
   const dict: {[key: string]: string} = {};
   for (const col of df.columns) {
-    if (col.name !== seqColName) 
+    if (col.name !== seqColName)
       dict[col.name] = df.get(col.name, idx);
   }
   return ui.tableFromMap(dict);
 }
 
 function createElementTemplate(params: ITooltipAndPanelParams,
-  drawFunc: (params: ITooltipAndPanelParams, element: HTMLDivElement, hosts: HTMLDivElement[], molIdx: number, idx: number) => void,
+  drawFunc: (params: ITooltipAndPanelParams, element: HTMLDivElement, hosts: HTMLDivElement[],
+  molIdx: number, idx: number) => void,
   vertical: boolean, flexColNames: boolean, colNameStyle?: any) {
   const element = vertical ? ui.divH([]) : ui.divV([]);
   const columnNames = vertical ? ui.divV([]) : ui.divH([]);
@@ -88,7 +95,8 @@ function createElementTemplate(params: ITooltipAndPanelParams,
 
 
 export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivElement {
-  const propPanel = createElementTemplate(params, drawPropPanelElement, false, false, {style: {minWigth: `${canvasWidth}px`}});
+  const propPanel = createElementTemplate(params, drawPropPanelElement, false, false,
+    {style: {minWigth: `${canvasWidth}px`}});
   propPanel.append(ui.divH([
     ui.divText(`Cliff: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
     ui.divText(params.sali!.toFixed(2)),
@@ -102,16 +110,16 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
   activity.style.paddingLeft = '15px';
   activity.style.paddingLeft = '10px';
   const molHost = ui.div();
-  if (params.df.currentRowIdx === molIdx) 
+  if (params.df.currentRowIdx === molIdx)
     molHost.style.border = 'solid 1px lightgrey';
-    
+
   ui.tooltip.bind(molHost, () => moleculeInfo(params.df, molIdx, params.seqCol.name));
   molHost.onclick = () => {
     const obj = grok.shell.o;
     molHost.style.border = 'solid 1px lightgrey';
     params.df.currentRowIdx = molIdx;
     hosts.forEach((h, i) => {
-      if (i !== idx) 
+      if (i !== idx)
         h.style.border = '';
     });
     setTimeout(() => {

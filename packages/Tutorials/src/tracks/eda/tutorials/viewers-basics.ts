@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { filter, map } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval, merge } from 'rxjs';
 
 
@@ -61,7 +61,7 @@ export class ViewersTutorial extends Tutorial {
     this.title('Properties');
 
     const spProperties = 'Make the scatter plot a current viewer by clicking on it, and then open its properties ' +
-      '(press <b>F4</b> to bring out the property panel or click on the settings icon in the viewer header). There ' +
+      '(press <b>F4</b> to bring out the context panel or click on the settings icon in the viewer header). There ' +
       'you can edit all properties of the viewer. Data-related properties are usually assembled on top under the ' +
       '<b>Data</b> category, while visual properties fall under various groups, such as <b>Colors</b>, ' +
       '<b>Markers</b> or <b>Axes</b>.';
@@ -83,15 +83,15 @@ export class ViewersTutorial extends Tutorial {
     this.title('Style');
 
     const stylePickInfo = 'You can apply the style of one viewer to another. ' +
-      'To do that, right-click on the viewer and select <b>Style | Pick up</b>.';
+      'To do that, right-click on the viewer and select <b>Pick Up / Apply | Pick Up</b>.';
     await this.contextMenuAction('Pick up the scatter plot\'s style', 'Pick Up', null, stylePickInfo);
 
     await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
 
-    const styleApplyInfo = 'To apply the style, choose <b>Style | Apply</b> in the context menu ' +
+    const styleApplyInfo = 'To apply the style, choose <b>Pick Up / Apply | Apply</b> in the context menu ' +
       'of the new viewer. Depending on the situation, you might want to apply only visual or only ' +
-      'data-related attributes; in this case, use <b>Style | Apply Style Settings</b> or ' +
-      '<b>Style | Apply Data Settings</b>. Note that style settings can be applied even to ' +
+      'data-related attributes; in this case, use <b>Apply Style Settings</b> or ' +
+      '<b>Apply Data Settings</b>. Note that style settings can be applied even to ' +
       'viewers that have different source of data.';
     await this.contextMenuAction('Apply the style to the new viewer', 'Apply', null, styleApplyInfo);
   }

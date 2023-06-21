@@ -1,43 +1,25 @@
-declare module 'phylotree' {
-  export interface PhylotreeNode {
-    id: string;
-    name: string;
-    parent: PhylotreeNode;
-    children: PhylotreeNode[];
-    attribute: string; // height / branch length
-    annotation: string;
-  }
-}
+declare module '@phylocanvas/phylocanvas.gl' {
+  export class PhylocanvasGL {
+    get deck(): Deck;
 
-declare module 'phylotree/src/formats/newick' {
-  import {PhylotreeNode} from 'phylotree';
+    get view(): HTMLDivElement;
 
-  function newickParser(newick: string): { json: PhylotreeNode, error: string | null } ;
+    get props(): { [propName: string]: any };
 
-  export = newickParser; // default
-}
+    constructor(element: HTMLElement, props: { [propName: string]: any });
 
-declare module 'phylotree' {
-  class phylotree {
+    render(): void;
 
-    get display(): TreeRender {}
+    fitInCanvas(): void;
 
-    constructor(nwk: string, options: {});
+    resume(): void;
 
-    modify_selection(selection: string);
+    setProps(props: { [propName: string]: any }): void;
 
-    path_to_root(node: PhylotreeNode);
+    selectNode: (nodeOrId: any, append: boolean = false) => void;
 
-    select_all_descendants(node: PhylotreeNode, flag1: boolean, flag2: boolean);
+    destroy(): void;
 
-    getNodes(): PhylotreeNode[];
-
-    render(props: { [propName: string]: any });
-  }
-
-  class TreeRender {
-    show();
-
-    modifySelection(predicate: () => boolean);
+    getBranchScale(...arguments): number;
   }
 }

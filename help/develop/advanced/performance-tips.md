@@ -1,6 +1,6 @@
-<!-- TITLE: Performance tips -->
-
-# Performance tips
+---
+title: "Performance tips"
+---
 
 Datagrok was designed to be as efficient as possible. While many of the features work very fast any way you use them,
 others either need a deeper understanding of the internal structures, or need to be fine-tuned to unlock maximum

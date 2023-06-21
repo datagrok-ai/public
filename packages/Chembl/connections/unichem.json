@@ -3,7 +3,7 @@
   "name": "Unichem",
   "friendlyName": "Unichem",
   "parameters":{
-    "server": "dev.datagrok.ai",
+    "server": "db.datagrok.ai",
     "port": 54326,
     "db": "unichem"
   },

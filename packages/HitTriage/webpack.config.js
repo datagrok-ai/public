@@ -13,7 +13,7 @@ module.exports = {
       { test: /\.tsx?$/, loader: 'ts-loader' }
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

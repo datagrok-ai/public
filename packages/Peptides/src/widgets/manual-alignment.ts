@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import '../styles.css';
 import {PeptidesModel} from '../model';
-import {splitAlignedSequences} from '@datagrok-libraries/bio';
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 /** Manual sequence alignment widget.
  *
@@ -31,7 +31,7 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
     grok.shell.o = temp;
 
     const peptidesController = PeptidesModel.getInstance(currentDf);
-    peptidesController.updateDefault();
+    peptidesController.updateGrid();
   });
 
   const resetBtn = ui.button(

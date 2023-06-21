@@ -33,9 +33,9 @@
 
 * "Help view" is open
 * [Toolbox](../../datagrok/navigation.md#toolbox) shows help structure in tree
-* Current page ([Cheminformatics](../../domains/chem/cheminformatics.md)) is highlighted in the tree
+* Current page ([Cheminformatics](../../domains/chem/chem.md)) is highlighted in the tree
 
-1. Go to another help page through links on [Cheminformatics](../../domains/chem/cheminformatics.md)
+1. Go to another help page through links on [Cheminformatics](../../domains/chem/chem.md)
    page
 
 1. Click on "Show in navigation tree" button
@@ -68,7 +68,7 @@
 1. Click on "Clone and detach" button on context help window
 
 * Current page ([Scripting](../../compute/scripting.md)) is fixed by separate window
-  on [Property Panel](../../datagrok/navigation.md#properties)
+  on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 1. Open **Admin | Data Queries**
 

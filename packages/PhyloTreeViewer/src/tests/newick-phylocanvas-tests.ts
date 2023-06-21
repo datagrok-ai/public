@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 category('newickParser_phylocanvas', () => {
   const nwk0 = `;`;
@@ -33,63 +33,60 @@ category('newickParser_phylocanvas', () => {
     [Tests.nwk1NoNameNoHeight]: {
       nwk: '();',
       obj: {
-        name: '', // root
-        children: [{name: '',}]
+        name: NO_NAME_ROOT, // root
+        children: [{name: ''}]
       },
     },
     [Tests.nwk1NameNoHeight]: {
       nwk: '(single);',
       obj: {
-        name: '', // root
-        children: [{name: 'single',}]
+        name: NO_NAME_ROOT, // root
+        children: [{name: 'single'}]
       },
     },
     [Tests.nwk1NameHeight]: {
       nwk: '(single:1.2);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [{name: 'single', branch_length: 1.2}]
       },
     },
     [Tests.nwk1NoNameHeight]: {
       nwk: '(:1.2);',
       obj: {
-        name: '', // root
-        children: [{name: '', branch_length: 1.2},]
+        name: NO_NAME_ROOT, // root
+        children: [{name: '', branch_length: 1.2}]
       },
     },
     [Tests.nwk3LeafsNoHeight]: {
       nwk: '((n1,n2),n3);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [
           {
             name: '',
-            children: [{name: 'n1'}, {name: 'n2'},],
+            children: [{name: 'n1'}, {name: 'n2'}],
           },
-          {name: 'n3',},
+          {name: 'n3'},
         ]
       },
     },
     [Tests.nwk3LeafsIntNodesNoHeight]: {
       nwk: '((n1,n2)in1,n3);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [
           {
             name: 'in1',
-            children: [{name: 'n1'}, {name: 'n2'},],
+            children: [{name: 'n1'}, {name: 'n2'}],
           },
-          {name: 'n3',},
+          {name: 'n3'},
         ]
       },
     },
   };
 
   test('nwk0', async () => {
-    // const res = Newick.parse_newick(nwk0);
-    // expectObject(res, {});
-
     const testData = data[Tests.nwk0];
     _testNewickToObject(testData.nwk, testData.obj);
   });
@@ -171,12 +168,11 @@ category('newickParser_phylocanvas', () => {
   });
 
   function _testNewickToObject(nwk: string, tgtObj: Object) {
-    const resObj = bio.Newick.parse_newick(nwk);
+    const resObj = parseNewick(nwk);
     expectObject(resObj, tgtObj);
   }
 
   // function _testNodeToNewick(node:Object, tgtNwk: string){
   //   const resNwk = Newick.parse_newick()
   // }
-
 });

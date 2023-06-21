@@ -4,10 +4,10 @@ Bio is a bioinformatics support [package](https://datagrok.ai/help/develop/devel
 [Datagrok](https://datagrok.ai) platform with an extensive toolset supporting SAR analisys for small molecules
 and antibodies.
 
-# Notations
+## Notations
 
 [@datagrok/bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) can ingest data in multiple file
-formats (such as fasta o csv) and multiple notations for natural and modified residues, aligned and non-aligned forms,
+formats (such as fasta or csv) and multiple notations for natural and modified residues, aligned and non-aligned forms,
 nucleotide and amino acid sequences. The sequences are automatically detected and classified, while preserving their
 initial notation. Datagrok allows you to convert sequences between different notations as well.
 
@@ -18,7 +18,7 @@ See:
 * [detectMacromolecule()](../Bio/detectors.js)
 * [class NotationConverter](../../libraries/bio/src/utils/notation-converter.ts)
 
-# Atomic-Level structures from sequences
+## Atomic-Level structures from sequences
 
 For linear sequences, the linear form (see the illustration below) of molecules is reproduced. This is useful
 for better visual inspection of sequence and duplex comparison. Structure at atomic level could be saved in available
@@ -34,14 +34,13 @@ See:
 
 * [getMolfilesFromSeq()](./src/utils/atomic-works.ts)
 
-# MSA
+## MSA
 
 For multiple-sequence alignment, Datagrok uses the “kalign” that relies on Wu-Manber string-matching algorithm
-[Lassmann, Timo. _Kalign 3: multiple sequence alignment of large data sets._ **Bioinformatics** (2019).[pdf](
-https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btz795/30314127/btz795.pdf)].
+[Lassmann, Timo. _Kalign 3: multiple sequence alignment of large data sets._ **Bioinformatics** (2019).pdf](https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btz795/30314127/btz795.pdf).
 “kalign“ is suited for sequences containing only natural monomers. Sequences of a particular column can be analyzed
 using MSA algorithm available at the top menu. Aligned sequences can be inspected for base composition
-at the position of MSA result.
+at the position of MSA result. User is also able to specify custom gap open, gap extend and terminal gap penalties for alignment.
 
 ![MSA and base composition analysis](
 ../../help/uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif "MSA analysis")
@@ -50,9 +49,7 @@ See:
 
 * [runKalign()](src/utils/multiple-sequence-alignment.ts)
 
-TODO: MSA with PepSeA
-
-# Splitting to monomers
+## Splitting to monomers
 
 Splitting to monomers allows splitting aligned sequences in separate monomers.
 
@@ -62,7 +59,7 @@ See:
 
 * [splitAlignedSequences()](../../libraries/bio/src/utils/splitter.ts)
 
-# Web Logo
+## Web Logo
 
 Web Logo visualizes a graphical representation of multiple sequence alignment (amino acids or nucleotides or
 modified residues with multi-char labels). Each logo consists of stacks of symbols, one for each position
@@ -81,13 +78,13 @@ You can customize the look of the viewer with properties. Properties ```startPos
 allow to display multiple alignment partially. If property  ```startPosition``` (```endPosition```)
 is not specified, then the Logo will be plotted from the first (till the last) position of sequences.
 
-## General
+### General
 
 |             |              |
 |-------------|--------------|
 | Right click | Context menu |
 
-## Properties
+### Properties
 
 | Property name        | Default  | Description                                                                                                             |
 |----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
@@ -116,15 +113,15 @@ See also:
 * [Viewers](../../help/visualize/viewers.md)
 * [Table view](../../help/datagrok/table-view.md)
 
-# Sequence space
+## Sequence space
 
 Datagrok allows visualizing multidimensional sequence space using a dimensionality reduction approach.
 Several distance-based dimensionality reduction algorithms are available, such as UMAP or t-SNE.
 The sequences are projected to 2D space closer if they correspond to similar structures, and farther
 otherwise. The tool for analyzing molecule collections is called 'Sequence space' and exists in
-the Bio package.
+the Bio package. Depending on the sequence type, different distance functions will be used, like [Levenstein](https://en.wikipedia.org/wiki/Levenshtein_distance) for DNA/RNA, [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) for Proteins and [Hamming](https://en.wikipedia.org/wiki/Hamming_distance) for already aligned sequences. The process is conducted in web-workers and is parallelized, which yields very fast and non interupting computing.
 
-To launch the analysis from the top menu, select Bio | Sequence space.
+To launch the analysis from the top menu, select Bio | Structure | Sequence space.
 
 ![Sequence space](../../help/uploads/macromolecules/sequence_space.gif)
 
@@ -132,17 +129,34 @@ See:
 
 * [sequenceSpace()](src/utils/sequence-space.ts)
 
-# Sequence activity cliffs
+## Sequence activity cliffs
 
 Activity cliffs tool finds pairs of sequences where small changes in the sequence yield significant
 changes in activity or any other numerical property. open the tool from a top menu by selecting.
 Similarity cutoff and similarity metric are configurable. As in Sequence space, you can select
 from different dimensionality reduction algorithms.
+A custom scatter plot with cliffs will be added to the right side of the grid. User has an option to show only cliffs and also to inspect them and highligh differences between simmilar sequences.  
 
-To launch the analysis from the top menu, select Bio | Sequence Activity Cliffs.
+To launch the analysis from the top menu, select Bio | SAR | Sequence Activity Cliffs.
 
 ![Running activity cliffs](../../help/uploads/macromolecules/activity_cliffs_open.gif)
 
 See:
 
 * [getActivityCliffs()](../../libraries/ml/src/viewers/activity-cliffs.ts)
+
+## Similarity Search
+
+Similarity Search tool allows user to find sequences that are most similar to target sequence. The tool can be accessed from the top menu of bio. It first constructs the distance matrix for all sequences, and then uses it to find most similar ones to the selection. Upon selecting similar sequences from the docked grid bellow, detailed difference will be shown in the context panel.
+
+To launch the searcg from the top menu, select Bio | Search | Similarity Search
+
+![Running similarity search](../../help/uploads/macromolecules/similarity_search.gif)
+
+## Diversity Search
+
+Diversity Search tool allows user to find sequences that are most diverse in given dataset. The tool can be accessed from the top menu of bio. By default, number of diverse sequneces will be 10.
+
+To launch the search from the top menu, select Bio | Search | Diversity Search
+
+![Running diversity search](../../help/uploads/macromolecules/diversity_search.gif)

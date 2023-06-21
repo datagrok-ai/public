@@ -4,14 +4,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {getSequenceMolecularWeight} from './molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {DimensionalityReducer, IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {
   createDimensinalityReducingWorker,
-  IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {DistanceMetricsSubjects, Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
-import * as C from './constants';
 
 /**
  * Cast an aligned sequences column to clean sequences.
@@ -69,7 +67,7 @@ export async function createPeptideSimilaritySpaceViewer(table: DG.DataFrame, me
     const axisCol = table.col(axis);
     const newCol = edf.getCol(axis);
 
-    if (axisCol != null) {
+    if (axisCol !== null) {
       for (let i = 0; i < newCol.length; ++i) {
         const v = newCol.get(i);
         table.set(axis, i, v);
@@ -116,7 +114,7 @@ export class PeptideSimilaritySpaceWidget {
    */
   constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {
     this.availableMethods = DimensionalityReducer.availableMethods;
-    this.availableMetrics = Measure.getMetricByDataType('String');
+    this.availableMetrics = Measure.getMetricByDataType(DistanceMetricsSubjects.String);
     this.method = this.availableMethods[0];
     this.metrics = this.availableMetrics[0];
     const df = alignedSequencesColumn.dataFrame;
@@ -188,7 +186,7 @@ export class PeptideSimilaritySpaceWidget {
   }
 
   /**
-   * Draws a viewer on property panel.
+   * Draws a viewer on context panel.
    *
    * @return {Promise<DG.Widget>} The corresponding widget.
    * @memberof PeptideSimilaritySpaceWidget
@@ -199,13 +197,13 @@ export class PeptideSimilaritySpaceWidget {
     const elements = ui.divV([plot.root, inputs]);
 
     // Move detaching scatterplot to the grid.
-    plot.onEvent('d4-viewer-detached').subscribe((args) => {
+    plot.onEvent('d4-viewer-detached').subscribe((_args) => {
       let found = false;
 
       for (const v of this.view.viewers) {
         const opts = v.getOptions() as {[name: string]: any};
 
-        if (opts.type == 'Scatter plot' && opts.look.xColumnName == '~X' && opts.look.yColumnName == '~Y')
+        if (opts.type === 'Scatter plot' && opts.look.xColumnName === '~X' && opts.look.yColumnName === '~Y')
           found = true;
       }
 

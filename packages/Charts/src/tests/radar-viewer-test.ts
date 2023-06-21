@@ -1,19 +1,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Subscription} from 'rxjs';
+
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {Subscription} from 'rxjs';
 import {getOptions} from './utils';
 
 
 category('Radar', () => {
-  const TYPE = 'RadarViewer';
+  const TYPE = 'Radar';
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];
-  
+
   before(async () => {
     df = DG.DataFrame.fromCsv(
-        `USUBJID, SEX, AGE, COUNTRYID
+      `USUBJID, SEX, AGE, COUNTRYID
       s1, F, 48, 12
       s2, M, 51, 3
       s3, F, 39, 5
@@ -41,7 +42,7 @@ category('Radar', () => {
       showMin: true,
       showMax: true,
       showValues: true,
-      valuesColumnNames: null,
+      valuesColumnNames: ['AGE', 'COUNTRYID'],
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });

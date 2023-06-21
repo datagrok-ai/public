@@ -19,6 +19,7 @@ interface getPosConstants {
   cols: DG.Column[];
 }
 
+
 function getPos(col: number, row: number, constants: getPosConstants): DG.Point {
   const b = constants.b;
   const settings = constants.settings;
@@ -46,16 +47,19 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const df = gridCell.grid.dataFrame;
 
-  if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) return {
-    isHit: false,
-    row: -1,
-    cols: [],
-    activeColumn: -1
-  };
+  if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) {
+    return {
+      isHit: false,
+      row: -1,
+      cols: [],
+      activeColumn: -1
+    };
+  }
 
   const row = gridCell.cell.row.idx;
   const settings = getSettings(gridCell.gridColumn);
-  const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
+  const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width,
+    gridCell.bounds.height).inflate(-3, -2);
 
   const cols = df.columns.byNames(settings.columnNames);
   const getPosConstants: getPosConstants = {
@@ -66,7 +70,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
 
 
   const MousePoint = new DG.Point(e.offsetX, e.offsetY);
-  const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) / b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
+  const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) /
+    b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
 
   const activePoint = getPos(activeColumn, row, getPosConstants);
   return {
@@ -133,7 +138,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
         const p = getPos(i, row, getPosConstants);
-        let color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.blue;
+        const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.blue;
         DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p.x, p.y, color, 3);
       }
     }

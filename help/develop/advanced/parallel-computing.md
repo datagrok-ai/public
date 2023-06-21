@@ -1,6 +1,6 @@
-<!-- TITLE: Parallel computing -->
-
-# Parallel computing in a browser
+---
+title: "Parallel computing"
+---
 
 In this section we bring the best practices of using Web Workers in JavaScript/TypeScript code of your Datagrok
 packages. We recommend them as they help provide a more low-latency, high-performance experience for your end users.
@@ -33,4 +33,4 @@ function taking considerable time to run.
 
 ## Parallelizing a single task using multiple Workers
 
-# Parallel computing on a server
+## Parallel computing on a server

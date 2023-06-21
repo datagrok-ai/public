@@ -1,7 +1,6 @@
-<!-- TITLE: Smart bar -->
-<!-- SUBTITLE: -->
-
-# Smart bar
+---
+title: "Smart bar"
+---
 
 Search for available commands and help pages. Start typing, and suggestions will appear. Search in data by preceding a
 query with '?'.

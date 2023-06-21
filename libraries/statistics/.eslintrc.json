@@ -1,7 +1,7 @@
 {
 	"env": {
 		"browser": true,
-		"es2021": true
+		"es2022": true
 	},
 	"extends": [
 		"google"
@@ -20,7 +20,12 @@
 			120
 		],
 		"require-jsdoc": "off",
-		"spaced-comment": "off"
+		"spaced-comment": "off",
+		"linebreak-style": "off",
+		"curly": [
+			"error",
+			"multi-or-nest"
+		]
 	},
 	"parser": "@typescript-eslint/parser",
 	"plugins": [

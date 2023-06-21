@@ -6,7 +6,7 @@ import { ODEview } from './views/ode-view';
 
 export const _package = new DG.Package();
 
-//name: SimPKPD
+//name: Simulation PKPD
 //tags: app
 export async function sim() {
   const dosage = ui.floatInput('Dosage, um', 1000, () => recalculate());
@@ -20,21 +20,21 @@ export async function sim() {
   const effRate = ui.floatInput('Effective rate', 0.2, () => recalculate());
   const effect = ui.floatInput('EC50', 8, () => recalculate());
 
-  let t = await simulate(dosage.value!, doseInterval.value!, compartments.value!, 
+  let t = await simulate(dosage.value!, doseInterval.value!, compartments.value!,
   clearance.value!, rateConstant.value!, centralV.value!,
   perV.value!, interRate.value!, effRate.value!, effect.value!);
 
   let lc = DG.Viewer.lineChart(t);
-  
+
   let recalculate = async (): Promise<void> => {
     t = await simulate(
-      dosage.value!, doseInterval.value!, compartments.value!, 
+      dosage.value!, doseInterval.value!, compartments.value!,
       clearance.value!, rateConstant.value!, centralV.value!,
       perV.value!, interRate.value!, effRate.value!, effect.value!);
-    
+
     lc.dataFrame = t;
-  } 
-  
+  }
+
   const v = grok.shell.newView('SimPKPD', [
     ui.panel([
       ui.div([
@@ -67,12 +67,12 @@ export async function simulate(
   perV: number, interRate: number, effRate: number, effect: number): Promise<DG.DataFrame> {
   return await grok.functions.call(
     "Simpkpd:pkpd", {
-    'dosage': dosage, 
+    'dosage': dosage,
     'doseInterval': doseInterval,
     'compartments': compartments,
-    'clearance': clearance, 
+    'clearance': clearance,
     'rateConstant': rateConstant,
-    'centralV': centralV, 
+    'centralV': centralV,
     'perV': perV,
     'interRate': interRate,
     'effRate': effRate,

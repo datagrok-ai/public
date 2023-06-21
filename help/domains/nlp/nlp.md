@@ -1,11 +1,11 @@
-<!-- TITLE: Natural language processing -->
-<!-- SUBTITLE: -->
-
-# Natural language processing
+---
+title: "Natural language processing"
+sidebar_position: 0
+---
 
 The Datagrok platform has a plugin designed for natural language processing. This feature
-can be applied to comfortably work with [files](../../access/file-browser-and-file-shares.md) with text content.
-To try it out, import your text files according to the [instructions](../../access/file-browser-and-file-shares.md)
+can be applied to comfortably work with [files](../../access/files/files.mdx) with text content.
+To try it out, import your text files according to the [instructions](../../access/files/files.mdx)
 or use the provided [demo files](https://public.datagrok.ai/files/demo.testjobs.files.demofiles/nlp).
 The rest of the article is dedicated to the main applications of this domain integrated into the platform.
 
@@ -14,7 +14,7 @@ The rest of the article is dedicated to the main applications of this domain int
 It all starts with extracting text. This is a building block for other, more
 complex tasks. Due to the high demand, it is essential to support as many
 popular text file formats as possible. The platform comes with a built-in
-[file browser](../../access/file-browser-and-file-shares.md) for easy file management.
+[file browser](../../access/files/files.mdx#file-manager) for easy file management.
 The *NLP* package extends it by processing text from `pdf`, `doc`, `docx`, `odt`, and other text formats.
 
 ![Extract text from PDF](./images/nlp-text-extraction.gif)
@@ -36,7 +36,7 @@ which supports over [70 languages](https://docs.aws.amazon.com/translate/latest/
 
 To translate a text, navigate to the file browser and select one of the demo files.
 Alternatively, open your personal folder and drag-and-drop your file to the platform.
-Now, whenever you click on the file, you will see a suggestion to translate it in the property panel on the right.
+Now, whenever you click on the file, you will see a suggestion to translate it in the context panel on the right.
 
 ![Translate text files](./images/nlp-machine-translation.gif)
 

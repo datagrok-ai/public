@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
+// import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('ValueMatcher', () => {
@@ -112,6 +112,6 @@ category('ValueMatcher', () => {
     const matcher = DG.ValueMatcher.dateTime('after 10/17/2019');
     expect(matcher.operator, 'after');
     expect(matcher.match('12/03/2022').toString(), 'true');
-    expect(matcher.validate('12/03/2022'), undefined);
+    expect(matcher.validate('12/03/2022') ==undefined);
   });
 });

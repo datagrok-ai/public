@@ -1,7 +1,6 @@
-<!-- TITLE: Column manager -->
-<!-- SUBTITLE: -->
-
-# Column manager
+---
+title: "Column manager"
+---
 
 Column Manager, available via **View | Columns** or **Add | Column Viewer**, contains a list of columns in the currently
 open tables. Use it to navigate between columns, select them, or perform batch actions. It also allows to view metadata

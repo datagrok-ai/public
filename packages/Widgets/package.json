@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/widgets",
 	"friendlyName": "Widgets",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"author": {
 		"name": "Andrew Skalkin",
 		"email": "askalkin@datagrok.ai"
@@ -50,5 +50,5 @@
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"
 	},
-  "category": "Visualizations"
+	"category": "Visualizations"
 }

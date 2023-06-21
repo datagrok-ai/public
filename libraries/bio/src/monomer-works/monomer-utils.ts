@@ -3,65 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {
-  HELM_FIELDS, HELM_CORE_FIELDS, RGROUP_FIELDS, jsonSdfMonomerLibDict,
+  HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
-import {getSplitter, SplitterFunc, TAGS} from '../utils/macromolecule';
-import {IMonomerLib, Monomer} from '../types/index';
-import {MonomerLib} from './monomer-lib';
-
-const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
-
-export async function readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
-  let data: any[] = [];
-  let file;
-  let dfSdf;
-  let fileSource = new DG.FileSource(path);
-  if (fileName.endsWith('.sdf')) {
-    const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'importSdf'});
-    if (funcList.length === 1) {
-
-      file = await fileSource.readAsBytes(fileName);
-      dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
-      data = createJsonMonomerLibFromSdf(dfSdf[0]);
-    } else {
-      grok.shell.warning('Chem package is not installed');
-    }
-  } else {
-    const file = await fileSource.readAsText(fileName);
-    data = JSON.parse(file);
-  }
-
-  let monomers: { [type: string]: { [name: string]: Monomer } } = {};
-  const types: string[] = [];
-  //group monomers by their type
-  data.forEach(monomer => {
-    let monomerAdd: Monomer = {
-      'symbol': monomer['symbol'],
-      'name': monomer['name'],
-      'naturalAnalog': monomer['naturalAnalog'],
-      'molfile': monomer['molfile'],
-      'rgroups': monomer['rgroups'],
-      'polymerType': monomer['polymerType'],
-      'monomerType': monomer['monomerType'],
-      'data': {}
-    };
-
-    Object.keys(monomer).forEach(prop => {
-      if (!expectedMonomerData.includes(prop))
-        monomerAdd.data[prop] = monomer[prop];
-    });
-
-    if (!types.includes(monomer['polymerType'])) {
-      monomers[monomer['polymerType']] = {};
-      types.push(monomer['polymerType']);
-    }
-
-    monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
-  });
-
-  return new MonomerLib(monomers);
-}
+import {IMonomerLib} from '../types/index';
+import {TAGS} from '../utils/macromolecule/consts';
+import {SplitterFunc} from '../utils/macromolecule/types';
+import {getSplitter} from '../utils/macromolecule/utils';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -73,7 +21,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   for (let i = 0; i < col.length; ++i) {
     let encodedMonomerStr = '';
     const monomers = splitterFunc(col.get(i));
-    monomers.forEach((m) => {
+    monomers.forEach((m: string) => {
       if (!monomerSymbolDict[m]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);
@@ -165,10 +113,10 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
           const rgroup: { [key: string]: string | any } = {};
           const altAtom = g.substring(g.lastIndexOf(']') + 1);
           const radicalNum = g.match(/\[R(\d+)\]/)![1];
-          rgroup[RGROUP_FIELDS.CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
-          rgroup[RGROUP_FIELDS.ALTER_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
-          rgroup[RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
-          rgroup[RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
+          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
+          rgroup[HELM_RGROUP_FIELDS.ALTERNATE_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
+          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
+          rgroup[HELM_RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
           jsonRgroups.push(rgroup);
         });
         monomer[key] = jsonRgroups;
@@ -180,4 +128,26 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
     resultLib.push(monomer);
   }
   return resultLib;
+}
+
+export interface IMonomerLibHelper {
+  /** Singleton monomer library */
+  getBioLib(): IMonomerLib;
+
+  /** (Re)Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME} to singleton.
+   * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]
+   */
+  loadLibraries(reload?: boolean): Promise<void>;
+
+  /** Reads library from file shares, handles .json and .sdf */
+  readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
+}
+
+export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
+  const funcList = DG.Func.find({package: 'Bio', name: 'getMonomerLibHelper'});
+  if (funcList.length === 0)
+    throw new Error('Package "Bio" must be installer for MonomerLibraryHelper.');
+
+  const res: IMonomerLibHelper = (await funcList[0].prepare().call()).getOutputParamValue() as IMonomerLibHelper;
+  return res;
 }

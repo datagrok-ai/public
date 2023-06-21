@@ -2,8 +2,8 @@
 
 The package contains a collection of interactive materials helping users explore the [Datagrok](https://datagrok.ai) platform.
 
-Issue tracker: https://github.com/datagrok-ai/public/projects/3
-Presentation: https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s
+Issue tracker: <https://github.com/datagrok-ai/public/projects/3>
+Presentation: <https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s>
 
 ## Available tracks
 
@@ -20,3 +20,4 @@ If you want to disable a track, set its property to *false*.
 See also:
 
 - [How to write tutorials](https://datagrok.ai/help/develop/how-to/write-tutorials)
+- [How to write demo scripts](https://datagrok.ai/help/develop/how-to/write-demo-scripts)

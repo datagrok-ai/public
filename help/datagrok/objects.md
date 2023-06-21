@@ -1,26 +1,25 @@
-<!-- TITLE: Entities -->
-<!-- SUBTITLE: -->
-
-# Entities
+---
+title: "Entities"
+---
 
 Certain classes of objects in Datagrok have a common set of operations and features applicable to them. We call these
 objects _entities_. Here they are:
 
-* [Function](functions/function.md)
+* [Function](functions/functions.md)
 * [Function Call](functions/function-call.md)
-* [Data Pipeline](../access/data-pipeline.md)
-* [Data Connection](../access/data-connection.md)
-* [Data Query](../access/data-query.md)
-* [Data Job](../access/data-job.md)
-* [DB Table Info](../access/db-table-info.md)
-* [DB Column Info](../access/db-column-info.md)
+* [Data Pipeline](../access/access.md)
+* [Data Connection](../access/access.md#data-connection)
+* [Data Query](../access/access.md#data-query)
+* [Data Job](../access/access.md)
+* [DB Table Info](../access/databases/databases.mdx#working-with-queries)
+* [DB Column Info](../access/databases/databases.mdx#working-with-queries)
 * [User](../govern/user.md)
 * [Group](../govern/group.md)
 * [Model](../learn/predictive-modeling.md)
 * [Notebook](../compute/jupyter-notebook.md)
 * [Package](../develop/develop.md#packages)
 * [Project](project.md)
-* [Repository](../access/connectors/git.md)
+* [Repository](../access/databases/connectors/git.md)
 * [Script](../compute/scripting.md)
 * [Table](table.md)
 * [View Layout](../visualize/view-layout.md)

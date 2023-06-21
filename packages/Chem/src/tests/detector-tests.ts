@@ -73,8 +73,8 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
   test('spgi', async () => {
     const df = DG.DataFrame.fromCsv(await loadFileAsText('tests/spgi-100.csv'));
     await grok.data.detectSemanticTypes(df);
-    expect(df.col('structure')!.semType, DG.SEMTYPE.MOLECULE);
-    expect(df.col('primary scaffold')!.semType, DG.SEMTYPE.MOLECULE);
+    //'Primary scaffold' column has been removed from spgi version 2
+    expect(df.col('Structure')!.semType, DG.SEMTYPE.MOLECULE);
     expect(df.col('core')!.semType, DG.SEMTYPE.MOLECULE);
     expect(df.col('r1')!.semType, DG.SEMTYPE.MOLECULE);
     expect(df.col('r2')!.semType, DG.SEMTYPE.MOLECULE);

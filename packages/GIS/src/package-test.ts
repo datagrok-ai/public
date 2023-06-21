@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
-// import {runTests, tests} from '@datagrok-libraries/utils/src/test';
+
 import './tests/gis-viewer-tests';
 
 export const _package = new DG.Package();

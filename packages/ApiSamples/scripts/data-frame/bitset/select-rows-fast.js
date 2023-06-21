@@ -2,7 +2,7 @@
 
 let demog = grok.data.demo.demog();
 let selection = demog.selection;
-grok.shell.add(demog);
+grok.shell.addTableView(demog);
 
 // method 1: init(predicate)
 selection.init((i) => i % 2 === 0);

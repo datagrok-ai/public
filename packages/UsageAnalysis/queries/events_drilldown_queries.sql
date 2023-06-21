@@ -7,6 +7,7 @@ where name = @name;
 
 
 --name: FunctionInfoByName
+
 --input: string name
 --connection: System:Datagrok
 select * from event_types et

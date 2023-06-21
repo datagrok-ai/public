@@ -1,7 +1,6 @@
-<!-- TITLE: Scaling -->
-<!-- SUBTITLE: -->
-
-# Scaling
+---
+title: "Scaling"
+---
 
 Datagrok was designed to connect millions of users with millions of datasets, data sources, algorithms, scripts, and
 applications. It should be able to handle such volumes, and it should do it fast and without cluttering the UI.
@@ -74,7 +73,7 @@ becomes unwieldy, and users get lost in the hundreds of different menus and thou
 
 We had to come up with a solution that is not only highly extensible but also has a built-in mechanism for restricting
 the feature creep and keeping the UI clean. We addressed these seemingly self-contradictory requirements by designing a
-solution that combines first-class support for [functions](../../datagrok/functions/function.md)
+solution that combines first-class support for [functions](../../datagrok/functions/functions.md)
 with the [data augmentation](../../discover/data-augmentation.md) mechanism.
 
 In the end, we came up with a solution that not only satisfied the initial requirements, but provides a solid foundation

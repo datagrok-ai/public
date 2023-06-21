@@ -1,4 +1,6 @@
-# Content types
+---
+title: "Content types"
+---
 
 We follow four different content types:
 
@@ -44,7 +46,7 @@ Tutorials should be in this format:
 
 1. Start by telling the user what the tutorial does, the estimated completion time, and the expected _outcome_:
     * _By the end of this tutorial, you will be able to_ followed by a phrase that starts with a verb and clearly
-     describes the outcome of what the user will accomplish.
+      describes the outcome of what the user will accomplish.
     * _Estimated completion time: 30 minutes._
 2. Provide prerequisites:
     * _Before you begin, make sure you meet these prerequisites:_

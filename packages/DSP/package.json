@@ -1,33 +1,42 @@
 {
-	"name": "@datagrok/dsp",
-	"fullName": "DSP",
-	"author": {
-		"name": "Maksym Shvyrlo",
-		"email": "mshvyrlo@datagrok.ai"
-	},
-	"version": "0.0.6",
-	"description": "A pack of various digital signal processing tools",
-	"repository": {
+  "name": "@datagrok/dsp",
+  "fullName": "DSP",
+  "author": {
+    "name": "Maksym Shvyrlo",
+    "email": "mshvyrlo@datagrok.ai"
+  },
+  "version": "0.0.6",
+  "description": "Digital signal processing tools",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/DSP"
   },
-	"dependencies": {
-		"datagrok-api": "^1.0.0"
-	},
-	"scripts": {
-		"debug-dsp": "grok publish",
-		"deploy-dsp": "grok publish --release",
-		"build": "webpack",
-		"debug-dsp-dev": "grok publish dev",
-		"deploy-dsp-dev": "grok publish dev --release",
-		"debug-dsp-local": "grok publish local",
-		"deploy-dsp-local": "grok publish local --release"
-	},
-	"sources": [
-		"src/dspWasm.js"
-	],
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ],
+  "dependencies": {
+    "datagrok-api": "^1.0.0"
+  },
+  "devDependencies": {
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "puppeteer": "^13.7.0"
+  },
+  "scripts": {
+    "debug-dsp": "grok publish",
+    "deploy-dsp": "grok publish --release",
+    "build": "webpack",
+    "debug-dsp-dev": "grok publish dev",
+    "deploy-dsp-dev": "grok publish dev --release",
+    "debug-dsp-local": "grok publish local",
+    "deploy-dsp-local": "grok publish local --release"
+  },
+  "sources": [
+    "src/dspWasm.js"
+  ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
   "category": "Digital Health"
 }

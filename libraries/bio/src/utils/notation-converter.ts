@@ -4,7 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UnitsHandler} from './units-handler';
-import {getSplitterForColumn, getStats, NOTATION, SeqColStats, SplitterFunc, TAGS} from './macromolecule';
+import {SeqColStats, SplitterFunc} from './macromolecule/types';
+import {NOTATION, TAGS} from './macromolecule/consts';
+import {getSplitterForColumn} from './macromolecule/utils';
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
 export class NotationConverter extends UnitsHandler {
@@ -33,7 +35,7 @@ export class NotationConverter extends UnitsHandler {
     if (fastaGapSymbol === null)
       fastaGapSymbol = this.defaultGapSymbol;
 
-    const newColumn = this.getNewColumn(NOTATION.SEPARATOR);
+    const newColumn = this.getNewColumn(NOTATION.SEPARATOR, separator);
     // assign the values to the newly created empty column
     newColumn.init((idx: number) => {
       const fastaPolymer = this.column.get(idx);
@@ -45,7 +47,6 @@ export class NotationConverter extends UnitsHandler {
       return fastaMonomersArray.join(separator);
     });
     newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
-    newColumn.setTag(TAGS.separator, separator);
     return newColumn;
   }
 
@@ -57,14 +58,14 @@ export class NotationConverter extends UnitsHandler {
    */
   private getHelmWrappers(): string[] {
     const prefix = (this.isDna()) ? 'DNA1{' :
-      (this.isRna()) ? 'RNA1{' :
-        (this.isPeptide()) ? 'PEPTIDE1{' :
-          'Unknown'; // this case should be handled as exceptional
+      (this.isRna() || this.isHelmCompatible()) ? 'RNA1{' : 'PEPTIDE1{';
+    // (this.isPeptide()) ? 'PEPTIDE1{' :
+    // 'Unknown'; // this case should be handled as exceptional
 
-    if (prefix === 'Unknown')
-      throw new Error('Neither peptide, nor nucleotide');
+    // if (prefix === 'Unknown')
+    //   throw new Error('Neither peptide, nor nucleotide');
 
-    const postfix = '}$$$';
+    const postfix = '}$$$$';
     const leftWrapper = (this.isDna()) ? 'D(' :
       (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
     const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
@@ -82,10 +83,12 @@ export class NotationConverter extends UnitsHandler {
   ): string {
     const monomerArray = this.splitter(sourcePolymer);
     const monomerHelmArray: string[] = monomerArray.map((mm: string) => {
-      if (mm === sourceGapSymbol)
+      if (!mm || mm === sourceGapSymbol) {
         return UnitsHandler._defaultGapSymbolsDict.HELM;
-      else
-        return `${leftWrapper}${mm}${rightWrapper}`;
+      } else {
+        return mm.length == 1 ? `${leftWrapper}${mm}${rightWrapper}` :
+          `${leftWrapper}[${mm}]${rightWrapper}`;
+      }
     });
     return `${prefix}${monomerHelmArray.join('.')}${postfix}`;
   }
@@ -166,6 +169,50 @@ export class NotationConverter extends UnitsHandler {
   }
 
   /**
+   *  Convert HELM string to FASTA/SEPARATOR
+   *
+   * @param {string} helmPolymer    A string to be converted
+   * @param {string} tgtNotation    Target notation: FASTA or SEPARATOR
+   * @param {string} tgtSeparator   Optional target separator (for HELM ->
+   * @param {string | null} tgtGapSymbol   Optional target gap symbol
+   * SEPARATOR)
+   * @return {string} Converted string
+   */
+  public convertHelmToFastaSeparator(
+    helmPolymer: string, tgtNotation: string, tgtSeparator?: string, tgtGapSymbol?: string
+  ): string {
+    if (!tgtGapSymbol) {
+      tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
+        UnitsHandler._defaultGapSymbolsDict.FASTA :
+        UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
+    }
+
+    if (!tgtSeparator)
+      tgtSeparator = (this.toFasta(tgtNotation as NOTATION)) ? '' : this.separator;
+
+    const helmWrappersRe = /(R\(|D\(|\)|P)/g;
+    const isNucleotide = helmPolymer.startsWith('DNA') || helmPolymer.startsWith('RNA');
+    // items can be monomers or helms
+    const helmItemsArray = this.splitter(helmPolymer);
+    const tgtMonomersArray: string[] = [];
+    for (let i = 0; i < helmItemsArray.length; i++) {
+      let item = helmItemsArray[i];
+      if (isNucleotide)
+        item = item.replace(helmWrappersRe, '');
+      if (item === UnitsHandler._defaultGapSymbolsDict.HELM) {
+        tgtMonomersArray.push(tgtGapSymbol!);
+      } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
+        // the case of a multi-character monomer converted to FASTA
+        const monomer = '[' + item + ']';
+        tgtMonomersArray.push(monomer);
+      } else {
+        tgtMonomersArray.push(item);
+      }
+    }
+    return tgtMonomersArray.join(tgtSeparator);
+  }
+
+  /**
    *  Convert HELM column to FASTA/SEPARATOR
    *
    * @param {string} tgtNotation    Target notation: FASTA or SEPARATOR
@@ -177,51 +224,19 @@ export class NotationConverter extends UnitsHandler {
   private convertHelm(tgtNotation: string, tgtSeparator?: string, tgtGapSymbol?: string): DG.Column {
     // This function must not contain calls of isDna() and isRna(), for
     // source helm columns may contain RNA, DNA and PT across different rows
-    if (!tgtGapSymbol) {
-      tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
-        UnitsHandler._defaultGapSymbolsDict.FASTA :
-        UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
-    }
-
-    if (!tgtSeparator) {
-      tgtSeparator = (this.toFasta(tgtNotation as NOTATION)) ? '' : this.separator;
-    }
-
-    const helmWrappersRe = /(R\(|D\(|\)|P)/g;
-    const newColumn = this.getNewColumn(tgtNotation as NOTATION);
+    const newColumn = this.getNewColumn(tgtNotation as NOTATION, tgtSeparator);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
       const helmPolymer = this.column.get(idx);
-
+      return this.convertHelmToFastaSeparator(helmPolymer, tgtNotation, tgtSeparator, tgtGapSymbol);
       // we cannot use isDna() or isRna() because source helm columns can
       // contain DNA, RNA and PT in different cells, so the corresponding
       // tags cannot be set for the whole column
-      const isNucleotide = helmPolymer.startsWith('DNA') || helmPolymer.startsWith('RNA');
-
-      // items can be monomers or helms
-      const helmItemsArray = this.splitter(helmPolymer);
-      const tgtMonomersArray: string[] = [];
-      for (let i = 0; i < helmItemsArray.length; i++) {
-        let item = helmItemsArray[i];
-        if (isNucleotide)
-          item = item.replace(helmWrappersRe, '');
-        if (item === UnitsHandler._defaultGapSymbolsDict.HELM) {
-          tgtMonomersArray.push(tgtGapSymbol!);
-        } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
-          // the case of a multi-character monomer converted to FASTA
-          const monomer = '[' + item + ']';
-          tgtMonomersArray.push(monomer);
-        } else {
-          tgtMonomersArray.push(item);
-        }
-      }
-      return tgtMonomersArray.join(tgtSeparator);
     });
 
     // TAGS.aligned is mandatory for columns of NOTATION.FASTA and NOTATION.SEPARATOR
     const splitter: SplitterFunc = getSplitterForColumn(newColumn);
-    const stats: SeqColStats = getStats(newColumn, 5, splitter);
-    const aligned = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+    const aligned = this.stats.sameLength ? 'SEQ.MSA' : 'SEQ';
     newColumn.setTag(TAGS.aligned, aligned);
 
     return newColumn;
@@ -245,19 +260,20 @@ export class NotationConverter extends UnitsHandler {
     if (this.toSeparator(tgtNotation) && tgtSeparator === null)
       throw new Error('tgt separator is not specified');
 
-    if (this.isFasta() && this.toSeparator(tgtNotation) && tgtSeparator !== null)
+    if (this.isFasta() && this.toSeparator(tgtNotation) && tgtSeparator !== null) {
       return this.convertFastaToSeparator(tgtSeparator);
-    else if ((this.isFasta() || this.isSeparator()) && this.toHelm(tgtNotation))
+    } else if ((this.isFasta() || this.isSeparator()) && this.toHelm(tgtNotation)) {
       return this.convertToHelm();
-    else if (this.isSeparator() && this.toFasta(tgtNotation))
+    } else if (this.isSeparator() && this.toFasta(tgtNotation)) {
       return this.convertSeparatorToFasta();
-    else if (this.isHelm() && this.toFasta(tgtNotation)) // the case of HELM
+    } else if (this.isHelm() && this.toFasta(tgtNotation)) { // the case of HELM
       return this.convertHelm(tgtNotation);
-    else if (this.isHelm() && this.toSeparator(tgtNotation))
+    } else if (this.isHelm() && this.toSeparator(tgtNotation)) {
       return this.convertHelm(tgtNotation, tgtSeparator!);
-    else
+    } else {
       throw new Error('Not supported conversion ' +
         `from source notation '${this.notation}' to target notation '${tgtNotation}'.`);
+    }
   }
 
   public constructor(col: DG.Column) {

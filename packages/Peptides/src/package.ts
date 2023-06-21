@@ -6,23 +6,41 @@ import * as DG from 'datagrok-api/dg';
 import {analyzePeptidesUI} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
-import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
-
+import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {IDendrogramService, getDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import {LogoSummary} from './viewers/logo-summary';
-import {MonomerWorks} from '@datagrok-libraries/bio';
+import {LogoSummaryTable} from './viewers/logo-summary';
+import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {PeptidesModel} from './model';
+import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 
-export let monomerWorks: MonomerWorks | null;
+let monomerWorks: MonomerWorks | null = null;
+let treeHelper: ITreeHelper | null = null;
+let dendrogramService: IDendrogramService | null = null;
 
 export const _package = new DG.Package();
-let currentTable: DG.DataFrame;
-let alignedSequenceColumn: DG.Column;
 
-export function getMonomerWorks(): MonomerWorks | null {
-  return monomerWorks;
-};
+export function getMonomerWorksInstance(): MonomerWorks {
+  return monomerWorks!;
+}
 
-async function main(chosenFile: string): Promise<void> {
+export function getTreeHelperInstance(): ITreeHelper {
+  return treeHelper!;
+}
+
+export function getDendrogramServiceInstance(): IDendrogramService {
+  return dendrogramService!;
+}
+
+//tags: init
+export async function initPeptides(): Promise<void> {
+  monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
+  treeHelper ??= await getTreeHelper();
+  dendrogramService ??= await getDendrogramService();
+}
+
+async function openDemoData(chosenFile: string): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
   const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = await grok.data.loadTable(path);
@@ -36,31 +54,26 @@ async function main(chosenFile: string): Promise<void> {
 
 //name: Peptides
 //tags: app
-export async function Peptides(): Promise<void> {
+export function Peptides(): void {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
-  if (monomerWorks == null) {
-    const lib = await grok.functions.call('Bio:getBioLib');
-    monomerWorks = new MonomerWorks(lib);
-  }
-  const appDescription = ui.info(
-    [
-      ui.list([
-        '- automatic recognition of peptide sequences',
-        '- native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, ' +
+
+  const appDescription = ui.info([
+    ui.list([
+      '- automatic recognition of peptide sequences',
+      '- native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, ' +
         'multivariate analysis, etc)',
-        '- custom rendering in the spreadsheet',
-        '- interactive logo plots',
-        '- rendering residues',
-        '- structure-activity relationship:',
-        ' ',
-        'a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet',
-        'b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in ' +
+      '- custom rendering in the spreadsheet',
+      '- interactive logo plots',
+      '- rendering residues',
+      '- structure-activity relationship:',
+      ' ',
+      'a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet',
+      'b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in ' +
         'this position vs rest of the monomers in this position)',
-        'c) interactivity',
-      ]),
-    ],
-    'Use and analyse peptide sequence data to support your research:',
+      'c) interactivity',
+    ]),
+  ], 'Use and analyse peptide sequence data to support your research:',
   );
 
   const windows = grok.shell.windows;
@@ -72,14 +85,14 @@ export async function Peptides(): Promise<void> {
     appDescription,
     ui.info([textLink]),
     ui.divH([
-      ui.button('Simple demo', () => main('aligned.csv'), ''),
-      ui.button('Complex demo', () => main('aligned_2.csv'), ''),
-      ui.button('HELM demo', () => main('aligned_3.csv'), ''),
+      ui.button('Simple demo', () => openDemoData('aligned.csv'), ''),
+      ui.button('Complex demo', () => openDemoData('aligned_2.csv'), ''),
+      ui.button('HELM demo', () => openDemoData('aligned_3.csv'), ''),
     ]),
   ]);
 }
 
-//top-menu: Bio | Peptides...
+//top-menu: Bio | SAR | Peptides...
 //name: Bio Peptides
 export function peptidesDialog(): DG.Dialog {
   const analyzeObject = analyzePeptidesUI(grok.shell.t);
@@ -96,37 +109,40 @@ export function peptidesDialog(): DG.Dialog {
 //input: column col {semType: Macromolecule}
 //output: widget result
 export function peptidesPanel(col: DG.Column): DG.Widget {
-  [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
-  const analyzeObject = analyzePeptidesUI(currentTable, alignedSequenceColumn);
+  const analyzeObject = analyzePeptidesUI(col.dataFrame, col);
   return new DG.Widget(analyzeObject.host);
 }
 
-//name: peptide-sar-viewer
-//description: Peptides SAR Viewer
+//name: Monomer-Position
+//description: Peptides Monomer-Position Viewer
 //tags: viewer
+//meta.icon: files/icons/peptide-sar-viewer.svg
 //output: viewer result
-export function sar(): MonomerPosition {
+export function monomerPosition(): MonomerPosition {
   return new MonomerPosition();
 }
 
-//name: peptide-sar-viewer-vertical
-//description: Peptides Vertical SAR Viewer
+//name: Most Potent Residues
+//description: Peptides Most Potent Residues Viewer
 //tags: viewer
+//meta.icon: files/icons/peptide-sar-vertical-viewer.svg
 //output: viewer result
-export function sarVertical(): MostPotentResiduesViewer {
-  return new MostPotentResiduesViewer();
+export function mostPotentResidues(): MostPotentResidues {
+  return new MostPotentResidues();
 }
 
-//name: logo-summary-viewer
+//name: Logo Summary Table
 //tags: viewer
+//meta.icon: files/icons/logo-summary-viewer.svg
 //output: viewer result
-export function logoSummary(): LogoSummary {
-  return new LogoSummary();
+export function logoSummaryTable(): LogoSummaryTable {
+  return new LogoSummaryTable();
 }
 
 //name: peptide-space-viewer
 //description: Peptide Space Viewer
 //tags: viewer
+//meta.icon: files/icons/peptide-space-viewer.svg
 //output: viewer result
 export function peptideSpace(): PeptideSpaceViewer {
   return new PeptideSpaceViewer();
@@ -137,9 +153,14 @@ export function peptideSpace(): PeptideSpaceViewer {
 //input: string _monomer {semType: Monomer}
 //output: widget result
 export function manualAlignment(_monomer: string): DG.Widget {
-  [currentTable, alignedSequenceColumn] = getOrDefine();
   //TODO: recalculate Molfile and Molecule panels on sequence update
-  return manualAlignmentWidget(alignedSequenceColumn, currentTable);
+  const df = grok.shell.t;
+  const model: PeptidesModel | null = df?.temp[PeptidesModel.modelName];
+  if (!model)
+    return new DG.Widget(ui.divText('Manual alignment works with peptides analysis'));
+
+  const col = df.getCol(model.settings.sequenceColumnName!);
+  return manualAlignmentWidget(col, df);
 }
 
 //name: Peptide Space
@@ -147,38 +168,15 @@ export function manualAlignment(_monomer: string): DG.Widget {
 //input: column col {semType: Macromolecule}
 //output: widget result
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
-  [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
   const widget = new PeptideSimilaritySpaceWidget(col, grok.shell.v as DG.TableView);
   return widget.draw();
 }
 
-//name: Get Peptides Structure
-//tags: panel, widgets
-//input: column col {semType: Macromolecule}
-//output: widget result
-export function getPeptidesStructure(col: DG.Column): DG.Widget {
-  const getButtonTooltip = 'Retrieves peptides structure from customer database by special id column';
-  const getButton = ui.button('Get structure', async () => {
-    const progress = DG.TaskBarProgressIndicator.create('Getting structure...');
-    try {
-      const params = {peptidesTable: col.dataFrame};
-      const result = await grok.functions.call('Customerextensions:getPeptidesStructure', params);
-      const text = result ? 'Structure retreived' : 'Structure retreivial is not possible';
-      grok.shell.info(text);
-    } catch (e) {
-      console.warn(e);
-    } finally {
-      progress.close();
-    }
-  }, getButtonTooltip);
-  return new DG.Widget(getButton);
-}
-
-function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {
-  dataframe ??= grok.shell.t;
-  column ??= dataframe.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!;
-  if (column === null)
-    throw new Error('Table does not contain aligned sequence columns');
-
-  return [dataframe, column];
+// --- Demo ---
+//name: Macromolecule SAR Analysis
+//description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
+//meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
+//meta.isDemoScript: True
+export async function macromoleculeSarFastaDemo(): Promise<void> {
+  return macromoleculeSarFastaDemoUI();
 }

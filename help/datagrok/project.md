@@ -1,7 +1,6 @@
-<!-- TITLE: Project -->
-<!-- SUBTITLE: -->
-
-# Project
+---
+title: "Project"
+---
 
 Project is a collection of entities along with the applied visualizations. Projects are used to group and share data and
 other assets with other users. One of the most common applications of projects are dashboards that consist of tables (
@@ -20,8 +19,8 @@ inside.
 
 ### Dynamic data
 
-Whenever a table is created by executing a [function](../datagrok/functions/function.md)
-(such as a [database query](../access/data-query.md)), this information gets stored with the table as a "generation
+Whenever a table is created by executing a [function](../datagrok/functions/functions.md)
+(such as a [database query](../access/access.md#data-query)), this information gets stored with the table as a "generation
 script". This serves multiple purposes:
 
 * Provides data lineage
@@ -45,7 +44,7 @@ reference the link rather than the entity itself. This fact becomes important in
 name suggests, they are the most common ones
 (that's what users create by default). Entities from such a project belong to the higher-level namespace, which means
 they are tied to the root project. To find out where an entity comes from, see `Links` in the `Details` tab of the
-property panel.
+context panel.
 
 Root projects are automatically created for users and packages. When the user uploads a project, it gets saved to their
 namespace. However, the existing entities will be available in the user's project via link. As for packages, each
@@ -61,7 +60,7 @@ Controls:
 
 |              |                        |
 |--------------|------------------------|
-| Click        | Show in property panel |
+| Click        | Show in context panel |
 | Right click  | Context menu           |
 | Double click | Open                   |
 
@@ -83,8 +82,6 @@ The following fields could be used to filter projects with [smart search](smart-
 See also:
 
 * [Create project](create-project.md)
-* [Data pipeline](../access/data-pipeline.md)
-* [Data connection](../access/data-connection.md)
-* [Data query](../access/data-query.md)
-* [Data job](../access/data-job.md)
+* [Data connection](../access/access.md#data-connection)
+* [Data query](../access/access.md#data-query)
 * [Function call](functions/function-call.md)

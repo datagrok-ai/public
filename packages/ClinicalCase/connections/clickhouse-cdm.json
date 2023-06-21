@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "ClickHouseCDM",
+  "friendlyName": "CDM",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "cdm_synthea",
+    "port": 8123
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "ClickHouse",
+  "description": "CDM sample database",
+  "tags": [
+    "cdm"
+  ]
+}

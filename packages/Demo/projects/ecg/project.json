@@ -5,6 +5,7 @@
     "ecg",
     "scripting-viewer"
   ],
+  "name": "Demo ECG",
   "description": "Electrocardiography (ECG) signal spectral and wavelet analysis",
   "tables": [
     {

@@ -18,14 +18,16 @@ module.exports = {
       }
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators'
+    'rxjs/operators': 'rxjs.operators',
+    'cash-dom': '$',
+    'dayjs': 'dayjs',
   },
   output: {
     filename: '[name].js',

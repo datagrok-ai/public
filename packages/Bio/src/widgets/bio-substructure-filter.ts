@@ -11,17 +11,17 @@ import * as grok from 'datagrok-api/grok';
 import wu from 'wu';
 import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-search/substructure-search';
 import {Subject, Subscription} from 'rxjs';
-import * as C from '../utils/constants';
 import {updateDivInnerHTML} from '../utils/ui-utils';
-import {NOTATION} from '@datagrok-libraries/bio';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {debounceTime} from 'rxjs/operators';
 
 export class BioSubstructureFilter extends DG.Filter {
   bioFilter: FastaFilter | SeparatorFilter | HelmFilter | null = null;
   bitset: DG.BitSet | null = null;
   loader: HTMLDivElement = ui.loader();
   onBioFilterChangedSubs?: Subscription;
-  notation: string | undefined = '';
+  notation: string | undefined = undefined;
 
   get calculating(): boolean { return this.loader.style.display == 'initial'; }
 
@@ -39,6 +39,20 @@ export class BioSubstructureFilter extends DG.Filter {
     return !this.calculating && this.bitset != null;
   }
 
+  get _debounceTime(): number {
+    if (this.column == null)
+      return 1000;
+    const length = this.column.length;
+    const minLength = 500;
+    const maxLength = 10000;
+    const msecMax = 1000;
+    if (length < minLength) return 0;
+    if (length > maxLength) return msecMax;
+    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
+  }
+
+  //column name setter overload
+
   constructor() {
     super();
     this.root = ui.divV([]);
@@ -48,16 +62,18 @@ export class BioSubstructureFilter extends DG.Filter {
   attach(dataFrame: DG.DataFrame): void {
     super.attach(dataFrame);
     this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-    this.columnName = this.column?.name;
-    this.notation = this.column?.getTag(DG.TAGS.UNITS);
+    this.columnName ??= this.column?.name;
+    this.notation ??= this.column?.getTag(DG.TAGS.UNITS);
     this.bioFilter = this.notation === NOTATION.FASTA ?
       new FastaFilter() : this.notation === NOTATION.SEPARATOR ?
-        new SeparatorFilter(this.column!.getTag(C.TAGS.SEPARATOR)) : new HelmFilter();
+        new SeparatorFilter(this.column!.getTag(bioTAGS.separator)) : new HelmFilter();
     this.root.appendChild(this.bioFilter!.filterPanel);
     this.root.appendChild(this.loader);
 
     this.onBioFilterChangedSubs?.unsubscribe();
-    const onChangedEvent: any = this.bioFilter.onChanged;
+
+    let onChangedEvent: any = this.bioFilter.onChanged;
+    onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onBioFilterChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onInputChanged());
   }
 
@@ -70,16 +86,20 @@ export class BioSubstructureFilter extends DG.Filter {
       this.dataFrame?.filter.and(this.bitset);
   }
 
-  /** Override to save filter state. */
+  /** Override to save filter state.
+   * @return {any} - filter state
+   */
   saveState(): any {
     const state = super.saveState();
     state.bioSubstructure = this.bioFilter?.substructure;
     return state;
   }
 
-  /** Override to load filter state. */
+  /** Override to load filter state.
+   * @param {any} state - filter state
+   */
   applyState(state: any): void {
-    super.applyState(state);
+    super.applyState(state); //column, columnName
     if (state.bioSubstructure)
       this.bioFilter!.substructure = state.bioSubstructure;
 
@@ -127,18 +147,20 @@ abstract class BioFilterBase {
   set substructure(s: string) {
   }
 
-  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+  async substrucrureSearch(_column: DG.Column): Promise<DG.BitSet | null> {
     return null;
   }
 }
 
 class FastaFilter extends BioFilterBase {
-  substructureInput: DG.InputBase<string> = ui.stringInput('', '', () => {
-    this.onChanged.next();
-  }, {placeholder: 'Substructure'});
+  readonly substructureInput: DG.InputBase<string>;
 
   constructor() {
     super();
+
+    this.substructureInput = ui.stringInput('', '', () => {
+      this.onChanged.next();
+    }, {placeholder: 'Substructure'});
   }
 
   get filterPanel() {
@@ -159,13 +181,15 @@ class FastaFilter extends BioFilterBase {
 }
 
 export class SeparatorFilter extends FastaFilter {
-  separatorInput: DG.InputBase<string> = ui.stringInput('', '', () => {
-    this.onChanged.next();
-  }, {placeholder: 'Separator'});
+  readonly separatorInput: DG.InputBase<string>;
   colSeparator = '';
 
   constructor(separator: string) {
     super();
+
+    this.separatorInput = ui.stringInput('', '', () => {
+      this.onChanged.next();
+    }, {placeholder: 'Separator'});
     this.colSeparator = separator;
     this.separatorInput.value = separator;
   }
@@ -173,7 +197,7 @@ export class SeparatorFilter extends FastaFilter {
   get filterPanel() {
     return ui.divV([
       this.substructureInput.root,
-      this.separatorInput.root
+      this.separatorInput.root,
     ]);
   }
 
@@ -206,13 +230,14 @@ export class HelmFilter extends BioFilterBase {
     this.helmEditor = await grok.functions.call('HELM:helmWebEditor');
     await ui.tools.waitForElementInDom(this._filterPanel);
     this.updateFilterPanel();
-    this._filterPanel.addEventListener('click', (event: MouseEvent) => {
+    this._filterPanel.addEventListener('click', (_event: MouseEvent) => {
       const {editorDiv, webEditor} = this.helmEditor.createWebEditor(this.helmSubstructure);
       //@ts-ignore
       ui.dialog({showHeader: false, showFooter: true})
         .add(editorDiv)
         .onOK(() => {
-          const helmString = webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+          const helmString = webEditor.canvas.getHelm(true)
+            .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
           this.helmSubstructure = helmString;
           this.updateFilterPanel(this.substructure);
           setTimeout(() => { this.onChanged.next(); }, 10);
@@ -242,15 +267,7 @@ export class HelmFilter extends BioFilterBase {
       this._filterPanel.parentElement!.clientWidth;
     const height = width / 2;
     if (!helmString) {
-      const editDivStyle = {style: {
-        width: `${width}px`,
-        height: `${height/2}px`,
-        textAlign: 'center',
-        verticalAlign: 'middle',
-        lineHeight: `${height/2}px`,
-        border: '1px solid #dbdcdf'
-      }};
-      const editDiv = ui.divText('Click to edit', editDivStyle);
+      const editDiv = ui.divText('Click to edit', 'helm-substructure-filter');
       updateDivInnerHTML(this._filterPanel, editDiv);
     } else {
       updateDivInnerHTML(this._filterPanel, this.helmEditor.host);

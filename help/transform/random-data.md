@@ -1,7 +1,6 @@
-<!-- TITLE: Random data -->
-<!-- SUBTITLE: -->
-
-# Random data
+---
+title: "Random data"
+---
 
 Adds a numerical column with random data with the specified distribution with initial seed. Parameters of the
 distribution can be edited as well.

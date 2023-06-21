@@ -1,23 +1,54 @@
 package grok_connect.utils;
 
-import grok_connect.connectors_info.DataProvider;
-import grok_connect.providers.*;
-import org.apache.log4j.Logger;
-
+import grok_connect.connectors_info.DataSource;
+import grok_connect.providers.AccessDataProvider;
+import grok_connect.providers.AthenaDataProvider;
+import grok_connect.providers.BigQueryDataProvider;
+import grok_connect.providers.CassandraDataProvider;
+import grok_connect.providers.ClickHouseProvider;
+import grok_connect.providers.Db2DataProvider;
+import grok_connect.providers.DenodoDataProvider;
+import grok_connect.providers.DynamoDBDataProvider;
+import grok_connect.providers.FirebirdDataProvider;
+import grok_connect.providers.HBaseDataProvider;
+import grok_connect.providers.Hive2DataProvider;
+import grok_connect.providers.HiveDataProvider;
+import grok_connect.providers.ImpalaDataProvider;
+import grok_connect.providers.JdbcDataProvider;
+import grok_connect.providers.MariaDbDataProvider;
+import grok_connect.providers.MongoDbDataProvider;
+import grok_connect.providers.MsSqlDataProvider;
+import grok_connect.providers.MySqlDataProvider;
+import grok_connect.providers.Neo4jDataProvider;
+import grok_connect.providers.NeptuneDataProvider;
+import grok_connect.providers.OracleDataProvider;
+import grok_connect.providers.PIDataProvider;
+import grok_connect.providers.PostgresDataProvider;
+import grok_connect.providers.RedshiftDataProvider;
+import grok_connect.providers.SQLiteDataProvider;
+import grok_connect.providers.SapHanaDataProvider;
+import grok_connect.providers.SnowflakeDataProvider;
+import grok_connect.providers.TeradataDataProvider;
+import grok_connect.providers.VerticaDataProvider;
+import grok_connect.providers.VirtuosoDataProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class ProviderManager {
-    public Logger logger;
-    public QueryMonitor queryMonitor;
-    public List<DataProvider> Providers;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProviderManager.class);
+    private final QueryMonitor queryMonitor;
+    private final Map<String, JdbcDataProvider> providersMap;
 
-    public ProviderManager(Logger logger) {
+    public ProviderManager() {
         this.queryMonitor = new QueryMonitor();
-        this.logger = logger;
-
-        Providers = new ArrayList<DataProvider>() {{
+        LOGGER.debug("Initializing providers HashMap");
+        List<JdbcDataProvider> providersList = new ArrayList<JdbcDataProvider>() {{
             add(new AccessDataProvider(ProviderManager.this));
             add(new AthenaDataProvider(ProviderManager.this));
             add(new BigQueryDataProvider(ProviderManager.this));
@@ -34,6 +65,7 @@ public class ProviderManager {
             add(new Neo4jDataProvider(ProviderManager.this));
             add(new OracleDataProvider(ProviderManager.this));
             add(new PostgresDataProvider(ProviderManager.this));
+            add(new PIDataProvider(ProviderManager.this));
             add(new RedshiftDataProvider(ProviderManager.this));
             add(new SQLiteDataProvider(ProviderManager.this));
             add(new TeradataDataProvider(ProviderManager.this));
@@ -44,31 +76,33 @@ public class ProviderManager {
             add(new SnowflakeDataProvider(ProviderManager.this));
             add(new ClickHouseProvider(ProviderManager.this));
             add(new NeptuneDataProvider(ProviderManager.this));
+            add(new DynamoDBDataProvider(ProviderManager.this));
             add(new SapHanaDataProvider(ProviderManager.this));
         }};
+        providersMap = providersList.stream()
+                .collect(Collectors.toMap(provider -> provider.descriptor.type,
+                Function.identity()));
     }
 
-    public List<String> getAllProvidersTypes() {
-        List<String> types = new ArrayList<>();
-
-        for (DataProvider provider : Providers)
-            types.add(provider.descriptor.type);
-
-        return types;
-    }
-    public DataProvider getByName(String name) {
-        DataProvider provider = Providers.get(0);
-
-        for (ListIterator<DataProvider> providers = Providers.listIterator(); providers.hasNext(); ) {
-            DataProvider tmp = providers.next();
-            if (tmp.descriptor.type.equals(name)) {
-                provider = tmp;
-                break;
-            }
-        }
-
-        return provider;
+    public Collection<String> getAllProvidersTypes() {
+        LOGGER.trace("getAllProvidersTypes providers was called");
+        return providersMap.keySet();
     }
 
+    public JdbcDataProvider getByName(String name) {
+        LOGGER.trace("getByName with argument {} was called", name);
+        return providersMap.get(name);
+    }
 
+    public QueryMonitor getQueryMonitor() {
+        LOGGER.trace("getQueryMonitor was called");
+        return queryMonitor;
+    }
+
+    public Collection<DataSource> getAllDescriptors() {
+        LOGGER.trace("getAllDescriptors was called");
+        return providersMap.values().stream()
+                .map(provider -> provider.descriptor)
+                .collect(Collectors.toList());
+    }
 }

@@ -1,6 +1,8 @@
 package serialization;
 
 import java.time.*;
+import java.util.Arrays;
+import java.util.Objects;
 
 
 // Data time column.
@@ -11,6 +13,11 @@ public class DateTimeColumn extends Column<Double> {
 
     public String getType() {
         return TYPE;
+    }
+
+    public void empty() {
+        length = 0;
+        data = new double[100];
     }
 
     public DateTimeColumn() {
@@ -131,5 +138,9 @@ public class DateTimeColumn extends Column<Double> {
         buf.writeInt8((byte)0); // Archive
         if (array != null)
             buf.writeInt8List(array);
+    }
+
+    public double[] getData() {
+        return data;
     }
 }

@@ -1,6 +1,6 @@
-<!-- TITLE: Show formula lines -->
-
-# How to show formula lines
+---
+title: "Show formula lines"
+---
 
 Dataframe and viewer can contain information about lines and bands.
 

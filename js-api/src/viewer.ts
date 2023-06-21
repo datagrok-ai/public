@@ -13,6 +13,7 @@ import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
+import {TableView, View} from "./views/view";
 
 declare let DG: any;
 declare let ui: any;
@@ -153,7 +154,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** Returns a view this viewer is associated with, or null */
-  get view(): any | null {
+  get view(): View | null {
+    return toJs(api.grok_Viewer_Get_View(this.dart));
+  }
+
+  /** Returns a view this viewer is associated with, or null */
+  get tableView(): TableView | null {
     return toJs(api.grok_Viewer_Get_View(this.dart));
   }
 
@@ -174,7 +180,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     api.grok_Viewer_Set_HelpUrl(this.dart, s);
   }
 
-  static grid(t: DataFrame, options: object | null = null): Grid<interfaces.IGridLookSettings> {
+  static grid(t: DataFrame, options: object | null = null): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
@@ -262,7 +268,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
   }
 
-  static wordCloud(t: DataFrame, options: object | null = null): Viewer<interfaces.IWordCloudLookSettings> {
+  /** @deprecated */
+  static wordCloud(t: DataFrame, options: object | null = null): Viewer {
     return <Viewer>Viewer.fromType(VIEWER.WORD_CLOUD, t, options);
   }
 
@@ -382,7 +389,7 @@ export class JsViewer extends Viewer {
 
   /** Returns the column bound to the specified data property.
    *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted. */
-  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): Column {
+  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): string {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
@@ -457,6 +464,11 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSetting
     super(dart);
   }
 
+  /** Rerender plot */
+  invalidateCanvas(): void{
+    api.grok_ScatterPlotViewer_InvalidateCanvas(this.dart);
+  }
+
   /** Row hit test using canvas coords */
   hitTest(x: number, y: number): number {
     return api.grok_ScatterPlotViewer_HitTest(this.dart, x, y);
@@ -477,6 +489,8 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSetting
   /** Convert coords */
   worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
   screenToWorld(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
+  render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
+  getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }

@@ -1,7 +1,6 @@
-<!-- TITLE: Line chart -->
-<!-- SUBTITLE: -->
-
-# Line chart
+---
+title: "Line chart"
+---
 
 General:
 
@@ -9,6 +8,7 @@ General:
 |-----------------------|-----------------|
 | Right click           | Context menu    |
 | Alt+Mouse Drag        | Zoom            |
+| Alt+F                 | Show in full screen |
 | Shift+Mouse Drag      | Select          |
 | Up, Down, Left, Right | Scroll          |
 | Ctrl -                | Zoom out        |
@@ -23,6 +23,6 @@ General:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Line chart](https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart)

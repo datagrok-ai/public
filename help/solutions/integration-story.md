@@ -1,7 +1,6 @@
-<!-- TITLE: Integration -->
-<!-- SUBTITLE: -->
-
-# Overview
+---
+title: "Integration"
+---
 
 Datagrok was designed to be as extensible and customizable as possible. The platform exposes a number of integration
 points, allowing you to customize it according to your organization's needs, and integrate with existing systems.
@@ -23,7 +22,7 @@ Note that other languages, such as Java, C#, or Node.js can be integrated in a s
 ## Custom data connectors
 
 Out of the box, the platform comes with the data connectors
-for [30+ popular databases](../access/data-connection.md#connectors), and the list is constantly growing. In addition to
+for [30+ popular databases](../access/databases/connectors/connectors.md), and the list is constantly growing. In addition to
 that, it is possible to develop your own data connectors, and seamlessly integrate them into the platform.
 
 In order to do that, a "Grok Connect" REST endpoint that implements a few methods has to be registered with the
@@ -49,7 +48,7 @@ application could be useful for testing and debug purposes.
 
 Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatically mapping
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to
-Grok's [functions](../datagrok/functions/function.md). This has many benefits:
+Grok's [functions](../datagrok/functions/functions.md). This has many benefits:
 
 * Ability to easily call that web method from:
   * [Console](../datagrok/navigation.md#console)

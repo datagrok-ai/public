@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getBy, smilesToPubChem} from './pubchem';
-import {getSearchWidget, buildAccordion} from './widget';
+import {getBy} from './pubchem';
+import {getSearchWidget} from './widget';
 import {pubChemRest} from './tests/const';
 
 export const _package = new DG.Package();
@@ -19,28 +19,28 @@ export async function pubChemPanel(molString: string): Promise<DG.Widget> {
 }
 */
 
-//name: PubChem | Substructure Search
+//name: Databases | PubChem | Substructure Search
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSubstructureSearchPanel(molString: string): Promise<DG.Widget> {
-  return await getSearchWidget(molString, 'substructure');
+  return molString ? await getSearchWidget(molString, 'substructure') : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: PubChem | Similarity Search
+//name: Databases | PubChem | Similarity Search
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSimilaritySearchPanel(molString: string): Promise<DG.Widget> {
-  return await getSearchWidget(molString, 'similarity');
+  return molString ? await getSearchWidget(molString, 'similarity') : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: PubChem | Identity Search
+//name: Databases | PubChem | Identity Search
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemIdentitySearch(molString: string): Promise<DG.Widget> {
-  return await getSearchWidget(molString, 'identity');
+  return molString ? await getSearchWidget(molString, 'identity') : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: pubChemToSmiles

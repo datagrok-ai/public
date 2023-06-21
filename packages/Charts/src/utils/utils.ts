@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 export namespace ts {
   /** A type guard function.
    * See https://stackoverflow.com/questions/64616994/typescript-type-narrowing-not-working-for-in-when-key-is-stored-in-a-variable*/
-  export function hasProp<T>(obj: T, key: PropertyKey): key is keyof T {
+  export function hasProp<T extends object>(obj: T, key: PropertyKey): key is keyof T {
     return key in obj;
   }
 }
@@ -16,7 +16,8 @@ export namespace data {
     return (((x - min1) * range2) / range1) + min2;
   }
 
-  export function aggToStat(dataframe: DG.DataFrame, columnName: string, aggregation: DG.AggregationType): number | null {
+  export function aggToStat(dataframe: DG.DataFrame, columnName: string,
+    aggregation: DG.AggregationType): number | null {
     const colStatsCall = 'dataframe.getCol(columnName).stats.';
     const stats = {
       avg: colStatsCall + 'avg',

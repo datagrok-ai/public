@@ -1,6 +1,6 @@
 import {after, before, category, test, expect} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
@@ -12,11 +12,11 @@ category('Dapi: groups', () => {
     testGroup = await grok.dapi.groups.createNew(testGroupName);
   });
 
-  test('Dapi: groups - find group', async () => {
-    expect((await grok.dapi.groups.filter('unexisting group').first()), undefined);
+  test('find group', async () => {
+    expect((await grok.dapi.groups.filter('unexisting group').first()) == undefined);
   });
 
-  test('Dapi: groups - create group', async () => {
+  test('create group', async () => {
     let localTestGroup = null as any;
     try {
       const localTestGroupName = 'js-api-test-group1';
@@ -26,7 +26,7 @@ category('Dapi: groups', () => {
     }
   });
 
-  test('Dapi: groups - create subgroup', async () => {
+  test('create subgroup', async () => {
     let subgroup = null as any;
     try {
       const subgroupName = 'js-api-test-group1';
@@ -37,7 +37,7 @@ category('Dapi: groups', () => {
     }
   });
 
-  test('Dapi: groups - include member', async () => {
+  test('include member', async () => {
     let subgroup = null as any;
     let demoGroup = null as any;
     try {
@@ -59,19 +59,19 @@ category('Dapi: groups', () => {
       }
 
       if (!hasAdmin)
-        throw 'Member not added';
+        throw new Error('Member not added');
     } finally {
       await grok.dapi.groups.delete(demoGroup);
       await grok.dapi.groups.delete(subgroup);
     }
   });
 
-  test('Dapi: groups - delete group', async () => {
+  test('delete group', async () => {
     const localTestGroupName = 'js-api-test-group1';
     const localTestGroup = await grok.dapi.groups.createNew(localTestGroupName);
     expect((await grok.dapi.groups.filter(localTestGroupName).first())?.name, localTestGroupName);
     await grok.dapi.groups.delete(localTestGroup);
-    expect((await grok.dapi.groups.filter(localTestGroupName).first()), undefined);
+    expect((await grok.dapi.groups.filter(localTestGroupName).first()) == undefined);
   });
 
   after(async () => {

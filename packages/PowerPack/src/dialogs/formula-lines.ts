@@ -354,14 +354,14 @@ class Preview {
     if (itemIdx < 0 && this._scrAxes)
       this._axes = this._scrAxes;
 
-    /** Duplicate the original item to display it even if it's hidden */
-    const item = this.items[itemIdx];
-    const previewItem = Object.assign({}, item);
-    previewItem.visible = true;
-
-    /** Trying to show the item */
-    this.scatterPlot.meta.formulaLines.clear();
     try {
+      /** Duplicate the original item to display it even if it's hidden */
+      const item = this.items[itemIdx];
+      const previewItem = Object.assign({}, item);
+      previewItem.visible = true;
+
+      /** Trying to show the item */
+      this.scatterPlot.meta.formulaLines.clear();
       this.scatterPlot.meta.formulaLines.add(previewItem);
       this._axes = this._getItemAxes(previewItem);
       return true;
@@ -437,6 +437,8 @@ class Editor {
 
       /** Preparing the "Tooltip" panel */
       tooltipPane.append(this._inputTitle(itemIdx));
+      tooltipPane.append(this._inputShowLabels(itemIdx));
+      tooltipPane.append(this._inputShowDescriptionInTooltip(itemIdx));
       tooltipPane.append(this._inputDescription(itemIdx));
     }
 
@@ -464,7 +466,7 @@ class Editor {
 
     const elFormula = ibFormula.input as HTMLInputElement;
     elFormula.placeholder = 'Formula';
-    elFormula.setAttribute('style', 'width: 360px; height: 137px; margin-right: -6px;');
+    elFormula.setAttribute('style', 'width: 360px; height: 60px; margin-right: -6px;');
 
     ui.tools.initFormulaAccelerators(ibFormula, this._dataFrame);
 
@@ -606,6 +608,34 @@ class Editor {
     formTitleValue(elTitle.value);
 
     return ui.divH([this._ibTitle.root]);
+  }
+
+  /** Creates show on plot bool */
+  _inputShowLabels(itemIdx: number): HTMLElement {
+    const item = this.items[itemIdx];
+
+    const iShowLabels = ui.boolInput('Show on plot', item.showOnPlot ?? true,
+      (value: boolean) => {
+        item.showOnPlot = value;
+        this._onItemChangedAction(itemIdx);
+      });
+
+
+    return iShowLabels.root;
+  }
+
+  /** Creates show on plot bool */
+  _inputShowDescriptionInTooltip(itemIdx: number): HTMLElement {
+    const item = this.items[itemIdx];
+
+    const iShowLabels = ui.boolInput('Show on tooltip', item.showOnTooltip ?? true,
+      (value: boolean) => {
+        item.showOnTooltip = value;
+        this._onItemChangedAction(itemIdx);
+      });
+
+
+    return iShowLabels.root;
   }
 
   /** Creates textarea for item description */
@@ -855,7 +885,7 @@ export class FormulaLinesDialog {
   }
 
   _initPreview(src: DG.DataFrame | DG.Viewer): Preview {
-    const preview = new Preview(this.host.viewerItems!, src, this.creationControl.popupMenu);
+    const preview = new Preview(this.host.viewerItems! ?? this.host.dframeItems!, src, this.creationControl.popupMenu);
     preview.height = 300;
     return preview;
   }
@@ -868,7 +898,7 @@ export class FormulaLinesDialog {
   }
 
   _initEditor(): Editor {
-    return new Editor(this.host.viewerItems!, this.preview.dataFrame,
+    return new Editor(this.host.viewerItems! ?? this.host.dframeItems!, this.preview.dataFrame,
       (itemIdx: number): boolean => {
         this._currentTable.update(itemIdx);
         return this.preview.update(itemIdx);
@@ -892,9 +922,10 @@ export class FormulaLinesDialog {
         this.dframeTable = this._initTable(this.host.dframeItems!);
         return this.dframeTable.root;
       });
-    } else { // Overrides the standard component logic that hides the header containing only one tab
-      tabs.header.style.removeProperty('display');
     }
+    // Overrides the standard component logic that hides the header containing only one tab
+    tabs.header.style.removeProperty('display');
+    
 
     /** Display "Add new" button */
     tabs.header.append(this.creationControl.button);

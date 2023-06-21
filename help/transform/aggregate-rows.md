@@ -1,7 +1,6 @@
-<!-- TITLE: Aggregate rows -->
-<!-- SUBTITLE: -->
-
-# Aggregate rows
+---
+title: "Aggregate rows"
+---
 
 This tools allows to interactively define aggregation logic, and immediately see results in the preview window.
 

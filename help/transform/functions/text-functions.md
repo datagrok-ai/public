@@ -1,7 +1,6 @@
-<!-- TITLE: Text functions -->
-<!-- SUBTITLE: -->
-
-# Text functions
+---
+title: "Text functions"
+---
 
 As parameters of the function, you can pass a regular string or a column name. To pass a regular string, it must be
 enclosed in double quotes, like `"my string"` or in apostrophes, like  `'my string'`. To pass a column cell, you can use
@@ -19,6 +18,8 @@ the syntax `${columnName}`.
 - [IsNotEmpty](#isnotempty)
 - [Length](#length)
 - [NotEq](#noteq)
+- [PadLeft](#padleft)
+- [PadRight](#padright)
 - [ParseFloat](#parsefloat)
 - [ParseInt](#parseint)
 - [RegExpContains](#regexpcontains)
@@ -104,6 +105,24 @@ Returns false if the string `s1` equal to `s2` and true otherwise.
 
 ```javascript
 Eq("Sky", "Sky")    // false
+```
+
+## <a name="padleft"></a>PadLeft(`s`, `width`, `padding`)
+
+Pads the string `s` with the `padding` symbol on the left if `s` is shorter than `width`.
+
+```javascript
+PadLeft("x", 3, "-")       // "--x"
+PadLeft("123", 3, "-")     // "123"
+```
+
+## <a name="padright"></a>PadRight(`s`, `width`, `padding`)
+
+Pads the string `s` with the `padding` symbol on the right if `s` is shorter than `width`.
+
+```javascript
+PadRight("x", 3, "-")       // "x--"
+PadRight("123", 3, "-")     // "123"
 ```
 
 ## <a name="parsefloat"></a>ParseFloat(`s`)

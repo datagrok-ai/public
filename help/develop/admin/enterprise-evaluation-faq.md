@@ -1,11 +1,10 @@
-<!-- TITLE: Enterprise evaluation FAQ -->
-<!-- SUBTITLE: -->
-
-# FAQ
+---
+title: "Enterprise evaluation FAQ"
+---
 
 * [Architecture](architecture.md)
   * Data flows
-  * [Deployment](deploy.md)
+  * [Deployment](deploy/deploy.md)
 
 * Security
   * [Security overview](security.md)

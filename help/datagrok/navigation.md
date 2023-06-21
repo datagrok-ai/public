@@ -1,7 +1,6 @@
-<!-- TITLE: Navigation -->
-<!-- SUBTITLE: -->
-
-# Navigation
+---
+title: "Navigation"
+---
 
 This article is designed to help you navigate the Datagrok platform. We will introduce core concepts and walk you
 through the fundamentals of working with our platform.
@@ -22,9 +21,9 @@ Here you can find an overview of the platform's key capabilities as well as the 
 [projects](project.md) and more.
 
 The welcome page consists of several visual components: a sidebar, [toolbox](#toolbox), main
-view, [property panel](#properties), and [context help](#context-help). Typically, the view resides in the center and
+view, [context panel](#context-panel), and [context help](#context-help). Typically, the view resides in the center and
 occupies all available area in the screen. The sidebar and toolbox are placed on the left. The sidebar contains controls
-over the main functionality, while the toolbox displays options specific to the current view. The property panel and
+over the main functionality, while the toolbox displays options specific to the current view. The context panel and
 context help are docked to the right. This appearance is fully customizable, you can manage the displayed windows from
 the sidebar
 (`Windows`), or turn them on/off with the following shortcuts:
@@ -32,7 +31,7 @@ the sidebar
 |    Menu Option         |      Shortcut               |         Action                |
 |------------------------|-----------------------------|-------------------------------|
 | Windows | Toolbox      | Alt + X                     | Show/hide the toolbox         |
-| Windows | Properties   | F4                          | Show/hide the property panel  |
+| Windows | Properties   | F4                          | Show/hide the context panel  |
 | Windows | Context Help | F1                          | Show/hide the context help    |
 
 In addition to the design modularity, these panels can be resized and docked.
@@ -44,7 +43,7 @@ Now, let's proceed to the sidebar icons and explore the functionality they offer
 This tab brings together the platform's main data-retrieving capabilities. There are multiple ways in which you can work
 with data in Datagrok: from a full in-browser experience to establishing data connections, deploying interactive
 applications, running data jobs, building pipelines. It all starts with a simple step
-of [importing data](../access/file-browser-and-file-shares.md).
+of [importing data](../access/files/files.mdx).
 
 ### Local files
 
@@ -52,12 +51,12 @@ Take a local file to begin with. To open it on the platform, drag-and-drop it in
 file dialog interaction: double-click on the `Data` icon or press `Ctrl + O`. You can access this dialog from the
 toolbox as well (`Data | Open local file`). It is important to note that the data resides in the browser up until the
 moment you choose to upload it to the server. This is always done explicitly. See the list
-of [supported file formats](../access/supported-data-sources.md#supported-file-types)
+of [supported file formats](../access/files/supported-formats.md)
 and read more about [saving data to the server](../datagrok/project.md#uploading-a-project).
 
 ### File browser
 
-[File shares](../access/connect-a-file-share.md) are arguably an even more popular choice for working with data. Files
+[File shares](../access/files/files.mdx) are arguably an even more popular choice for working with data. Files
 form a hierarchy, which you can browse naturally from the interface. The
 [File Browser](https://public.datagrok.ai/files) operates as a file system: you can organize pieces of data into folders
 and subfolders, rename and move files. The [tree map](../visualize/viewers/tree-map.md)
@@ -76,21 +75,21 @@ users can do that from `Data | Files | Actions | New File Share`. Besides, since
 connections, they can be added in the connection dialog (`Databases | Actions | Add New Connection`)
 . If you enable indexing feature, the platform will extract metadata from the files, which you can later apply in the
 search. The articles on
-[data access](../develop/how-to/access-data.md#file-shares), [file shares](../access/connect-a-file-share.md)
+[data access](../develop/how-to/access-data.md#file-shares), [file shares](../access/files/files.mdx)
 and
 [routing](routing.md#files) explain in more detail how to work with file shares.
 
 ### Databases
 
 In Datagrok, you can retrieve data from a variety of sources. The platform comes with data connectors
-for [30+ popular databases](../access/data-connection.md#connectors), and the list is constantly growing. In addition to
+for [30+ popular databases](../access/access.md#data-connection), and the list is constantly growing. In addition to
 that, it is possible to develop your own data connectors, and seamlessly integrate them into the platform.
 
-[Connections](../access/data-connection.md) to data sources live
+[Connections](../access/access.md#data-connection) to data sources live
 in [Connection Tree](https://public.datagrok.ai/connect), which you can reach from `Data | Databases`. Each branch
 corresponds to a provider and unfolds to show connections to the given data source. Connections, in their turn,
-list [data queries](../access/data-query.md)
-and, if available, [tables](../access/db-table-info.md) from the database.
+list [data queries](../access/access.md#data-query)
+and, if available, [tables](../access/databases/databases.mdx#working-with-queries) from the database.
 
 ### Webservices
 
@@ -112,7 +111,7 @@ and, if available, [tables](../access/db-table-info.md) from the database.
 
 The `Windows` icon lets you manage windows and see the currently open ones. In particular, you can customize the
 visibility of the following panes: [Menu](#menu), [Tables](#tables),
-[Columns](#columns), [Properties](#properties), [Toolbox](#toolbox), [Variables](#variables),
+[Columns](#columns), [Context Panel](#context-panel), [Toolbox](#toolbox), [Variables](#variables),
 [Console](#console), [Context Help](#context-help). To save your preferences regarding the display of certain windows at
 startup, tweak your user's [general settings](https://public.datagrok.ai/settings/general)
 (`Settings | General`).
@@ -121,35 +120,35 @@ startup, tweak your user's [general settings](https://public.datagrok.ai/setting
 
 ### Columns
 
-### Properties
+### Context panel
 
 This panel describes the properties of a current object. Typically, whenever the user clicks on most objects within the
 platform, such as a table, data connection, application, command, or any other
 [supported object type](../datagrok/objects.md), this object becomes a current object. So, to focus on one, simply click
-on it. After that, you will see the corresponding property panel as well as the
+on it. After that, you will see the corresponding context panel as well as the
 [context help](#context-help).
 
-`F4` toggles the visibility of the property panel. Additionally, you can manage it from the sidebar
+`F4` toggles the visibility of the context panel. Additionally, you can manage it from the sidebar
 (`Windows | Properties`). There are several useful icons in the panel header:
 
 |      Icon        |            Action                                           |
 |------------------|-------------------------------------------------------------|
 | Back/Forward     | Navigate the history of previously viewed object properties |
-| Clone and detach | Detach a copy of the property panel preserving the content  |
+| Clone and detach | Detach a copy of the context panel preserving the content  |
 | Collapse all     | Collapse all listed property values                         |
 | Favorites        | Switch to the properties of favorite objects                |
 
-The property panel saves history of viewed objects, so you can switch to the previous selected object if necessary. This
-also means that the content of the property panel is synchronized with the current object. To display properties of
+The context panel saves history of viewed objects, so you can switch to the previous selected object if necessary. This
+also means that the content of the context panel is synchronized with the current object. To display properties of
 another object along with the currently selected one, click on the `Clone and detach` icon.
 
-The content of a property panel is generated based on the type of a current object, as well as its value. For example,
+The content of a context panel is generated based on the type of a current object, as well as its value. For example,
 if you open a table, you can find applicable actions,
 [predictive models](../learn/predictive-modeling.md), and algorithms. The panel is designed in such a way that related
 objects are easy to reach, e.g., having a query in front of their eyes, users can identify the corresponding data
 connection and switch to its properties with one click.
 
-Some visual components, such as viewers, activate the property panel in a special way. To access the properties of a
+Some visual components, such as viewers, activate the context panel in a special way. To access the properties of a
 viewer, you would click on a gear icon `⚙` in the top right corner of the viewer's header.
 
 What is more, the information provided for a current object can be expanded by means of
@@ -183,7 +182,7 @@ detection rules.
 
 ### Console
 
-Console can be used to call [functions](functions/function.md) and record [macros](functions/function.md#macros).
+Console can be used to call [functions](functions/functions.md) and record [macros](functions/functions.md#macros).
 
 #### Controls
 
@@ -198,7 +197,7 @@ Press the tilde key `~` to open the console or enable it from the toolbox (`Wind
 ![Autocomplete](../uploads/gifs/console-autocomplete.gif "Console Autocomplete")
 
 Two icons on the top left let you clear the console, or open the [variables view](#variables). Clicking on the function
-name will bring up its details in the [property panel](#properties).
+name will bring up its details in the [context panel](#context-panel).
 
 #### Command examples
 
@@ -246,7 +245,7 @@ part, so you can seamlessly have it both ways:
 use the console to examine which functions got triggered by particular UI events to reproduce those steps in the future,
 or call functions on your data directly from the console. The first case can be used
 in [data transformations](../transform/recipe-editor.md)
-and [data pipelines](../access/data-pipeline.md). The second use case is a common practice for debugging custom
+and data pipelines. The second use case is a common practice for debugging custom
 functions defined in a [package](../develop/develop.md#packages).
 
 ![Recording Macros](console-macros.gif "Console Macros")
@@ -298,6 +297,6 @@ is provided in the toolbox of the help icon.
 
 See also:
 
-* [Functions](functions/function.md)
+* [Functions](functions/functions.md)
 * [Info panels](../discover/info-panels.md)
 * [Entities](objects.md)

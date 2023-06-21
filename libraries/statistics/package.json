@@ -4,14 +4,14 @@
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "0.1.7",
+  "version": "1.1.8",
   "description": "",
   "dependencies": {
-    "datagrok-api": ">0.95.4",
-    "@datagrok-libraries/utils": ">=0.0.22",
+    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "^4",
     "cash-dom": "latest",
-    "dayjs": "latest",
-    "jstat": "latest"
+    "jstat": "latest",
+    "dayjs": "^1.11.7"
   },
   "devDependencies": {
     "ts-loader": "^9.2.6",
@@ -31,6 +31,7 @@
     "build-statistics": "tsc",
     "build": "tsc",
     "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix"
+    "lint-fix": "eslint src --ext .ts --fix",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   }
 }

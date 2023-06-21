@@ -1,40 +1,40 @@
-// import {NodeType} from '@phylocanvas/phylocanvas.gl';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
+import {
+  HELM_REQUIRED_FIELDS as REQ,
+  HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT
+} from '../utils/const';
 
-
-/* Interface for hierarchical data structure returned by Newick.parse_newick */
-export interface NodeType {
-  name: string;
-  branch_length?: number;
-  children?: NodeType[];
+type RGroup = {
+  [RGP.CAP_GROUP_SMILES]: string,
+  [RGP.ALTERNATE_ID]: string,
+  [RGP.CAP_GROUP_NAME]: string,
+  [RGP.LABEL]: string,
 }
-
-export function isLeaf(node: NodeType) {
-  return !node.children || node.children.length == 0;
-}
-
-export interface NodeCuttedType extends NodeType {
-  cuttedLeafNameList: string[];
-  cuttedChildren?: NodeType[];
-}
-
 export type Monomer = {
-  symbol: string,
-  name: string,
-  naturalAnalog: string,
-  molfile: string,
-  polymerType: string,
-  monomerType: string,
-  rgroups: {capGroupSmiles: string, alternateId: string, capGroupName: string, label: string }[],
-  data: {[property: string]: any}
+  [REQ.SYMBOL]: string,
+  [REQ.NAME]: string,
+  [REQ.MOLFILE]: string,
+  [REQ.AUTHOR]: string,
+  [REQ.ID]: number,
+  [REQ.RGROUPS]: RGroup[],
+  [REQ.SMILES]: string,
+  [REQ.POLYMER_TYPE]: string,
+  [REQ.MONOMER_TYPE]: string,
+  [REQ.CREATE_DATE]: string | null,
+  [OPT.NATURAL_ANALOG]?: string,
+  [OPT.META]?: { [property: string]: any }
 };
 
 export interface IMonomerLib {
-  getMonomer(monomerType: string, monomerName: string): Monomer | null;
-  getMonomerMolsByType(type: string): {[symbol: string]: string} | null;
-  getMonomerNamesByType(type: string): string[];
-  getTypes(): string[];
+  get error(): string | undefined;
+  getMonomer(polymerType: string, monomerSymbol: string): Monomer | null;
+  getMonomerMolsByPolymerType(polymerType: string): { [monomerSymbol: string]: string } | null;
+  getMonomerSymbolsByType(polymerType: string): string[];
+  getPolymerTypes(): string[];
   update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 }

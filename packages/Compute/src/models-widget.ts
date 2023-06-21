@@ -3,7 +3,6 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import {ModelHandler} from './model-handler';
 import $ from 'cash-dom';
-import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 const api = <any>window;
 
 /*
@@ -19,7 +18,7 @@ export class ModelsWidget extends DG.Widget {
 
   constructor() {
     super(ui.box());
-    
+
     this.meta = new ModelHandler();
     this.name = 'Models';
     this.permanentFilter = '#model';
@@ -59,25 +58,25 @@ export class ModelsWidget extends DG.Widget {
     this.getModels('updatedOn');
   }
 
-    
+
 
   async getModels(order:string){
     let b = true;
     let v = order;
 
     switch(order){
-        case 'Recent': 
+        case 'Recent':
             v = 'updatedOn';
             break;
-        case 'Newest': 
+        case 'Newest':
             v = 'createdOn';
             break;
-        case 'Oldest': 
+        case 'Oldest':
             v = 'createdOn';
             b = false;
             break;
         default:
-            v = 'updatedOn';     
+            v = 'updatedOn';
     }
 
     grok.dapi.scripts
@@ -92,16 +91,16 @@ export class ModelsWidget extends DG.Widget {
             d.style.color = 'var(--blue-1)';
             d.style.margin = '4px 0';
             $(d).find('.ui-label').addClass('ui-link');
-            
-            this.modelsList.append(d)  
+
+            this.modelsList.append(d)
         }));
   }
 
   static openModel(x: DG.Script, parentCall?: DG.FuncCall) {
-    let views = []  
+    let views = []
     for (let v of grok.shell.views)
       views.push(v.name)
-    
+
     if (views.includes('Models')){
           let view = new FunctionView(x);
           view.parentCall = parentCall!;

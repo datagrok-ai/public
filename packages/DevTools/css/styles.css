@@ -58,3 +58,31 @@
 .test-manager .d4-tree-view-group {
   width: 100%;
 }
+
+.dt-help-icon {
+  position: relative;
+  left: 120px;
+}
+
+.dt-input {
+  width: 250px;
+  position: relative;
+  margin-left: -40px;
+}
+
+.dt-res-string {
+  align-items: center;
+}
+
+.dt-res-string > div > span:first-child {
+  color: var(--green-2);
+}
+
+.dt-res-string > div > span:nth-child(2) {
+  color: var(--red-3);
+}
+
+.dt-res-string > div > span:last-child {
+  color: var(--orange-2);
+  padding-right: 10px;
+}

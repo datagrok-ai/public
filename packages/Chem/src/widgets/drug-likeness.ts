@@ -15,9 +15,9 @@ export function assessDruglikeness(molString: string): [number, OCL.IParameteriz
 export function drugLikenessWidget(molString: string): DG.Widget {
   const rdKitModule = getRdKitModule();
   try {
-    molString = _convertMolNotation(molString, 'unknown', 'smiles', rdKitModule);
+    molString = _convertMolNotation(molString, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   let score: number;
   let description: OCL.IParameterizedString[];
@@ -26,5 +26,9 @@ export function drugLikenessWidget(molString: string): DG.Widget {
   } catch (e) {
     return new DG.Widget(ui.divText('Could not asses drug likeness'));
   }
-  return new DG.Widget(ui.divV([ui.label(`Score: ${score}`), renderDescription(description)]));
+  const descriptionHost = renderDescription(description);
+  descriptionHost.style.overflow = 'hidden';
+  descriptionHost.style.maxHeight = '400px';
+  return new DG.Widget(ui.divV([ui.label(`Score: ${score.toFixed(2)}`),
+    ui.label(` ${description[0].value}`), descriptionHost], {classes: 'ui-box'}));
 }

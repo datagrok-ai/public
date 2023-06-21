@@ -2,7 +2,7 @@
 
 let windows = grok.shell.windows;
 windows.showToolbox = false; //*hide tool box
-windows.showProperties = false; //*hide property panel
+windows.showContextPanel = false; //*hide context panel
 
 let gallery = ui.divH([],'grok-gallery-grid');
 for (let i =0; i<40; i++){

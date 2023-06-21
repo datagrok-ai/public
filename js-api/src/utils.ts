@@ -75,6 +75,21 @@ CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
 
 export namespace Paint {
 
+  export function coordinateGrid(g: CanvasRenderingContext2D, worldBounds: Rect, xAxis?: Rect, yAxis?: Rect, viewport?: Rect) {
+    if (xAxis != null)
+      horzAxis(g, worldBounds.minX, worldBounds.maxX, xAxis.x, xAxis.y, xAxis.width, xAxis.height);
+    if (yAxis != null)
+      vertAxis(g, worldBounds.minY, worldBounds.maxY, yAxis.x, yAxis.y, yAxis.width, yAxis.height);
+  }
+
+  export function horzAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number, log: boolean = false, inverse: boolean = false) {
+    api.grok_Paint_HorzAxis(g, min, max, x, y, w, h, log, inverse);
+  }
+
+  export function vertAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number, log: boolean = false, inverse: boolean = false) {
+    api.grok_Paint_VertAxis(g, min, max, x, y, w, h, log, inverse);
+  }
+
   export function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
@@ -89,7 +104,7 @@ export namespace Paint {
   }
 
   /** Renders a marker */
-  export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number, size: number) {
+  export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number | string, size: number) {
     api.grok_Paint_Marker(g, markerType, x, y, color, size);
   }
 
@@ -176,7 +191,7 @@ export class Utils {
 }
 
 
-/** A proxy to a Dart List<T>. */
+/** A proxy to a Dart `List<T>`. */
 export class DartList<T> implements Iterable<T> {
   dart: any;
 
@@ -229,6 +244,10 @@ export namespace HtmlUtils {
   /** Renders the element to canvas */
   export function renderToCanvas(element: HTMLElement, ratio: number = 1): Promise<HTMLCanvasElement> {
     return api.grok_HtmlUtils_RenderToCanvas(element, ratio);
+  }
+
+  export function htmlGetBounds(element: HTMLElement): Rect {
+    return Rect.fromDart(api.grok_HtmlUtils_HtmlGetBounds(element));
   }
 }
 
@@ -655,4 +674,23 @@ export function _propsToDart(s: string, cls: string): string {
 
 export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
+}
+
+
+/** Autotest-related helpers */
+export namespace Test {
+
+  /** Specifies whether the TestManager works in benchmark on unit test mode.
+   * This is controlled by the TestManager's "Benchmark" check box.
+   *
+   * Use this variable in the individual tests to control whether it
+   * runs as a quick unit test (for instance, set small number of iterations)
+   * or a benchmark (set big number of iterations).
+   *
+   * Results of the benchmarks, including time, are captured during the overnight
+   * automated testing and are reported to the metrics database. This allows to
+   * identify performance regressions, compare how fast tests perform under
+   * different conditions, etc.
+   * */
+  export let isInBenchmark = false;
 }

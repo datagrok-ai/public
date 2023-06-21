@@ -7,7 +7,7 @@ import os from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
-import { checkImportStatements, checkFuncSignatures, extractExternals } from './check';
+import { checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile } from './check';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -90,6 +90,8 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
   const funcWarnings = checkFuncSignatures(curDir, funcFiles);
   contentValidationLog += funcWarnings.join('\n') + (funcWarnings.length ? '\n' : '');
+  const packageWarnings = checkPackageFile(curDir);
+  contentValidationLog += packageWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
   console.log(`Checks finished in ${Date.now() - checkStart} ms`);
 
   files.forEach((file: any) => {

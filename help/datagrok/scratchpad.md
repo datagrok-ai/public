@@ -1,7 +1,6 @@
-<!-- TITLE: Scratchpad -->
-<!-- SUBTITLE: -->
-
-# Scratchpad
+---
+title: "Scratchpad"
+---
 
 Scratchpad is a default [Project](project.md) in the workspace, which is opened when you start the application. When you
 drag files into the platform, they end up in the Scratchpad.
@@ -13,8 +12,6 @@ Upload scratchpad as your new project to server using _upload_ button and grant 
 
 See also:
 
-* [Data pipeline](../access/data-pipeline.md)
-* [Data connection](../access/data-connection.md)
-* [Data query](../access/data-query.md)
-* [Data job](../access/data-job.md)
+* [Data connection](../access/access.md#data-connection)
+* [Data query](../access/access.md#data-query)
 * [Function call](functions/function-call.md)

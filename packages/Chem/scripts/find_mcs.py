@@ -2,7 +2,8 @@
 #language: python
 #input: string molecules
 #input: dataframe df
-#input: bool returnSmarts
+#input: bool exactAtomSearch
+#input: bool exactBondSearch
 #output: string result
 
 from rdkit import Chem
@@ -17,10 +18,15 @@ length = len(molecules)
 mols = np_none(length)
 idx_err = []
 for n in range(0, length):
-  mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+  try:
+  	mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+  except:
+    mol = None
   if mol is None:
     idx_err.append(n)
     continue
   mols[n] = mol
 mols = mols[mols != np.array(None)]
-result = rdFMCS.FindMCS(mols).smartsString if returnSmarts else Chem.MolToSmiles(Chem.MolFromSmarts(rdFMCS.FindMCS(mols).smartsString))
+atomSearch = rdFMCS.AtomCompare.CompareElements if exactAtomSearch else rdFMCS.AtomCompare.CompareAny
+bondSearch = rdFMCS.BondCompare.CompareOrderExact if exactBondSearch else rdFMCS.BondCompare.CompareOrder
+result = rdFMCS.FindMCS(mols, bondCompare=bondSearch, atomCompare=atomSearch).smartsString

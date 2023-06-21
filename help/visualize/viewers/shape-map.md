@@ -1,7 +1,6 @@
-<!-- TITLE: Shape map -->
-<!-- SUBTITLE: -->
-
-# Shape map
+---
+title: "Shape map"
+---
 
 Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries,
 states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG
@@ -26,5 +25,5 @@ See also:
 
 * Applicable tables: #{x.demo:germany_grp_by_state}, #{x.demo:pa_income_by_county}, #{x.demo:
   ua_population}
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [JS API: Shape map](https://public.datagrok.ai/js/samples/ui/viewers/types/shape-map)

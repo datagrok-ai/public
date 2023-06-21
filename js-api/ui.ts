@@ -5,7 +5,7 @@
 
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
-import {VirtualView} from './src/views/view';
+import {View, VirtualView} from './src/views/view';
 import {
   Accordion,
   Dialog,
@@ -19,29 +19,33 @@ import {
   FilesWidget,
   DateInput,
   fileShares,
-  SliderOptions
+  SliderOptions,
+  Breadcrumbs,
+  DropDown,
+  TypeAhead,
+  TypeAheadConfig,
+  TagsInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
 import {__obs, StreamSubscription} from './src/events';
-import {_isDartium, _options} from './src/utils';
+import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
 import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
+import { Wizard, WizardPage } from './src/ui/wizard';
 
 
 let api = <any>window;
 declare let grok: any;
 
-/**
- * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
+/** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
  * @param {string} tagName The name of an element.
  * @param {string | null} className
- * @returns {HTMLElement}
- */
+ * @returns {HTMLElement} */
 export function element(tagName: string, className: string | null = null): HTMLElement & any {
   let x = document.createElement(tagName);
   if (className !== null)
@@ -110,8 +114,7 @@ export function _backColor(x: HTMLElement, s: string): HTMLElement {
 /**
  * @param {number} height
  * @param {number} width
- * @returns {HTMLCanvasElement}
- * */
+ * @returns {HTMLCanvasElement} */
 export function canvas(width: number | null = null, height: number | null = null): HTMLCanvasElement {
   let result = element('CANVAS');
   if (height != null && width != null) {
@@ -313,8 +316,7 @@ export function inlineText(objects: any[]): HTMLElement {
 /**
  * @param {object[]} children
  * @param {string | ElementOptions} options
- * @returns {HTMLDivElement}
- * */
+ * @returns {HTMLDivElement} */
 export function div(children: any[] | string | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
@@ -391,8 +393,7 @@ export function setUpdateIndicator(element: HTMLElement, updating: boolean = tru
  * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
  * @param {string} tooltip
- * @returns {HTMLButtonElement}
- * */
+ * @returns {HTMLButtonElement} */
 export function button(content: string | Element | (string | Element)[], handler: Function, tooltip: string | null = null): HTMLButtonElement {
   return api.grok_UI_Button(content, handler, tooltip);
 }
@@ -407,8 +408,7 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
  * @param {Function} renderer (item) => {...}
- * @returns {HTMLElement}
- * */
+ * @returns {HTMLElement} */
 export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer?: ((item: any) => HTMLElement) | null): HTMLElement {
   return api.grok_UI_ComboPopup(caption, items, handler, renderer ? (item: any) => renderer(toJs(item)) : null);
 }
@@ -417,8 +417,7 @@ export function comboPopup(caption: string | HTMLElement, items: string[], handl
  * Creates a combo popup with the specified icons and items
  * @param {string | HTMLElement} caption
  * @param {Map<string>} items
- * @returns {HTMLElement}
- * */
+ * @returns {HTMLElement} */
 export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Function }): HTMLElement {
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
@@ -440,12 +439,12 @@ export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) |
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
-/** Waits for Future<Element> function to complete and collect its result.*/
+/** Waits for `Future<Element>` function to complete and collect its result.*/
 export function wait(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
-/** Waits for Future<Element> function to complete and collect its result as a ui.box.*/
+/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.*/
 export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
@@ -504,7 +503,7 @@ export function image(src: string, width: number, height: number, options?: {tar
   return image;
 }
 
-/** Creates an <a> element. */
+/** Creates an `<a>` element. */
 export function link(
     text: string,
     target: string | Function | object,
@@ -529,7 +528,7 @@ export function link(
 }
 
 /** Creates a [Dialog]. */
-export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
+export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
 
@@ -562,8 +561,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
  * @param {number} maxColumns - maximum number of items on the non-scrolling axis
- * @returns {VirtualView}
- */
+ * @returns {VirtualView} */
 export function virtualView(length: number, renderer: Function, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
   let view = VirtualView.create(verticalScroll, maxColumns);
   view.setData(length, renderer);
@@ -649,24 +647,27 @@ export function tree(): TreeViewGroup {
 }
 
 
-// Will come back later (-Andrew)
-//
-// export interface InputOptions {
-//   value?: any;
-//   onValueChanged?: (v: any) => void;
-// }
-//
-//
+export interface IInputInitOptions {
+  onCreated?: (input: InputBase) => void;
+  onValueChanged?: (input: InputBase) => void;
+}
+
+
 export namespace input {
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
-  export function forProperty(property: Property, source: any = null): InputBase {
-    return InputBase.forProperty(property, source);
+  export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
+    const input = InputBase.forProperty(property, source);
+    if (options?.onCreated)
+      options.onCreated(input);
+    if (options?.onValueChanged)
+      input.onChanged(() => options.onValueChanged!(input));
+    return input;
   }
 
   /** Returns a form for the specified properties, bound to the specified object */
-  export function form(source: any, props: Property[]): HTMLElement {
-    return inputs(props.map((p) => forProperty(p, source)));
+  export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
+    return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
   // export function bySemType(semType: string) {
@@ -726,8 +727,8 @@ export function floatInput(name: string, value: number | null, onValueChanged: F
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
-export function dateInput(name: string, value: dayjs.Dayjs, onValueChanged: Function | null = null): DateInput {
-  return new DateInput(api.grok_DateInput(name, value.valueOf()), onValueChanged);
+export function dateInput(name: string, value: dayjs.Dayjs | null, onValueChanged: Function | null = null): DateInput {
+  return new DateInput(api.grok_DateInput(name, value?.valueOf()), onValueChanged);
 }
 
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {
@@ -742,8 +743,9 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase<Column | null> {
-  return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {filter?: Function | null}): InputBase<Column | null> {
+  const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
+  return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
@@ -752,7 +754,7 @@ export function columnsInput(name: string, table: DataFrame, onValueChanged: (co
 }
 
 export function tableInput(name: string, table: DataFrame | null, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
-  return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
+  return new InputBase(api.grok_TableInput(name, table?.dart, tables.map(toDart)), onValueChanged);
 }
 
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
@@ -761,6 +763,10 @@ export function textInput(name: string, value: string, onValueChanged: Function 
 
 export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+}
+
+export function radioInput(name: string, value: string, items: string[], onValueChanged: Function | null = null): InputBase<string | null> {
+  return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
 }
 
 /**
@@ -813,6 +819,10 @@ export class tools {
     let interval = setInterval(() => {
       let newWidth = element.clientWidth;
       let newHeight = element.clientHeight;
+      if ((newWidth === 0 && newHeight === 0)) {
+        return
+      }
+
       if (newWidth !== width || newHeight !== height) {
         width = newWidth;
         height = newHeight;
@@ -930,8 +940,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * TODO: search, destructuring to properties
  *
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
- * */
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta} */
 export class ObjectHandler {
 
   /** Type of the object that this meta handles. */
@@ -953,8 +962,7 @@ export class ObjectHandler {
   /**
    * Override this method to check whether this meta class should handle the specified object.
    * @param x - specified object.
-   * @returns {boolean}
-   * */
+   * @returns {boolean} */
   isApplicable(x: any): boolean {
     throw 'Not defined.';
   }
@@ -1001,6 +1009,11 @@ export class ObjectHandler {
     return divText(this.getCaption(x));
   }
 
+  /** Renders preview list for the item. */
+  async renderPreview(x: any, context: any = null): Promise<View> {
+    return View.create();
+  }
+
   /** Renders view for the item. */
   renderView(x: any, context: any = null): HTMLElement {
     return this.renderProperties(x);
@@ -1043,7 +1056,7 @@ export class ObjectHandler {
   /**
    * Registers a function that takes applicable objects as the only argument.
    * It will be suggested to run in the context menu for that object, and
-   * also in the "Actions" pane on the property panel.
+   * also in the "Actions" pane on the context panel.
    *
    * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
@@ -1105,12 +1118,32 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   if (resize && items.length > 1){
     items.forEach((v, i) => {
       let divider = box();
+      divider.className='ui-split-v-divider';
       $(b).addClass('ui-split-v').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
         spliterResize(divider, items[i], items[i + 1])
       }
-    })
+    });
+    tools.handleResize(b, (w,h)=>{
+      let totalHeigh = 0;
+      let childs = 0;
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+          childs++;
+        }
+        totalHeigh = totalHeigh + $(b.childNodes[i]).height();
+      }
+
+      for (let i = 0; i < b.children.length; i++){
+          if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+            $(b.childNodes[i]).css('max-height', (h-totalHeigh)/childs+$(b.childNodes[i]).height());
+          } else {
+            $(b.childNodes[i]).css('height', 4);
+          }
+      }
+
+    });
   } else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
@@ -1120,15 +1153,38 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
 /** Div flex-box container that positions child elements horizontally. */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
+
   if (resize && items.length > 1) {
+
     items.forEach((v, i) => {
       let divider = box();
+      divider.className='ui-split-h-divider';
       $(b).addClass('ui-split-h').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i + 1], true)
+        spliterResize(divider, items[i], items[i + 1], true);
       }
     })
+
+    tools.handleResize(b, (w,h)=>{
+      let totalWidth = 0;
+      let childs = 0;
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+          childs++;
+        }
+        totalWidth = totalWidth + $(b.childNodes[i]).width();
+      }
+
+      for (let i = 0; i < b.children.length; i++){
+          if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+            $(b.childNodes[i]).css('max-width', (w-totalWidth)/childs+$(b.childNodes[i]).width());
+          } else {
+            $(b.childNodes[i]).css('width', 4);
+          }
+        }
+    });
+
   } else {
     $(b).addClass('ui-split-h').append(items.map(item => box(item)))
   }
@@ -1143,12 +1199,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-width: 4px;
+    width: 4px;
+    min-width: 4px;
     cursor: col-resize;`
   }
   else {
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-height: 4px;
+    height: 4px;
+    min-height: 4px;
     cursor: row-resize;`
   }
 
@@ -1162,15 +1222,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
     if (!previousSibling.classList.contains('ui-box'))
       previousSibling = previousSibling.parentElement!;
 
-    md = {
-      e,
-      offsetLeft: divider.offsetLeft,
-      offsetTop: divider.offsetTop,
-      topHeight: previousSibling.offsetHeight,
-      bottomHeight: nextSibling.offsetHeight,
-      leftWidth: previousSibling.offsetWidth,
-      rightWidth: nextSibling.offsetWidth
-    };
+      md = {
+        e,
+        offsetLeft: divider.offsetLeft,
+        offsetTop: divider.offsetTop,
+        topHeight: previousSibling.offsetHeight,
+        bottomHeight: nextSibling.offsetHeight,
+        leftWidth: previousSibling.offsetWidth,
+        rightWidth: nextSibling.offsetWidth
+      };
+
     divider.style.backgroundColor = 'var(--grey-2)';
     document.onmousemove = onMouseMove;
     document.onmouseup = () => {
@@ -1180,17 +1241,34 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
   }
 
   function onMouseMove(e: any) {
-    const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
-    if (horizontal) {
-      delta.x = Math.min(Math.max(delta.x, -md.leftWidth), md.rightWidth);
-      previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
-      nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
-    } else {
-      delta.x = Math.min(Math.max(delta.y, -md.topHeight), md.bottomHeight);
-      previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
-      nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
-    }
+      const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+      if (horizontal) {
+        delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+        previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
+        nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
+      } else {
+        delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+        previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
+        nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
+      }
   }
+}
+
+export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
+  const root = document.createElement('div');
+  $(root).addClass('d4-ribbon');
+  if (items != null) {
+    $(root).append(items.map(item => {
+      let itemBox = document.createElement('div');
+      $(itemBox).addClass('d4-ribbon-item');
+      $(itemBox).append(item);
+      return render(itemBox)
+    }));
+  }
+  const wrapSpacer = document.createElement('div');
+  $(wrapSpacer).addClass('d4-ribbon-wrap-spacer');
+  $(root).prepend(wrapSpacer);
+  return root;
 }
 
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
@@ -1300,6 +1378,22 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   return e;
 }
 
+export function breadcrumbs(path: string[]): Breadcrumbs {
+  return new Breadcrumbs(path);
+}
+
+export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
+  return new DropDown(label, createElement);
+}
+
+export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
+  return new TypeAhead(name, config);
+}
+
+export function tagsInput(name: string, tags: string[], showBtn: boolean) {
+  return new TagsInput(name, tags, showBtn);
+}
+
 export let icons = {
   close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
   help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
@@ -1358,4 +1452,204 @@ export namespace labels {
   export function details(s: string): HTMLDivElement {
     return divText(s, 'ui-label-details');
   }
+}
+
+/** Visual hints attached to an element. They can be used to introduce a new app to users. */
+export namespace hints {
+
+  export enum POSITION {
+    TOP = 'top',
+    BOTTOM = 'bottom',
+    LEFT = 'left',
+    RIGHT = 'right',
+  }
+
+  /** Adds a popup window with the specified [content] next to an [element].
+   * Set [position] to control where the popup will appear. The default position is [POSITION.RIGHT]. */
+  export function addHint(el: HTMLElement, content: HTMLElement, position: `${POSITION}` = POSITION.RIGHT) {
+    const root = document.createElement('div');
+    root.className = 'ui-hint-popup';
+
+    const closeBtn = iconFA('times', () => root.remove());
+    closeBtn.style.cssText = `
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      color: var(--grey-4);
+    `;
+
+    const node = el.getBoundingClientRect();
+
+    root.append(closeBtn);
+    root.append(content);
+    $('body').append(root);
+
+    if (position == POSITION.RIGHT) {
+      const right = node.right + 8;
+      root.style.left = right + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.LEFT) {
+      let left = node.left - root.offsetWidth - 8;
+      if (left < 0)
+        left = 0;
+      root.style.left = left + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.TOP) {
+      let top = node.top - root.offsetHeight - 8;
+      if (top < 0)
+        top = 0;
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
+      root.style.top = top + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.BOTTOM) {
+      let bottom = node.bottom + 8;
+      if (bottom + root.offsetHeight > window.innerHeight)
+        bottom = window.innerHeight - root.offsetHeight;
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
+      root.style.top = bottom + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    }
+
+    return root;
+  }
+
+  /** Adds a hint indication to the provided element and returns it. */
+  export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
+    const id = Math.floor(Math.random() * 1000);
+    const hintIndicator = document.createElement('div');
+    hintIndicator.className = 'ui-hint-blob';
+
+    hintIndicator.setAttribute('data-target', 'hint-target-' + id);
+    el.setAttribute('data-target', 'hint-target-' + id);
+
+    el.classList.add('ui-hint-target');
+    $('body').append(hintIndicator);
+
+    const indicatorNode = el.getBoundingClientRect();
+    hintIndicator.style.position = 'fixed';
+    hintIndicator.style.zIndex = '4000';
+    hintIndicator.style.left = indicatorNode.left + 'px';
+    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    if (clickToClose) {
+      $(el).on('click', () => {
+        remove(el);
+      });
+    }
+
+    if (autoClose! > 0) {
+      setTimeout(() => remove(el), autoClose);
+    }
+    return el;
+  }
+
+  /** Describes series of visual components in the wizard. Each wizard page is associated with the
+   * [showNextTo] element. Provide either [text] or [root] parameter to populate the page, the other
+   * parameters are optional. The wizard header is shown only if [title] or [helpUrl] are provided.
+   * The user can use the arrow buttons to navigate the set of instructions. The wizard can be closed
+   * from the dialog header (the "x" icon), via the "Cancel" button, or via the [Wizard.close()] method.
+   * Example: {@link https://public.datagrok.ai/js/samples/ux/Interactivity/hints}:*/
+  export function addTextHint(options: {title?: string, helpUrl?: string, pages?: HintPage[]}): Wizard {
+    let targetElement: HTMLElement | undefined;
+    const overlay = div([], 'ui-hint-overlay');
+    $('body').prepend(overlay);
+    const horizontalOffset = 10;
+    const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
+
+    const cancelBtn = wizard.getButton('CANCEL');
+    $(cancelBtn)?.hide();
+    const prevBtn = wizard.getButton('<<');
+    $(prevBtn).empty();
+    const prevIcon = iconFA('chevron-left');
+    $(prevIcon).css('color', 'inherit');
+    prevBtn.append(prevIcon);
+    const nextBtn = wizard.getButton('>>');
+    nextBtn.innerText = 'OK';
+
+    if (options.pages) {
+      nextBtn.innerText = (wizard.pageIndex === options.pages.length - 1) ? 'OK' : 'NEXT';
+      const pageNumberStr = `${wizard.pageIndex + 1}/${options.pages.length}`;
+      wizard.addButton(pageNumberStr, () => {}, 1);
+      const pageNumberField = wizard.getButton(pageNumberStr);
+      pageNumberField.classList.add('disabled');
+      $(pageNumberField).css('font-weight', 500);
+
+      function ok() {
+        if (nextBtn.innerText === 'OK')
+          wizard.close();
+      }
+
+      for (const p of options.pages) {
+        const page = Object.assign({}, p);
+        page.onActivated = () => {
+          if (wizard.pageIndex === options.pages!.length - 1) {
+            nextBtn.innerText = 'OK';
+            // Use delay to override default wizard behavior
+            setTimeout(() => nextBtn.classList.remove('disabled'), 10);
+            $(nextBtn).on('click', ok);
+          } else {
+            nextBtn.innerText = 'NEXT';
+            $(nextBtn).off('click', ok);
+          }
+
+          pageNumberField.innerText = `${wizard.pageIndex + 1}/${options.pages!.length}`;
+          if (p.showNextTo) {
+            if (targetElement)
+              targetElement.classList.remove('ui-text-hint-target');
+            targetElement = p.showNextTo;
+            p.showNextTo.classList.add('ui-text-hint-target');
+            const rect = HtmlUtils.htmlGetBounds(p.showNextTo);
+            $(wizard.root).css('left', rect.right + horizontalOffset);
+            $(wizard.root).css('top', rect.top);
+          }
+          if (p.onActivated)
+            p.onActivated();
+        };
+        page.root = p.root ?? divText(p.text ?? '');
+        wizard.page(<WizardPage>page);
+      }
+    }
+    wizard.onClose.subscribe(() => remove(targetElement));
+    $(overlay).on('click', () => wizard.close());
+    const _x = $(wizard.root).css('left');
+    const _y = $(wizard.root).css('top');
+    wizard.show({width: 250, height: 200,
+      x: _x ? parseInt(_x) : undefined, y: _y ? parseInt(_y) : undefined});
+    return wizard;
+  }
+
+  /** Removes the hint indication from the provided element and returns it. */
+  export function remove(el?: HTMLElement): HTMLElement | null {
+    if (el != null) {
+      const id = el.getAttribute('data-target');
+      $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
+      el.classList.remove('ui-hint-target', 'ui-text-hint-target');
+    }
+    $('div.ui-hint-overlay')?.remove();
+    return el ?? null;
+  }
+}
+
+interface HintPage {
+
+  /** Displays the wizard next to the specified element when the page is current. */
+  showNextTo: HTMLElement;
+
+  /** Page root. Can also be set via [text] property */
+  root?: HTMLDivElement;
+
+  /** Adds a div with the specified text as the page root. */
+  text?: string;
+
+  /** Caption to be displayed on top of the panel */
+  caption?: HTMLElement | string;
+
+  /** Called when the page is activated */
+  onActivated?: () => void;
+
+  /** Returns error message (and stops wizard from proceeding to the next page),
+   * or null if validated */
+  validate?: () => string | null;
 }

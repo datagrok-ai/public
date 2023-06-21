@@ -1,9 +1,7 @@
 import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
 
-import { category, test, expect, delay } from '@datagrok-libraries/utils/src/test';
-import { _package } from '../package-test';
-import { chemblSimilaritySearch, chemblSubstructureSearch } from '../package';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
 
 const smiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
 

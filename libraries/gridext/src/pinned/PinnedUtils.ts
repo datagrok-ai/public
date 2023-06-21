@@ -52,7 +52,6 @@ export function getPinnedColumnLeft(colPinned : PinnedColumn) : number {
   return nW;
 }
 
-
 export function setPinnedColumnWidth(colPinned : PinnedColumn, nW : number) : void {
   const grid = colPinned.getGridColumn()?.grid;
   if(grid === null || grid === undefined)
@@ -109,7 +108,6 @@ export function setPinnedColumnWidth(colPinned : PinnedColumn, nW : number) : vo
   grid.invalidate();
 }
 
-
 export function getTotalPinnedColsWidth(grid : DG.Grid) : number {
   const dart = DG.toDart(grid);
   const nPinnedColsCounnt = dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
@@ -122,7 +120,6 @@ export function getTotalPinnedColsWidth(grid : DG.Grid) : number {
 
   return nWidth;
 }
-
 
 export function findPinnedColumnByRoot(eCanvas : HTMLCanvasElement, grid : DG.Grid) : PinnedColumn | null {
   const dart = DG.toDart(grid);
@@ -219,11 +216,7 @@ export function installPinnedColumns(grid : DG.Grid) : void {
       console.error("ERROR: Couldn't hide row header.");
     }
   }
-
 }
-
-
-
 
 export function isPinnedColumn(colGrid : DG.GridColumn) : boolean {
   const grid = getGrid(colGrid);
@@ -304,7 +297,7 @@ export function registerPinnedColumns() {
   grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
     const view : DG.TableView = layout.view as TableView;
     if(view === null) {
-      console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
+      //console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
       return;
     }
 

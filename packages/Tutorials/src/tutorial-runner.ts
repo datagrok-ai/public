@@ -2,9 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { _package } from './package';
-import { Track } from './track';
-import { Tutorial } from './tutorial';
+import {Track} from '@datagrok-libraries/tutorials/src/track';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class TutorialRunner {
@@ -14,6 +13,7 @@ export class TutorialRunner {
   async run(t: Tutorial): Promise<void> {
     if (t instanceof TutorialSubstitute)
       t = await TutorialSubstitute.getTutorial(t, this.track);
+
 
     $('.tutorial').hide();
     $('#tutorial-child-node').html('');
@@ -27,9 +27,9 @@ export class TutorialRunner {
     let completed = 0;
     while (tutorials[i]) {
       await tutorials[i].updateStatus();
-      if (tutorials[i].status == true) {
+      if (tutorials[i].status == true)
         completed++;
-      }
+
       i++;
     }
     return completed;
@@ -37,47 +37,51 @@ export class TutorialRunner {
 
   constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
     let complete: number = 0;
-    let total: number = track.tutorials.length;
+    const total: number = track.tutorials.length;
 
     this.track = track;
 
-    let progress = ui.element('progress');
+    const progress = ui.element('progress');
     progress.max = '100';//track.tutorials.length;
     progress.value = '2';
 
     //Container for progress bar details (percents & completed tutorials)
-    let progressDetails = ui.divH([], 'tutorials-track-details');
+    const progressDetails = ui.divH([], 'tutorials-track-details');
 
     (async () => {
-      complete = await this.getCompleted(track.tutorials);
-      track.completed = complete;
-      if(total !=0){
-        if(complete!=0){  
-            progress.value = 100/total*complete 
-            progressDetails.append(ui.divText(progress.value.toFixed() + '% complete'));
-            progressDetails.append(ui.divText(complete+' / '+total));
-        }else{   
-        progressDetails.append(ui.divText('0% complete'));     
-        progressDetails.append(ui.divText(complete+' / '+total));
+      await track.updateStatus();
+      complete = track.completed;
+      if (total != 0) {
+        if (complete != 0) {
+          progress.value = 100 / total * complete;
+          progressDetails.append(ui.divText(progress.value.toFixed() + '% complete'));
+          progressDetails.append(ui.divText(complete + ' / ' + total));
+        } else {
+          progressDetails.append(ui.divText('0% complete'));
+          progressDetails.append(ui.divText(complete + ' / ' + total));
         }
-      }else{
+      } else {
         progressDetails.append(ui.divText('0% complete'));
-        progressDetails.append(ui.divText(complete+' / '+total));
+        progressDetails.append(ui.divText(complete + ' / ' + total));
       }
     })();
 
-    let trackRoot = ui.divV([
-      ui.divH([ui.h1(track.name), ui.button(ui.icons.help(()=>{}),()=>window.open(track.helpUrl,'_blank'), 'Read more about '+track.name+'\n'+track.helpUrl)], 'tutorials-track-title'),
+    const trackRoot = ui.divV([
+      ui.divH([
+        ui.h1(track.name),
+        ui.button(ui.icons.help(() => {}),
+          () => window.open(track.helpUrl, '_blank'),
+          'Read more about ' + track.name + '\n' + track.helpUrl),
+      ], 'tutorials-track-title'),
       ui.divH([progress]),
       progressDetails,
       ui.divV(track.tutorials.map((t) => {
         const el = new TutorialCard(t).root;
         el.addEventListener('click', () => {
-          if (onStartTutorial == null) {
+          if (onStartTutorial == null)
             this.run(t);
-          } else {
+          else
             onStartTutorial(t);
-          }
         });
         return el;
       })),
@@ -92,9 +96,8 @@ export class TutorialRunner {
     ], 'tutorials-track');
 
     trackRoot.setAttribute('data-name', track.name);
-    this.root.append(trackRoot)
+    this.root.append(trackRoot);
   }
-
 }
 
 class TutorialCard {
@@ -104,10 +107,10 @@ class TutorialCard {
   constructor(tutorial: Tutorial) {
     this.tutorial = tutorial;
 
-    let img = ui.image(tutorial.imageUrl, 90, 70);
-    let icon = ui.div([], 'tutorials-card-status');
-    let title = ui.divText(tutorial.name, 'tutorials-card-title');
-    let description = ui.divText(tutorial.description, 'tutorials-card-description');
+    const img = ui.image(tutorial.imageUrl, 90, 70);
+    const icon = ui.div([], 'tutorials-card-status');
+    const title = ui.divText(tutorial.name, 'tutorials-card-title');
+    const description = ui.divText(tutorial.description, 'tutorials-card-description');
     icon.append(ui.iconFA('check-circle', () => { }));
     $(icon).hide();
     $(icon).children().removeClass('fal');
@@ -117,10 +120,10 @@ class TutorialCard {
       await tutorial.updateStatus();
       if (tutorial.status == true) {
         $(icon).show();
-        $(title).css('color','var(--grey-4)');
-        $(description).css('color','var(--grey-4)');
-        $(img).css('mix-blend-mode','luminosity');
-        $(img).css('opacity','0.7');
+        $(title).css('color', 'var(--grey-4)');
+        $(description).css('color', 'var(--grey-4)');
+        $(img).css('mix-blend-mode', 'luminosity');
+        $(img).css('opacity', '0.7');
       }
     })();
 
@@ -129,10 +132,10 @@ class TutorialCard {
       ui.tooltip.bind(
         ui.divV([
           title,
-          description
+          description,
         ]),
         `<b>${tutorial.name}</b><br>${tutorial.description}`),
-      icon
+      icon,
     ], 'tutorials-card');
     this.root.setAttribute('data-name', tutorial.name);
   }
@@ -156,9 +159,12 @@ export class TutorialSubstitute extends Tutorial {
     const tutorial = await grok.functions.call(substitute.func.nqName);
     if (track)
       tutorial.track = track;
+
     return tutorial;
   }
 
-  get steps() { return 1; }
+  get steps() {
+    return 1;
+  }
   async _run() {}
 }

@@ -5,7 +5,7 @@ import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {Menu, ToolboxPage, Widget} from '../widgets';
-import {Entity, Script} from '../entities';
+import {ColumnInfo, Entity, Script} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options, _toIterable, MapProxy} from '../utils';
 import {StreamSubscription} from '../events';
@@ -644,6 +644,7 @@ export class TableView extends View {
   /**
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/word-cloud | word cloud}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud}
+   *  @deprecated
    *  @param options
    *  @returns {Viewer} */
   wordCloud(options: object | null = null): Viewer {
@@ -742,6 +743,11 @@ export class ViewLayout extends Entity {
   toJson(): string {
     return api.grok_ViewLayout_ToJson(this.dart);
   }
+
+  get columns(): ColumnInfo[] {
+    return toJs(api.grok_ViewLayout_Get_Columns(this.dart));
+  }
+
 }
 
 

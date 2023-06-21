@@ -4,7 +4,7 @@ import {Dialog} from "../widgets";
 let api = <any>window;
 
 /** EXPERIMENTAL - USE AT YOUR OWN RISK - API might change */
-interface WizardPage {
+export interface WizardPage {
 
   root: HTMLDivElement;
 
@@ -32,7 +32,7 @@ export class Wizard extends Dialog {
   nextButton = this.addButton('>>', () => this.next());
 
   constructor(options?: {title?: string, helpUrl?: string}) {
-    super(api.grok_Dialog(options?.title, options?.helpUrl, true, true));
+    super(api.grok_Dialog(options?.title, options?.helpUrl, !!(options?.title || options?.helpUrl), true));
     this.add(this.wizardRoot);
   }
 

@@ -1,3 +1,5 @@
+# DSP
+
 *DSP* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for digital signal processing. The package provides a set of core signal processing functions wrapped around fast [WebAssembly](https://webassembly.org/)-based implementations. These functions run directly in the browser on the data provided.
 
 The following functions are currently implemented:

@@ -1,7 +1,7 @@
-import {after, before, category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
+// import * as ui from 'datagrok-api/ui';
+// import * as DG from 'datagrok-api/dg';
 
 category('Dapi: user data storage', () => {
   test('post and get value', async () => {
@@ -42,6 +42,6 @@ category('Dapi: user data storage', () => {
     await grok.dapi.userDataStorage.remove(storageName, key);
 
     const receivedValue = await grok.dapi.userDataStorage.getValue(storageName, key);
-    expect(receivedValue, undefined);
+    expect(receivedValue == undefined);
   });
 });

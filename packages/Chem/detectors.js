@@ -8,7 +8,7 @@ class ChemPackageDetectors extends DG.Package {
   static likelyRegexps = [/[r|R][0-9]+(\W|$)/];
 
   static likelyChemicalName(s) {
-    return ChemPackageDetectors.likelyNames.some((likelyName) => s.endsWith(likelyName)) ||
+    return ChemPackageDetectors.likelyNames.some((likelyName) => s.includes(likelyName)) ||
       ChemPackageDetectors.likelyRegexps.some((regexp) => regexp.test(s));
   }
 

@@ -5,7 +5,7 @@ module.exports = {
   entry: {
     package: './src/package.js'
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
@@ -20,7 +20,7 @@ module.exports = {
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
-  
+
   module: {
     rules: [
       {
@@ -34,7 +34,7 @@ module.exports = {
       }
     ]
   },
-  
+
   optimization: {
     moduleIds: 'deterministic',
     chunkIds: 'deterministic'

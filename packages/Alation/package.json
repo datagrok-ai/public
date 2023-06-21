@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/alation",
   "friendlyName": "Alation",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
   },
-  "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "description": "Integration with the Alation data catalog.",
   "properties": [
     {
       "name": "Base URL",
@@ -19,7 +19,7 @@
     "directory": "packages/Alation"
   },
   "dependencies": {
-    "datagrok-api": "^1.6.6",
+    "datagrok-api": "^1.12.0",
     "cash-dom": "latest",
     "dayjs": "latest",
     "@datagrok-libraries/utils": "^1.16.1",
@@ -33,16 +33,7 @@
     "eslint": "latest",
     "eslint-config-google": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
-    "@types/jest": "^27.0.0",
-    "jest": "^27.0.0",
-    "jest-html-reporter": "^3.5.0",
-    "puppeteer": "^13.7.0",
-    "ts-jest": "^27.0.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "@typescript-eslint/parser": "latest"
   },
   "scripts": {
     "link-all": "",
@@ -54,9 +45,9 @@
     "release-alation-eval": "grok publish eval --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "canEdit": [
     "Developers"

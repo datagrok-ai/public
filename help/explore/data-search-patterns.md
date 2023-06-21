@@ -1,11 +1,10 @@
-<!-- TITLE: Search patterns -->
-<!-- SUBTITLE: -->
-
-# Search patterns
+---
+title: "Search patterns"
+---
 
 Search patterns let you use a commonly accepted notation to specify conditions in free text. Use the same syntax to
 query in-memory datasets via the [search mechanism](data-search.md), and to query external databases
-with [parameterized queries](../access/parameterized-queries.md). When querying databases, behind the scenes the
+with [parameterized queries](../access/databases/databases.mdx#parameterized-queries). When querying databases, behind the scenes the
 platform will parse the free-text query, and then execute a parameterized, safe, provider-specific SQL query on the
 backend.
 
@@ -93,4 +92,4 @@ String matching is case-insensitive. If the input does not match above-mentioned
 See also:
 
 * [Data search](data-search.md)
-* [Parameterized queries](../access/parameterized-queries.md)
+* [Parameterized queries](../access/databases/databases.mdx#parameterized-queries)

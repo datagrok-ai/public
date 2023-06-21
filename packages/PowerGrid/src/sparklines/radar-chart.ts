@@ -29,7 +29,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const df = gridCell.grid.dataFrame;
   const maxAngleDistance = 0.1;
   const settings = getSettings(gridCell.gridColumn);
-  const box = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).fitSquare().inflate(-2, -2);
+  const box = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height)
+    .fitSquare().inflate(-2, -2);
   const cols = df.columns.byNames(settings.columnNames);
   const vectorX = e.offsetX - gridCell.bounds.midX;
   const vectorY = e.offsetY - gridCell.bounds.midY;
@@ -40,7 +41,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   let activeColumn = Math.floor(valueForColumn + maxAngleDistance);
   // needed to handle the exception when the angle is near 2 * Math.PI
   activeColumn = activeColumn > cols.length - 1 ? 0 : activeColumn;
-  valueForColumn = Math.floor(valueForColumn + maxAngleDistance) > cols.length - 1 ? cols.length - valueForColumn : valueForColumn;
+  valueForColumn = Math.floor(valueForColumn + maxAngleDistance) > cols.length - 1 ?
+    cols.length - valueForColumn : valueForColumn;
   const point = p(activeColumn, 1);
   const mousePoint = new DG.Point(e.offsetX, e.offsetY);
   const center = new DG.Point(gridCell.bounds.midX, gridCell.bounds.midY);
@@ -48,9 +50,9 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     activeColumn: activeColumn,
     cols: cols,
     row: gridCell.cell.row.idx,
-    isHit: ((distance(center, mousePoint) < distance(center, point)) && (Math.abs(valueForColumn - activeColumn) <= maxAngleDistance)),
+    isHit: ((distance(center, mousePoint) < distance(center, point)) &&
+      (Math.abs(valueForColumn - activeColumn) <= maxAngleDistance)),
   };
-
 }
 
 export class RadarChartCellRender extends DG.GridCellRenderer {
@@ -120,7 +122,8 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     }
     it.range(cols.length).map(function(i) {
       if (!cols[i].isNone(row)) {
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, cols[i].scale(row)).x, p(i, cols[i].scale(row)).y, DG.Color.fromHtml('#1E90FF'), 3);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, cols[i].scale(row)).x, p(i, cols[i].scale(row)).y,
+          DG.Color.fromHtml('#1E90FF'), 3);
       }
     });
   }

@@ -9,7 +9,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType, JOIN_TYPE
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -18,11 +18,12 @@ import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
-import {Grid} from "./grid";
+import {FormViewer, Grid} from "./grid";
 import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
+import {Tags} from "./api/ddt.api.g";
 
 declare let grok: any;
 declare let DG: any;
@@ -388,16 +389,18 @@ export class DataFrame {
 
   /**
    * Merges two tables by the specified key columns.
-   * @param {DataFrame} t2
-   * @param {string[]} keyColumns1
-   * @param {string[]} keyColumns2
-   * @param {string[]} valueColumns1
-   * @param {string[]} valueColumns2
-   * @param {JoinType} joinType
+   * @param {DataFrame} t2 - a table to join
+   * @param {string[]} keyColumns1 - key column names from the first table
+   * @param {string[]} keyColumns2 - key column names from the second table
+   * @param {string[]} valueColumns1 - column names to copy from the first table.
+   * Pass null to add all columns, an empty array [] to not add any columns, or an array with column names to add them specifically.
+   * @param {string[]} valueColumns2 - column names to copy from the second table
+   * @param {JoinType} joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
    * @param {boolean} inPlace - merges content in-place into the source table
    * @returns {DataFrame}
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables}
    * */
-  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], joinType: JoinType, inPlace: boolean): DataFrame {
+  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
     return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
@@ -546,7 +549,7 @@ export class Row {
         return true;
       },
       get(target: any, name) {
-        if (name == 'cells' || name == 'get' || target.hasOwnProperty(name))
+        if (name == 'cells' || name == 'get' || name == 'toDart' || target.hasOwnProperty(name))
           return target[<any>name];
         return target.table.get(name, target.idx);
       }
@@ -638,6 +641,8 @@ export class Column<T = any> {
    * @param {object[]} list
    * @returns {Column} */
   static fromList(type: ColumnType, name: string, list: any[]): Column {
+    if (type === TYPE.DATE_TIME)
+      list = list.map((v) => v?.valueOf());
     return toJs(api.grok_Column_FromList(type, name, list));
   }
 
@@ -1313,6 +1318,9 @@ export class RowList {
     this.dart = dart;
   }
 
+  /** Gets i-th row. DO NOT USE IN PERFORMANCE-CRITICAL CODE! */
+  get(i: number): Row { return new Row(this.table, i); }
+
   /** List of textual descriptions of currently applied filters */
   get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
@@ -1322,6 +1330,18 @@ export class RowList {
    * @param notify - Whether a change notification should be fired. */
   removeAt(idx: number, count: number = 1, notify: boolean = true): void {
     api.grok_RowList_RemoveAt(this.dart, idx, count, notify);
+  }
+
+  /** Removes specified rows
+   * @param {RowPredicate} rowPredicate */
+  removeWhere(rowPredicate: RowPredicate): void {
+    api.grok_RowList_RemoveWhere(this.dart, rowPredicate);
+  }
+
+  /** Removes specified rows
+   * @param {IndexPredicate} indexPredicate */
+  removeWhereIdx(indexPredicate: IndexPredicate): void {
+    api.grok_RowList_RemoveWhereIdx(this.dart, indexPredicate);
   }
 
   /** Inserts empty rows at the specified position
@@ -1393,7 +1413,7 @@ export class RowList {
   }
 
   /** Highlights the corresponding rows. */
-  highlight(indexPredicate: IndexPredicate): void {
+  highlight(indexPredicate: IndexPredicate | null): void {
     api.grok_RowList_Highlight(this.dart, indexPredicate);
   }
 
@@ -2178,8 +2198,10 @@ export class DataFramePlotHelper {
   fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
     return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.dart, _toJson(options)));
   }
+
   scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
   grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
+  form(options: object | null = null): FormViewer { return DG.Viewer.form(this.df, options); }
   histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
   bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
   heatMap(options: object | null = null): Viewer { return DG.Viewer.heatMap(this.df, options); }
@@ -2243,10 +2265,19 @@ export class ColumnColorHelper {
     return DG.COLOR_CODING_TYPE.OFF;
   }
 
-  setLinear(range: ColorType[] | null = null): void {
+  /** Enables linear color-coding on a column.
+   * @param range - list of palette colors.
+   * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
+   * Use the same numeric representation as [Column.min] and [Column.max].
+   */
+  setLinear(range: ColorType[] | null = null, options: {min?: number, max?: number} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
+    if (options?.min != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = `${options.min}`;
+    if (options?.max != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
   setCategorical(colorMap: {} | null = null): void {
@@ -2330,4 +2361,10 @@ export class ColumnMetaHelper {
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+
+  get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
+  set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
+
+  get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
+  set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
 }

@@ -1,7 +1,7 @@
-<!-- TITLE: Datagrok -->
-<!-- SUBTITLE: -->
+---
+title: "Datagrok: Swiss Army Knife for Data"
+---
 
-# Datagrok: Swiss Army Knife for Data
 
 Datagrok is a platform for turning data into actionable insights. It helps you unlock the value of your organization’s
 complex data by empowering non-technical users to discover, cleanse, visualize, explore, model data themselves, and
@@ -31,15 +31,15 @@ Don't take our word for this – [run the platform](https://public.datagrok.ai/)
 
 Seamlessly bring together data from the different silos and formats.
 
-* [30+ connectors](access/data-connection.md) to all major databases
+* [30+ connectors](access/access.md#data-connection) to all major databases
 * 1,000+ services exposed via [OpenAPI](access/open-api.md)
-* Drag-and-drop files to open ([10+ formats](access/supported-data-sources.md)), or
+* Drag-and-drop files to open ([10+ formats](access/databases/connectors/connectors.md)), or
   browse [file shares](https://public.datagrok.ai/files)
-* [Visually explore](access/db-exploration.md) and manage relational databases
-  using [schema browser](access/db-exploration.md#schema-browser)
-  and [visual query](access/db-visual-query.md)
+* [Visually explore](access/databases/databases.mdx#database-manager) and manage relational databases
+  using [schema browser](access/databases/databases.mdx#schema-browser)
+  and [aggregation editor](access/databases/databases.mdx#aggregation-editor)
 * Connect to [thousands of public datasets](access/public-datasets.md)
-* Automate via [data preparation pipelines](access/data-pipeline.md)
+* Automate via data preparation pipelines
 
 ## Govern
 
@@ -57,7 +57,7 @@ Manage availability, usability, integrity and security of your data, all in one 
 
 * [Aggregate, join, filter and edit data](transform/data-wrangling.md) right in the browser
 * Record and apply [macros](datagrok/navigation.md#recording-macros)
-* Use 500+ available [functions](datagrok/functions/function.md), or write your own in R, Python, or JavaScript
+* Use 500+ available [functions](datagrok/functions/functions.md), or write your own in R, Python, or JavaScript
 * Visually edit [pipelines](transform/job-editor.md)
   and [query transformations](transform/recipe-editor.md)
 
@@ -68,7 +68,7 @@ were previously impossible to spot, resulting in the acceleration of data-driven
 
 * [Proprietary in-memory database](develop/advanced/performance.md) technology allows to handle tens of millions of rows
   in the browser
-* [30+ high-performance interactive viewers](visualize/viewers.md)
+* [30+ high-performance interactive viewers](visualize/viewers/viewers.md)
 * [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
 * Built-in viewers: [regression lines](visualize/viewers/scatter-plot.md), confidence intervals,
   correlations, [statistical tests](learn/data-science.md)
@@ -97,7 +97,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 ## Apply
 
 * Build [custom applications](develop/how-to/build-an-app.md) on top of the platform
-* [Cheminformatics](domains/chem/cheminformatics.md)
+* [Cheminformatics](domains/chem/chem.md)
 * Text analytics, [natural language processing](https://github.com/datagrok-ai/public/tree/master/packages/NLP)
   with cloud-based machine translation
 * [Location Analytics](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet)
@@ -109,7 +109,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 * Different [hosting options](develop/admin/hosting-options.md)
 * [Roles, groups and privileges](govern/security.md)
 * Flexible [authentication](govern/authentication.md)
-* Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up alerts
+* Create [pipelines](transform/job-editor.md), schedule jobs, and set up alerts
 * [Customizable by IT](develop/admin/it-customizations.md)
 * Easy to learn the platform with
   * [Interactive help](datagrok/navigation.md#help),

@@ -3,7 +3,7 @@
   "name": "ChemblSql",
   "friendlyName": "CHEMBLSQL",
   "parameters":{
-    "server": "dev.datagrok.ai",
+    "server": "db.datagrok.ai",
     "port": 54325,
     "db": "chembl"
   },

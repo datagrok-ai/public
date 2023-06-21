@@ -16,9 +16,12 @@ dependency-reduced-pom.xml
 node_modules/
 upload.keys.json
 test-report.html
+test-record.mp4
+test-report.csv
 
 # Build results
 dist/
+zip
 
 # js-api
 /js-api/**/*.js.map
@@ -28,6 +31,7 @@ dist/
 /js-api/ui.js
 
 # JSDoc
+!/js-api/docs/.gitkeep
 /js-api/docs
 .DS_Store
 
@@ -57,3 +61,9 @@ pubspec.lock
 
 # ack
 .ackrc
+
+# Docusaurus
+docusaurus/access.log
+docusaurus/error.log
+docusaurus/.env
+test-console-output.log

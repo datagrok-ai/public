@@ -1,74 +1,126 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {PeptidesModel} from '../model';
-import {isGridCellInvalid} from '../utils/misc';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 
-export class SARViewerBase extends DG.JsViewer {
-  tempName!: string;
+export enum MONOMER_POSITION_MODE {
+  MUTATION_CLIFFS = 'Mutation Cliffs',
+  INVARIANT_MAP = 'Invariant Map',
+}
+
+export enum MONOMER_POSITION_PROPERTIES {
+  COLOR_COLUMN_NAME = 'colorColumnName',
+  AGGREGATION = 'aggregation',
+  TARGET = 'target',
+};
+
+/** Structure-activity relationship viewer */
+export class MonomerPosition extends DG.JsViewer {
+  _titleHost = ui.divText(MONOMER_POSITION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
-  sourceGrid!: DG.Grid;
-  model!: PeptidesModel;
-  isPropertyChanging: boolean = false;
-  _isVertical = false;
+  _model!: PeptidesModel;
+  colorColumnName: string;
+  aggregation: string;
+  target: string;
 
   constructor() {
     super();
+    this.target = this.string(MONOMER_POSITION_PROPERTIES.TARGET, null,
+      {category: MONOMER_POSITION_MODE.MUTATION_CLIFFS, choices: []});
+    this.colorColumnName = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
+      {category: MONOMER_POSITION_MODE.INVARIANT_MAP});
+    this.aggregation = this.string(MONOMER_POSITION_PROPERTIES.AGGREGATION, DG.AGG.AVG,
+      {category: MONOMER_POSITION_MODE.INVARIANT_MAP, choices: Object.values(DG.AGG)});
   }
 
-  get name(): string {return '';}
+  get name(): string {return VIEWER_TYPE.MONOMER_POSITION;}
 
   get viewerGrid(): DG.Grid {
+    if (!this._viewerGrid)
+      this.createMonomerPositionGrid();
     return this._viewerGrid;
   }
   set viewerGrid(grid: DG.Grid) {
     this._viewerGrid = grid;
   }
 
-  onTableAttached(): void {
-    super.onTableAttached();
-    this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.model = PeptidesModel.getInstance(this.dataFrame);
-    this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
-    this.helpUrl = '/help/domains/bio/peptides.md';
+  get mode(): MONOMER_POSITION_MODE {
+    return this.dataFrame.getTag(C.TAGS.MONOMER_POSITION_MODE) as MONOMER_POSITION_MODE ??
+      MONOMER_POSITION_MODE.MUTATION_CLIFFS;
+  }
+  set mode(mode: MONOMER_POSITION_MODE) {
+    this.dataFrame.setTag(C.TAGS.MONOMER_POSITION_MODE, mode);
+    this.viewerGrid.invalidate();
+  }
+
+  get model(): PeptidesModel {
+    this._model ??= PeptidesModel.getInstance(this.dataFrame);
+    return this._model;
   }
 
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
-  get isMutationCliffsMode(): string {
-    return this.dataFrame.getTag(C.TAGS.SAR_MODE) ?? '1';
+  onTableAttached(): void {
+    super.onTableAttached();
+    this.helpUrl = '/help/domains/bio/peptides.md';
+    this.render();
   }
-  set isMutationCliffsMode(s: string) {
-    this.dataFrame.setTag(C.TAGS.SAR_MODE, s);
+
+  onPropertyChanged(property: DG.Property): void {
+    super.onPropertyChanged(property);
+    if (property.name === MONOMER_POSITION_PROPERTIES.TARGET)
+      this.model.updateMutationCliffs();
+
+    this.render();
+  }
+
+  createMonomerPositionGrid(): void {
+    this.viewerGrid = this.model.monomerPositionDf.plot.grid();
+    this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
+    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
+    const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    CR.setAARRenderer(monomerCol, this.model.alphabet);
+    this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
+      this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorColumnName),
+      this.aggregation as DG.AggregationType));
+    this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
+    this.viewerGrid.root.addEventListener('click', (ev) => {
+      const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
+      if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
+        return;
+
+      const position = gridCell!.tableColumn!.name;
+      const aar = monomerCol.get(gridCell!.tableRowIndex!);
+      chooseAction(aar, position, ev.shiftKey, this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.model);
+      this.viewerGrid.invalidate();
+    });
+    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
+
+    setViewerGridProps(this.viewerGrid, false);
   }
 
   render(refreshOnly = false): void {
     if (!refreshOnly) {
       $(this.root).empty();
-      let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
-      if (this.name == 'MC') {
-        const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1');
+      let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
+      if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
+        const mutationCliffsMode = ui.boolInput('', this.mode === MONOMER_POSITION_MODE.MUTATION_CLIFFS);
         mutationCliffsMode.root.addEventListener('click', () => {
           invariantMapMode.value = false;
           mutationCliffsMode.value = true;
-          this.isMutationCliffsMode = '1';
-          this.model.isInvariantMap = false;
-          this.viewerGrid.invalidate();
+          this.mode = MONOMER_POSITION_MODE.MUTATION_CLIFFS;
         });
-        mutationCliffsMode.addPostfix('Mutation Cliffs');
-        const invariantMapMode = ui.boolInput('', this.isMutationCliffsMode === '0');
+        mutationCliffsMode.addPostfix(MONOMER_POSITION_MODE.MUTATION_CLIFFS);
+        const invariantMapMode = ui.boolInput('', this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP);
         invariantMapMode.root.addEventListener('click', () => {
           mutationCliffsMode.value = false;
           invariantMapMode.value = true;
-          this.isMutationCliffsMode = '0';
-          this.model.isInvariantMap = true;
-          this.viewerGrid.invalidate();
+          this.mode = MONOMER_POSITION_MODE.INVARIANT_MAP;
         });
-        invariantMapMode.addPostfix('Invariant Map');
+        invariantMapMode.addPostfix(MONOMER_POSITION_MODE.INVARIANT_MAP);
         const setDefaultProperties = (input: DG.InputBase): void => {
           $(input.root).find('.ui-input-editor').css('margin', '0px').attr('type', 'radio');
           $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
@@ -80,95 +132,32 @@ export class SARViewerBase extends DG.JsViewer {
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
         $(switchHost).css('width', 'auto').css('align-self', 'center');
       }
+      const tips: HTMLElement = ui.iconFA('question');
+      ui.tooltip.bind(tips,
+        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference')]));
+
+      $(tips).addClass('pep-help-icon');
+
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      this.root.appendChild(ui.divV([switchHost, viewerRoot]));
+      const header = ui.divH([switchHost, tips], {style: {alignSelf: 'center', lineHeight: 'normal'}});
+      this.root.appendChild(ui.divV([header, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
-  }
-
-  onPropertyChanged(property: DG.Property): void {
-    super.onPropertyChanged(property);
-
-    this.render(true);
-  }
-}
-
-/** Structure-activity relationship viewer */
-export class MonomerPosition extends SARViewerBase {
-  _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
-  _name = 'MC';
-  _isVertical = false;
-  colorColumnName: string;
-  aggregation: string;
-
-  constructor() {
-    super();
-    this.colorColumnName = this.string('colorColumnName', C.COLUMNS_NAMES.ACTIVITY_SCALED, {category: 'Invariant Map'});
-    this.aggregation = this.string('aggregation', 'avg', {category: 'Invariant Map', choices: Object.values(DG.AGG)});
-  }
-
-  get name(): string {return this._name;}
-
-  get viewerGrid(): DG.Grid {
-    if (!this._viewerGrid)
-      this.createMonomerPositionGrid();
-    return this._viewerGrid;
-  }
-  set viewerGrid(grid: DG.Grid) {
-    this._viewerGrid = grid;
-  }
-
-  onTableAttached(): void {
-    super.onTableAttached();
-    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
-      this.createMonomerPositionGrid();
-      this.render();
-    }));
-    this.render();
-  }
-
-  onPropertyChanged(property: DG.Property): void {
-    super.onPropertyChanged(property);
-  }
-
-  createMonomerPositionGrid(): void {
-    this.viewerGrid = this.model.monomerPositionDf.plot.grid();
-    this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
-    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
-    const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    CR.setAARRenderer(monomerCol, this.model.alphabet);
-    this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
-      this.model.isInvariantMap, this.dataFrame.getCol(this.colorColumnName), this.aggregation as DG.AggregationType));
-    this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
-    this.viewerGrid.root.addEventListener('click', (ev) => {
-      const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
-        return;
-
-      const position = gridCell!.tableColumn!.name;
-      const aar = monomerCol.get(gridCell!.tableRowIndex!);
-      chooseAction(aar, position, ev.shiftKey, this.model.isInvariantMap, this.model);
-      this.viewerGrid.invalidate();
-    });
-    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
-
-    setViewerGridProps(this.viewerGrid, false);
-    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
   }
 }
 
 /** Vertical structure activity relationship viewer */
-export class MostPotentResiduesViewer extends SARViewerBase {
-  _name = 'MPR';
-  _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
-  _isVertical = true;
+export class MostPotentResidues extends DG.JsViewer {
+  _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
+  _viewerGrid!: DG.Grid;
+  _model!: PeptidesModel;
 
   constructor() {
     super();
   }
 
-  get name(): string {return this._name;}
+  get name(): string {return VIEWER_TYPE.MOST_POTENT_RESIDUES;}
 
   get viewerGrid(): DG.Grid {
     if (!this._viewerGrid)
@@ -179,17 +168,22 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     this._viewerGrid = grid;
   }
 
+  get model(): PeptidesModel {
+    this._model ??= PeptidesModel.getInstance(this.dataFrame);
+    return this._model;
+  }
+
+  detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
+
   onTableAttached(): void {
     super.onTableAttached();
-    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
-      this.createMostPotentResiduesGrid();
-      this.render();
-    }));
+    this.helpUrl = '/help/domains/bio/peptides.md';
     this.render();
   }
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
+    this.render();
   }
 
   createMostPotentResiduesGrid(): void {
@@ -199,7 +193,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     pValGridCol.format = '#.000';
     pValGridCol.name = 'P-value';
     const monomerCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    const positionCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const positionCol: DG.Column<number> = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
 
     // Setting Monomer column renderer
     CR.setAARRenderer(monomerCol, this.model.alphabet);
@@ -207,27 +201,44 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
+      if (!gridCell?.isTableCell || gridCell!.tableColumn!.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return;
 
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = positionCol.get(tableRowIdx);
       const aar = monomerCol.get(tableRowIdx);
-      chooseAction(aar, position, ev.shiftKey, false, this.model);
+      chooseAction(aar, position!.toFixed(), ev.shiftKey, false, this.model);
       this.viewerGrid.invalidate();
+      // this.model.fireBitsetChanged();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.mostPotentResiduesDf, this.model));
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
     setViewerGridProps(this.viewerGrid, true);
-    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
+  }
+
+  render(refreshOnly = false): void {
+    if (!refreshOnly) {
+      $(this.root).empty();
+      const switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
+      const tips: HTMLElement = ui.iconFA('question');
+      ui.tooltip.bind(tips,
+        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference')]));
+
+      $(tips).addClass('pep-help-icon');
+
+      const viewerRoot = this.viewerGrid.root;
+      viewerRoot.style.width = 'auto';
+      const header = ui.divH([switchHost, tips], {style: {alignSelf: 'center', lineHeight: 'normal'}});
+      this.root.appendChild(ui.divV([header, viewerRoot]));
+    }
+    this.viewerGrid?.invalidate();
   }
 }
 
 function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
   colorCol?: DG.Column<number>, colorAgg?: DG.AggregationType): void {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
-  const mdCol = model.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
   const canvasContext = args.g;
   const bound = args.bounds;
 
@@ -241,67 +252,70 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   if (cell.isRowHeader && cell.gridColumn.visible) {
     cell.gridColumn.visible = false;
     args.preventDefault();
+    canvasContext.restore();
     return;
   }
 
   const tableColName = cell.tableColumn?.name;
   const tableRowIndex = cell.tableRowIndex!;
-  if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
-    const cellValue: number | null = cell.cell.value;
-
-    if (cellValue && cellValue !== DG.INT_NULL && cellValue !== DG.FLOAT_NULL) {
-      const gridTable = cell.grid.table;
-      const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
-        tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-      const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
-
-      if (isInvariantMap) {
-        const value: number = model.monomerPositionStatsDf
-          .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.COUNT])
-          .where(`${C.COLUMNS_NAMES.POSITION} = ${currentPosition} and ${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`)
-          .aggregate().get(C.COLUMNS_NAMES.COUNT, 0);
-        const positionCol = model.df.getCol(currentPosition);
-        const positionColData = positionCol.getRawData();
-        const positionColCategories = positionCol.categories;
-
-        const colorColData = colorCol!.getRawData();
-        const colorDataList: number[] = [];
-        for (let i = 0; i < positionColData.length; ++i) {
-          if (positionColCategories[positionColData[i]] === currentAAR)
-            colorDataList.push(colorColData[i]);
-        }
-        const cellColorDataCol = DG.Column.fromList('double', '', colorDataList);
-        const colorColStats = colorCol!.stats;
-
-        const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
-        CR.renderInvaraintMapCell(
-          canvasContext, currentAAR, currentPosition, model.invariantMapSelection, value, bound, color);
-      } else {
-        CR.renderMutationCliffCell(canvasContext, currentAAR, currentPosition, model.monomerPositionStatsDf,
-          mdCol, bound, cellValue, model.mutationCliffsSelection, model.substitutionsInfo,
-          model.settings.isBidirectional);
-      }
-    }
-    args.preventDefault();
+  if (!cell.isTableCell || renderColNames.indexOf(tableColName!) === -1) {
+    canvasContext.restore();
+    return;
   }
+
+  const gridTable = cell.grid.table;
+  const currentMonomer: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
+  const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
+    gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
+  const currentPosStats = model.monomerPositionStats[currentPosition];
+
+  if (!currentPosStats[currentMonomer]) {
+    args.preventDefault();
+    canvasContext.restore();
+    return;
+  }
+
+  if (isInvariantMap) {
+    const value = currentPosStats[currentMonomer].count;
+    const positionCol = model.df.getCol(currentPosition);
+    const positionColData = positionCol.getRawData();
+    const positionColCategories = positionCol.categories;
+
+    const colorColData = colorCol!.getRawData();
+    const colorDataList: number[] = [];
+    for (let i = 0; i < positionColData.length; ++i) {
+      if (positionColCategories[positionColData[i]] === currentMonomer)
+        colorDataList.push(colorColData[i]);
+    }
+    const cellColorDataCol = DG.Column.fromList('double', '', colorDataList);
+    const colorColStats = colorCol!.stats;
+
+    const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
+    CR.renderInvaraintMapCell(
+      canvasContext, currentMonomer, currentPosition, model.monomerPositionFilter, value, bound, color);
+  } else {
+    CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
+      model.monomerPositionSelection, model.mutationCliffs, model.settings.isBidirectional);
+  }
+  args.preventDefault();
   canvasContext.restore();
 }
 
-function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesModel): boolean {
+export function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesModel): boolean {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const tableCol = cell.tableColumn;
   const tableColName = tableCol?.name;
   const tableRowIndex = cell.tableRowIndex;
 
-  if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex != null) {
+  if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex !== null) {
     const table = cell.grid.table;
     const currentAAR = table.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
 
-    if (tableCol.semType == C.SEM_TYPES.MONOMER)
+    if (tableCol.semType === C.SEM_TYPES.MONOMER)
       model.showMonomerTooltip(currentAAR, x, y);
-    else if (cell.cell.value && renderColNames.includes(tableColName!)) {
+    else if (renderColNames.includes(tableColName!)) {
       const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
-        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
 
       model.showTooltipAt(currentAAR, currentPosition, x, y);
     }
@@ -309,12 +323,16 @@ function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesMod
   return true;
 }
 
-function chooseAction(aar: string, position: string, isShiftPressed: boolean, isInvariantMapSelection: boolean,
+function chooseAction(aar: string, position: string, isShiftPressed: boolean, isFilter: boolean,
   model: PeptidesModel): void {
-  if (isShiftPressed)
-    model.modifyMonomerPositionSelection(aar, position, isInvariantMapSelection);
-  else
-    model.initMonomerPositionSelection(aar, position, isInvariantMapSelection);
+  if (!isShiftPressed) {
+    if (isFilter)
+      model.initMonomerPositionFilter({cleanInit: true, notify: false});
+    else
+      model.initMonomerPositionSelection({cleanInit: true, notify: false});
+  }
+
+  model.modifyMonomerPositionSelection(aar, position, isFilter);
 }
 
 function cellChanged(table: DG.DataFrame, model: PeptidesModel): void {

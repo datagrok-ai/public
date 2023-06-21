@@ -1,7 +1,6 @@
-<!-- TITLE: Math functions -->
-<!-- SUBTITLE: -->
-
-# Math functions
+---
+title: "Math functions"
+---
 
 This type of function includes math, trigonometric, and logic functions.
 
@@ -31,6 +30,7 @@ to use parameters: `true`
 - [Exp](#exp)
 - [Floor](#floor)
 - [Greater](#greater)
+- [If](#if)
 - [Ln](#ln)
 - [Log](#log)
 - [Log10](#log10)
@@ -47,6 +47,7 @@ to use parameters: `true`
 - [Or](#or)
 - [Percentile](#percentile)
 - [Pow](#pow)
+- [Qualifier](#qualifier)
 - [RandBetween](#randbetween)
 - [Rnd](#rnd)
 - [Round](#round)
@@ -192,6 +193,17 @@ Greater(5, 5)    // false
 Greater(5, 4)    // true
 ```
 
+## <a name="if"></a>If(`condition`, `ifTrue`, `ifFalse`)
+
+Returns `ifTrue`, if `condition` is true, or `ifFalse` otherwise.
+
+```javascript
+If(true, "a", "b")                 // "a"
+If(false, "a", "b")                // "b"
+If(true, If(true, "a", "b"), "c")  // "a"
+If(Eq(10, 50), 1, 0)               // 0
+```
+
 ## <a name="ln"></a>Ln(`x`)
 
 Returns the natural logarithm of `x`.
@@ -328,6 +340,16 @@ Returns `x` to the power of `exponent`.
 ```javascript
 Pow(2, 3)     // 8
 Pow(2, -2)    // 0.25
+```
+
+## <a name="qualifier"></a>Qualifier(`x`)
+
+Extracts the qualifier from a qualified number `x`.
+
+```javascript
+Qualifier(Qnum(1.5, "="))   // =
+Qualifier(Qnum(1.5, "<"))   // <
+Qualifier(Qnum(1.5, ">"))   // >
 ```
 
 ## <a name="randbetween"></a>RandBetween(`m`, `n`)

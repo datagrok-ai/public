@@ -1,7 +1,6 @@
-<!-- TITLE: Query debugging -->
-<!-- SUBTITLE: -->
-
-# Query debugging
+---
+title: "Query debugging"
+---
 
 To debug and troubleshoot the database queries, use the built-in tool
 that allows you to see the following information about the query:
@@ -20,7 +19,7 @@ You can find this information by doing the following:
 - Open the Datagrok inspector by pressing Alt+I (or Tools | Dev | Inspector)
 - Enable 'Debug Queries' on the 'Debug' pane. You might close the inspector now.
 - Execute the query you want to profile
-- Open your requested table in the property panel by clicking on the table header
-- Click the 'DataQuery' in the property panel
+- Open your requested table in the context panel by clicking on the table header
+- Click the 'DataQuery' in the context panel
 - Click the 'Last call'
 - Expand the 'Log' menu item

@@ -1,7 +1,6 @@
-<!-- TITLE: Treemap -->
-<!-- SUBTITLE: -->
-
-# Treemap
+---
+title: "Treemap"
+---
 
 Treemap displays hierarchical (tree-structured) data as nested rectangles. The
 branches are rectangles, then tiled with smaller rectangles representing
@@ -58,6 +57,6 @@ example, you can:
 
 ## See also
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table view](../../datagrok/table-view.md)
 * [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)

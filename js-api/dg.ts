@@ -1,5 +1,8 @@
 import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
+
 import * as wu from 'wu';
 
 export * from './src/interfaces/d4';
@@ -8,6 +11,9 @@ export * from './src/events';
 export * from './src/dapi';
 export * from './src/dataframe';
 export * from './src/entities';
+export * from './src/api/ddt.api.g';
+export * from './src/api/grok_shared.api.g';
+export * from './src/api/d4.api.g';
 export * from './src/shell';
 export * from './src/functions';
 export * from './src/grid';
@@ -35,8 +41,15 @@ $(function () {
   (<any>window).$ = $;
   (<any>window).dayjs = dayjs;
   (<any>window).wu = wu;
-  (<any>window).addEventListener("unhandledrejection", function(e: PromiseRejectionEvent) {
-    (<any>window).grok_Unhandled_Error(e.reason);
-    e.stopPropagation();
+
+  window.addEventListener("error", function (e) {
+    if (e.error?.message == '[object ProgressEvent]')
+      return;
+    if ((<any>window).grok_Unhandled_Error != undefined) {
+      e.preventDefault();
+      e.stopPropagation();
+      (<any>window).grok_Unhandled_Error(e.error?.message ?? e.error ?? e.message ?? e, e.error?.stack);
+    }
   });
+
 });

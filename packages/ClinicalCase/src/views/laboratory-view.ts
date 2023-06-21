@@ -72,7 +72,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     let tabControl = ui.tabControl(null, false);
 
-    let hysLawGuide = ui.info('Please select values for ALT/AST and Bilirubin in a property panel', '', false);
+    let hysLawGuide = ui.info('Please select values for ALT/AST and Bilirubin in a context panel', '', false);
 
     checkColumnsAndCreateViewer(
       study.domains.lb,

@@ -1,7 +1,6 @@
-<!-- TITLE: Create project -->
-<!-- SUBTITLE: -->
-
-# Create project
+---
+title: "Create project"
+---
 
 A project is a collection of different objects that you want to use together. A project can contain tables, views,
 queries, connections, data jobs, Jupyter notebooks, predictive models, and resources such as files.
@@ -20,7 +19,6 @@ Right-click on the project picture to see available options.
 See also:
 
 * [Project](project.md)
-* [Data connection](../access/data-connection.md)
-* [Data query](../access/data-query.md)
-* [Data job](../access/data-job.md)
+* [Data connection](../access/access.md#data-connection)
+* [Data query](../access/access.md#data-query)
 * [Function call](functions/function-call.md)

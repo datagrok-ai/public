@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isMolBlock} from '../utils/convert-notation-utils';
 import $ from 'cash-dom';
-import {_properties, renderer} from '../package';
-import {RDKitCellRenderer} from './rdkit-cell-renderer';
+import {_properties} from '../package';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {isSmarts} from '../utils/mol-creation_rdkit';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
@@ -17,11 +17,6 @@ export function renderMolecule(
   options.width ??= 200;
   options.height ??= 100;
   options.popupMenu ??= true;
-
-  //let mol: OCL.Molecule | RDMol | null = null;
-  let molFile: string;
-  let smiles: string;
-  isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
 
   const moleculeHost = ui.canvas(options.width, options.height);
 
@@ -48,23 +43,27 @@ export function renderMolecule(
       () => {
         const menu = DG.Menu.popup();
         menu.item('Copy SMILES', () => {
+          const smiles = !DG.chem.isMolBlock(molStr) && !isSmarts(molStr) ? molStr :
+            _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
           navigator.clipboard.writeText(smiles);
           grok.shell.info('SMILES copied to clipboard');
         });
         menu.item('Copy Molfile', () => {
+          const molFile = DG.chem.isMolBlock(molStr) ?
+            molStr : _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule());
           navigator.clipboard.writeText(molFile);
           grok.shell.info('Molfile copied to clipboard');
         });
         menu.item('Sketch', () => {
           const sketcher = new DG.chem.Sketcher();
-          isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
+          DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
           ui.dialog()
             .add(sketcher)
             .show();
         });
         menu.item('Explore', () => {
           grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
-        });
+        }, null);
         menu.show();
       },
       'More',

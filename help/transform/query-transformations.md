@@ -1,7 +1,6 @@
-<!-- TITLE: Query transformations -->
-<!-- SUBTITLE: -->
-
-# Transformations
+---
+title: "Query transformations"
+---
 
 After the data is retrieved from the data provider, it can be transformed using functions.
 
@@ -29,10 +28,8 @@ You can add steps manually and switch between steps to view results of each step
 
 See also:
 
-* [Data pipeline](../access/data-pipeline.md)
-* [Data connection](../access/data-connection.md)
-* [Data query](../access/data-query.md)
-* [Data job](../access/data-job.md)
+* [Data connection](../access/access.md#data-connection)
+* [Data query](../access/access.md#data-query)
 * [Function call](../datagrok/functions/function-call.md)
 * [Aggregate rows](aggregate-rows.md)
 * [Recipe Editor](recipe-editor.md)

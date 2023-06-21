@@ -1,7 +1,6 @@
-<!-- TITLE: Security -->
-<!-- SUBTITLE: -->
-
-# Security overview
+---
+title: "Security"
+---
 
 Datagrok uses a flexible mechanism for setting up privileges and access rights for
 all [entities](../datagrok/objects.md), largely based on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)

@@ -9,7 +9,7 @@ public class AggrFunctionInfo
     @SerializedName("#type")
     public String _type = "AggrFunctionInfo";
 
-    /// Whether to show it automatically in the property panel
+    /// Whether to show it automatically in the context panel
     public boolean auto = true;
 
     /// Function alias (see [Stats])

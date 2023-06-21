@@ -5,16 +5,30 @@ import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
 import {_functionParametersGrid} from './function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
-import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-//import {ModelsWidget} from './models-widget'
-import {delay} from "@datagrok-libraries/utils/src/test";
-import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
-import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
+import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import './css/model-card.css';
+import { ImportScriptGeneratorApp } from './import-script-generator/view';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
+
+//name: openModelFromFuncall
+//input: funccall funccall
+export function openModelFromFuncall(funccall: DG.FuncCall) {
+  ModelHandler.openModelFromFunccall(funccall);
+}
+
+//name: Import Script Generator
+//description: Creates and registers a new script based on the input config
+//tags: higher-order function, app
+//meta.icon: icons/flux.png
+export function importScriptGenerator(){
+  const app = new ImportScriptGeneratorApp();
+  app.name = 'Import Script Gen'
+  grok.shell.addView(app);
+  app.root.classList.remove('ui-panel');
+}
 
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
@@ -24,29 +38,21 @@ export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
 
-//name: ComputationView
-//tags: model-editor, editor
+//name: RichFunctionViewEditor
+//tags: editor
 //input: funccall call
 //output: view result
-export function ComputationViewEditor(call: DG.FuncCall) {
-  let v = new ComputationView();
-  v.linkFunccall(call);
-  v.parentCall = call;
-  v.name = call.func.friendlyName;
-  v.parentView = grok.functions.getCurrentCall().parentCall.aux['view']; // modelCatalog view
-  console.log('comp view editor called')
-  //todo: parse url, set parameters to call
-  return v;
+export function RichFunctionViewEditor(call: DG.FuncCall) {
+  return RichFunctionView.fromFuncCall(call, {historyEnabled: true, isTabbed: false});
 }
 
-//name: FunctionView
-//tags: model-editor, editor
+//name: PipelineStepEditor
+//tags: editor
 //input: funccall call
 //output: view result
-export function FunctionViewEditor(call: DG.FuncCall) {
-  return new FunctionView(call);
+export function PipelineStepEditor(call: DG.FuncCall) {
+  return RichFunctionView.fromFuncCall(call, {historyEnabled: false, isTabbed: true});
 }
-
 
 /*//output: widget result
 //tags: dashboard
@@ -78,7 +84,7 @@ export function hof() {
 
 
 //name: hof2
-//tags: 
+//tags:
 //description: some description 2 2 2
 //sidebar: @compute
 //meta.icon: package1.png
@@ -214,29 +220,10 @@ export function modelCatalog() {
     grok.shell.addView(view);
     // console.log(parser.href);
     if (pathSegments.length > 3) {
-      let c = grok.functions.getCurrentCall();
       grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
         if (lst.length == 1)
-          ModelHandler.openModel(lst[0], c);
+          ModelHandler.openModel(lst[0]);
       });
     }
   } else grok.shell.v = modelsView;
-}
-
-
-//name: computationTest
-//input: int delayMs {description: Wait time; units: ms}
-//input: string error {description: When specified, throws this error}
-//output: dataframe result
-export async function computationTest(delayMs: number, error: string): Promise<DG.DataFrame> {
-  await delay(delayMs);
-  if (error != null || error != '')
-    throw error;
-  return grok.data.demo.demog();
-}
-
-//name: testComputationView();
-export function testComputationView() {
-  let f = DG.Func.find({name: 'computationTest'})[0];
-  //grok.shell.addView(new ComputationView(f));
 }

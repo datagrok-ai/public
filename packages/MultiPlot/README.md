@@ -45,7 +45,7 @@ let options = {
             y: 'col2',
             height: '1flex',
             show: 1,
-        },      
+        },
         {
             tableName: 'test',
             title: 'plot 1',
@@ -56,7 +56,7 @@ let options = {
             height: '2flex',
             show: 1,
         },
-    ]    
+    ]
 }
 
 async function func1() {
@@ -76,7 +76,7 @@ async function func1() {
 func1();
 ```
 
-### The result of script execution:
+#### 1. The result of script execution
 
 ![image of script result](img/simple_2_plots.png?raw=true "The result")
 
@@ -114,7 +114,7 @@ let options = {
         valueField: 2,                  // index of field with test value
         splitByColumnName: 'LBTEST',    // column to get categories
         categories: ["Basophils", "Urate", "Glucose"], // fixed categories
-        minField: 3,                    // min and max normal value 
+        minField: 3,                    // min and max normal value
         maxField: 4,                    // will be displayed with default color, otherwises "red"
         maxLimit: 5,                    // max number of categories
         alertColor: 'red',
@@ -138,7 +138,7 @@ let options = {
       show: 1,
     },
 
-    // multi linechart 
+    // multi linechart
     {
       tableName: 'lb',
       title: 'Multi Linechat',
@@ -148,7 +148,7 @@ let options = {
       y: 'LBSTRESN',
       splitByColumnName: 'LBTEST',                    // get categories from this column
       categories: ["Basophils", "Urate", "Glucose"],  // fixed categories
-      maxLimit: 5,                                    // max number of linecharts 
+      maxLimit: 5,                                    // max number of linecharts
       yType: 'value',
       markerShape: 'square',
       height: '1flex',
@@ -191,10 +191,10 @@ async function func1() {
 
 func1();
 
-```  
+```
 
 </details>
 
-### The result of script execution:
+#### 2. The result of script execution
 
 ![image of script result](img/full_plots_anim.gif?raw=true "The result")

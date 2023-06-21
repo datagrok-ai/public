@@ -10,7 +10,7 @@ import {readDataframe, loadFileAsText} from './utils';
 
 import {getSdfString} from '../utils/sdf-utils';
 
-category('saveAsSdf', async () => {
+category('save as sdf', async () => {
   let inputDf: DG.DataFrame;
   let fileWithSavedSmiles: string;
   let fileWithSavedMolblock: string;
@@ -23,19 +23,22 @@ category('saveAsSdf', async () => {
     }
     inputDf = await readDataframe('tests/sdf-test.csv');
     await grok.data.detectSemanticTypes(inputDf);
+    inputDf.getCol('Smiles').semType = 'Molecule';
     fileWithSavedSmiles = await loadFileAsText('tests/sdf-test-smiles.sdf');
     fileWithSavedMolblock = await loadFileAsText('tests/sdf-test-scaffold.sdf');
     fileWithSavedSmiles = fileWithSavedSmiles.replace(/\r/g, '');
     fileWithSavedMolblock = fileWithSavedMolblock.replace(/\r/g, '');
   });
 
-  test('saveSmilesColumn', async () => {
+  test('save Smiles column', async () => {
     const savedColumn = inputDf.col('Smiles')!;
-    expect(getSdfString(inputDf, savedColumn), fileWithSavedSmiles);
+    const sdfString = getSdfString(inputDf, savedColumn);
+    expect(sdfString.replace(/\r/g, ''), fileWithSavedSmiles);
   });
 
-  test('saveMolblockColumn', async () => {
+  test('save Molblock column', async () => {
     const savedColumn = inputDf.col('Scaffold')!;
-    expect(getSdfString(inputDf, savedColumn).replace(/\r/g, ''), fileWithSavedMolblock);
+    const sdfString = getSdfString(inputDf, savedColumn);
+    expect(sdfString.replace(/\r/g, ''), fileWithSavedMolblock);
   });
 });

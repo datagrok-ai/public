@@ -100,6 +100,7 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 /** Grok functions */
 export class Functions {
+
   register(func: Func): void {
     api.grok_RegisterFunc(func);
   }
@@ -116,12 +117,20 @@ export class Functions {
     return toJs(await api.grok_EvalFunc(name, context?.dart));
   }
 
-  async find(name: string): Promise<any> {
+  /** Returns a function with the specified name, or throws an error if
+   * there is no such function. See also {@link find}. */
+  async get(name: string): Promise<Func> {
+    let f = await this.find(name);
+    if (!f)
+      throw `Function not found: "${name}"`;
+    return f;
+  }
+
+  /** Returns a function with the specified name, or null if not found.
+   * See also {@link find}. */
+  async find(name: string): Promise<Func | null> {
     let f = await this.eval(name);
-    if (f instanceof Func)
-      return f;
-    else
-      return null;
+    return (f instanceof Func) ? f : null;
   }
 
   scriptSync(s: string): any {
@@ -134,6 +143,7 @@ export class Functions {
 
   get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
+  get onParamsUpdated(): Observable<FuncCall> { return __obs('d4-func-call-output-params-updated'); }
 }
 
 
@@ -200,24 +210,45 @@ export class Context {
   }
 }
 
+class FuncCallParams {
+  [name: string]: FuncCallParam,
+
+  //@ts-ignore
+  public values(): FuncCallParam[];
+}
+
 /** Represents a function call
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
 export class FuncCall extends Entity {
   public readonly dart: any;
-  public inputs: any;
-  public outputs: any;
+
+  /** Named input values. See {@link inputParams} for parameter metadata. */
+  public inputs: {[name: string]: any};
+
+  /** Named output values. See {@link outputParams} for parameter metadata. */
+  public outputs: {[name: string]: any};
+
+  /** Input parameter metadata. See {@link inputs} for parameter values. */
+  public inputParams: FuncCallParams;
+
+  /** Output parameter metadata. See {@link outputs} for parameter values. */
+  public outputParams: FuncCallParams;
+
   public aux: any;
   public options: any;
-  public inputParams: any;
-  public outputParams: any;
 
   constructor(dart: any) {
     super(dart);
+    // @ts-ignore
     this.inputs = new FuncCallParamMapProxy(this.dart, true);
+    // @ts-ignore
     this.outputs = new FuncCallParamMapProxy(this.dart, false);
+    // @ts-ignore
     this.inputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, true));
+    // @ts-ignore
     this.outputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, false));
+
     this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.dart));
     this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.dart));
   }
@@ -248,8 +279,13 @@ export class FuncCall extends Entity {
   /** Error message, if this call resulted in an exception, or null. */
   get errorMessage(): string | null { return api.grok_FuncCall_Get_ErrorMessage(this.dart); }
 
+  /** Returns the first output parameter value, or null. */
   getOutputParamValue(): any {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
+  }
+
+  setAuxValue(name: string, value: any): void {
+    api.grok_FuncCall_Set_Aux_Value(this.dart, name, toDart(value));
   }
 
   setParamValue(name: string, value: any): void {
@@ -259,6 +295,10 @@ export class FuncCall extends Entity {
   /** Executes the function call */
   call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+  }
+
+  cancel(): Promise<void> {
+    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
   }
 
   /** Executes the function call synchronously*/

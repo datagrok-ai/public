@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "PostgresWorld",
+  "friendlyName": "World",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 54323,
+    "db": "world"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "World sample database",
+  "tags": [
+    "demo"
+  ]
+}

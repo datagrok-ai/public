@@ -1,7 +1,6 @@
-<!-- TITLE: User -->
-<!-- SUBTITLE: -->
-
-# User
+---
+title: "User"
+---
 
 Represents the identity of a person, and is used for [group](group.md) and role management.
 
@@ -39,10 +38,10 @@ uses [audit](../govern/audit.md) as a data source.
 
 **Activity** pane lists user actions recorded in the platform, with the most recent actions on top. It
 uses [audit](../govern/audit.md) as a data source. Note that the activity is interactive, i.e. by clicking on
-highlighted entities their properties will appear in the [property panel](../datagrok/navigation.md#properties).
+highlighted entities their properties will appear in the [context panel](../datagrok/navigation.md#context-panel).
 
 **Favorites** contains your favorite objects. To add something to favorites, click on it, and then click on the "star"
-icon on the right in the property panel. Not every object can be added to favorites, currently the list is limited to
+icon on the right in the context panel. Not every object can be added to favorites, currently the list is limited to
 connections, queries, projects, and functions.
 
 **Projects**, **Connections**, **Queries**, **Models**, **Scripts**, **Jobs**, and **Notebooks**

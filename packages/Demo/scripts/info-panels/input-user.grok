@@ -1,0 +1,9 @@
+#name: User input
+#description: Shows user's email
+#language: grok
+#tags: demo, panel
+#condition: StartsWith(u.name, "A")
+#input: User u
+#output: string info {action:markup}
+
+info = "# " + u.email

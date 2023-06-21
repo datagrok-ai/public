@@ -1,17 +1,10 @@
-<!-- TITLE: Molecular descriptors -->
-<!-- SUBTITLE: -->
+---
+title: "Molecular descriptors"
+---
 
-# Molecular descriptors
+Datagrok supports calculation of the following descriptors:
 
-The molecular descriptor is the final result of a logic and mathematical procedure which transforms chemical information
-encoded within a symbolic representation of a molecule into a useful number or the result of some standardized
-experiment.
-
-![descriptors](descriptors.gif)
-
-## Available descriptors modules
-
-### EState.EState_VSA
+## EState.EState_VSA
 
 Hybrid EState-VSA descriptors (like the MOE VSA descriptors)
 
@@ -39,7 +32,7 @@ Hybrid EState-VSA descriptors (like the MOE VSA descriptors)
 | VSA_EState8  | VSA EState Descriptor 8 ( 6.45 <= x < 7.00)   |
 | VSA_EState9  | VSA EState Descriptor 9 ( 7.00 <= x < 11.00)  |
 
-### QED
+## QED
 
 QED stands for quantitative estimation of drug-likeness
 
@@ -47,7 +40,7 @@ QED stands for quantitative estimation of drug-likeness
 |------------|---------------------------------------|
 | qed        | Weighted sum of ADS mapped properties |
 
-### GraphDescriptors
+## GraphDescriptors
 
 Topological/topochemical descriptors
 
@@ -73,7 +66,7 @@ Topological/topochemical descriptors
 | Kappa2        | Hall-Kier Kappa2 value                                                                                                                            |
 | Kappa3        | Hall-Kier Kappa3 value                                                                                                                            |
 
-### Descriptors
+## General descriptors
 
 General descriptors
 
@@ -92,7 +85,7 @@ General descriptors
 | NumValenceElectrons | The number of valence electrons the molecule has                                 |
 | MaxPartialCharge    | Maximum partial charge                                                           |
 
-### Crippen
+## Crippen
 
 Atom-based calculation of LogP and MR using Crippen's approach
 
@@ -101,7 +94,7 @@ Atom-based calculation of LogP and MR using Crippen's approach
 | MolLogP    | Wildman-Crippen LogP value |
 | MolMR      | Wildman-Crippen MR value   |
 
-### MolSurf
+## MolSurf
 
 MOE-like approximate molecular surface area descriptors
 
@@ -146,7 +139,7 @@ MOE-like approximate molecular surface area descriptors
 | SlogP_VSA9  | MOE logP VSA Descriptor 9 ( 0.30 <= x < 0.40)              |
 | TPSA        | The polar surface area of a molecule based upon fragments. |
 
-### Descriptors3D
+## Descriptors3D
 
 Descriptors derived from a molecule's 3D structure
 
@@ -163,7 +156,7 @@ Descriptors derived from a molecule's 3D structure
 | Asphericity         | Molecular asphericity                         |
 | SpherocityIndex     | Molecular spherocity index                    |
 
-### EState.EState
+## EState.EState
 
 Basic EState descriptors
 
@@ -174,7 +167,7 @@ Basic EState descriptors
 | MinEStateIndex    | Minimum EState index          |
 | MinAbsEStateIndex | Minimum absolute EState index |
 
-### Fragments
+## Fragments
 
 Bunch of fragment descriptors from a file
 
@@ -266,7 +259,7 @@ Bunch of fragment descriptors from a file
 | fr_unbrch_alkane       | Number of unbranched alkanes of at least 4 members (excludes halogenated alkanes) |
 | fr_urea                | Number of urea groups                                                             |
 
-### Lipinski
+## Lipinski
 
 Lipinski parameters for molecules
 
@@ -293,5 +286,4 @@ Lipinski parameters for molecules
 
 See also:
 
-* [Molecular descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)
 * [RDKit](https://rdkit.org)

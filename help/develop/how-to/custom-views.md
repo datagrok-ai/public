@@ -1,6 +1,6 @@
-<!-- TITLE: Create a custom view -->
-
-# Custom views
+---
+title: "Create a custom view"
+---
 
 A view is a set of visualizations grouped together. Typically it is associated with a particular dataframe (then it is
 called a [table view](../../datagrok/table-view.md)). However, essentially a view can contain pretty much anything,

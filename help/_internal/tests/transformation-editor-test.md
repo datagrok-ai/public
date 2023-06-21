@@ -85,9 +85,9 @@ users.
 1. Close [Transformations Editor](../../transform/recipe-editor.md).md view, go to "Connect to data" view
 
 1. Select *stores in @state* query. (*PostgreSQL* provider, *starbucks* connection)
-   in [Property Panel](../../datagrok/navigation.md#properties)
+   in [Context Panel](../../datagrok/navigation.md#context-panel)
 
-* "transformation" tab of [Property Panel](../../datagrok/navigation.md#properties) shows the script created earlier (**)
+* "transformation" tab of [Context Panel](../../datagrok/navigation.md#context-panel) shows the script created earlier (**)
 
 1. Run *stores in @state* query with value ```NY``` for @state parameter
 

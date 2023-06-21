@@ -1,7 +1,6 @@
-<!-- TITLE: &#8204;Extending Datagrok -->
-<!-- SUBTITLE: -->
-
-# Extending and customizing Datagrok
+---
+title: "Extending Datagrok"
+---
 
 Datagrok is built highly extensible, composable and customizable. Many parts of the Datagrok platform can be enhanced by
 plugins using our [JavaScript API](../js-api.md). The plugins are structured and delivered to the platform
@@ -17,10 +16,10 @@ our [guides](../develop.md), [API samples](https://public.datagrok.ai/js)
 
 With using our [JavaScript API](../js-api.md), you can create your own:
 
-* [functions](../../datagrok/functions/function.md), which may be written in any
+* [functions](../../datagrok/functions/functions.md), which may be written in any
   [scripting language we support](../../compute/scripting.md), and later be reused in various contexts, including other
   functions, or called directly from Datagrok UI or the [console](../../datagrok/navigation.md#console)
-* [visualizations](../../visualize/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
+* [visualizations](../../visualize/viewers/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
 * [file viewers](../how-to/create-custom-file-viewers.md) — to support new data formats in addition to many we already recognize
 * [cell renderers](../function-roles.md#cell-renderers) — to visualize certain semantic types, such
   as [molecules
@@ -35,7 +34,7 @@ With using our [JavaScript API](../js-api.md), you can create your own:
   a [context menu](https://public.datagrok.ai/js/samples/events/viewer-events) of a viewer
 * [info panels](../how-to/add-info-panel.md), to augment data with additional information retrieved or calculated
   on-the-fly
-* [connections](../../access/data-connection.md), to add new public or in-house data sources, such
+* [connections](../../access/access.md#data-connection), to add new public or in-house data sources, such
   as [Chembl](https://www.ebi.ac.uk/chembl/) or [ENA](https://www.ebi.ac.uk/ena/browser/),
   custom [filters](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts)
   , which allow adding a filtering mask to an active dataset; in addition, viewers themselves may act as filters, and

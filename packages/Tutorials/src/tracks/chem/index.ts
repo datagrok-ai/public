@@ -1,4 +1,4 @@
-import { Track } from '../../track';
+import { Track } from '@datagrok-libraries/tutorials/src/track';
 import { VirtualScreeningTutorial } from './tutorials/virtual-screening';
 
 

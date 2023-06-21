@@ -44,24 +44,28 @@ const UnitsHandler = {
 const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
 class BioPackageDetectors extends DG.Package {
+  /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
+  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
 
-  PeptideFastaAlphabet = new Set([
+  peptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
     'MeNle', 'MeA', 'MeG', 'MeF',
   ]);
 
-  DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
+  dnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
 
-  RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
+  rnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
-  SmilesRawAlphabet = new Set([
+  numbersRawAlphabet = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+
+  smilesRawAlphabet = new Set([
     'A', 'B', 'C', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'Z',
     'a', 'c', 'e', 'g', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '+', '-', '.', , '/', '\\', '@', '[', ']', '(', ')', '#', '%', '=']);
 
-  SmartsRawAlphabet = new Set([
+  smartsRawAlphabet = new Set([
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '!', '#', '$', '&', '(', ')', '*', '+', ',', '-', '.', ':', ';', '=', '@', '~', '[', ']',
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M',
@@ -83,6 +87,11 @@ class BioPackageDetectors extends DG.Package {
   detectMacromolecule(col) {
     const t1 = Date.now();
     try {
+      const colName = col.name;
+      const colNameLikely = this.likelyColNamePartList.some(
+        (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
+      const seqMinLength = colNameLikely ? 3 : 5;
+
       // Fail early
       if (col.type !== DG.TYPE.STRING) return null;
 
@@ -92,7 +101,7 @@ class BioPackageDetectors extends DG.Package {
       // To collect alphabet freq three strategies can be used:
       // as chars, as fasta (single or within square brackets), as with the separator.
       if (
-        !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
+        !(col.categories.length === 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category
         DG.Detector.sampleCategories(col, (s) => this.isHelm(s), 1, SEQ_SAMPLE_LIMIT)
       ) {
         const statsAsHelm = this.getStats(categoriesSample, 2,
@@ -109,14 +118,15 @@ class BioPackageDetectors extends DG.Package {
       }
 
       const decoyAlphabets = [
-        ['SMILES', this.SmilesRawAlphabet, 0.30],
-        ['SMARTS', this.SmartsRawAlphabet, 0.43],
+        ['NUMBERS', this.numbersRawAlphabet, 0.25],
+        ['SMILES', this.smilesRawAlphabet, 0.25],
+        ['SMARTS', this.smartsRawAlphabet, 0.45],
       ];
 
       const candidateAlphabets = [
-        [ALPHABET.PT, this.PeptideFastaAlphabet, 0.50],
-        [ALPHABET.DNA, this.DnaFastaAlphabet, 0.55],
-        [ALPHABET.RNA, this.RnaFastaAlphabet, 0.55],
+        [ALPHABET.PT, this.peptideFastaAlphabet, 0.50],
+        [ALPHABET.DNA, this.dnaFastaAlphabet, 0.55],
+        [ALPHABET.RNA, this.rnaFastaAlphabet, 0.55],
       ];
 
       // Check for url column, maybe it is too heavy check
@@ -136,57 +146,68 @@ class BioPackageDetectors extends DG.Package {
 
       // TODO: Detect HELM sequence
       // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
-      const statsAsChars = this.getStats(categoriesSample, 5,
+      const statsAsChars = this.getStats(categoriesSample, seqMinLength,
         this.getSplitterAsChars(SEQ_SAMPLE_LENGTH_LIMIT));
       // Empty statsAsShars.freq alphabet means no strings of enough length presented in the data
       if (Object.keys(statsAsChars.freq).length === 0) return null;
 
-      const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
-      if (decoy != ALPHABET.UN) return null;
+      const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, colNameLikely ? -0.05 : 0);
+      if (decoy !== ALPHABET.UN) return null;
 
       const separator = this.detectSeparator(statsAsChars.freq);
+      if (this.checkForbiddenSeparator(separator)) return null;
+
       const units = separator ? NOTATION.SEPARATOR : NOTATION.FASTA;
       const gapSymbol = separator ? '' : '-';
       const splitter = separator ? this.getSplitterWithSeparator(separator, SEQ_SAMPLE_LENGTH_LIMIT) :
         this.getSplitterAsFasta(SEQ_SAMPLE_LENGTH_LIMIT);
 
       if (statsAsChars.sameLength) {
-        const stats = this.getStats(categoriesSample, 5, splitter);
-        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-');
+        const stats = this.getStats(categoriesSample, seqMinLength, splitter);
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.20 : 0);
         if (alphabet === ALPHABET.UN) return null;
 
         col.setTag(DG.TAGS.UNITS, units);
         if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
         col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
         col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
+        if (alphabet === ALPHABET.UN) {
+          const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+          col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+        }
         return DG.SEMTYPE.MACROMOLECULE;
       } else {
-        const stats = this.getStats(categoriesSample, 5, splitter);
+        const stats = this.getStats(categoriesSample, seqMinLength, splitter);
+        const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
         // Empty monomer alphabet is not allowed
         if (Object.keys(stats.freq).length === 0) return null;
         // Long monomer names for sequences with separators have constraints
-        if (separator && this.checkForbiddenWithSeparators(stats.freq)) return null;
+        if (
+          ((units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) &&
+            this.checkForbiddenMultichar(stats.freq)) ||
+          ((units === NOTATION.FASTA && !alphabetIsMultichar) &&
+            this.checkForbiddenSinglechar(stats.freq))
+        ) {
+          return null;
+        }
 
         const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
-        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol);
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely ? 0.15 : 0);
+        if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) return null;
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
-        if (separator || alphabet != 'UN') {
-          col.setTag(DG.TAGS.UNITS, units);
-          if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
-          col.setTag(UnitsHandler.TAGS.aligned, aligned);
-          col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
-          if (alphabet === ALPHABET.UN) {
-            // alphabetSize calculated on (sub)sample of data is incorrect
-            // const alphabetSize = Object.keys(stats.freq).length;
-            const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
-            // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
-            col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
-          }
-          return DG.SEMTYPE.MACROMOLECULE;
+        col.setTag(DG.TAGS.UNITS, units);
+        if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
+        col.setTag(UnitsHandler.TAGS.aligned, aligned);
+        col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
+        if (alphabet === ALPHABET.UN) {
+          // alphabetSize calculated on (sub)sample of data is incorrect
+          const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+          col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
+        return DG.SEMTYPE.MACROMOLECULE;
       }
     } finally {
       const t2 = Date.now();
@@ -198,7 +219,7 @@ class BioPackageDetectors extends DG.Package {
    * Does not use any splitting strategies, estimates just by single characters.
    * */
   detectSeparator(freq) {
-    // To detect a separator we analyse col's sequences character frequencies.
+    // To detect a separator we analyze col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
     // of all other symbols in sum to be called the separator.
@@ -207,15 +228,15 @@ class BioPackageDetectors extends DG.Package {
     // !!! What is the difference between the gap symbol and separator symbol in stats terms?
     // const noSeparatorRe = /[a-z\d]+$/i;
     const noSeparatorChemRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
-    const noSeparatorAlphaDigitRe = /[\dA-Z,& _\r\n]/i; // ..., comma, ampersand, space, underscore, CR, LF
+    const noSeparatorAlphaDigitRe = /[\dA-Z]/i;
     const noSeparatorBracketsRe = /[\[\]()<>{}]/i;
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
       .filter(([m, f]) =>
         !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) && !noSeparatorBracketsRe.test(m) &&
-        !this.PeptideFastaAlphabet.has(m) &&
-        !this.DnaFastaAlphabet.has(m))
+        !this.peptideFastaAlphabet.has(m) &&
+        !this.dnaFastaAlphabet.has(m))
       .map(([m, f]) => ({[m]: f})));
-    if (Object.keys(cleanFreq).length == 0) return null;
+    if (Object.keys(cleanFreq).length === 0) return null;
 
     const maxFreq = Math.max(...Object.values(cleanFreq));
 
@@ -227,12 +248,26 @@ class BioPackageDetectors extends DG.Package {
     return sepFreq / otherSumFreq > freqThreshold ? sep : null;
   }
 
-  /** With a separator, spaces are nor allowed in monomer names.
+  checkForbiddenSeparator(separator) {
+    // comma, ampersand, space, underscore, CRLF, CR, LF
+    // 2023-04-15: dot is allowed to allow Helm like separator in Helm MSA results (no Helm monomers contains dot)
+    const forbiddenSepRe = /,|&| |_|\r\n|\r|\n/i;
+    return forbiddenSepRe.test(separator);
+  }
+
+  /** Spaces, dots and colons are nor allowed in multichar monomer names.
    * The monomer name/label cannot contain digits only.
    */
-  checkForbiddenWithSeparators(freq) {
-    const forbiddenRe = /[ ]|^\d+$/i;
-    return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
+  checkForbiddenMultichar(freq) {
+    const forbiddenRe = /[ .:]|^\d+$/i;
+    const forbiddenMonomerList = Object.keys(freq).filter((m) => forbiddenRe.test(m));
+    return forbiddenMonomerList.length > 0;
+  }
+
+  /** Space, dot, colon, semicolon, digit, underscore are not allowed as singe char monomer names.*/
+  checkForbiddenSinglechar(freq) {
+    const forbiddenRe = /[ .:;\d_]/i;
+    return Object.keys(freq).some((m) => forbiddenRe.test(m));
   }
 
   // /** Without a separator, special symbols or digits are not allowed as monomers. */
@@ -250,17 +285,16 @@ class BioPackageDetectors extends DG.Package {
     for (const seq of values) {
       const mSeq = splitter(seq);
 
-      if (firstLength == null) {
+      if (firstLength === null) {
+        //
         firstLength = mSeq.length;
       } else if (mSeq.length !== firstLength) {
         sameLength = false;
       }
 
-      if (mSeq.length > minLength) {
+      if (mSeq.length >= minLength) {
         for (const m of mSeq) {
-          if (!(m in freq)) {
-            freq[m] = 0;
-          }
+          if (!(m in freq)) freq[m] = 0;
           freq[m] += 1;
         }
       }
@@ -271,17 +305,18 @@ class BioPackageDetectors extends DG.Package {
   /** Detects alphabet for freq by freq similarity to alphabet monomer set.
    * @param freq       frequencies of monomers in sequence set
    * @param candidates  an array of pairs [name, monomer set]
-   * */
-  detectAlphabet(freq, candidates, gapSymbol) {
+   * @param {boolean} colNameLikely The column name suggests the column is Macromolecule more likely
+   */
+  detectAlphabet(freq, candidates, gapSymbol, simAdj = 0) {
     const candidatesSims = candidates.map((c) => {
-      const sim = this.getAlphabetSimilarity(freq, c[1], gapSymbol);
+      const sim = this.getAlphabetSimilarity(freq, c[1], gapSymbol) + simAdj;
       return [c[0], c[1], c[2], freq, sim];
     });
 
     let alphabetName;
     const maxSim = Math.max(...candidatesSims.map((cs) => cs[4] > cs[2] ? cs[4] : -1));
     if (maxSim > 0) {
-      const sim = candidatesSims.find((cs) => cs[4] == maxSim);
+      const sim = candidatesSims.find((cs) => cs[4] === maxSim);
       alphabetName = sim[0];
     } else {
       alphabetName = ALPHABET.UN;
@@ -296,7 +331,7 @@ class BioPackageDetectors extends DG.Package {
     const freqA = [];
     const alphabetA = [];
     for (const m of keys) {
-      freqA.push(m in freq ? freq[m] : 0);
+      freqA.push(m in freq ? freq[m] : -0.10);
       alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
@@ -313,13 +348,15 @@ class BioPackageDetectors extends DG.Package {
   }
 
   vectorDotProduct(v1, v2) {
-    if (v1.length != v2.length) {
+    if (v1.length !== v2.length) {
       throw Error('The dimensionality of the vectors must match');
     }
+
     let prod = 0;
     for (let i = 0; i < v1.length; i++) {
       prod += v1[i] * v2[i];
     }
+
     return prod;
   }
 
@@ -327,7 +364,7 @@ class BioPackageDetectors extends DG.Package {
   getSplitterAsChars(lengthLimit) {
     return function(seq) {
       return seq.split('', lengthLimit);
-    }.bind(this);
+    };
   }
 
   getSplitterWithSeparator(separator, lengthLimit) {
@@ -346,11 +383,11 @@ class BioPackageDetectors extends DG.Package {
       // } else {
       return seq.split(separator, lengthLimit);
       // }
-    }.bind(this);
+    };
   }
 
   // Multichar monomer names in square brackets, single char monomers or gap symbol
-  monomerRe = /\[(\w+)\]|(\w)|(-)/g;
+  monomerRe = /\[(\w+)\]|(.)/g;
 
   /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol. */
   getSplitterAsFasta(lengthLimit) {
@@ -365,6 +402,7 @@ class BioPackageDetectors extends DG.Package {
           } else {
             mRes = m;
           }
+
           return mRes;
         }).toArray();
 
@@ -412,9 +450,7 @@ class BioPackageDetectors extends DG.Package {
     const idxSet = new Set();
     while (idxSet.size < n) {
       const idx = Math.floor(Math.random() * src.length);
-      if (!idxSet.has(idx)) {
-        idxSet.add(idx);
-      }
+      if (!idxSet.has(idx)) idxSet.add(idx);
     }
 
     return [...idxSet].map((idx) => src[idx]);

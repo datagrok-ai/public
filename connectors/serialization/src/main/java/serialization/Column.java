@@ -1,6 +1,7 @@
 package serialization;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 // Column.
@@ -19,4 +20,5 @@ public abstract class Column<T> {
     public abstract Object get(int idx);
     public abstract long memoryInBytes();
     public abstract boolean isNone(int idx);
+    public abstract void empty();
 }

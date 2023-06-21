@@ -1,7 +1,6 @@
-<!-- TITLE: Datagrok for life sciences -->
-<!-- SUBTITLE: -->
-
-# Datagrok for life sciences
+---
+title: "Datagrok for life sciences"
+---
 
 Datagrok is a great tool for working with tabular data of any origin. It will retrieve, analyze, visualize and transform
 traditional business data, such as sales, inventory, or marketing data as well as any other system (but of course
@@ -25,8 +24,8 @@ efficiently work with as big datasets as possible. It offers two modes:
 * **Remote data**—sometimes, it is impractical or impossible to download the whole dataset, but you still need to work
   with it. In this case, Datagrok offers several solutions that will transparently translate the necessary work to be
   performed on the server-side. Here are some of them:
-  * [DB Exploration](../access/db-exploration.md) to explore database schemas
-  * [DB Visual Query](../access/db-visual-query.md) to aggregate and pivot on the database side
+  * [DB Exploration](../access/databases/databases.mdx#database-manager) to explore database schemas
+  * [DB Aggregation Editor](../access/databases/databases.mdx#aggregation-editor) to aggregate and pivot on the database side
 
 ## Complexity
 
@@ -76,7 +75,7 @@ We also support [FAIR Principles](../discover/fair.md) where applicable.
 
 Scientific data often comes in formats that are not understood by a typical business application. In addition to
 commonly used data formats, such as csv, txt, xsls, xml, and json, Datagrok
-[supports](../access/supported-data-sources.md#supported-file-types) the following ones:
+[supports](../access/files/supported-formats.md) the following ones:
 
 | Extension     | Description          |
 |---------------|----------------------|

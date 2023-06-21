@@ -1,0 +1,213 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "friendlyName": "eeg",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1378,
+      "height": 929
+    },
+    "children": [
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 684,
+          "height": 929
+        },
+        "children": [
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 684,
+              "height": 476,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 684,
+                  "height": 476,
+                  "element": {
+                    "id": "07eb2900-0b50-11e9-e8f5-19e1a0f06e89",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "HeatMapLook",
+                      "allowColumnMenu": true,
+                      "topLevelDefaultMenu": true,
+                      "columns": [
+                        {
+                          "width": 77,
+                          "columnName": "Stimulus",
+                          "cellType": "string"
+                        },
+                        {
+                          "width": 81,
+                          "columnName": "time (ms)",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 70,
+                          "columnName": "Fp1",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "Fz",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 74,
+                          "columnName": "F3",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 70,
+                          "columnName": "F7",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "T7",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 74,
+                          "columnName": "C3",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "Cz",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "P7",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "O1",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "P3",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "Pz",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "O2",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "P8",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "P4",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "T8",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "C4",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "F4",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 70,
+                          "columnName": "F8",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 70,
+                          "columnName": "Fp2",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "33",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 54,
+                          "columnName": "Gaze",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 91,
+                          "columnName": "TimeSignal",
+                          "cellType": "string"
+                        },
+                        {
+                          "width": 61,
+                          "columnName": "col 27",
+                          "cellType": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "children": [
+                ]
+              }
+            ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 684,
+              "height": 452,
+              "element": {
+                "id": "07eb9e30-0b50-11e9-a39c-697a75384c2d",
+                "type": "Markup",
+                "look": {
+                  "content": "# EEG Viewer\n\nThe interactive depiction of the human head that you see on the right is not a custom control; \ninstead, it is a simple SVG file with the markup inserted to color-code electrode values. Right-click \non it, and choose \"Edit content...\" to see the source.\n\nBy the way, the same control is capable of rendering documents in the Markdown format. This text is\nan example of it, check out its source.\n\n## Info panels\n\nClick on the 'F3' column, and check out the spectrogram on the right in the context panel. "
+                }
+              }
+            },
+            "children": [
+            ]
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 685,
+          "height": 929,
+          "element": {
+            "id": "07ede820-0b50-11e9-89d2-d5e47410a237",
+            "type": "Markup",
+            "look": {
+              "content": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd\">\n<svg width=\"100%\" height=\"100%\" viewBox=\"-37 -21 374 338\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n  <g>\n    <ellipse style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" cx=\"150\" cy=\"150\" rx=\"150\" ry=\"150\"/>\n    <ellipse style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" cx=\"150\" cy=\"150\" rx=\"150\" ry=\"150\"/>\n  </g>\n  <g>\n    <ellipse style=\"fill: none;  stroke-width: 1.6; stroke-dasharray: 6; stroke: #000000\" cx=\"150\" cy=\"150\" rx=\"120\" ry=\"120\"/>\n    <ellipse style=\"fill: none;  stroke-width: 1.6; stroke-dasharray: 6; stroke: #000000\" cx=\"150\" cy=\"150\" rx=\"120\" ry=\"120\"/>\n  </g>\n  <line style=\"fill: none;  stroke-width: 1.6; stroke-dasharray: 6; stroke: #000000\" x1=\"300\" y1=\"150\" x2=\"0\" y2=\"150\"/>\n  <line style=\"fill: none;  stroke-width: 1.6; stroke-dasharray: 6; stroke: #000000\" x1=\"150\" y1=\"0\" x2=\"150\" y2=\"300\"/>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"149.777\" cy=\"150.027\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(Cz)}; stroke-width: 1.6; stroke: #000000\" cx=\"149.777\" cy=\"150.027\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"149.777\" y=\"155.111\">\n      <tspan x=\"149.777\" y=\"155.111\">Cz</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"269.777\" cy=\"149.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(T4)}; stroke-width: 1.6; stroke: #000000\" cx=\"269.777\" cy=\"149.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"269.777\" y=\"154.861\">\n      <tspan x=\"269.777\" y=\"154.861\">T4</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"209.777\" cy=\"149.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(C4)}; stroke-width: 1.6; stroke: #000000\" cx=\"209.777\" cy=\"149.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"209.777\" y=\"154.861\">\n      <tspan x=\"209.777\" y=\"154.861\">C4</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"89.9798\" cy=\"149.655\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(C3)}; stroke-width: 1.6; stroke: #000000\" cx=\"89.9798\" cy=\"149.655\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"89.9798\" y=\"154.738\">\n      <tspan x=\"89.9798\" y=\"154.738\">C3</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"30.1299\" cy=\"149.705\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(T3)}; stroke-width: 1.6; stroke: #000000\" cx=\"30.1299\" cy=\"149.705\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"30.1299\" y=\"154.788\">\n      <tspan x=\"30.1299\" y=\"154.788\">T3</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"149.997\" cy=\"210.505\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(Pz)}; stroke-width: 1.6; stroke: #000000\" cx=\"149.997\" cy=\"210.505\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"149.997\" y=\"215.588\">\n      <tspan x=\"149.997\" y=\"215.588\">Pz</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"150.072\" cy=\"89.2798\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(Fz)}; stroke-width: 1.6; stroke: #000000\" cx=\"150.072\" cy=\"89.2798\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"150.072\" y=\"94.3632\">\n      <tspan x=\"150.072\" y=\"94.3632\">Fz</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"246.697\" cy=\"219.427\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(T6)}; stroke-width: 1.6; stroke: #000000\" cx=\"246.697\" cy=\"219.427\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"246.697\" y=\"224.511\">\n      <tspan x=\"246.697\" y=\"224.511\">T6</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"187.847\" cy=\"263.477\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(O2)}; stroke-width: 1.6; stroke: #000000\" cx=\"187.847\" cy=\"263.477\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"187.847\" y=\"268.561\">\n      <tspan x=\"187.847\" y=\"268.561\">O2</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"53.164\" cy=\"219.861\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(T5)}; stroke-width: 1.6; stroke: #000000\" cx=\"53.164\" cy=\"219.861\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"53.164\" y=\"224.945\">\n      <tspan x=\"53.164\" y=\"224.945\">T5</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"52.964\" cy=\"80.286\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(F7)}; stroke-width: 1.6; stroke: #000000\" cx=\"52.964\" cy=\"80.286\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"52.964\" y=\"85.3694\">\n      <tspan x=\"52.964\" y=\"85.3694\">F7</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"246.963\" cy=\"80.286\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(F8)}; stroke-width: 1.6; stroke: #000000\" cx=\"246.963\" cy=\"80.286\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"246.963\" y=\"85.3694\">\n      <tspan x=\"246.963\" y=\"85.3694\">F8</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"112.031\" cy=\"263.785\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(O1)}; stroke-width: 1.6; stroke: #000000\" cx=\"112.031\" cy=\"263.785\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"112.031\" y=\"268.869\">\n      <tspan x=\"112.031\" y=\"268.869\">O1</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"111.152\" cy=\"36.786\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(Fp1)}; stroke-width: 1.6; stroke: #000000\" cx=\"111.152\" cy=\"36.786\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"111.152\" y=\"41.8694\">\n      <tspan x=\"111.152\" y=\"41.8694\">Fp1</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"189.152\" cy=\"36.786\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(Fp2)}; stroke-width: 1.6; stroke: #000000\" cx=\"189.152\" cy=\"36.786\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"189.152\" y=\"41.8694\">\n      <tspan x=\"189.152\" y=\"41.8694\">Fp2</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"199.152\" cy=\"89.1192\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(F4)}; stroke-width: 1.6; stroke: #000000\" cx=\"199.152\" cy=\"89.1192\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"199.152\" y=\"94.2026\">\n      <tspan x=\"199.152\" y=\"94.2026\">F4</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"101.152\" cy=\"89.1192\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(F3)}; stroke-width: 1.6; stroke: #000000\" cx=\"101.152\" cy=\"89.1192\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"101.152\" y=\"94.2026\">\n      <tspan x=\"101.152\" y=\"94.2026\">F3</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"101.152\" cy=\"210.786\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(P3)}; stroke-width: 1.6; stroke: #000000\" cx=\"101.152\" cy=\"210.786\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"101.152\" y=\"215.869\">\n      <tspan x=\"101.152\" y=\"215.869\">P3</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"199.152\" cy=\"210.986\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(P4)}; stroke-width: 1.6; stroke: #000000\" cx=\"199.152\" cy=\"210.986\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"199.152\" y=\"216.069\">\n      <tspan x=\"199.152\" y=\"216.069\">P4</tspan>\n    </text>\n  </g>\n  <path style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" d=\"M 164,-8 A 14.1667,14.1667 0 0 0 136,-8\"/>\n  <path style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" d=\"M 180,4 A 14.5,14.5 0 0 0 164,-8\"/>\n  <path style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" d=\"M 136,-8 A 14.5,14.5 0 0 0 120,4\"/>\n  <path style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" d=\"M -28,156 A 14.561,14.561 0 0 0 0,148\"/>\n  <path style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" d=\"M -24,156 A 8.32935,8.32935 0 0 0 -8,152\"/>\n  <path style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" d=\"M 300,148 A 14.561,14.561 0 1 0 328,156\"/>\n  <path style=\"fill: none;  stroke-width: 1.6; stroke: #000000\" d=\"M 308,152 A 8.32935,8.32935 0 0 0 324,156\"/>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"-21.2226\" cy=\"142.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(A1)}; stroke-width: 1.6; stroke: #000000\" cx=\"-21.2226\" cy=\"142.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"-21.2226\" y=\"147.861\">\n      <tspan x=\"-21.2226\" y=\"147.861\">A1</tspan>\n    </text>\n  </g>\n  <g>\n    <ellipse style=\"fill: #ffffff\" cx=\"321.111\" cy=\"142.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <ellipse style=\"fill: #{t.color(A2)}; stroke-width: 1.6; stroke: #000000\" cx=\"321.111\" cy=\"142.777\" rx=\"14.7774\" ry=\"14.7774\"/>\n    <text style=\"fill: #000000;text-anchor:middle;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"321.111\" y=\"147.861\">\n      <tspan x=\"321.111\" y=\"147.861\">A2</tspan>\n    </text>\n  </g>\n  <text style=\"fill: #000000;text-anchor:start;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"132.2\" y=\"313.742\">\n    <tspan x=\"132.2\" y=\"313.742\">INION</tspan>\n  </text>\n  <text style=\"fill: #000000;text-anchor:start;font-size:13.5467;font-family:sanserif;font-style:normal;font-weight:normal\" x=\"125.85\" y=\"17.3418\">\n    <tspan x=\"125.85\" y=\"17.3418\">NASION</tspan>\n  </text>\n</svg>\n"
+            }
+          }
+        },
+        "children": [
+        ]
+      }
+    ],
+    "tableId": "dd025280-0b50-11e9-f986-29b6fdc7c743"
+  },
+  "id": "dd02a0a0-0b50-11e9-c94b-4b0e2b3d247b",
+  "name": "Eeg"
+}

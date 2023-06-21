@@ -5,30 +5,27 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {getStats, MaskInfo, Stats} from '../utils/statistics';
+import {getStats, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
+import {getStatsSummary} from '../utils/misc';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const allConst = 'All';
 const otherConst = 'Other';
 
 export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
-  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-  const rowCount = activityScaledCol.length;
-  const selectionObject = model.mutationCliffsSelection;
+  const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityColData = activityCol.getRawData();
+  const rowCount = activityCol.length;
+  const selectionObject = model.monomerPositionSelection;
   const clustersColName = model.settings.clustersColumnName;
   let clustersProcessedObject: string[] = [];
-  if (clustersColName) {
-    const clustersRawObject = model.logoSummarySelection;
-    const clustersColCategories = table.getCol(model.settings.clustersColumnName!).categories;
-    clustersProcessedObject = new Array(clustersRawObject.length);
-    for (let i = 0; i < clustersRawObject.length; ++i)
-      clustersProcessedObject[i] = clustersColCategories[clustersRawObject[i]];
-  }
+  if (clustersColName)
+    clustersProcessedObject = model.clusterSelection;
+
   const positions = Object.keys(selectionObject);
-  const positionsLen = positions.length;
   let aarStr = allConst;
   let otherStr = '';
-  const useSelectedStr = model.isPeptideSpaceChangingBitset;
 
   const updateDistributionHost = (): void => {
     model.splitByPos = splitByPosition.value!;
@@ -37,24 +34,30 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     if (splitByPosition.value && splitByAAR.value) {
       otherStr = otherConst;
       for (const position of positions) {
-        const posCol = table.getCol(position);
         const aarList = selectionObject[position];
         if (aarList.length === 0)
           continue;
 
-        for (const aar of aarList) {
-          aarStr = `${position} : ${aar}`;
-          const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => posCol.get(i) == aar);
+        const posCol = table.getCol(position);
+        const posColCategories = posCol.categories;
+        const posColData = posCol.getRawData();
 
-          const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-          const currentStatsDf = model.monomerPositionStatsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
-          const stats: Stats = {
-            count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
-            ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
-            pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
-            meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
-          };
-          const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        for (const aar of aarList) {
+          const labels = getDistributionLegend(`${position} : ${aar}`, otherStr);
+
+          const aarCategoryIndex = posColCategories.indexOf(aar);
+          const mask = DG.BitSet.create(rowCount, (i) => posColData[i] === aarCategoryIndex);
+          const distributionTable = DG.DataFrame.fromColumns(
+            [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
+          const hist = getActivityDistribution(distributionTable);
+
+          const stats = model.monomerPositionStats[position][aar];
+          const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+
+          const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+
+          const resultMap = {...tableMap, ...aggregatedColMap};
+          const distributionRoot = getStatsSummary(labels, hist, resultMap);
           $(distributionRoot).addClass('d4-flex-col');
 
           res.push(distributionRoot);
@@ -62,26 +65,32 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
       }
     } else if (splitByPosition.value) {
       otherStr = otherConst;
-      const activityScaledData = activityScaledCol.toList();
       for (const position of positions) {
-        const posCol = table.getCol(position);
         const aarList = selectionObject[position];
         if (aarList.length === 0)
           continue;
 
         aarStr = `${position}: {${aarList.join(', ')}}`;
+        const labels = getDistributionLegend(aarStr, otherStr);
 
-        //OPTIMIZE: don't create Bitset, use bool[]
-        const mask = DG.BitSet.create(rowCount, (i) => aarList.includes(posCol.get(i)));
-        const maskInfo: MaskInfo = {
-          mask: mask.getBuffer(),
-          trueCount: mask.trueCount,
-          falseCount: mask.falseCount,
-        };
-        const stats = getStats(activityScaledData, maskInfo);
+        const posCol = table.getCol(position);
+        const posColCategories = posCol.categories;
+        const posColData = posCol.getRawData();
+        const aarIndexesList = aarList.map((aar) => posColCategories.indexOf(aar));
+        const mask = DG.BitSet.create(rowCount, (i) => aarIndexesList.includes(posColData[i]));
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
-        const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+
+        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+
+        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+        const hist = getActivityDistribution(distributionTable);
+
+        const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
+        const stats = getStats(activityColData, bitArray);
+        const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+
+        const resultMap = {...tableMap, ...aggregatedColMap};
+        const distributionRoot = getStatsSummary(labels, hist, resultMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -102,29 +111,30 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
       }
 
       otherStr = otherConst;
-      const activityScaledData = activityScaledCol.getRawData();
       for (const aar of aars) {
         const posList = reversedSelectionObject[aar];
-        aarStr = `${aar}: {${posList.join(', ')}}`;
+        const posColList = posList.map((pos) => table.getCol(pos));
+        const posColCategoriesList = posColList.map((posCol) => posCol.categories);
+        const posColDataList = posColList.map((posCol) => posCol.getRawData());
+        const aarCategoryIndexList = posColCategoriesList.map((posColCategories) => posColCategories.indexOf(aar));
 
-        //OPTIMIZE: don't create Bitset, use bool[]
-        const mask = DG.BitSet.create(rowCount, (i) => {
-          const currentRow = table.row(i);
-          for (const position of posList) {
-            if (currentRow.get(position) == aar)
-              return true;
-          }
-          return false;
-        });
-        const maskInfo: MaskInfo = {
-          mask: mask.getBuffer(),
-          trueCount: mask.trueCount,
-          falseCount: mask.falseCount,
-        };
-        const stats = getStats(activityScaledData, maskInfo);
+        aarStr = `${aar}: {${posList.join(', ')}}`;
+        const labels = getDistributionLegend(aarStr, otherStr);
+
+        const mask = DG.BitSet.create(rowCount,
+          (i) => posColDataList.some((posColData, j) => posColData[i] === aarCategoryIndexList[j]));
+        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
-        const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+        const hist = getActivityDistribution(distributionTable);
+
+        const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
+        const stats = getStats(activityColData, bitArray);
+        const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+
+        const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
+        const distributionRoot = getStatsSummary(labels, hist, resultMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -135,10 +145,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         res.push(ui.divText('No distribution'));
       else {
         otherStr = '';
-        if (useSelectedStr) {
-          aarStr = 'Selected';
-          otherStr = otherConst;
-        } else if (positionsLen) {
+        if (Object.values(selectionObject).some((selectedAar) => selectedAar.length !== 0) ||
+          clustersProcessedObject.length !== 0) {
           aarStr = '';
           for (const position of positions) {
             const aarList = selectionObject[position];
@@ -149,15 +157,20 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
             aarStr += `Clusters: ${clustersProcessedObject.join(', ')}`;
           otherStr = otherConst;
         }
+        const labels = getDistributionLegend(aarStr, otherStr);
 
-        const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        const maskInfo: MaskInfo = {
-          mask: table.selection.getBuffer(),
-          trueCount: table.selection.trueCount,
-          falseCount: table.selection.falseCount,
-        };
-        const stats = getStats(activityScaledCol.getRawData(), maskInfo);
-        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
+        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+        const hist = getActivityDistribution(distributionTable);
+
+        const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
+        const mask = DG.BitSet.create(rowCount, (i) => bitArray.getBit(i));
+        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+
+        const stats = getStats(activityColData, bitArray);
+        const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+
+        const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
+        const distributionRoot = getStatsSummary(labels, hist, resultMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -167,14 +180,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   };
 
   const setDefaultProperties = (input: DG.InputBase): void => {
-    input.enabled = !model.isMutationCliffSelectionEmpty;
+    input.enabled = !model.isMonomerPositionSelectionEmpty;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
     $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
   };
 
   let defaultValuePos = model.splitByPos;
   let defaultValueAAR = model.splitByAAR;
-  if (!model.isLogoSummarySelectionEmpty && model.isMutationCliffSelectionEmpty) {
+  if (!model.isClusterSelectionEmpty && model.isMonomerPositionSelectionEmpty) {
     defaultValuePos = false;
     defaultValueAAR = false;
   }
@@ -194,14 +207,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   return new DG.Widget(ui.divV([controlsHost, distributionHost]));
 }
 
-export function getDistributionAndStats(
-  table: DG.DataFrame, stats: Stats, thisLabel: string, otherLabel: string = '', isTooltip: boolean = false,
-): HTMLDivElement {
-  const labels = ui.divV([
-    ui.label(thisLabel, {style: {color: DG.Color.toHtml(otherLabel == '' ? DG.Color.blue : DG.Color.orange)}}),
-    ui.label(otherLabel, {style: {color: DG.Color.toHtml(DG.Color.blue)}})]);
-
-  const histRoot = table.plot.histogram({
+export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean = false,
+): DG.Viewer<DG.IHistogramLookSettings> {
+  const hist = table.plot.histogram({
     filteringEnabled: false,
     valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
     splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
@@ -211,20 +219,24 @@ export function getDistributionAndStats(
     showRangeSlider: false,
     showBinSelector: !isTooltip,
     backColor: isTooltip ? '#fdffe5' : '#fffff',
-  }).root;
-  histRoot.style.width = 'auto';
+  }) as DG.Viewer<DG.IHistogramLookSettings>;
+  hist.root.style.width = 'auto';
+  return hist;
+}
 
-  const tableMap: StringDictionary = {
+export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number} = {}): StringDictionary {
+  const tableMap = {
     'Statistics:': '',
     'Count': stats.count.toString(),
-    'Ratio': stats.ratio.toFixed(2),
-    'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(2),
-    'Mean difference': stats.meanDifference.toFixed(2),
+    'Ratio': stats.ratio.toFixed(options.fractionDigits),
+    'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits),
+    'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
   };
+  return tableMap;
+}
 
-  const result = ui.divV([labels, histRoot, ui.tableFromMap(tableMap)]);
-  result.style.minWidth = '200px';
-  if (isTooltip)
-    histRoot.style.maxHeight = '150px';
-  return result;
+export function getDistributionLegend(thisLabel: string, otherLabel: string = ''): HTMLDivElement {
+  return ui.divV([
+    ui.label(thisLabel, {style: {color: DG.Color.toHtml(otherLabel.length === 0 ? DG.Color.blue : DG.Color.orange)}}),
+    ui.label(otherLabel, {style: {color: DG.Color.toHtml(DG.Color.blue)}})]);
 }

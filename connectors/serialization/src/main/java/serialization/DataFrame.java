@@ -17,6 +17,17 @@ public class DataFrame {
     public DataFrame() {
     }
 
+    @SuppressWarnings("unchecked")
+    public void addRow(Object... objects) {
+        if (objects.length != columns.size())
+            throw new RuntimeException("Objects length does not match columns length");
+        for (int i = 0; i < columns.size(); i++) {
+            columns.get(i).add(objects[i]);
+        }
+        rowCount++;
+    }
+
+
     public void addColumn(Column col) {
         rowCount = col.length;
         col.name = getUniqueName(col.name);
@@ -98,5 +109,49 @@ public class DataFrame {
             if (unique.test(newName))
                 return newName;
         }
+    }
+
+    public void merge(DataFrame dataFrame) {
+        if (!Objects.equals(columns.size(), dataFrame.columns.size()) && rowCount != 0) {
+            throw new RuntimeException("Can't merge dataframes with different row count");
+        }
+        if (rowCount == 0) {
+            addColumns(dataFrame.columns);
+            return;
+        }
+        for (int i = 0; i < columns.size(); i++) {
+            Column column = columns.get(i);
+            Column columnToMerge = dataFrame.columns.get(i);
+            if (!column.name.equals(columnToMerge.name)) {
+                throw new RuntimeException("Can't merge dataframes of columns with different names");
+            }
+            for (int j = 0; j < columnToMerge.length; j++) {
+                column.add(columnToMerge.get(j));
+            }
+        }
+        Column column = columns.get(0);
+        if (column != null) {
+            rowCount = column.length;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataFrame dataFrame = (DataFrame) o;
+        return Objects.equals(name, dataFrame.name) && Objects.equals(rowCount, dataFrame.rowCount) && Objects.equals(columns, dataFrame.columns) && Objects.equals(tags, dataFrame.tags);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, rowCount, columns, tags);
+    }
+
+    public int memoryInBytes() {
+        int sum = 0;
+        for (Column col : columns)
+            sum += col.memoryInBytes();
+        return sum;
     }
 }

@@ -1,7 +1,6 @@
-<!-- TITLE: Routing -->
-<!-- SUBTITLE: -->
-
-# Routing
+---
+title: "Routing"
+---
 
 In this article, we will consider in which cases the Datagrok platform retains the state in which it was before
 refreshing the browser page. Routing allows you to quickly share something by simply copying a URL and sending it to
@@ -19,17 +18,17 @@ The platform has browsers for the following entities:
 | Entity Browser                                 | URL                                                                                |
 |------------------------------------------------|------------------------------------------------------------------------------------|
 | [Projects](project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
-| [Files](../access/connect-a-file-share.md)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
-| [Queries](../access/data-query.md)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
+| [Files](../access/files/files.mdx)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
+| [Queries](../access/access.md#data-query)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
 | [Scripts](../compute/scripting.md)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
-| [Functions](functions/function.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
+| [Functions](functions/functions.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
 | [Applications](../develop/develop.md)          | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
 | [Models](../learn/predictive-modeling.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
 | [Notebooks](../compute/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
 | [Users](../govern/user.md)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
 | [Groups](../govern/group.md)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
-| [Connections](../access/data-connection.md)    | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
-| [Jobs](../access/data-job.md)                  | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
+| [Connections](../access/access.md#data-connection)    | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
+| [Jobs](../access/access.md)                  | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
 | [Packages](../develop/develop.md)              | [https://public.datagrok.ai/packages](https://public.datagrok.ai/packages)         |
 | [Repositories](../develop/develop.md)          | [https://public.datagrok.ai/repositories](https://public.datagrok.ai/repositories) |
 | [Layouts](../visualize/view-layout.md)         | [https://public.datagrok.ai/view_layouts](https://public.datagrok.ai/view_layouts) |
@@ -49,7 +48,7 @@ not specified, the first view from the project will open.
 
 ## Files
 
-A [file share](../access/connect-a-file-share.md) for which the user has access is available by the link. You should
+A [file share](../access/files/files.mdx) for which the user has access is available by the link. You should
 specify the file share name and the namespace in which it exists in the URL, for
 example, [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles)
 .
@@ -74,10 +73,10 @@ Datagrok supports execution of saved queries via URL. For example, after followi
 link [https://public.datagrok.ai/q/Demo.Northwind.Products](https://public.datagrok.ai/q/Demo.Northwind.Products)
 , the query `Products` will be executed and we will see the table that has just been created as a query result.
 
-The link to a [data query](../access/data-query.md), in addition to its name, must also contain the
-corresponding [data connection](../access/data-connection.md) name and the namespace (or several nested namespaces).
+The link to a [data query](../access/access.md#data-query), in addition to its name, must also contain the
+corresponding [data connection](../access/access.md#data-connection) name and the namespace (or several nested namespaces).
 
-[Parameterized queries](../access/parameterized-queries.md) can be executed as well. In this case, query parameters are
+[Parameterized queries](../access/databases/databases.mdx#parameterized-queries) can be executed as well. In this case, query parameters are
 passed directly in the URL. For example:
 
 [https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY](https://public.datagrok.ai/q/Demo.CoffeeCompany.StoresInState?state=NY)

@@ -14,4 +14,3 @@ and et.friendly_name != ''
 group by et.friendly_name
 limit 50
 --end
-

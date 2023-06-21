@@ -1,6 +1,9 @@
 package serialization;
 
 
+import java.util.Arrays;
+import java.util.Objects;
+
 // Float column.
 public class FloatColumn extends Column<Float> {
     private static final String TYPE = Types.FLOAT;
@@ -10,6 +13,11 @@ public class FloatColumn extends Column<Float> {
 
     public String getType() {
         return TYPE;
+    }
+
+    public void empty() {
+        length = 0;
+        data = new float[100];
     }
 
     public FloatColumn() {
@@ -57,5 +65,9 @@ public class FloatColumn extends Column<Float> {
             System.arraycopy(data, 0, newData, 0, data.length);
             data = newData;
         }
+    }
+
+    public float[] getData() {
+        return data;
     }
 }

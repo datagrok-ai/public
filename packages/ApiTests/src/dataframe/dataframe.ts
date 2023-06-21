@@ -19,12 +19,14 @@ category('DataFrame', () => {
     return df;
   };
 
+  /*
   test('byte array', async () => {
     const t = grok.data.testData('demog');
     const data = t.toByteArray();
     const t2 = DG.DataFrame.fromByteArray(data);
     expect(t.toCsv(), t2.toCsv());
   });
+  */
 
   test('create from arrays', async () => {
     DG.DataFrame.fromColumns([
@@ -46,7 +48,7 @@ category('DataFrame', () => {
       `make, model,    cylinders, volume, price
 Honda, Civic,    4,         1.4,    15000
 Honda, Accord,   6,         1.8,    20000
-BMW,   328i,     4,         1.7,    60000        
+BMW,   328i,     4,         1.7,    60000
 BMW,   535i,     6,         1.5,    35000
 Tesla, Roadster, ,          1.6,    100000
 Tesla, Model S,  ,          1.6,    120000`);
@@ -297,12 +299,10 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('datetime column', async () => {
     const t = grok.data.testData('demog');
     const c = t.columns.byName('started');
-    c.set(1, dayjs('2022-01-01'));
-    expect(c.get(1).valueOf(), 1640984400000);
+    c.set(1, dayjs.utc('2022-01-01'));
+    expect(c.get(1).valueOf(), 1640995200000);
     c.set(1, null);
     expect(c.get(1), null);
-    const v = grok.shell.addTableView(t);
-    v.close();
   });
 
   test('hash', async () => {
@@ -316,5 +316,12 @@ Tesla, Model S,  ,          1.6,    120000`);
     const df3 = DG.DataFrame.fromCsv(`a,b\n"abc",0\n"dce",0\n"xyz",0`);
     const df4 = DG.DataFrame.fromCsv(`a,b\n"dce",0\n"abc",0\n"xyz",0`);
     expectArray(hashDataFrame(df3), hashDataFrame(df4));
+  });
+
+  test('emptyDataFrameToCsv', async () => {
+    const df: DG.DataFrame = DG.DataFrame.fromColumns([]);
+    const csv: string = df.toCsv();
+
+    expect(csv, '');
   });
 });

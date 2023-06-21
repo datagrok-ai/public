@@ -25,9 +25,9 @@ We wrap lines in `.md` files at 100 characters.
 
 We capitalize proper names of distinct UI functional elements:
 
-* **Not correct**: Navigate to a property panel
-* **Acceptable**: Navigate to the Property Panel
-* **Correct**: Navigate to Property Panel
+* **Not correct**: Navigate to a context panel
+* **Acceptable**: Navigate to the Context Panel
+* **Correct**: Navigate to Context Panel
 
 We don't capitalize functional elements which can exist in plurality:
 

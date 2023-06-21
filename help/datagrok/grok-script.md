@@ -1,7 +1,6 @@
-<!-- TITLE: Grok Script -->
-<!-- SUBTITLE: -->
-
-# Grok Script
+---
+title: "Grok Script"
+---
 
 Grok script language is used to control or automate everything within the Datagrok platform. Use it to transform data,
 automate workflows, run queries, evaluate numerical expressions, execute commands, record macros, perform statistical
@@ -19,7 +18,7 @@ Type a command into the console and press Enter.
 
 ## Functions
 
-Open **Help | Functions** to see a list of available [functions](functions/function.md).
+Open **Help | Functions** to see a list of available [functions](functions/functions.md).
 
 ## Syntax
 
@@ -95,16 +94,16 @@ t.KeepRows(Selected())
 
 Symbols '"', '{' and '}' should be replaced as '^^', '<\[' and ']>'.
 
-You can run any system [action](functions/function.md) by calling it from [console](navigation.md#console)
+You can run any system [action](functions/functions.md) by calling it from [console](navigation.md#console)
 
 ## Try it
 
 Open [console](navigation.md#console) by pressing ~ (tilde) or **Tools | Console**. and try to make some actions:
-run [query](../access/data-query.md) or [job](../access/data-job.md). Every step you take will be recorded, so you can
+run [query](../access/access.md#data-query) or job. Every step you take will be recorded, so you can
 re-run it, or use somewhere.
 
 See also:
 
 * [Console](navigation.md#console)
-* [Functions](functions/function.md)
+* [Functions](functions/functions.md)
 * [Scripting](../compute/scripting.md)

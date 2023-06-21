@@ -1,7 +1,7 @@
-### Patient profile
+# Patient profile
 
 Patient profile is useful for analyzing events related to particular patient.
-You can analyze data from laboratory, adverse events, dug exposure and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
+You can analyze data from laboratory, adverse events, dug exposure and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously.
 
 Information about events is available in tooltips on mouse hover. For convenience graphs can be collapsed or extended.
 
@@ -20,6 +20,7 @@ Values within normal ranges are colored green, values outside normal ranges are 
 You can also choose laboratory values by clicking settings button.
 
 Laboratory line chart provides the following of calculating values dynamics:
+
 1. Relative changes from baseline
 2. Relative values between min and max contained in dataset
 3. Relative changes between normalized normal ranges
