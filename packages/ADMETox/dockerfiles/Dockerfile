@@ -9,6 +9,7 @@ RUN pip install --upgrade awscli && \
     pip uninstall -y awscli
 
 COPY environment.yml /app/
+COPY requirements.txt /app/
 
 RUN set -ex ; \
     conda install -n base conda-libmamba-solver -y ; \
