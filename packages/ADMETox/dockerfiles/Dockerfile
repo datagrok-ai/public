@@ -2,10 +2,11 @@ FROM continuumio/miniconda3
 
 WORKDIR /app
 
-RUN pip install --upgrade pip && \
-    pip install --upgrade awscli && \
+SHELL ["/bin/bash","-c"]
+
+RUN pip install --upgrade awscli && \
     aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive && \
-    pip uninstall awscli
+    pip uninstall -y awscli
 
 COPY environment.yml /app/
 
