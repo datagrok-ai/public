@@ -443,7 +443,7 @@ export async function callWasm(module, funcName, inputs) {
 
     let finish = new Date().getTime();
 
-    console.log(`Time for C/C++-function is ${finish - start} ms.`)
+    //console.log(`Time for C/C++-function is ${finish - start} ms.`)
 
     // if a single object must be returned
     if(output['type'] != 'objects')
