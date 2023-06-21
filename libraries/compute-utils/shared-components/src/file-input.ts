@@ -28,7 +28,7 @@ export class FileInput {
     public initialText = 'Drag-n-drop here',
     public initialValue: File | null = null,
     public onValueChanged: Function | null = null,
-    public fileType = EXCEL_BLOB_TYPE,
+    public fileType: string | null = EXCEL_BLOB_TYPE,
   ) {
     this.draw();
 
@@ -71,7 +71,7 @@ export class FileInput {
         }
 
         this.visibleInput.value = files[0].name;
-        if (files[0].type !== this.fileType) {
+        if (this.fileType && files[0].type !== this.fileType) {
           this.isValid.next(false);
           throw new Error('File type is not supported');
         }
