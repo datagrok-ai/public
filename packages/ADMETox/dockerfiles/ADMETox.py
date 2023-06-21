@@ -1,7 +1,7 @@
 import sys
 import django
+import gc
 from os import path as osp
-
 
 def rel_path(*p): return osp.normpath(osp.join(rel_path.path, *p))
 
@@ -60,6 +60,9 @@ if not settings.configured:
 
 django.setup()
 
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
+
 from django.db import models
 
 class Smiles(models.Model):
@@ -99,6 +102,7 @@ class SmilesViewSet(viewsets.ModelViewSet):
     @list_route(methods=['POST'])
     def df_upload(self, request, *args, **kwargs):
         return Response(handle_uploaded_file(request.data, request.query_params.get('models')))
+        
 
 import sklearn.externals.joblib
 import numpy as np
@@ -305,6 +309,7 @@ def model_computation(model):
         except:
             for i in range(len(smiles_global)):
                 predicts.append(y_predict_label[i])
+    gc.collect()
     return predicts
 
 def handle_uploaded_file(f, models):
@@ -329,7 +334,7 @@ def handle_uploaded_file(f, models):
     models_res = [model.encode('utf8') for model in models.split(",")]
     pool = Pool(multiprocessing.cpu_count())
     predicts = pool.map(model_computation, models_res)
-    pool.close()
+    pool.terminate()
     pool.join()
     result = np.zeros((len(smiles_global),0), float)
     result = np.concatenate([ result, np.array(predicts).reshape(len(smiles_global),len(models_res))], axis=1)

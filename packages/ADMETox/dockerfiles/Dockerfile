@@ -24,4 +24,4 @@ SHELL ["conda","run","-n","myenv","/bin/bash","-c"]
 EXPOSE 8000
 
 #start server inside container
-ENTRYPOINT ["conda", "run", "--no-capture-output","-n", "myenv", "python","ADMETox.py", "runserver","0.0.0.0:8000"]
+ENTRYPOINT ["conda","run","--no-capture-output","-n","myenv","gunicorn", "ADMETox:application","--timeout","900","-b", "0.0.0.0:8000","--access-logfile", "-","--error-logfile", "-","--workers=2","--threads=4","--worker-class=gthread","--max-requests=100","--max-requests-jitter=15"]
