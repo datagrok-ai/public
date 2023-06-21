@@ -11,9 +11,6 @@ import {SequenceTranslatorUI} from '../view/view';
 import {_package} from '../package';
 
 export async function demoSequenceTranslatorUI() {
-  // let view: DG.TableView;
-  // let df: DG.DataFrame;
-
   try {
     const demoScript = new DemoScript(
       'Sequence Design',
@@ -41,7 +38,7 @@ export async function demoSequenceTranslatorUI() {
 
         let len: number;
 
-        async function callback(value: string, idx: number, idxUpdate: (idx: number) => number) {
+        async function emulateUserInput(value: string, idx: number, idxUpdate: (idx: number) => number) {
           await delay(3000);
 
           // warning: this redefinition is necessary because
@@ -55,12 +52,12 @@ export async function demoSequenceTranslatorUI() {
         }
 
         ssNewValues.forEach(async (value, idx) => {
-          callback(value, idx, (i) => 2 * i);
+          emulateUserInput(value, idx, (i) => 2 * i);
         });
 
         const asNewValues = ['2\'-O-Methyl', '2\'-Fluoro', '2\'-O-MOE'];
         asNewValues.forEach(async (value, idx) => {
-          callback(value, idx, (i) => (len - 2 - 2 * i));
+          emulateUserInput(value, idx, (i) => (len - 2 - 2 * i));
         })
       }, {
         description: `Create a modification pattern for a dimer`,
