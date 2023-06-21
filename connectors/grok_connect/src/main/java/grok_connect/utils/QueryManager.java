@@ -122,7 +122,7 @@ public class QueryManager {
 
         if (!connection.isClosed() && !resultSet.isClosed()) {
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
-            return provider.getResultSetSubDf(query, resultSet, columns,
+            df =  provider.getResultSetSubDf(query, resultSet, columns,
                     schemeInfo.supportedType, schemeInfo.initColumn, rowsNumber, logger, dfNumber, false, true);
         }
 
