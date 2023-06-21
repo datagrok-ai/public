@@ -9,6 +9,7 @@ import {getDfFromRuns} from './shared/utils';
 import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {VarianceBasedSenstivityAnalysis} from './variance-based-analysis/sensitivity-analysis';
 import {RunComparisonView} from './run-comparison-view';
+import {combineLatest} from 'rxjs';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 
@@ -28,8 +29,13 @@ enum ANALYSIS_TYPE {
   VARIANCE_ANALYSIS = 'Variance-based',
 }
 
+enum DF_OPTIONS {
+  LAST_ROW = 'Last row',
+  FIRST_ROW = 'First row',
+}
+
 type AnalysisProps = {
-  analysisType: InputWithValue<ANALYSIS_TYPE>,
+  analysisType: InputWithValue<BehaviorSubject<ANALYSIS_TYPE>>,
   samplesCount: InputWithValue,
 }
 
@@ -38,15 +44,17 @@ type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 type InputValues = {
   isChanging: InputWithValue<BehaviorSubject<boolean>>,
   const: InputWithValue<boolean | number>,
-  min: InputWithValue,
-  max: InputWithValue,
-  lvl: InputWithValue,
-  distrib: InputWithValue<DISTRIB_TYPE>,
+  constForm: HTMLElement,
+  saForm: HTMLElement,
 }
 
 type SensitivityNumericStore = {
   prop: DG.Property,
   type: DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT,
+  min: InputWithValue,
+  max: InputWithValue,
+  lvl: InputWithValue,
+  distrib: InputWithValue<DISTRIB_TYPE>,
 } & InputValues;
 
 type SensitivityBoolStore = {
@@ -62,19 +70,14 @@ type SensitivityConstStore = {
 type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
 
 export class SensitivityAnalysisView {
-  generateForm = (func: DG.Func) => {
+  generateInputFields = (func: DG.Func) => {
     const analysisInputs = {
       analysisType: {
         input: ui.choiceInput(
-          'Analysis type', ANALYSIS_TYPE.SIMPLE_ANALYSIS, [ANALYSIS_TYPE.SIMPLE_ANALYSIS, ANALYSIS_TYPE.VARIANCE_ANALYSIS], (v: ANALYSIS_TYPE) => {
-            analysisInputs.analysisType.value = v;
-
-            if (v === ANALYSIS_TYPE.VARIANCE_ANALYSIS)
-              $(analysisInputs.samplesCount.input.root).show();
-            else
-              $(analysisInputs.samplesCount.input.root).hide();
-          }),
-        value: ANALYSIS_TYPE.SIMPLE_ANALYSIS,
+          'Analysis type', ANALYSIS_TYPE.SIMPLE_ANALYSIS, [ANALYSIS_TYPE.SIMPLE_ANALYSIS, ANALYSIS_TYPE.VARIANCE_ANALYSIS],
+          (v: ANALYSIS_TYPE) => analysisInputs.analysisType.value.next(v),
+        ),
+        value: new BehaviorSubject(ANALYSIS_TYPE.SIMPLE_ANALYSIS),
       },
       samplesCount: {
         input: ui.intInput('Samples', 100, (v: number) => analysisInputs.samplesCount.value = v),
@@ -89,91 +92,113 @@ export class SensitivityAnalysisView {
       case DG.TYPE.INT:
       case DG.TYPE.BIG_INT:
       case DG.TYPE.FLOAT:
-        acc[inputProp.name] = {
+        const temp = {
           type: inputProp.propertyType,
           prop: inputProp,
           const: {
             input:
               inputProp.propertyType === DG.TYPE.FLOAT ?
-                ui.floatInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue, (v: number) => acc[inputProp.name].const.value = v):
-                ui.intInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue, (v: number) => acc[inputProp.name].const.value = v),
+                ui.floatInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue, (v: number) => ref.const.value = v):
+                ui.intInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue, (v: number) => ref.const.value = v),
             value: inputProp.defaultValue,
           },
           min: {
             input:
-              inputProp.propertyType === DG.TYPE.FLOAT ?
-                ui.floatInput(`${inputProp.caption ?? inputProp.name} min`, inputProp.defaultValue, (v: number) => acc[inputProp.name].min.value = v):
-                ui.intInput(`${inputProp.caption ?? inputProp.name} min`, inputProp.defaultValue, (v: number) => acc[inputProp.name].min.value = v),
+              (() => {
+                const inp = inputProp.propertyType === DG.TYPE.FLOAT ?
+                  ui.floatInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue, (v: number) => ref.min.value = v):
+                  ui.intInput(`${inputProp.caption ?? inputProp.name}`, inputProp.defaultValue, (v: number) => ref.min.value = v);
+
+                (inp.input as HTMLInputElement).placeholder = 'Min';
+                return inp;
+              })(),
             value: inputProp.defaultValue,
           },
           max: {
             input:
-              inputProp.propertyType === DG.TYPE.FLOAT ?
-                ui.floatInput(`${inputProp.caption ?? inputProp.name} max`, inputProp.defaultValue, (v: number) => acc[inputProp.name].max.value = v):
-                ui.intInput(`${inputProp.caption ?? inputProp.name} max`, inputProp.defaultValue, (v: number) => acc[inputProp.name].max.value = v),
+              (() => {
+                const inp = inputProp.propertyType === DG.TYPE.FLOAT ?
+                  ui.floatInput(` `, inputProp.defaultValue, (v: number) => ref.min.value = v):
+                  ui.intInput(` `, inputProp.defaultValue, (v: number) => ref.min.value = v);
+
+                (inp.input as HTMLInputElement).placeholder = 'Max';
+                return inp;
+              })(),
             value: inputProp.defaultValue,
           },
           lvl: {
-            input: ui.intInput('Levels', 3, (v: number) => acc[inputProp.name].lvl.value = v),
+            input: ui.intInput('Levels', 3, (v: number) => ref.lvl.value = v),
             value: 3,
           },
           distrib: {
-            input: ui.choiceInput('Distribution', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => acc[inputProp.name].distrib.value = v),
+            input: ui.choiceInput('Distribution', DISTRIB_TYPES[0], DISTRIB_TYPES, (v: DISTRIB_TYPE) => ref.distrib.value = v),
             value: inputProp.defaultValue,
           },
           isChanging: {
             input: (() => {
-              const input = ui.switchInput(' ', false, (v: boolean) => acc[inputProp.name].isChanging.value.next(v));
+              const input = ui.switchInput(' ', false, (v: boolean) => ref.isChanging.value.next(v));
               $(input.root).css({'min-width': '50px', 'width': '50px'});
               $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
               return input;
             })(),
             value: new BehaviorSubject<boolean>(false),
           },
+        };
+
+        temp.min.input.root.append(temp.max.input.input);
+        const simpleSa = [temp.lvl.input, temp.distrib.input];
+        acc[inputProp.name] = {
+          ...temp,
+          constForm: ui.form([temp.const.input], {style: {flexGrow: '1'}}),
+          saForm: ui.form([
+            temp.min.input,
+            ...simpleSa,
+          ], {style: {flexGrow: '1'}}),
         } as SensitivityNumericStore;
-        const ref = acc[inputProp.name];
-        ref.isChanging.value.subscribe((newVal) => {
-          if (newVal) {
-            $(ref.const.input.root).hide();
-            $(ref.min.input.root).show();
-            $(ref.max.input.root).show();
-            if (analysisInputs.analysisType.value === ANALYSIS_TYPE.SIMPLE_ANALYSIS) {
-              $(ref.lvl.input.root).show();
-              $(ref.distrib.input.root).show();
+
+        const ref = acc[inputProp.name] as SensitivityNumericStore;
+        combineLatest([
+          temp.isChanging.value, analysisInputs.analysisType.value,
+        ]).subscribe(([isChanging, analysisType]) => {
+          if (isChanging) {
+            $(ref.constForm).hide();
+            if (analysisType === ANALYSIS_TYPE.SIMPLE_ANALYSIS) {
+              $(ref.saForm).show();
+              simpleSa.forEach((input) => $(input.root).show());
             } else {
-              $(ref.lvl.input.root).hide();
-              $(ref.distrib.input.root).hide();
+              $(ref.saForm).show();
+              simpleSa.forEach((input) => $(input.root).hide());
             }
           } else {
-            $(ref.const.input.root).show();
-            $(ref.min.input.root).hide();
-            $(ref.max.input.root).hide();
-            $(ref.lvl.input.root).hide();
-            $(ref.distrib.input.root).hide();
+            $(ref.constForm).show();
+            $(ref.saForm).hide();
           }
-        });
-        $([ref.min.input.root, ref.max.input.root, ref.lvl.input.root, ref.distrib.input.root]).css({
-          'width': '25%',
         });
         break;
       case DG.TYPE.BOOL:
-        acc[inputProp.name] = {
+        const tempBool = {
+          type: inputProp.propertyType,
+          prop: inputProp,
           const: {
-            input: ui.boolInput('Default value', false, (v: boolean) => acc[inputProp.name].const.value = v),
+            input: ui.boolInput(' ', false, (v: boolean) => ref.const.value = v),
             value: false,
           } as InputWithValue<boolean>,
           isChanging: {
-            input: ui.switchInput('Is changing', false, (v: boolean) => acc[inputProp.name].isChanging.value.next(v)),
+            input: ui.switchInput('Is changing', false, (v: boolean) => ref.isChanging.value.next(v)),
             value: new BehaviorSubject<boolean>(false),
           },
-          type: inputProp.propertyType,
-          prop: inputProp,
+        };
+
+        acc[inputProp.name] = {
+          ...tempBool,
+          constForm: ui.form([tempBool.const.input], {style: {flexGrow: '1'}}),
+          saForm: ui.form([tempBool.const.input], {style: {flexGrow: '1'}}),
         } as SensitivityBoolStore;
         break;
       default:
         acc[inputProp.name] = {
           const: {
-            input: ui.input.forProperty(inputProp, undefined, {onValueChanged: (v: any) => acc[inputProp.name].const.value = v}),
+            input: ui.input.forProperty(inputProp, undefined, {onValueChanged: (v: any) => ref.const.value = v}),
             value: inputProp.defaultValue,
           },
           type: inputProp.propertyType,
@@ -184,12 +209,89 @@ export class SensitivityAnalysisView {
       return acc;
     }, {} as Record<string, SensitivityStore>);
 
-    return {analysisInputs, inputs};
+    const outputs = func.outputs.reduce((acc, outputProp) => {
+      const temp = {
+        prop: outputProp,
+        input:
+          (() => {
+            const input = outputProp.propertyType === DG.TYPE.DATA_FRAME ?
+              ui.choiceInput(outputProp.caption ?? outputProp.name, DF_OPTIONS.LAST_ROW, [DF_OPTIONS.LAST_ROW, DF_OPTIONS.FIRST_ROW], (v: DF_OPTIONS) => {
+                temp.value.returning = v;
+              }):
+              ui.input.forProperty(outputProp);
+
+          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
+          input.captionLabel.firstChild!.replaceWith(ui.span([outputProp.caption ?? outputProp.name]));
+
+          return input;
+          })(),
+        analysisInputs:
+          outputProp.propertyType === DG.TYPE.DATA_FRAME ? [(() => {
+            const input = ui.stringInput('Column', '', (v: string) => {
+              temp.value.colName = v;
+            });
+
+            return input;
+          })()]: [],
+        value: {
+          returning: DF_OPTIONS.LAST_ROW,
+          colName: null as string | null,
+        },
+        isInterest: {
+          input: (() => {
+            const input = ui.switchInput(' ', false, (v: boolean) => temp.isInterest.value.next(v));
+            $(input.root).css({'min-width': '50px', 'width': '50px'});
+            $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
+            return input;
+          })(),
+          value: new BehaviorSubject<boolean>(false),
+        },
+      };
+      $(temp.input.input).hide();
+
+      if (temp.prop.propertyType === DG.TYPE.DATA_FRAME) {
+        temp.isInterest.value.subscribe((isInterest) => {
+          if (isInterest) {
+            temp.analysisInputs.forEach((input) => $(input.root).show());
+            $(temp.input.input).show();
+          } else {
+            temp.analysisInputs.forEach((input) => $(input.root).hide());
+            $(temp.input.input).hide();
+          }
+        });
+      }
+
+      switch (outputProp.propertyType) {
+      case DG.TYPE.INT:
+      case DG.TYPE.BIG_INT:
+      case DG.TYPE.FLOAT:
+      case DG.TYPE.BOOL:
+      case DG.TYPE.DATA_FRAME:
+        break;
+      default:
+        $(temp.isInterest.input.root).css({'visibility': 'hidden'});
+      }
+
+      acc[outputProp.name] = temp;
+
+      return acc;
+    }, {} as Record<string, {
+      prop: DG.Property,
+      input: DG.InputBase,
+      analysisInputs: DG.InputBase[],
+      value: {
+        returning: DF_OPTIONS,
+        colName: string | null
+      }
+      isInterest: {input: DG.InputBase, value: BehaviorSubject<boolean>}
+    }>);
+
+    return {analysisInputs, inputs, outputs};
   };
 
   private openedViewers = [] as DG.Viewer[];
 
-  store = this.generateForm(this.func);
+  store = this.generateInputFields(this.func);
   comparisonView: DG.TableView;
 
   static async fromEmpty(
@@ -251,75 +353,79 @@ export class SensitivityAnalysisView {
   }
 
   private buildFormWithBtn() {
-    const adaptStyle = () => {
-      if (allPropInputs.some((input) => {
-        return $(input).width() < 350 && $(input).width() > 0;
-      }))
-        $(form.container).addClass('ui-form-condensed');
-      else
-        $(form.container).removeClass('ui-form-condensed');
-    };
+    // const adaptStyle = () => {
+    //   if (allPropInputs.some((input) => {
+    //     return $(input).width() < 350 && $(input).width() > 0;
+    //   }))
+    //     $(form.container).addClass('ui-form-condensed');
+    //   else
+    //     $(form.container).removeClass('ui-form-condensed');
+    // };
 
     let prevCategory = 'Misc';
-    const allPropInputs = [] as HTMLElement[];
     const form = Object.values(this.store.inputs)
       .reduce(({container, switches}, inputConfig) => {
-        let propInputs = [] as HTMLElement[];
-
-        switch (inputConfig.type) {
-        case DG.TYPE.INT:
-        case DG.TYPE.BIG_INT:
-        case DG.TYPE.FLOAT:
-          inputConfig = inputConfig as SensitivityNumericStore;
-          propInputs = [
-            inputConfig.isChanging.input.root,
-            inputConfig.const.input.root,
-            inputConfig.min.input.root,
-            inputConfig.max.input.root,
-            inputConfig.lvl.input.root,
-            inputConfig.distrib.input.root,
-          ];
-          inputConfig.isChanging.input.onChanged(adaptStyle);
-          allPropInputs.push(...propInputs.filter((_, idx) => idx > 0));
-          switches.push(inputConfig.isChanging.input);
-          break;
-        case DG.TYPE.BOOL:
-          inputConfig = inputConfig as SensitivityBoolStore;
-          propInputs = [
-            inputConfig.isChanging.input.root,
-            inputConfig.const.input.root,
-          ];
-          inputConfig.isChanging.input.onChanged(adaptStyle);
-          allPropInputs.push(...propInputs.filter((_, idx) => idx > 0));
-          switches.push(inputConfig.isChanging.input);
-          break;
-        default:
-          propInputs = [
-            inputConfig.const.input.root,
-          ];
-          allPropInputs.push(...propInputs);
-        }
-
         const prop = inputConfig.prop;
         if (prop.category !== prevCategory) {
-          container.append(ui.h2(prop.category, {style: {'margin-top': '10px'}}));
+          container.append(ui.h2(prop.category));
           prevCategory = prop.category;
         }
-        container.appendChild(ui.divH(propInputs, {style: {'max-width': '100%'}}));
+
+        const inputRow = ui.divH([
+          ui.form([inputConfig.isChanging.input]),
+          inputConfig.constForm,
+          inputConfig.saForm,
+        ], 'ui-form ui-form-wide');
+        $(inputRow).removeClass('ui-div');
+        container.appendChild(inputRow);
 
         return {container, switches};
       }, {
-        container: ui.divV([ui.divH([
-          this.store.analysisInputs.analysisType.input.root,
-          this.store.analysisInputs.samplesCount.input.root,
-        ])], 'ui-form ui-form-wide ui-form-left'),
+        container: ui.form([
+          this.store.analysisInputs.analysisType.input,
+          this.store.analysisInputs.samplesCount.input,
+        ], 'ui-form-wide'),
         switches: [] as DG.InputBase[],
       });
+
+    const outputsTitle = ui.h2('Outputs of interest');
+    form.container.appendChild(outputsTitle);
+    prevCategory = 'Misc';
+    const outputForm = Object.values(this.store.outputs)
+      .reduce(({container, switches}, outputConfig) => {
+        const prop = outputConfig.prop;
+        if (prop.category !== prevCategory) {
+          container.append(ui.h2(prop.category));
+          prevCategory = prop.category;
+        }
+
+        const inputRow = ui.divH([
+          ui.form([outputConfig.isInterest.input]),
+          ui.form([outputConfig.input, ...outputConfig.analysisInputs], {style: {flexGrow: '1'}}),
+        ], 'ui-form ui-form-wide');
+        $(inputRow).removeClass('ui-div');
+        container.appendChild(inputRow);
+
+        return {container, switches};
+      }, {
+        container: ui.form([]),
+        switches: [] as DG.InputBase[],
+      });
+
+    this.store.analysisInputs.analysisType.value.subscribe((analysisType) => {
+      if (analysisType === ANALYSIS_TYPE.SIMPLE_ANALYSIS) {
+        $(outputsTitle).hide();
+        $(outputForm.container).hide();
+      } else {
+        $(outputsTitle).show();
+        $(outputForm.container).show();
+      }
+    });
 
     const buttons = ui.buttonsInput([ui.bigButton('Run sensitivity analysis', async () => {
       this.closeOpenedViewers();
 
-      if (this.store.analysisInputs.analysisType.value === ANALYSIS_TYPE.SIMPLE_ANALYSIS)
+      if (this.store.analysisInputs.analysisType.value.value === ANALYSIS_TYPE.SIMPLE_ANALYSIS)
         this.runSimpleAnalysis();
       else
         this.runVarianceAnalysis();
@@ -327,27 +433,11 @@ export class SensitivityAnalysisView {
     $(buttons).css({
       'align-items': 'start',
     });
+
+    form.container.appendChild(outputForm.container);
     form.container.appendChild(
       buttons,
     );
-
-    form.switches.forEach((switchEl) => {
-      $(switchEl.root).css({
-        'width': '50px',
-        'max-width': '50px',
-        'min-width': '50px',
-        'padding-top': '0px',
-      });
-    });
-
-    $(form.container).css({
-      'width': '100%',
-      'max-width': '100%',
-      'padding-top': '0px',
-      'overflow-y': 'scroll',
-    });
-
-    ui.tools.handleResize(form.container, adaptStyle);
 
     return form.container;
   }
