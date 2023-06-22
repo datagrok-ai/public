@@ -8,9 +8,8 @@ import grok_connect.log.QueryLogger;
 import grok_connect.utils.QueryChunkNotSent;
 import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
-
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -51,23 +50,19 @@ public class SessionHandler {
         Throwable cause = err.getCause() == null ? err : err.getCause(); // we need to get cause, because error is wrapped by runtime exception
         if (cause instanceof OutOfMemoryError) {
             // guess it won't work because there is no memory left!
-            logger.error(EventType.ERROR.getMarker(), "Out of memory", cause);
             GrokConnect.needToReboot = true;
-        } else {
-            String message = cause.getMessage();
-            String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
-                    .collect(Collectors.joining(System.lineSeparator()));
-            logger.error(EventType.ERROR.getMarker(), cause.toString(), cause);
-            logger.error(EventType.ERROR.getMarker(), String.format("STACK_TRACE: %s", stackTrace));
-            DataQueryRunResult result = new DataQueryRunResult();
-            result.errorMessage = message;
-            result.errorStackTrace = stackTrace;
-            session.getRemote().sendString(socketErrorMessage(new Gson().toJson(result)));
-            sendLog();
-            queryLogger.closeLogger();
-            session.close();
-            queryManager.closeConnection();
         }
+        String message = cause.getMessage();
+        String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
+                .collect(Collectors.joining(System.lineSeparator()));
+        logger.error(EventType.ERROR.getMarker(), cause.toString(), cause);
+        logger.error(EventType.ERROR.getMarker(), String.format("STACK_TRACE: %s", stackTrace));
+        DataQueryRunResult result = new DataQueryRunResult();
+        result.errorMessage = message;
+        result.errorStackTrace = stackTrace;
+        session.getRemote().sendStringByFuture(String.format("ERROR: %s", new Gson().toJson(result)));
+        sendLog();
+        session.close();
     }
 
     public void onMessage(String message) throws Throwable {
@@ -91,7 +86,7 @@ public class SessionHandler {
                     }
                 }
                 dryRunDiff = (ordinaryResult / dryRunCycles) - (dryRunResult / dryRunCycles);
-                session.getRemote().sendString("COMPLETED 0");
+                session.getRemote().sendStringByFuture("COMPLETED 0");
                 return;
             }
             queryManager.initResultSet();
@@ -105,12 +100,11 @@ public class SessionHandler {
             fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
             Marker start = EventType.DATA_SENDING.getMarker(dfNumber, EventType.Stage.START);
             logger.debug(start, "Sending binary dataframe with id {}", dfNumber);
-            session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
+            session.getRemote().sendBytesByFuture(ByteBuffer.wrap(bytes));
             return;
         } else if (message.startsWith(COMPLETED_OK)) {
             sendLog();
-            queryLogger.closeLogger();
-            session.getRemote().sendString(END_MESSAGE);
+            session.getRemote().sendStringByFuture(END_MESSAGE);
             session.close();
             return;
         } else {
@@ -139,32 +133,25 @@ public class SessionHandler {
             bytes = dataFrame.toByteArray();
             logger.debug(finish, "DataFrame with id {} was converted to byteArray", dfNumber);
             logger.debug(EventType.CHECKSUM_SENDING.getMarker(dfNumber, EventType.Stage.START), "Sending checkSum message with bytes length of {}", bytes.length);
-            session.getRemote().sendString(checksumMessage(bytes.length));
+            session.getRemote().sendStringByFuture(String.format("DATAFRAME PART SIZE: %d", bytes.length));
         } else {
-            queryManager.closeConnection();
-            session.getRemote().sendString(String.format("COMPLETED %s", dfNumber));
+            session.getRemote().sendStringByFuture(String.format("COMPLETED %s", dfNumber));
         }
     }
 
-    public String checksumMessage(int i) {
-        return String.format("DATAFRAME PART SIZE: %d", i);
+    public void onClose() throws SQLException {
+        threadPool.shutdown();
+        queryLogger.closeLogger();
+        queryManager.closeConnection();
     }
 
-    public QueryManager getQueryManager() {
-        return queryManager;
-    }
-
-    private String socketErrorMessage(String s) {
-        return String.format("ERROR: %s", s);
-    }
-
-    private void sendLog() throws IOException {
+    private void sendLog() {
         logger.debug(EventType.LOG_SENDING.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
         DataFrame logs = queryLogger.dumpLogMessages();
         if (queryManager.dryRun) {
             logs.addRow(System.currentTimeMillis() * 1000.0, "GrokConnect", Level.INFO.levelStr,
                     EventType.DRY_RUN_DIFF.getName(), EventType.Stage.END.toString(), null, null, null, String.format("Average difference in duration when read result set and not for %s cycles", dryRunCycles - 1), dryRunDiff);
         }
-        session.getRemote().sendBytes(ByteBuffer.wrap(logs.toByteArray()));
+        session.getRemote().sendBytesByFuture(ByteBuffer.wrap(logs.toByteArray()));
     }
 }

@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import grok_connect.GrokConnect;
@@ -51,26 +49,20 @@ public class QueryManager {
         this.logger = logger;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
         if (query.func.options != null) {
-            if (query.func.options.containsKey(FETCH_SIZE_KEY)) {
+            if (query.func.options.containsKey(FETCH_SIZE_KEY))
                 setFetchSize(query.func.options.get(FETCH_SIZE_KEY).toString());
-            }
-            if (query.func.options.containsKey(DRY_RUN_KEY)) {
+            if (query.func.options.containsKey(DRY_RUN_KEY))
                 dryRun = Boolean.parseBoolean(query.func.options.get(DRY_RUN_KEY).toString());
-            }
-            if (query.func.options.containsKey(INIT_FETCH_SIZE_KEY)) {
+            if (query.func.options.containsKey(INIT_FETCH_SIZE_KEY))
                 setInitFetchSize(query.func.options.get(INIT_FETCH_SIZE_KEY).toString());
-            }
         }
         if (query.func.aux != null) {
-            if (query.func.aux.containsKey(FETCH_SIZE_KEY)) {
+            if (query.func.aux.containsKey(FETCH_SIZE_KEY))
                 setFetchSize(query.func.aux.get(FETCH_SIZE_KEY).toString());
-            }
-            if (query.func.aux.containsKey(DRY_RUN_KEY)) {
+            if (query.func.aux.containsKey(DRY_RUN_KEY))
                 dryRun = (Boolean) query.func.aux.get(DRY_RUN_KEY);
-            }
-            if (query.func.aux.containsKey(INIT_FETCH_SIZE_KEY)) {
+            if (query.func.aux.containsKey(INIT_FETCH_SIZE_KEY))
                 setInitFetchSize(query.func.aux.get(INIT_FETCH_SIZE_KEY).toString());
-            }
         }
         if (dryRun)
             initMessage = message;
@@ -139,16 +131,16 @@ public class QueryManager {
     }
 
     public void closeConnection() throws SQLException {
-        logger.debug(EventType.MISC.getMarker(), "CLosing DB connection");
         if (connection != null && !connection.isClosed()) {
+            logger.debug(EventType.MISC.getMarker(), "Closing DB connection");
             if (!connection.getAutoCommit())
                 connection.commit();
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
             connection.close();
+            logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
         } else {
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
         }
-        logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
     }
 
     public boolean isResultSetInitialized() {

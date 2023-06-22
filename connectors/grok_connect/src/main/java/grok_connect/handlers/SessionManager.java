@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-
 import grok_connect.log.QueryLoggerImpl;
-import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +33,8 @@ public class SessionManager {
     static void delete(Session session) throws Throwable {
         LOGGER.trace("delete method was called with parameters: session :{}", session);
         if (sessions.containsKey(session)) {
-            QueryManager queryManager = sessions.get(session).getQueryManager();
-            if (queryManager != null)
-                queryManager.closeConnection();
+            SessionHandler handler = sessions.get(session);
+            handler.onClose();
             sessions.remove(session);
         }
     }
