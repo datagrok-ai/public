@@ -142,26 +142,29 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
   const divMain = ui.div();
   divMain.append(ui.divText('Most diverse structures', {style: {'position': 'relative', 'left': '20px'}}));
-  const divStructures = ui.div();
+  const divStructures = ui.div([ui.loader()]);
   divStructures.classList.add('d4-flex-wrap');
-  if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
-    const molIds = await chemDiversitySearch(
-      col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, true);
 
-    Object.assign(col.temp, {
-      'version': version,
-      'molIds': molIds,
-    });
+  const getDiverseStructures = async (): Promise<void> => {
+    if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
+      const molIds = await chemDiversitySearch(
+        col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, true);
+  
+      Object.assign(col.temp, {
+        'version': version,
+        'molIds': molIds,
+      });
+    }
+    ui.empty(divStructures);
+    const molIdsCached = col.temp['molIds'];
+    for (let i = 0; i < molIdsCached.length; ++i)
+      divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
   }
-
-  const molIdsCached = col.temp['molIds'];
-  for (let i = 0; i < molIdsCached.length; ++i)
-    divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
-
 
   divMain.append(divStructures);
   const widget = new DG.Widget(divMain);
   widget.root.classList.add('chem-tooltip-widget');
+  setTimeout(() => getDiverseStructures(), 10);
   return widget;
 }
 
