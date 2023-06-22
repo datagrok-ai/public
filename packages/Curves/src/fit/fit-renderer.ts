@@ -11,7 +11,7 @@ import {
   CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   FIT_CELL_TYPE,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
+import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
@@ -53,12 +53,14 @@ function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentV
 }
 
 /** Performs candlestick drawing */
-function drawCandlestick(g: CanvasRenderingContext2D, x: number, lowerAdjacentValue: number,
-  upperAdjacentValue: number, transform: Viewport): void {
-  drawCandlestickBorder(g, x, lowerAdjacentValue, transform);
-  g.moveTo(transform.xToScreen(x), transform.yToScreen(lowerAdjacentValue));
-  g.lineTo(transform.xToScreen(x), transform.yToScreen(upperAdjacentValue));
-  drawCandlestickBorder(g, x, upperAdjacentValue, transform);
+function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: BoxPlotStatistics,
+  transform: Viewport, ratio: number, markerColor: number): void {
+  drawCandlestickBorder(g, x, boxPlotStats.lowerAdjacentValue, transform);
+  g.moveTo(transform.xToScreen(x), transform.yToScreen(boxPlotStats.lowerAdjacentValue));
+  g.lineTo(transform.xToScreen(x), transform.yToScreen(boxPlotStats.upperAdjacentValue));
+  drawCandlestickBorder(g, x, boxPlotStats.upperAdjacentValue, transform);
+  DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, transform.xToScreen(x), transform.yToScreen(boxPlotStats.q2),
+    markerColor, 3.5 * ratio);
 }
 
 /** Performs a curve confidence interval drawing */
@@ -198,10 +200,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
               values[ind] = series.points[j].y;
             }
-            const {lowerAdjacentValue, upperAdjacentValue} = calculateBoxPlotStatistics(values);
+            const boxPlotStats = calculateBoxPlotStatistics(values);
 
             g.beginPath();
-            drawCandlestick(g, p.x, lowerAdjacentValue, upperAdjacentValue, viewport);
+            drawCandlestick(g, p.x, boxPlotStats, viewport, ratio, series.pointColor ?
+              DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker);
             g.stroke();
 
             candleStart = null;
