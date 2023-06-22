@@ -37,22 +37,28 @@ export async function accessServer(csvString: string, queryParams: string) {
 
 export function addTooltip() {
   const tableView = grok.shell.tv;
-  const { grid, dataFrame } = tableView;
-  const between = (x: number, min: number, max: number) => x >= min && x <= max;
 
-  grid.onCellTooltip((cell, x, y) => {
-    const col = cell.tableColumn!.name;
-    if (cell.isTableCell && Object.prototype.hasOwnProperty.call(models, col)) {
-      const ranges = Object.keys(models[col]).map(parseFloat);
-      const rowValue = dataFrame.get(cell.gridColumn.name, cell.gridRow);
-      let val;
-      for (const range of ranges) {
-        if (between(rowValue, range, ranges[ranges.length - 1])) {
+  tableView.grid.onCellTooltip((cell, x, y) => {
+    const col = cell.tableColumn?.name;
+
+    if (cell.isTableCell && col && models[col]) {
+      const keys = Object.keys(models[col]);
+      const rowValue = tableView.dataFrame.get(cell.gridColumn.name, cell.gridRow);
+
+      let val = '';
+      keys.some((range, i) => {
+        const nextRange = keys[i + 1];
+        const isLastRange = i === keys.length - 1;
+
+        if (nextRange && rowValue >= +range && rowValue <= +nextRange) {
           val = models[col][range];
-          break;
+          return true;
+        } else if (isLastRange) {
+          val = models[col][range];
+          return true;
         }
-        val = models[col][ranges[0]];
-      }
+      });
+
       ui.tooltip.show(ui.divV([ui.div(val)]), x, y);
       return true;
     }
