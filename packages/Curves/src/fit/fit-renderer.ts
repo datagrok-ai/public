@@ -175,6 +175,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
     for (const series of data.series!) {
+      if (w < 70 || h < 45) {
+        series.showPoints = '';
+        if (data.chartOptions)
+          data.chartOptions.showStatistics = [];
+      }
       series.points.sort((a, b) => a.x - b.x);
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
