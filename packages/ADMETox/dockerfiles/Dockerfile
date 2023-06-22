@@ -19,9 +19,22 @@ RUN set -ex ; \
 
 COPY . /app
 
-SHELL ["conda","run","-n","myenv","/bin/bash","-c"]
+SHELL ["conda","run","-n","myenv", "--no-capture-output", "/bin/bash","-c"]
 
 EXPOSE 8000
 
+ARG GUNICORN_MAX_REQUESTS=1
+ARG GUNICORN_MAX_REQUESTS_JITTER=3
+ARG GUNICORN_WORKERS=3
+ARG GUNICORN_THREADS=4
+ENV GUNICORN_MAX_REQUESTS="${GUNICORN_MAX_REQUESTS}"
+ENV GUNICORN_MAX_REQUESTS_JITTER="${GUNICORN_MAX_REQUESTS_JITTER}"
+ENV GUNICORN_WORKERS="${GUNICORN_WORKERS}"
+ENV GUNICORN_THREADS="${GUNICORN_THREADS}"
+
 #start server inside container
-ENTRYPOINT ["conda","run","--no-capture-output","-n","myenv","gunicorn", "ADMETox:application","--timeout","900","-b", "0.0.0.0:8000","--access-logfile", "-","--error-logfile", "-","--workers=2","--threads=4","--worker-class=gthread","--max-requests=100","--max-requests-jitter=15"]
+ENTRYPOINT gunicorn ADMETox:application \
+           --timeout 900 -b "0.0.0.0:8000" \
+           --access-logfile - --error-logfile - \
+           --workers=${GUNICORN_WORKERS} --threads=${GUNICORN_THREADS} --worker-class=gthread \
+           --max-requests=${GUNICORN_MAX_REQUESTS} --max-requests-jitter=${GUNICORN_MAX_REQUESTS_JITTER}
