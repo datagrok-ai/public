@@ -12,7 +12,7 @@ function rnd(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
-function createSigmoidPoints(length: number, step: number, pointsPerX: number = 1):
+export function createSigmoidPoints(length: number, step: number, pointsPerX: number = 1):
     { x: Float32Array, y: Float32Array, params: number[] } {
   const x = new Float32Array(length * pointsPerX);
   const y = new Float32Array(length * pointsPerX);
