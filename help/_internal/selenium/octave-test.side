@@ -124,7 +124,7 @@
           "id": "30a32233-d8bb-4d4e-bcb4-a8a5df5b788b",
           "comment": "",
           "command": "click",
-          "target": "xpath=//span[contains(.,'Scripts')]",
+          "target": "xpath=//span[contains(.,'scripts')]",
           "targets": [
             [
               "css=.d4-toggle-button:nth-child(3) > span",
@@ -139,7 +139,7 @@
               "xpath:position"
             ],
             [
-              "xpath=//span[contains(.,'Scripts')]",
+              "xpath=//span[contains(.,'scripts')]",
               "xpath:innerText"
             ]
           ],

@@ -15,15 +15,15 @@ title: Chemical functions
 |Cheminformatics   | SMILES to InchI                    |<br /><pre>`\#{x.ChemSmilesToInchi}`</pre> |
 |Cheminformatics   | SMILES to Canonical                |<br /><pre>`\#{x.ChemSmilesToCanonical}`</pre> |
 |Cheminformatics   | Chemical map identifiers           |<br /><pre>`\#{x.ChemMapIdentifiers}`</pre> |
-|Chemical analysis | Butina cluster                     |<br /><pre>`\#{x.ChemScripts:ButinaMoleculesClustering}`</pre> |
-|Chemical analysis | Filter by catalogs                 |<br /><pre>`\#{x.ChemScripts:FilterByCatalogs}`</pre> |
-|Chemical analysis | Gasteiger partial charges          |<br /><pre>`\#{x.ChemScripts:GasteigerPartialCharges}`</pre> |
-|Chemical analysis | Murcko scaffolds                   |<br /><pre>`\#{x.ChemScripts:MurckoScaffolds}`</pre>|
-|Chemical analysis | Similarity maps using fingerprints |<br /><pre>`\#{x.ChemScripts:SimilarityMapsUsingFingerprints}`</pre> |
-|Chemical analysis | Chemical space using tSNE          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingtSNE}`</pre> |
+|Chemical analysis | Butina cluster                     |<br /><pre>`\#{x.Chemscripts:ButinaMoleculesClustering}`</pre> |
+|Chemical analysis | Filter by catalogs                 |<br /><pre>`\#{x.Chemscripts:FilterByCatalogs}`</pre> |
+|Chemical analysis | Gasteiger partial charges          |<br /><pre>`\#{x.Chemscripts:GasteigerPartialCharges}`</pre> |
+|Chemical analysis | Murcko scaffolds                   |<br /><pre>`\#{x.Chemscripts:MurckoScaffolds}`</pre>|
+|Chemical analysis | Similarity maps using fingerprints |<br /><pre>`\#{x.Chemscripts:SimilarityMapsUsingFingerprints}`</pre> |
+|Chemical analysis | Chemical space using tSNE          |<br /><pre>`\#{x.Chemscripts:ChemicalSpaceUsingtSNE}`</pre> |
 |Chemical analysis | Two component reactions            |<br /><pre>`Chem:TwoComponentReaction`</pre> |
-|Chemical analysis | Chemical space using UMAP          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingUMAP}`</pre> |
-|Chemical analysis | USRCAT                             |<br /><pre>`\#{x.ChemScripts:USRCAT}`</pre> |
+|Chemical analysis | Chemical space using UMAP          |<br /><pre>`\#{x.Chemscripts:ChemicalSpaceUsingUMAP}`</pre> |
+|Chemical analysis | USRCAT                             |<br /><pre>`\#{x.Chemscripts:USRCAT}`</pre> |
 |TBD               | Mutate                             |<br /><pre>`[PLACEHOLDER]`</pre> |
 |TBD               | Solubility prediction              |<br /><pre>`\#{x.18b704d0-0b50-11e9-b846-1fa94a4da5d1."Predict Solubility"}`</pre>|
 |TBD               | Curate                             |<br /><pre>`[PLACEHOLDER]`</pre> |

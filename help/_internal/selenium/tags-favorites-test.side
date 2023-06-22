@@ -478,7 +478,7 @@
           "id": "b4947371-2833-4cb4-b304-f09768327eaa",
           "comment": "",
           "command": "click",
-          "target": "xpath=//span[contains(.,'Scripts')]",
+          "target": "xpath=//span[contains(.,'scripts')]",
           "targets": [
             [
               "css=.d4-toggle-button:nth-child(3) > span",
@@ -493,7 +493,7 @@
               "xpath:position"
             ],
             [
-              "xpath=//span[contains(.,'Scripts')]",
+              "xpath=//span[contains(.,'scripts')]",
               "xpath:innerText"
             ]
           ],
@@ -1601,14 +1601,14 @@
           "id": "e7a91a6e-a9a6-4a32-b825-d83221fadfc2",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='div-section--Scripts']",
+          "target": "xpath=//div[@name='div-section--scripts']",
           "targets": [
             [
               "css=.d4-flex-row .d4-accordion-pane:nth-child(5) > .d4-accordion-pane-header",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='div-section--Scripts']",
+              "xpath=//div[@name='div-section--scripts']",
               "xpath:attributes"
             ],
             [

@@ -872,14 +872,14 @@
           "id": "60aa79e4-3e6f-4eb4-b695-49453edc5975",
           "comment": "",
           "command": "click",
-          "target": "xpath=//label[@name='label-Scripts']",
+          "target": "xpath=//label[@name='label-scripts']",
           "targets": [
             [
               "css=.d4-link-label:nth-child(10)",
               "css:finder"
             ],
             [
-              "xpath=//label[@name='label-Scripts']",
+              "xpath=//label[@name='label-scripts']",
               "xpath:attributes"
             ],
             [

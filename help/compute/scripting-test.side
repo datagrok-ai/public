@@ -185,7 +185,7 @@
           "id": "11abe3b2-b622-45cd-9b46-d121e1143dfb",
           "comment": "",
           "command": "click",
-          "target": "xpath=//span[contains(.,'Scripts')]",
+          "target": "xpath=//span[contains(.,'scripts')]",
           "targets": [
             [
               "css=.d4-toggle-button:nth-child(3) > span",
@@ -200,7 +200,7 @@
               "xpath:position"
             ],
             [
-              "xpath=//span[contains(.,'Scripts')]",
+              "xpath=//span[contains(.,'scripts')]",
               "xpath:innerText"
             ]
           ],
@@ -1366,7 +1366,7 @@
           "id": "b8ab15a2-3ef6-4500-9798-7207a16d1eae",
           "comment": "",
           "command": "click",
-          "target": "xpath=//span[contains(.,'Scripts')]",
+          "target": "xpath=//span[contains(.,'scripts')]",
           "targets": [
             [
               "css=.d4-toggle-button:nth-child(3) > span",
@@ -1381,7 +1381,7 @@
               "xpath:position"
             ],
             [
-              "xpath=//span[contains(.,'Scripts')]",
+              "xpath=//span[contains(.,'scripts')]",
               "xpath:innerText"
             ]
           ],
