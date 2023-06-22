@@ -284,7 +284,7 @@ export class RichFunctionView extends FunctionView {
           return viewer;
         });
 
-        const reactiveViewers = promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
+        const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then((loadedViewer) => {
           const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
@@ -292,11 +292,13 @@ export class RichFunctionView extends FunctionView {
               $(this.outputsTabsElem.root).show();
               $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
-              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParam.value;
-              else {
+                loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
+              } else {
                 // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                 const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
+                newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
                 loadedViewer.root.replaceWith(newViewer.root);
                 loadedViewer = newViewer;
               }
