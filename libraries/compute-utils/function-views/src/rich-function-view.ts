@@ -668,6 +668,9 @@ export class RichFunctionView extends FunctionView {
       }
       this.hideOutdatedOutput();
       this.checkDisability.next();
+
+      if (this.runningOnInput && this.isRunnable())
+        this.doRun();
     };
 
     const sub = val.onChanged.subscribe(syncSub);
