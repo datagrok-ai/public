@@ -334,10 +334,11 @@ def handle_uploaded_file(f, models):
     models_res = [model.encode('utf8') for model in models.split(",")]
     pool = Pool(multiprocessing.cpu_count())
     predicts = pool.map(model_computation, models_res)
-    pool.terminate()
+    transposed_predicts = list(zip(*predicts))
+    pool.close()
     pool.join()
     result = np.zeros((len(smiles_global),0), float)
-    result = np.concatenate([ result, np.array(predicts).reshape(len(smiles_global),len(models_res))], axis=1)
+    result = np.concatenate([ result, np.array(transposed_predicts).reshape(len(smiles_global),len(models_res))], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
     res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
     return res_str
