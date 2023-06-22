@@ -335,7 +335,7 @@ def handle_uploaded_file(f, models):
     pool = Pool(multiprocessing.cpu_count())
     predicts = pool.map(model_computation, models_res)
     transposed_predicts = list(zip(*predicts))
-    pool.close()
+    pool.terminate()
     pool.join()
     result = np.zeros((len(smiles_global),0), float)
     result = np.concatenate([ result, np.array(transposed_predicts).reshape(len(smiles_global),len(models_res))], axis=1)
