@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.22",
+  "version": "3.4.29",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -853,6 +853,9 @@
         },
         "1.1.10": {
           "datagrok-api": "^1.14.1"
+        },
+        "1.1.11": {
+          "datagrok-api": "^1.14.1"
         }
       },
       "description": "Integration with the PubChem web service.",
@@ -1130,6 +1133,9 @@
           "datagrok-api": "^1.11.1"
         },
         "1.0.13": {
+          "datagrok-api": "^1.11.1"
+        },
+        "1.0.14": {
           "datagrok-api": "^1.11.1"
         }
       },
@@ -1461,6 +1467,9 @@
         },
         "1.8.2": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.8.4": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1740,6 +1749,9 @@
           "datagrok-api": "^1.14.1"
         },
         "1.0.9": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.10": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -2164,6 +2176,9 @@
         },
         "2.4.46": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.4.47": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2300,6 +2315,9 @@
         },
         "1.0.0": {
           "datagrok-api": "latest"
+        },
+        "1.0.1": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Integration with Enamine. Allows to search for molecules available in Enamine, and provides contextual information for the current molecule.",
@@ -2319,6 +2337,9 @@
           "datagrok-api": "^0.151.6"
         },
         "1.0.0": {
+          "datagrok-api": "latest"
+        },
+        "1.0.1": {
           "datagrok-api": "latest"
         }
       },

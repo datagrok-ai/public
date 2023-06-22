@@ -7,7 +7,8 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-## Requirements
+<details>
+<summary>Requirements</summary>
 
 To access the cheminformatics functionality, install these
 packages using the [Package Manager](https://public.datagrok.ai/packages) (on the **Sidebar**, click **Manage** > **Packages**):
@@ -16,14 +17,14 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Optional. Sketchers: The Chem package includes a built-in OpenChemLib Sketcher, but you can use your favorite sketcher, such as
   [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/Ketcher) ([Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)), MarvinJS (commercial license), or ChemDraw (commercial license).
 * Optional. [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl): Integration with the ChEMBL database deployed on your premises.
-* Optional. [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for the chemical building blocks.
-* Optional. [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
 * Optional. [DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank): Integration with DrugBank (information on 11,300 drugs is included with the plugin).
 * Optional. Integration with external webservices (**these packages transmit your data to external services**):
   * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
   * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
+  * [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
+  * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for the chemical building blocks.
 
-## Overview
+</details>
 
 Datagrok provides an intuitive interface and a wide range of tools for working
 with chemical data:
@@ -49,6 +50,7 @@ with chemical data:
 * [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [scripts](#chemical-scripts).
   * Ability to create custom plugins and fit-for-purpose applications.
+* [Enterprise-grade platform](../../develop/admin/enterprise-evaluation-faq.md) for efficient data access and management of any data.
 
 ## Data access
 
@@ -671,7 +673,7 @@ All of your customizations and actions can be recorded as macros and incorporate
 
 To learn more about extending and customizing Datagrok, see the
 [Develop](../../develop/develop.md) section of the documentation, including this
-[cheminformatics-specific section](./chem.md).
+[cheminformatics-specific section](../../develop/domains/chem/cheminformatics.md).
 
 ## Resources
 

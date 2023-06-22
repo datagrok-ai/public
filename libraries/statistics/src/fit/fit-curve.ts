@@ -158,7 +158,7 @@ export interface IFitSeriesOptions {
   fitLineColor?: string;
   confidenceIntervalColor?: string;
   showFitLine?: boolean;
-  showPoints?: boolean;
+  showPoints?: string;
   showCurveConfidenceInterval?: boolean;   // show ribbon
   showIntercept?: boolean;
   showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
@@ -212,10 +212,11 @@ export const fitSeriesProperties: Property[] = [
     {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
   Property.js('showFitLine', TYPE.BOOL,
     {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
-  Property.js('showPoints', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether points should be rendered', defaultValue: true}),
-  Property.js('showBoxPlot', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
+  Property.js('showPoints', TYPE.STRING,
+    {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks']}),
+  // Property.js('showBoxPlot', TYPE.BOOL,
+  //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';

@@ -159,7 +159,7 @@ function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CAT
 ): HTMLDivElement {
   const currency = CURRENCY.USD;
   const headerHost = ui.divH([/*ui.h2(searchMode)*/], 'enamine-store-panel-header');
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost], 'enamine-store-panel');
   const options: {[key: string]: any} = {
     'code': `search_${smiles}_${searchModeToCommandMap[searchMode]}`,

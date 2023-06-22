@@ -105,7 +105,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     return new DG.Widget(ui.divText('Molecule string is malformed'));
   }
   const headerHost = ui.div();
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const widget = new DG.Widget(ui.divV([headerHost, compsHost]));
 
   let moleculesJson: anyObject[] | null;

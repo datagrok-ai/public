@@ -15,7 +15,7 @@ export enum SEARCH_TYPE {
 export async function searchWidget(molString: string, searchType: SEARCH_TYPE, dbdf: DG.DataFrame,
 ): Promise<DG.Widget> {
   const headerHost = ui.div();
-  const compsHost = ui.div([], 'd4-flex-wrap');
+  const compsHost = ui.div([], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;

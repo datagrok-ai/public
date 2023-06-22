@@ -121,7 +121,7 @@ export async function samplesPanel(smiles: string): Promise<DG.Widget> {
 export function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.BB,
 ): HTMLDivElement {
   const headerHost = ui.divH([/*ui.h2(panelName)*/], 'chemspace-panel-header');
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
 
   queryMultipart(`search/${catalogToParam[catalog]}/${modeToParam[searchMode]}`, smiles,
