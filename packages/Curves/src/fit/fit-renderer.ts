@@ -32,6 +32,7 @@ import {MultiCurveViewer} from './multi-curve-viewer';
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
 export const CANDLESTICK_BORDER_PX_SIZE = 4;
+export const OUTLIER_HITBOX_RADIUS = 2;
 
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
@@ -78,10 +79,7 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
 }
 
 // TODO: Denis will look at axes
-// TODO: change input type on colors
-// TODO: make show points as one parameter - show points/candles/nothing
 // TODO: automatic output of parameters
-// TODO: fix calculating column
 // TODO: add candlesticks to Curves documentation
 // TODO: add how to control options - series opitons, chart options, etc.
 
@@ -130,26 +128,26 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showBoxPlot)
+      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
         const screenX = viewport.xToScreen(p.x);
         const screenY = viewport.yToScreen(p.y);
-        const pxPerMarkerType = (p.outlier ? 6 : 4) / 2;
+        const pxPerMarkerType = ((p.outlier ? 6 : 4) / 2) + OUTLIER_HITBOX_RADIUS;
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
-            p.outlier = !p.outlier;
-            // temporarily works only for JSON structure
-            if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
-              const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
-              gridCellValue.series![i].points[j].outlier = p.outlier;
-              gridCell.cell.value = JSON.stringify(gridCellValue);
-            }
-            return;
+          p.outlier = !p.outlier;
+          // temporarily works only for JSON structure
+          if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
+            const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
+            gridCellValue.series![i].points[j].outlier = p.outlier;
+            gridCell.cell.value = JSON.stringify(gridCellValue);
           }
+          return;
+        }
       }
-    }   
+    }
   }
 
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -281,6 +279,33 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       const content = ui.divV([canvas]);
       ui.tooltip.show(content, e.x, e.y);
     }
+
+    // TODO: add caching
+    const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
+      ? convertXMLToIFitChartData(gridCell.cell.value)
+      : getChartData(gridCell);
+
+    const screenBounds = gridCell.bounds.inflate(-6, -6);
+    const dataBox = layoutChart(screenBounds)[0];
+    const dataBounds = getChartBounds(data);
+    const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
+
+    for (let i = 0; i < data.series?.length!; i++) {
+      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
+        continue;
+      for (let j = 0; j < data.series![i].points.length!; j++) {
+        const p = data.series![i].points[j];
+        const screenX = viewport.xToScreen(p.x);
+        const screenY = viewport.yToScreen(p.y);
+        const pxPerMarkerType = ((p.outlier ? 6 : 4) / 2) + OUTLIER_HITBOX_RADIUS;
+        if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
+          e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
+          document.body.style.cursor = 'pointer';
+          return;
+        }
+      }
+    }
+    document.body.style.cursor = 'default';
   }
 }
 
