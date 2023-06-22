@@ -129,7 +129,7 @@ const axolabsToSmiles: {[key: string]: string} = {
   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1O',
 };
 
-category('sequence-translator', () => {
+category('Axolabs to smiles', () => {
   for (const strand of Object.keys(axolabsToSmiles)) {
     test(strand, async () => {
       const expected = axolabsToSmiles[strand];

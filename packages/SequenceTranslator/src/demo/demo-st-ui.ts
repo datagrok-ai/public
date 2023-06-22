@@ -33,11 +33,6 @@ export async function demoSequenceTranslatorUI() {
         delay: 2000,
       })
       .step(`Create pattern`, async () => {
-        tabControl.currentPane = panes[1];
-        const ssNewValues = ['DNA', 'invAb', 'Z-New'];
-
-        let len: number;
-
         async function emulateUserInput(value: string, idx: number, idxUpdate: (idx: number) => number) {
           await delay(3000);
 
@@ -51,6 +46,11 @@ export async function demoSequenceTranslatorUI() {
           selectElement.dispatchEvent(event);
         }
 
+        tabControl.currentPane = panes[1];
+
+        let len: number;
+
+        const ssNewValues = ['DNA', 'invAb', 'Z-New'];
         ssNewValues.forEach(async (value, idx) => {
           emulateUserInput(value, idx, (i) => 2 * i);
         });
