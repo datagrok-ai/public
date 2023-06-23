@@ -31,6 +31,12 @@ their choice.
 
 ![Filter](../../uploads/gifs/filter-search.gif "Filter")
 
+## Text filter
+
+On the **Filter Panel**, you can search or filter text using keywords. To create a keyword category, enter a word or phrase in the filter tab and press Enter. The filter automatically generates categories based on the entered text. Toggle the categories to include or exclude specific words from the search. By default, the result includes text that contains at least one of the specified keywords. To find text that includes all the specified keywords, at the top of the filter tab, switch the logical operator from `OR` to `AND`.
+
+<img alt="Text filter" src={require('../../uploads/viewers/text-filter.gif').default} width="800px"/>
+
 ## Column tags
 
 * For **molecular columns**, use the **.structure-filter-type** column tag to
