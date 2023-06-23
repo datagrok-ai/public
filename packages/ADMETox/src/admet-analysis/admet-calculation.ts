@@ -155,7 +155,7 @@ function processCsv(csvString: string | null | undefined): DG.DataFrame {
   return table;
 }
 
-export function getModelsSingle(smiles: string): DG.Accordion {
+export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion {
   const acc = ui.accordion('ADME/Tox');
   const accPanes = document.getElementsByClassName('d4-accordion-pane-header');
   for (let i = 0; i < accPanes.length; ++i) {
@@ -167,7 +167,7 @@ export function getModelsSingle(smiles: string): DG.Accordion {
     result.appendChild(ui.loader());
     accessServer(
       `smiles
-      ${smiles}`,
+      ${smiles.value}`,
       queryParams.toString()
     ).catch((e: any) => {
       console.log(e);

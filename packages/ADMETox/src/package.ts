@@ -13,9 +13,9 @@ export function info() {
 
 //name: Biology | ADME/Tox
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: semantic_value smiles { semType: Molecule }
 //output: widget result
-export function admetWidget(smiles: string): DG.Widget<any> {
+export function admetWidget(smiles: DG.SemanticValue): DG.Widget<any> {
   return getModelsSingle(smiles);
 }
 
