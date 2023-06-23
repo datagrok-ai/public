@@ -1102,6 +1102,12 @@ export function copyAsSmarts(value: DG.SemanticValue): void {
   grok.shell.info('Smarts copied to clipboard');
 }
 
+//name: _getMolSafe
+//input: string molString
+//output: object mol
+export function _getMolSafe(molString: string) {
+  return getMolSafe(molString, {}, _rdKitModule);
+}
 
 //name: isSmiles
 //input: string s

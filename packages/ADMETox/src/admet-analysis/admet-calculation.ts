@@ -95,12 +95,14 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     const queryParams = selected.join(',');
     const pi = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
     try {
+      const malformedIndexes = await getMalformedSmiles(smilesCol);
+      if (malformedIndexes.length > 0)
+        smilesCol = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
       const [csvString] = await Promise.all([
       accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams),
       new Promise((resolve) => setTimeout(resolve, 1000))]);
-      
       const table = processCsv(csvString);
-      addResultColumns(table, viewTable);
+      addResultColumns(table, viewTable, malformedIndexes);
       addTooltip();
 
       if (_COLOR === 'true') {
@@ -119,8 +121,10 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
   })
 }
 
-function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
+function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
   if (table.columns.length > 0) {
+    if (malformedIndexes)
+      malformedIndexes.map((index) => table.rows.insertAt(index));
     const modelNames: string[] = table.columns.names()
     for (let i = 0; i < modelNames.length; ++i) {
       let column: DG.Column = table.columns.byName(modelNames[i]);
@@ -135,6 +139,9 @@ function processCsv(csvString: string | null | undefined): DG.DataFrame {
   csvString = csvString!.replaceAll('"', '');
   const table = DG.DataFrame.fromCsv(csvString);
   table.rows.removeAt(table.rowCount - 1);
+  const removeRow = Array.from(table.row(table.rowCount - 1).cells).some((cell: DG.Cell) => cell.value == '');
+  if (removeRow)
+    table.rows.removeAt(table.rowCount - 1);
   const modelNames: string[] = [];
   const prevColNames = table.columns.names();
   for (let i = 0; i < prevColNames.length; ++i) {
@@ -303,4 +310,14 @@ async function getSelected() : Promise<any> {
 function removeChildren(node: any): void {
   while (node.firstChild)
     node.removeChild(node.firstChild);
+}
+
+async function getMalformedSmiles(col: DG.Column) {
+  const indices = await Promise.all(
+    Array.from(col.values()).map(async (molStr, i) => {
+      const mol = await grok.functions.call('Chem:_getMolSafe', { molString: molStr});
+      return mol.kekulize === false ? i : null;
+    })
+  );
+  return indices.filter((index) => index !== null);
 }
