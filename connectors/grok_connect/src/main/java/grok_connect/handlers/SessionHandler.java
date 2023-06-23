@@ -1,6 +1,5 @@
 package grok_connect.handlers;
 
-import ch.qos.logback.classic.Level;
 import com.google.gson.Gson;
 import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.log.EventType;
@@ -33,8 +32,6 @@ public class SessionHandler {
     private Boolean firstTry = true;
     private Boolean oneDfSent = false;
     private int dfNumber = 1;
-    private int dryRunDiff = 0;
-    private int dryRunCycles = 2;
     private byte[] bytes;
     private QueryManager queryManager;
 
@@ -46,7 +43,7 @@ public class SessionHandler {
         logger.info(EventType.MISC.getMarker(), "GrokConnect version: {}", GrokConnect.properties.getProperty("version"));
     }
 
-    public void onError(Throwable err) throws Throwable {
+    public void onError(Throwable err) {
         Throwable cause = err.getCause() == null ? err : err.getCause(); // we need to get cause, because error is wrapped by runtime exception
         if (cause instanceof OutOfMemoryError) {
             // guess it won't work because there is no memory left!
@@ -69,27 +66,15 @@ public class SessionHandler {
         logger.debug(EventType.MISC.getMarker(), "Received message {}", message.startsWith("QUERY") ? "QUERY" : message);
         if (message.startsWith(MESSAGE_START)) {
             message = message.substring(6);
-            queryManager = new QueryManager(message, queryLogger.getLogger());
+            queryManager = new QueryManager(message, queryLogger);
             if (queryManager.dryRun) {
-                dryRunCycles = ((Double) queryManager.getQuery().func.aux.getOrDefault("cycles", 3.0)).intValue();
-                logger.info(EventType.MISC.getMarker(), "Running dry run {} times", dryRunCycles);
-                int dryRunResult = 0;
-                int ordinaryResult = 0;
-                for (int i = 0; i < dryRunCycles; i++) {
-                    DataFrame dryRunDf = queryManager.run(true, false);
-                    queryManager.closeConnection();
-                    DataFrame ordinaryDf = queryManager.run(true, true);
-                    queryManager.closeConnection();
-                    if (i > 0) {
-                        dryRunResult += (int) dryRunDf.columns.get(0).get(0);
-                        ordinaryResult += (int) ordinaryDf.columns.get(0).get(0);
-                    }
+                logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.START), "Running dry run");
+                for (int i = 0; i < 2; i++) {
+                    queryManager.dryRun(i == 0);
                 }
-                dryRunDiff = (ordinaryResult / dryRunCycles) - (dryRunResult / dryRunCycles);
-                session.getRemote().sendStringByFuture("COMPLETED 0");
-                return;
+                logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.END), "Dry run finished");
             }
-            queryManager.initResultSet();
+            queryManager.initResultSet(queryManager.getQuery());
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
                 dataFrame = queryManager.getSubDF(dfNumber);
@@ -98,7 +83,7 @@ public class SessionHandler {
             }
         } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
             fdf = threadPool.submit(() -> queryManager.getSubDF(dfNumber + 1));
-            Marker start = EventType.DATA_SENDING.getMarker(dfNumber, EventType.Stage.START);
+            Marker start = EventType.DATA_SEND.getMarker(dfNumber, EventType.Stage.START);
             logger.debug(start, "Sending binary dataframe with id {}", dfNumber);
             session.getRemote().sendBytesByFuture(ByteBuffer.wrap(bytes));
             return;
@@ -127,12 +112,12 @@ public class SessionHandler {
             }
         }
         if (dataFrame != null && (dataFrame.rowCount != 0 || !oneDfSent)) {
-            Marker start = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.START);
-            Marker finish = EventType.DATAFRAME_TO_BYTEARRAY_CONVERTING.getMarker(dfNumber, EventType.Stage.END);
+            Marker start = EventType.DATAFRAME_TO_BYTEARRAY_CONVERSION.getMarker(dfNumber, EventType.Stage.START);
+            Marker finish = EventType.DATAFRAME_TO_BYTEARRAY_CONVERSION.getMarker(dfNumber, EventType.Stage.END);
             logger.debug(start, "Converting dataframe to byteArray");
             bytes = dataFrame.toByteArray();
             logger.debug(finish, "DataFrame with id {} was converted to byteArray", dfNumber);
-            logger.debug(EventType.CHECKSUM_SENDING.getMarker(dfNumber, EventType.Stage.START), "Sending checkSum message with bytes length of {}", bytes.length);
+            logger.debug(EventType.CHECKSUM_SEND.getMarker(dfNumber, EventType.Stage.START), "Sending checkSum message with bytes length of {}", bytes.length);
             session.getRemote().sendStringByFuture(String.format("DATAFRAME PART SIZE: %d", bytes.length));
         } else {
             session.getRemote().sendStringByFuture(String.format("COMPLETED %s", dfNumber));
@@ -146,12 +131,8 @@ public class SessionHandler {
     }
 
     private void sendLog() {
-        logger.debug(EventType.LOG_SENDING.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
+        logger.debug(EventType.LOG_SEND.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
         DataFrame logs = queryLogger.dumpLogMessages();
-        if (queryManager.dryRun) {
-            logs.addRow(System.currentTimeMillis() * 1000.0, "GrokConnect", Level.INFO.levelStr,
-                    EventType.DRY_RUN_DIFF.getName(), EventType.Stage.END.toString(), null, null, null, String.format("Average difference in duration when read result set and not for %s cycles", dryRunCycles - 1), dryRunDiff);
-        }
         session.getRemote().sendBytesByFuture(ByteBuffer.wrap(logs.toByteArray()));
     }
 }

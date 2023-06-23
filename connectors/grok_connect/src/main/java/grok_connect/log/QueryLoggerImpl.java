@@ -38,4 +38,9 @@ public class QueryLoggerImpl implements QueryLogger<DataFrame> {
     public DataFrame dumpLogMessages() {
         return appender.getLog();
     }
+
+    @Override
+    public void writeLog(boolean write) {
+        appender.setWriteLog(write);
+    }
 }

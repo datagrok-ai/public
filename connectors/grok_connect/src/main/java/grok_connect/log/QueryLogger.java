@@ -8,4 +8,6 @@ public interface QueryLogger<T> {
     void closeLogger();
 
     T dumpLogMessages();
+
+    void writeLog(boolean write);
 }

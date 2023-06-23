@@ -23,6 +23,7 @@ public class QueryLoggerAppender extends AppenderBase<ILoggingEvent> {
     private static final int EVENT_DURATION_INDEX = 9;
     private static final String COMPONENT_NAME = "GrokConnect";
     private static final String DESTINATION = "GrokConnect -> DatagrokServer";
+    private boolean writeLog = true;
     private final List<ILoggingEvent> logs;
 
     public QueryLoggerAppender() {
@@ -31,7 +32,8 @@ public class QueryLoggerAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent iLoggingEvent) {
-        logs.add(iLoggingEvent);
+        if (writeLog)
+            logs.add(iLoggingEvent);
     }
 
     @SuppressWarnings("unchecked")
@@ -49,6 +51,10 @@ public class QueryLoggerAppender extends AppenderBase<ILoggingEvent> {
         return df;
     }
 
+    public void setWriteLog(boolean writeLog) {
+        this.writeLog = writeLog;
+    }
+
     @SuppressWarnings("unchecked")
     private void addMarkerColumns(DataFrame logs, Marker marker) {
         String[] split = marker.getName().split("\\|");
@@ -58,8 +64,8 @@ public class QueryLoggerAppender extends AppenderBase<ILoggingEvent> {
         logs.columns.get(EVENT_DF_NUMBER_INDEX).add(dfNumber.equals(" ") ? null : Integer.parseInt(dfNumber));
         logs.columns.get(EVENT_SUB_DF_NUMBER_INDEX).add(null);
         logs.columns.get(EVENT_STAGE_INDEX).add(split[2]);
-        String destination = type.equals(EventType.CHECKSUM_SENDING.toString())
-                || type.equals(EventType.DATA_SENDING.toString()) || type.equals(EventType.LOG_SENDING.toString()) ? DESTINATION : "";
+        String destination = type.equals(EventType.CHECKSUM_SEND.toString())
+                || type.equals(EventType.DATA_SEND.toString()) || type.equals(EventType.LOG_SEND.toString()) ? DESTINATION : "";
         logs.columns.get(EVENT_DESTINATION_INDEX).add(destination);
     }
 
