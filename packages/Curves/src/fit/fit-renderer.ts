@@ -10,6 +10,7 @@ import {
   CONFIDENCE_INTERVAL_STROKE_COLOR,
   CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   FIT_CELL_TYPE,
+  IFitSeries,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -61,6 +62,44 @@ function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: B
   drawCandlestickBorder(g, x, boxPlotStats.upperAdjacentValue, transform);
   DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, transform.xToScreen(x), transform.yToScreen(boxPlotStats.q2),
     markerColor, 3.5 * ratio);
+}
+
+/** Performs points drawing */
+function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
+  transform: Viewport, ratio: number): void {
+  for (let i = 0; i < series.points.length!; i++) {
+    const p = series.points[i];
+    DG.Paint.marker(g,
+      p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
+      transform.xToScreen(p.x), transform.yToScreen(p.y),
+      series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
+      (p.outlier ? 6 : 4) * ratio);
+  }
+}
+
+/** Performs candles drawing */
+function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
+  transform: Viewport, ratio: number) : void {
+  for (let i = 0, candleStart = null; i < series.points.length!; i++) {
+    const p = series.points[i];
+    const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
+    if (!candleStart && nextSame)
+      candleStart = i;
+    else if (candleStart !== null && !nextSame) {
+      const values: number[] = [];
+      for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
+        values[ind] = series.points[j].y;
+      }
+      const boxPlotStats = calculateBoxPlotStatistics(values);
+
+      g.beginPath();
+      drawCandlestick(g, p.x, boxPlotStats, transform, ratio, series.pointColor ?
+        DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker);
+      g.stroke();
+
+      candleStart = null;
+    }
+  }
 }
 
 /** Performs a curve confidence interval drawing */
@@ -195,33 +234,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
       if (series.showPoints ?? 'points') {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
-        for (let i = 0, candleStart = null; i < series.points.length!; i++) {
-          const p = series.points[i];
-          const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
-          if (!candleStart && nextSame)
-            candleStart = i;
-          else if ((series.showPoints === 'candlesticks') && candleStart !== null && !nextSame) {
-            const values: number[] = [];
-            for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
-              values[ind] = series.points[j].y;
-            }
-            const boxPlotStats = calculateBoxPlotStatistics(values);
-
-            g.beginPath();
-            drawCandlestick(g, p.x, boxPlotStats, viewport, ratio, series.pointColor ?
-              DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker);
-            g.stroke();
-
-            candleStart = null;
-          }
-          else if (!candleStart || !(series.showPoints === 'candlesticks')) {
-            DG.Paint.marker(g,
-              p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
-              viewport.xToScreen(p.x), viewport.yToScreen(p.y),
-              series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-              (p.outlier ? 6 : 4) * ratio);
-          }
-        }
+        if (['points', 'both'].includes(series.showPoints!))
+          drawPoints(g, series, viewport, ratio);
+        if (['candlesticks', 'both'].includes(series.showPoints!))
+          drawCandles(g, series, viewport, ratio);
       }
 
       if (series.showFitLine ?? true) {

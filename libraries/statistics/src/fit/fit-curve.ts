@@ -214,7 +214,7 @@ export const fitSeriesProperties: Property[] = [
     {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
   Property.js('showPoints', TYPE.STRING,
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
-      defaultValue: 'points', choices: ['points', 'candlesticks']}),
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   // Property.js('showBoxPlot', TYPE.BOOL,
   //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
