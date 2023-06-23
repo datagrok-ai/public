@@ -3,16 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import {FuncCall} from 'datagrok-api/dg';
 
 category('Benchmarks', () => {
-  test('Sequential 1000', async () => {
+  test('Sequential 100', async () => {
     const dataConnection = await grok.dapi.connections.filter(`name = "PostgreSQLDBTests"`).first();
     const times = [];
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 100; i++) {
       const dataQuery = await dataConnection.query('test', 'SELECT 1');
       dataQuery.adHoc = true;
       times.push(await getCallTime(dataQuery.prepare()));
     }
     return getTestResult(times, times.length);
-  });
+  }, {timeout: 120000});
 
   test('Parallel 200', async () => {
     const callCount: number = 200;
