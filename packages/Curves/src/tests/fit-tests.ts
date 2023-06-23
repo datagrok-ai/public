@@ -43,13 +43,16 @@ category('fit', () => {
 	});
 
 	test('fitSeries', async () => {
+		const start = Date.now();
 		const sigmoidFitSeries = fitSeries(sigmoidSeries, sigmoidFitFunc);
 		const polynomialFitSeries = fitSeries(polynomialSeries, polynomialFitFunc);
+		const stop = Date.now();
 
 		expect(sigmoidFitSeries.fittedCurve(2.5), 1.6907865884456907);
 		expect(polynomialFitSeries.fittedCurve(3.99876), 6.09328601677405);
 		expectArray(sigmoidFitSeries.parameters, [1.6914372095641517, 1.1536998642628853, 5.410173358224149, 0.2089689354045083]);
 		expectArray(polynomialFitSeries.parameters, [0.07070206940832963, -1.138666933634074, 3.947509109407932, 3.9947960440506685]);
+		return `${stop.valueOf() - start.valueOf()} ms`;
 	});
 
 	test('getSeriesConfidenceInterval', async () => {

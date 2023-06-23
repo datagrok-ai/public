@@ -43,17 +43,21 @@ export async function scrollTable(el: HTMLElement, delta: number, cycles: number
 
 category('creation', () => {
 	test('fit curve creation', async () => {
+		const start = Date.now();
 		const df = createDemoDataFrame(DG.Test.isInBenchmark ? 1000 : 100, 5, 2);
 		grok.shell.addTableView(df);
+		const stop = Date.now();
 		await delay(50);
+		console.log(`Creation took ${stop.valueOf() - start.valueOf()} ms`)
+		return `${DG.Test.isInBenchmark ? 1000 : 100} points, took ${stop.valueOf() - start.valueOf()} ms`
 	});
 });
 
 category('rendering', () => {
-	// TODO: return amount of rendering things and same for different benchmarks, same for fitTests also ask Ann
 	test('rendering same fitChartData on canvas', async () => {
 		const canvasWidth = 160;
 		const canvasHeight = 100;
+		const renderingTimesAmount = 1000;
 
 		const canvas = ui.canvas(canvasWidth, canvasHeight);
 		grok.shell.newView('canvas', [canvas]);
@@ -61,26 +65,29 @@ category('rendering', () => {
 
 		const fitChartCellRenderer = new FitChartCellRenderer();
 		const fitChartData: IFitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
-		for (let i = 1; i <= 1000; i++) {
+		for (let i = 1; i <= renderingTimesAmount; i++) {
 			fitChartCellRenderer.renderCurves(g, canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight, fitChartData);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
+		return `rendering performed ${renderingTimesAmount} times`;
 	});
 
 	test('rendering different fitChartData on canvas', async () => {
 		const canvasWidth = 160;
 		const canvasHeight = 100;
+		const renderingTimesAmount = 1000;
 
 		const canvas = ui.canvas(canvasWidth, canvasHeight);
 		grok.shell.newView('canvas', [canvas]);
 		const g = canvas.getContext('2d')!;
 
 		const fitChartCellRenderer = new FitChartCellRenderer();
-		for (let i = 1; i <= 1000; i++) {
+		for (let i = 1; i <= renderingTimesAmount; i++) {
 			const fitChartData = createIFitChartData(DG.Test.isInBenchmark ? 50 : 15);
 			fitChartCellRenderer.renderCurves(g, canvas.clientLeft, canvas.clientTop, canvasWidth, canvasHeight, fitChartData);
 			g.clearRect(0, 0, canvasWidth, canvasHeight);
 		}
+		return `rendering performed ${renderingTimesAmount} times`;
 	});
 
 	test('rendering in grid', async () => {
@@ -93,6 +100,7 @@ category('rendering', () => {
 		const start = new Date();
 		await scrollTable(canvas, scrollDelta, scrollCycles, 10);
 		const stop = new Date();
-		console.log(`Time for curves rendering is ${stop.valueOf() - start.valueOf()} ms`);
+		console.log(`curves rendering took ${stop.valueOf() - start.valueOf()} ms`);
+		return `${stop.valueOf() - start.valueOf()} ms`;
 	});
 });
