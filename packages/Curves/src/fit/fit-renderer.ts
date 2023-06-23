@@ -82,6 +82,12 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
   transform: Viewport, ratio: number) : void {
   for (let i = 0, candleStart = null; i < series.points.length!; i++) {
     const p = series.points[i];
+    if (p.outlier) {
+      DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, transform.xToScreen(p.x), transform.yToScreen(p.y),
+        series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
+        6 * ratio);
+      continue;
+    }
     const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
     if (!candleStart && nextSame)
       candleStart = i;
