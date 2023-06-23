@@ -82,7 +82,7 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
 }
 
 function invalidatedColumnKey(col: DG.Column): string {
-  return col.dataFrame.name + '.' + col.name;
+  return col.dataFrame?.name + '.' + col.name;
 }
 
 function colInvalidated(col: DG.Column, createMols: boolean): Boolean {

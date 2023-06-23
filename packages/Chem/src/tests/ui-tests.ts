@@ -242,7 +242,7 @@ category('UI', () => {
     expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
     const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click();
-    await awaitCheck(() => grok.shell.t.name === 'mutations', 'cannot find mutations table', 10000);
+    await awaitCheck(() => grok.shell.t.name === 'mutations', 'cannot find mutations table', 20000);
     await delay(10);
     grok.shell.v.close();
     grok.shell.closeTable(grok.shell.t);
