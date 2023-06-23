@@ -79,6 +79,31 @@ class SmilesSerializer (serializers.ModelSerializer):
         model = Smiles
         fields = ('smiles', 'numerical_data')
 
+class ProcessHandler:
+    def __init__(self):
+        self.pool = None
+        self.results = []
+
+    def start_process(self, target, args=(), kwargs={}):
+        if self.pool is not None:
+            raise RuntimeError("A process is already running.")
+
+        self.results = []
+        self.pool = multiprocessing.Pool(processes=1)
+        self.results.append(self.pool.apply_async(target, args=args, kwds=kwargs))
+
+    def stop_process(self):
+        if self.pool is not None:
+            self.pool.close()
+            self.pool.join()
+            self.pool = None
+        else:
+            raise RuntimeError("No running process to stop.")
+
+    def get_results(self):
+        results = [result.get() for result in self.results]
+        return results
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import list_route
 from rest_framework.response import Response
@@ -312,6 +337,10 @@ def model_computation(model):
     gc.collect()
     return predicts
 
+import numpy as np
+import pandas as pd
+import csv
+
 def handle_uploaded_file(f, models):
     """Calculate ADMET properties
 
@@ -325,6 +354,7 @@ def handle_uploaded_file(f, models):
     global Ecfp2
     global Ecfp4
     smiles = [list(row.values()) for row in f]
+    predicts = []
     encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
     if len(smiles_global) == 0 or smiles_global != encoded_smiles:
         smiles_global = encoded_smiles
@@ -332,15 +362,21 @@ def handle_uploaded_file(f, models):
         Ecfp2 = np.array(getECFP(smiles_global, 1, 2048))
         Ecfp4 = np.array(getECFP(smiles_global, 2, 1024))
     models_res = [model.encode('utf8') for model in models.split(",")]
-    pool = Pool(multiprocessing.cpu_count())
-    predicts = pool.map(model_computation, models_res)
+    process_handlers = []
+    for model in models_res:
+        process_handler = ProcessHandler()
+        process_handler.start_process(model_computation, args=(model,))
+        process_handlers.append(process_handler)
+
+    for process_handler in process_handlers:
+        process_handler.stop_process()
+        predicts.extend(process_handler.get_results())
     transposed_predicts = list(zip(*predicts))
-    pool.terminate()
-    pool.join()
-    result = np.zeros((len(smiles_global),0), float)
+    result = np.zeros((len(smiles_global), 0), float)
     result = np.concatenate([ result, np.array(transposed_predicts).reshape(len(smiles_global),len(models_res))], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
     res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
+    del smiles, predicts, encoded_smiles, models_res, process_handlers, transposed_predicts, result, res_df
     return res_str
 
 from django.conf.urls import url, include 
