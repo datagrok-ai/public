@@ -82,12 +82,8 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
   transform: Viewport, ratio: number) : void {
   for (let i = 0, candleStart = null; i < series.points.length!; i++) {
     const p = series.points[i];
-    if (p.outlier) {
-      DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, transform.xToScreen(p.x), transform.yToScreen(p.y),
-        series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-        6 * ratio);
+    if (p.outlier)
       continue;
-    }
     const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
     if (!candleStart && nextSame)
       candleStart = i;
@@ -102,6 +98,17 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
       drawCandlestick(g, p.x, boxPlotStats, transform, ratio, series.pointColor ?
         DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker);
       g.stroke();
+
+      if (series.showPoints === 'both') {
+        for (let ind = 0; ind < values.length; ind++) {
+          if (values[ind] < boxPlotStats.lowerAdjacentValue || values[ind] > boxPlotStats.upperAdjacentValue) {
+            DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER,
+              transform.xToScreen(p.x), transform.yToScreen(values[ind]),
+              series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
+              6 * ratio);
+          }
+        }
+      }
 
       candleStart = null;
     }
@@ -240,9 +247,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
       if (series.showPoints ?? 'points') {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
-        if (['points', 'both'].includes(series.showPoints!))
+        if (series.showPoints === 'points')
           drawPoints(g, series, viewport, ratio);
-        if (['candlesticks', 'both'].includes(series.showPoints!))
+        else if (['candlesticks', 'both'].includes(series.showPoints!))
           drawCandles(g, series, viewport, ratio);
       }
 
