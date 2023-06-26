@@ -1260,7 +1260,7 @@ see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-upda
 Improvement:
 
 * Added aggregated columns to the Monomer-Positon viewer tooltips. This viewer is used
-  in [Peptides SAR](../../../domains/bio/bioinformatics.md)
+  in [Peptides SAR](../../../domains/bio/bio.md)
 
 #### [SequenceTranslator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#readme)
 
