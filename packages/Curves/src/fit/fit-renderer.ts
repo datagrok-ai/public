@@ -38,7 +38,7 @@ export const OUTLIER_HITBOX_RADIUS = 2;
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
-  if (rect.width < 100 || rect.height < 100)
+  if (rect.width < 70 || rect.height < 55)
     return [rect, undefined, undefined];
   return [
     rect.cutLeft(30).cutBottom(30),
@@ -166,7 +166,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   get cellType() { return FIT_CELL_TYPE; }
 
   getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
-    return {width: 160, height: 100};
+    return {width: 160, height: 120};
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
