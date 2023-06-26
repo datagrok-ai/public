@@ -73,8 +73,18 @@ export class FormatConverter {
 }
 
 function getRegExpPattern(arr: string[]): string {
-  const escaped = arr.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  return escaped.join('|');
+  const parenthsRegExp = /\\(|\\)/g;
+  const negativeLookBehind = '(?<!\\([^()]*)'; // not '(' followed by non-parenths
+  const negativeLookAhead = '(?![^()]*\\))';  // not ')' preceded by non-parenths
+  const escaped = arr.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .map((key) => {
+    if (!parenthsRegExp.test(key))
+      return `${negativeLookBehind}${key}${negativeLookAhead}`;
+    return key;
+  });
+  const result =  escaped.join('|');
+  console.log('result:', result);
+  return result;
 }
 
 function sortCallback(a: string, b: string) {return b.length - a.length};
