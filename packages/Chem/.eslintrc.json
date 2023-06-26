@@ -37,12 +37,8 @@
     "no-throw-literal": "error",
     "no-with": "error",
     "prefer-promise-reject-errors": "error",
-    "no-unused-vars": [
-      "error",
-      {
-        "args": "none"
-      }
-    ],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
     "array-bracket-newline": "off",
     "array-bracket-spacing": [
       "error",
