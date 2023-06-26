@@ -100,7 +100,8 @@ export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
   BOTTOM: 'bottom',
 };
 
-export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
+export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
+  'triangle left' | 'triangle right' | 'triangle top';
 
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
@@ -154,6 +155,7 @@ export interface IFitSeriesOptions {
   name?: string;
   fitFunction?: string | IFitFunctionDescription;
   parameters?: number[];         // auto-fitting when not defined
+  markerType?: FitMarkerType;
   pointColor?: string;
   fitLineColor?: string;
   confidenceIntervalColor?: string;
@@ -215,6 +217,9 @@ export const fitSeriesProperties: Property[] = [
   Property.js('showPoints', TYPE.STRING,
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
+    defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
   // Property.js('showBoxPlot', TYPE.BOOL,
   //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
@@ -226,6 +231,7 @@ export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
 
 
+// TODO?: add method to return parameters - get parameters from fit function
 export abstract class FitFunction {
   abstract get name(): string;
   abstract get parameterNames(): string[];

@@ -70,7 +70,7 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
     DG.Paint.marker(g,
-      p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
+      p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
       transform.xToScreen(p.x), transform.yToScreen(p.y),
       series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
       (p.outlier ? 6 : 4) * ratio);
