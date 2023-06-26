@@ -392,6 +392,8 @@ export class UnitsHandler {
   }
 
   protected constructor(col: DG.Column<string>) {
+    if (col.type != DG.TYPE.STRING)
+      throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
     const units = this._column.getTag(DG.TAGS.UNITS);
     if (units !== null && units !== undefined)
