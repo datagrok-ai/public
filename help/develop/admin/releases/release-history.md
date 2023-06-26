@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.1](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.3](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.13](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -17,7 +17,49 @@ title: "Release History"
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../deploy/docker-compose.md)
+- [Docker-Compose](../deploy/docker-compose.mdx)
+
+
+## 2023-06-19 1.15.3
+
+### Addressed Issues
+
+* Improvements:  
+  * [#1988](https://github.com/datagrok-ai/public/issues/1988): Trellis Plot: Enhancements:
+     * Added a column filter to the properties for column selection. X and Y axes accept categorical columns only
+     * Removed the "Viewer Type" property from the context panel (users can switch it via the dropdown in the viewer itself)
+     * Added the ability to resize a legend for Trellis
+     * Adjusted labels apprearance on the Y axis. Use ellipsis for long names
+     * Added Show GridLines property (when enabled, makes the inner viewer borders visible)
+  * [#1951](https://github.com/datagrok-ai/public/issues/1951): Add Global scale option to Trellis plot
+  * [#2011](https://github.com/datagrok-ai/public/issues/2011): Viewers: Inconsistencies in saved layouts won't allow creating a viewer when such layout is applied
+  * [#1378](https://github.com/datagrok-ai/public/issues/1378): PC Plot: context menu harmonization: added "..." for the Columns item 
+  * [#1778](https://github.com/datagrok-ai/public/issues/1778): Viewers: Organize properties consistently in the context panel: moved **Col Label Orientation** to the **Styles** category for heatmap and grid 
+* Fixed:
+  * [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views 
+  * [#1985](https://github.com/datagrok-ai/public/issues/1985): Box plot: Y axis zoom slider behaviour is inverted 
+  * [#1986](https://github.com/datagrok-ai/public/issues/1986): Dragging a column to filter panel moves it to the beginning of the table 
+  * [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue 
+  * [#1983](https://github.com/datagrok-ai/public/issues/1983): Categorical coloring colors cannot be changed 
+  * [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases 
+  * [#1959](https://github.com/datagrok-ai/public/issues/1959): Cannot adjust legend width for a Trellis plot 
+  * [#1230](https://github.com/datagrok-ai/public/issues/1230): Filters: custom filters not synced 
+  * [#2009](https://github.com/datagrok-ai/public/issues/2009): Correlation Plot shows wrong axes
+  * [#2028](https://github.com/datagrok-ai/public/issues/2028): Handling the layout save with a viewer loading error 
+  * GROK-12902: Chem | Context Pane | Actions: Add to favorites doesn't work 
+  * GROK-13238: Adding new columns fails in the presence of virtual columns 
+  * [#1838](https://github.com/datagrok-ai/public/issues/1838): Error on adding a custom viewer 
+  * GROK-13321: Filter Panel: 'Unsupported operation: NaN.round()' error occurs when hovering the Board Id tab
+  * GROK-13343: Trellis plot is not loading from the layout in some cases
+
+
+## 2023-06-02 1.15.2
+
+### Addressed Issues
+
+* (Bug) GROK-13157: Can't load table without initial permissions 
+* GROK-13075: Delete old and inactive containers 
+* (Improvement) GROK-13188: Datlas: Improve migration process 
 
 
 ## 2023-05-25 1.15.1
@@ -81,7 +123,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
       * Added the **Selection** menu item with the **Show Current Line**, **Show Mouse Over Line**, and **Show Mouse Over Row Group**  entries.
 * [Box Plot](../../../visualize/viewers/box-plot.md)
   * [#1635](https://github.com/datagrok-ai/public/issues/1635): Added a zoom slider to adjust axes range.
-  * [#1377](https://github.com/datagrok-ai/public/issues/1635): Added Show Category Axis to the X-axis menu.
+  * [#1377](https://github.com/datagrok-ai/public/issues/1377): Added Show Category Axis to the X-axis menu.
 
 ### Data Access
 
@@ -421,7 +463,7 @@ The package provides the functionality of two viewers  that enable the visualiza
   * Customization of dimensionality reduction algorithms is now possible, especially in the context of **Chemical Space** and **Activity Cliffs** functions. For details, see [Dimensionality reduction algorithms](https://community.datagrok.ai/t/cheminformatics-updates/457/21).
   * Implemented improvements for Similarity and Diversity Search viewers. Information from any column of the initial dataset can now be added to these viewers, and the color coding applied to the initial dataframe is also displayed there. To learn more, see [New functionality in Similarity/Diversity search](https://community.datagrok.ai/t/cheminformatics-updates/457/19).
   * When a large structure is depicted in the sketch box of the filters panel, it is now rendered in a tooltip.
-  * [Scaffold tree](../../../domains/chem/scaffold-tree.md) improvements:
+  * [Scaffold tree](../../../domains/chem/chem.md#scaffold-tree-analysis) improvements:
     * Scaffold tree now uses the default sketcher set in the Chem package properties.
     * Implemented logical AND, OR, NOT operations for scaffold tree elements.
 * Fixed:
@@ -1130,7 +1172,7 @@ Here are some of the biggest improvements:
 
 * New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by
   arranging molecules into a tree hierarchy based on their scaffolds. For details,
-  see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
+  see [Scaffold tree](../../../domains/chem/chem.md#scaffold-tree-analysis).
 * [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
   For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
 * Brand new [Map](release-history.md/#enhancements-in-packages). To learn more,
@@ -1167,7 +1209,7 @@ Here are some of the biggest improvements:
 #### [Chem](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Chem#readme)
 
 We've added new **Scaffold Tree** visualization that organizes molecular data sets by arranging molecules into a tree
-hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
+hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/chem.md#scaffold-tree-analysis).
 
 * Improvements:
   * Added the package property to [set the default **Sketcher
@@ -1218,7 +1260,7 @@ see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-upda
 Improvement:
 
 * Added aggregated columns to the Monomer-Positon viewer tooltips. This viewer is used
-  in [Mutation Cliffs / Invariant Map and Most Potent Residues](../../../domains/bio/macromolecules#quantitative-sequence-based-activity-relationship-analyses-to-enable-design-and-optimization-of-polymer-modalities)
+  in [Peptides SAR](../../../domains/bio/bioinformatics.md)
 
 #### [SequenceTranslator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#readme)
 

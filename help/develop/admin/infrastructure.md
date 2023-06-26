@@ -435,7 +435,7 @@ At the moment some limitations are exists:
 
 See also:
 
-* [Cheminformatics](../../domains/chem/cheminformatics.md)
+* [Cheminformatics](../../domains/chem/chem.md)
 
 ## Storage
 
@@ -524,4 +524,4 @@ The schema has the following tables:
 * [Configuration](configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](releases/versioning-policy.md)
-* [Try Datagrok locally](deploy/docker-compose.md)
+* [Try Datagrok locally](deploy/docker-compose.mdx)

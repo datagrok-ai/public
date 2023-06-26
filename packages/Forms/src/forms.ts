@@ -97,7 +97,7 @@ export class FormsViewer extends DG.JsViewer {
         input.value = this.dataFrame.get(name, row);
 
         if (this.colorCode) {
-          const grid = this.view.grid;
+          const grid = (this.view as DG.TableView).grid;
           const color = grid.cell(name, row).color;
           input.input.style.color = DG.Color.toHtml(DG.Color.getContrastColor(color));
           input.input.style.backgroundColor = DG.Color.toHtml(color);

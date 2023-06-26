@@ -2,10 +2,13 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
-import {PROPS as pdbPROPS} from '../viewers/ngl-viewer';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
+
 import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+
+import {NglViewer, PROPS as pdbPROPS} from '../viewers/ngl-viewer';
+
+import {_package} from '../package';
 
 export class NglViewerApp {
   private readonly appFuncName: string;

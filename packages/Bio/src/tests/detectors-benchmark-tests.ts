@@ -21,19 +21,19 @@ category('detectorsBenchmark', () => {
   // -- fasta --
 
   test('fastaDnaShorts50Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
-  },
-  {skipReason: '#1192'});
+      await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
+    },
+    {skipReason: '#1192'});
 
   test('fastaDnaShorts50Many1E6', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
-  },
-  {skipReason: '#1192'});
+      await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
+    },
+    {skipReason: '#1192'});
 
   test('fastaDnaLong1e6Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
-  },
-  {skipReason: '#1192'});
+      await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
+    },
+    {skipReason: '#1192'});
 
   // -- separator --
 
@@ -42,14 +42,14 @@ category('detectorsBenchmark', () => {
   }, {skipReason: '#1192'});
 
   test('separatorDnaShorts50Many1E6', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
-  },
-  { /* skipReason: 'slow transmit large dataset to detector' */});
+      detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
+    },
+    { /* skipReason: 'slow transmit large dataset to detector' */});
 
   test('separatorDnaLong1e6Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
-  },
-  {skipReason: '#1192'});
+      detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
+    },
+    {skipReason: '#1192'});
 
   async function detectMacromoleculeBenchmark(
     maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
@@ -121,13 +121,13 @@ category('detectorsBenchmark', () => {
     funcCall.callSync();
     const semType = funcCall.getOutputParamValue();
 
-    const col: DG.Column = funcCall.inputs.col;
+    const col: DG.Column = funcCall.inputs.col as unknown as DG.Column;
     if (semType) col.semType = semType;
     return col;
   }
 
   function checkDetectorRes(col: DG.Column, tgt: TgtType): void {
-    const uh = new UnitsHandler(col);
+    const uh = UnitsHandler.getOrCreate(col);
     expect(col.semType, tgt.semType);
     expect(uh.notation, tgt.notation);
     expect(uh.alphabet, tgt.alphabet);

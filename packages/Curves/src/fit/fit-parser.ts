@@ -3,8 +3,10 @@ import {
   IFitChartOptions,
   IFitSeriesOptions,
   IFitSeries,
-  IFitPoint
-} from './fit-data';
+  IFitPoint,
+  FIT_FUNCTION_SIGMOID
+} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+
 
 const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};
@@ -16,7 +18,7 @@ const EXTREMUMS = {min: 'min', max: 'max'};
  * @return {IFitChartOptions} IFitChartOptions for the fitted curve
 */
 function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
-  const fitChartOptions: IFitChartOptions = {
+  return {
     minX: +grid.getElementsByTagName(AXES.x)[0].getAttribute(EXTREMUMS.min)!,
     minY: +grid.getElementsByTagName(AXES.y)[0].getAttribute(EXTREMUMS.min)!,
     maxX: +grid.getElementsByTagName(AXES.x)[0].getAttribute(EXTREMUMS.max)!,
@@ -26,8 +28,6 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
     yAxisName: settings.getAttribute('yLabel')!,
     logX: !!settings.getAttribute('logX')!,
   };
-
-  return fitChartOptions;
 }
 
 /** Constructs {@link IFitSeriesOptions} from the series xml tag.
@@ -39,13 +39,13 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
   // params there are: [IC50, min, max, tan] (also log IC50) - so we place them correctly: [max, tan, IC50, min]
   const newParams = [params[2], params[3], Math.log10(params[0]), params[1]];
   let funcType = series.getElementsByTagName('function')[0].getAttribute('type')!;
-  funcType = funcType === 'sigif' ? 'Sigmoid': funcType;
+  funcType = funcType === 'sigif' ? FIT_FUNCTION_SIGMOID: funcType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;
   const lineColor = series.getElementsByTagName('settings')[0].getAttribute('color')!;
   const drawLine = !!series.getElementsByTagName('settings')[0].getAttribute('drawLine')!;
   const seriesName = series.getAttribute('name')!;
 
-  const fitSeriesOptions: IFitSeriesOptions = {
+  return {
     parameters: newParams,
     fitFunction: funcType,
     pointColor: markerColor,
@@ -53,8 +53,6 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
     showFitLine: drawLine,
     name: seriesName,
   };
-
-  return fitSeriesOptions;
 }
 
 /** Constructs {@link IFitPoint} array from the grid series tag.
@@ -113,7 +111,7 @@ function getSeriesArray(seriesCollection: Element): IFitSeries[] {
 
 /** Converts XML fitted curve chart document into {@link IFitChartData} interface.
  * @param {string} xmlText XML document
- * @return {IFitChartData} IFitChartData intefrace for the fitted curve
+ * @return {IFitChartData} IFitChartData interface for the fitted curve
 */
 export function convertXMLToIFitChartData(xmlText: string): IFitChartData {
   const parser = new DOMParser();
@@ -134,11 +132,9 @@ export function convertXMLToIFitChartData(xmlText: string): IFitChartData {
   // get IFitSeries[]
   const fitSeries = getSeriesArray(seriesCollection);
 
-  const fitChartData: IFitChartData = {
+  return {
     chartOptions: fitChartOptions,
     seriesOptions: fitSeriesOptions,
     series: fitSeries
   };
-
-  return fitChartData;
 }

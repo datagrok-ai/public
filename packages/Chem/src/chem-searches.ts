@@ -13,6 +13,7 @@ import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import { getMolSafe } from './utils/mol-creation_rdkit';
 
 const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
@@ -80,8 +81,12 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   return diversities;
 }
 
+function invalidatedColumnKey(col: DG.Column): string {
+  return col.dataFrame?.name + '.' + col.name;
+}
+
 function colInvalidated(col: DG.Column, createMols: boolean): Boolean {
-  return (lastColumnInvalidated == col.name &&
+  return (lastColumnInvalidated == invalidatedColumnKey(col) &&
     col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version) &&
     (!createMols || col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version)));
 }
@@ -92,7 +97,7 @@ async function _invalidate(molCol: DG.Column, createMols: boolean) {
       await (await getRdKitService()).initMoleculesStructures(molCol.toList());
       molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 2));
     }
-    lastColumnInvalidated = molCol.name;
+    lastColumnInvalidated = invalidatedColumnKey(molCol);
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
 }
@@ -249,19 +254,22 @@ export async function chemSubstructureSearchLibrary(
 export function chemGetFingerprint(molString: string, fingerprint: Fingerprint): BitArray {
   let mol = null;
   try {
-    mol = getRdKitModule().get_mol(molString);
-    let fp;
-    if (fingerprint == Fingerprint.Morgan) {
-      fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
-        radius: defaultMorganFpRadius,
-        nBits: defaultMorganFpLength,
-      }));
-    } else if (fingerprint == Fingerprint.Pattern)
-      fp = mol.get_pattern_fp_as_uint8array();
-    else
-      throw new Error(`${fingerprint} does not match any fingerprint`);
-
-    return rdKitFingerprintToBitArray(fp) as BitArray;
+    mol = getMolSafe(molString, {}, getRdKitModule()).mol;
+    if (mol) {
+      let fp;
+      if (fingerprint == Fingerprint.Morgan) {
+        fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
+          radius: defaultMorganFpRadius,
+          nBits: defaultMorganFpLength,
+        }));
+      } else if (fingerprint == Fingerprint.Pattern)
+        fp = mol.get_pattern_fp_as_uint8array();
+      else
+        throw new Error(`${fingerprint} does not match any fingerprint`);
+  
+      return rdKitFingerprintToBitArray(fp) as BitArray;
+    } else
+      throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } finally {

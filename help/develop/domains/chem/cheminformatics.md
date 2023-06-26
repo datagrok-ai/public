@@ -212,5 +212,5 @@ rendered as SVG using the RDKit library.
 
 See also:
 
-* [Cheminformatics](../../../domains/chem/cheminformatics.md)
+* [Cheminformatics](../../../domains/chem/chem.md)
 * [JavaScript development](../../develop.md)

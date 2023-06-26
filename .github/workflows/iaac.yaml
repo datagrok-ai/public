@@ -4,11 +4,21 @@ on:
   push:
     paths:
       - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
-    branches:
-      - 'master'
+  pull_request:
+    paths:
+      - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
+
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   iac:
+    needs: common-check
     runs-on: ubuntu-20.04
+    if: needs.common-check.outputs.continue == 'true'
     name: Security check for IaaC scripts
     steps:
       - name: Checkout

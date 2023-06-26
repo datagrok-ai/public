@@ -45,12 +45,10 @@ category('Table view', () => {
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;
     const posCols = model.splitSeqDf.columns.names();
-    const visibleColumns = Object.keys(model.settings.columns ?? {});
     for (let colIdx = 1; colIdx < gridCols.length; colIdx++) {
       const col = gridCols.byIndex(colIdx)!;
       const tableColName = col.column!.name;
-      const expectedVisibility = posCols.includes(tableColName) || (tableColName === COLUMNS_NAMES.ACTIVITY_SCALED) ||
-      visibleColumns.includes(tableColName);
+      const expectedVisibility = posCols.includes(tableColName) || (tableColName === COLUMNS_NAMES.ACTIVITY_SCALED);
       expect(col.visible, expectedVisibility, `Column ${tableColName} is visible === ${col.visible} but should be ` +
         `${expectedVisibility}`);
     }
@@ -158,4 +156,4 @@ category('Table view', () => {
         `monomer-position filter`);
     }
   });
-});
+}, false);

@@ -11,7 +11,7 @@ const MORE_ICON_FONT_WEIGHT = '500';
 export function structure2dWidget(molecule: string): DG.Widget {
   const rdKitModule = getRdKitModule();
   const mol = getMolSafe(molecule, {}, rdKitModule).mol;
-  const resultWidget = mol && mol.is_valid() ?
+  const resultWidget = mol ?
     new DG.Widget(get2dMolecule(molecule)) : new DG.Widget(ui.divText('Molecule is possibly malformed'));
   mol?.delete();
   return resultWidget;
@@ -23,5 +23,7 @@ function get2dMolecule(molecule: string): HTMLElement {
   moreIcon.style.left = `${WIDTH}px`;
   moreIcon.style.fontWeight = MORE_ICON_FONT_WEIGHT;
   moreIcon.classList.remove('pep-more-icon');
-  return molecule2d;
+  molecule2d.classList.remove('d4-flex-col');
+  molecule2d.classList.add('d4-flex-wrap');
+  return ui.div(molecule2d, 'd4-flex-col');
 }

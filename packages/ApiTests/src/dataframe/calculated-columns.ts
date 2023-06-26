@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 import {after, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
-category('DataFrame', () => {
+category('DataFrame: Calculated columns', () => {
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3]),
     DG.Column.fromList(DG.TYPE.FLOAT, 'y', [4, 5, 6]),

@@ -23,6 +23,7 @@ import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
+import {Tags} from "./api/ddt.api.g";
 
 declare let grok: any;
 declare let DG: any;
@@ -640,6 +641,8 @@ export class Column<T = any> {
    * @param {object[]} list
    * @returns {Column} */
   static fromList(type: ColumnType, name: string, list: any[]): Column {
+    if (type === TYPE.DATE_TIME)
+      list = list.map((v) => v?.valueOf());
     return toJs(api.grok_Column_FromList(type, name, list));
   }
 
@@ -2358,4 +2361,10 @@ export class ColumnMetaHelper {
   get format(): string | null {
     return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
+
+  get includeInCsvExport(): boolean { return this.column.getTag(Tags.IncludeInCsvExport) != 'false'; }
+  set includeInCsvExport(x) { this.column.setTag(Tags.IncludeInCsvExport, x.toString()); }
+
+  get includeInBinaryExport(): boolean { return this.column.getTag(Tags.IncludeInBinaryExport) != 'false'; }
+  set includeInBinaryExport(x) { this.column.setTag(Tags.IncludeInBinaryExport, x.toString()); }
 }

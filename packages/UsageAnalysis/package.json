@@ -30,7 +30,7 @@
     "release-usageanalysis": "webpack && grok publish --release",
     "debug-usageanalysis-dev": "webpack && grok publish dev",
     "release-usageanalysis-dev": "webpack && grok publish dev --release",
-    "debug-usageanalysis-public": "grok publish public --release",
+    "debug-usageanalysis-public": "webpack && grok publish public --release",
     "debug-usageanalysis-local": "webpack && grok publish local",
     "release-usageanalysis-localhost": "webpack && grok publish localhost --release",
     "test": "grok test",

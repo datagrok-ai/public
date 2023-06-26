@@ -912,6 +912,18 @@ export class PinnedColumn {
       const renderer = getRenderer(cell);
       if (renderer !== null)
         renderer.onMouseDownEx(cell, e, this.m_arXYMouseOnCellDown[0], this.m_arXYMouseOnCellDown[1]);
+      else {
+        const rendererdg = cell.renderer;
+        if (rendererdg.name == 'bool') {
+          const value = cell.cell.value;
+          const tableRowIdx = cell.tableRowIndex;
+          if (tableRowIdx !== null) {
+            this.m_colGrid.column!.set(tableRowIdx, !value);
+            const g = this.getRoot()!.getContext('2d');
+            this.paint(g, grid);
+          }
+        }
+      }
     }
 
     this.m_bResizeColPinMoving = false;

@@ -6,6 +6,10 @@ import {findMonomers, parseHelm, getParts} from './utils';
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
+// Global flag is for replaceAll
+const helmGapStartRe = /\{(\*\.)+/g;
+const helmGapIntRe = /\.(\*\.)+/g;
+const helmGapEndRe = /(\.\*)+\}/g;
 
 export class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
@@ -50,7 +54,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       for (let i = 0; i < allParts.length; ++i) {
         if (monomers.has(allParts[i])) {
           tooltipMessage[i] = ui.divV([
-            ui.divText(`Monomer ${allParts[i]} not found.`),
+            ui.divText(`Monomer '${allParts[i]}' not found.`),
             ui.divText('Open the Context Panel, then expand Manage Libraries')
           ]);
         }
@@ -70,13 +74,15 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
     const undefinedColor = 'rgb(100,100,100)';
     const grayColor = '#808080';
-    const monomers = findMonomers(gridCell.cell.value);
-    const s: string = gridCell.cell.value ?? '';
+
+    const s: string = !gridCell.cell.value ? '' : gridCell.cell.value
+      .replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.').replaceAll(helmGapEndRe, '}');
+    const monomers = findMonomers(s);
     const subParts: string[] = parseHelm(s);
     if (monomers.size == 0 && grid) {
       const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
-      host.setAttribute('data', gridCell.cell.value);
+      host.setAttribute('data', s);
       gridCell.element = host;
       //@ts-ignore
       const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
@@ -85,7 +91,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       if (!grid) {
         const r = window.devicePixelRatio;
         h = 28;
-        g.canvas.height = h*r;
+        g.canvas.height = h * r;
         g.canvas.style.height = `${h}px`;
       }
       w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;

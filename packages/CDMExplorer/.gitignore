@@ -3,3 +3,4 @@ node_modules/
 dist/
 built/
 test-report.html
+test-console-output.log

@@ -228,7 +228,7 @@ AND r.company IN (
 
 
 --name: ByChemblIds
---friendlyName: Search | byChemblIds
+--friendlyName: Search | By ChEMBL ids
 --connection: Chembl 
 --input: list<string> chemblIds = ['CHEMBL1185', 'CHEMBL1186'] {inputType: TextArea}
 SELECT *
