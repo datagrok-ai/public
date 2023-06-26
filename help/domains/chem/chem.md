@@ -564,7 +564,7 @@ To view the chemical scripts you've created or those shared with you, open the [
 
 :::note
 
-For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](Scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../compute/scripting.md).
+For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../compute/scripting.md).
 
 :::
 
