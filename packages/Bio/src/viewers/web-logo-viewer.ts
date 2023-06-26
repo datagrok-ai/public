@@ -1,28 +1,30 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {SliderOptions} from 'datagrok-api/dg';
 
 import wu from 'wu';
 import {fromEvent, Unsubscribable} from 'rxjs';
-
-import {SliderOptions} from 'datagrok-api/dg';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
-  getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc,
+  monomerToShort,
+  pickUpPalette,
+  pickUpSeqCol,
   TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
-  WebLogoPropsDefault, WebLogoProps,
-  PositionHeight,
-  positionSeparator,
-  VerticalAlignments,
-  HorizontalAlignments,
-  PositionMarginStates,
   FilterSources,
+  HorizontalAlignments,
+  PositionHeight,
+  PositionMarginStates,
+  positionSeparator,
+  TAGS as wlTAGS,
+  VerticalAlignments,
+  WebLogoProps,
+  WebLogoPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {TAGS as wlTAGS} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {_package} from '../package';
 
 declare global {
@@ -576,7 +578,7 @@ export class WebLogoViewer extends DG.JsViewer {
         } catch (err: any) {
           this.seqCol = null;
           this.error = err instanceof Error ? err : new Error(err.toString());
-          _package.logger.error(this.error.message, undefined, this.error.stack);
+          throw err;
         }
         if (!this.seqCol) {
           this.unitsHandler = null;
@@ -700,7 +702,18 @@ export class WebLogoViewer extends DG.JsViewer {
         break;
     }
 
-    this.render(RecalcLevel.Freqs, 'onPropertyChanged');
+    switch (property.name) {
+      case PROPS.fixWidth:
+      case PROPS.fitArea:
+      case PROPS.positionWidth:
+      case PROPS.positionMargin:
+        this.render(RecalcLevel.Layout, 'onPropertyChanged');
+        break;
+
+      default:
+        this.render(RecalcLevel.Freqs, 'onPropertyChanged');
+        break;
+    }
   }
 
   /** Add filter handlers when table is a attached  */
@@ -751,7 +764,7 @@ export class WebLogoViewer extends DG.JsViewer {
 
   /** Helper function for remove empty positions */
   // TODO: use this function in from core
-  protected removeWhere(array: Array<any>, predicate: (T: any) => boolean): Array<any> {
+  protected removeWhere<T>(array: Array<T>, predicate: (item: T) => boolean): Array<any> {
     const length = array.length;
     let updateIterator = 0;
     for (let deleteIterator = 0; deleteIterator < length; deleteIterator++) {
@@ -767,7 +780,7 @@ export class WebLogoViewer extends DG.JsViewer {
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions)
-      this.removeWhere(this.positions, (item) => item?.freq['-']?.count === item.rowCount);
+      this.removeWhere(this.positions, (item) => item?.getFreq('-')?.count === item?.rowCount);
   }
 
   private renderRequested: boolean = false;
@@ -780,11 +793,11 @@ export class WebLogoViewer extends DG.JsViewer {
       `.render( recalcLevel=${recalcLevel}, reason='${reason}' )`);
 
     /** Calculate freqs of monomers */
-    const calculateFreqsInt = (length: number): void => {
+    const calculateFreqsInt = (): void => {
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateFreqsInt(), start `);
-
       if (!this.host || !this.seqCol || !this.dataFrame) return;
 
+      const length: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
       this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
       const posCount: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
       this.positions = new Array(posCount);
@@ -815,9 +828,10 @@ export class WebLogoViewer extends DG.JsViewer {
     };
 
     /** Calculate layout of monomers on screen (canvas) based on freqs, required to handle mouse events */
-    const calculateLayoutInt = (length: number, dpr: number): void => {
+    const calculateLayoutInt = (dpr: number): void => {
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), start `);
 
+      const length = this.positions.length;
       this.calcSize();
       const absoluteMaxHeight = this.canvas.height - this.axisHeight * dpr;
       const alphabetSize = this.getAlphabetSize();
@@ -854,11 +868,11 @@ export class WebLogoViewer extends DG.JsViewer {
 
       this.slider.root.style.width = `${this.host.clientWidth}px`;
 
-      const length: number = this.Length;
       const dpr: number = window.devicePixelRatio;
-      if (recalcLevel >= RecalcLevel.Freqs) calculateFreqsInt(length);
-      if (recalcLevel >= RecalcLevel.Layout) calculateLayoutInt(length, window.devicePixelRatio);
+      if (recalcLevel >= RecalcLevel.Freqs) calculateFreqsInt();
+      if (recalcLevel >= RecalcLevel.Layout) calculateLayoutInt(window.devicePixelRatio);
 
+      const length: number = this.Length;
       g.resetTransform();
       g.fillStyle = DG.Color.toHtml(this.backgroundColor);
       g.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -896,7 +910,7 @@ export class WebLogoViewer extends DG.JsViewer {
           this.positionWidthWithMargin, firstVisibleIndex, this.cp);
       }
 
-      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), end `);
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), end`);
     };
 
     this.recalcLevelRequested = Math.max(this.recalcLevelRequested, recalcLevel);
@@ -1039,7 +1053,8 @@ export class WebLogoViewer extends DG.JsViewer {
     _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()');
     try {
       this.updatePositions();
-      this.render(RecalcLevel.Freqs, 'dataFrameFilterOnChanged');
+      if (this.filterSource === FilterSources.Filtered)
+        this.render(RecalcLevel.Freqs, 'dataFrameFilterOnChanged');
     } catch (err: any) {
       const errMsg = errorToConsole(err);
       _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterOnChanged() error:\n' + errMsg);
@@ -1050,7 +1065,8 @@ export class WebLogoViewer extends DG.JsViewer {
   private dataFrameSelectionOnChanged(_value: any): void {
     _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged()');
     try {
-      this.render(RecalcLevel.Freqs, 'dataFrameSelectionOnChanged');
+      if (this.filterSource === FilterSources.Selected)
+        this.render(RecalcLevel.Freqs, 'dataFrameSelectionOnChanged');
     } catch (err: any) {
       const errMsg = errorToConsole(err);
       _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged() error:\n' + errMsg);
@@ -1132,10 +1148,6 @@ export class WebLogoViewer extends DG.JsViewer {
 export function checkSeqForMonomerAtPos(
   df: DG.DataFrame, unitsHandler: UnitsHandler, filter: DG.BitSet, rowI: number, monomer: string, at: PositionInfo,
 ): boolean {
-  // if (!filter.get(rowI)) return false;
-  // TODO: Use BitSet.get(idx)
-  if (!filter.getSelectedIndexes().includes(rowI)) return false;
-
   const seqMList: string[] = unitsHandler.splitted[rowI];
   const seqM = at.pos < seqMList.length ? seqMList[at.pos] : null;
   return ((seqM === monomer) || (seqM === '' && monomer === '-'));
