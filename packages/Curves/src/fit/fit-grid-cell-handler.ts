@@ -12,17 +12,17 @@ import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_C
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 
-export const SOURCE_COLUMN = '.sourceColumn';
-export const SERIES_NUMBER = '.seriesNumber';
-const STATISTICS = '.statistics';
+const SOURCE_COLUMN_TAG = '.sourceColumn';
+const SERIES_NUMBER_TAG = '.seriesNumber';
+const STATISTICS_TAG = '.statistics';
 
 
 function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesNumber: number): void {
   const grid = chartColumn.grid;
   const column = DG.Column.float(p.name, chartColumn.column?.length);
-  column.tags[SOURCE_COLUMN] = chartColumn.name;
-  column.tags[SERIES_NUMBER] = seriesNumber;
-  column.tags[STATISTICS] = p.name;
+  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
+  column.tags[SERIES_NUMBER_TAG] = seriesNumber;
+  column.tags[STATISTICS_TAG] = p.name;
 
   column
     .init((i) => {
@@ -51,13 +51,11 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const refresh = {onValueChanged: (_: any) => gridCell.grid.invalidate()};
 
     acc.addPane('Options', () => ui.divV([
-        ui.input.form(columnChartOptions.seriesOptions, fitSeriesProperties, refresh),
-        ui.input.form(columnChartOptions.chartOptions, fitChartDataProperties, refresh),
-      ]));
+      ui.input.form(columnChartOptions.seriesOptions, fitSeriesProperties, refresh),
+      ui.input.form(columnChartOptions.chartOptions, fitChartDataProperties, refresh),
+    ]));
 
-      // TODO: add marker type choice in parameters
-      // TODO: improve edit chart mode
-      // TODO: render grid on smaller width + height
+    // TODO: improve edit chart mode
     acc.addPane('Fit', () => {
       const host = ui.divV([]);
 

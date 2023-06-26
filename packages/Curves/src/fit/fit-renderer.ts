@@ -11,6 +11,7 @@ import {
   CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   FIT_CELL_TYPE,
   IFitSeries,
+  FitStatistics,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -192,6 +193,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
           p.outlier = !p.outlier;
+          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn':
+            gridCell.cell.column.name, '.seriesNumber': i});
+          if (columns) {
+            const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
+            for (const column of columns) {
+              column.set(gridCell.cell.rowIndex, stats[column.name as keyof FitStatistics]);
+            }
+          }
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
