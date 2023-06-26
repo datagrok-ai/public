@@ -458,7 +458,7 @@ You can use the sequence translator alongside a **Table View**. To do so, click 
 
 :::
 
-To learn more and how to use, see [Oligonucleotide sequence design](oligonucleotide-design.md).
+To learn more and how to use, see [Oligonucleotide sequence design].
 
 <!--
 
