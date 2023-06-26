@@ -334,7 +334,7 @@ async function execTest(t: Test, predicate: string | undefined) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     } else {
       r = {success: true, result: await timeout(t.test,
-        DG.Test.isInBenchmark ? 600000 : 30000) ?? 'OK', ms: 0, skipped: false};
+        DG.Test.isInBenchmark ? 600000 : t.options?.timeout ?? 30000) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
