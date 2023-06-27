@@ -129,7 +129,7 @@ export async function convertDo(
     newColumn.semType = semType;
 
   // call to calculate 'cell.renderer' tag
-  const newUH = new UnitsHandler(newColumn);
+  const newUH = UnitsHandler.getOrCreate(newColumn);
   expect(newUH.isMsa(), true);
   await grok.data.detectSemanticTypes(srcCol.dataFrame);
 

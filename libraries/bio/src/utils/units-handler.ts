@@ -85,7 +85,7 @@ export class UnitsHandler {
 
   protected get column(): DG.Column { return this._column; }
 
-  protected get units(): string { return this._units; }
+  public get units(): string { return this._units; }
 
   public get notation(): NOTATION { return this._notation; }
 

@@ -82,7 +82,7 @@ id3,QHIRE--LT
       const charWidth: number = 7;
       const sepWidth: number = 12;
       const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, () => {
-        const uh = new UnitsHandler(seqCol);
+        const uh = UnitsHandler.getOrCreate(seqCol);
         return {
           unitsHandler: uh,
           monomerCharWidth: charWidth,

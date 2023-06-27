@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
 import {UnitsHandler} from './units-handler';
-import {getSplitterForColumn, MonomerToShortFunc, NOTATION, SplitterFunc} from './macromolecule';
+import {NOTATION, SplitterFunc, MonomerToShortFunc, getSplitterForColumn} from './macromolecule';
 
 type MonomerPlacerProps = {
   unitsHandler: UnitsHandler,
