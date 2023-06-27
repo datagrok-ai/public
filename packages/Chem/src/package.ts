@@ -332,7 +332,7 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
   assure.notNull(cutoff, 'cutoff');
 
   try {
-    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: limit, cutoff: cutoff});
+    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: limit, minScore: cutoff});
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | In findSimilar: ' + e.toString());
