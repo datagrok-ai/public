@@ -330,10 +330,12 @@ async function execTest(t: Test, predicate: string | undefined) {
     console.log(`Started ${t.category} ${t.name}`);
   const start = new Date();
   try {
-    if (skip)
+    if (skip) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
-    else
-      r = {success: true, result: await timeout(t.test) ?? 'OK', ms: 0, skipped: false};
+    } else {
+      r = {success: true, result: await timeout(t.test,
+        DG.Test.isInBenchmark ? 600000 : t.options?.timeout ?? 30000) ?? 'OK', ms: 0, skipped: false};
+    }
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
@@ -369,14 +371,14 @@ export async function awaitCheck(checkHandler: () => boolean,
   });
 }
 
-async function timeout(func: () => Promise<any>): Promise<any> {
+async function timeout(func: () => Promise<any>, testTimeout: number): Promise<any> {
   let timeout: Timeout | null = null;
   const timeoutPromise = new Promise<any>((_, reject) => {
     //@ts-ignore
     timeout = setTimeout(() => {
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('EXECUTION TIMEOUT');
-    }, 30000);
+    }, testTimeout);
   });
   try {
     return await Promise.race([func(), timeoutPromise]);
@@ -426,7 +428,10 @@ export async function testViewer(v: string, df: DG.DataFrame,
       for (let i = num; i < num * 2; i++) df.filter.set(i, false);
       await delay(50);
       df.currentRowIdx = 1;
-      // df.columns.names().forEach((c) => df.columns.remove(c));
+      const df1 = df.clone();
+      df.columns.names().slice(0, Math.ceil(df.columns.length / 2)).forEach((c) => df.columns.remove(c));
+      await delay(100);
+      tv.dataFrame = df1;
     }
     const optns = viewer.getOptions(true).look;
     const props = viewer.getProperties();

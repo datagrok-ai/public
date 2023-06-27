@@ -9,9 +9,6 @@ import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-
 import {awaitContainerStart} from './utils';
 //import * as grok from 'datagrok-api/grok';
 
-export const _package = new DG.Package();
-
-
 category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
   const fromCsv = `seq

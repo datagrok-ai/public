@@ -643,7 +643,6 @@ export class Column<T = any> {
   static fromList(type: ColumnType, name: string, list: any[]): Column {
     if (type === TYPE.DATE_TIME)
       list = list.map((v) => v?.valueOf());
-    console.log(list);
     return toJs(api.grok_Column_FromList(type, name, list));
   }
 

@@ -75,6 +75,7 @@ category('top menu chem space', async () => {
 async function _testChemSpaceReturnsResult(df: DG.DataFrame, col: string) {
   await grok.data.detectSemanticTypes(df);
   const tv = grok.shell.addTableView(df);
+  await awaitCheck(() => tv.name === df.name, 'Chem space table view hasn\'t been created', 1000);
   try {
     const sp = await runChemSpace(df, df.getCol(col), DimReductionMethods.UMAP,
       BitArrayMetricsNames.Tanimoto, true, {});

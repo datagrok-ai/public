@@ -10,10 +10,9 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
-import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
+import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
@@ -285,7 +284,7 @@ export class RichFunctionView extends FunctionView {
           return viewer;
         });
 
-        const reactiveViewers = promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
+        const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then((loadedViewer) => {
           const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
@@ -293,11 +292,13 @@ export class RichFunctionView extends FunctionView {
               $(this.outputsTabsElem.root).show();
               $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
-              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParam.value;
-              else {
+                loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
+              } else {
                 // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                 const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
+                newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
                 loadedViewer.root.replaceWith(newViewer.root);
                 loadedViewer = newViewer;
               }
@@ -495,7 +496,7 @@ export class RichFunctionView extends FunctionView {
         if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
           const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
             this.funcCall.outputs[prop.name] = file;
-          });
+          }, null);
           if (prop.category !== prevCategory)
             outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
 
@@ -560,7 +561,7 @@ export class RichFunctionView extends FunctionView {
           const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
             this.funcCall.inputs[prop.name] = file;
             this.checkDisability.next();
-          });
+          }, null);
 
           if (this.runningOnInput) {
             const sub = t.onFileUploaded.subscribe(async () => await this.doRun());
@@ -669,6 +670,9 @@ export class RichFunctionView extends FunctionView {
       }
       this.hideOutdatedOutput();
       this.checkDisability.next();
+
+      if (this.runningOnInput && this.isRunnable())
+        this.doRun();
     };
 
     const sub = val.onChanged.subscribe(syncSub);

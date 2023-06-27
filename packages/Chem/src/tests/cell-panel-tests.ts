@@ -103,24 +103,6 @@ category('cell panel', async () => {
       toxicityWidget(mol);
   });
 
-  //TODO: Test smiles, mol2000, mol3000;
-  test('substructure-filter-manual', async () => {
-    const df = grok.data.demo.molecules(1000);
-    await grok.data.detectSemanticTypes(df);
-    const filter = substructureFilter();
-
-    filter.attach(df);
-    grok.shell.addTableView(df);
-    const colChoice = ui.columnInput('Column', filter.dataFrame!, filter.column, (col: DG.Column) => {
-      filter.column = col;
-      filter.dataFrame!.filter.setAll(true, false);
-      filter.dataFrame!.rows.requestFilter();
-    });
-    ui.dialog({title: 'Chem Filter'})
-      .add(colChoice)
-      .add(filter.root)
-      .show();
-  });
 
   //TODO: fix, Test smiles, mol2000, mol3000;
   // test('substructure-filter-panel', async () => {

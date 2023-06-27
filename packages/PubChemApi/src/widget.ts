@@ -8,6 +8,14 @@ import {pubChemBaseURL} from './tests/const';
 const WIDTH = 200;
 const HEIGHT = 100;
 
+export enum COLUMN_NAMES {
+  CANONICAL_SMILES = 'CanonicalSMILES',
+  CID = 'CID',
+  MOLECULE = 'molecule',
+  SCORE = 'score',
+  INDEX = 'index',
+}
+
 export function renderInfoValue(info: anyObject, refs: anyObject): HTMLElement {
   const infoValue: {[key: string]: any[]} = info.Value;
   let infoValueList = Object.values(infoValue)[0];
@@ -105,7 +113,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     return new DG.Widget(ui.divText('Molecule string is malformed'));
   }
   const headerHost = ui.div();
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const widget = new DG.Widget(ui.divV([headerHost, compsHost]));
 
   let moleculesJson: anyObject[] | null;
@@ -123,7 +131,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     throw new Error(`DrugBankSearch: Search type \`${searchType}\` not found`);
   }
 
-  if (moleculesJson === null) {
+  if (moleculesJson === null || moleculesJson.length === 0) {
     compsHost.firstChild?.remove();
     compsHost.appendChild(ui.divText('No matches'));
     return widget;
@@ -152,18 +160,42 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
 
     return new DG.Widget(resultMap);
   }
+  const resultDf = DG.DataFrame.fromObjects(moleculesJson)!;
 
-  const molCount = Math.min(moleculesJson.length, 20);
+  let similarStructures: DG.DataFrame | null = null;
+  let moleculesCol = resultDf.getCol(COLUMN_NAMES.CANONICAL_SMILES);
+  let indexes = new Int32Array(0);
+  let scoreCol: DG.Column<number> | null = null;
+  let rowCount = resultDf.rowCount;
+  if (searchType === 'similarity') {
+    similarStructures = await grok.chem.findSimilar(moleculesCol, molString, {limit: 20, cutoff: 0.75});
 
-  for (let idx = 0; idx < molCount; idx++) {
-    const molEntry = moleculesJson[idx] as {'CanonicalSMILES': string, 'CID': number};
-    const molHost = ui.div();
-    grok.functions.call('Chem:drawMolecule', {'molStr': molEntry['CanonicalSMILES'], 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-      .then((res: HTMLElement) => molHost.append(res));
+    if (similarStructures === null || similarStructures.rowCount === 0) {
+      compsHost.firstChild?.remove();
+      compsHost.appendChild(ui.divText('No matches'));
+      return widget;
+    }
+    // moleculesCol = similarStructures.getCol(COLUMN_NAMES.MOLECULE);
+    scoreCol = similarStructures.getCol(COLUMN_NAMES.SCORE);
+    indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData() as Int32Array;
+    rowCount = indexes.length;
+  }
 
-    ui.tooltip.bind(molHost, () => ui.divText(`CID: ${molEntry['CID']}\nClick to open in PubChem`));
+  const cidCol = resultDf.getCol(COLUMN_NAMES.CID);
+
+  for (let idx = 0; idx < rowCount; idx++) {
+    const piv = searchType === 'similarity' ? indexes[idx] : idx;
+    const molHost = ui.divV([]);
+    grok.functions.call('Chem:drawMolecule', {'molStr': moleculesCol.get(idx), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+      .then((res: HTMLElement) => {
+        molHost.append(res);
+        if (searchType === 'similarity' && scoreCol !== null)
+          molHost.append(ui.divText(`Score: ${scoreCol.get(idx)?.toFixed(2)}`));
+      });
+
+    ui.tooltip.bind(molHost, () => ui.divText(`CID: ${cidCol.get(piv)}\nClick to open in PubChem`));
     molHost.addEventListener('click',
-      () => window.open(`https://pubchem.ncbi.nlm.nih.gov/compound/${molEntry['CID']}`, '_blank'));
+      () => window.open(`https://pubchem.ncbi.nlm.nih.gov/compound/${cidCol.get(piv) }`, '_blank'));
     compsHost.appendChild(molHost);
   }
 

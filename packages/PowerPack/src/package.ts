@@ -177,6 +177,14 @@ export function windowsManager() {
   windowsManagerPanel();
 }
 
+//name: viewerDialog
+//description: Open "Viewer Gallery" dialog 
+//input: dynamic tv 
+export function viewerDialog(tv: DG.TableView) {
+  if (tv instanceof DG.TableView)
+    return viewersDialog(tv, tv.table!);
+}
+
 //description: ViewerGallery
 //tags: autostart
 export function viewerGallery(): void {

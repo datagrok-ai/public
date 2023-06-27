@@ -255,7 +255,7 @@ export async function previewNewick(file: DG.FileInfo) {
 
 // -- Top menu --
 
-//top-menu: ML | Hierarchical Clustering ...
+//top-menu: Bio | Hierarchical Clustering
 //name: Hierarchical Clustering
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClustering(): Promise<void> {

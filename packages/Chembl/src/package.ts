@@ -43,7 +43,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.div([]);
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost]);
   const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
