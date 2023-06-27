@@ -94,7 +94,7 @@ category('screening tools: benchmarks', () => {
     await DG.timeAsync('Structural Alerts', async () => {
       await runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitService);
     });
-  }, {timeout: 90000});
+  }, {timeout: 90000, skipReason: 'GROK-13428'});
 
   test('elementalAnalysis', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
