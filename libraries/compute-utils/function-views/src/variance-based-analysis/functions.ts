@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {getEachOutputItemInfo} from './output-tools';
 import {VariedNumericalInputInfo, FixedInputItem} from './input-tools';
 
-import {VarianceBasedSenstivityAnalysis} from './sensitivity-analysis';
+import {SobolAnalysis} from './sobol-sensitivity-analysis';
 
 export const _package = new DG.Package();
 

@@ -60,7 +60,7 @@ export function getEachOutputItemInfo(funcCall: DG.FuncCall): OutputInfo[] {
       ouputInfoExtended.push(item);
       break;
     case DG.TYPE.DATA_FRAME:
-      Array.prototype.push.apply(ouputInfoExtended, getDataFrameItemsInfo(funcCall, item.name));
+      //Array.prototype.push.apply(ouputInfoExtended, getDataFrameItemsInfo(funcCall, item.name));
       break;
     default:
       throw new Error(UNSUPPORTED_TYPE_ERROR_MSG);
@@ -99,12 +99,12 @@ export function getOutputColumns(funcCalls: DG.FuncCall[]): DG.Column[] {
         break;
       case DG.TYPE.DATA_FRAME:
         // each element of dataframe is put to the corresponding column (its own)
-        for (const column of funcCall.outputs[item.name].columns) {
+        /*for (const column of funcCall.outputs[item.name].columns) {
           for (const element of column.getRawData()) {
             columns[col].set(row, element);
             ++col;
           }
-        }
+        }*/
         break;
       default:
         throw new Error(UNSUPPORTED_TYPE_ERROR_MSG);

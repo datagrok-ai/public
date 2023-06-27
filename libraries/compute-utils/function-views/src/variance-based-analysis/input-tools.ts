@@ -44,7 +44,7 @@ function getNumericalInputCol(numInputInfo: VariedNumericalInputInfo,
 }
 
 // Returns columns of varied numerical inputs that are used in VSA
-export function getVariedNumericalInputColumns(samplesCount: number,
+export function getVariedNumericalInputColumnsForSobolAnalysis(samplesCount: number,
   inputsInfo: VariedNumericalInputInfo[]): DG.Column[] {
   const dimension = inputsInfo.length;
 
@@ -53,4 +53,26 @@ export function getVariedNumericalInputColumns(samplesCount: number,
 
   // Create & return an array of columns of varied numerical inputs
   return [...Array(dimension).keys()].map((i) => getNumericalInputCol(inputsInfo[i], randData[i]));
+}
+
+// Returns columns of varied numerical inputs that are used in RSA
+export function getVariedNumericalInputColumnsForRandomAnalysis(samplesCount: number,
+  inputsInfo: VariedNumericalInputInfo[]): DG.Column[] {
+
+  const columns = [] as DG.Column[];
+
+  for (const item of inputsInfo) {
+    const column = DG.Column.fromType(item.prop.propertyType as unknown as DG.COLUMN_TYPE,
+      item.prop.caption ?? item.prop.name, samplesCount);
+    
+    const columnSource = column.getRawData();
+    const step = item.max - item.min;
+
+    for (let i = 0; i < samplesCount; ++i)
+      columnSource[i] = item.min + step * Math.random();
+
+    columns.push(column);
+  }
+
+  return columns;
 }

@@ -1,4 +1,4 @@
-// sensitivity-analysis.ts
+// sobol-sensitivity-analysis.ts
 
 /* Tools that perform variance-based sensitivity analysis (VSA).
 
@@ -22,9 +22,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumns} from './input-tools';
+import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForSobolAnalysis} from './input-tools';
 import {getOutputColumns} from './output-tools';
 import {checkSize} from './utils';
+import {OutputInfo, getOutput} from './sa-outputs-routine'
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -33,15 +34,23 @@ type SobolIndeces = {
   totalOrder: DG.Column
 };
 
+type OutputDataFromUI = {
+  prop: DG.Property,
+  value: {
+    row: number,
+    columns: string | null
+  },
+};
+
 const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
 
-export type ResultOfVarianceBasedSenstivityAnalysis = {
+export type ResultOfSobolAnalysis = {
   funcEvalResults: DG.DataFrame,
   firstOrderSobolIndices: DG.DataFrame,
   totalOrderSobolIndices: DG.DataFrame
 };
 
-export class VarianceBasedSenstivityAnalysis {
+export class SobolAnalysis {
   private samplesCount: number;
   private dimension: number;
   private runsCount: number;
@@ -51,10 +60,13 @@ export class VarianceBasedSenstivityAnalysis {
   private func: DG.Func;
   private funcCalls: DG.FuncCall[];
 
+  private outputInfo: OutputInfo[];
+
   constructor(
     func: DG.Func,
     fixedInputs: FixedInputItem[],
     variedInputs: VariedNumericalInputInfo[],
+    outputsOfInterest: OutputDataFromUI[],
     samplesCount: number,
   ) {
     // check size
@@ -71,7 +83,7 @@ export class VarianceBasedSenstivityAnalysis {
          2) scale [0, 1]-to-[min, max] is applied. 
 
        Further, these values are put to the function analyzed. */
-    const numericalColumns = getVariedNumericalInputColumns(samplesCount, variedInputs);
+    const numericalColumns = getVariedNumericalInputColumnsForSobolAnalysis(samplesCount, variedInputs);
 
     this.dimension = variedInputs.length;
 
@@ -99,6 +111,13 @@ export class VarianceBasedSenstivityAnalysis {
 
       this.funcCalls.push(func.prepare(inputs));
     }
+
+    this.outputInfo = outputsOfInterest.map((output) => ({
+      prop: output.prop,
+      elements: [],
+      row: output.value.row
+      }
+    ));
   }
 
   // Runs the function with each inputs set
@@ -170,7 +189,7 @@ export class VarianceBasedSenstivityAnalysis {
   }
 
   // Performs variance-based sensitivity analysis
-  async perform(): Promise<ResultOfVarianceBasedSenstivityAnalysis> {
+  async perform(): Promise<ResultOfSobolAnalysis> {
     await this.run();
 
     // columns with the varied inputs values
@@ -180,7 +199,8 @@ export class VarianceBasedSenstivityAnalysis {
     const funcEvalResults = DG.DataFrame.fromColumns(inputColumns);
     funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
-    const outputColumns = getOutputColumns(this.funcCalls);
+    //const outputColumns = getOutputColumns(this.funcCalls);
+    const outputColumns = getOutput(this.funcCalls, this.outputInfo).columns.toList();
 
     // add columns with outputs
     for (const col of outputColumns)
@@ -205,7 +225,7 @@ export class VarianceBasedSenstivityAnalysis {
     firstOrderSobolIndicesDF.name = "First order Sobol' indices";    
 
     const totalOrderSobolIndicesDF = DG.DataFrame.fromColumns(totalOrderSobolIndecesCols);
-    totalOrderSobolIndicesDF.name = "Total order Sobol' indices";
+    totalOrderSobolIndicesDF.name = "Total order Sobol' indices";    
 
     return {
       funcEvalResults: funcEvalResults,
