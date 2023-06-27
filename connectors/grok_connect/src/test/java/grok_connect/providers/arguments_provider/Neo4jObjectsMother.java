@@ -610,7 +610,7 @@ public class Neo4jObjectsMother {
                 .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
-                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                dayOfYear == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
