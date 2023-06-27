@@ -91,7 +91,7 @@ export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: Word Cloud Viewer
+//name: Word сloud
 //description: Creates a word cloud viewer
 //tags: viewer
 //output: viewer result
