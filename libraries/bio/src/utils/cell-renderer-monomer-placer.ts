@@ -3,13 +3,23 @@ import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
 import {UnitsHandler} from './units-handler';
-import {NOTATION, SplitterFunc, MonomerToShortFunc, getSplitterForColumn} from './macromolecule';
+import {NOTATION, SplitterFunc, MonomerToShortFunc, getSplitterForColumn, ALPHABET} from './macromolecule';
+import {IMonomerLib, Monomer} from '../types';
+import { HELM_POLYMER_TYPE } from './const';
 
 type MonomerPlacerProps = {
   unitsHandler: UnitsHandler,
+  monomerLib?: IMonomerLib,
   monomerCharWidth: number, separatorWidth: number,
   monomerToShort: MonomerToShortFunc, monomerLengthLimit: number,
 };
+
+const polymerTypeMap = {
+  [ALPHABET.DNA]: HELM_POLYMER_TYPE.RNA,
+  [ALPHABET.RNA]: HELM_POLYMER_TYPE.RNA,
+  [ALPHABET.PT]: HELM_POLYMER_TYPE.PEPTIDE,
+  [ALPHABET.UN]: HELM_POLYMER_TYPE.PEPTIDE,
+}
 
 export class MonomerPlacer {
   private readonly _splitter: SplitterFunc;
@@ -142,5 +152,11 @@ export class MonomerPlacer {
   getSeqMonList(rowIdx: number): string[] {
     const seq: string | null = this.col.get(rowIdx);
     return seq ? this._splitter(seq) : [];
+  }
+
+  public getMonomer(symbol: string): Monomer | null {
+    const alphabet = this.props.unitsHandler.alphabet ?? ALPHABET.UN;
+    const polymerType = polymerTypeMap[alphabet as ALPHABET];
+    return this.props.monomerLib?.getMonomer(polymerType, symbol) ?? null;
   }
 }

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {_package} from '../package';
+import {_package, getBioLib} from '../package';
 import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import * as C from './constants';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
@@ -22,6 +22,9 @@ import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {Tags as mmcrTags, Temps as mmcrTemps} from '../utils/cell-renderer-consts';
+import { HELM_POLYMER_TYPE } from '@datagrok-libraries/bio/src/utils/const';
+import { MonomerLib } from './monomer-lib';
+import { IMonomerLib } from '@datagrok-libraries/bio/src/types';
 
 const enum tempTAGS {
   referenceSequence = 'reference-sequence',
@@ -94,14 +97,20 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     // for (let posI: number = 1; posI < maxLengthWords.length; posI++)
     //   maxLengthWordsSum[posI] = maxLengthWordsSum[posI - 1] + maxLengthWords[posI];
     // const maxIndex = maxLengthWords.length;
-
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCellBounds.x);
     const left: number | null = seqColTemp.getPosition(gridCell.tableRowIndex!, argsX);
 
     const seqMonList: string[] = seqColTemp.getSeqMonList(gridCell.tableRowIndex!);
     if (left !== null && left < seqMonList.length) {
-      const monomer: string = seqMonList[left];
-      ui.tooltip.show(ui.divV([monomer, `left: ${left}`, `argsX: ${argsX}`]), e.x + 16, e.y + 16);
+      const monomerSymbol: string = seqMonList[left];
+      const tooltipElements: HTMLElement[] = [ui.div(monomerSymbol)];
+      const monomer = seqColTemp.getMonomer(monomerSymbol);
+      if(monomer) {
+      const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+      const monomerSVG = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
+      tooltipElements.push(monomerSVG);
+      }
+      ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
     } else {
       ui.tooltip.hide();
     }
@@ -136,7 +145,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidth];
     const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
     if (monomerWidth === 'short') {
-      gapRenderer = 12;
       maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties.maxMonomerLength;
     }
 
@@ -147,8 +155,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           const uh = UnitsHandler.getOrCreate(tableCol);
           return {
             unitsHandler: uh,
-            monomerCharWidth: 7, separatorWidth: !uh.isMsa() ? 4 : 12,
-            monomerToShort: monomerToShortFunction, monomerLengthLimit: 1,
+            monomerCharWidth: 7, separatorWidth: !uh.isMsa() ? gapRenderer : 8,
+            monomerToShort: monomerToShortFunction, monomerLengthLimit: maxLengthOfMonomer,
+            monomerLib: getBioLib()
           };
         });
     }

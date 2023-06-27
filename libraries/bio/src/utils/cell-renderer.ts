@@ -89,7 +89,7 @@ export const printLeftOrCentered = (
     }
     if (drawStyle === DrawStyle.MSA) {
       g.fillStyle = drawColor;
-      g.fillText(colorPart, x + dx1 + ((maxWord[wordIdx] - colorTextSize) / 2), y + dy);
+      g.fillText(colorPart, x + dx1, y + dy);
     }
   }
 
