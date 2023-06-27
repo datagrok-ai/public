@@ -4,41 +4,41 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 module.exports = {
   mode: 'development',
   entry: {
-    package: [`./src/wasm/wasmCluster.wasm`, './src/package.ts'],
+    package: ['./src/package.ts'],
     test: {
       filename: 'package-test.js',
       library: {type: 'var', name: `${packageName}_test`},
       import: './src/package-test.ts',
-    }
+    },
   },
   devServer: {
-    contentBase: './dist'
+    contentBase: './dist',
   },
   experiments: {
     asyncWebAssembly: true,
-    topLevelAwait: true
+    topLevelAwait: true,
   },
   resolve: {
-    fallback: { "url": false },
+    fallback: {'url': false},
     extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
       {
         test: /\.worker\.ts$/,
-        loader: "worker-loader",
+        loader: 'worker-loader',
         options: {
-          inline: "fallback" // this creates a separate file
+          inline: 'fallback', // this creates a separate file
         },
       },
       {
         test: /\.(wasm)$/i,
-        type: "javascript/auto",
-        loader: "file-loader",
+        type: 'javascript/auto',
+        loader: 'file-loader',
         options: {
-          publicPath: "dist/",
-          name: '[name].[ext]'
-        }
+          publicPath: 'dist/',
+          name: '[name].[ext]',
+        },
       },
       {
         test: /\.ts(x?)$/,
@@ -54,6 +54,7 @@ module.exports = {
         test: /\.js$/,
         enforce: 'pre',
         use: ['source-map-loader'],
+        exclude: /node_modules/,
       },
     ],
   },

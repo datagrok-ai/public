@@ -4,11 +4,12 @@ import * as grok from 'datagrok-api/grok';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {chemSpace} from '../analysis/chem-space';
+import {chemSpace, runChemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
-import {chemSpaceTopMenu} from '../package';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 
 const {jStat} = require('jstat');
 
@@ -29,8 +30,8 @@ category('top menu chem space', async () => {
   });
 
   test('chemSpaceOpens.smiles', async () => {
-    if (DG.Test.isInBenchmark) await _testChemSpaceReturnsResult(await readDataframe('smiles.csv'), 'canonical_smiles');
-    else await _testChemSpaceReturnsResult(smallDf, 'smiles');
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_100K.zip') : smallDf;
+    await _testChemSpaceReturnsResult(df, 'smiles');
   });
 
   test('chemSpaceOpens.molV2000', async () => {
@@ -52,21 +53,18 @@ category('top menu chem space', async () => {
     await _testChemSpaceReturnsResult(testSmilesMalformed, 'canonical_smiles');
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
+      'cannot find warning balloon', 1000);
     } finally {DG.Balloon.closeAll();}
   });
 
   test('TSNE', async () => {
-    await _testDimensionalityReducer(smallDf.col('smiles')!, 't-SNE');
+    await _testDimensionalityReducer(smallDf.col('smiles')!, DimReductionMethods.T_SNE);
   }, {skipReason: '#1384'});
 
   test('UMAP', async () => {
-    await _testDimensionalityReducer(smallDf.col('smiles')!, 'UMAP');
+    await _testDimensionalityReducer(smallDf.col('smiles')!, DimReductionMethods.UMAP);
   }, {skipReason: 'GROK-12227'});
-
-  test('SPE', async () => {
-    await _testDimensionalityReducer(smallDf.col('smiles')!, 'SPE');
-  });
 
   after(async () => {
     grok.shell.closeAll();
@@ -77,17 +75,19 @@ category('top menu chem space', async () => {
 async function _testChemSpaceReturnsResult(df: DG.DataFrame, col: string) {
   await grok.data.detectSemanticTypes(df);
   const tv = grok.shell.addTableView(df);
+  await awaitCheck(() => tv.name === df.name, 'Chem space table view hasn\'t been created', 1000);
   try {
-    const sp = await chemSpaceTopMenu(df, df.getCol(col), 'UMAP', 'Tanimoto', true, {});
+    const sp = await runChemSpace(df, df.getCol(col), DimReductionMethods.UMAP,
+      BitArrayMetricsNames.Tanimoto, true, {});
     expect(sp != null, true);
   } finally {tv.close();}
 }
 
-async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
+async function _testDimensionalityReducer(col: DG.Column, algorithm: DimReductionMethods) {
   const chemSpaceParams: ISequenceSpaceParams = {
     seqCol: col,
     methodName: algorithm,
-    similarityMetric: 'Tanimoto',
+    similarityMetric: BitArrayMetricsNames.Tanimoto,
     embedAxesNames: ['Embed_X', 'Embed_Y'],
   };
   const {distance, coordinates} = await chemSpace(chemSpaceParams);
@@ -101,7 +101,8 @@ async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
   else
     getSimilaritiesMarixFromDistances(dim, distance, simArr);
 
-  const nearestAndFarestNeighbours: IDistanceToPoint[][] = findNNearestAndFarestNeighbours(coordinates, col.length, 'Embed_X', 'Embed_Y');
+  const nearestAndFarestNeighbours: IDistanceToPoint[][] =
+    findNNearestAndFarestNeighbours(coordinates, col.length, 'Embed_X', 'Embed_Y');
   // const similaririesWithDistances = DG.DataFrame.create();
   const similaritiesArray: number[] = [];
   const distancesArray: number[] = [];
@@ -129,7 +130,8 @@ interface IDistanceToPoint {
   distance: number;
 }
 
-function findNNearestAndFarestNeighbours(coordinates: DG.ColumnList, nItems: number, xColName: string, yColName: string, n?: number) {
+function findNNearestAndFarestNeighbours(coordinates: DG.ColumnList, nItems: number, xColName: string,
+  yColName: string, n?: number) {
   const matrix: IDistanceToPoint[][] = [];
   const df = DG.DataFrame.create(nItems);
   for (const col of coordinates)

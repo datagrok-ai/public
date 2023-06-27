@@ -100,6 +100,7 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 /** Grok functions */
 export class Functions {
+
   register(func: Func): void {
     api.grok_RegisterFunc(func);
   }
@@ -209,24 +210,45 @@ export class Context {
   }
 }
 
+class FuncCallParams {
+  [name: string]: FuncCallParam,
+
+  //@ts-ignore
+  public values(): FuncCallParam[];
+}
+
 /** Represents a function call
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
 export class FuncCall extends Entity {
   public readonly dart: any;
-  public inputs: any;
-  public outputs: any;
+
+  /** Named input values. See {@link inputParams} for parameter metadata. */
+  public inputs: {[name: string]: any};
+
+  /** Named output values. See {@link outputParams} for parameter metadata. */
+  public outputs: {[name: string]: any};
+
+  /** Input parameter metadata. See {@link inputs} for parameter values. */
+  public inputParams: FuncCallParams;
+
+  /** Output parameter metadata. See {@link outputs} for parameter values. */
+  public outputParams: FuncCallParams;
+
   public aux: any;
   public options: any;
-  public inputParams: any;
-  public outputParams: any;
 
   constructor(dart: any) {
     super(dart);
+    // @ts-ignore
     this.inputs = new FuncCallParamMapProxy(this.dart, true);
+    // @ts-ignore
     this.outputs = new FuncCallParamMapProxy(this.dart, false);
+    // @ts-ignore
     this.inputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, true));
+    // @ts-ignore
     this.outputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, false));
+
     this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.dart));
     this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.dart));
   }

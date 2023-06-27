@@ -6,7 +6,6 @@ import {PinnedColumn} from "../pinned/PinnedColumn";
 import {Grid, TableView} from "datagrok-api/dg";
 
 let m_dispatcher : MouseDispatcher | null = null;
-
 function findPinnedColumn(eElem : Element) : PinnedColumn | null {
 
     if(!(eElem instanceof HTMLCanvasElement))
@@ -43,7 +42,6 @@ function findPinnedColumn(eElem : Element) : PinnedColumn | null {
 
     return null;
 }
-
 
 function findElement(nXClient : number, nYClient : number) : Element | null {
     const eElem = document.elementFromPoint(nXClient, nYClient);

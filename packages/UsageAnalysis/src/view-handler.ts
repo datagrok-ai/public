@@ -8,6 +8,7 @@ import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
+import {LogView} from "./tabs/log";
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -26,10 +27,11 @@ export class ViewHandler {
 
   async init() {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
+    ViewHandler.UA.parentCall = grok.functions.getCurrentCall();
     const toolbox = await UaToolbox.construct();
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView];
     // const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
@@ -48,17 +50,29 @@ export class ViewHandler {
         toolbox.setPackages(params.get('packages')!);
       toolbox.applyFilter();
     }
-    const sub = ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
-      if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
-        grok.shell.windows.showToolbox = true;
-        grok.shell.windows.showContextPanel = true;
-        const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
+    let helpShown = false;
+    ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
+      const view = ViewHandler.UA.currentView;
+      if (view instanceof UaView) {
+        for (const viewer of view.viewers) {
+          if (!viewer.activated) {
+            viewer.activated = true;
+            viewer.reloadViewer();
+          }
+        }
+      }
+      if (!helpShown) {
+        if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
+          grok.shell.windows.showToolbox = true;
+          grok.shell.windows.showContextPanel = true;
+          const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
     simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
     more information about the selected events will be displayed on context pane`);
-        info.classList.add('ua-hint');
-        grok.shell.o = info;
+          info.classList.add('ua-hint');
+          grok.shell.o = info;
+        }
+        helpShown = true;
       }
-      sub.unsubscribe();
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;

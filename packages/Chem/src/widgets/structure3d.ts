@@ -10,7 +10,7 @@ const HEIGHT = 300;
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
   try {
-    molecule = _convertMolNotation(molecule, 'unknown', 'molblock', rdKitModule);
+    molecule = _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
@@ -18,7 +18,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   try {
     sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule has no atoms'));
+    return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));
   }
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 
@@ -45,15 +45,15 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
           nglHost.style.width = `${w}px`;
           nglHost.style.height = `${h}px`;
           const waitParentEl = nglHost.parentElement;
-          if(waitParentEl?.classList.contains('grok-wait')){
+          if (waitParentEl?.classList.contains('grok-wait')) {
             waitParentEl.style.width = `${w}px`;
             waitParentEl.style.height = `${h}px`;
           }
           stage.handleResize();
-        })
+        });
       }
     }
-  })
+  });
 
   return new DG.Widget(nglHost);
 }

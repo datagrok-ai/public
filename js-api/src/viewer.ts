@@ -268,7 +268,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
   }
 
-  static wordCloud(t: DataFrame, options: object | null = null): Viewer<interfaces.IWordCloudLookSettings> {
+  /** @deprecated */
+  static wordCloud(t: DataFrame, options: object | null = null): Viewer {
     return <Viewer>Viewer.fromType(VIEWER.WORD_CLOUD, t, options);
   }
 

@@ -20,14 +20,14 @@ perspective.
 
 1. Register on [public.datagrok.ai](https://public.datagrok.ai) and [dev.datagrok.ai](https://dev.datagrok.ai)
 1. Now let's import data into the platform:
-   1. [Local files](../../access/file-shares.mdx#importing-text). Download a
+   1. [Local files](../../access/files/files.mdx#importing-text). Download a
       [dataset](https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ApiTests/files/datasets/demog.csv)
       and import it into the platform using different approaches: drag-and-drop, double-click the "Data" icon on the
       sidebar, select "Data > Open local file", press `Ctrl+O`, and so on.
-   1. [File shares](../../access/file-shares). Add the dataset to your *Home* directory.
-   1. [Databases](../../access/databases.mdx#database-manager).
+   1. [File shares](../../access/files/files.mdx). Add the dataset to your *Home* directory.
+   1. [Databases](../../access/databases/databases.mdx#database-manager).
       1. Watch a [DB exploration video](https://www.youtube.com/watch?v=YJmSvh3_uCM).
-      1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/DataAccess/DataConnectors) tutorial to
+      1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/Tutorials/DataAccess/DataConnectors) tutorial to
          connect to a Postgres DB and run a query.
    1. [Webservices](../../access/open-api). Browse the [Webservices Manager](https://public.datagrok.ai/webservices)
       (Data > Webservices).
@@ -36,19 +36,19 @@ perspective.
       1. [Grid](../../visualize/viewers/grid)
       1. [Table view](../../datagrok/table-view.md)
    1. Watch a [Viewers and views video](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=588s)
-   1. Open a table view for the imported dataset. Edit values in the grid, add/remove rows/columns, select rows/columns,
-      sort records by double-clicking a column header, resize rows/columns.
+   1. Complete the [Grid](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization)
+      tutorial
 1. Viewers:
    1. Learn how to work with visualizations on the platform by completing these tutorials:
-      1. [Scatter plot](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/ScatterPlot)
-      1. [Viewers](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/Viewers)
-      1. [Filters](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/Filters)
-      1. [Embedded viewers](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/EmbeddedViewers)
+      1. [Scatter plot](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/ScatterPlot)
+      1. [Viewers](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers)
+      1. [Filters](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Filters)
+      1. [Embedded viewers](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/EmbeddedViewers)
    1. Watch an [Interactive data visualization video](https://www.youtube.com/watch?v=67LzPsdNrEc)
    1. Read [documentation](../../visualize/viewers/viewers.md)
    1. Add different viewers using the previously imported dataset
 1. Dashboards:
-   1. Complete the [Dashboards](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/Dashboards) tutorial
+   1. Complete the [Dashboards](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Dashboards) tutorial
    1. Create a dashboard and share it with your mentor
 
 ## Day 2
@@ -73,7 +73,7 @@ The goal for today is to gain experience with the platform by learning about its
       `#text`, `#conversion`, etc.). Run simple functions, e.g., `Abs`, `Add` or `And`, from the context panel and the
       console.
 1. Scripting:
-   1. Complete the [Scripting](https://dev.datagrok.ai/apps/tutorials/MachineLearning/Scripting) tutorial
+   1. Complete the [Scripting](https://dev.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/Scripting) tutorial
    1. Read documentation:
       1. [Scripting for non-developers](../../compute/scripting-for-non-developers.mdx)
       1. [Scripting](../../compute/scripting.md)
@@ -140,18 +140,23 @@ After Day 4, you will learn:
       1. [Aggregate rows](../../transform/aggregate-rows.md)
       1. [Join tables](../../transform/join-tables.md)
       1. [Link tables](../../explore/link-tables.md)
+   1. Complete the [Data Aggregation](https://dev.datagrok.ai/apps/tutorials/Tutorials/Datatransformation/DataAggregation)
+      tutorial
 1. Create a function that aggregates demographics data in your package:
    1. A function called `diseaseAvgAge` takes parameters `df` and `site`, aggregates data, and returns a dataframe with
       average age for each disease. Average age should be represented separately for female and male patients.
    1. Test your function on the [demographics dataset](https://datagrok.ai/js-api/classes/dg.DemoDatasets#demog)
    1. Refer to the [data aggregation](https://public.datagrok.ai/js/samples/data-frame/aggregation/aggregate) example
-1. Create a function that adds a calculated column to the demographics dataset:
-   1. A function called `addBmiColumn` takes parameters `df`, column names `weight`, and `height`, adds a column with
-      BMI to the original dataframe.
-   1. Test your function on the [demographics dataset](https://datagrok.ai/js-api/classes/dg.DemoDatasets#demog)
-   1. Refer to the
-      [example](https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns/add-calculated-column)
-      for calculated columns
+1. Calculated columns:
+   1. Complete the [Calculated Columns](https://dev.datagrok.ai/apps/tutorials/Tutorials/Datatransformation/CalculatedColumns)
+      tutorial
+   1. Create a function that adds a calculated column to the demographics dataset:
+      1. A function called `addBmiColumn` takes parameters `df`, column names `weight`, and `height`, adds a column with
+         BMI to the original dataframe.
+      1. Test your function on the [demographics dataset](https://datagrok.ai/js-api/classes/dg.DemoDatasets#demog)
+      1. Refer to the
+         [example](https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns/add-calculated-column)
+         for calculated columns
 1. Complete [Exercise #1](exercises.md#exercise-1-semantic-types). Add a detector test.
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.
@@ -172,11 +177,11 @@ After Day 5, you will learn how to:
 1. Scripting viewers:
    1. Watch a [Scripting viewers video](https://www.youtube.com/watch?v=jHRpOnhBAz4)
    1. Read [documentation](../how-to/develop-custom-viewer.md#scripting-viewers)
-   1. Complete [Exercise #5](exercises.md#exercise-5-creating-a-scripting-viewer)
+   1. Complete [Exercise #6](exercises.md#exercise-6-creating-a-scripting-viewer)
 1. Data access:
    1. Complete [Exercise #4](exercises.md#exercise-4-querying-databases)
    1. Read [documentation](../how-to/access-data)
-1. Complete [Exercise #6](exercises.md#exercise-6-transforming-dataframes)
+1. Complete [Exercise #7](exercises.md#exercise-7-transforming-dataframes)
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.
 
@@ -190,12 +195,12 @@ After Day 6, you will learn how to:
 
 1. Cell renderers:
    1. Read [documentation](../how-to/custom-cell-renderers.md)
-   1. Complete [Exercise #7](exercises.md#exercise-7-custom-cell-renderers)
+   1. Complete [Exercise #8](exercises.md#exercise-8-custom-cell-renderers)
 1. Connecting to a webservice:
    1. Read [documentation](../how-to/access-data)
-   1. Complete [Exercise #8](exercises.md#exercise-8-creating-an-info-panel-with-a-rest-web-service)
+   1. Complete [Exercise #9](exercises.md#exercise-9-creating-an-info-panel-with-a-rest-web-service)
 1. Building a user interface:
-   1. Complete [Exercise #9](exercises.md#exercise-9-enhancing-datagrok-with-dialog-based-functions)
+   1. Complete [Exercise #10](exercises.md#exercise-10-enhancing-datagrok-with-dialog-based-functions)
    1. Refer to [UI components](../advanced/ui.md) article
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.

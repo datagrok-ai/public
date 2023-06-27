@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import $ from 'cash-dom';
 
@@ -44,6 +45,11 @@ interface AlignMethod {
   right: (node: SankeyNode<{}, {}>, n: number) => number,
 }
 
+@grok.decorators.viewer({
+  name: 'Sankey',
+  description: 'Creates a sankey viewer',
+  icon: 'icons/sankey-viewer.svg',
+})
 export class SankeyViewer extends DG.JsViewer {
   sourceColumnName: string;
   targetColumnName: string;

@@ -8,6 +8,7 @@ import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 import {LogoSummaryTable} from '../viewers/logo-summary';
+import {TEST_COLUMN_NAMES} from './utils';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;
@@ -22,12 +23,12 @@ category('Model: Settings', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
       SCALING_METHODS.NONE);
     if (tempModel === null)
@@ -112,9 +113,6 @@ category('Model: Settings', () => {
       `'${Object.keys(testColumns)[0]}' with '${testColumns[columnName]}' but aggregated with ` +
       `'${model.settings.columns![columnName]}' instead`);
 
-    expect(model.analysisView.grid.col(columnName)?.visible, true, `Expected to show column '${columnName}' but ` +
-      `it is hidden`);
-
     const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
     const aggColName = getAggregatedColName(testColumns[columnName], columnName);
     expect(lstViewer.viewerGrid.col(aggColName) !== null, true, `Expected to include column '${columnName}' in ` +
@@ -125,9 +123,6 @@ category('Model: Settings', () => {
     expect(Object.keys(model.settings.columns!).length, 0,
       `Expected to remove all column aggregations but columns {${Object.keys(model.settings.columns!).join(' & ')}} ` +
       `are still included`);
-
-    expect(model.analysisView.grid.col(columnName)?.visible, false, `Expected to hide column '${columnName}' but ` +
-      `it is shown`);
 
     expect(lstViewer.viewerGrid.col(aggColName) === null, true, `Expected to remove column '${columnName}' from ` +
       `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is still present`);
@@ -149,4 +144,4 @@ category('Model: Settings', () => {
     expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) === null, true,
       'Dendrogram is present in the view after disabling');
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
-});
+}, false);

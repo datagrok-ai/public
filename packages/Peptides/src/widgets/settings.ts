@@ -48,14 +48,21 @@ export const PANES_INPUTS = {
 export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const accordion = ui.accordion();
   const settings = model.settings;
-  const result: type.PeptidesSettings = {columns: {}};
+  const currentScaling = settings.scaling ?? C.SCALING_METHODS.NONE;
+  const currentBidirectional = settings.isBidirectional ?? false;
+  const currentMaxMutations = settings.maxMutations ?? 1;
+  const currentMinActivityDelta = settings.minActivityDelta ?? 0;
+  const currentColumns = settings.columns ?? {};
+
+  const result: type.PeptidesSettings = {};
   const inputs: PaneInputs = {};
 
   // General pane options
-  const activityScaling = ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, settings.scaling ?? C.SCALING_METHODS.NONE,
-    Object.values(C.SCALING_METHODS), () => result.scaling = activityScaling.value! as C.SCALING_METHODS);
-  const bidirectionalAnalysis = ui.boolInput(GENERAL_INPUTS.BIDIRECTIONAL_ANALYSIS, settings.isBidirectional ?? false,
-    () => result.isBidirectional = bidirectionalAnalysis.value!);
+  const activityScaling =
+    ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
+      () => result.scaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
+  const bidirectionalAnalysis = ui.boolInput(GENERAL_INPUTS.BIDIRECTIONAL_ANALYSIS, currentBidirectional,
+    () => result.isBidirectional = bidirectionalAnalysis.value) as DG.InputBase<boolean>;
 
   accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityScaling, bidirectionalAnalysis]), true);
   inputs[SETTINGS_PANES.GENERAL] = [activityScaling, bidirectionalAnalysis];
@@ -75,26 +82,26 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   */
   const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
   const dendrogram = ui.boolInput(VIEWER_TYPE.DENDROGRAM, isDendrogramEnabled ?? false,
-    () => result.showDendrogram = dendrogram.value!);
+    () => result.showDendrogram = dendrogram.value) as DG.InputBase<boolean>;
 
   accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram]), true);
   inputs[SETTINGS_PANES.VIEWERS] = [dendrogram];
 
   // Mutation Cliffs pane options
-  const maxMutations = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MAX_MUTATIONS, settings.maxMutations ?? 1, 0, 50, () => {
-    const val = Math.round(maxMutations.value!);
+  const maxMutations = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MAX_MUTATIONS, currentMaxMutations, 1, 50, () => {
+    const val = Math.round(maxMutations.value);
     $(maxMutations.root).find('label.ui-input-description').remove();
     result.maxMutations = val;
     maxMutations.addPostfix(val.toString());
-  });
+  }) as DG.InputBase<number>;
   maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
-  const minActivityDelta = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MIN_ACTIVITY_DELTA, settings.minActivityDelta ?? 0, 0,
+  const minActivityDelta = ui.sliderInput(MUTATION_CLIFFS_INPUTS.MIN_ACTIVITY_DELTA, currentMinActivityDelta, 0,
     100, () => {
-      const val = minActivityDelta.value!.toFixed(3);
+      const val = minActivityDelta.value.toFixed(3);
       result.minActivityDelta = parseFloat(val);
       $(minActivityDelta.root).find('label.ui-input-description').remove();
       minActivityDelta.addPostfix(val);
-    });
+    }) as DG.InputBase<number>;
   minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
   accordion.addPane(SETTINGS_PANES.MUTATION_CLIFFS, () => ui.inputs([maxMutations, minActivityDelta]), true);
   inputs[SETTINGS_PANES.MUTATION_CLIFFS] = [maxMutations, minActivityDelta];
@@ -104,22 +111,31 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const includedColumnsInputs: DG.InputBase[] = [];
   for (const col of model.df.columns.numerical) {
     const colName = col.name;
-    if (colName == settings.activityColumnName || colName == C.COLUMNS_NAMES.ACTIVITY_SCALED)
+    if (colName === settings.activityColumnName || colName === C.COLUMNS_NAMES.ACTIVITY_SCALED)
       continue;
 
-    const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED,
-      typeof (settings.columns ?? {})[colName] !== 'undefined', () => {
+    const isIncludedInput = ui.boolInput(COLUMNS_INPUTS.IS_INCLUDED, typeof (currentColumns)[colName] !== 'undefined',
+      () => {
+        result.columns ??= {};
         if (isIncludedInput.value)
-          result.columns![colName] = aggregationInput.value;
-        else
-          delete result.columns![colName];
+          result.columns[colName] = aggregationInput.value;
+        else {
+          delete result.columns[colName];
+          if (Object.keys(result.columns).length === Object.keys(currentColumns).length)
+            delete result.columns;
+        }
       }) as DG.InputBase<boolean>;
-    const aggregationInput = ui.choiceInput(COLUMNS_INPUTS.AGGREGATION,
-      (settings.columns ?? {})[colName] ?? DG.AGG.AVG, Object.values(DG.STATS), () => {
+
+    const aggregationInput = ui.choiceInput(COLUMNS_INPUTS.AGGREGATION, (currentColumns)[colName] ?? DG.AGG.AVG,
+      Object.values(DG.STATS), () => {
+        result.columns ??= {};
         if (isIncludedInput.value)
-          result.columns![colName] = aggregationInput.value;
-        else
-          delete result.columns![col.name];
+          result.columns[colName] = aggregationInput.value;
+        else {
+          delete result.columns[col.name];
+          if (Object.keys(result.columns).length === Object.keys(currentColumns).length)
+            delete result.columns;
+        }
       }) as DG.InputBase<DG.AggregationType>;
     $(aggregationInput.root).find('label').css('width', 'auto');
     const inputsRow = ui.inputsRow(col.name, [isIncludedInput, aggregationInput]);
@@ -127,7 +143,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     $(inputsRow).find('div.ui-div').css('display', 'inline-flex');
     inputsRows.push(inputsRow);
   }
-  if (inputsRows.length != 0) {
+  if (inputsRows.length !== 0) {
     accordion.addPane(SETTINGS_PANES.COLUMNS, () => ui.divV(inputsRows), false);
     inputs[SETTINGS_PANES.COLUMNS] = includedColumnsInputs;
   }

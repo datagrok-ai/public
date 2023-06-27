@@ -20,7 +20,7 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
   simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
   simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-  const simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
+  const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
 
   demo.step('Load data', async () => {grok.shell.addTableView(simpleTable);},
     {description: 'Load the dataset containing macromolecule sequences. Notice how Datagrok detects macromolecules ' +

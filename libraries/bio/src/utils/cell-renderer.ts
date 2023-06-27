@@ -57,6 +57,7 @@ export const printLeftOrCentered = (
     compareWithCurrent = gridCell.cell.column.temp['compare-with-current'] ?? true;
     highlightDifference = gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
   }
+
   const currentMonomer: string = referenceSequence[wordIdx];
   if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference'))
     transparencyRate = (colorPart == currentMonomer) ? 0.3 : transparencyRate;

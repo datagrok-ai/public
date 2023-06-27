@@ -70,14 +70,14 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
     imageHost.height = height * r;
     imageHost.style.width = width.toString() + 'px';
     imageHost.style.height = height.toString() + 'px';
-      //in case molecule is smiles setting correct coordinates to save molecule orientation
+    //in case molecule is smiles setting correct coordinates to save molecule orientation
     if (!DG.chem.isMolBlock(molecule))
       molecule = _convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdKitModule!);
     drawMoleculeToCanvas(0, 0, width * r, height * r, imageHost, molecule, smartsCol.get(i));
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
-  }), {classes: 'd4-flex-wrap', style: {overflow: 'hidden', 'max-height': '400px'}});
+  }), {classes: 'd4-flex-wrap', style: {'overflow': 'hidden', 'max-height': '400px'}});
 
   return new DG.Widget(ui.box(list));
 }

@@ -4,11 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
-import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
 import {TAGS as bioTAGS, getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {calcMmDistanceMatrix, dmLinearIndex} from './workers/mm-distance-worker-creator';
+import {calculateMMDistancesArray} from './workers/mm-distance-array-service';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
@@ -23,6 +25,8 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
   computeCompleted = new Subject<boolean>();
+  distanceMatrixComputed: boolean = false;
+  mmDistanceMatrix: Float32Array;
 
   constructor() {
     super('similarity');
@@ -43,20 +47,9 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const monomericMols = await getMonomericMols(this.moleculeColumn);
-        //need to create df to calculate fingerprints
-        const monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
-        const df = await grok.functions.call('Chem:callChemSimilaritySearch', {
-          df: this.dataFrame,
-          col: monomericMols,
-          molecule: monomericMols.get(this.targetMoleculeIdx),
-          metricName: this.distanceMetric,
-          limit: this.limit,
-          minScore: this.cutoff,
-          fingerprint: this.fingerprint
-        });
-        this.idxs = df.getCol('indexes');
-        this.scores = df.getCol('score');
+        const uh = UnitsHandler.getOrCreate(this.moleculeColumn!);
+
+        await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
           `similar (${this.moleculeColumnName})`;
         this.molCol = DG.Column.string(similarColumnName,
@@ -74,7 +67,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
         const targetScoreCell = grid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (event: MouseEvent) => {
+        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (_event: MouseEvent) => {
           this.gridSelect = false;
         });
         updateDivInnerHTML(this.root, grid.root);
@@ -83,22 +76,64 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     }
   }
 
+  private async computeByChem() {
+    const monomericMols = await getMonomericMols(this.moleculeColumn!);
+    //need to create df to calculate fingerprints
+    const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
+    const df = await grok.functions.call('Chem:callChemSimilaritySearch', {
+      df: this.dataFrame,
+      col: monomericMols,
+      molecule: monomericMols.get(this.targetMoleculeIdx),
+      metricName: this.distanceMetric,
+      limit: this.limit,
+      minScore: this.cutoff,
+      fingerprint: this.fingerprint,
+    });
+    this.idxs = df.getCol('indexes');
+    this.scores = df.getCol('score');
+  }
+
+  private async computeByMM() {
+    let distanceArray = new Float32Array();
+    if (!this.distanceMatrixComputed && this.preComputeDistanceMatrix) {
+      this.mmDistanceMatrix = await calcMmDistanceMatrix(this.moleculeColumn!);
+      this.distanceMatrixComputed = true;
+    } else if (!this.preComputeDistanceMatrix) {
+      // use fast distance array calculation if matrix will take too much space
+      distanceArray = await calculateMMDistancesArray(this.moleculeColumn!, this.targetMoleculeIdx);
+    }
+    const len = this.moleculeColumn!.length;
+    const linearizeFunc = dmLinearIndex(len);
+    // array that keeps track of the indexes and scores together
+    const indexWScore = Array(len).fill(0)
+      .map((_, i) => ({idx: i, score: i === this.targetMoleculeIdx ? 1 :
+        this.preComputeDistanceMatrix ? 1 - this.mmDistanceMatrix[linearizeFunc(this.targetMoleculeIdx, i)] :
+          1 - distanceArray[i]
+      }));
+    indexWScore.sort((a, b) => b.score - a.score);
+    // get the most similar molecules
+    const actualLimit = Math.min(this.limit, len);
+    const mostSimilar = indexWScore.slice(0, actualLimit);
+    this.idxs = DG.Column.int('indexes', actualLimit).init((i) => mostSimilar[i].idx);
+    this.scores = DG.Column.float('score', actualLimit).init((i) => mostSimilar[i].score);
+  }
 
   createPropertyPanel(resDf: DG.DataFrame) {
     const propPanel = ui.div();
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
-    const units = resDf.col('sequence')!.getTag(DG.TAGS.UNITS);
-    const separator = resDf.col('sequence')!.getTag(bioTAGS.separator);
+    const molColName = this.molCol?.name!;
+    const units = resDf.col(molColName)!.getTag(DG.TAGS.UNITS);
+    const separator = resDf.col(molColName)!.getTag(bioTAGS.separator);
     const splitter = getSplitter(units, separator);
     const subParts1 = splitter(this.moleculeColumn!.get(this.targetMoleculeIdx));
-    const subParts2 = splitter(resDf.get('sequence', resDf.currentRowIdx));
+    const subParts2 = splitter(resDf.get(molColName, resDf.currentRowIdx));
     const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([
         ui.divText(`Different sequence length:`, {style: {fontWeight: 'bold'}}),
         ui.divText(`target: ${subParts1.length} monomers`),
-        ui.divText(`selected: ${subParts2.length} monomers`)
+        ui.divText(`selected: ${subParts2.length} monomers`),
       ], {style: {paddingBottom: '10px'}}));
     }
     propPanel.append(createDifferencesWithPositions(molDifferences));

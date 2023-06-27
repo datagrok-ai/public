@@ -97,11 +97,17 @@ export function installGridForColumn(grid : DG.Grid, colGrid : DG.GridColumn) : 
 
 export function setGridColumnRenderer(colGrid : DG.GridColumn, renderer : GridCellRendererEx) : void {
   const dart : any = DG.toDart(colGrid);
+  if (dart === null)
+    return;
+
   dart.m_renderer = renderer;
 }
 
 export function getGridColumnRenderer(colGrid : DG.GridColumn) : GridCellRendererEx | null {
   const dart : any = DG.toDart(colGrid);
+  if (dart === null)
+    return null;
+
   const renderer = dart.m_renderer;
   if (renderer === undefined)
     return null;
@@ -243,7 +249,6 @@ export function scaleFont(font : string, fFactor : number) : string {
 }
 
 export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : number, nY : number, nW: number, nH: number, colGrid : DG.GridColumn) {
-
   if(g === null)
     return;
 
@@ -275,6 +280,104 @@ export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : num
   g.fillText(str, nXX, nYY);
 }
 
+
+//Calculates individual words layout from an arbitrary string within a specified bounded range.
+//The text is split only by whitespace as other characters are considered to a part of individual words.
+//The priority is given to keep the words as a whole. Truncation occurs only used when an individual word cannot fit withing the range's bounds
+//ctx the canvas' graphics context. Should be initialized with font and alignment flags before calling this function.
+//arLines an array that after the call will contain the words layout. Each element of the array is another array representing the layout of an individual line.
+//strText a string containing text to be layouted.
+//nWidth the width of bounded range.
+export function calcWordsCellLayout(ctx: CanvasRenderingContext2D, arLines: string[][], strText: string, nWidth: number) {
+  while(arLines.length > 0) {
+    arLines.pop();
+  }
+
+  if(strText === "")
+    return;
+
+  arLines.push([]);
+
+  const arWords : Array<string> = [];
+  splitWithWhitespaces(strText, arWords);
+
+  let tm = null;
+  let strWord = "";
+  let nLine = 0;
+  let nWLine = 0;
+  let nWWord = -1;
+  let nCharCount = -1;
+  for (let nWord = 0; nWord < arWords.length; ++nWord) {
+    strWord = arWords[nWord];
+    tm = ctx.measureText(strWord);
+    nWWord = tm.width;
+    if (nWLine + nWWord > nWidth) { //the word cannot fit within the cell's bounds
+      if (arLines[nLine].length === 0) { // the word gets truncated if the line starts with it. Otherwise, it goes to the next line (eventually it will be truncated)
+        nCharCount = fitWordPart(ctx, strWord, nWidth);
+        if (nCharCount === 0)
+          return;
+
+        strWord = strWord.substring(0, nCharCount);
+        arLines[nLine].push(strWord);   //replace the word with the remaining part to repeat on the next iteration
+        arWords[nWord] = arWords[nWord].substring(nCharCount);
+      }
+
+      --nWord;
+      nWLine = 0;
+      arLines.push([]);
+      ++nLine;
+      continue;
+    }
+
+    arLines[nLine].push(strWord);
+    nWLine += nWWord;
+  }
+}
+
+//Split an arbitrary text into words by whitespace character. Whitespaces as considered as individual words, and thus are included into the output.
+//strText a string containing some text to be split.
+//ar the specified array that after the call will contain individual words including whitespaces as legitimate words.
+function splitWithWhitespaces(strText: string, ar: Array<string>) {
+
+  while (ar.length > 0) {
+    ar.pop();
+  }
+
+  let nIdxStart=0;
+  let nIdxSpace=-1;
+
+  while (nIdxStart < strText.length) {
+    nIdxSpace = strText.indexOf(" ", nIdxStart);
+    if (nIdxSpace >= 0) {
+      if(nIdxSpace> nIdxStart)
+        ar.push(strText.substring(nIdxStart, nIdxSpace))
+
+      ar.push(" ");
+      nIdxStart = nIdxSpace + 1;
+    } else {
+      ar.push(strText.substring(nIdxStart, strText.length));
+      break;
+    }
+  }
+}
+
+
+//Calculates the number of characters from a word that fits within a specified bounded range.
+//strWord the specified word to be split
+//nWidth the width of the specified bounded range.
+function fitWordPart(g: CanvasRenderingContext2D, strWord: string, nWidth: number) {
+  let str = "";
+  let nWWWord = -1;
+  let nLength = strWord.length;
+  for (var n = nLength; n >= 0; --n) {
+    str = strWord.substring(0, n);
+    nWWWord = g.measureText(str).width;
+    if(nWWWord <= nWidth)
+      return n;
+  }
+
+  return 0;
+}
 
 export const LeftArrow = '←';
 export const RightArrow = '→';

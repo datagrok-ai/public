@@ -19,14 +19,19 @@ import {UnknownSeqPalettes} from '../../unknown';
  * @param {SplitterFunc} splitter
  * @return { SeqColStats }, sameLength: boolean } stats of column sequences
  */
-export function getStats(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
+export function getStatsForCol(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
+  const cats = seqCol.categories;
+  const splitted: Iterable<string[]> = wu(seqCol.getRawData())
+    .map((catI) => splitter(seqCol.categories[catI]));
+  return getStats(splitted, minLength);
+}
+
+function getStats(splitted: Iterable<string[]>, minLength: number): SeqColStats {
   const freq: { [m: string]: number } = {};
   let sameLength = true;
   let firstLength = null;
 
-  for (const seq of seqCol.categories) {
-    const mSeq = splitter(seq);
-
+  for (const mSeq of splitted) {
     if (firstLength == null)
       firstLength = mSeq.length;
     else if (mSeq.length !== firstLength)
@@ -48,12 +53,14 @@ export function getStats(seqCol: DG.Column, minLength: number, splitter: Splitte
  * @return {string[]} array of monomers
  */
 export function splitterAsFasta(seq: any): string[] {
-  return wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
-    .map((ma: RegExpMatchArray) => {
-      const m: string = ma[0];
-      const mRes = m.length > 1 ? ma[1] : m;
-      return mRes;
-    }).toArray();
+  return seq.toString().replace(monomerRe, '.$1').slice(1).split('.').map((monomer: string) => {
+    if (monomer.startsWith('[') && monomer.endsWith(']'))
+      return monomer.slice(1, -1);
+    else if (monomer === '-')
+      return '';
+    else
+      return monomer;
+  });
 }
 
 /** Gets method to split sequence by separator
@@ -201,10 +208,10 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
 export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
   let alphabet: string;
   if (seqCol.semType == DG.SEMTYPE.MACROMOLECULE) {
-    const uh: UnitsHandler = new UnitsHandler(seqCol);
+    const uh: UnitsHandler = UnitsHandler.getOrCreate(seqCol);
     alphabet = uh.alphabet;
   } else {
-    const stats: SeqColStats = getStats(seqCol, minLength, splitterAsFasta);
+    const stats: SeqColStats = getStatsForCol(seqCol, minLength, splitterAsFasta);
     alphabet = detectAlphabet(stats.freq, candidateAlphabets);
   }
 

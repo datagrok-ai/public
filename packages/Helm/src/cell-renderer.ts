@@ -11,6 +11,10 @@ const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
   helmMaxLengthWords = 'helm-maxLengthWords',
 }
+// Global flag is for replaceAll
+const helmGapStartRe = /\{(\*\.)+/g;
+const helmGapIntRe = /\.(\*\.)+/g;
+const helmGapEndRe = /(\.\*)+\}/g;
 
 type TempType = { [tagName: string]: any };
 
@@ -58,9 +62,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
           } else if (argsX > maxLengthWordsSum[mid + 1]) {
             left = mid + 1;
           }
-          if (left == right) {
+          if (left == right)
             found = true;
-          }
         }
       }
       left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
@@ -70,15 +73,17 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const allParts: string[] = getParts(subParts, s);
       const tooltipMessage: HTMLElement[] = [];
       for (let partI = 0; partI < allParts.length; ++partI) {
-        if (monomers.has(allParts[partI]))
+        if (monomers.has(allParts[partI])) {
           tooltipMessage[partI] = ui.divV([
             ui.divText(`Monomer ${allParts[partI]} not found.`),
             ui.divText('Open the Context Panel, then expand Manage Libraries')
           ]);
+        }
       }
-      (((tooltipMessage[left]?.childNodes.length ?? 0) > 0))
-        ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16)
-        : ui.tooltip.hide();
+
+      (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) ?
+        ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) :
+        ui.tooltip.hide();
     } catch (err: any) {
       const errMsg: string = errorToConsole(err);
       console.error('Helm: HelmCellRenderer.onMouseMove() error:\n' + errMsg);
@@ -100,8 +105,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const grayColor = '#808080';
 
       const missedMonomers = findMonomers(gridCell.cell.value);
-      let s: string = gridCell.cell.value ?? '';
-      let subParts: string[] = parseHelm(s);
+      const s: string = gridCell.cell.value ?? '';
+      const subParts: string[] = parseHelm(s);
 
       if (missedMonomers.size == 0) {
         const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
@@ -142,9 +147,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
         const maxLengthWordSum: number[] = new Array<number>(maxLengthWords.length);
         maxLengthWordSum[0] = maxLengthWords[0];
-        for (let partI = 1; partI < allParts.length; partI++) {
+        for (let partI = 1; partI < allParts.length; partI++)
           maxLengthWordSum[partI] = maxLengthWordSum[partI - 1] + maxLengthWords[partI];
-        }
+
         tableCol.temp = {
           [tempTAGS.helmSumMaxLengthWords]: maxLengthWordSum,
           [tempTAGS.helmMaxLengthWords]: maxLengthWords

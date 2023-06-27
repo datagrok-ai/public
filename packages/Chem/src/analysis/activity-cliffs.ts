@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import { convertMolNotation } from '../package';
+import {convertMolNotation} from '../package';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
@@ -38,7 +38,7 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
       molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
     }
     drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, params.cashedData[params.line.id],
-      { normalizeDepiction: false, straightenDepiction: false });
+      {normalizeDepiction: false, straightenDepiction: false});
     ui.empty(hosts[index]);
     if (!params.cashedData[params.line.id])
       hosts[index].append(ui.divText('MCS loading...'));
@@ -74,7 +74,8 @@ function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLEl
 }
 
 function createElementTemplate(params: ITooltipAndPanelParams,
-  drawFunc: (params: ITooltipAndPanelParams, element: HTMLDivElement, hosts: HTMLDivElement[], molIdx: number, idx: number) => void,
+  drawFunc: (params: ITooltipAndPanelParams, element: HTMLDivElement, hosts: HTMLDivElement[],
+  molIdx: number, idx: number) => void,
   vertical: boolean, flexColNames: boolean, colNameStyle?: any) {
   const element = vertical ? ui.divH([]) : ui.divV([]);
   const columnNames = vertical ? ui.divV([]) : ui.divH([]);
@@ -94,7 +95,8 @@ function createElementTemplate(params: ITooltipAndPanelParams,
 
 
 export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivElement {
-  const propPanel = createElementTemplate(params, drawPropPanelElement, false, false, {style: {minWigth: `${canvasWidth}px`}});
+  const propPanel = createElementTemplate(params, drawPropPanelElement, false, false,
+    {style: {minWigth: `${canvasWidth}px`}});
   propPanel.append(ui.divH([
     ui.divText(`Cliff: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
     ui.divText(params.sali!.toFixed(2)),

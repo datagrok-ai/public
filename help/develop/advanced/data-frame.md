@@ -640,9 +640,9 @@ property setter).
 
 [102]: ../../visualize/viewers/viewers.md "Datagrok Viewers"
 
-[103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L50 "DG.COLUMN_TYPE"
+[103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/consts.ts#L50 "DG.COLUMN_TYPE"
 
-[104]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L39 "NULL constants"
+[104]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/consts.ts#L39 "NULL constants"
 
 [105]: #column-data-types "Column data types"
 
@@ -654,7 +654,7 @@ property setter).
 
 [109]: ../../discover/semantic-types.md "Semantic types"
 
-[110]: ../domains/chem/cheminformatics.md "Cheminformatics overview"
+[110]: ../../domains/chem/chem.md "Cheminformatics overview"
 
 [111]: https://github.com/datagrok-ai/public/blob/1393df83ef2eea80dc2c19b5e6e541cb35d60f91/packages/Chem/detectors.js#L6 "Chem Molecule detector"
 

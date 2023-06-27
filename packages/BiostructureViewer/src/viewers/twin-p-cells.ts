@@ -29,7 +29,7 @@ export class TwinProteinView {
   pViz: PvizAspect;
 
   entry: string;
-  ligandSelection: { [key: string]: any }
+  ligandSelection: { [key: string]: any };
 
   public init(entry: string, bsView: DG.TableView, ligandSelection: { [key: string]: boolean }) {
     // ---- SIDEPANEL REMOVAL ----
@@ -82,17 +82,15 @@ export class TwinProteinView {
     const items: DG.TreeViewNode[] = [];
 
     for (const g in groups) {
-      if (Object.prototype.hasOwnProperty.call(groups, g)) {
+      if (Object.prototype.hasOwnProperty.call(groups, g))
         groups[g].checked = false;
-      }
     }
     for (const i of items) i.checked = false;
 
     this.changeChoices();
 
-    if (!!this.ngl) {
+    if (!!this.ngl)
       this.ngl.stage.removeAllComponents();
-    }
   }
 
   public async show(bsView: DG.TableView) {
@@ -118,7 +116,7 @@ export class TwinProteinView {
 
     MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
 
-    grok.events.onCustomEvent('selectionChanged').subscribe((v) => {
+    grok.events.onCustomEvent('selectionChanged').subscribe((_v) => {
       this.ngl.render(false, this.ligandSelection);
     });
 
@@ -140,11 +138,11 @@ export class TwinProteinView {
 
   private changeChoices(): void {
     // ---- INPUTS PANEL ----
-    if (!this.accOptions) {
+    if (!this.accOptions)
       this.accOptions = ui.accordion();
-    } else {
+    else
       this.accOptions.removePane(this.accOptions.getPane('3D model'));
-    }
+
 
     this.accOptions.addPane('3D model', () => ui.inputs([this.repChoice]));
     this.root.append(this.accOptions.root);

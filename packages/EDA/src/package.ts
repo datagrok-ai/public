@@ -58,7 +58,8 @@ export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.Co
 //name: MVA demo
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //meta.demoPath: Compute | Multivariate analysis
-export async function demoScript(): Promise<any>  {
+//meta.isDemoScript: True
+export async function demoMultivariateAnalysis(): Promise<any>  {
   const demoScript = new DemoScript('Partial least squares regression', 
     'Analysis of multidimensional data.'); 
   
@@ -90,7 +91,7 @@ export async function demoScript(): Promise<any>  {
         .onOK(() => {
           grok.shell.info('Multivariate analysis has been already performed.');
         })
-        .show();
+        .show({x: 400, y: 140});
     }, {description: 'Predict car price by its other features.', delay: 0})
     .step('Regression coeffcicients', async () => 
       {

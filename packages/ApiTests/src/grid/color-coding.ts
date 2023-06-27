@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, after, category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 import {hasTag} from './grid';
 
 
@@ -9,12 +9,9 @@ category('Grid: Color Coding', () => {
   let grid: DG.Grid;
   let demog = grok.data.demo.demog(1000);
   
-  before(async () => {
+  test('colorCoding.api', async () => {
     v = grok.shell.addTableView(demog);
     grid = v.grid;
-  });
-
-  test('colorCoding.api', async () => {
     demog.col('age')!.colors.setLinear();
     demog.col('age')!.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
     demog.col('sex')!.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
@@ -29,14 +26,8 @@ category('Grid: Color Coding', () => {
     grok.shell.closeTable(demog);
     demog = grok.data.demo.demog(1000);
     v = grok.shell.addTableView(demog);
-    //grid = v.grid;
     v.loadLayout(layout);
     testTags();
-  });
-
-  after(async () => {
-    v.close();
-    grok.shell.closeTable(demog);
   });
 
   function testTags() {

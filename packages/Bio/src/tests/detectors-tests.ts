@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -67,69 +67,56 @@ category('detectors', () => {
     [csvTests.negSmiles]: string = `col1
 CCCCN1C(=O)CN=C(c2cc(F)ccc12)C3CCCCC3
 C1CCCCC1
-CCCCCC
-`;
+CCCCCC`;
     [csvTests.fastaDna1]: string = `seq
 ACGTC
 CAGTGT
-TTCAAC
-`;
+TTCAAC`;
     [csvTests.fastaRna1]: string = `seq
 ACGUC
 CAGUGU
-UUCAAC
-`;
+UUCAAC`;
     /** Pure amino acids sequence */
     [csvTests.fastaPt1]: string = `seq
 FWPHEY
 YNRQWYV
-MKPSEYV
-`;
+MKPSEYV`;
     [csvTests.fastaUn]: string = `seq
 [meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D
 [meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
-[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
-`;
+[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]`;
     [csvTests.sepDna]: string = `seq
 A*C*G*T*C
 C*A*G*T*G*T
-T*T*C*A*A*C
-`;
+T*T*C*A*A*C`;
     [csvTests.sepRna]: string = `seq
 A*C*G*U*C
 C*A*G*U*G*U
-U*U*C*A*A*C
-`;
+U*U*C*A*A*C`;
     [csvTests.sepPt]: string = `seq
 F-W-P-H-E-Y
 Y-N-R-Q-W-Y-V
-M-K-P-S-E-Y-V
-`;
+M-K-P-S-E-Y-V`;
     [csvTests.sepUn1]: string = `seq
 abc-dfgg-abc1-cfr3-rty-wert
 rut12-her2-rty-wert-abc-abc1-dfgg
-rut12-rty-her2-abc-cfr3-wert-rut12
-`;
+rut12-rty-her2-abc-cfr3-wert-rut12`;
     [csvTests.sepUn2]: string = `seq
 abc/dfgg/abc1/cfr3/rty/wert
 rut12/her2/rty/wert//abc/abc1/dfgg
-rut12/rty/her2/abc/cfr3//wert/rut12
-`;
+rut12/rty/her2/abc/cfr3//wert/rut12`;
     [csvTests.sepMsaDna1]: string = `seq
 A-C--G-T--C-T
 C-A-C--T--G-T
-A-C-C-G-T-A-C-T
-`;
+A-C-C-G-T-A-C-T`;
     [csvTests.fastaMsaDna1]: string = `seq
 AC-GT-CT
 CAC-T-GT
-ACCGTACT
-`;
+ACCGTACT`;
     [csvTests.fastaMsaPt1]: string = `seq
 FWR-WYV-KHP
 YNR-WYV-KHP
-MWRSWY-CKHP
-`;
+MWRSWY-CKHP`;
   }();
 
   const enum Samples {
@@ -201,7 +188,7 @@ MWRSWY-CKHP
     return df;
   }
 
-  async function readFileFasta(file: string): Promise<DG.DataFrame> {
+  async function _readFileFasta(file: string): Promise<DG.DataFrame> {
     const txt: string = await grok.dapi.files.readAsText(file);
     const df: DG.DataFrame = importFasta(txt)[0];
     return df;
@@ -223,6 +210,8 @@ MWRSWY-CKHP
   test('Negative2', async () => { await _testNeg(readCsv(csvTests.neg2), 'col1'); });
   test('Negative3', async () => { await _testNeg(readCsv(csvTests.neg3), 'col1'); });
   test('NegativeSmiles', async () => { await _testNeg(readCsv(csvTests.negSmiles), 'col1'); });
+  test('NegativeStartEnd', async () => { await _testNegList(['START', 'END']); });
+  test('NegativeStartEndIntermediate', async () => { await _testNegList(['START', 'END', 'INTERMEDIATE']); });
 
   test('FastaDna1', async () => {
     await _testPos(readCsv(csvTests.fastaDna1), 'seq',
@@ -375,6 +364,15 @@ MWRSWY-CKHP
   });
 });
 
+export async function _testNegList(list: string[]): Promise<void> {
+  const col: DG.Column = DG.Column.fromList(DG.TYPE.STRING, 'col1', list);
+  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+  if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
+    const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
+    throw new Error(msg);
+  }
+}
+
 export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.getCol(colName)!;
@@ -386,16 +384,13 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
     const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
     throw new Error(msg);
-    // col.semType = '';
-    // col.setTag(DG.TAGS.UNITS, '');
-    // col.setTag(NOTATION.SEPARATOR, '');
   }
 }
 
 export async function _testPos(
   readDf: DfReaderFunc, colName: string, units: string,
   aligned: string | null, alphabet: string | null, alphabetSize: number, alphabetIsMultichar: boolean,
-  separator: string | null = null
+  separator: string | null = null,
 ) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.col(colName)!;
@@ -411,7 +406,7 @@ export async function _testPos(
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
 
-  const uh = new UnitsHandler(col);
+  const uh = UnitsHandler.getOrCreate(col);
   expect(uh.getAlphabetSize(), alphabetSize);
   expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
   if (!uh.isHelm()) {
@@ -427,7 +422,7 @@ class PosCol {
     public readonly alphabet: string | null,
     public readonly alphabetSize: number,
     public readonly alphabetIsMultichar: boolean,
-    public readonly separator?: string
+    public readonly separator?: string,
   ) { };
 }
 

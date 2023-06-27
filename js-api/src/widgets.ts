@@ -984,6 +984,11 @@ export class InputBase<T = any> {
     return toJs(api.grok_InputBase_ForProperty(property.dart, source));
   }
 
+  /** Creates input for the specified input type */
+  static forInputType(inputType: string): InputBase {
+    return toJs(api.grok_InputBase_ForInputType(inputType));
+  }
+
   /** Creates input for the specified column */
   static forColumn<T = any>(column: Column<T>): InputBase<T | null> {
     return toJs(api.grok_InputBase_ForColumn(column.dart));

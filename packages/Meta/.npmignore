@@ -13,3 +13,6 @@ bin/commands/*.ts
 [._]*.un~
 
 test-report.html
+test-record.mp4
+test-report.csv
+test-console-output.log

@@ -11,3 +11,9 @@
 .pipeline-view .d4-ribbon-name + .d4-ribbon-name::before {
   color: var(--grey-3);
 }
+
+.pipeline-view .d4-ribbon-name.d4-disabled {
+  cursor: default;
+  pointer-events: none;
+  color: var(--grey-3);
+}

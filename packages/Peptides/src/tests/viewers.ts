@@ -7,18 +7,18 @@ import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResiduesViewer, showTooltip} from '../viewers/sar-viewer';
+import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResidues, showTooltip} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
 import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
-
+import {TEST_COLUMN_NAMES} from './utils';
 
 category('Viewers: Basic', () => {
   const df = DG.DataFrame.fromCsv(aligned1);
   const viewers = DG.Func.find({package: 'Peptides', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
-      await testViewer(v, df.clone(), true);
+      await testViewer(v, df.clone(), {detectSemanticTypes: true});
     }, {skipReason: 'GROK-11534'});
   }
 });
@@ -34,12 +34,12 @@ category('Viewers: Monomer-Position', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(
       activityCol, sequenceCol, clusterCol, df, scaledActivityCol, SCALING_METHODS.NONE);
     if (tempModel === null)
@@ -70,7 +70,7 @@ category('Viewers: Monomer-Position', () => {
     expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
       `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
   });
-});
+}, false);
 
 category('Viewers: Most Potent Residues', () => {
   let df: DG.DataFrame;
@@ -79,22 +79,22 @@ category('Viewers: Most Potent Residues', () => {
   let sequenceCol: DG.Column<string>;
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
-  let mprViewer: MostPotentResiduesViewer;
+  let mprViewer: MostPotentResidues;
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(
       activityCol, sequenceCol, clusterCol, df, scaledActivityCol, SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResiduesViewer;
+    mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
   });
 
   test('Tooltip', async () => {
@@ -116,12 +116,12 @@ category('Viewers: Logo Summary Table', () => {
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol('activity');
-    sequenceCol = df.getCol('sequence');
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
-    clusterCol = df.getCol('cluster');
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
     const tempModel = await startAnalysis(
       activityCol, sequenceCol, clusterCol, df, scaledActivityCol, SCALING_METHODS.NONE);
     if (tempModel === null)
@@ -152,4 +152,4 @@ category('Viewers: Logo Summary Table', () => {
     const tooltipElement = lstViewer.showTooltip(cluster, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
-});
+}, false);

@@ -4,10 +4,21 @@ on:
   push:
     paths:
       - 'js-api/**'
+  pull_request:
+    paths:
+      - 'js-api/**'
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   version:
     name: Check version
+    needs: common-check
     runs-on: ubuntu-20.04
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
       current_version: ${{ steps.check-version.outputs.current_version }}
@@ -15,7 +26,8 @@ jobs:
       packages_matrix: ${{ steps.packages.outputs.matrix }}
       libraries_matrix: ${{ steps.libraries.outputs.matrix }}
       latest: ${{ steps.check-version.outputs.latest }}
-      replace_dep: ${{ steps.check-version.outputs.replace_dep }}
+      replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
+      replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -57,6 +69,7 @@ jobs:
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
               unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
               if [[ $unpublished_dep == "datagrok-api" ]]; then
+                echo "replace_pack_dep=true" >> $GITHUB_OUTPUT
                 MATRIX_JSON+="{\"package\": \"${PACKAGE}\""
                 scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
                 if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
@@ -86,6 +99,7 @@ jobs:
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
               unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
               if [[ $unpublished_dep == "datagrok-api" ]]; then
+                echo "replace_lib_dep=true" >> $GITHUB_OUTPUT
                 MATRIX_JSON+="{\"library\": \"${LIB}\""
                 scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
                 if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
@@ -117,7 +131,8 @@ jobs:
   build:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
-    needs: version
+    needs: [version, common-check] 
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -181,10 +196,11 @@ jobs:
   libraries:
     name: Check libraries
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.replace_dep == 'true'
+    if: needs.version.outputs.replace_lib_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build
       - version
+      - common-check
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.version.outputs.libraries_matrix) }}
@@ -258,10 +274,11 @@ jobs:
   packages:
     name: Check packages
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.replace_dep == 'true'
+    if: needs.version.outputs.replace_pack_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build
       - version
+      - common-check
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.version.outputs.packages_matrix) }}

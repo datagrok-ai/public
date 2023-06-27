@@ -4,138 +4,128 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.handlers.SessionHandler;
+import grok_connect.log.EventType;
+import grok_connect.log.QueryLogger;
 import grok_connect.providers.JdbcDataProvider;
-import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import serialization.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import serialization.Column;
+import serialization.DataFrame;
 
 public class QueryManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueryManager.class);
+    public static final String CHUNK_NUMBER_TAG = "chunkNumber";
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
-    private static final String AUX_FETCH_SIZE_KEY = "fetchSize";
-    private static final int DEFAULT_FETCH_SIZE = 10000;
+    public static final String FETCH_SIZE_KEY = "connectFetchSize";
+    public static final String INIT_FETCH_SIZE_KEY = "initConnectFetchSize";
+    public static final String DRY_RUN_KEY = "dryRun";
+    private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
+    private static final int MAX_FETCH_SIZE = 100000;
+    private static final int MIN_FETCH_SIZE = 100;
+    public boolean dryRun = false;
     private final JdbcDataProvider provider;
+    private final Logger logger;
+    private final QueryLogger<DataFrame> queryLogger;
     private final FuncCall query;
+    private int currentFetchSize = MIN_FETCH_SIZE;
+    private int initFetchSize = MIN_FETCH_SIZE;
+    private int chunkSize = -1;
     private SchemeInfo schemeInfo;
     private ResultSet resultSet;
     private Connection connection;
     private boolean changedFetchSize;
+    private boolean supportTransactions;
+    private String initMessage;
 
-    public QueryManager(FuncCall query, JdbcDataProvider provider) {
-        this.query = query;
-        this.provider = provider;
-    }
-
-    public QueryManager(String message) {
+    public QueryManager(String message, QueryLogger<DataFrame> queryLogger) {
         query = gson.fromJson(message, FuncCall.class);
-        query.log = "";
         query.setParamValues();
         query.afterDeserialization();
-        LOGGER.debug("Initializing with query: {}", query.func.query);
-        // DateTime startTime = DateTime.now();
+        this.logger = queryLogger.getLogger();
+        this.queryLogger = queryLogger;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
+        initParams();
+        if (dryRun)
+            initMessage = message;
     }
 
-    public void initResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
-        LOGGER.trace("initResultSet was called");
-        LocalDateTime startTime = LocalDateTime.now();
-        if (query.debugQuery) {
-            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Initializing resultSet, current time: %s",
-                    startTime));
-        }
+    public void initResultSet(FuncCall query) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
+        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.START), "Receiving connection to db");
         connection = provider.getConnection(query.func.connection);
-        resultSet = provider.getResultSet(query, connection);
-        if (query.debugQuery) {
-            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Finished resultSet init, execution time: %s",
-                    LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
-                            - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()));
-        }
-        LOGGER.trace("ResultSet received");
+        logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Connection was received");
+        resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
+        supportTransactions = connection.getMetaData().supportsTransactions();
     }
 
     public void initScheme() throws QueryCancelledByUser, SQLException {
-        LocalDateTime startTime = LocalDateTime.now();
-        if (query.debugQuery) {
-            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Initializing schemeInfo, current time: %s",
-                    startTime));
-        }
         if (resultSet == null) {
+            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.END), "resultSet is null, return empty schemeInfo");
             schemeInfo = new SchemeInfo(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-            return;
+        } else {
+            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.START), "Initializing schemeInfo");
+            schemeInfo = provider.resultSetScheme(query, resultSet, logger);
+            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.END), "Finished schemeInfo init");
         }
-        schemeInfo = provider.resultSetScheme(query, resultSet);
-        if (query.debugQuery) {
-            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Finished schemeInfo init, execution time: %s",
-                    LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
-                            - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()));
-        }
-        LOGGER.trace("SchemeInfo initialization finished");
     }
 
-    public DataFrame getSubDF(int maxIterations) throws IOException, SQLException, QueryCancelledByUser {
-        LOGGER.trace("getSubDF was called with argument: {}", maxIterations);
-        List<Column> columns = schemeInfo.columns;
-        for (Column column : columns) {
-            column.empty();
+    public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, IOException, GrokConnectException, ClassNotFoundException {
+        // need to create new FuncCall on every run because state of params changes irrevocably after each run
+        queryLogger.writeLog(false);
+        FuncCall query = gson.fromJson(initMessage, FuncCall.class);
+        query.setParamValues();
+        initResultSet(query);
+        initScheme();
+        if (supportTransactions && changedFetchSize) {
+            resultSet.setFetchSize(currentFetchSize);
         }
+        queryLogger.writeLog(!skipColumnFillingLog);
+        provider.getResultSetSubDf(query, resultSet, schemeInfo.columns,
+                schemeInfo.supportedType, schemeInfo.initColumn, -1, logger, 1, true);
+        closeConnection();
+        queryLogger.writeLog(true);
+    }
+
+    public DataFrame getSubDF(int dfNumber) throws IOException, SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
+        if (resultSet.isAfterLast() && !resultSet.isBeforeFirst())
+            return df;
+
+        schemeInfo.columns.forEach(Column::empty);
+
         if (!connection.isClosed() && !resultSet.isClosed()) {
-            LocalDateTime startTime = LocalDateTime.now();
-            LOGGER.trace("Calling getResultSetSubDf");
-            if (query.debugQuery) {
-                query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Receiving part of resultSet, "
-                                + "current time: %s",
-                        startTime));
-            }
-            df = provider.getResultSetSubDf(query, resultSet, columns,
-            schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
-            if (query.debugQuery) {
-                query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Received part of resultSet, execution time: %s",
-                        LocalDateTime.now().toInstant(ZoneOffset.UTC).toEpochMilli()
-                                - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()));
-            }
+            int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
+            df =  provider.getResultSetSubDf(query, resultSet, schemeInfo.columns,
+                    schemeInfo.supportedType, schemeInfo.initColumn, rowsNumber, logger, dfNumber, false);
         }
 
-        if (connection.getMetaData().supportsTransactions() && df.rowCount != 0) {
-            Double memInBytes = df.memoryInBytes() / 1024.0;
-            double fetchSize = df.rowCount / memInBytes * 30000;
-            if (query.debugQuery) {
-                query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Dataframe weight %s",
-                        memInBytes));
-            }
-            if (fetchSize > 40000)
-                fetchSize = 40000;
-            query.log += String.format(SessionHandler.LOG_MESSAGE, String.format("New fetch size: %s", fetchSize));
-            if (!provider.descriptor.type.equals("Virtuoso")) {
-                resultSet.setFetchSize((int)fetchSize);
-                LOGGER.trace("Set new fetch size to {}", fetchSize);
-            }
-        }
+        if (dfNumber == 1 && supportTransactions && changedFetchSize) {
+            logger.debug(EventType.MISC.getMarker(), "Manual fetch size was set for all chunks {}", currentFetchSize);
+            resultSet.setFetchSize(currentFetchSize);
+        } else if (!changedFetchSize)
+            changeFetchSize(df, dfNumber);
+
+        df.tags = new LinkedHashMap<>();
+        df.tags.put(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
         return df;
     }
 
     public void closeConnection() throws SQLException {
-        LOGGER.trace("Closing connection");
         if (connection != null && !connection.isClosed()) {
+            logger.debug(EventType.MISC.getMarker(), "Closing DB connection");
             if (!connection.getAutoCommit())
                 connection.commit();
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
             connection.close();
-        } else {
+            logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
+        } else
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
-        }
     }
 
     public boolean isResultSetInitialized() {
@@ -144,5 +134,59 @@ public class QueryManager {
 
     public FuncCall getQuery() {
         return query;
+    }
+
+    private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
+        if (supportTransactions && df.rowCount != 0) {
+            currentFetchSize = getFetchSize(df);
+            logger.debug(EventType.MISC.getMarker(dfNumber), "Calculated fetch size: {}", currentFetchSize);
+            if (!provider.descriptor.type.equals("Virtuoso")) {
+                resultSet.setFetchSize(currentFetchSize);
+            }
+        }
+    }
+
+    private int getFetchSize(DataFrame df) {
+        int maxChunkSize = chunkSize != -1 ? chunkSize : MAX_CHUNK_SIZE_BYTES;
+        int fetchSize = Math.round(maxChunkSize / (float) (df.memoryInBytes() / df.rowCount));
+        return Math.min(Math.max(MIN_FETCH_SIZE, fetchSize), MAX_FETCH_SIZE);
+    }
+
+    private void initParams() {
+        Map<String, Object> params = new HashMap<>();
+        // add meta params of query
+        if (query.func.options != null)
+            params.putAll(query.func.options);
+        // aux params have preference over meta params
+        if (query.func.aux != null) {
+            for (String key: query.func.aux.keySet()) {
+                Object value = query.func.aux.get(key);
+                if (value != null && !value.toString().isEmpty())
+                    params.put(key, value);
+            }
+        }
+        setFetchSize(params.getOrDefault(FETCH_SIZE_KEY, "").toString());
+        setInitFetchSize(params.getOrDefault(INIT_FETCH_SIZE_KEY, "").toString());
+        dryRun = Boolean.parseBoolean(params.getOrDefault(DRY_RUN_KEY, false).toString());
+    }
+
+    private void setFetchSize(String optionValue) {
+        if (optionValue == null || optionValue.isEmpty())
+            return;
+        Pattern pattern = Pattern.compile("(\\d+) MB");
+        Matcher matcher = pattern.matcher(optionValue);
+        if (matcher.find())
+            chunkSize = Integer.parseInt(matcher.group(1)) * 1_000_000;
+        else {
+            changedFetchSize = true;
+            currentFetchSize = Integer.parseInt(optionValue);
+        }
+    }
+
+    private void setInitFetchSize(String optionValue) {
+        if (optionValue == null || optionValue.isEmpty())
+            return;
+        logger.debug(EventType.MISC.getMarker(), "Setting init fetch size {}", optionValue);
+        initFetchSize = Integer.parseInt(optionValue);
     }
 }

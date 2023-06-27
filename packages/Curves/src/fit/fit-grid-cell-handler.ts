@@ -1,60 +1,76 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {GridCell} from 'datagrok-api/dg';
-import {divV} from 'datagrok-api/ui';
 
-import * as fit from './fit-data';
-import {fitSeries} from './fit-data';
-import {fitResultProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
-import {MultiCurveViewer} from "./multi-curve-viewer";
+import {
+  fitSeries,
+  getChartData,
+  getColumnChartOptions,
+  getSeriesStatistics,
+  getSeriesFitFunction,
+} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {MultiCurveViewer} from './multi-curve-viewer';
 
 
-function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
+const SOURCE_COLUMN_TAG = '.sourceColumn';
+const SERIES_NUMBER_TAG = '.seriesNumber';
+const STATISTICS_TAG = '.statistics';
+
+
+function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesNumber: number): void {
   const grid = chartColumn.grid;
-  grid.dataFrame.columns
-    .addNew(p.name, p.propertyType as DG.ColumnType)
+  const column = DG.Column.float(p.name, chartColumn.column?.length);
+  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
+  column.tags[SERIES_NUMBER_TAG] = seriesNumber;
+  column.tags[STATISTICS_TAG] = p.name;
+
+  column
     .init((i) => {
-      const chartData = fit.getChartData(
-        GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
-      const fitResult = fitSeries(chartData.series![0], true);
+      const chartData = getChartData(
+        DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
+      const fitResult = getSeriesStatistics(chartData.series![0], getSeriesFitFunction(chartData.series![0]));
       return p.get(fitResult);
     });
+  grid.dataFrame.columns.add(column);
 }
 
 
 export class FitGridCellHandler extends DG.ObjectHandler {
-
   get type(): string {
     return 'GridCell';
   }
 
   isApplicable(x: any): boolean {
-    return x instanceof DG.GridCell && x.cellType == 'fit';
+    return x instanceof DG.GridCell && x.cellType === FIT_CELL_TYPE;
   }
 
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
     const acc = ui.accordion();
-    const chartData = fit.getChartData(gridCell);
-    const columnChartOptions = fit.getColumnChartOptions(gridCell.gridColumn);
+    const chartData = getChartData(gridCell);
+    const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
     const refresh = {onValueChanged: (_: any) => gridCell.grid.invalidate()};
 
     acc.addPane('Options', () => ui.divV([
-        ui.input.form(columnChartOptions.seriesOptions, fit.fitSeriesProperties, refresh),
-        ui.input.form(columnChartOptions.chartOptions, fit.fitChartDataProperties, refresh),
-      ]));
+      ui.input.form(columnChartOptions.seriesOptions, fitSeriesProperties, refresh),
+      ui.input.form(columnChartOptions.chartOptions, fitChartDataProperties, refresh),
+    ]));
 
-    acc.addPane('Results', () => {
-      const host = divV([]);
+    // TODO: improve edit chart mode
+    acc.addPane('Fit', () => {
+      const host = ui.divV([]);
 
       for (let i = 0; i < chartData.series!.length; i++) {
         const series = chartData.series![i];
-        const fitResult = fitSeries(series, true);
+        const fitFunction = getSeriesFitFunction(chartData.series![i]);
+        if (!series.parameters)
+          series.parameters = fitSeries(series, fitFunction).parameters;
+        const seriesStatistics = getSeriesStatistics(series, fitFunction);
         host.appendChild(ui.panel([
           ui.h1(series.name ?? 'series ' + i),
-          ui.input.form(fitResult, fitResultProperties, {
+          ui.input.form(seriesStatistics, statisticsProperties, {
             onCreated: (input) => input.root.appendChild(
               ui.iconFA('plus',
-                () => addStatisticsColumn(gridCell.gridColumn, input.property),
+                () => addStatisticsColumn(gridCell.gridColumn, input.property, i),
                 `Calculate ${input.property.name} for the whole column`))
           })
         ]));
