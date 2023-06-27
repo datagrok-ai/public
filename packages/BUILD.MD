@@ -1,6 +1,7 @@
 # Build instructions
 
 This repository contains 3 types of packages:
+
 1. Datagrok JS API: `/js-api`
 2. Shared libraries: `/libraries`
 3. Datagrok packages: `/packages`
@@ -61,6 +62,7 @@ Just like the package, if you change the version of library and if it passes tes
 
 [NPM link](https://docs.npmjs.com/cli/v8/commands/npm-link) is a way to skip NPM publish step for local debugging. It might be useful if you modify the code in many libraries simultaneously and want to debug it. 
 If you need to use local copy of a library or js-api as a dependency of your package instead of NPM version, you need:
+
 1. Run `npm link` in library (or js-api) folder
 2. Run `npm link LIBRARY_NAME` in package folder. For example: `npm link @datagrok-libraries/utils`
 That makes NPM use local library instead of NPM version. To reset link, simply run `npm install` in package folder.
@@ -68,6 +70,7 @@ Usually, there is a script in a package or in a library, called `npm run link-al
 To link all the libraries run `libraries-link-local.cmd` script. Refer to script contents to understand what's going on.
 
 > Suppose, you need to debug package `Chem` with local versions of `js-api` and `utils` library
+>
 > 1. Run `libraries-link-local.cmd`.
 > 2. Run `npm run link-all` in `Chem` package folder.
 > 3. Run `npm run build-chem-local` to build all libraries and package itself.
@@ -76,24 +79,28 @@ To link all the libraries run `libraries-link-local.cmd` script. Refer to script
 
 You can publish built package to any Datagrok server for testing and debugging, but if js-api version, the package was built with, differs from platform version - package might be unstable.
 > <span style="color:red">!</span> If you want to link multiple dependencies - link them in a single command.
-
 > <span style="color:red">!</span> When you link package to local js-api, don't forget to link all libraries to local js-api too
 
 # API injection
 
 ## Platform injection 
 
-There is a way to inject your js-api inside local Docker container. Use [Docker Volumes](https://docs.docker.com/storage/volumes/) to map folder with pre-built js-api to your local folder
+There is a way to inject your js-api inside local Docker container. Use [Docker Volumes](https://docs.docker.com/storage/volumes/) to map folder with pre-built js-api to your local folder:
+
 1. Run `npm run build` inside `js-api` folder. By default, it saves a bundle to `../../xamgle/web/js/api` folder. Remember this path.
 2. Map this folder to Datagrok Docker:
- - Open the `localhost.docker-compose.yaml` file (in `public\docker` folder).
- - Replace 
+
+* Open the `localhost.docker-compose.yaml` file (in `public\docker` folder).
+* Replace 
+
 ```
 volumes:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
-``` 
+```
+
 section by the following code
+
 ```
     volumes:
       - datagrok_data:/home/grok/data
@@ -102,15 +109,18 @@ section by the following code
         source: %FULL_PATH_TO_BUILD_JS_API%
         target: /home/grok/datagrok/html.build/web/js/api
 ```
-3. Restart docker containers as it is described in local Docker [instructions](https://datagrok.ai/help/develop/admin/docker-compose)
-4. Clear browser cache, refresh browser page. 
+
+3.Restart docker containers as it is described in local Docker [instructions](https://datagrok.ai/help/develop/admin/docker-compose)
+4.Clear browser cache, refresh browser page.
 
 ## Package injection
 
 Remove `datagrok-api` from externals section of your `webpack.config.js` file:
+
 ```
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
 ```
+
 This will include js-api inside package bundle instead of using platform code. Don't forget to revert this change before publishing.

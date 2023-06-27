@@ -6,7 +6,7 @@ sidebar_position: 0
 Grok platform provides first-class support for functions, which is an incredibly powerful concept. Pretty much anything
 that can be executed within the platform is a function. Here are some examples of the different types of functions:
 
-* [Querying](../../access/data-query.md) external Postgres database
+* [Querying](../../access/access.md#data-query) external Postgres database
 * Executing a [JavaScript function](../../develop/develop.md) in the browser that uses Grok API for integration purposes
 * Calculating Sin(PI)
 * Deleting a column from the table
@@ -58,7 +58,7 @@ public environment.
 While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
 [training a predictive model](../../learn/predictive-modeling.md),
 [running an R script](../../compute/scripting.md), or
-[computing chemical descriptors](../../domains/chem/cheminformatics.md#descriptors-and-fingerprints)
+[computing chemical descriptors](../../domains/chem/chem.md#molecular-descriptors-and-fingerprints)
 run on a [server](../../develop/admin/architecture.md#compute-engine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back to the client.
 Results of the computations reside on the server until either the client retrieves it, or an automatic cleanup happens.

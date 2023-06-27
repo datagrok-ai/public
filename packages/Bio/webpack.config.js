@@ -17,7 +17,7 @@ module.exports = {
   },
   module: {
     rules: [
-      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader']},
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
       {test: /\.css$/, use: ['style-loader', 'css-loader']},
     ],

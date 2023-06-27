@@ -28,14 +28,14 @@ export abstract class ComputationView extends FunctionView {
    * 2) change routing logic for models
    */
   constructor(
-    funcName: string,
+    protected initValue: string | DG.FuncCall,
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
       parentCall?: DG.FuncCall
-    } = {historyEnabled: true, isTabbed: false}
+    } = {historyEnabled: true, isTabbed: false},
   ) {
-    super(funcName, options);
+    super(initValue, options);
 
     if (!options.parentCall) options.parentCall = grok.functions.getCurrentCall();
 
@@ -43,14 +43,13 @@ export abstract class ComputationView extends FunctionView {
     this.parentCall = parentCall;
     this.parentView = parentCall?.parentCall.aux['view'];
     this.basePath = `/${parentCall?.func.name}`;
+  }
 
-    this.subs.push(this.onFuncCallReady.subscribe({
-      complete: async () => {
-        await this.getPackageUrls();
-        this.buildRibbonMenu();
-        this.changeViewName(parentCall.func.friendlyName);
-      }
-    }));
+  protected override async onFuncCallReady() {
+    super.onFuncCallReady();
+    await this.getPackageUrls();
+    this.buildRibbonMenu();
+    this.changeViewName(this.parentCall!.func.friendlyName);
   }
 
   /** Override to customize getting mocks
@@ -103,9 +102,9 @@ export abstract class ComputationView extends FunctionView {
     const ribbonMenu = this.ribbonMenu.group('Model');
 
     if (this.getMocks && this.getMocks.length > 0) {
-      if (this.getMocks.length === 1) {
+      if (this.getMocks.length === 1)
         ribbonMenu.item('Input data mock', this.getMocks[0].action);
-      } else {
+      else {
         const dataGroup = ribbonMenu.group('Input data mocks');
         this.getMocks.forEach((val) => {
           dataGroup.item(val.mockName, val.action);
@@ -115,9 +114,9 @@ export abstract class ComputationView extends FunctionView {
     }
 
     if (this.getTemplates && this.getTemplates.length > 0) {
-      if (this.getTemplates.length === 1) {
+      if (this.getTemplates.length === 1)
         ribbonMenu.item('Input data template', this.getTemplates[0].action);
-      } else {
+      else {
         const dataGroup = ribbonMenu.group('Input data templates');
         this.getTemplates.forEach((val) => {
           dataGroup.item(val.name, val.action);
@@ -162,10 +161,10 @@ export abstract class ComputationView extends FunctionView {
 
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
     if (reportBugUrl && !this.reportBug)
-      this.reportBug = async () => { window.open(reportBugUrl, '_blank'); };
+      this.reportBug = async () => {window.open(reportBugUrl, '_blank');};
 
     const reqFeatureUrl = (await pack?.getProperties() as any).REQUEST_FEATURE_URL;
     if (reqFeatureUrl && !this.requestFeature)
-      this.requestFeature = async () => { window.open(reqFeatureUrl, '_blank'); };
+      this.requestFeature = async () => {window.open(reqFeatureUrl, '_blank');};
   }
 }

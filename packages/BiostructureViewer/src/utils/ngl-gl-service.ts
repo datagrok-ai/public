@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import * as NGL from 'NGL';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
+import {_package} from '../package';
 
 export class NglGlService implements NglGlServiceBase {
   readonly nglDiv: HTMLDivElement;
@@ -13,36 +13,20 @@ export class NglGlService implements NglGlServiceBase {
 
   hostDn?: DG.DockNode;
 
-  //private renderQueue: Subject<bio.NglGlRenderTask>;
   private readonly _queue: { key?: keyof any, task: NglGlTask }[];
   private readonly _queueDict: { [key: keyof any]: NglGlTask };
+  /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
+  private _busy: boolean = false;
 
   constructor() {
-    const r = window.devicePixelRatio;
-
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
-    this.nglDiv.style.width = `${300 / r}px`;
-    this.nglDiv.style.height = `${300 / r}px`;
-
-    // const blanket = ui.div();
-    // blanket.style.position = 'absolute';
-    // blanket.style.width = `${200 / r}px`;
-    // blanket.style.height = `${200 / r}px`;
-
-    // const windows = grok.shell.windows;
-    // windows.showProperties = false;
 
     this.ngl = new NGL.Stage(this.nglDiv);
-    // this.ngl.viewer.renderer.domElement.width = 300;
-    // this.ngl.viewer.renderer.domElement.height = 300;
     this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     this._queue = [];
     this._queueDict = {};
   }
-
-  /* The flag allows _processQueue() on add item to the queue */
-  private _busy: boolean = false;
 
   render(task: NglGlTask, key?: keyof any): void {
     //_package.logger.debug('NglGlService.render() start ' + `name: ${name}`);
@@ -90,18 +74,15 @@ export class NglGlService implements NglGlServiceBase {
     await this.ngl.compList[0].addRepresentation('cartoon');
     await this.ngl.compList[0].autoView();
 
-    const canvas = this.nglDiv.querySelector('canvas');
-    canvas!.width = Math.floor(task.props.width);
-    canvas!.height = Math.floor(task.props.height);
+    const canvas = this.nglDiv.querySelector('canvas')!;
+    canvas.width = Math.floor(task.props.width);
+    canvas.height = Math.floor(task.props.height);
 
     this.task = task;
     this.key = key;
     this.emptyPaintingSize = undefined;
 
     await this.ngl.handleResize();
-
-    // await new Promise((r) => setTimeout(r, 4000));
-    let k = 11;
   }
 
   private emptyPaintingSize?: number = undefined;
@@ -118,7 +99,6 @@ export class NglGlService implements NglGlServiceBase {
     //TODO: HTMLCanvas.toBlob()
     if (this.emptyPaintingSize === undefined) {
       this.emptyPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
-      let k = 11;
     } else {
       const currentPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
       if (currentPaintingSize > this.emptyPaintingSize * 2) {
@@ -153,7 +133,7 @@ export class NglGlService implements NglGlServiceBase {
   }
 
   public renderOnGridCell(
-    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource
+    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource,
   ): void {
     gCtx.save();
     try {
@@ -176,9 +156,11 @@ export class NglGlService implements NglGlServiceBase {
       // gCtx.fillStyle = '#E0E0FF';
       // gCtx.fillRect(bd.x + 1, bd.y + 1, bd.width - 2, bd.height - 2);
 
-      const cw: number = canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number;
-      const ch: number = canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number;
-
+      const cw = 'width' in canvas && (
+        canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number);
+      const ch = 'height' in canvas && (
+        canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number);
+      if (!cw || !ch) throw new Error('NglGlService.renderOnGridCell() canvas size is not available');
       gCtx.transform(bd.width / cw, 0, 0, bd.height / ch, bd.x, bd.y);
 
       gCtx.drawImage(canvas, 0 + 1, 0 + 1);

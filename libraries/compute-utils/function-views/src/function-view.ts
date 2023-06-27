@@ -3,9 +3,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
+import {RunComparisonView} from './run-comparison-view';
+import {CARD_VIEW_TYPE} from './shared/consts';
+import {deepCopy} from './shared/utils';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -16,44 +19,38 @@ export abstract class FunctionView extends DG.ViewBase {
   protected _type: string = 'function';
 
   // emitted when after a new FuncCall is linked
-  protected funcCallReplaced = new Subject<true>();
-
-  // emitted when after an initial FuncCall is linked
-  public onFuncCallReady = new BehaviorSubject<false>(false);
+  public funcCallReplaced = new Subject<true>();
 
   /**
-   * Constructs a new view using function with the given {@link funcName}. An fully-specified name is expected.
+   * Constructs a new view using function with the given {@link func}. An fully-specified name is expected.
    * Search of the function is async, so async {@link init} function is used.
-   * All other functions are called only when initialization is over and {@link this.onFuncCallReady} is emitted.
-   * @param funcName Name of DG.Func (either script or package function) to use as view foundation
+   * All other functions are called only when initialization is over and {@link this.onFuncCallReady} is run.
+   * @param initValue Name of DG.Func (either script or package function) or DG.FuncCall to use as view foundation
    * @param options Configuration object for the view.
    */
   constructor(
-    protected funcName: string,
-    public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false},
+    protected initValue: string | DG.FuncCall,
+    public options: {historyEnabled?: boolean, isTabbed?: boolean} = {historyEnabled: true, isTabbed: false},
   ) {
     super();
     this.box = true;
-
-    // Changing view and building IO are reasonable only after FuncCall is linked
-    this.subs.push(
-      this.onFuncCallReady.subscribe({
-        complete: async () => {
-          this.changeViewName(this.funcCall.func.friendlyName);
-          this.build();
-
-          if (this.getStartId()) {
-            await this.onBeforeLoadRun();
-            this.lastCall = this.funcCall;
-            await this.onAfterLoadRun(this.funcCall);
-
-            this.setAsLoaded();
-          }
-        },
-      }),
-    );
-
     this.init();
+  }
+
+  /**
+   * Runs after an initial FuncCall loading done.
+   */
+  protected async onFuncCallReady() {
+    this.changeViewName(this.funcCall.func.friendlyName);
+
+    this.build();
+    const runId = this.getStartId();
+    if (runId && !this.options.isTabbed) {
+      ui.setUpdateIndicator(this.root, true);
+      this.linkFunccall(await this.loadRun(this.funcCall.id));
+      ui.setUpdateIndicator(this.root, false);
+      this.setAsLoaded();
+    }
   }
 
   /**
@@ -171,7 +168,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this._funcCall = funcCall;
 
     if (!this.options.isTabbed) {
-      if (funcCall.options['isHistorical']) {
+      if (this.isHistorical) {
         if (!isPreviousHistorical)
           this.changeViewName(`${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
         else
@@ -192,13 +189,20 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
   */
   protected async loadFuncCallById() {
+    if (this.initValue instanceof DG.FuncCall) {
+      // next tick is needed to run funcCallReplaced before building UI
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      this.linkFunccall(this.initValue);
+      return;
+    }
+
     ui.setUpdateIndicator(this.root, true);
 
     const runId = this.getStartId();
     if (runId && !this.options.isTabbed)
       this.linkFunccall(await historyUtils.loadRun(runId));
     else {
-      const func: DG.Func = await grok.functions.eval(this.funcName);
+      const func: DG.Func = await grok.functions.eval(this.initValue);
       this.linkFunccall(func.prepare({}));
     }
 
@@ -208,13 +212,12 @@ export abstract class FunctionView extends DG.ViewBase {
   /**
    * Method for any async logic that could not be placed in the constructor directly.
    * It is only called in the constructor, but not awaited.
-   * A soon as {@link this.funcCall} is set, {@link this.onFuncCallReady} is emitted.
+   * A soon as {@link this.funcCall} is set, {@link this.onFuncCallReady} is run.
    * @stability Stable
  */
   public async init() {
     await this.loadFuncCallById();
-
-    this.onFuncCallReady.complete();
+    await this.onFuncCallReady();
   }
 
   /**
@@ -238,6 +241,25 @@ export abstract class FunctionView extends DG.ViewBase {
   public abstract buildIO(): HTMLElement;
 
   /**
+   * Override to change behavior on runs comparison
+   * @param funcCallIds FuncCalls to be compared
+   */
+
+  public async onComparisonLaunch(funcCallIds: string[]) {
+    const parentCall = grok.shell.v.parentCall;
+
+    const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
+
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
+    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
+      parentView: cardView,
+      parentCall,
+      configFunc: this.func,
+    });
+    grok.shell.addView(v);
+  }
+
+  /**
    * Override to create a custom historical runs control.
    * @returns The HTMLElement with history block UI
    * @stability Stable
@@ -246,13 +268,26 @@ export abstract class FunctionView extends DG.ViewBase {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
     this.subs.push(
-      newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id))),
+      newHistoryBlock.onRunChosen.subscribe(async (id) => {
+        ui.setUpdateIndicator(this.root, true);
+        this.linkFunccall(await this.loadRun(id));
+        ui.setUpdateIndicator(this.root, false);
+      }),
+      newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
+      grok.events.onCurrentViewChanged.subscribe(() => {
+        if (grok.shell.v === this) {
+          setTimeout(() => {
+            grok.shell.o = this.historyRoot;
+          });
+        }
+      }),
     );
 
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
     this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
+    grok.shell.o = this.historyRoot;
     return newHistoryBlock.root;
   }
 
@@ -262,29 +297,27 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   buildRibbonPanels(): HTMLElement[][] {
-    const newRibbonPanels: HTMLElement[][] = [
-      [...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [ui.divH([
-        ui.comboPopup(
-          ui.iconFA('arrow-to-bottom'),
-          this.exportConfig.supportedFormats,
-          async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format))),
-      ])]: [],
+    const historyButton = ui.iconFA('history', () => {
+      grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
+      historyButton.classList.toggle('d4-current');
+      grok.shell.o = this.historyRoot;
+    });
+
+    historyButton.classList.add('d4-toggle-button');
+    if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
+
+    const newRibbonPanels: HTMLElement[][] =
+      [[
+        ...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
+          ui.comboPopup(
+            ui.iconFA('arrow-to-bottom'),
+            this.exportConfig.supportedFormats,
+            async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format)),
+          )]: [],
+        ...this.options.historyEnabled ? [
+          historyButton,
+        ]: [],
       ]];
-
-    if (this.func?.id) {
-      const historyButton = ui.iconFA('history', () => {
-        grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
-        historyButton.classList.toggle('d4-current');
-        grok.shell.o = this.historyRoot;
-      });
-
-      historyButton.classList.add('d4-toggle-button');
-      if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
-
-      newRibbonPanels.push([
-        historyButton,
-      ]);
-    }
 
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
@@ -323,7 +356,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
-    savedCall.options['isHistorical'] = false;
+
     this.linkFunccall(savedCall);
 
     if (this.options.historyEnabled) this.buildHistoryBlock();
@@ -413,13 +446,19 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
     this.funcCall.newId();
-    await this.funcCall.call(); // CAUTION: mutates the funcCall field
-    pi.close();
-    await this.onAfterRun(this.funcCall);
+    try {
+      await this.funcCall.call(); // CAUTION: mutates the funcCall field
 
-    // If a view is incapuslated into a tab (e.g. in PipelineView),
-    // there is no need to save run till an entire pipeline is over.
-    this.lastCall = this.options.isTabbed ? this.funcCall.clone() : await this.saveRun(this.funcCall);
+      await this.onAfterRun(this.funcCall);
+
+      // If a view is incapuslated into a tab (e.g. in PipelineView),
+      // there is no need to save run till an entire pipeline is over.
+      this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+    } catch (err: any) {
+      grok.shell.error(err.toString());
+    } finally {
+      pi.close();
+    }
   }
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
@@ -443,4 +482,20 @@ export abstract class FunctionView extends DG.ViewBase {
   protected defaultSupportedExportFormats = () => {
     return ['Excel'];
   };
+
+  protected get hasUploadMode() {
+    return this.func.options['uploadMode'] === 'true';
+  }
+
+  protected get runningOnInput() {
+    return this.func.options['runOnInput'] === 'true';
+  }
+
+  protected get runningOnStart() {
+    return this.func.options['runOnOpen'] === 'true';
+  }
+
+  protected get isHistorical() {
+    return this.funcCall.options['isHistorical'] === true;
+  }
 }

@@ -7,7 +7,7 @@ import java.util.Objects;
 // Integer column.
 public class IntColumn extends Column<Integer> {
     private static final String TYPE = Types.INT;
-    private static final int None = -2147483648;
+    public static final int None = -2147483648;
 
     private int[] data;
 

@@ -84,7 +84,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 4. Save jobs with name *"audit-test-job"*
 
-5. Run *"audit-test-job"* [data job](../access/data-job.md)
+5. Run *"audit-test-job"* data job
 
     * Job completed
 

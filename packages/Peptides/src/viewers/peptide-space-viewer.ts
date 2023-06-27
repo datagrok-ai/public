@@ -6,11 +6,12 @@ import $ from 'cash-dom';
 
 import {getSequenceMolecularWeight} from '../utils/molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {createDimensinalityReducingWorker, IReduceDimensionalityResult,
+import {createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
+import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;
@@ -47,7 +48,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
   async onPropertyChanged(property: DG.Property | null): Promise<void> {
     super.onPropertyChanged(property);
-    if (this.prevProps[property?.name as 'method' | 'measure' | 'cyclesCount' ?? ''] == property?.get(this))
+    if (this.prevProps[property?.name as 'method' | 'measure' | 'cyclesCount' ?? ''] === property?.get(this))
       return;
 
     if (this.model)
@@ -57,7 +58,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
   }
 
   async render(computeData=false): Promise<void> {
-    if (computeData && !this.isEmbeddingCreating && !this.model.isChangingEdfBitset) {
+    if (computeData && !this.isEmbeddingCreating /*&& !this.model.isChangingEdfBitset*/) {
       this.isEmbeddingCreating = true;
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
@@ -65,17 +66,17 @@ export class PeptideSpaceViewer extends DG.JsViewer {
         const alignedSeqCol = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
         const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount, alignedSeqCol);
         this.dataFrame.temp[C.EMBEDDING_STATUS] = true;
-        this.model.edf = edf;
+        // this.model.edf = edf;
 
         if (edf === null)
           return ui.label('Could not compute embeddings');
 
         const edfSelection = edf.selection;
         edfSelection.copyFrom(this.dataFrame.selection);
-        edfSelection.onChanged.subscribe(() => {
-          if (!this.model.isChangingEdfBitset)
-            this.model.fireBitsetChanged(true);
-        });
+        // edfSelection.onChanged.subscribe(() => {
+        //   if (!this.model.isChangingEdfBitset)
+        //     this.model.fireBitsetChanged(true);
+        // });
 
         const colorCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
         edf.columns.add(colorCol);
@@ -90,7 +91,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
         viewerRoot.addEventListener('mousemove', (ev) => {
           const idx = scatterPlot.hitTest(ev.offsetX, ev.offsetY);
-          if (idx != -1) {
+          if (idx !== -1) {
             const table = ui.tableFromMap({
               'Activity': colorCol.get(idx),
               'Sequence': alignedSeqCol.get(idx),

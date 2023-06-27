@@ -61,5 +61,5 @@ Retrieves chemical identifiers for the specified source, using UniChem database.
 
 See also:
 
-* [Cheminformatics](cheminformatics.md)
+* [Cheminformatics](chem.md)
 * [Chem info panels test](chem-info-panels-test.md)

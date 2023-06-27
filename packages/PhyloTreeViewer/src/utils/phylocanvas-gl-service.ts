@@ -75,7 +75,7 @@ export class PhylocanvasGlService implements PhylocanvasGlServiceBase {
       onAfterRender: ({gl}: { gl: WebGLRenderingContext }) => {
         // console.debug('PhyloTreeViewer: PhylocanvasGlService._processQueue() .onAfterRender() start ' +
         //   `name: ${name}`);
-        task.onAfterRender(gl.canvas);
+        task.onAfterRender(gl.canvas as HTMLCanvasElement);
         // console.debug('PhyloTreeViewer: PhylocanvasGlService._processQueue() .onAfterRender() end ' +
         //   `name: ${name}`);
 

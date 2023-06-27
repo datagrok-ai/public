@@ -6,7 +6,6 @@ import * as DG from 'datagrok-api/dg';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
 interface IMolInfo {
   //mol: RDMol | null; // null when molString is invalid?
@@ -78,82 +77,78 @@ M  END
   get defaultHeight() {return 100;}
 
   getDefaultSize(gridColumn: DG.GridColumn): {width: number, height: number} {
-    return { width: this.defaultWidth, height: this.defaultHeight };
+    return {width: this.defaultWidth, height: this.defaultHeight};
   }
 
-  _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean, details: object = {}): IMolInfo {
+  _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean,
+    details: object = {}): IMolInfo {
     let molCtx: IMolContext;
-    let mol: RDMol | null = null;
+    let mol = null;
     let substruct = {};
-    //try {
     if ((details as any).isSubstructure) {
       if (molString.includes(' H ') || molString.includes('V3000')) {
-        //mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
-        molCtx = getMolSafe(molString, {"mergeQueryHs":true}, _rdKitModule);
-        mol = molCtx.mol;//  this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+        molCtx = getMolSafe(molString, {mergeQueryHs: true}, _rdKitModule);
+        mol = molCtx.mol;
       } else {
-        const aromaMolString = aromatizeMolBlock(molString, _rdKitModule)
-        mol = this.rdKitModule.get_qmol(aromaMolString);
-        molCtx = {mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false };
+        try {
+          mol = this.rdKitModule.get_qmol(molString);
+          mol.set_aromatic_form();
+        } catch (e) {
+          if (mol) {
+            mol.delete();
+            mol = null;
+          }
+        }
+        molCtx = {mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false};
       }
-    }
-    else {
+    } else {
       molCtx = getMolSafe(molString, details, _rdKitModule);
-      mol = molCtx.mol;//mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
+      mol = molCtx.mol;
     }
 
     if (mol !== null) {
       try {
-        if (mol.is_valid()) {
-          let molHasOwnCoords = mol.has_coords();
-          const scaffoldIsMolBlock = DG.chem.isMolBlock(scaffoldMolString);
-          if (scaffoldIsMolBlock) {
-            const rdKitScaffoldMolCtx = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).molCtx;
-            const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;//this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).mol;
-            if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
-              rdKitScaffoldMol.normalize_depiction(0);
-              if (molHasOwnCoords)
-                mol.normalize_depiction(0);
+        let molHasOwnCoords = (mol.has_coords() > 0);
+        const scaffoldIsMolBlock = DG.chem.isMolBlock(scaffoldMolString);
+        if (scaffoldIsMolBlock) {
+          const rdKitScaffoldMolCtx = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false,
+            {mergeQueryHs: true, isSubstructure: true}).molCtx;
+          const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
+          if (rdKitScaffoldMol) {
+            rdKitScaffoldMol.normalize_depiction(0);
+            if (molHasOwnCoords)
+              mol.normalize_depiction(0);
 
-              let substructJson;
-              try {
-                substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
-                  useCoordGen: true,
-                  allowRGroups: true,
-                  acceptFailure: false,
-                  alignOnly: molHasOwnCoords,
-                }));
-              } catch {
-                // exceptions should not be thrown anymore by RDKit, but let's play safe
-                substructJson = '';
-              }
-              if (substructJson === '') {
-                substruct = {};
-                if (molHasOwnCoords) {
-                  mol.straighten_depiction(true);
-                }
-              } else
-                substruct = JSON.parse(substructJson);
+            let substructJson = '';
+            try {
+              substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
+                useCoordGen: true,
+                allowRGroups: true,
+                acceptFailure: false,
+                alignOnly: molHasOwnCoords,
+              }));
+            } catch {
+              // exceptions should not be thrown anymore by RDKit, but let's play safe
             }
+            if (substructJson === '') {
+              substruct = {};
+              if (molHasOwnCoords)
+                mol.straighten_depiction(true);
+            } else
+              substruct = JSON.parse(substructJson);
           }
-          if (!mol.has_coords() || molRegenerateCoords) {
-            mol.set_new_coords(molRegenerateCoords);
-            molHasOwnCoords = false;
-          }
-          if (!scaffoldIsMolBlock) {
-            mol.normalize_depiction(molHasOwnCoords ? 0 : 1);
-            mol.straighten_depiction(molHasOwnCoords);
-          } else if (!molHasOwnCoords) {
-            mol.normalize_depiction(0);
-          }
-          molCtx.useMolBlockWedging = molHasOwnCoords;
         }
-        else {
-          console.error(
-            'Chem | In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
-          mol.delete();
-          molCtx.mol = null;
+        if (mol.has_coords() === 0 || molRegenerateCoords) {
+          mol.set_new_coords(molRegenerateCoords);
+          molHasOwnCoords = false;
         }
+        if (!scaffoldIsMolBlock) {
+          mol.normalize_depiction(molHasOwnCoords ? 0 : 1);
+          mol.straighten_depiction(molHasOwnCoords);
+        } else if (!molHasOwnCoords)
+          mol.normalize_depiction(0);
+
+        molCtx.useMolBlockWedging = (mol.has_coords() === 2);
       } catch (e) {
         console.error(
           'In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `' + molString + '`');
@@ -175,7 +170,8 @@ M  END
   _fetchMol(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean,
     scaffoldRegenerateCoords: boolean, details: object = {}): IMolInfo {
     const name = molString + ' || ' + scaffoldMolString + ' || ' +
-      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + (Object.keys(details).length ? ' || ' + JSON.stringify(details) : '');
+      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords +
+      (Object.keys(details).length ? ' || ' + JSON.stringify(details) : '');
     return this.molCache.getOrCreate(name, (_: any) =>
       this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords, details));
   }
@@ -183,13 +179,14 @@ M  END
   _rendererGetOrCreate(
     width: number, height: number, molString: string, scaffoldMolString: string,
     highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): ImageData {
-    const fetchMolObj : IMolInfo = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+    const fetchMolObj : IMolInfo =
+      this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
     const rdKitMolCtx = fetchMolObj.molCtx;
     const rdKitMol = rdKitMolCtx.mol;//fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
 
     const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d', {willReadFrequently : true})!;
+    const ctx = canvas.getContext('2d', {willReadFrequently: true})!;
     this.canvasCounter++;
     if (rdKitMol != null)
       drawRdKitMoleculeToOffscreenCanvas(rdKitMolCtx, width, height, canvas, highlightScaffold ? substruct : null);
@@ -199,7 +196,7 @@ M  END
       drawErrorCross(ctx, width, height);
     }
 
-    return ctx.getImageData(0, 0, width, height);
+    return ctx.getImageData(0, 0, !Math.floor(width) ? 1 : width, !Math.floor(height) ? 1 : height);
   }
 
   _fetchRender(
@@ -227,7 +224,7 @@ M  END
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
 
     if (vertical) {
-      const ctx = onscreenCanvas.getContext('2d', {willReadFrequently : true})!;
+      const ctx = onscreenCanvas.getContext('2d', {willReadFrequently: true})!;
       ctx.save();
       const scl = ctx.getTransform();
       ctx.resetTransform();
@@ -235,13 +232,13 @@ M  END
       ctx.rotate(Math.PI / 2);
       if (scl.m11 < 1 || scl.m22 < 1)
         ctx.scale(scl.m11, scl.m22);
-      let f = new OffscreenCanvas(imageData.width, imageData.height)!;
+      const f = new OffscreenCanvas(imageData.width, imageData.height)!;
       f.getContext('2d')?.putImageData(imageData, 0, 0);
-      ctx.drawImage(f, 0, 0)
+      ctx.drawImage(f, 0, 0);
       ctx.restore();
     } else {
       //const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
-      onscreenCanvas.getContext('2d', {willReadFrequently : true})!.putImageData(imageData, x, y);
+      onscreenCanvas.getContext('2d', {willReadFrequently: true})!.putImageData(imageData, x, y);
     }
   }
 

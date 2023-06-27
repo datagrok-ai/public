@@ -1,9 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
-
-import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall} from './utils';
+import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParameters,
+  _testSearchSubstructureSARSmall} from './utils';
+import {before, category, test} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
+import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import { searchSubstructure } from '../package';
 
 export const testSubstructure = 'C1CC1';
 //csv with C1CC1 as substructure in pos 0 and 2
@@ -15,6 +17,14 @@ CC(C(=O)NCCS)c1cccc(c1)C(=O)c2ccccc2
 COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5`;
 
 category('substructure search', () => {
+
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
   test('searchSubstructure.sar-small', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
@@ -84,6 +94,15 @@ category('substructure search', () => {
     await _testSearchSubstructure(df, 'smiles1', testSubstructure, [1, 4]);
   });
 
+  test('searchSubstructure2Dataframes', async () => {
+    const df1 = grok.data.demo.molecules(50);
+    const df2 = grok.data.demo.molecules(50);
+
+    await _testSearchSubstructure(df1, 'smiles', 'c1ccncc1', [6, 26, 46]);
+    await _testSearchSubstructure(df2, 'smiles', 'c1ccccc1',
+      [0, 4, 5, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24, 25, 27, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 45, 47, 48]);
+  });
+
   test('searchSubstructureExplicitHydrogen', async () => {
     const df = await readDataframe('tests/explicit_h_test.csv');
     await _testSearchSubstructure(df, 'smiles', `
@@ -143,5 +162,11 @@ M  END
   5  6  4  0  0  0  0
 M  END
 `, [2, 3]);
+  });
+
+  test('substructureSearchLibrary', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip") :
+      grok.data.demo.molecules(500);
+    await searchSubstructure(df.col('smiles')!, 'c1ccccc1', '');
   });
 });

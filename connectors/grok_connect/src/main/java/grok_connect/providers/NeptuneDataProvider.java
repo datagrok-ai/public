@@ -120,3 +120,4 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }
+

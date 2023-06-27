@@ -2,6 +2,8 @@ package grok_connect.table_query;
 
 import java.util.*;
 import java.util.stream.*;
+
+import grok_connect.connectors_info.DataConnection;
 import org.apache.commons.lang.StringUtils;
 
 
@@ -9,6 +11,7 @@ public class TableQuery
 {
     public String tableName;
     public String schema;
+    public DataConnection connection;
     public List<String> fields = new ArrayList<>();
     public List<String> pivots = new ArrayList<>();
 
@@ -62,8 +65,13 @@ public class TableQuery
         String sql = "";
         String str = "";
         List<String> selectFields = fields.stream().map(addBrackets::convert).collect(Collectors.toList());
-        for (GroupAggregation func : getAggFuncs())
-            selectFields.add(aggrToSql.convert(func));
+        for (GroupAggregation func : getAggFuncs()) {
+            String convert = aggrToSql.convert(func);
+            if (convert != null) {
+                selectFields.add(convert);
+            }
+        }
+
         if (selectFields.size() == 0)
             return "";
         selectFields = pad(selectFields);
@@ -75,7 +83,7 @@ public class TableQuery
             _tableName = _tableName.substring(idx + 1);
         }
         _tableName = addBrackets.convert(_tableName);
-        _tableName = (schema != null && schema.length() != 0) ? schema + "." + _tableName : _tableName;
+        _tableName = schema != null && schema.length() != 0 && !connection.dataSource.equals("SQLite") ? schema + "." + _tableName : _tableName;
         sql += "select \n" + ((limit != null && !limitAtEnd) ? limitToSql.convert("", limit) + "\n" : "") +
                 str + "from \n  " + _tableName + "\n";
 
@@ -102,8 +110,12 @@ public class TableQuery
         if (!orderBy.isEmpty()) {
             List<String> orders = new ArrayList<>();
             sql += "order by\n";
-            for (FieldOrder order: orderBy)
-                orders.add("\"" + order.field + "\"" +(order.asc ? " asc" : " desc"));
+            for (FieldOrder order: orderBy) {
+                String orderField = connection.dataSource.equals("Access") ?
+                        String.format("[%s]", order.field) : String.format("\"%s\"", order.field);
+                orders.add(String.format("%s%s", orderField, order.asc ? " asc" : " desc"));
+            }
+
             sql += StringUtils.join(pad(orders), ", ") + "\n";
         }
 

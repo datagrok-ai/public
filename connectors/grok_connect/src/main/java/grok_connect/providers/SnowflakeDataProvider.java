@@ -1,7 +1,7 @@
 package grok_connect.providers;
 
 import grok_connect.managers.ColumnManager;
-import grok_connect.managers.bigint_column.OracleSnowflakeBigIntColumnManager;
+import grok_connect.managers.bigint_column.SnowflakeBigIntColumnManager;
 import grok_connect.managers.integer_column.OracleSnowflakeIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
@@ -64,16 +64,25 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
+        String whereClause = String.format(" WHERE%s%s%s",
+                db == null ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
+                schema == null ? "" : String.format("%s c.table_schema = '%s'", db == null ? "" : " AND",schema),
+                table == null ? "" : String.format("%s c.table_name = '%s'", db == null && schema == null ? "" : " AND", table));
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
-                + "c.data_type as data_type, "
-                + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name WHERE c.table_schema = '%s' %s"
-                , schema, table == null ? "" : String.format("AND c.table_name = '%s'", table));
+                        + "c.data_type as data_type, "
+                        + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
+                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s ORDER BY c.table_name, c.ordinal_position;"
+                , db == null && schema == null && table == null ? "" : whereClause);
     }
 
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("%s REGEXP '%s'", columnName, regexExpression);
+    }
+
+    @Override
+    public String addBrackets(String name) {
+        return String.format("\"%s\"", name);
     }
 
     @Override
@@ -99,7 +108,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
-        defaultManagersMap.put(Types.BIG_INT, new OracleSnowflakeBigIntColumnManager());
+        defaultManagersMap.put(Types.BIG_INT, new SnowflakeBigIntColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 

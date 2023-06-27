@@ -6,6 +6,7 @@ import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
 import {PackageLogger} from "./logger";
 import * as Module from "module";
+import dayjs from "dayjs";
 
 declare var grok: any;
 let api = <any>window;
@@ -58,10 +59,10 @@ export class Entity {
   get path(): string { return api.grok_Entity_Path(this.dart); }
 
   /** Time when entity was created **/
-  get createdOn(): string { return api.grok_Entity_Get_CreatedOn(this.dart); }
+  get createdOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_CreatedOn(this.dart)); }
 
   /** Time when entity was updated **/
-  get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.dart); }
+  get updatedOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_UpdatedOn(this.dart)); }
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
@@ -344,7 +345,7 @@ export class Project extends Entity {
 
 /** Represents a data query
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-query}
+ * {@link https://datagrok.ai/help/access/access#data-query}
  * */
 export class DataQuery extends Func {
   /** @constructs DataQuery*/
@@ -491,7 +492,7 @@ export class TableQueryBuilder {
 
 /** Represents a data job
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-job}
+ * {@link https://datagrok.ai/help/access}
  * */
 export class DataJob extends Func {
   /** @constructs DataJob */
@@ -502,7 +503,7 @@ export class DataJob extends Func {
 
 /** Represents a data connection
  * @extends Entity
- * {@link https://datagrok.ai/help/access/data-connection}
+ * {@link https://datagrok.ai/help/access/access#data-connection}
  * */
 export class DataConnection extends Entity {
   parameters: any;
@@ -631,6 +632,12 @@ export class FileInfo extends Entity {
 
   /** Returns file URL */
   get url(): string { return api.grok_FileInfo_Get_Url(this.dart); }
+
+  /** Checks if file */
+  get isFile(): boolean { return api.grok_FileInfo_Get_IsFile(this.dart); }
+
+  /** Checks if directory */
+  get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
 
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
@@ -884,7 +891,7 @@ export class LogEventParameterValue extends Entity {
  */
 export class Package extends Entity {
   public webRoot: string = '';
-  public version: string = '';
+  public _version: string = '';
 
   constructor(dart: any | undefined = undefined) {
     super(dart);
@@ -901,6 +908,20 @@ export class Package extends Entity {
   init(): Promise<null> { return Promise.resolve(null); }
 
   private _name: string = '';
+
+  get version(): string {
+    if (this.dart != null)
+      return api.grok_Package_Get_Version(this.dart);
+    else
+      return this._version;
+  }
+
+  set version(x) {
+    if (this.dart != null)
+      api.grok_Package_Set_Version(this.dart, x);
+    else
+      this._version = x;
+  }
 
   /** Package short name */
   get name(): string {
@@ -1008,6 +1029,9 @@ export interface PropertyOptions {
 
   /** Property type */
   type?: string;
+
+  /** Property input type */
+  inputType?: string;
 
   /** Whether an empty value is allowed. This is used by validators. */
   nullable?: boolean;
@@ -1195,22 +1219,6 @@ export class Property {
   }
 }
 
-/*
-export class DateTime {
-  public dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static fromDate(date: Date): DateTime {
-    return DateTime.fromMillisecondsSinceEpoch(date.getTime());
-  }
-
-  static fromMillisecondsSinceEpoch(millisecondsSinceEpoch: number): DateTime {
-    return new DateTime(api.grok_DateTime_FromMillisecondsSinceEpoch(millisecondsSinceEpoch));
-  }
-}*/
 
 export class HistoryEntry {
   public dart: any;

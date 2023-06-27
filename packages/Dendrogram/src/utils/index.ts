@@ -3,8 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
-
-/** By Dimitri Petrov */
+import '../css/injected-dendrogram.css';
+/** By Dimitri Petrov
+ * Attach a div to a grid
+ * @param {DG.Grid} grid
+ * @param {number} neighborWidth
+ * @return {GridNeighbor}*/
 export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): GridNeighbor {
   // const nRowCount = 100;
   // const nColCount = 5;
@@ -13,13 +17,35 @@ export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): Gri
   // for (let nR = 0; nR < nRowCount; ++nR) {
   //   colDate.set(nR, dayjs());
   // }
-
-  let neighbor: GridNeighbor;
   const eDiv = ui.div();
-  // let button = ui.button('Close', () => {
-  //   neighbor.close();
-  // });
-  // eDiv.appendChild(button);
-  neighbor = new GridNeighbor(eDiv, grid, neighborWidth);
+  const button = ui.icons.close(() => {
+    neighbor.close();
+    //trigger grid rerender
+    grid.invalidate();
+  }, 'Remove Dendrogram');
+  button.classList.add('dendrogram-close-bttn');
+  eDiv.appendChild(button);
+
+  const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth);
+  return neighbor;
+}
+
+export function attachLoaderDivToGrid(grid: DG.Grid, neighborWidth: number = 100): GridNeighbor {
+  const eDiv = ui.div();
+  eDiv.classList.add('dendrogram-loader');
+  const loader = ui.waitBox(async () => {
+    return new Promise<HTMLElement>(() => {});
+  });
+  eDiv.appendChild(loader);
+  const button = ui.icons.close(() => {
+    neighbor.close();
+    //trigger grid rerender
+    grid.invalidate();
+  }, 'Remove Dendrogram');
+  button.classList.add('dendrogram-close-bttn');
+  loader.style.width = '40px';
+  const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth);
+  //trigger grid rerender
+  grid.invalidate();
   return neighbor;
 }

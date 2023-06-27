@@ -132,6 +132,7 @@ export enum GRID_COLUMN_TAGS {
 /** Commonly used options on the function level */
 export enum FUNC_OPTIONS {
   DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
+  IS_DEMO_SCRIPT = 'isDemoScript'
 }
 
 // export type FILTER_TYPE =
@@ -286,6 +287,26 @@ export const TAGS = {
     SCAFFOLD: 'chem-scaffold'
   }
 }
+    
+export const InputType = {
+  Int: 'Int',
+  BigInt: 'BigInt',
+  Float: 'Float',
+  QNum: 'QNum',
+  Slider: 'Slider',
+  Bool: 'Bool',
+  TextArea: 'TextArea',
+  Text: 'Text',
+  Date: 'Date',
+  Map: 'Map',
+  List: 'List',
+  Color: 'Color',
+  Column: 'Column',
+  Radio: 'Radio',
+  Choice: 'Choice',
+  MultiChoice: 'MultiChoice',
+  Table: 'Table',
+}
 
 export const FUNC_TYPES = {
   /** An application that gets shown in the app store.
@@ -386,7 +407,8 @@ export enum VIEWER {
   WORD_CLOUD = 'Word cloud',
   TIMELINES = 'TimelinesViewer',
   RADAR_VIEWER = 'RadarViewer',
-  SURFACE_PLOT = 'SurfacePlot'
+  SURFACE_PLOT = 'SurfacePlot',
+  SCAFFOLD_TREE = 'Scaffold Tree'
 }
 
 /** @enum {LINE_CHART_SERIES_TYPE} */

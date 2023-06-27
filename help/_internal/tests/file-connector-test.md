@@ -128,7 +128,7 @@ indexed and can be browsed.
 ## Common scenarios
 
 1. Test functionality from previous sections with different file types. Supported file types can be found
-   in [supported-formats.md](../../access/supported-formats.md) file
+   in [supported-formats.md](../../access/files/supported-formats.md) file
 
 1. Check common functionality for all data sources ([data-query-test](../../access/data-query-test.md))
 
@@ -139,7 +139,7 @@ indexed and can be browsed.
 See also:
 
 * [Files](../../access/connectors/files.md)
-* [Data connection](../../access/data-connection.md)
+* [Data connection](../../access/access.md#data-connection)
 * [Data connection Test](../../access/data-connection-test.md)
-* [Data query](../../access/data-query.md)
+* [Data query](../../access/access.md#data-query)
 * [Data query-test](../../access/data-query-test.md)

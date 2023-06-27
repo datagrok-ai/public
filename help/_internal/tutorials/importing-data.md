@@ -18,4 +18,4 @@ shares, databases
 
 See also:
 
-* [Data import](../../access/file-browser-and-file-shares.md)
+* [Data import](../../access/files/files.mdx)

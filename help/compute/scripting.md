@@ -87,7 +87,7 @@ registered in the platform as a
 [function](../datagrok/functions/functions.md), and can be invoked in different ways:
 
 * From the [console](../datagrok/navigation.md#console)
-* From the [data job](../access/data-job.md)
+* From the data job
 * From the [transformations editor](../transform/recipe-editor.md)
 * From the [function browser](https://public.datagrok.ai/functions)
 
@@ -517,6 +517,34 @@ Header line examples:
 
 #input: string option = int {suggestions: jssuggesttype}
 ```
+
+#### For "list" type
+
+| Option      | Value                                                                                      | Description                              |
+|-------------|--------------------------------------------------------------------------------------------|------------------------------------------|
+| separators     | String that consists of consecutive separators (different characters needed to facilitate the splitting process)                   | String of separators applied to the string parameter     | 
+
+Use **separators** options to obtain the output of a list type. You need to provide separators as a string. This allows to split the string based on the specified characters.
+
+**Separators** work only for the TextArea input type. The following example demonstrates how separators work.
+
+```sql
+--name: OrdersByEmployee
+--friendlyName: OrdersByEmployee
+--connection: PostgresNorthwind
+--input: string shipCountry = "Spain" {choices: Query("SELECT DISTINCT shipCountry FROM orders")}
+--input: string shipCity = "Barcelona" {choices: Query("SELECT DISTINCT shipcity FROM orders WHERE shipCountry = @shipCountry")}
+--input: string customerId = "GALED" {choices: Query("SELECT DISTINCT customerid FROM orders WHERE shipCity = @shipCity")}
+--input: list<string> employee {inputType: TextArea; separators: ,}
+
+SELECT *
+FROM orders
+INNER JOIN employees
+ON orders.employeeId = employees.employeeId
+WHERE lastName in (SELECT unnest(@employee))
+```
+
+![Separators Option](../compute/separators-option.gif)
 
 ### Examples
 

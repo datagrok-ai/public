@@ -4,6 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UnitsHandler} from './units-handler';
+import {NOTATION} from './macromolecule/consts';
+import {UNITS} from 'datagrok-api/dg';
 
 /** Class for parsing FASTA files */
 export class FastaFileHandler {
@@ -60,9 +62,10 @@ export class FastaFileHandler {
     const descriptionsArrayCol = DG.Column.fromStrings('description', this.descriptionsArray);
     const sequenceCol = DG.Column.fromStrings('sequence', this.sequencesArray);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
 
     // here should go the code from units handler
-    UnitsHandler.setUnitsToFastaColumn(sequenceCol);
+    const uh = UnitsHandler.getOrCreate(sequenceCol);
 
     return [DG.DataFrame.fromColumns([
       descriptionsArrayCol,

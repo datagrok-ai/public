@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PdbHelper} from '../utils/pdb-helper';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {getPdbHelper} from '../package';
+import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+
+import {_getPdbHelper} from '../package-utils';
 
 /** The app for .pdb file handler */
 export class PdbApp {
@@ -12,14 +13,17 @@ export class PdbApp {
 
   constructor() {}
 
-  /** {@link df} created with pdbToDf() */
+  /**
+   * @param {DG.DataFrame} df dataframe created with pdbToDf()
+   * @param {string} funcName name of the function that will be called on the server
+   */
   async init(df: DG.DataFrame, funcName: string = 'pdbApp'): Promise<void> {
     this._funcName = funcName;
     await this.loadData(df);
   }
 
   async loadData(df: DG.DataFrame): Promise<void> {
-    const ph: IPdbHelper = await getPdbHelper();
+    const ph: IPdbHelper = await _getPdbHelper();
     await this.setData(df);
   }
 
@@ -38,7 +42,7 @@ export class PdbApp {
   async buildView(): Promise<void> {
     this.view = grok.shell.addTableView(this.df);
 
-    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {})) as DG.JsViewer;
+    const viewer: DG.Viewer & IBiostructureViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {}));
     this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
   }
 }

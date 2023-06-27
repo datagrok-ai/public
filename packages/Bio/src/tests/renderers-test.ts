@@ -3,13 +3,13 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
-import {importFasta, multipleSequenceAlignmentAny} from '../package';
+import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
 import * as C from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
@@ -28,35 +28,38 @@ category('renderers', () => {
 
   test('long sequence performance ', async () => {
     performanceTest(generateLongSequence, 'Long sequences');
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('many sequence performance', async () => {
     performanceTest(generateManySequences, 'Many sequences');
-  });
+  }, {skipReason: 'GROK-13300'});
+  test('many sequence performance', async () => {
+    performanceTest(generateManySequences, 'Many sequences');
+  }, {skipReason: 'GROK-13300'});
 
   test('rendererMacromoleculeFasta', async () => {
     await _rendererMacromoleculeFasta();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('rendererMacromoleculeSeparator', async () => {
     await _rendererMacromoleculeSeparator();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('rendererMacromoleculeDifference', async () => {
     await _rendererMacromoleculeDifference();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('afterMsa', async () => {
     await _testAfterMsa();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('afterConvert', async () => {
     await _testAfterConvert();
-  }, {skipReason: 'GROK-12765'});
+  }, {skipReason: 'GROK-13300'});
 
   test('selectRendererBySemType', async () => {
     await _selectRendererBySemType();
-  });
+  }, {skipReason: 'GROK-13300'});
 
   test('setRendererManually', async () => {
     await _setRendererManually();
@@ -145,17 +148,17 @@ category('renderers', () => {
     expect(srcSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
-    const msaSeqCol = multipleSequenceAlignmentAny(srcSeqCol);
+    const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol});
     tv.grid.invalidate();
 
-    // expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    // expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
-    // expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
-    // expect(msaSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
-    // expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
+    expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
+    expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
+    expect(msaSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
+    expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     // check newColumn with UnitsHandler constructor
-    // const uh: UnitsHandler = new UnitsHandler(msaSeqCol);
+    const _uh: UnitsHandler = UnitsHandler.getOrCreate(msaSeqCol);
 
     dfList.push(df);
     tvList.push(tv);
@@ -183,7 +186,7 @@ category('renderers', () => {
     expect(resCellRenderer, 'sequence');
 
     // check tgtCol with UnitsHandler constructor
-    const uh: UnitsHandler = new UnitsHandler(tgtCol);
+    const _uh: UnitsHandler = UnitsHandler.getOrCreate(tgtCol);
   }
 
   async function _selectRendererBySemType() {

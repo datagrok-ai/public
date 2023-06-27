@@ -22,15 +22,17 @@ import java.util.List;
 import java.util.Map;
 
 public class DefaultResultSetManager implements ResultSetManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultResultSetManager.class);
-    private final Collection<ColumnManager<?>> columnManagers;
-    private final List<Column> columns;
-    private final List<ColumnMeta> columnsMeta;
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass().getName());
+    protected final Collection<ColumnManager<?>> columnManagers;
+    protected final List<Column> columns;
+    protected final List<ColumnMeta> columnsMeta;
+    protected final List<ColumnManager<?>> currentManagers;
 
     public DefaultResultSetManager(Collection<ColumnManager<?>> columnManagers) {
         this.columnManagers = columnManagers;
         columns = new ArrayList<>();
         columnsMeta = new ArrayList<>();
+        currentManagers = new ArrayList<>();
     }
 
     public static ResultSetManager getDefaultManager() {
@@ -56,40 +58,41 @@ public class DefaultResultSetManager implements ResultSetManager {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T convert(Object o, ColumnMeta columnMeta) {
-        LOGGER.trace("convert method was called");
+        logger.trace("convert method was called");
         for (ColumnManager<?> manager : columnManagers) {
             if (manager.isApplicable(columnMeta)) {
-                LOGGER.trace("found suitable converter manager");
+                logger.trace("found suitable converter manager");
+                currentManagers.add(manager);
                 return (T) manager.convert(o, columnMeta.getColumnLabel());
             }
         }
-        LOGGER.trace("can't find suitable converter manager, return as a string");
+        logger.trace("can't find suitable converter manager, return as a string");
         return o == null ? null : (T) o.toString();
     }
 
     @Override
     public Column getColumn(ColumnMeta columnMeta) {
-        LOGGER.trace("getColumn method was called");
+        logger.trace("getColumn method was called");
         for (ColumnManager<?> manager : columnManagers) {
             if (manager.isApplicable(columnMeta)) {
-                LOGGER.trace("found suitable column provider");
+                logger.trace("found suitable column provider");
                 return manager.getColumn();
             }
         }
-        LOGGER.trace("couldn't find suitable column, return StringColumn");
+        logger.trace("couldn't find suitable column, return StringColumn");
         return new StringColumn();
     }
 
     @Override
     public Column getColumn(Object o) {
-        LOGGER.trace("getColumn method was called");
+        logger.trace("getColumn method was called");
         for (ColumnManager<?> manager : columnManagers) {
             if (manager.isApplicable(o)) {
-                LOGGER.trace("found suitable column provider");
+                logger.trace("found suitable column provider");
                 return manager.getColumn();
             }
         }
-        LOGGER.trace("couldn't find suitable column, return StringColumn");
+        logger.trace("couldn't find suitable column, return StringColumn");
         return new StringColumn();
     }
 
@@ -99,7 +102,8 @@ public class DefaultResultSetManager implements ResultSetManager {
         if (!inBounds) {
             processHeaders(o, index, meta);
         } else {
-            columns.get(index - 1).add(convert(o, columnsMeta.get(index - 1)));
+            columns.get(index - 1).add(currentManagers.get(index - 1)
+                    .convert(o, columnsMeta.get(index - 1).getColumnLabel()));
         }
     }
 
@@ -108,7 +112,7 @@ public class DefaultResultSetManager implements ResultSetManager {
         return columns;
     }
 
-    private void processHeaders(Object o, int index, ResultSetMetaData meta) {
+    protected void processHeaders(Object o, int index, ResultSetMetaData meta) {
         ColumnMeta columnMeta = getColumnMeta(index, meta);
         columnsMeta.add(index - 1, columnMeta);
         Column column = getColumn(columnMeta);

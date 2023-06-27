@@ -1,20 +1,46 @@
 package grok_connect.providers;
 
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-import java.text.*;
-import java.util.regex.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.Array;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
+import grok_connect.connectors_info.FuncParam;
+import grok_connect.log.EventType;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.FieldPredicate;
+import grok_connect.table_query.GroupAggregation;
+import grok_connect.table_query.TableQuery;
+import grok_connect.utils.ConnectionPool;
+import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.PatternMatcher;
+import grok_connect.utils.PatternMatcherResult;
+import grok_connect.utils.QueryCancelledByUser;
+import grok_connect.utils.QueryMonitor;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import serialization.*;
-import grok_connect.utils.*;
-import grok_connect.table_query.*;
-import grok_connect.connectors_info.*;
+import serialization.DataFrame;
 import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
@@ -106,32 +132,33 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
-    public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
+    public ResultSet executeQuery(String query, FuncCall queryRun,
+                                  Connection connection, int timeout, Logger queryLogger, int fetchSize) throws SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-        logger.debug("supports Transactions: {}", supportsTransactions);
+        queryLogger.trace(EventType.MISC.getMarker(), "Provider supports transactions: {}", supportsTransactions);
         if (supportsTransactions)
             connection.setAutoCommit(false);
 
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
-        int fetchSize = (queryRun.aux.containsKey("fetchSize") && (queryRun.aux.get("fetchSize").equals("big"))) ? 10000 : 100;
 
         ResultSet resultSet = null;
         if (dataQuery.inputParamsCount() > 0) {
+            queryLogger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.START), "Converting query");
             query = convertPatternParamsToQueryParams(queryRun, query);
-
+            queryLogger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.END), "Query after converting: {}",
+                    query);
             if (autoInterpolation()) {
-                logger.debug("Autointerpolating query");
                 StringBuilder queryBuffer = new StringBuilder();
+                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Query will be auto interpolated");
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
-                System.out.println(query);
+                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated query: {}",
+                        query);
                 PreparedStatement statement = connection.prepareStatement(query);
-                if (supportsTransactions)
-                    statement.setFetchSize(fetchSize);
                 queryMonitor.addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
-                System.out.println(names);
+                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.START), "Query detected parameters: {}", names);
                 int i = 0;
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
@@ -142,58 +169,62 @@ public abstract class JdbcDataProvider extends DataProvider {
                         if (param.value == null)
                             stringValue = "null";
                         else
-                           stringValue = param.value.toString();
+                            stringValue = param.value.toString();
                         i = i + setArrayParamValue(statement, n + i + 1, param);
                     } else {
-                        if (param.value == null)
+                        if (param.value == null) {
                             stringValue = "null";
-                        else
+                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
+                        } else {
                             stringValue = param.value.toString();
-                        statement.setObject(n + i + 1, param.value);
+                            statement.setObject(n + i + 1, param.value);
+                        }
                     }
                     stringValues.add(stringValue);
                 }
-                statement.setQueryTimeout(timeout);
-                String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
-                logger.debug(logString);
-                if (queryRun.debugQuery)
-                    queryRun.log += logString;
+                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Parameters were replaced by: {}", stringValues);
+                setQueryTimeOut(statement, timeout);
+                queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing statement");
+                statement.setFetchSize(fetchSize);
                 if(statement.execute())
                     resultSet = statement.getResultSet();
+                queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Statement was executed");
                 queryMonitor.removeStatement(mainCallId);
             } else {
+                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Query will be manually interpolated");
                 query = manualQueryInterpolation(query, dataQuery);
-
-                Statement statement = connection.createStatement();
-                if (supportsTransactions)
-                    statement.setFetchSize(fetchSize);
-                queryMonitor.addNewStatement(mainCallId, statement);
-                statement.setQueryTimeout(timeout);
-                String logString = String.format("Query: %s \n", query);
-                logger.debug(logString);
-                if (queryRun.debugQuery)
-                    queryRun.log += logString;
-                if(statement.execute(query))
-                    resultSet = statement.getResultSet();
-                queryMonitor.removeStatement(mainCallId);
+                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated query");
+                resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
             }
         } else {
-            // Query without parameters
-            Statement statement = connection.createStatement();
-            if (supportsTransactions)
-                statement.setFetchSize(fetchSize);
-            queryMonitor.addNewStatement(mainCallId, statement);
-            statement.setQueryTimeout(timeout);
-            String logString = String.format("Query: %s \n", query);
-            logger.debug(logString);
-            if (queryRun.debugQuery)
-                queryRun.log += logString;
-            if(statement.execute(query))
-                resultSet = statement.getResultSet();
-            queryMonitor.removeStatement(mainCallId);
+            queryLogger.debug(EventType.QUERY_PARSE.getMarker(), "Query without parameters");
+            resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
         }
 
         return resultSet;
+    }
+
+    private ResultSet executeStatement(String query, Connection connection, Logger queryLogger,
+                                       int timeout, String mainCallId, int fetchSize) throws SQLException {
+        ResultSet resultSet = null;
+        PreparedStatement statement = connection.prepareStatement(query);
+        queryMonitor.addNewStatement(mainCallId, statement);
+        setQueryTimeOut(statement, timeout);
+        queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing statement");
+        statement.setFetchSize(fetchSize);
+        if(statement.execute())
+            resultSet = statement.getResultSet();
+        queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Statement was executed");
+        queryMonitor.removeStatement(mainCallId);
+        return resultSet;
+    }
+
+    private void setQueryTimeOut(Statement statement, int timeout) {
+        try {
+            statement.setQueryTimeout(timeout);
+        } catch (SQLException exception) {
+            logger.debug("setQueryTimeout is not supported for {}", descriptor.type);
+        }
     }
 
     protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
@@ -280,8 +311,12 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
-        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         List<String> names = new ArrayList<>();
+        String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
+        query = query
+                .replaceAll(regexComment, "")
+                .trim();
+        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         Matcher matcher = pattern.matcher(query);
         int idx = 0;
         while (matcher.find()) {
@@ -290,9 +325,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryBuffer.append(query, idx, matcher.start());
                 appendQueryParam(dataQuery, name, queryBuffer);
                 idx = matcher.end();
-                if (!names.contains(name)) {
-                    names.add(name);
-                }
+                names.add(name);
             }
         }
         queryBuffer.append(query, idx, query.length());
@@ -303,8 +336,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
-        logger.debug("resultSetScheme was called");
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection,
+                                  Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
@@ -321,13 +354,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
-                System.out.println(query);
-                resultSet = executeQuery(query, queryRun, connection, timeout);
+                resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
             } else {
+                queryLogger.debug(EventType.MISC.getMarker(), "Executing batch mode");
                 String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
-
                 for (String currentQuery : queries)
-                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout); // IT WON'T WORK?
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger, fetchSize); // IT WON'T WORK?
             }
 
             return resultSet;
@@ -337,98 +369,54 @@ public abstract class JdbcDataProvider extends DataProvider {
             else throw e;
         }
     }
-
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet) throws IOException, SQLException, QueryCancelledByUser {
-        return getResultSetSubDf(queryRun, resultSet, 10000);
-    }
-
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, int maxIterations)
-            throws IOException, SQLException, QueryCancelledByUser {
-        logger.debug("getResultSetSubDf was called");
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, int maxIterations,
+                                       Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
         if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
-            logger.debug("Query was cancelled: \"{}\"", queryRun.func.query);
+            queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
             throw new QueryCancelledByUser();
         }
 
-        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
-        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
         try {
-            if (resultSet == null)
-                return new DataFrame();
-
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-            int columnCount = resultSetMetaData.getColumnCount();
-            logger.debug("Received resultSet meta data");
-            BufferedWriter csvWriter = null;
-            if (outputCsv != null) {
-                csvWriter = new BufferedWriter(new FileWriter(outputCsv));
-
-                for (int c = 1; c < columnCount + 1; c++) {
-                    csvWriter.append(resultSetMetaData.getColumnLabel(c));
-                    csvWriter.append(c == columnCount ? '\n' : ',');
-                }
-            }
-            long fillingDataframeStart = System.currentTimeMillis();
-            int rowCount = 0;
+            queryLogger.debug(EventType.MISC.getMarker(), "Received resultSet meta data");
+            EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_COLUMN_FILL;
+            if (dryRun)
+                resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_COLUMN_FILL;
             ResultSetManager resultSetManager = getResultSetManager();
+            int columnCount = resultSetMetaData.getColumnCount();
+            queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
+                    "Column filling was started");
+            int rowCount = 0;
             while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
                 rowCount++;
-
                 for (int c = 1; c < columnCount + 1; c++) {
                     Object value = getObjectFromResultSet(resultSet, c);
 
-                    if (outputCsv != null) {
-                        if (value != null)
-                            csvWriter.append(StringEscapeUtils.escapeCsv(value.toString()));
+                    if (dryRun)
+                        continue;
 
-                        csvWriter.append(c == columnCount ? '\n' : ',');
-                    }
                     resultSetManager.processValue(value, c, resultSetMetaData);
-                }
-            }
-            List<Column> processedColumns = resultSetManager.getProcessedColumns();
-            if (rowCount % 10 == 0) {
-                if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
-                    DataFrame dataFrame = new DataFrame();
-                    dataFrame.addColumns(processedColumns);
 
-                    resultSet.close();
-                    queryMonitor.removeResultSet(queryRun.id);
-                    return dataFrame;
-                }
-                if (rowCount % 100 == 0) {
-                    long size = 0L;
-                    for (Column column : processedColumns)
-                        size += column.memoryInBytes();
-                    size = ((count > 0) ? (count * size / rowCount) : size) / 1000000;
-
-                    if (size > 5) {
+                    if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
+                        queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
                         DataFrame dataFrame = new DataFrame();
-                        dataFrame.addColumns(processedColumns);
+                        dataFrame.addColumns(resultSetManager.getProcessedColumns());
+                        resultSet.close();
+                        queryMonitor.removeResultSet(queryRun.id);
                         return dataFrame;
                     }
-
-                    if (rowCount % 1000 == 0 && memoryLimit > 0 && size > memoryLimit)
-                        throw new SQLException("Too large query result: " +
-                            size + " > " + memoryLimit + " MB");
                 }
             }
+            queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
+                    "Column filling was finished");
 
-            String logString = String.format(" dataframe filling: %s s \n",
-                    (System.currentTimeMillis() - fillingDataframeStart / 1000.0));
-            if (queryRun.debugQuery)
-                queryRun.log += logString;
-            logger.debug(logString);
-            if (outputCsv != null) {
-                csvWriter.close();
-            }
             DataFrame dataFrame = new DataFrame();
+            if (dryRun)
+                return dataFrame;
             dataFrame.addColumns(resultSetManager.getProcessedColumns());
             return dataFrame;
         } catch (Exception e) {
-            logger.warn("An exception was thrown", e);
+            queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);
             if (resultSet != null && resultSet.isClosed()) {
                 throw new QueryCancelledByUser();
             }
@@ -443,11 +431,12 @@ public abstract class JdbcDataProvider extends DataProvider {
         Connection connection = null;
         try {
             connection = getConnection(queryRun.func.connection);
-            ResultSet resultSet = getResultSet(queryRun, connection);
+            ResultSet resultSet = getResultSet(queryRun, connection, logger, 100);
 
             if (resultSet == null)
                 return new DataFrame();
-            return getResultSetSubDf(queryRun, resultSet, -1);
+
+            return getResultSetSubDf(queryRun, resultSet, -1, logger, 1, false);
         }
         catch (SQLException e) {
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
@@ -484,24 +473,33 @@ public abstract class JdbcDataProvider extends DataProvider {
     public PatternMatcherResult numericPatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = param.options.get("pattern");
-        if (matcher.op.equals(PatternMatcher.NONE))
-            result.query = "(1 = 1)";
-        else if (matcher.op.equals(PatternMatcher.RANGE_NUM)) {
-            String name0 = param.name + "R0";
-            String name1 = param.name + "R1";
-            result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
-            result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
-            result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
-        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
-            String names = paramToNamesString(param, matcher, type, result);
-            result.query = getInQuery(matcher, names);
-        } else {
-            result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
-            result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
+        switch (matcher.op) {
+            case PatternMatcher.NONE:
+                result.query = "(1 = 1)";
+                break;
+            case PatternMatcher.RANGE_NUM:
+                String name0 = param.name + "R0";
+                String name1 = param.name + "R1";
+                result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
+                result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
+                result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
+                break;
+            case PatternMatcher.IN:
+            case PatternMatcher.NOT_IN:
+                String names = paramToNamesString(param, matcher, type, result);
+                result.query = getInQuery(matcher, names);
+                break;
+            case PatternMatcher.IS_NULL:
+            case PatternMatcher.IS_NOT_NULL:
+                result.query = String.format("(%s %s)", matcher.colName, matcher.op);
+                break;
+            default:
+                result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
+                result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
+                break;
         }
         return result;
     }
-
     protected String getInQuery(PatternMatcher matcher, String names) {
         return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
@@ -516,28 +514,45 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
-        String value = ((String)matcher.values.get(0)).toLowerCase();
+        List<Object> values = matcher.values;
+        String value = null;
+        if (values.size() > 0) {
+            value = ((String) values.get(0)).toLowerCase();
+        }
 
-        if (matcher.op.equals(PatternMatcher.EQUALS)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, value));
-        } else if (matcher.op.equals(PatternMatcher.CONTAINS)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, "%" + value + "%"));
-        } else if (matcher.op.equals(PatternMatcher.STARTS_WITH)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, value + "%"));
-        } else if (matcher.op.equals(PatternMatcher.ENDS_WITH)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, "%" + value));
-        } else if (matcher.op.equals(PatternMatcher.REGEXP)) {
-            result.query = getRegexQuery(matcher.colName, value);
-            result.params.add(new FuncParam(type, param.name, value));
-        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
-            String names = paramToNamesString(param, matcher, type, result);
-            result.query = getInQuery(matcher, names);
-        } else {
-            result.query = "(1 = 1)";
+        switch (matcher.op) {
+            case PatternMatcher.EQUALS:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, value));
+                break;
+            case PatternMatcher.CONTAINS:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, "%" + value + "%"));
+                break;
+            case PatternMatcher.STARTS_WITH:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, value + "%"));
+                break;
+            case PatternMatcher.ENDS_WITH:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, "%" + value));
+                break;
+            case PatternMatcher.REGEXP:
+                result.query = getRegexQuery(matcher.colName, value);
+                result.params.add(new FuncParam(type, param.name, value));
+                break;
+            case PatternMatcher.IN:
+            case PatternMatcher.NOT_IN:
+                String names = paramToNamesString(param, matcher, type, result);
+                result.query = getInQuery(matcher, names);
+                break;
+            case PatternMatcher.IS_NULL:
+            case PatternMatcher.IS_NOT_NULL:
+                result.query = String.format("(%s %s)", matcher.colName, matcher.op);
+                break;
+            default:
+                result.query = "(1 = 1)";
+                break;
         }
 
         return result;
@@ -550,23 +565,34 @@ public abstract class JdbcDataProvider extends DataProvider {
     public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
 
-        if (matcher.op.equals(PatternMatcher.NONE)) {
-            result.query = "(1 = 1)";
-        } else if (matcher.op.equals(PatternMatcher.EQUALS)) {
-            result.query = "(" + matcher.colName + " = @" + param.name + ")";
-            result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
-        } else if (matcher.op.equals(PatternMatcher.BEFORE) || matcher.op.equals(PatternMatcher.AFTER)) {
-            result.query = "(" + matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + param.name + ")";
-            result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
-        } else if (matcher.op.equals(PatternMatcher.RANGE_DATE_TIME)) {
-            String name0 = param.name + "R0";
-            String name1 = param.name + "R1";
-            result.query = "(" + matcher.colName + PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1) + "@" + name0 + " AND " +
-                    matcher.colName + PatternMatcher.cmp(PatternMatcher.BEFORE, matcher.include2) + "@" + name1 + ")";
-            result.params.add(new FuncParam("datetime", name0, matcher.values.get(0)));
-            result.params.add(new FuncParam("datetime", name1, matcher.values.get(1)));
-        } else {
-            result.query = "(1 = 1)";
+        switch (matcher.op) {
+            case PatternMatcher.NONE:
+                result.query = "(1 = 1)";
+                break;
+            case PatternMatcher.EQUALS:
+                result.query = "(" + matcher.colName + " = @" + param.name + ")";
+                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                break;
+            case PatternMatcher.BEFORE:
+            case PatternMatcher.AFTER:
+                result.query = "(" + matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + param.name + ")";
+                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                break;
+            case PatternMatcher.RANGE_DATE_TIME:
+                String name0 = param.name + "R0";
+                String name1 = param.name + "R1";
+                result.query = "(" + matcher.colName + PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1) + "@" + name0 + " AND " +
+                        matcher.colName + PatternMatcher.cmp(PatternMatcher.BEFORE, matcher.include2) + "@" + name1 + ")";
+                result.params.add(new FuncParam("datetime", name0, matcher.values.get(0)));
+                result.params.add(new FuncParam("datetime", name1, matcher.values.get(1)));
+                break;
+            case PatternMatcher.IS_NULL:
+            case PatternMatcher.IS_NOT_NULL:
+                result.query = String.format("(%s %s)", matcher.colName, matcher.op);
+                break;
+            default:
+                result.query = "(1 = 1)";
+                break;
         }
 
         return result;
@@ -612,7 +638,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String sql = queryTableSql(conn, query);
-        System.out.println(sql);
         if (sql == null)
             return new DataFrame();
         queryRun.func.query = sql;

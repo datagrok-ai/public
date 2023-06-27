@@ -5,37 +5,83 @@ import {category, expect, test, before, after} from '@datagrok-libraries/utils/s
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
+import {findMCS, findRGroups} from '../scripts-api';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {getRdKitModule} from '../package';
+import {getMCS} from '../utils/most-common-subs';
 
 
 category('top menu r-groups', () => {
+  let empty: DG.DataFrame;
+  let malformed: DG.DataFrame;
+  let dfForMcs: DG.DataFrame;
+  let coreEmpty: string;
+  let coreMalformed: string;
+
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    empty = await readDataframe('tests/sar-small_empty_vals.csv');
+    await grok.data.detectSemanticTypes(empty);
+    malformed = await readDataframe('tests/Test_smiles_malformed.csv');
+    await grok.data.detectSemanticTypes(malformed);
+    coreEmpty = getMCS(empty.col('smiles')!, true, true)!;
+    coreMalformed = getMCS(malformed.col('canonical_smiles')!, true, true)!;
+    dfForMcs = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+      await readDataframe('tests/spgi-100.csv');
   });
 
-  test('mcs', async () => {
-    const mcs = await grok.functions.call('Chem:FindMCS', {molecules: 'smiles', df: t, returnSmarts: false});
-    expect(mcs, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
+  test('mcs.exactAtomsExactBonds', async () => {
+    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, true);
+    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-[#6]-[#7]-[#6]');
   });
+
+  test('mcs.anyAtomsExactBonds', async () => {
+    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, true);
+    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
+  });
+
+  test('mcs.exactAtomsAnyBonds', async () => {
+    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, true, false);
+    expect(mcs, DG.Test.isInBenchmark ? '[#17]' : '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
+  });
+
+  test('mcs.anyAtomsAnyBonds', async () => {
+    const mcs = getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `smiles` : `Structure`)!, false, false);
+    expect(mcs, DG.Test.isInBenchmark ?
+      `[#8,#6,#7,#9,#15,#16,#17,#35]-,:[#17,#5,#6,#7,#8,#14,#15,#16,#33,#34]` :
+      `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
+});
 
   test('rgroups.smiles', async () => {
+    if (DG.Test.isInBenchmark) {
+      await grok.functions.call('Chem:FindRGroups', {
+        molecules: 'canonical_smiles',
+        df: await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip"),
+        core: 'c1ccccc1',
+        prefix: 'R',
+      });
+      return;
+    }
     const rgroups: DG.DataFrame = await grok.functions.call('Chem:FindRGroups', {
       molecules: 'smiles',
       df: t,
       core: 'c1ccccc1',
       prefix: 'R',
     });
-    expect(rgroups.getCol('R1').get(0), '*C(=NCC(=O)N[1*])C1CCCCC1');
-    expect(rgroups.getCol('R1').get(1), '*C(=NCC(=O)N([1*])C)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(2), '*C(=NCC(=O)N([1*])CCCC)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(3), '*C(=NCC(=O)N([1*])CCC(C)C)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(4), '*C(=NCC(=O)N([1*])CC1CCCCC1)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(5), '*C(=NCC(=O)N[1*])C1CCCCC1');
-    expect(rgroups.getCol('R1').get(6), '*C(=NCC(=O)N([1*])C)C1CCCCC1');
-    expect(rgroups.getCol('R2').get(5), '[2*]Cl');
-    expect(rgroups.getCol('R2').get(6), '[2*]Cl');
+    if (!DG.Test.isInBenchmark) {
+      expect(rgroups.getCol('R1').get(0), '*C(=NCC(=O)N[1*])C1CCCCC1');
+      expect(rgroups.getCol('R1').get(1), '*C(=NCC(=O)N([1*])C)C1CCCCC1');
+      expect(rgroups.getCol('R1').get(2), '*C(=NCC(=O)N([1*])CCCC)C1CCCCC1');
+      expect(rgroups.getCol('R1').get(3), '*C(=NCC(=O)N([1*])CCC(C)C)C1CCCCC1');
+      expect(rgroups.getCol('R1').get(4), '*C(=NCC(=O)N([1*])CC1CCCCC1)C1CCCCC1');
+      expect(rgroups.getCol('R1').get(5), '*C(=NCC(=O)N[1*])C1CCCCC1');
+      expect(rgroups.getCol('R1').get(6), '*C(=NCC(=O)N([1*])C)C1CCCCC1');
+      expect(rgroups.getCol('R2').get(5), '[2*]Cl');
+      expect(rgroups.getCol('R2').get(6), '[2*]Cl');
+    }
   });
 
   test('rgroups.molV2000', async () => {
@@ -79,6 +125,30 @@ M  END
       prefix: 'R',
     });
   });
+
+  test('rgroups.emptyValues', async () => {
+    const res = await findRGroups('smiles', empty, _convertMolNotation(coreEmpty,
+      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
+    expect(res.getCol('R1').stats.valueCount, 13);
+    expect(res.getCol('R2').stats.valueCount, 13);
+  });
+
+  test('rgroups.emptyInput', async () => {
+    await findRGroups('smiles', empty, '', 'R');
+  });
+
+  test('rgroups.malformedData', async () => {
+    const res = await findRGroups('canonical_smiles', malformed, _convertMolNotation(coreMalformed,
+      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
+    expect(res.getCol('R1').stats.valueCount, 38);
+    expect(res.getCol('R2').stats.valueCount, 1);
+    expect(res.getCol('R3').stats.valueCount, 1);
+    expect(res.getCol('R4').stats.valueCount, 1);
+  });
+
+  test('rgroups.malformedInput', async () => {
+    await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
+  }, {skipReason: '#1491'});
 
   after(async () => {
     grok.shell.closeAll();

@@ -34,7 +34,7 @@ export function getPanelElements(molStr: string): [HTMLButtonElement, HTMLButton
 export function molfileWidget(molStr: string): DG.Widget {
   const rdKitModule = getRdKitModule();
   try {
-    molStr = _convertMolNotation(molStr, 'unknown', 'molblock', rdKitModule);
+    molStr = _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }

@@ -4,10 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import {AvailableMetrics, AvailableMetricsTypes, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
-import * as C from '../utils/constants';
-import {GridColumn} from 'datagrok-api/dg';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {getSplitter, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -15,7 +13,7 @@ export async function getDistances(col: DG.Column, seq: string): Promise<Array<n
   const stringArray = col.toList();
   const distances = new Array(stringArray.length).fill(0);
   const distanceMethod: (x: string, y: string) => number =
-    AvailableMetrics[AvailableMetricsTypes.String][StringMetricsNames.Levenshtein];
+    AvailableMetrics[DistanceMetricsSubjects.String][StringMetricsNames.Levenshtein];
   for (let i = 0; i < stringArray.length; ++i) {
     const distance = stringArray[i] ? distanceMethod(stringArray[i], seq) : null;
     distances[i] = distance ? distance / Math.max((stringArray[i] as string).length, seq.length) : null;
@@ -24,7 +22,7 @@ export async function getDistances(col: DG.Column, seq: string): Promise<Array<n
 }
 
 export async function getSimilaritiesMatrix(
-  dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]
+  dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[],
 ): Promise<DG.Column[]> {
   const distances = new Array(simArr.length).fill(null);
   for (let i = 0; i != dim - 1; ++i) {
@@ -43,8 +41,8 @@ export async function getSimilaritiesMatrix(
 }
 
 export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
-  df: DG.DataFrame, colName: string, simArr: DG.Column[])
-  : Promise<DG.Column[]> {
+  df: DG.DataFrame, colName: string, simArr: (DG.Column | null)[])
+  : Promise<(DG.Column | null)[]> {
   if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
     await invalidateMols(seqCol, false);
   const fpDf = DG.DataFrame.create(seqCol.length);
@@ -54,7 +52,7 @@ export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
     col: seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
     df: fpDf,
     colName: colName,
-    simArr: simArr
+    simArr: simArr,
   });
   return res;
 }
@@ -69,7 +67,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
   columnNames.style.display = 'flex';
   columnNames.style.justifyContent = 'space-between';
   tooltipElement.append(columnNames);
-  params.line.mols.forEach((molIdx: number, idx: number) => {
+  params.line.mols.forEach((molIdx: number, _idx: number) => {
     const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
     activity.style.display = 'flex';
     activity.style.justifyContent = 'left';
@@ -82,7 +80,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
   return tooltipElement;
 }
 
-function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
+function _moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
   const dict: { [key: string]: string } = {};
   for (const col of df.columns) {
     if (col.name !== seqColName)
@@ -124,7 +122,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 function createPropPanelField(name: string, value: number): HTMLDivElement {
   return ui.divH([
     ui.divText(`${name}: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
-    ui.divText(value.toFixed(2))
+    ui.divText(value.toFixed(2)),
   ], {style: {paddingTop: '10px'}});
 }
 
@@ -147,13 +145,13 @@ export function createDifferencesWithPositions(
     const diffsPanel = ui.divV([]);
     diffsPanel.append(ui.divH([
       ui.divText('Pos', {style: {fontWeight: 'bold', width: '30px', borderBottom: '1px solid'}}),
-      ui.divText('Difference', {style: {fontWeight: 'bold', borderBottom: '1px solid'}})
+      ui.divText('Difference', {style: {fontWeight: 'bold', borderBottom: '1px solid'}}),
     ]));
     for (const key of Object.keys(molDifferences)) {
       molDifferences[key as any].style.borderBottom = '1px solid lightgray';
       diffsPanel.append(ui.divH([
         ui.divText((parseInt(key) + 1).toString(), {style: {width: '30px', borderBottom: '1px solid lightgray'}}),
-        molDifferences[key as any]
+        molDifferences[key as any],
       ]));
     }
     div.append(diffsPanel);

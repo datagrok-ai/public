@@ -32,7 +32,7 @@ select * from customers
 --connection: ClickHouseNorthwind
 --input: int quantity = '40'
 --input: string productName = 'Manjimup Dried Apples'
---input: string country { choices: northwind:countries }
+--input: string country { choices: Demo:NorthwindDemo:countries }
 select
   order_details.orderid,
   order_details.unitprice,
@@ -51,8 +51,8 @@ from
   left join suppliers on products.supplierid = suppliers.supplierid
   left join categories on products.categoryid = categories.categoryid
 where
-  products.productname like '%@productName%'
-  and customers.country = '@country'
+  products.productname = @productName
+  and customers.country = @country
   and quantity = @quantity  -- would be nice to be able to construct query on the client side
 --end
 

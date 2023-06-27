@@ -2,36 +2,52 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 
+const WIDTH = 200;
+const HEIGHT = 100;
 
-export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFrame> {
+enum COLUMN_NAMES {
+  SMILES = 'canonical_smiles',
+  CHEMBL_ID = 'molecule_chembl_id',
+}
+
+export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFrame | null> {
   try {
-    let df = await grok.data.query(`${_package.name}:SubstructureSmile`, {'smile': mol})
-    df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
-    if (df == null)
-      return DG.DataFrame.create();
+    let df: DG.DataFrame = await grok.data.query(`${_package.name}:SubstructureSmile`, {'smile': mol});
+    const smilesCol = df.col(COLUMN_NAMES.SMILES);
+    if (smilesCol === null || df.col(COLUMN_NAMES.CHEMBL_ID) === null)
+      return null;
+
+    const rowMask = DG.BitSet.create(df.rowCount, (i) => smilesCol.get(i) !== '');
+    df = df.clone(rowMask, [COLUMN_NAMES.SMILES, COLUMN_NAMES.CHEMBL_ID]);
+    if (df.rowCount === 0)
+      return null;
 
     return df;
   } catch (e: any) {
-    console.error("In SubstructureSearch: " + e.toString());
+    console.error('In SubstructureSearch: ' + e.toString());
     throw e;
   }
 }
 
-export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame> {
+export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame | null> {
   try {
-    let df = await grok.data.query(`${_package.name}:SimilaritySmileScore`, {'smile': molecule, 'score': 40})
-    df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
-    if (df == null)
-      return DG.DataFrame.create();
+    let df = await grok.data.query(`${_package.name}:SimilaritySmileScore`, {'smile': molecule, 'score': 40});
+    const smilesCol = df.col(COLUMN_NAMES.SMILES);
+    if (smilesCol === null || df.col(COLUMN_NAMES.CHEMBL_ID) === null)
+      return null;
+
+    const rowMask = DG.BitSet.create(df.rowCount, (i) => smilesCol.get(i) !== '');
+    df = df.clone(rowMask, [COLUMN_NAMES.SMILES, COLUMN_NAMES.CHEMBL_ID]);
+    if (df.rowCount === 0)
+      return null;
 
     return df;
   } catch (e: any) {
-    console.error("In SimilaritySearch: " + e.toString());
+    console.error('In SimilaritySearch: ' + e.toString());
     throw e;
   }
-
 }
 
 //name: ChEMBL Search Widget
@@ -41,50 +57,50 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //output: widget result
 export function chemblSearchWidget(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.divH([]);
-  const compsHost = ui.divH([ui.loader(), headerHost]);
+  const compsHost = ui.div([ui.loader(), headerHost], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([compsHost]);
   const searchFunc = substructure ?
-                     async () => chemblSubstructureSearch(mol) :
-                     async () => chemblSimilaritySearch(mol);
+    async () => chemblSubstructureSearch(mol) :
+    async () => chemblSimilaritySearch(mol);
 
-  searchFunc().then((t: any) => {
-      compsHost.removeChild(compsHost.firstChild!);
-      if (t == null) {
-
-        compsHost.appendChild(ui.divText('No matches'));
-        return;
-      }
-      t.col('canonical_smiles').semType = 'Molecule';
-      t.col('canonical_smiles').setTag('cell.renderer', 'Molecule');
-
-
-      const grid = t.plot.grid();
-      const col = grid.columns.byName('molecule_chembl_id');
-      col.cellType = 'html';
-      grid.onCellPrepare(function (gc: DG.GridCell) {
-        if (gc.isTableCell && gc.gridColumn.name === 'molecule_chembl_id') {
-          const link = `https://www.ebi.ac.uk/chembl/compound_report_card/${gc.cell.value}/`;
-          gc.style.element = ui.divV([
-            ui.link(gc.cell.value, link, link)
-          ]);
-        }
-      });
-      compsHost.appendChild(grid.root)
-      headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-        t.name = `"DrugBank Similarity Search"`;
-        grok.shell.addTableView(t);
-      }, 'Open compounds as table'));
-      compsHost.style.overflowY = 'auto';
+  searchFunc().then((table: DG.DataFrame | null) => {
+    compsHost.removeChild(compsHost.firstChild!);
+    if (table === null) {
+      compsHost.appendChild(ui.divText('No matches'));
+      return;
     }
+
+    const moleculeCol = table.getCol(COLUMN_NAMES.SMILES);
+    const chemblIdCol = table.getCol(COLUMN_NAMES.CHEMBL_ID);
+    const molCount = Math.min(table.rowCount, 20);
+
+    for (let i = 0; i < molCount; i++) {
+      const molHost = ui.div();
+      grok.functions.call('Chem:drawMolecule', {'molStr': moleculeCol.get(i), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+        .then((res: HTMLElement) => molHost.append(res));
+
+      ui.tooltip.bind(molHost,
+        () => ui.divText(`ChEMBL ID: ${chemblIdCol.get(i)}\nClick to open in ChEMBL Database`));
+      molHost.addEventListener('click',
+        () => window.open(`https://www.ebi.ac.uk/chembl/compound_report_card/${chemblIdCol.get(i)}`, '_blank'));
+      compsHost.appendChild(molHost);
+    }
+
+    headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+      table.name = `"ChEMBL Similarity Search"`;
+      grok.shell.addTableView(table);
+    }, 'Open compounds as table'));
+    compsHost.style.overflowY = 'auto';
+  },
   )
-  .catch((err: any) => {
-    if (compsHost.children.length > 0) {
-      compsHost.removeChild(compsHost.firstChild!);
-    }
-    const div = ui.divText('No matches');
-    ui.tooltip.bind(div, `${err}`);
-    compsHost.appendChild(div);
-  });
+    .catch((err: any) => {
+      if (compsHost.children.length > 0)
+        compsHost.removeChild(compsHost.firstChild!);
+
+      const div = ui.divText('No matches');
+      ui.tooltip.bind(div, `${err}`);
+      compsHost.appendChild(div);
+    });
   return new DG.Widget(panel);
 }
 
@@ -92,9 +108,9 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
 //input string id
 //output dataframe
 export async function getById(id: string): Promise<DG.DataFrame | null> {
-  if (!id.toLowerCase().startsWith("chembl")) {
-    id = "CHEMBL" + id
-  }
+  if (!id.toLowerCase().startsWith('chembl'))
+    id = `CHEMBL${id}`;
+
   try {
     return await grok.data.query(`${_package.name}:MoleculeJson`, {'molecule_chembl_id__exact': id});
   } catch (e: any) {
@@ -103,7 +119,7 @@ export async function getById(id: string): Promise<DG.DataFrame | null> {
   }
 }
 
-//name: Databases | ChEMBL Substructure Search
+//name: Databases | ChEMBL | Substructure Search API
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -112,7 +128,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
   return mol ? chemblSearchWidget(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Databases | ChEMBL Similarity Search
+//name: Databases | ChEMBL | Similarity Search API
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result

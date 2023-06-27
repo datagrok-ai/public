@@ -6,7 +6,7 @@ Datagrok was built for data scientists, by data scientists. Our goal is to let s
 infrastructure.
 
 Out of the box, Datagrok provides all tools necessary for
-[data ingestion](../access/file-browser-and-file-shares.md),
+[data ingestion](../access/files/files.mdx),
 [transformation](../transform/data-wrangling.md),
 [visualization](../visualize/viewers/viewers.md),
 [analysis](../explore/exploratory-data-analysis.md),
@@ -31,7 +31,7 @@ upon.
 
 ## Data pipelines
 
-[Data pipelines](../access/data-pipeline.md)  is a core component of the Datagrok platform designed to let end users define
+Data pipelines is a core component of the Datagrok platform designed to let end users define
 jobs that would get data from disparate data sources, clean or merge the data if needed, run transformations, build
 interactive dashboards based on the retrieved data, and publish these dashboards.
 

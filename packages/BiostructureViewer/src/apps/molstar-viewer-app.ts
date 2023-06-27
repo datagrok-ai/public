@@ -2,8 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {PROPS as msPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+
 import {_package} from '../package';
-import {PROPS as msPROPS} from '../viewers/molstar-viewer';
 
 export class MolstarViewerApp {
   private readonly appFuncName: string;
@@ -27,7 +28,7 @@ export class MolstarViewerApp {
 
   // -- Data --
 
-  private df: DG.DataFrame;
+  private df?: DG.DataFrame;
 
   async setData(df: DG.DataFrame): Promise<void> {
     this.df = df;
@@ -36,11 +37,12 @@ export class MolstarViewerApp {
   }
 
   // -- View --
-  private void: DG.TableView;
 
-  private view: DG.TableView;
+  private view?: DG.TableView;
 
   async buildView(): Promise<void> {
+    if (!this.df) throw new Error('df is not set');
+
     this.view = grok.shell.addTableView(this.df);
     this.view.path = this.view.basePath = `func/${_package.name}.${this.appFuncName}`;
 

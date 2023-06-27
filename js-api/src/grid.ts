@@ -75,9 +75,41 @@ export class Rect {
     return new Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY)
   }
 
+  static fromXYArrays(x: number[], y: number[]): Rect {
+    let minX = x[0];
+    let minY = y[0];
+    let maxX = x[0];
+    let maxY = y[0];
+  
+    for (let i = 1; i < x.length; i++) {
+      minX = Math.min(minX, x[i]);
+      minY = Math.min(minY, y[i]);
+      maxX = Math.max(maxX, x[i]);
+      maxY = Math.max(maxY, y[i]);
+    }
+  
+    return new Rect(minX, minY, maxX - minX, maxY - minY);
+  }
+
   static fromDart(dart: any): Rect {
     api.grok_Rect_Pack(dart, _bytes);
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
+  }
+
+  static toDart(rect: Rect): any {
+    _bytes[0] = rect.x;
+    _bytes[1] = rect.y;
+    _bytes[2] = rect.width;
+    _bytes[3] = rect.height;
+    return api.grok_Rect_Unpack(_bytes);
+  }
+
+  toDart(): any {
+    _bytes[0] = this.x;
+    _bytes[1] = this.y;
+    _bytes[2] = this.width;
+    _bytes[3] = this.height;
+    return api.grok_Rect_Unpack(_bytes);
   }
 
   /** Rectangle of the specified size, with the specified center */

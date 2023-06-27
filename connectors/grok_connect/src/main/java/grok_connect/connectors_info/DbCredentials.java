@@ -9,7 +9,9 @@ public class DbCredentials
     public static final String SERVER = "server";
     public static final String DOMAIN = "domain";
     public static final String META_STORE_SERVER = "metaStoreServer";
+    public static final String KEYSPACE = "keySpace";
     public static final String DB = "db";
+    public static final String INITIAL_CATALOG = "initialCatalog";
     public static final String META_STORE_DB = "metaStoreDb";
     public static final String SCHEMA = "schema";
     public static final String LOGIN = "login";
@@ -37,6 +39,7 @@ public class DbCredentials
     public static final String SECRET_KEY = "secretKey";
     public static final String VPC_ENDPOINT = "VPCEndpoint";
     public static final String META_STORE = "metaStore";
+    public static final String ENGINE_VERSION = "engineVersion";
 
     public String server;
     public String port;

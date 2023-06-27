@@ -1,24 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, T_SNE, UMAP, UMAPOptions } from '../reduce-dimensionality';
+import { DimReductionMethods, IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
+import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
+import { BitArrayMetricsNames } from '../typed-metrics/consts';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 export const SEQ_COL_NAMES = {
-    [DG.SEMTYPE.MOLECULE]: 'Molecule',
-    [DG.SEMTYPE.MACROMOLECULE]: 'Sequence'
+    [DG.SEMTYPE.MOLECULE]: 'Molecules',
+    [DG.SEMTYPE.MACROMOLECULE]: 'Sequences'
 }
 
 export class SequenceSpaceBaseFuncEditor {
     tableInput: DG.InputBase;
     molColInput: DG.InputBase;
+    molColInputRoot: HTMLElement;
     methodInput: DG.InputBase;
     methodSettingsIcon: HTMLElement;
-    methodSettingsDiv = ui.form([]);
-    moleculesColDiv: HTMLDivElement = ui.div();
+    methodSettingsDiv = ui.inputs([]);
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
-      [UMAP]: new UMAPOptions(),
-      [T_SNE]: new TSNEOptions()
+      [DimReductionMethods.UMAP]: new UMAPOptions(),
+      [DimReductionMethods.T_SNE]: new TSNEOptions()
     };
+    similarityMetricInput: DG.InputBase;
   
     get algorithmOptions(): IUMAPOptions | ITSNEOptions {
       const algorithmParams: UMAPOptions | TSNEOptions = this.methodsParams[this.methodInput.value!];
@@ -34,19 +38,15 @@ export class SequenceSpaceBaseFuncEditor {
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
-      this.tableInput.input.style.width = '50px';
-  
-      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
-      this.molColInput.root.style.width = '332px';
-      this.moleculesColDiv.append(this.molColInput.root);
-  
-      this.methodInput = ui.choiceInput('Method name', UMAP, [UMAP, T_SNE], () => {
+      //TODO: remove when the new version of datagrok-api is available
+      //@ts-ignore
+      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {filter: (col: DG.Column) => col.semType === semtype} as ColumnInputOptions);
+      this.molColInputRoot = this.molColInput.root;
+      this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         }
       });
-      this.methodInput.input.style.width = '185px';
-      this.methodInput.captionLabel.style.width = '122px';
   
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
@@ -55,13 +55,15 @@ export class SequenceSpaceBaseFuncEditor {
         else 
           this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
       }, 'Modify methods parameters');
-      this.methodSettingsIcon.style.lineHeight = '1.7';
-      this.methodSettingsIcon.style.fontSize = '18px';
-      this.methodSettingsDiv = ui.form([]);
+      this.methodInput.root.classList.add('ml-dim-reduction-settings-input');
+      this.methodInput.root.prepend(this.methodSettingsIcon);
+      this.methodSettingsDiv = ui.inputs([]);
       let settingsOpened = false;
+
+      this.similarityMetricInput = ui.choiceInput('Similarity', BitArrayMetricsNames.Tanimoto, SEQ_SPACE_SIMILARITY_METRICS);
     }
   
-    createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions) {
+    createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {
       ui.empty(paramsForm);
       Object.keys(params).forEach((it: any) => {
         const param: IDimReductionParam = (params as any)[it];
@@ -75,9 +77,8 @@ export class SequenceSpaceBaseFuncEditor {
     }
 
     onTableInputChanged(semtype: DG.SemType) {
-        ui.empty(this.moleculesColDiv);
         this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
-        this.molColInput.root.style.width = '335px';
-        this.moleculesColDiv.append(this.molColInput.root);
+        ui.empty(this.molColInputRoot);
+        Array.from(this.molColInput.root.children).forEach((it) => this.molColInputRoot.append(it));
     }
   }

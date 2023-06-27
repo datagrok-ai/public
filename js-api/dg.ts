@@ -1,5 +1,8 @@
 import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
+
 import * as wu from 'wu';
 
 export * from './src/interfaces/d4';
@@ -10,6 +13,7 @@ export * from './src/dataframe';
 export * from './src/entities';
 export * from './src/api/ddt.api.g';
 export * from './src/api/grok_shared.api.g';
+export * from './src/api/d4.api.g';
 export * from './src/shell';
 export * from './src/functions';
 export * from './src/grid';

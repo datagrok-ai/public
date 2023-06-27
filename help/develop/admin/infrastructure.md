@@ -11,7 +11,7 @@ Datagrok server installation consists of two big blocks:
   * [Persistent file storage](#storage)
   * [ElasticSearch](#elasticsearch)
   * [Credentials Management Service](../../govern/security.md#credentials)
-  * [Grok Connect](../../access/data-connection.md)
+  * [Grok Connect](../../access/access.md#data-connection)
   * [Nginx](https://www.nginx.com/) server
 * [Compute](#compute-components)
   * [Load balancer](#load-balancer)
@@ -63,7 +63,7 @@ example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://c
 to use scalable and highly reliable solutions for storage and avoid local file system setup to prevent datagrok internal
 information loss, such as projects, settings, etc. User data won't be affected anyhow on Datagrok storage loss.
 
-Check [How to deploy datagrok?](deploy.md) for details.
+Check [How to deploy datagrok?](deploy/deploy.md) for details.
 
 ## Scalability
 
@@ -84,7 +84,7 @@ Datagrok components are:
 * [ElasticSearch](#elasticsearch)
 * [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
   separate container with a separate database.
-* [Grok Connect](../../access/data-connection.md). Separate container with Java-based data connectors to 20+ databases.
+* [Grok Connect](../../access/access.md#data-connection). Separate container with Java-based data connectors to 20+ databases.
 * Nginx server
 
 ### Web Application
@@ -435,7 +435,7 @@ At the moment some limitations are exists:
 
 See also:
 
-* [Cheminformatics](../../domains/chem/cheminformatics.md)
+* [Cheminformatics](../../domains/chem/chem.md)
 
 ## Storage
 
@@ -520,8 +520,8 @@ The schema has the following tables:
 
 ## Useful links
 
-* [Deployment](deploy.md)
+* [Deployment](deploy/deploy.md)
 * [Configuration](configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](releases/versioning-policy.md)
-* [Try Datagrok locally](docker-compose.md)
+* [Try Datagrok locally](deploy/docker-compose.mdx)

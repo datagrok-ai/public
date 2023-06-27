@@ -3,14 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  after,
-  before,
   category,
   test,
   expect,
   expectArray,
-  expectObject,
-  Test
 } from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../../src/package-test';
@@ -42,7 +38,7 @@ node-l1-l2-l3,,false,0.14
 leaf1,node-l1-l2-l3,true,0.18
 node-l2-l3,node-l1-l2-l3,false,0.17
 leaf2,node-l2-l3,true,0.13
-leaf3,node-l2-l3,true,0.01`)
+leaf3,node-l2-l3,true,0.01`),
   },
 
   // -- NoRootName
@@ -61,8 +57,8 @@ ${NO_NAME_ROOT},,false,0.14
 leaf1,${NO_NAME_ROOT},true,0.18
 node-l2-l3,[root],false,0.17
 leaf2,node-l2-l3,true,0.13
-leaf3,node-l2-l3,true,0.01`)
-  }
+leaf3,node-l2-l3,true,0.01`),
+  },
 };
 
 category('treeHelper', () => {
@@ -107,7 +103,7 @@ category('treeHelper', () => {
     await _testGetNodesByLeaves(newick, df,
       {
         'leaf6': null, 'leaf7': null,
-        'leaf10': null, 'leaf11': null
+        'leaf10': null, 'leaf11': null,
       },
       ['node-l6-l7', 'node-l9-l10-l11']);
   });
@@ -118,7 +114,7 @@ category('treeHelper', () => {
     await _testGetNodesByLeaves(newick, df,
       {
         'leaf6': null, 'leaf7': null, 'leaf8': null,
-        'leaf10': null, 'leaf11': null
+        'leaf10': null, 'leaf11': null,
       },
       ['node-l6-l7-l8-l9-l10-l11']);
   });
@@ -131,7 +127,7 @@ category('treeHelper', () => {
   });
 
   function _testGetNodesByLeaves(
-    newick: string, df: DG.DataFrame, leaves: { [name: string]: any }, tgtNameList: string[]
+    newick: string, df: DG.DataFrame, leaves: { [name: string]: any }, tgtNameList: string[],
   ) {
     const th: ITreeHelper = new TreeHelper();
     const treeRootNwk: NodeType = parseNewick(newick);
@@ -186,10 +182,6 @@ function _testGetNodeList(nwk: string, tgtNodeNameList: string[]) {
   // side check for newickToDf order
   const nwkDf = th.newickToDf(nwk, '');
   expectArray(nwkDf.getCol('node').toList(), tgtNodeNameList);
-}
-
-function _testSetGridOrder(nwk: string) {
-
 }
 
 function expectDataFrame(actual: DG.DataFrame, expected: DG.DataFrame) {

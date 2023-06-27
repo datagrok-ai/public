@@ -1,14 +1,12 @@
 package grok_connect.managers.string_column;
 
+import com.datastax.oss.driver.api.core.data.GettableByIndex;
 import com.ibm.db2.jcc.am.c9;
 import com.ibm.db2.jcc.am.db;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.Converter;
+import grok_connect.managers.string_column.converters.*;
 import grok_connect.resultset.ColumnMeta;
-import grok_connect.managers.string_column.converters.ArrayTypeConverter;
-import grok_connect.managers.string_column.converters.SQLArrayTypeConverter;
-import grok_connect.managers.string_column.converters.ClobTypeConverter;
-import grok_connect.managers.string_column.converters.XMLTypeConverter;
 import oracle.sql.ARRAY;
 import oracle.xdb.XMLType;
 import org.postgresql.jdbc.PgSQLXML;
@@ -42,6 +40,7 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
         converterMap.put(Object.class, new ArrayTypeConverter());
         converterMap.put(Array.class, sqlArrayConverter);
         converterMap.put(ARRAY.class, sqlArrayConverter);
+        converterMap.put(GettableByIndex.class, new GettableByIndexConverter());
     }
 
     @Override
@@ -81,7 +80,9 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
                 !typeName.equalsIgnoreCase("uuid") &&
                 !typeName.equalsIgnoreCase("set") ||
                 (type == java.sql.Types.SQLXML ||
-                        typeName.equalsIgnoreCase("xml"));
+                        typeName.equalsIgnoreCase("xml")) ||
+                typeName.startsWith("Tuple") || typeName.startsWith("UDT") ||
+                typeName.startsWith("List") || typeName.equalsIgnoreCase("JSON");
     }
 
     @Override

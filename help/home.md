@@ -31,15 +31,15 @@ Don't take our word for this – [run the platform](https://public.datagrok.ai/)
 
 Seamlessly bring together data from the different silos and formats.
 
-* [30+ connectors](access/data-connection.md) to all major databases
+* [30+ connectors](access/access.md#data-connection) to all major databases
 * 1,000+ services exposed via [OpenAPI](access/open-api.md)
-* Drag-and-drop files to open ([10+ formats](access/supported-data-sources.md)), or
+* Drag-and-drop files to open ([10+ formats](access/databases/connectors/connectors.md)), or
   browse [file shares](https://public.datagrok.ai/files)
-* [Visually explore](access/db-exploration.md) and manage relational databases
-  using [schema browser](access/db-exploration.md#schema-browser)
-  and [visual query](access/db-visual-query.md)
+* [Visually explore](access/databases/databases.mdx#database-manager) and manage relational databases
+  using [schema browser](access/databases/databases.mdx#schema-browser)
+  and [aggregation editor](access/databases/databases.mdx#aggregation-editor)
 * Connect to [thousands of public datasets](access/public-datasets.md)
-* Automate via [data preparation pipelines](access/data-pipeline.md)
+* Automate via data preparation pipelines
 
 ## Govern
 
@@ -97,7 +97,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 ## Apply
 
 * Build [custom applications](develop/how-to/build-an-app.md) on top of the platform
-* [Cheminformatics](domains/chem/cheminformatics.md)
+* [Cheminformatics](domains/chem/chem.md)
 * Text analytics, [natural language processing](https://github.com/datagrok-ai/public/tree/master/packages/NLP)
   with cloud-based machine translation
 * [Location Analytics](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet)
@@ -109,7 +109,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 * Different [hosting options](develop/admin/hosting-options.md)
 * [Roles, groups and privileges](govern/security.md)
 * Flexible [authentication](govern/authentication.md)
-* Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up alerts
+* Create [pipelines](transform/job-editor.md), schedule jobs, and set up alerts
 * [Customizable by IT](develop/admin/it-customizations.md)
 * Easy to learn the platform with
   * [Interactive help](datagrok/navigation.md#help),

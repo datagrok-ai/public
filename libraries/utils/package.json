@@ -4,11 +4,11 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "4.0.2",
+  "version": "4.0.15",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.8.1",
+    "datagrok-api": "^1.15.2",
     "fast-sha256": "^1.3.0",
     "rxjs": "^6.5.5",
     "wu": "latest"
@@ -29,6 +29,7 @@
     "link-all": "npm link datagrok-api",
     "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
+    "build-all": "npm --prefix ./../../js-api run build && npm run build"
   }
 }

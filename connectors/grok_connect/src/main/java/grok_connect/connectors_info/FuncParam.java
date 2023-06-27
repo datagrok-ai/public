@@ -39,4 +39,16 @@ public class FuncParam {
                 this.value = value;
         }
     }
+
+    @Override
+    public String toString() {
+        return "FuncParam{" +
+                "propertyType='" + propertyType + '\'' +
+                ", propertySubType='" + propertySubType + '\'' +
+                ", name='" + name + '\'' +
+                ", value=" + value +
+                ", isInput=" + isInput +
+                ", options=" + options +
+                '}';
+    }
 }

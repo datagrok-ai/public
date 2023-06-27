@@ -2,12 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {FilterSources, WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
-import {
-  VdRegionsPropsDefault, VdRegionsProps, IVdRegionsViewer,
-  VdRegion, VdRegionType
+import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+import {IVdRegionsViewer,
+  VdRegion, VdRegionType,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
-import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {FilterSources, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {Unsubscribable} from 'rxjs';
 
 const vrt = VdRegionType;
@@ -128,12 +127,12 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
     if (property) {
       switch (property.name) {
-      case 'regionTypes':
-        break;
-      case 'chains':
-        break;
-      case 'sequenceColumnNamePostfix':
-        break;
+        case 'regionTypes':
+          break;
+        case 'chains':
+          break;
+        case 'sequenceColumnNamePostfix':
+          break;
         // for (let orderI = 0; orderI < this.logos.length; orderI++) {
         //   for (let chainI = 0; chainI < this.chains.length; chainI++) {
         //     const chain: string = this.chains[chainI];
@@ -145,11 +144,11 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     }
 
     switch (property.name) {
-    case 'skipEmptyPositions':
-    case 'positionWidth':
-    case 'positionHeight':
-      this.setData(this.dataFrame, this.regions); // onPropertyChanged
-      break;
+      case 'skipEmptyPositions':
+      case 'positionWidth':
+      case 'positionHeight':
+        this.setData(this.dataFrame, this.regions); // onPropertyChanged
+        break;
     }
   }
 
@@ -259,7 +258,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
               width: '16px',
               marginTop: '24px',
               marginLeft: '6px',
-            }
+            },
           })] : []),
           // List with controls for regions
           ...[...Array(orderList.length).keys()].map((orderI) => {
@@ -271,7 +270,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
                 // height: '100%',
                 marginTop: '4px',
                 marginBottom: '4px',
-              }
+              },
             });
 
             return resDiv;
@@ -280,8 +279,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       },
       ['', ...[...Array(orderList.length).keys()].map(
         (orderI: number) => regionsFiltered.find(
-          (r: VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0]
-        )!.name || 'Name')]
+          (r: VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0],
+        )!.name || 'Name')],
     );
     this.mainLayout.className = 'mlb-vd-regions-viewer-table2';
     // this.mainLayout.style.background = '#EEEEFF';
@@ -294,7 +293,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     this.filterSourceInput.root.style.top = '-3px';
     ui.tooltip.bind(this.filterSourceInput.root, 'Check to filter sequences for selected VRs');
 
-    const color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
+    const _color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
     this.host = ui.div([this.mainLayout, this.filterSourceInput!.root],
       {/*style: {backgroundColor: color}*/});
     this.root.appendChild(this.host);
@@ -310,7 +309,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
     const maxHeight: number = Math.min(logoHeight,
       Math.max(...this.logos.map((wlDict) =>
-        Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight))))
+        Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight)))),
     );
 
     for (let orderI = 0; orderI < this.logos.length; orderI++) {
@@ -323,11 +322,11 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   // -- Handle events --
 
-  private rootOnSizeChanged(args: any): void {
+  private rootOnSizeChanged(_args: any): void {
     this.calcSize();
   }
 
-  private rootOnMouseMove(e: MouseEvent) {
+  private rootOnMouseMove(_e: MouseEvent) {
     // ui.tooltip.show('text', e.x + 8, e.y + 8,);
     // console.log(`onMouseMoveRoot.( x: ${e.x}, y: ${e.y} )`);
   }

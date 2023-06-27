@@ -1,10 +1,15 @@
 /// this file was generated automatically from ddt classes declarations
+import { toDart } from "../wrappers";
 let api = <any>window;
+
+export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?: number, logScale?: boolean}): Int32List
+  { return api.grok_histogram(toDart(col), toDart(bitset), toDart(flag), toDart(options?.bins), toDart(options?.logScale)); }
 
 export class Tags {
   static Description = 'description';
 
-  static Author = 'author';
+  /// A user that created this entity
+  static CreatedBy = 'createdBy';
 
   static SemanticDetectionDuration = '.semantic-detection-duration';
 
@@ -82,6 +87,8 @@ export class Tags {
   static IgnoreCustomFilter = '.ignore-custom-filter';
 
   static CustomFilterType = '.custom-filter-type';
+
+  static NotAddDefaultFilter = '.not-add-default-filter';
 
   static Charts = '.charts';
 
@@ -179,5 +186,58 @@ export class Tags {
   static FriendlyName = 'friendlyName';
 
   static AllowRename = '.allow-rename';
+
+  /// Applies to columns or dataframes.
+  /// Comma-separated list of user or group names that are allowed to make changes to that column.
+  static EditableBy = 'editableBy';
+
+  /// Pin this column if you are specifically an editor (see "editable by").
+  static PinIfEditable = 'pinIfEditable';
+
+  /// Boolean flag that specifies whether the column is exported as part of the CSV file. Defaults to true.
+  static IncludeInCsvExport = '.includeInCsvExport';
+
+  /// Boolean flag that Specifies whether the column is exported as part of the binary file. Defaults to true.
+  static IncludeInBinaryExport = '.includeInBinaryExport';
+
+}
+export class FuncParamOptions {
+  static SemType = 'semType';
+
+  static Columns = 'columns';
+
+  static Category = 'category';
+
+  static Optional = 'optional';
+
+  static Type = 'type';
+
+  static Format = 'format';
+
+  static AllowNulls = 'allowNulls';
+
+  static Action = 'action';
+
+  static Choices = 'choices';
+
+  static Suggestions = 'suggestions';
+
+  static Min = 'min';
+
+  static Max = 'max';
+
+  static Validators = 'validators';
+
+  static Caption = 'caption';
+
+  static Postfix = 'postfix';
+
+  static Units = 'units';
+
+  static Editor = 'editor';
+
+  static Nullable = 'nullable';
+
+  static Separators = 'separators';
 
 }

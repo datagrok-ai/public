@@ -1,6 +1,8 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {monomerToShort} from './macromolecule';
+import {monomerToShort} from './macromolecule/utils';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
@@ -39,7 +41,10 @@ export const printLeftOrCentered = (
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color: string = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null): number => {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic,
+  maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null,
+  referenceSequence: string[] = [], maxLengthOfMonomer?: number
+): number => {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -53,8 +58,8 @@ export const printLeftOrCentered = (
     colorCode = gridCell.cell.column.temp['color-code'] ?? true;
     compareWithCurrent = gridCell.cell.column.temp['compare-with-current'] ?? true;
     highlightDifference = gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
-
   }
+
   const currentMonomer: string = referenceSequence[wordIdx];
   if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference')) {
     transparencyRate = (colorPart == currentMonomer) ? 0.3 : transparencyRate;
@@ -62,10 +67,8 @@ export const printLeftOrCentered = (
   if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'equal')) {
     transparencyRate = (colorPart != currentMonomer) ? 0.3 : transparencyRate;
   }
-  if (maxLengthOfMonomer != null) {
+  if (!!maxLengthOfMonomer)
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
-  }
-
 
   let textSize: any = g.measureText(colorPart + grayPart);
   const indent = 5;
@@ -104,4 +107,3 @@ export const printLeftOrCentered = (
     return x + dx + maxColorTextSize;
   }
 };
-

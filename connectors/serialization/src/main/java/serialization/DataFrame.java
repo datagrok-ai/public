@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class DataFrame {
     private static final String delimiter = ",";
@@ -17,6 +18,16 @@ public class DataFrame {
     public Map<String, String> tags;
 
     public DataFrame() {
+    }
+
+    @SuppressWarnings("unchecked")
+    public void addRow(Object... objects) {
+        if (objects.length != columns.size())
+            throw new RuntimeException("Objects length does not match columns length");
+        for (int i = 0; i < columns.size(); i++) {
+            columns.get(i).add(objects[i]);
+        }
+        rowCount++;
     }
 
     public void addColumn(Column col) {
@@ -59,21 +70,20 @@ public class DataFrame {
 
     public String toCsv() {
         StringBuilder buffer = new StringBuilder();
+        String collect = columns.stream()
+                .map(column -> column.name)
+                .collect(Collectors.joining(delimiter));
+        buffer.append(collect);
+        buffer.append(System.lineSeparator());
 
-        for (Column column : columns) {
-            buffer.append(column.name);
-            buffer.append(delimiter);
+        for (int r = 0; r < rowCount; r++) {
+            final int index = r;
+            String row = columns.stream()
+                    .map(column -> columnToStr(column, index))
+                    .collect(Collectors.joining(delimiter));
+            buffer.append(row);
+            buffer.append(System.lineSeparator());
         }
-        buffer.append("\n");
-
-        for (int r = 0; r < columns.get(0).length; r++) {
-            for (Column column : columns) {
-                buffer.append(columnToStr(column, r));
-                buffer.append(delimiter);
-            }
-            buffer.append("\n");
-        }
-
         return buffer.toString();
     }
 
@@ -118,6 +128,30 @@ public class DataFrame {
         }
     }
 
+    public void merge(DataFrame dataFrame) {
+        if (!Objects.equals(columns.size(), dataFrame.columns.size()) && rowCount != 0) {
+            throw new RuntimeException("Can't merge dataframes with different row count");
+        }
+        if (rowCount == 0) {
+            addColumns(dataFrame.columns);
+            return;
+        }
+        for (int i = 0; i < columns.size(); i++) {
+            Column column = columns.get(i);
+            Column columnToMerge = dataFrame.columns.get(i);
+            if (!column.name.equals(columnToMerge.name)) {
+                throw new RuntimeException("Can't merge dataframes of columns with different names");
+            }
+            for (int j = 0; j < columnToMerge.length; j++) {
+                column.add(columnToMerge.get(j));
+            }
+        }
+        Column column = columns.get(0);
+        if (column != null) {
+            rowCount = column.length;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -131,8 +165,8 @@ public class DataFrame {
         return Objects.hash(name, rowCount, columns, tags);
     }
 
-    public int memoryInBytes() {
-        int sum = 0;
+    public long memoryInBytes() {
+        long sum = 0;
         for (Column col : columns)
             sum += col.memoryInBytes();
         return sum;

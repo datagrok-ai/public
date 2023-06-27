@@ -11,6 +11,7 @@
 
 .ua-apply-button {
   margin-left: auto !important;
+  margin-top: 7px !important;
 }
 
 .ua-apply-button:disabled {
@@ -36,21 +37,10 @@
 
 .ua-back-button {
   float: right;
-  color: var(--grey-3) !important;
+  /* color: var(--grey-3) !important; */
   padding: 0 !important;
-}
-
-.ua-reload-div {
-  position: absolute;
-  background-color: rgb(25 36 64 / 50%);
-  height: 100%;
-  width: 100%;
-  z-index: 100;
-}
-
-.ua-reload-loader {
-  top: 50%;
-  left: 48%;
+  font-size: 11px !important;
+  text-transform: none !important;
 }
 
 .ua-hint {
@@ -60,4 +50,82 @@
   height: fit-content;
   /* box-shadow: 0 0 0 0 #FDFFE5;
   animation: pulse-white 1s 1; */
+}
+
+.ua-table .d4-link-label, .ua-table td {
+  max-width: 150px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ua-widget .d4-viewer-title textarea {
+  padding: 0 12px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.ua-widget .d4-viewer-title {
+  z-index: 99;
+  width: initial;
+  right: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ua-markup label {
+  margin-left: 22px !important;
+}
+
+.ua-cards.ui-div {
+  flex-direction: row;
+  display: flex;
+}
+
+.ua-cards .ua-card .grok-wait {
+  height: 50px;
+}
+
+.ua-cards .ua-card {
+  width: 100px;
+  margin: 12px;
+  /* padding: 4px; */
+  box-shadow: 0px 0px 2px var(--grey-3);
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.ua-cards .ua-card > .grok-wait > .ui-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ua-cards .ua-card > .grok-wait > .ui-div > div:first-child {
+  font-size: 32px;
+  line-height: 32px;
+}
+
+.ua-card .ua-card-plus::before {
+  content: '+';
+}
+
+.ua-card .ua-card-plus {
+  color: var(--green-2);
+}
+
+.ua-card .ua-card-minus {
+  color: var(--red-3);
+}
+
+.ua-wait {
+  inset: 0;
+  position: absolute;
+  z-index: 1;
+  backdrop-filter: blur(5px);
+  background-color: rgba(255, 255, 255, 0.93);
+  transition: 2s;
 }

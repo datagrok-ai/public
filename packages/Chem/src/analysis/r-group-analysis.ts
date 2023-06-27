@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {findMCS, findRGroups} from '../scripts-api';
+import {findRGroups} from '../scripts-api';
 import {convertMolNotation, getRdKitModule} from '../package';
+import {getMCS} from '../utils/most-common-subs';
 
 
 export function convertToRDKit(smiles: string): string {
@@ -17,31 +18,36 @@ export function convertToRDKit(smiles: string): string {
 /**
  * Opens a dialog with the sketcher that allows to sketch a core (or perform MCS),
  * and initiate the R-Group Analysis for the specified column with molecules.
+ * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
 export function rGroupAnalysis(col: DG.Column): void {
   const sketcher = new DG.chem.Sketcher();
   const columnPrefixInput = ui.stringInput('Column prefix', 'R');
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
+  const exactAtomsCheck = ui.boolInput('MCS exact atoms', true);
+  const exactBondsCheck = ui.boolInput('MCS exact bonds', true);
 
-  let molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
+  const molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
   const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
 
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
-      let molCol = col.dataFrame.columns.byName(columnInput.value!);
-      const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
-      ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setMolFile(convertMolNotation(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock));
+      const molCol = col.dataFrame.columns.byName(columnInput.value!);
+      //TODO: implements mcs using web worker
+      const mcsSmarts = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
+      if (mcsSmarts !== null) {
+        ui.setUpdateIndicator(sketcher.root, false);
+        sketcher.setSmarts(mcsSmarts);
+      }
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
     }
   });
   ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
-  const mcsButtonHost = ui.div([mcsButton]);
-  mcsButtonHost.style.display = 'flex';
-  mcsButtonHost.style.justifyContent = 'center';
+  const mcsButtonHost = ui.div([mcsButton], 'chem-mcs-button-host');
+  mcsButton.classList.add('chem-mcs-button');
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
@@ -49,10 +55,15 @@ export function rGroupAnalysis(col: DG.Column): void {
   })
     .add(ui.div([
       sketcher,
-      mcsButtonHost,
+      ui.divH([
+        ui.divV([
+          exactAtomsCheck.root, exactBondsCheck.root,
+        ]),
+        mcsButtonHost,
+      ]),
       columnInput,
       columnPrefixInput,
-      visualAnalysisCheck,
+      visualAnalysisCheck.root,
     ]))
     .onOK(async () => {
       col = col.dataFrame.columns.byName(columnInput.value!);
@@ -61,7 +72,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
         return;
       }
-      const core = sketcher.getMolFile();
+      const core = await sketcher.getSmarts();
       if (!core) {
         grok.shell.error('No core was provided');
         return;

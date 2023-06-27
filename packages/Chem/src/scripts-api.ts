@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
-export async function findMCS(molecules: string, df: DG.DataFrame, smarts?: boolean): Promise<string> {
-  const returnSmarts = !!smarts;
-  return await grok.functions.call('Chem:FindMCS', {molecules, df, returnSmarts});
+export async function findMCS(molecules: string, df: DG.DataFrame,
+  exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
+  return await grok.functions.call('Chem:FindMCS', {molecules, df, exactAtomSearch, exactBondSearch});
 }
 
 export async function findRGroups(
@@ -32,7 +32,7 @@ export async function generateScaffoldTree(
   smilesColumn: string,
   ringCutoff: number = 0,
   dischargeAndDeradicalize: boolean = false) : Promise<string> {
-    return await grok.functions.call('Chem: GenerateScaffoldTree', {
-      data, smilesColumn, ringCutoff, dischargeAndDeradicalize
-    });
+  return await grok.functions.call('Chem: GenerateScaffoldTree', {
+    data, smilesColumn, ringCutoff, dischargeAndDeradicalize,
+  });
 }

@@ -2,22 +2,36 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as OCL from 'openchemlib/full';
 import {findSimilar, searchSubstructure} from './searches';
 
-export async function searchWidget(molString: string, searchType: 'similarity' | 'substructure', dbdf: DG.DataFrame,
+const WIDTH = 200;
+const HEIGHT = 100;
+
+export enum SEARCH_TYPE {
+  SIMILARITY = 'similarity',
+  SUBSTRUCTURE = 'substructure',
+}
+
+export enum COLUMN_NAMES {
+  DRUGBANK_ID = 'DRUGBANK_ID',
+  COMMON_NAME = 'COMMON_NAME',
+  MOLECULE = 'molecule',
+  SCORE = 'score',
+}
+
+export async function searchWidget(molString: string, searchType: SEARCH_TYPE, dbdf: DG.DataFrame,
 ): Promise<DG.Widget> {
   const headerHost = ui.div();
-  const compsHost = ui.divV([]);
+  const compsHost = ui.div([], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;
   try {
     switch (searchType) {
-    case 'similarity':
-      table = await findSimilar(molString, 20, 0, dbdf);
+    case SEARCH_TYPE.SIMILARITY:
+      table = await findSimilar(molString, 20, 0.75, dbdf);
       break;
-    case 'substructure':
+    case SEARCH_TYPE.SUBSTRUCTURE:
       table = await searchSubstructure(molString, dbdf);
       break;
     default:
@@ -32,20 +46,24 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
     compsHost.appendChild(ui.divText('No matches'));
     return new DG.Widget(panel);
   }
-  table.name = `DrugBank ${searchType === 'similarity' ? 'Similarity' : 'Substructure'} Search`;
+  table.name = `DrugBank ${searchType} Search`;
 
   const bitsetIndexes = table.filter.getSelectedIndexes();
-  const iterations = Math.min(bitsetIndexes.length, 20);
-  const moleculeCol: DG.Column<string> = table.getCol('molecule');
-  const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
-  const nameCol: DG.Column<string> = table.getCol('COMMON_NAME');
+  const molCount = Math.min(bitsetIndexes.length, 20);
+  const moleculeCol: DG.Column<string> = table.getCol(COLUMN_NAMES.MOLECULE);
+  const idCol: DG.Column<string> = table.getCol(COLUMN_NAMES.DRUGBANK_ID);
+  const nameCol: DG.Column<string> = table.getCol(COLUMN_NAMES.COMMON_NAME);
+  const similarityCol: DG.Column<number> = table.getCol(COLUMN_NAMES.SCORE);
 
-  for (let n = 0; n < iterations; n++) {
+  for (let n = 0; n < molCount; n++) {
     const piv = bitsetIndexes[n];
-    const molHost = ui.canvas();
     const molfile = moleculeCol.get(piv)!;
-    const molecule = OCL.Molecule.fromMolfile(molfile);
-    OCL.StructureView.drawMolecule(molHost, molecule, {'suppressChiralText': true});
+    const molHost = ui.divV([]);
+    grok.functions.call('Chem:drawMolecule', {'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+      .then((res: HTMLElement) => {
+        molHost.append(res);
+        molHost.append(ui.divText(`Score: ${similarityCol.get(n)?.toFixed(2)}`));
+      });
 
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));

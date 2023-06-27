@@ -69,7 +69,7 @@ export class HistoryInput {
     this._visibleInput.input.addEventListener('click', () => {
       const _historyDialog = ui.dialog();
 
-      $(_historyDialog.root).addClass('arrow-box');
+      $(_historyDialog.root).addClass('hi-arrow-box');
 
       _historyDialog.onOK(() => { });
       _historyDialog.onCancel(() => {
@@ -106,7 +106,7 @@ export class HistoryInput {
             cell.customText = '';
 
           if (cell.cell.value === true)
-            cell.element = ui.div([ui.iconFA('check')], {style: {'text-align': 'center', 'margin': '6px'}});
+            cell.element = ui.div([ui.iconFA('check', null, 'Confirm outliers group')], {style: {'text-align': 'center', 'margin': '6px'}});
           else
             cell.element = ui.div();
         }

@@ -19,14 +19,21 @@ export class LearningWidget extends DG.Widget {
     videoList.style.paddingLeft = '0px';
     videoList.appendChild(ui.div(playlists.map(renderPlaylist)));
 
-    let tabs = ui.tabControl({
-       'VIDEO':ui.panel([
-        videoList,
-       ]),
-       'WIKI':ui.panel([
-        wikiList
-       ])
-     });
+    let tabs = ui.tabControl();
+
+    grok.functions
+    .call("Tutorials:demoAppWidget")
+    .then((res) => {
+      tabs.addPane('DEMO',()=>res._root)
+    })
+    .catch((error) => {
+      console.log('TutorialWidget not found. \n'+error);
+    }).finally(() => {
+      tabs.addPane('VIDEO', ()=> ui.panel([videoList]));
+      tabs.addPane('WIKI', ()=> ui.panel([wikiList]));
+    }
+    );
+
     
     grok.functions
     .call("Tutorials:tutorialWidget")
@@ -50,13 +57,14 @@ function renderPlaylist(p: any) {
   let listItem = ui.element('li');
   listItem.style.breakInside = 'avoid';
   listItem.style.pageBreakInside = 'avoid';
-  listItem.style.minWidth = '155px';
 
   let root = ui.divH([]);
   root.style.alignItems = 'center';
 
-  let img = ui.image(p.url, 35,35,{target:url});
-  img.style.marginRight = '10px';
+  let img = ui.image(p.url, 30,30,{target:url});
+  img.style.marginRight = '5px';
+  img.style.minWidth = '30px';
+  img.style.minHeight = '30px';
 
   let link = ui.link(p.title,url,p.description,'');
 
@@ -119,7 +127,7 @@ let playlists = [
 let help = [
   {
     'title': 'Access',
-    'url': 'https://datagrok.ai/help/access/db-exploration'
+    'url': 'https://datagrok.ai/help/access/databases.md#database-manager'
   },
   {
     'title':'Collaborate',
@@ -170,4 +178,3 @@ let help = [
     'url': 'https://datagrok.ai/help/acknowledgements'
   }
 ];
-

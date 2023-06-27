@@ -26,26 +26,27 @@ export function saveSettings(): Promise<void> {
   return grok.dapi.userDataStorage.post(WIDGETS_STORAGE, settings);
 }
 
-export function widgetHost(w: DG.Widget): HTMLElement {
-  let host = ui.box(null, 'power-pack-widget-host');
-
+export function widgetHost(w: DG.Widget, widgetHeader?: HTMLDivElement): HTMLElement {
+  const host = ui.box(null, 'power-pack-widget-host');
+  widgetHeader ??= ui.div();
   function remove(): void {
     host.remove();
     if (w.factory?.name) {
-      let widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
+      const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
       widgetSettings.ignored = true;
       saveSettings()
         .then((_) => grok.shell.info('To control widget visibility, go to Tools | Widgets'));
     }
   }
 
-  if (w.props.hasProperty('order')){
-    host.style.order = w.props.order
-  }
+  if (w.props.hasProperty('order'))
+    host.style.order = w.props.order;
 
-  let header = ui.div([
+
+  const header = ui.div([
     ui.divText(w.props.hasProperty('caption') ? w.props.caption : '', 'd4-dialog-title'),
-    ui.icons.settings(() => { grok.shell.o = w}, 'Edit settings'),
+    widgetHeader,
+    ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'),
     ui.icons.close(remove, 'Remove'),
   ], 'd4-dialog-header');
 

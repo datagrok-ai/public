@@ -10,7 +10,7 @@ const Configuration = {
    */
   parserPreset: {
     parserOpts: {
-      headerPattern: /^(?:(?:closes )?((?:GROK-[0-9]+)|(?:#[0-9]+))[: ])? ?(?:((?:(?<=^|[: ])[a-zA-Z0-9 ]+))[:|] )((?:\w)+.*)$/,
+      headerPattern: /^(?:(?:closes )?((?:GROK-[0-9]+)|(?:#[0-9]+))[: ])? ?(?:((?:(?<=^|[: ])[-a-zA-Z0-9 ]+))[:|] )((?:\w)+.*)$/,
       headerCorrespondence: ['references', 'scope', 'subject'],
       issuePrefixes: ['GROK-', '#']
     }
@@ -39,7 +39,7 @@ const Configuration = {
     "footer-min-length": [0, "always", 0],
     "header-case": [0, "always", "sentence-case"],
     "header-full-stop": [1, "never", "."],
-    "header-max-length": [2, "always", 80],
+    "header-max-length": [1, "always", 80],
     "header-min-length": [2, "always", 1],
     "references-empty": [1, "never"],
     "scope-enum": [2, "always"],
@@ -47,10 +47,10 @@ const Configuration = {
     "scope-empty": [2, "never"],
     "scope-max-length": [2, "always", 25],
     "scope-min-length": [2, "always", 1],
-    "subject-case": [2, "always", ['sentence-case']],
+    "subject-case": [0, "always", ['sentence-case']],
     "subject-empty": [2, "never"],
     "subject-full-stop": [2, "never", "."],
-    "subject-max-length": [2, "always", 60],
+    "subject-max-length": [1, "always", 60],
     "subject-min-length": [2, "always", 1],
     "subject-exclamation-mark": [0, "never"],
     "type-enum": [0, "always"],

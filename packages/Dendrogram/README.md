@@ -9,7 +9,7 @@ Now only the _Newick_ tree format is supported.
 
 ## Viewers
 
-[Dendrogram viewer](./src/viewers/dendrogram.ts) is a ure typescript component derived from
+[Dendrogram viewer](./src/viewers/dendrogram.ts) is a pure typescript component derived from
 [DG.JsViewer](../../js-api/src/viewer.ts) to be used as [a Datagrok viewer](../../help/visualize/viewers/viewers.md).
 Exposed properties allow customizing the viewer appearance for the line width and color, the node size and fill color.
 
@@ -54,3 +54,15 @@ specified pairwise distance metric and aggregation method. Mouse over, current, 
 are synchronized between grid and injected tree in both directions.
 
 ![ML | Hierarchical Clustering](../../help/uploads/gifs/dendrogram-hierarchical-clustering-interactivity.gif)
+
+Hierarchical clustering supports numeric columns, as well as Macromolecule columns and combination of those. Different distance functions will be used depending on the type of macromolecule. Levenstein distance for DNA/RNA/Unknown, Needleman-Wunsch for Proteins and Hamming for pre-aligned columns. Distance matrix calculation is paralellized on web-workers, which yields very fast and efficient compute times. Hierarchical clustering is performed in web-assembly and supports multiple linkage methods, like `ward`, `average`, `centroid`, `complete`, `single`, `weighted` and `median`. For dataset of 2000 sequences, it takes less than 2 seconds to calculate the tree and render it.
+
+![ML | Hierarchical Clustering Sequences](../../help/uploads/gifs/clustering-2000-seq.gif)
+
+There is also an option to close the dendrogram viewer and restore the original grid view, by clicking on the `X` button on the top rigth corner of the tree view.
+
+![Close dendrogram](../../help/uploads/pictures/dendrogram-close-button.png)
+
+When clustering is performed, the tree aplies its own sorting to the table. Therefore, any external sorting will not be alowed. If however, the user wants to sort the table by a specific column, the tree viewer will be hidden, and a message will be displayed to the user. From there, the user can either restore sorting and continue working with the tree, or click on the `X` button to close the tree and restore the original grid view.
+
+![Restore sorting](../../help/uploads/gifs/dendrogram-sorting.gif)

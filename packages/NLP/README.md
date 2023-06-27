@@ -16,7 +16,7 @@
 It all starts with extracting text. This is a building block for other, more
 complex tasks. Due to the high demand, it is essential to support as many
 popular text file formats as possible. The platform comes with a built-in
-[file browser](https://datagrok.ai/help/access/file-browser-and-file-shares)
+[file browser](https://datagrok.ai/help/access/file-shares#files-manager)
 for easy file management. The package extends it by processing text from
 `pdf`, `doc`, `docx`, `odt`, and other text formats.
 

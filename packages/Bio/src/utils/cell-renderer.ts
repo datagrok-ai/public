@@ -3,9 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import * as C from './constants';
 import {
-  ALIGNMENT,
+  ALIGNMENT, ALPHABET,
   getPaletteByType,
   getSplitter,
   monomerToShort,
@@ -15,6 +14,11 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
+import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {Tags as mmcrTags, Temps as mmcrTemps} from '../utils/cell-renderer-consts';
+
+import * as C from './constants';
+import {_package} from '../package';
 
 const enum tempTAGS {
   referenceSequence = 'reference-sequence',
@@ -57,11 +61,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   get cellType(): string { return 'sequence'; }
 
-  get defaultHeight(): number { return 30; }
+  get defaultHeight(): number | null { return 30; }
 
-  get defaultWidth(): number { return 230; }
+  get defaultWidth(): number | null { return 230; }
 
-  onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+  onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
     const colTemp: TempType = gridCell.cell.column.temp;
     colTemp[tempTAGS.currentWord] = gridCell.cell.value;
     gridCell.grid.invalidate();
@@ -112,12 +116,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    * @param {number} w width of the cell.
    * @param {number} h height of the cell.
    * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} cellStyle Cell style.
+   * @param {DG.GridCellStyle} _cellStyle Cell style.
    * @memberof AlignedSequenceCellRenderer
    */
   render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle,
   ) {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
@@ -151,19 +155,19 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const referenceSequence: string[] = splitterFunc(
       ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
         tempReferenceSequence : tempCurrentWord ?? '');
-    const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
+    const monomerWidth: string = tempMonomerWidth ?? 'short';
 
     let gapRenderer = 5;
     let maxIndex = 0;
-    let maxLengthOfMonomer = 8;
+    let maxLengthOfMonomer: number = 8;
 
     if (monomerWidth === 'short') {
       gapRenderer = 12;
-      maxLengthOfMonomer = 1;
+      maxLengthOfMonomer = colTemp[mmcrTemps.maxMonomerLength] ?? _package.properties.maxMonomerLength;
     }
 
     let maxLengthWords: any = {};
-    if (gridCell.cell.column.getTag('.calculatedCellRender') !== splitLimit.toString()) {
+    if (gridCell.cell.column.getTag(mmcrTags.calculated) !== splitLimit.toString()) {
       let samples = 0;
       while (samples < Math.min(gridCell.cell.column.length, 100)) {
         const column = gridCell.cell.column.get(samples);
@@ -185,7 +189,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         colTemp[tempTAGS.bioSumMaxLengthWords] = maxLengthWordSum;
         colTemp[tempTAGS.bioMaxIndex] = maxIndex;
         colTemp[tempTAGS.bioMaxLengthWords] = maxLengthWords;
-        gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
+        gridCell.cell.column.setTag(mmcrTags.calculated, splitLimit.toString());
       }
     } else {
       maxLengthWords = colTemp[tempTAGS.bioMaxLengthWords];
@@ -215,43 +219,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-export class MonomerCellRenderer extends DG.GridCellRenderer {
-  get name(): string { return C.SEM_TYPES.MONOMER; }
-
-  get cellType(): string { return C.SEM_TYPES.MONOMER; }
-
-  get defaultHeight(): number { return 15; }
-
-  get defaultWidth(): number { return 30; }
-
-  /**
-   * Cell renderer function.
-   *
-   * @param {CanvasRenderingContext2D} g Canvas rendering context.
-   * @param {number} x x coordinate on the canvas.
-   * @param {number} y y coordinate on the canvas.
-   * @param {number} w width of the cell.
-   * @param {number} h height of the cell.
-   * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} _cellStyle Cell style.
-   */
-  render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    _cellStyle: DG.GridCellStyle): void {
-    g.font = `12px monospace`;
-    g.textBaseline = 'middle';
-    g.textAlign = 'center';
-
-    const palette = getPaletteByType(gridCell.cell.column.getTag(bioTAGS.alphabet));
-    const s: string = gridCell.cell.value;
-    if (!s)
-      return;
-    const color = palette.get(s);
-
-    g.fillStyle = color;
-    g.fillText(monomerToShort(s, 3), x + (w / 2), y + (h / 2), w);
-  }
-}
 
 export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'MacromoleculeDifferenceCR'; }
@@ -302,7 +269,7 @@ export function drawMoleculeDifferenceOnCanvas(
   subParts2: string [],
   units: string,
   fullStringLength?: boolean,
-  molDifferences?: { [key: number]: HTMLCanvasElement }
+  molDifferences?: { [key: number]: HTMLCanvasElement },
 ): void {
   if (subParts1.length !== subParts2.length) {
     const sequences: IComparedSequences = fillShorterSequence(subParts1, subParts2);
@@ -350,7 +317,7 @@ export function drawMoleculeDifferenceOnCanvas(
   g.restore();
 }
 
-interface IComparedSequences{
+interface IComparedSequences {
   subParts1: string[];
   subParts2: string[];
 }
@@ -382,7 +349,7 @@ function fillShorterSequence(subParts1: string[], subParts2: string[]): ICompare
   let numIdenticalStart = 0;
   let numIdenticalEnd = 0;
   const longerSeq = subParts1.length > subParts2.length ? subParts1 : subParts2;
-  let shorterSeq = subParts1.length > subParts2.length ? subParts2 : subParts1;
+  const shorterSeq = subParts1.length > subParts2.length ? subParts2 : subParts1;
 
   for (let i = 0; i < shorterSeq.length; i++) {
     if (longerSeq[i] === shorterSeq[i])
@@ -398,9 +365,11 @@ function fillShorterSequence(subParts1: string[], subParts2: string[]): ICompare
   const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
 
   function concatWithEmptyVals(subparts: string[]): string[] {
-    return numIdenticalStart > numIdenticalEnd ? subparts.concat(emptyMonomersArray) : emptyMonomersArray.concat(subparts);
+    return numIdenticalStart > numIdenticalEnd ?
+      subparts.concat(emptyMonomersArray) : emptyMonomersArray.concat(subparts);
   }
 
-  subParts1.length > subParts2.length ?  subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
+  subParts1.length > subParts2.length ?
+    subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
   return {subParts1: subParts1, subParts2: subParts2};
 }

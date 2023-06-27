@@ -216,7 +216,7 @@ function connectToDbDialog(
   const helpText = ui.inlineText(['The database credentials are stored in the secure ',
     ui.link('Datagrok Credentials Management Service', 'https://datagrok.ai/help/govern/security#credentials'),
     ' and the connection is created that can be used as any other ',
-    ui.link('Data Connection', 'https://datagrok.ai/help/access/data-connection'), ' in Datagrok.']);
+    ui.link('Data Connection', 'https://datagrok.ai/help/access/access#data-connection'), ' in Datagrok.']);
   const helpHost = ui.div(helpText, 'alation-help-host');
   $(helpHost).width(500);
   const usernameField = ui.stringInput('Login', '');

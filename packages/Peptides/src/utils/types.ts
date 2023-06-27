@@ -1,22 +1,27 @@
 import * as DG from 'datagrok-api/dg';
+import {SCALING_METHODS} from './constants';
 
 export type DataFrameDict = {[key: string]: DG.DataFrame};
 
 export type RawData = Int32Array | Uint32Array | Float32Array | Float64Array;
 export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
 //AAR: (Position: (index: indexList))
-export type SubstitutionsInfo = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
+export type MutationCliffs = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
 export type PositionToAARList = {[postiton: string]: string[]};
 
 export type MonomerSelectionStats = {[position: string]: {[monomer: string]: number}};
 
-export type ScalingMethods = 'none' | 'lg' | '-lg';
 export type PeptidesSettings = {
   sequenceColumnName?: string,
   activityColumnName?: string,
   clustersColumnName?: string,
-  scaling?: ScalingMethods,
+  targetColumnName?: string,
+  scaling?: SCALING_METHODS,
   isBidirectional?: boolean,
+  showMonomerPosition?: boolean,
+  showMostPotentResidues?: boolean,
+  showLogoSummaryTable?: boolean,
+  showDendrogram?: boolean,
   maxMutations?: number,
   minActivityDelta?: number,
   columns?: {[col: string]: DG.AggregationType},

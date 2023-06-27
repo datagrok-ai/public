@@ -71,6 +71,10 @@ export interface IScatterPlot3dLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ITreeMapLookSettings {
@@ -113,6 +117,10 @@ export interface ITreeMapLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IHistogramLookSettings {
@@ -140,18 +148,6 @@ export interface IHistogramLookSettings {
   /// A categorical column to split data on (each bar represents a category)
   splitColumnName: string;
 
-  /// Whether the distribution should be rendered as bars or as a spline.
-  /// When *Split* is defined, histogram always shows splines.
-  spline: boolean;
-
-  /// Whether the area below the spline should be filled with the corresponding color.
-  /// Only applicable when *spline* is true and *split* is empty
-  fillSpline: boolean;
-
-  showYAxis: boolean;
-
-  showColumnSelector: boolean;
-
   /// Whether the values should be normalized when multiple histograms are shown.
   /// If true, you are comparing distributions; if false, you are comparing absolute values.
   /// Requires *Split Column Name* to be set.
@@ -160,6 +156,8 @@ export interface IHistogramLookSettings {
   /// Spline tension in case multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
   splineTension: number;
+
+  showYAxis: boolean;
 
   /// Whether markers should be drown when multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
@@ -181,6 +179,16 @@ export interface IHistogramLookSettings {
 
   /// Show the distribution of the values that the mouse is currently over in another viewer.
   showMouseOverRowGroup: boolean;
+
+  /// Whether the distribution should be rendered as bars or as a spline.
+  /// When *Split* is defined, histogram always shows splines.
+  spline: boolean;
+
+  /// Whether the area below the spline should be filled with the corresponding color.
+  /// Only applicable when *spline* is true and *split* is empty
+  fillSpline: boolean;
+
+  showColumnSelector: boolean;
 
   showRangeSlider: boolean;
 
@@ -239,6 +247,10 @@ export interface IHistogramLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IFiltersLookSettings {
@@ -282,6 +294,10 @@ export interface IFiltersLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -417,6 +433,8 @@ export interface IScatterPlotLookSettings {
   /// Toggle this option by pressing L.
   lassoTool: boolean;
 
+  allowZoom: boolean;
+
   backColor: number;
 
   filteredRowsColor: number;
@@ -495,6 +513,10 @@ export interface IScatterPlotLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ILineChartLookSettings {
@@ -532,6 +554,10 @@ export interface ILineChartLookSettings {
   showXSelector: boolean;
 
   xAxisLabelOrientation: string;
+
+  xMin: number;
+
+  xMax: number;
 
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
@@ -630,20 +656,6 @@ export interface ILineChartLookSettings {
 
   currentLineColor: number;
 
-//  int innerChartMarginLeft = 5;
-//  int innerChartMarginRight = 0;
-  innerChartMarginTop: number;
-
-  innerChartMarginBottom: number;
-
-  outerChartMarginLeft: number;
-
-  outerChartMarginTop: number;
-
-  outerChartMarginRight: number;
-
-  outerChartMarginBottom: number;
-
   xAxisMin: number;
 
   xAxisMax: number;
@@ -673,6 +685,18 @@ export interface ILineChartLookSettings {
 
   rowGroupTooltip: string;
 
+  innerChartMarginTop: number;
+
+  innerChartMarginBottom: number;
+
+  outerChartMarginLeft: number;
+
+  outerChartMarginTop: number;
+
+  outerChartMarginRight: number;
+
+  outerChartMarginBottom: number;
+
   formulaLines: string;
 
   /// Control the visibility of dataframe-originated formula lines.
@@ -701,6 +725,10 @@ export interface ILineChartLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -766,6 +794,8 @@ export interface IBarChartLookSettings {
   /// Only works for cumulative aggregations such as count.
   showSelectedRows: boolean;
 
+  showMouseOverRect: boolean;
+
   maxCategoryWidth: number;
 
   categoryValueWidth: number;
@@ -808,6 +838,10 @@ export interface IBarChartLookSettings {
 
   outerMarginBottom: number;
 
+  showEmptyBars: boolean;
+
+  showLabels: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -824,6 +858,10 @@ export interface IBarChartLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -860,6 +898,10 @@ export interface IDensityPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -979,6 +1021,10 @@ export interface IBoxPlotLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IPieChartLookSettings {
@@ -1052,6 +1098,10 @@ export interface IPieChartLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IMatrixPlotLookSettings {
@@ -1088,12 +1138,14 @@ export interface IMatrixPlotLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IGridLookSettings {
-  /// Whether the spreadsheet should only show rows that pass the filter
-  showFilteredRowsOnly: boolean;
-
+  /// Determines the rows shown in grid
   /// Indicates whether the grid is editable.
   /// See also *Show Add New Row Icon*
   allowEdit: boolean;
@@ -1109,9 +1161,6 @@ export interface IGridLookSettings {
 
   showColumnLabels: boolean;
 
-  /// Orientation of the column header text.
-  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
-  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Column header height. If not specified, it is calculated automatically.
   /// See also *Col Labels Orientation*, *Horz Col Labels Height*
   colHeaderHeight: number;
@@ -1205,20 +1254,6 @@ export interface IGridLookSettings {
 
   frozenColumns: number;
 
-  showCellTooltip: boolean;
-
-  /// Include currently visible columns in a tooltip
-  showVisibleColumnsInTooltip: boolean;
-
-  showColumnTooltip: boolean;
-
-  /// Controls grid tooltip visibility
-  showTooltip: string;
-
-  /// Newline-separated list of column names to be used in a tooltip.
-  /// Requires *showTooltip* to be enabled.
-  rowTooltip: string;
-
   showCurrentCellOutline: boolean;
 
   /// Color-coding that applies to all columns.
@@ -1229,6 +1264,9 @@ export interface IGridLookSettings {
 
   colHeaderFont: string;
 
+  /// Orientation of the column header text.
+  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
+  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Resizing column header by dragging the border between the header and the first row
   allowColHeaderResizing: boolean;
 
@@ -1261,6 +1299,20 @@ export interface IGridLookSettings {
 
   rowHeaderBackColor: number;
 
+  /// Controls grid tooltip visibility
+  showTooltip: string;
+
+  showCellTooltip: boolean;
+
+  /// Include currently visible columns in a tooltip
+  showVisibleColumnsInTooltip: boolean;
+
+  showColumnTooltip: boolean;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
   marginLeft: number;
 
   marginTop: number;
@@ -1291,6 +1343,10 @@ export interface IGridLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1328,6 +1384,10 @@ export interface ICalendarLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ITrellisPlotLookSettings {
@@ -1339,7 +1399,10 @@ export interface ITrellisPlotLookSettings {
 
   categoryLabelFont: string;
 
-  //Map innerViewerLookState;
+  globalScale: boolean;
+
+  showGridlines: string;
+
   showXAxes: boolean;
 
   showYAxes: boolean;
@@ -1347,6 +1410,8 @@ export interface ITrellisPlotLookSettings {
   showControlPanel: boolean;
 
   syncMouseOverRow: boolean;
+
+  packCategories: boolean;
 
   backColor: number;
 
@@ -1366,6 +1431,10 @@ export interface ITrellisPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1389,9 +1458,9 @@ export interface IPcPlotLookSettings {
   /// if units are the same (for instance, use it for tracking change over time).'
   normalizeEachColumn: boolean;
 
-  showCurrentPoint: boolean;
+  showCurrentLine: boolean;
 
-  showMouseOverPoint: boolean;
+  showMouseOverLine: boolean;
 
   showMouseOverRowGroup: boolean;
 
@@ -1430,6 +1499,12 @@ export interface IPcPlotLookSettings {
 
   showMinMax: boolean;
 
+  showLabels: boolean;
+
+  maxCategories: number;
+
+  horzMargin: number;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1446,6 +1521,10 @@ export interface IPcPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1485,6 +1564,10 @@ export interface IMapViewerLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IStatsViewerLookSettings {
@@ -1512,6 +1595,10 @@ export interface IStatsViewerLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1546,6 +1633,10 @@ export interface ICorrelationPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1590,6 +1681,10 @@ export interface IFormLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IMarkupViewerLookSettings {
@@ -1618,47 +1713,9 @@ export interface IMarkupViewerLookSettings {
   // Markup is supported.
   description: string;
 
-}
-
-export interface IWordCloudLookSettings {
-  wordColumnName: string;
-
-  minSize: number;
-
-  maxSize: number;
-
-  backColor: number;
-
-  autoFontSize: boolean;
-
-  font: string;
-
-  maxWords: number;
-
-  sizeColumnName: string;
-
-  sizeColumnAggrType: string;
-
-  colorColumnName: string;
-
-  colorColumnAggrType: string;
-
-  //StreamController _changes;
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
-  description: string;
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1765,6 +1822,10 @@ export interface INetworkDiagramLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ICardLookSettings {
@@ -1791,6 +1852,10 @@ export interface ICardLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1825,6 +1890,10 @@ export interface ITileViewerLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IPivotViewerLookSettings {
@@ -1852,6 +1921,10 @@ export interface IPivotViewerLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 

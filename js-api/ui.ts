@@ -5,7 +5,7 @@
 
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
-import {VirtualView} from './src/views/view';
+import {View, VirtualView} from './src/views/view';
 import {
   Accordion,
   Dialog,
@@ -23,7 +23,8 @@ import {
   Breadcrumbs,
   DropDown,
   TypeAhead,
-  TypeAheadConfig
+  TypeAheadConfig,
+  TagsInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -742,8 +743,9 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase<Column | null> {
-  return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {filter?: Function | null}): InputBase<Column | null> {
+  const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
+  return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
@@ -761,6 +763,10 @@ export function textInput(name: string, value: string, onValueChanged: Function 
 
 export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+}
+
+export function radioInput(name: string, value: string, items: string[], onValueChanged: Function | null = null): InputBase<string | null> {
+  return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
 }
 
 /**
@@ -1001,6 +1007,11 @@ export class ObjectHandler {
   /** Renders properties list for the item. */
   renderProperties(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
+  }
+
+  /** Renders preview list for the item. */
+  async renderPreview(x: any, context: any = null): Promise<View> {
+    return View.create();
   }
 
   /** Renders view for the item. */
@@ -1377,6 +1388,10 @@ export function dropDown(label: string | Element, createElement: () => HTMLEleme
 
 export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);
+}
+
+export function tagsInput(name: string, tags: string[], showBtn: boolean) {
+  return new TagsInput(name, tags, showBtn);
 }
 
 export let icons = {

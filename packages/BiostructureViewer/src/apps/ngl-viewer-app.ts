@@ -2,14 +2,22 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {Observable, Subject, Unsubscribable} from 'rxjs';
+
+import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+
+import {NglViewer, PROPS as pdbPROPS} from '../viewers/ngl-viewer';
+
 import {_package} from '../package';
-import {INglViewer, PROPS as pdbPROPS} from '../viewers/ngl-viewer';
-import {Unsubscribable} from 'rxjs';
 
 export class NglViewerApp {
   private readonly appFuncName: string;
-  private pdb: string;
-  private df: DG.DataFrame;
+  private pdb?: string;
+  private df?: DG.DataFrame;
+
+  private _onAfterBuildView: Subject<void> = new Subject<void>();
+
+  public get onAfterBuildView(): Observable<void> { return this._onAfterBuildView; }
 
   constructor(appFuncName: string) {
     this.appFuncName = appFuncName;
@@ -42,24 +50,25 @@ export class NglViewerApp {
 
   // -- View --
 
-  private view: DG.TableView;
+  private view?: DG.TableView;
   private viewSubs: Unsubscribable[] = [];
 
   async buildView(): Promise<void> {
+    if (!this.df) throw new Error('df is not set');
+
     this.view = grok.shell.addTableView(this.df);
     this.view.path = this.view.basePath = `func/${_package.name}.${this.appFuncName}`;
 
     this.df.currentRowIdx = -1;
 
-    const viewer: DG.JsViewer | INglViewer = (await this.df.plot.fromType('Ngl', {
+    const viewer: DG.Viewer & INglViewer = (await this.df.plot.fromType('NGL', {
       [pdbPROPS.pdb]: this.pdb,
       [pdbPROPS.ligandColumnName]: 'molecule',
-    })) as DG.JsViewer | INglViewer;
-    this.view.dockManager.dock(viewer as DG.JsViewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
+    })) as DG.Viewer & INglViewer;
+    this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
 
-    this.viewSubs.push((viewer as INglViewer).onAfterBuildView.subscribe(() => {
-      if (this.df.rowCount > 0)
-        this.df.currentRowIdx = 0;
+    this.viewSubs.push(viewer.onAfterBuildView.subscribe(() => {
+      this._onAfterBuildView.next();
     }));
   }
 }

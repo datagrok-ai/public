@@ -14,14 +14,14 @@ import grok_connect.utils.*;
 import org.slf4j.LoggerFactory;
 import serialization.BufferAccessor;
 import serialization.DataFrame;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.core.MediaType;
 import grok_connect.handlers.QueryHandler;
@@ -29,6 +29,8 @@ import spark.Response;
 
 public class GrokConnect {
     private static final int DEFAULT_PORT = 1234;
+    private static final String VERSION = "version";
+    private static final String NAME = "artifactId";
     private static final String DEFAULT_URI = String.format("http://localhost:%s", DEFAULT_PORT);
     private static final String DEFAULT_LOG_EXCEPTION_MESSAGE = "An exception was thrown";
     private static final Logger PARENT_LOGGER = (Logger) LoggerFactory.getLogger(GrokConnect.class);
@@ -37,9 +39,12 @@ public class GrokConnect {
             .create();
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;
+    public static Properties properties;
 
     public static void main(String[] args) {
         try {
+            properties = getInfo();
+            PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
             PARENT_LOGGER.info("Grok Connect initializing");
             PARENT_LOGGER.info(getStringLogMemory());
             providerManager = new ProviderManager();
@@ -183,11 +188,8 @@ public class GrokConnect {
         }, gson::toJson);
 
         get("/info", (request, response) -> {
-            Map<String, String> responseMap = new HashMap<>();
-            responseMap.put("name", GrokConnect.class.getSimpleName());
-            responseMap.put("version", GrokConnect.class.getPackage().getImplementationVersion());
             response.type(MediaType.APPLICATION_JSON);
-            return responseMap;
+            return properties;
         }, gson::toJson);
 
         get("/log_memory", (request, response) -> getStringLogMemory());
@@ -288,5 +290,20 @@ public class GrokConnect {
         response.type(MediaType.TEXT_PLAIN);
         response.body(exception.get("errorMessage") + "\n" + exception.get("errorStackTrace"));
         response.status(HttpURLConnection.HTTP_INTERNAL_ERROR);
+    }
+
+    public static Properties getInfo() {
+        try {
+            InputStream resourceAsStream = Thread.currentThread()
+                    .getContextClassLoader()
+                    .getResourceAsStream("app.properties");
+            Properties properties = new Properties();
+            if (resourceAsStream != null) {
+                properties.load(new InputStreamReader(resourceAsStream));
+            }
+            return properties;
+        } catch (IOException e) {
+            throw new RuntimeException("Something went wrong when getting info", e);
+        }
     }
 }

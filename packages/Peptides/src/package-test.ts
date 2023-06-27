@@ -5,6 +5,9 @@ import './tests/core';
 import './tests/peptide-space-test';
 import './tests/algorithms';
 import './tests/viewers';
+import './tests/widgets';
+import './tests/table-view';
+import './tests/model';
 
 export const _package = new DG.Package();
 export {tests};

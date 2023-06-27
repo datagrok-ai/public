@@ -1,18 +1,25 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {delay, expect} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
+import {expect} from '@datagrok-libraries/utils/src/test';
 import {activityCliffs} from '../package';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
-export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: number, method: string, colName: string) {
+export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: number, method: DimReductionMethods,
+  colName: string) {
   await grok.data.detectSemanticTypes(df);
   const scatterPlot = await activityCliffs(
-    df,
-    df.col(colName)!,
-    df.col('Activity')!,
-    50,
-    method);
+    df, df.getCol(colName), df.getCol('activity'),
+    90, method);
+  // const scatterPlot = (await grok.functions.call('Bio:activityCliffs', {
+  //   table: df, molecules: df.getCol(colName), activities: df.getCol('Activity'),
+  //   similarity: 50, methodName: method
+  // })) as DG.Viewer | undefined;
+
+  // test scatter plot without activityCliffs passed
+  // const scatterPlot = (await df.plot.fromType(DG.VIEWER.SCATTER_PLOT, {})) as DG.Viewer;
+  // const libHelper: IMonomerLibHelper = (await grok.functions.call('Bio:getMonomerLibHelper'));
+  // const k = 11;
 
   expect(scatterPlot != null, true);
 

@@ -3,14 +3,16 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-
-type TreeLeafDict = { [nodeName: string]: NodeType };
+import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {MmDistanceFunctionsNames} from
+  '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 type DataNodeDict = { [nodeName: string]: number };
-type NodeNameCallback = (nodeName: string) => void;
 
 export const enum TAGS {
   DF_NEWICK = '.newick',
@@ -96,14 +98,14 @@ export class TreeHelper implements ITreeHelper {
       if (isLeaf) {
         return ([] as string[]).concat(
           node.name,
-          node.branch_length ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : [],
         ).join('');
       } else {
         const childrenText = node.children!.map((childNode) => toNewickInt(childNode)).join(',');
         return ([] as string[]).concat(
           `(${childrenText})`,
           node.name,
-          node.branch_length ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : [],
         ).join('');
       }
     }
@@ -165,7 +167,6 @@ export class TreeHelper implements ITreeHelper {
     }
   }
 
-  /***/
   getNodesByLeaves<TNode extends NodeType>(node: TNode | null, leaves: { [name: string]: any }): TNode[] {
     if (!node) return [];
 
@@ -183,10 +184,13 @@ export class TreeHelper implements ITreeHelper {
   }
 
 
-  /** Cuts tree, gets list of clusters as lists of leafs */
-  treeCutAsLeaves(
-    node: NodeType, cutHeight: number, currentHeight: number = 0
-  ): NodeType[] {
+  /** Cuts tree, gets list of clusters as lists of leafs
+   * @param {NodeType}node - root node of tree
+   * @param {number}cutHeight - height of cut
+   * @param {number}currentHeight - current height of node
+   * @return {NodeType[]} - list of clusters as lists of leafs
+   */
+  treeCutAsLeaves(node: NodeType, cutHeight: number, currentHeight: number = 0): NodeType[] {
     let res: NodeType[];
 
     const nodeBranchLength = node.branch_length ?? 0;
@@ -202,9 +206,14 @@ export class TreeHelper implements ITreeHelper {
     return res;
   }
 
-  /** Cuts tree, gets cutted tree of clusters as lists of leafs */
+  /** Cuts tree, gets cutted tree of clusters as lists of leafs
+   * @param {NodeType}node - root node of tree
+   * @param {number}cutHeight - height of cut
+   * @param {boolean}keepShorts - keep short branches
+   * @param {number}currentHeight - current height of node
+   * @return {NodeType} - cutted tree of clusters as lists of leafs*/
   treeCutAsTree(
-    node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number
+    node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number,
   ): NodeType | null {
     const nodeBranchHeight = node.branch_length ?? 0;
     const currentHeightV: number = currentHeight ?? 0;
@@ -235,10 +244,16 @@ export class TreeHelper implements ITreeHelper {
     }
   }
 
-  /** Sets grid's row order and returns tree (root node) of nodes presented in data */
+  /** Sets grid's row order and returns tree (root node) of nodes presented in data
+   * @param {NodeType}tree - root node of tree
+   * @param {DG.Grid}grid - grid to set order
+   * @param {string}leafColName - name of column with leaf names
+   * @param {boolean}removeMissingDataRows - remove rows with missing data
+   * @return {[NodeType, string[]]} - tree (root node) of nodes presented in data and list of missed data nodes
+  */
   setGridOrder(
     tree: NodeType | null, grid: DG.Grid, leafColName?: string,
-    removeMissingDataRows: boolean = false
+    removeMissingDataRows: boolean = false,
   ): [NodeType, string[]] {
     console.debug('Dendrogram.setGridOrder() start');
 
@@ -269,10 +284,8 @@ export class TreeHelper implements ITreeHelper {
         }
       }
     }
-
     // Build DATA node name dictionary
     const dataNodeDict: { [nodeName: string]: number } = {};
-    let dataDfFilterModified: boolean = false;
     for (let dataRowI = 0; dataRowI < dataNodeCol.length; dataRowI++) {
       const dataNodeName: string = dataNodeCol.get(dataRowI);
 
@@ -287,10 +300,8 @@ export class TreeHelper implements ITreeHelper {
         missedTreeLeafList.push(dataNodeName);
 
         // Hide grid data rows with node name not in tree leaf list
-        if (dataNodeOldFilter) {
+        if (dataNodeOldFilter)
           dataDf.filter.set(dataRowI, false, false);
-          dataDfFilterModified = true;
-        }
       }
     }
 
@@ -331,11 +342,11 @@ export class TreeHelper implements ITreeHelper {
   }
 
   markClusters(
-    tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any
+    tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any,
   ): void {
     const naValue = na ?? null;
     const clusterCol: DG.Column = dataDf.getCol(clusterColName);
-    clusterCol.init((rowI) => { return naValue; });
+    clusterCol.init((_rowI) => naValue);
 
     const dataNodeCol: DG.Column = leafColName ? dataDf.getCol(leafColName) :
       DG.Column.fromList(DG.COLUMN_TYPE.INT, '<index>', wu.count(0).take(dataDf.rowCount).toArray());
@@ -356,7 +367,7 @@ export class TreeHelper implements ITreeHelper {
     }
   }
 
-  buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName?: string): void {
+  buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, _clusterColName: string, _leafColName?: string): void {
     for (let clusterRowI = clusterDf.rowCount - 1; clusterRowI >= 0; clusterRowI--)
       clusterDf.rows.removeAt(clusterRowI);
 
@@ -369,10 +380,16 @@ export class TreeHelper implements ITreeHelper {
     }
   }
 
-  /** Cuts tree at threshold (from root), returns array of subtrees, marks leafs for cluster in data */
+  /** Cuts tree at threshold (from root), returns array of subtrees, marks leafs for cluster in data
+   * @param {NodeType}node - root node of tree
+   * @param {number}cutHeight - threshold for cutting
+   * @param {DG.DataFrame}dataDf - Dataframe
+   * @param {number}leafColName - name of column with lef names
+   * @param {string}clusterColName - name of column with cluster names
+   * @param {any}na - Value of nulls*/
   cutTreeToGrid(
     node: NodeType, cutHeight: number, dataDf: DG.DataFrame,
-    leafColName: string, clusterColName: string, na?: any
+    leafColName: string, clusterColName: string, na?: any,
   ): void {
     const clusterList: NodeType[] = this.treeCutAsLeaves(node, cutHeight, 0);
 
@@ -380,7 +397,7 @@ export class TreeHelper implements ITreeHelper {
     const clusterCol: DG.Column = dataDf.getCol(clusterColName);
     // for (let rowI = 0; rowI < clusterCol.length; rowI++)
     //   clusterCol.set(rowI, na_value);
-    clusterCol.init((rowI) => { return naValue; });
+    clusterCol.init((_rowI) => naValue);
 
     /* A leaf with cumulative height less than threshold
        will not be included in nor marked as cluster */
@@ -457,6 +474,102 @@ export class TreeHelper implements ITreeHelper {
     if (!treeRoot.branch_length) treeRoot.branch_length = 0;
     return treeRoot;
   }
+
+  async calcDistanceMatrix(
+    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean,
+  ) {
+    // Output distance matrix. reusing it saves a lot of memory
+    let out: DistanceMatrix | null = null;
+
+    const distanceMatrixService = new DistanceMatrixService(true, false);
+    const columns = colNames.map((name) => df.getCol(name));
+    for (const col of columns) {
+      let values: Float32Array;
+      let isUsingNeedlemanWunsch: boolean = false;
+      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
+        values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.NumericDistance, false);
+      } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
+        const uh = UnitsHandler.getOrCreate(col);
+        // Use Hamming distance when sequences are aligned
+        const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
+
+        if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
+          isUsingNeedlemanWunsch = true;
+        values = await distanceMatrixService.calc(col.toList(), seqDistanceFunction, false);
+      } else { throw new TypeError('Unsupported column type'); }
+
+      if (!out) {
+        out = new DistanceMatrix(values);
+        if (columns.length > 1) {
+          out.normalize();
+          if (method === DistanceMetric.Euclidean)
+            out.square();
+        } else if (isUsingNeedlemanWunsch) {
+          // we need to normalize as needleman wunsch returns negative and positive values as well
+          out.normalize();
+        }
+      } else {
+        let newMat: DistanceMatrix | null = new DistanceMatrix(values);
+        newMat.normalize();
+        switch (method) {
+        case DistanceMetric.Manhattan:
+          out.add(newMat);
+        default:
+          newMat.square();
+          out.add(newMat);
+        }
+        // remove reference
+        newMat = null;
+      }
+    }
+    distanceMatrixService.terminate();
+    if (method === DistanceMetric.Euclidean && columns.length > 1)
+      out?.sqrt();
+
+    return out;
+  }
+  parseClusterMatrix(clusterMatrix: ClusterMatrix): NodeType {
+    /*
+    clusert matrix is in R format, I.E. the indexings are 1-based.
+    one of the reasons is that values in merge arrays are not always positive. if the value is negative
+    it means that we are referencing a leaf node. otherwise we are referencing a cluster node.
+    for example :
+    1, -2, 0.1 would mean that the merge happened between cluster 0 and leaf node 1 with a distance of 0.1
+    */
+
+    function getSubTreeLength(node: NodeType): number {
+      //Tradeoff between performance and memory usage - in this case better to use less memory.
+      //as wasm already takes up quite a bit
+      function subTreeLength(children?: NodeType[]): number {
+        return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
+      }
+      if (isLeaf(node))
+        return 0;
+      else
+        return subTreeLength(node.children);
+    }
+
+
+    const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
+    const clusters: NodeType[] = new Array<NodeType>(heightsResult.length);
+
+    for (let i = 0; i < heightsResult.length; i++) {
+      const left: NodeType = mergeRow1[i] < 0 ?
+        {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+        clusters[mergeRow1[i] - 1];
+
+      const right = mergeRow2[i] < 0 ?
+        {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+        clusters[mergeRow2[i] - 1];
+
+      const leftLength = getSubTreeLength(left);
+      const rightLength = getSubTreeLength(right);
+
+      left.branch_length = heightsResult[i] - leftLength;
+      right.branch_length = heightsResult[i] - rightLength;
+
+      clusters[i] = {name: '', children: [left, right], branch_length: 0};
+    }
+    return clusters[clusters.length - 1];
+  }
 }
-
-

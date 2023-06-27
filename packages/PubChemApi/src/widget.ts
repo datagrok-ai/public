@@ -5,6 +5,17 @@ import {anyObject, getSmiles, pubChemIdType, pubChemSearchType} from './utils';
 import {getCompoundInfo, identitySearch, similaritySearch, substructureSearch} from './pubchem';
 import {pubChemBaseURL} from './tests/const';
 
+const WIDTH = 200;
+const HEIGHT = 100;
+
+export enum COLUMN_NAMES {
+  CANONICAL_SMILES = 'CanonicalSMILES',
+  CID = 'CID',
+  MOLECULE = 'molecule',
+  SCORE = 'score',
+  INDEX = 'index',
+}
+
 export function renderInfoValue(info: anyObject, refs: anyObject): HTMLElement {
   const infoValue: {[key: string]: any[]} = info.Value;
   let infoValueList = Object.values(infoValue)[0];
@@ -75,7 +86,7 @@ export function renderSection(section: anyObject, refs: anyObject): HTMLDivEleme
 }
 
 export async function buildAccordion(id: pubChemIdType | null): Promise<HTMLElement> {
-  if (id == '0' || id == null)
+  if (id === '0' || id === null)
     return ui.div('Not found in PubChem');
 
   const json = await getCompoundInfo(id);
@@ -101,33 +112,33 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule string is malformed'));
   }
-  const headerHost = ui.divH([]);
-  const compsHost = ui.divH([ui.loader()]);
-  const widget = new DG.Widget(compsHost);
+  const headerHost = ui.div();
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
+  const widget = new DG.Widget(ui.divV([headerHost, compsHost]));
 
-  let json: anyObject[] | null;
+  let moleculesJson: anyObject[] | null;
   switch (searchType) {
   case 'similarity':
-    json = await similaritySearch('smiles', molString);
+    moleculesJson = await similaritySearch('smiles', molString);
     break;
   case 'substructure':
-    json = await substructureSearch('smiles', molString);
+    moleculesJson = await substructureSearch('smiles', molString);
     break;
   case 'identity':
-    json = await identitySearch('smiles', molString);
+    moleculesJson = await identitySearch('smiles', molString);
     break;
   default:
     throw new Error(`DrugBankSearch: Search type \`${searchType}\` not found`);
   }
 
-  if (json == null) {
+  if (moleculesJson === null || moleculesJson.length === 0) {
     compsHost.firstChild?.remove();
     compsHost.appendChild(ui.divText('No matches'));
     return widget;
   }
 
-  if (searchType == 'identity') {
-    const props: {value: anyObject, urn: anyObject}[] = json[0]['props'];
+  if (searchType === 'identity') {
+    const props: {value: anyObject, urn: anyObject}[] = moleculesJson[0]['props'];
     const result: anyObject = {};
     const bannedKeys = ['label', 'name', 'implementation', 'datatype'];
 
@@ -149,36 +160,46 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
 
     return new DG.Widget(resultMap);
   }
+  const resultDf = DG.DataFrame.fromObjects(moleculesJson)!;
 
-  const table = DG.DataFrame.fromObjects(json);
+  const similarStructures = await grok.chem.findSimilar(resultDf!.getCol(COLUMN_NAMES.CANONICAL_SMILES), molString,
+    {limit: 20, cutoff: 0.75});
 
-  if (!table || table.filter.trueCount === 0) {
+  if (similarStructures === null || similarStructures.rowCount === 0) {
     compsHost.firstChild?.remove();
     compsHost.appendChild(ui.divText('No matches'));
     return widget;
   }
 
-  const smilesCol = table.col('CanonicalSMILES');
-  if (smilesCol !== null) {
-    smilesCol.semType = 'Molecule';
-    smilesCol.setTag('cell.renderer', 'Molecule');
-    if (searchType === 'substructure') {
-      smilesCol.temp['chem-scaffold-filter'] = molString;
-      smilesCol.temp['chem-scaffold'] = molString;
-    }
+  const cidCol = resultDf.getCol(COLUMN_NAMES.CID);
+  const moleculesCol = similarStructures.getCol(COLUMN_NAMES.MOLECULE);
+  const scoreCol = similarStructures.getCol(COLUMN_NAMES.SCORE);
+  const indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData();
+
+  for (let idx = 0; idx < similarStructures.rowCount; idx++) {
+    const piv = indexes[idx];
+    const molHost = ui.divV([]);
+    grok.functions.call('Chem:drawMolecule', {'molStr': moleculesCol.get(idx), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+      .then((res: HTMLElement) => {
+        molHost.append(res);
+        molHost.append(ui.divText(`Score: ${scoreCol.get(idx)}`));
+      });
+
+    ui.tooltip.bind(molHost, () => ui.divText(`CID: ${cidCol.get(piv)}\nClick to open in PubChem`));
+    molHost.addEventListener('click',
+      () => window.open(`https://pubchem.ncbi.nlm.nih.gov/compound/${cidCol.get(piv) }`, '_blank'));
+    compsHost.appendChild(molHost);
   }
 
-  const grid = table.plot.grid();
-  grid.columns.setOrder(['CanonicalSMILES', 'CID']);
-  compsHost.appendChild(grid.root);
   headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+    const table = DG.DataFrame.fromObjects(moleculesJson!);
     table!.name = 'PubChem Similarity Search';
     grok.shell.addTableView(table!);
   }, 'Open compounds as table'));
   compsHost.style.overflowY = 'auto';
   if (compsHost.parentElement)
     compsHost.parentElement!.style.width = 'auto';
-  grid.root.style.width = 'auto';
+
   compsHost.firstChild?.remove();
 
   if (compsHost.children.length === 0)

@@ -10,6 +10,8 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.QueryCancelledByUser;
+import org.slf4j.Logger;
 import serialization.DataFrame;
 import serialization.Types;
 import java.sql.Connection;
@@ -38,19 +40,17 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, GrokConnectException {
+            throws ClassNotFoundException, SQLException, GrokConnectException, QueryCancelledByUser {
 
         DataQuery dataQuery = queryRun.func;
         Connection connection = getConnection(dataQuery.connection);
-        ResultSet resultSet = getResultSet(queryRun, connection);
-        DataFrame dataFrame = getResultSetSubDf(queryRun, resultSet, 0);
-        return dataFrame;
+        ResultSet resultSet = getResultSet(queryRun, connection, logger, 1);
+        return getResultSetSubDf(queryRun, resultSet, -1, logger, 0, false);
     }
 
     @Override
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection) {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
         try {
             PreparedStatement statement = connection.prepareStatement(queryRun.func.query);
             return statement.executeQuery();
@@ -60,8 +60,8 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, int maxIterations) throws SQLException {
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, int maxIterations,
+                                       Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
         ResultSetManager resultSetManager = getResultSetManager();
         while (resultSet.next()) {
             Object object = resultSet.getObject(OBJECT_INDEX);

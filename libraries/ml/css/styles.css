@@ -10,3 +10,9 @@
 .show_only_cliffs {
     top: 30px;
 }
+
+.ml-dim-reduction-settings-input i.grok-icon.grok-font-icon-settings {
+    font-size: 18px;
+    position: absolute;
+    height: 28px;
+}
