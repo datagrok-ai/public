@@ -73,8 +73,16 @@ export class FormatConverter {
 }
 
 function getRegExpPattern(arr: string[]): string {
-  const escaped = arr.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  return escaped.join('|');
+  const negativeLookBehind = '(?<!\\([^()]*)'; // not '(' followed by non-parenths
+  const negativeLookAhead = '(?![^()]*\\))';  // not ')' preceded by non-parenths
+  const escaped = arr.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .map((key) => {
+    if (!key.includes('(') && !key.includes(')'))
+      return `${negativeLookBehind}${key}${negativeLookAhead}`;
+    return key;
+  });
+  const result =  escaped.join('|');
+  return result;
 }
 
 function sortCallback(a: string, b: string) {return b.length - a.length};
@@ -119,7 +127,7 @@ function formatToHelm(sequence: string, sourceFormat: FORMAT): string {
   const dict = Object.assign({}, ...Object.values(codesInfoObject)) as {[code: string]: string};
 
   const formatCodes = Object.keys(dict).sort(sortCallback);
-  const formatRegExp = new RegExp(getRegExpPattern(formatCodes), 'g');
+  const formatRegExp = new RegExp(getRegExpPattern(formatCodes) + '|\\([^()]*\\)|.', 'g'); // the added group before '|.' is to avoid mismatch inside parenths
 
   const phosphateHELMCodes = Array.from(
     new Set(Object.values(codesInfoObject[GROUP_TYPE.LINKAGE]))
@@ -127,7 +135,11 @@ function formatToHelm(sequence: string, sourceFormat: FORMAT): string {
   const phosphateHELMPattern = getRegExpPattern(phosphateHELMCodes);
   const phosphateRegExp = new RegExp(`${PHOSPHATE}\.(${phosphateHELMPattern})`, 'g');
 
-  let helm = sequence.replace(formatRegExp, (match) => dict[match] + '.');
+  let helm = sequence.replace(formatRegExp, (match) => {
+    const result = formatCodes.includes(match) ?  dict[match] + '.' : '?';
+    return result;
+  });
+  helm = helm.replace(/\?+/g, '<?>.');
   helm = helm.slice(0, -1); // strip last dot
   if (helm[helm.length - 1] === PHOSPHATE) 
     helm = helm.slice(0, -1);
