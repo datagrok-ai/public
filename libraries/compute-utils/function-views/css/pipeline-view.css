@@ -1,5 +1,5 @@
 .pipeline-view .d4-ribbon-name.selected {
-  color: #104161;
+  color: var(--grey-6)
 }
 
 .pipeline-view .d4-ribbon-name {
