@@ -17,15 +17,35 @@ import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/uti
 
 const FILE_INPUT_TYPE = 'file';
 
+// custom input like
+export interface InputLike<T = any> {
+  root: HTMLElement;
+  value: T;
+  notify: boolean;
+  onInput: (cb: Function) => any;
+}
+
+export type InputVariants = DG.InputBase | FileInput | InputLike;
+
+function isInputBase(input: InputVariants): input is DG.InputBase {
+  return !!(input as DG.InputBase).input;
+}
+
 export interface AfterInputRenderPayload {
   prop: DG.Property;
-  input: DG.InputBase | FileInput;
+  input: InputVariants;
 }
 
 export interface AfterOutputRenderPayload {
   prop: DG.Property;
   output: DG.Viewer;
 }
+
+type SyncFields = 'inputs' | 'outputs';
+const syncParams = {
+  'inputs': 'inputParams',
+  'outputs': 'outputParams',
+} as const;
 
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
@@ -38,7 +58,7 @@ export class RichFunctionView extends FunctionView {
   private isUploadMode = new BehaviorSubject<boolean>(false);
 
   private controllsDiv?: HTMLElement;
-  private customObjectInput?: HTMLElement;
+  private customObjectInput?: InputLike;
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -75,10 +95,14 @@ export class RichFunctionView extends FunctionView {
   }
 
   // scripting api events
+  // regular and experimental inputs
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
+  // input run buttons
   public beforeRenderControlls = new Subject<true>();
+  // output viewers
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
+  // output scalars table
   public afterOutputSacalarTableRender = new Subject<HTMLElement>();
 
   /*
@@ -93,8 +117,8 @@ export class RichFunctionView extends FunctionView {
    * Will work only if called synchronously inside
    * beforeInputPropertyRender subscriber.
    */
-  public addCustomObjectInput(div: HTMLElement) {
-    this.customObjectInput = div;
+  public addCustomObjectInput(input: InputLike) {
+    this.customObjectInput = input;
   }
 
   public getRunButton(name = 'Run') {
@@ -262,7 +286,7 @@ export class RichFunctionView extends FunctionView {
 
     this.tabsLabels.forEach((tabLabel) => {
       const tabDfProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
-      const tabScalarProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
+      const tabScalarProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME && p.propertyType !== DG.TYPE.OBJECT);
 
       const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
@@ -482,155 +506,40 @@ export class RichFunctionView extends FunctionView {
   }
 
   private renderOutputForm(): HTMLElement {
-    const outputs = ui.divV([], 'ui-form ui-form-wide');
-    $(outputs).css({
-      'flex-wrap': 'wrap',
-      'flex-grow': '0',
-    });
-    let prevCategory = 'Misc';
-    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[])
-      .filter((val) => !!val)
-      .forEach((val) => {
-        const prop = val.property;
-
-        if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
-          const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
-            this.funcCall.outputs[prop.name] = file;
-          }, null);
-          if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          outputs.append(t.root);
-        } else {
-          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
-            ui.input.forProperty(prop);
-
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-          t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-          if (prop.options['units']) t.addPostfix(prop.options['units']);
-
-          // Should be onInput. DEALING WITH BUG:
-          t.onChanged(() => {
-            this.funcCall.outputs[val.name] = t.value;
-            if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
-          });
-
-          if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          outputs.append(t.root);
-        }
-        prevCategory = prop.category;
-      });
-
-    outputs.classList.remove('ui-panel');
-    outputs.style.paddingTop = '0px';
-    outputs.style.paddingLeft = '0px';
-    outputs.style.maxWidth = '100%';
-
-    return outputs;
+    return this.renderIOForm('outputs');
   }
 
   private renderInputForm(): HTMLElement {
+    return this.renderIOForm('inputs');
+  }
+
+  private renderIOForm(field: SyncFields) {
     const inputs = ui.divH([], 'ui-form ui-form-wide');
     $(inputs).css({
       'flex-wrap': 'wrap',
       'flex-grow': '0',
     });
+
     let prevCategory = 'Misc';
-    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[])
+    const params =  this.funcCall[syncParams[field]].values() as DG.FuncCallParam[];
+    wu(params as DG.FuncCallParam[])
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;
         this.beforeInputPropertyRender.next(prop);
-        if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
-          const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
-            this.funcCall.inputs[prop.name] = file;
-            this.checkDisability.next();
-          }, null);
-
-          if (this.runningOnInput) {
-            const sub = t.onFileUploaded.subscribe(async () => await this.doRun());
-            this.subs.push(sub);
-          }
-
-          if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-          inputs.append(t.root);
-          this.afterInputPropertyRender.next({prop, input: t});
-        } else if (prop.propertyType.toString() === DG.TYPE.OBJECT) {
-          if (this.customObjectInput) {
-            inputs.append(this.customObjectInput);
-            this.customObjectInput === null;
-          }
-        } else {
-          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
-            ui.input.forProperty(prop);
-
-          t.input.onkeydown = async (ev) => {
-            if (ev.key == 'Enter')
-              await this.doRun();
-          };
-
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-          t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-          if (prop.options['units']) t.addPostfix(prop.options['units']);
-
-          this.syncFuncCallReplaced(t, val);
-          this.syncOnInput(t, val);
-          this.syncValOnChanged(t, val);
-
-          if (this.runningOnInput) {
-            if (prop.propertyType === DG.TYPE.DATA_FRAME)
-              this.runOnDgInput(t, val);
-            else
-              this.runOnInput(t, val);
-          }
-
-          if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          inputs.append(t.root);
-          this.afterInputPropertyRender.next({prop, input: t});
+        const input = this.getInputForVal(val);
+        if (!input) {
+          prevCategory = prop.category;
+          return;
         }
+        this.syncInput(val, input, field);
+        if (field === 'inputs') {
+          this.bindInputRun(val, input);
+        }
+        this.renderInput(inputs, val, input, prevCategory);
+        this.afterInputPropertyRender.next({prop, input: input});
         prevCategory = prop.category;
       });
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const buttonWrapper = ui.div([runButton]);
-      ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
-    };
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
@@ -641,28 +550,95 @@ export class RichFunctionView extends FunctionView {
     return inputs;
   }
 
-  private syncFuncCallReplaced(t: DG.InputBase<any>, val: DG.FuncCallParam) {
+  private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
     const prop = val.property;
-    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+    if (this.customObjectInput) {
+      const obj = this.customObjectInput;
+      this.customObjectInput = undefined;
+      return obj;
+    }
+    switch (prop.propertyType as any) {
+      case DG.TYPE.DATA_FRAME:
+        return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
+      case FILE_INPUT_TYPE:
+        return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
+      default:
+        return ui.input.forProperty(prop)
+    }
+  }
 
+  private bindInputRun(val: DG.FuncCallParam, t: InputVariants) {
+    const prop = val.property;
+    if (this.runningOnInput) {
+      if (prop.propertyType === DG.TYPE.DATA_FRAME)
+        this.runOnDgInput(t as DG.InputBase<DG.DataFrame>);
+      else
+        this.runOnInput(t);
+    }
+    if (isInputBase(t)) {
+      t.input.onkeydown = async (ev) => {
+        if (ev.key == 'Enter')
+          await this.doRun();
+      };
+    }
+  }
+
+  private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants, prevCategory: string) {
+    const prop = val.property;
+
+    if (prop.category !== prevCategory)
+      inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+
+    if (isInputBase(t)) {
+      this.inputBaseAdditionalRenderHandler(val, t);
+    }
+
+    inputsDiv.append(t.root);
+  }
+
+  private inputBaseAdditionalRenderHandler(val: DG.FuncCallParam, t: DG.InputBase) {
+    const prop = val.property;
+
+    $(t.root).css({
+      'width': `${prop.options['block'] ?? '100'}%`,
+      'box-sizing': 'border-box',
+      'padding-right': '5px',
+    });
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
+    t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
+    if (prop.options['units']) t.addPostfix(prop.options['units']);
+  }
+
+  private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
+    this.syncFuncCallReplaced(t, val, fields);
+    this.syncOnInput(t, val, fields);
+  }
+
+  private syncFuncCallReplaced(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
+    const prop = val.property;
+    const name = val.name;
+    // don't use val directly, get a fresh one, since it will be replaced with fc
+    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
+      const newValue = this.funcCall![field][name] ?? prop.defaultValue ?? null;
       t.value = newValue;
-      this.funcCall!.inputs[val.name] = newValue;
+      this.funcCall![field][name] = newValue;
+      const newParam = this.funcCall[syncParams[field]][name];
+      this.syncValOnChanged(t, newParam, field)
     });
     this.subs.push(sub);
   }
 
-  private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const syncSub = () => {
-      const newValue = this.funcCall!.inputs[val.name];
-
+  private syncValOnChanged(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
+    const sub = val.onChanged.subscribe(() => {
+      const newValue = this.funcCall![field][val.name];
       // there is no notify for DG.FuncCallParam, so we need to
       // check if the value is not the same for floats, otherwise we
       // will overwrite a user input with a lower precicsion decimal
       // representation
       if (
         ((val.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
-        val.property.propertyType !== DG.TYPE.FLOAT
+          val.property.propertyType !== DG.TYPE.FLOAT
       ) {
         t.notify = false;
         t.value = newValue;
@@ -673,19 +649,23 @@ export class RichFunctionView extends FunctionView {
 
       if (this.runningOnInput && this.isRunnable())
         this.doRun();
-    };
-
-    const sub = val.onChanged.subscribe(syncSub);
+    });
     this.subs.push(sub);
+  }
 
-    this.subs.push(
-      this.funcCallReplaced.subscribe(() => {
-        const newParam = this.funcCall.inputParams[val.property.name];
-
-        const sub = newParam.onChanged.subscribe(syncSub);
-        this.subs.push(sub);
-      }),
-    );
+  private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
+    t.onInput(() => {
+      this.funcCall![field][val.name] = t.value;
+      if (isInputBase(t)) {
+        if (t.value === null) {
+          setTimeout(() => t.input.classList.add('d4-invalid'), 100);
+        } else {
+          t.input.classList.remove('d4-invalid');
+        }
+      }
+      this.checkDisability.next();
+      this.hideOutdatedOutput();
+    });
   }
 
   private isRunnable() {
@@ -705,24 +685,14 @@ export class RichFunctionView extends FunctionView {
     await this.saveRun(expFuncCall);
   }
 
-  private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    t.onInput(() => {
-      this.funcCall!.inputs[val.name] = t.value;
-      if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
-      this.checkDisability.next();
-
-      this.hideOutdatedOutput();
-    });
-  }
-
-  private runOnInput(t: DG.InputBase, val: DG.FuncCallParam) {
+  private runOnInput(t: InputVariants) {
     t.onInput(async () => {
       if (this.isRunnable())
         await this.doRun();
     });
   }
 
-  private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
+  private runOnDgInput(t: DG.InputBase<DG.DataFrame>) {
     t.onInput(async () => {
       if (this.isRunnable()) await this.doRun();
     });

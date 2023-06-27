@@ -11,8 +11,12 @@ export const EXCEL_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.sp
 export class FileInput {
   // events to emit
   public uploadedFile$ = new Subject<File | null>();
-  // same event as above but in DG-style
-  public onFileUploaded = new Subject<File | null>();
+  // legacy compatibility
+  public onFileUploaded = this.uploadedFile$;
+
+  public notify = true;
+  public value: File | null = null;
+
   // HTML root of component
   public root = ui.div();
   // Validation object
@@ -48,10 +52,20 @@ export class FileInput {
       }
     });
 
-    this.uploadedFile$.subscribe((file) => this.onFileUploaded.next(file));
+    this.uploadedFile$.subscribe((newValue: File | null) => {
+      if (this.onValueChanged) {
+        this.onValueChanged(newValue);
+      }
+      this.value = newValue;
+    });
+  }
 
-    if (onValueChanged)
-      this.uploadedFile$.subscribe((newValue: File | null) => onValueChanged(newValue));
+  public onInput(cb: Function) {
+    return this.uploadedFile$.subscribe((file) => {
+      if (this.notify) {
+        cb(file);
+      }
+    });
   }
 
   private draw() {
