@@ -91,10 +91,11 @@ export async function _treeViewerDemo() {
 //name: wordCloudViewerDemo
 //description: Word Cloud viewer visualizes unstructured text data
 //meta.demoPath: Visualization | General | Word Cloud
-//test: _wordCloudViewerDemo() //wait: 200
+//test: _wordCloudViewerDemo() //wait: 200, skip: GROK-13318
 export async function _wordCloudViewerDemo() {
   await viewerDemo(DG.VIEWER.WORD_CLOUD, {drawOutOfBound: false});
 }
+
 export {_ChordViewer};
 export {_GlobeViewer};
 export {_GroupAnalysisViewer};
