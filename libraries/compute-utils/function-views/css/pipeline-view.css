@@ -6,6 +6,7 @@
   color: var(--blue-1);
   margin: 12px 6px;
   font-weight: normal;
+  place-content: center;
 }
 
 .pipeline-view .d4-ribbon-name + .d4-ribbon-name::before {
