@@ -24,9 +24,10 @@ export async function findSimilar(molStr: string, limit: number, cutoff: number,
   const resultIdCol: DG.Column<string> = searchdf.columns.addNew(idCol.name, idCol.type);
   const nameCol: DG.Column<string> = dbdf.getCol(COLUMN_NAMES.COMMON_NAME);
   const resultNameCol: DG.Column<string> = searchdf.columns.addNew(nameCol.name, nameCol.type);
-  for (const idx of indexes) {
-    resultIdCol.set(idx, idCol.get(idx));
-    resultNameCol.set(idx, nameCol.get(idx));
+  for (let idx = 0; idx < indexes.length; idx++) {
+    const piv = indexes[idx];
+    resultIdCol.set(idx, idCol.get(piv));
+    resultNameCol.set(idx, nameCol.get(piv));
   }
 
   return searchdf;
