@@ -1,5 +1,5 @@
 import {IChemPropertyGroupMap} from './types';
-
+import {ChemPropNames} from './types';
 export const ChemPropertyGroupMap: IChemPropertyGroupMap = {
   toxRisks: {
     name: 'Toxicity Risks',
@@ -37,4 +37,10 @@ export const ChemPropertyGroupMap: IChemPropertyGroupMap = {
       {name: 'Molecule charge', description: 'Molecule charge', propertyName: 'moleculeCharge'},
     ],
   },
+};
+
+export const chemFunctionNameMap: {[_ in Exclude<ChemPropNames, 'Descriptors'>]: string} = {
+  'Toxicity Risks': 'addChemRisksColumns',
+  'Structural Alerts': 'structuralAlertsTopMenu',
+  'Chemical Properties': 'addChemPropertiesColumns',
 };

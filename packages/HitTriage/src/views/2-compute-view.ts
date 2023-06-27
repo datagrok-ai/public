@@ -4,24 +4,31 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {HitTriageApp} from '../hit-triage-app';
 import {chemDescriptorsDialog} from './descriptors-dialog';
-import {ChemPropNames} from './types';
-import {ChemPropertyGroupMap} from './consts';
+import {ChemFunctionType, ChemPropNames} from './types';
+import {ChemPropertyGroupMap, chemFunctionNameMap} from './consts';
 
 /**
  * Enrichment of the molecular dataset.
  **/
 
-const chemFunctionsMap: {[_ in ChemPropNames]: (t: DG.DataFrame, col: string, props: string[]) => Promise<any>} = {
+const chemFunctionsMap: {[_ in ChemPropNames]: ChemFunctionType} = {
   'Descriptors': (t, c, p) => grok.chem.descriptors(t, c, p),
-  'Toxicity Risks': (t, c, p) => grok.functions.call(
-    'Chem:addChemRisksColumns', getChemFunctionArgs(t, c, p, 'Toxicity Risks')),
-  'Structural Alerts': (t, c, p) => grok.functions.call(
-    'Chem:structuralAlertsTopMenu', getChemFunctionArgs(t, c, p, 'Structural Alerts')),
-  'Chemical Properties': (t, c, p) => grok.functions.call(
-    'Chem:addChemPropertiesColumns', getChemFunctionArgs(t, c, p, 'Chemical Properties')),
+  'Toxicity Risks': getChemFunction('Toxicity Risks'),
+  'Structural Alerts': getChemFunction('Structural Alerts'),
+  'Chemical Properties': getChemFunction('Chemical Properties'),
 };
 
-function getChemFunctionArgs(t: DG.DataFrame, col: string, props: string[], funcName: ChemPropNames) {
+function getChemFunction(funcName: Exclude<ChemPropNames, 'Descriptors'>): ChemFunctionType {
+  const func = DG.Func.find({package: 'Chem', name: chemFunctionNameMap[funcName]})[0];
+  return ((t: DG.DataFrame, col: string, props: string[]) => {
+    const args = getChemFunctionArgs(t, col, props, funcName);
+    return func.apply(args);
+  });
+}
+
+function getChemFunctionArgs(
+  t: DG.DataFrame, col: string, props: string[], funcName: ChemPropNames,
+): {table: DG.DataFrame, molecules: string, [key: string]: any} {
   const args: {[_: string]: boolean} = {};
   const argNames = Object.values(ChemPropertyGroupMap).find((g) => g.name === funcName)!.values
     .map((v) => v.propertyName);
@@ -61,7 +68,6 @@ export class ComputeView extends HitTriageBaseView {
       this.template.enrichedTable = this.template.hitsTable;
 
       chemDescriptorsDialog(async (descriptorsMap) => {
-        console.log(descriptorsMap);
         Object.keys(descriptorsMap).forEach(async (key) => {
           await chemFunctionsMap[key as ChemPropNames](
             this.template.hitsTable!, this.template.hitsMolColumn, descriptorsMap[key]);

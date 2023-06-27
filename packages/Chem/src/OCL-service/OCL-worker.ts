@@ -1,6 +1,9 @@
 import {OCLServiceCall} from './consts';
 import {CHEM_PROP_MAP} from './calculations';
 import * as OCL from 'openchemlib/full';
+
+type OCLWorkerReturnType = {res: {[key: string]: Array<number>}, errors: string[]};
+
 onmessage = ({data: {op, data, argList}}) => {
   switch (op) {
   case OCLServiceCall.CHEM_PROPERTIES:
@@ -13,12 +16,11 @@ onmessage = ({data: {op, data, argList}}) => {
 };
 
 
-function getChemProperties(molList: Array<string>, propList: string[]) {
+function getChemProperties(molList: Array<string>, propList: string[]): OCLWorkerReturnType {
   const res: {[key: string]: Array<number>} = {};
   const errors: string[] = [];
-  propList.forEach((propName) => {
+  for (const propName of propList)
     res[propName] = new Array(molList.length).fill(NaN);
-  });
   molList.forEach((smiles, i) => {
     try {
       const mol = OCL.Molecule.fromSmiles(smiles);
@@ -32,12 +34,11 @@ function getChemProperties(molList: Array<string>, propList: string[]) {
   return {res, errors};
 }
 
-function getToxRisks(molList: Array<string>, riskTypes: number[]) {
+function getToxRisks(molList: Array<string>, riskTypes: number[]): OCLWorkerReturnType {
   const res: {[key: string]: Array<number>} = {};
   const errors: string[] = [];
-  riskTypes.forEach((propName) => {
+  for (const propName of riskTypes)
     res[propName] = new Array(molList.length).fill(0);
-  });
   const toxicityPredictor = new OCL.ToxicityPredictor();
   molList.forEach((smiles, i) => {
     try {

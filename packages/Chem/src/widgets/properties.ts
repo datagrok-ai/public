@@ -9,6 +9,10 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {addCopyIcon} from '../utils/ui-utils';
 import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../OCL-service';
 
+const DGTypeMap = {
+  'float': DG.TYPE.FLOAT,
+  'int': DG.TYPE.INT,
+} as const;
 
 export function getChemPropertyFunc(name: string) : null | ((smiles: string) => any) {
   const p: IChemProperty = PROP_MAP[name];
@@ -40,7 +44,7 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   function prop(p: IChemProperty, mol: OCL.Molecule) : HTMLElement {
     const addColumnIcon = ui.iconFA('plus', () => {
       const molCol: DG.Column<string> = semValue.cell.column;
-      const col : DG.Column = DG.Column.fromType(DG.TYPE.FLOAT,
+      const col : DG.Column = DG.Column.fromType(DGTypeMap[p.type],
         semValue.cell.dataFrame.columns.getUnusedName(p.name), molCol.length)
         .setTag('CHEM_WIDGET_PROPERTY', p.name)
         .setTag('CHEM_ORIG_MOLECULE_COLUMN', molCol.name)
@@ -87,7 +91,7 @@ export async function addPropertiesAsColumns(df: DG.DataFrame, smilesCol: DG.Col
   oclService.terminate();
   propsMap.forEach((p) => {
     const colName = df.columns.getUnusedName(p);
-    const col = DG.Column.fromList(DG.TYPE.FLOAT, colName, props[p]);
+    const col = DG.Column.fromList(DGTypeMap[PROP_MAP[p].type], colName, props[p]);
     df.columns.add(col);
   });
 }

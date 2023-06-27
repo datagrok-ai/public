@@ -1,13 +1,12 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {OCLServiceCall} from './consts';
 
 export class OCLService {
-  _workers: Worker[];
-  _threadCount: number = 4;
+  _threadCount: number = Math.max((navigator.hardwareConcurrency || 6) - 2, 1);
+  _workers: Worker[] = new Array(this._threadCount).fill(null)
+    .map(() => new Worker(new URL('OCL-worker', import.meta.url)));
   constructor() {
-    this._threadCount = Math.max((navigator.hardwareConcurrency || 6) - 2, 1);
-    this._workers = new Array(this._threadCount).fill(null)
-      .map(() => new Worker(new URL('OCL-worker', import.meta.url)));
   }
 
   private async _doParallel(
@@ -28,10 +27,11 @@ export class OCLService {
       });
     }
     const scatterRes = await Promise.all(promises);
-    const errorPercentages = scatterRes.map(({errors}) => errors.length)
-      .reduce((prev, cur) => prev + cur, 0) / colLenght;
+    const totalErrors = scatterRes.map(({errors}) => errors.length)
+      .reduce((prev, cur) => prev + cur, 0);
+    const errorPercentages = totalErrors / colLenght;
     if (errorPercentages > 0.1)
-      throw new Error('Too many errors occured during calculation');
+      grok.shell.warning(`Operation resulted in error for ${totalErrors} molecules`);
 
     scatterRes.forEach((res) => {
       Object.keys(res.res).forEach((propName) => {
