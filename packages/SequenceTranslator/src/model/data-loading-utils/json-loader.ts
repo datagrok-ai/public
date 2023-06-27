@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {APP_PATH, FORMAT_DICT_FILENAME, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME} from './const';
-import {FormatDict, AxolabsStyle, FormatToHELMDict} from './types';
+import {APP_PATH, FORMAT_DICT_FILENAME, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME} from './const';
+import {FormatDict, AxolabsStyle, FormatToHELMDict, CodeToSymbol} from './types';
 
 const fileSource = new DG.FileSource(APP_PATH);
 async function parse(path: string): Promise<any> {
@@ -14,12 +14,14 @@ async function parse(path: string): Promise<any> {
 export let formatDictionary: FormatDict;
 export let axolabsStyleMap: AxolabsStyle;
 export let codesToHelmDictionary: FormatToHELMDict;
+export let codesToSymbolsDictionary: CodeToSymbol;
 
 export async function getJsonData(): Promise<void> {
   try {
     formatDictionary = await parse(FORMAT_DICT_FILENAME);
     axolabsStyleMap = await parse(AXOLABS_STYLE_FILENAME);
     codesToHelmDictionary = await parse(CODES_TO_HELM_DICT_FILENAME);
+    codesToSymbolsDictionary = await parse(CODES_TO_SYMBOLS_FILENAME);
   } catch (err: any) {
     const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
     throw new Error('ST: Loading format dictionary error: ' + errMsg);

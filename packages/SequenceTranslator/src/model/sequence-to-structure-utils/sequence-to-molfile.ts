@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {MonomerSequenceParser} from './monomer-code-parser';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {FORMAT} from '../../model/const';
+import {codesToSymbolsDictionary} from '../../model/data-loading-utils/json-loader';
 
 export class SequenceToMolfileConverter {
   constructor(

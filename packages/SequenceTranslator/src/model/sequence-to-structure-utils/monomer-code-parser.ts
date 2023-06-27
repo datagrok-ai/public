@@ -34,7 +34,7 @@ export class MonomerSequenceParser {
       monomerSymbolSequence.push(monomerSymbol);
 
       // todo: to be deleted
-      const LINKER_CODES = ['s', 'ps', '*', 'Rpn', 'Spn', 'Rps', 'Sps']
+      const LINKER_CODES = ['s', 'ps', '*', 'Rpn', 'Spn', 'Rps', 'Sps'];
 
       const isPhosphate = LINKER_CODES.includes(code);
       const hasPhosphate = isMonomerWithPhosphate(code);
@@ -46,7 +46,6 @@ export class MonomerSequenceParser {
         monomerSymbolSequence.push(PHOSPHATE_SYMBOL);
       }
     });
-    // console.log('monomerSymbolSequence:', monomerSymbolSequence);
     return monomerSymbolSequence;
   }
 
@@ -75,8 +74,6 @@ export class MonomerSequenceParser {
   // todo: port to monomer handler
   private getAllCodesOfFormat(): string[] {
     let allCodesInTheFormat = Array.from(this.codeMap.keys());
-    const modifications = this.lib.getModificationGCRSCodes();
-    allCodesInTheFormat = allCodesInTheFormat.concat(modifications);
     return sortByReverseLength(allCodesInTheFormat);
   }
 }

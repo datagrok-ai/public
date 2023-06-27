@@ -28,3 +28,9 @@ export type CodesInfo = {
 export type FormatToHELMDict = {
   [sourceFormat: string]: CodesInfo
 }
+
+export type CodeToSymbol = {
+  [format: string]: {
+    [code: string]: string
+  }
+}
