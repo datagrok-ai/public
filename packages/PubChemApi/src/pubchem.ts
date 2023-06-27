@@ -77,6 +77,7 @@ export async function _getListById(
 
 export async function _asyncSearchId(
   searchType: pubChemSearchType, idType: string, id: pubChemIdType, params: paramsType = {}): Promise<string | null> {
+  params.MaxRecords ??= 20;
   const url =
     `${pubChemPug}/compound/${searchType}/${idType}/${encodeURIComponent(id)}/JSON?${urlParamsFromObject(params)}`;
   const response = await grok.dapi.fetchProxy(url);
