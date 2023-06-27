@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
 import { models, properties } from './const';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
@@ -20,18 +21,7 @@ export async function accessServer(csvString: string, queryParams: string) {
     body: csvString
   };
   const path = `/smiles/df_upload/?models=${queryParams}`;
-  let response;
-  try {
-    //@ts-ignore
-    response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
-  } catch(e) {
-    console.log(e);
-    grok.shell.warning('Starting the ADME Docker Container that is required for this computation.<br>\
-     Please try again in a few minutes');
-  } finally {
-    //@ts-ignore
-    await grok.dapi.docker.dockerContainers.run(admetDockerfile.id);
-  }
+  let response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
   return response;
 }
 
@@ -93,32 +83,39 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
     const queryParams = selected.join(',');
-    const pi = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
-    try {
-      const malformedIndexes = await getMalformedSmiles(smilesCol);
-      if (malformedIndexes.length > 0)
-        smilesCol = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
-      const [csvString] = await Promise.all([
-      accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams),
-      new Promise((resolve) => setTimeout(resolve, 1000))]);
-      const table = processCsv(csvString);
-      addResultColumns(table, viewTable, malformedIndexes);
-      addTooltip();
 
-      if (_COLOR === 'true') {
-        let columnNames = table.columns.names();
-        addColorCoding(columnNames);
-      }
-      
-      pi.update(100, 'Evaluation complete');
-    } catch (e: any) {
-      console.error(e);
-      grok.shell.warning(e.toString());
-      pi.update(100, 'Evaluation failed');
-    } finally {
-      pi.close();
+    for (let i = 0; i < selected.length; ++i) {
+      let name = viewTable.columns.getUnusedName(selected[i]);
+      viewTable.columns.addNewFloat(name);
+      selected[i] = name;
     }
+    const malformedIndexes = await getMalformedSmiles(smilesCol);
+    if (malformedIndexes.length > 0)
+      smilesCol = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
+    await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, malformedIndexes);
+    addTooltip();
+    addColorCoding(selected);    
   })
+}
+
+function addResultColumnsBatch(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[], startIndex: number = 0, models?: any[], batchSize?: number): void {
+  const columnCount = table.columns.length;
+  const endIndex = startIndex + (batchSize || 0) + malformedIndexes!.length;
+
+  if (malformedIndexes!.length > 0)
+      malformedIndexes!.map((index) => table.rows.insertAt(index));
+  
+  for (let i = 0; i < columnCount; i++) {
+    const column: DG.Column = table.columns.byIndex(i);
+    const modelName = models && models[i];
+    
+    for (let j = startIndex; j < endIndex; j++) {
+      const rowIndex = j - startIndex;
+      const value = column.get(rowIndex);
+      
+      viewTable.columns.byName(modelName).set(j, value);
+    }
+  }
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
@@ -320,4 +317,34 @@ async function getMalformedSmiles(col: DG.Column) {
     })
   );
   return indices.filter((index) => index !== null);
+}
+
+async function processBatch(batch: any, queryParams: string, viewTable: DG.DataFrame, startIndex: number, batchSize: number, modelNames: any[], malformedIndexes: any[]) {
+  const [csvString] = await Promise.all([
+    accessServer(DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', batch)]).toCsv(), queryParams),
+    new Promise((resolve) => setTimeout(resolve, 1000))]);
+  const table = processCsv(csvString);
+  addResultColumnsBatch(table, viewTable, malformedIndexes, startIndex, modelNames, batchSize)
+}
+
+async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]) {
+  let index = 0;
+
+  function processNextBatch(): any {
+    if (index >= column.length) {
+      return;
+    }
+
+    const remaining = column.length - index;
+    const currentBatchSize = Math.min(batchSize, remaining);
+    const batch = Array.from(column.values()).slice(index, index + currentBatchSize);
+
+    return processBatch(batch, queryParams, viewTable, index, currentBatchSize, modelNames, malformedIndexes)
+      .then(() => {
+        index += currentBatchSize;
+        return delay(100);
+      })
+      .then(processNextBatch); 
+  }
+  await processNextBatch();
 }
