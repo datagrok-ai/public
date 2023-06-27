@@ -1,11 +1,11 @@
-import {FORMAT} from '../const';
+import {DEFAULT_FORMATS} from '../const';
 import {FormatConverter} from './format-converter';
 import {codesToHelmDictionary} from '../data-loading-utils/json-loader';
 
-export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar: number, sourceFormat: FORMAT): {[key: string]: string} {
-  const supportedFormats = Object.keys(codesToHelmDictionary).concat([FORMAT.HELM]) as FORMAT[];
+export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar: number, sourceFormat: string): {[key: string]: string} {
+  const supportedFormats = Object.keys(codesToHelmDictionary).concat([DEFAULT_FORMATS.HELM]) as string[];
 
-  if (!sequence || (indexOfFirstInvalidChar !== -1 && sourceFormat !== FORMAT.HELM))
+  if (!sequence || (indexOfFirstInvalidChar !== -1 && sourceFormat !== DEFAULT_FORMATS.HELM))
     return {};
 
   if (!supportedFormats.includes(sourceFormat))

@@ -7,7 +7,6 @@ import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getJsonData} from './model/data-loading-utils/json-loader';
-import {FORMAT} from './model/const';
 import {SequenceToMolfileConverter} from './model/sequence-to-structure-utils/sequence-to-molfile';
 import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transformations';
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
@@ -79,7 +78,7 @@ export function validateSequence(sequence: string): boolean {
 //input: string sequence
 //input: bool invert
 export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): string {
-  return (new SequenceToMolfileConverter(sequence, invert, FORMAT.GCRS)).convert();
+  return (new SequenceToMolfileConverter(sequence, invert, 'GCRS')).convert();
 }
 
 //name: linkStrands

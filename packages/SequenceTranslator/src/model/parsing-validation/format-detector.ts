@@ -4,21 +4,24 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {sortByReverseLength} from '../helpers';
-import {FORMAT} from '../const';
+import {DEFAULT_FORMATS} from '../const';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
+import {codesToHelmDictionary} from '../data-loading-utils/json-loader';
 import {SequenceValidator} from './sequence-validator';
 
 export class FormatDetector {
   constructor (private sequence: string) {
     this.libWrapper = MonomerLibWrapper.getInstance();
+    this.formats = Object.keys(codesToHelmDictionary);
   };
 
   private libWrapper: MonomerLibWrapper;
+  private formats: string[];
 
-  getFormat(): FORMAT | null {
+  getFormat(): string | null {
     // todo: reliable criterion
     if (this.sequence.startsWith('RNA'))
-      return FORMAT.HELM;
+      return DEFAULT_FORMATS.HELM;
     const possibleFormats = this.getListOfPossibleSynthesizersByFirstMatchedCode();
     if (possibleFormats.length === 0)
       return null;
@@ -33,11 +36,12 @@ export class FormatDetector {
     return possibleFormats[outputIndices.indexOf(formatIdx)];
   }
 
-  private getListOfPossibleSynthesizersByFirstMatchedCode(): FORMAT[] {
+  // todo: rename
+  private getListOfPossibleSynthesizersByFirstMatchedCode(): string[] {
     const sequence = this.sequence;
-    let synthesizers: FORMAT[] = [];
-    for (const synthesizer of Object.values(FORMAT)) {
-      let codes = sortByReverseLength(this.libWrapper.getCodesByFormat(synthesizer));
+    let synthesizers: string[] = [];
+    for (const format of this.formats) {
+      let codes = sortByReverseLength(this.libWrapper.getCodesByFormat(format));
       let start = 0;
       for (let i = 0; i < sequence.length; i++) {
         if (sequence[i] === ')' && i !== sequence.length - 1) {
@@ -46,7 +50,7 @@ export class FormatDetector {
         }
       }
       if (codes.some((s: string) => s === sequence.slice(start, start + s.length)))
-        synthesizers.push(synthesizer);
+        synthesizers.push(format);
     }
     return synthesizers;
   }

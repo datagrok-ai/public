@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
-import {FORMAT} from '../const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
