@@ -330,6 +330,8 @@ async function processBatch(batch: any, queryParams: string, viewTable: DG.DataF
 async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]) {
   let index = 0;
 
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
+
   function processNextBatch(): any {
     if (index >= column.length) {
       return;
@@ -342,6 +344,10 @@ async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame
     return processBatch(batch, queryParams, viewTable, index, currentBatchSize, modelNames, malformedIndexes)
       .then(() => {
         index += currentBatchSize;
+        const percent = 100 / (column.length/index);
+        index != column.length 
+        ? progressIndicator.update(percent, `${percent.toFixed(2)}% is evaluated...`)
+        : progressIndicator.close();
         return delay(100);
       })
       .then(processNextBatch); 
