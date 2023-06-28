@@ -24,10 +24,10 @@ export async function init() {
 //input: double initial = 0.0 {caption: Initial; category: Time, min}
 //input: double final = 1000.0 {caption: Final; category: Time, min}
 //input: double step = 0.1 {caption: Step; category: Time, min}
-//input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values} 
-//input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values}
-//input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values}
-//input: double _KKredInitial = 0.1 {units: mmol/L; caption: KK reduced (KKred); category: Initial values}
+//input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values; min: 0.15; max: 0.25} 
+//input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values; min: 0.15; max: 0.25}
+//input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values; min: 0.98; max: 0.12}
+//input: double _KKredInitial = 0.1 {units: mmol/L; caption: KK reduced (KKred); category: Initial values; min: 0.98; max: 0.12}
 //input: double _FfreeInitial = 0.0 {units: mmol/L; caption: F free (Ffree); category: Initial values}
 //input: double _KfreeInitial = 0.0 {units: mmol/L; caption: K free (Kfree); category: Initial values}
 //input: double _FKredInitial = 0.0 {units: mmol/L; caption: FK reduced (FKred); category: Initial values}
@@ -44,20 +44,7 @@ export async function init() {
 //input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
 //input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
 //input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
-//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100); category: Global solution}
-//output: double FFox {units: mmol/L; caption: FF oxidized (FFox); category: Final point}
-//output: double KKox {units: mmol/L; caption: KK oxidized (KKox); category: Final point}
-//output: double FFred {units: mmol/L; caption: FF reduced (FFred); category: Final point}
-//output: double KKred {units: mmol/L; caption: KK reduced (KKred); category: Final point}
-//output: double Ffree {units: mmol/L; caption: F free (Ffree); category: Final point}
-//output: double Kfree {units: mmol/L; caption: K free (Kfree); category: Final point}
-//output: double FKred {units: mmol/L; caption: FK reduced (FKred); category: Final point}
-//output: double FKox {units: mmol/L; caption: FK oxidized (FKox); category: Final point}
-//output: double MEA {units: mmol/L; caption: MEAthiol (MEA); category: Final point}
-//output: double CO2 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Final point}
-//output: double yO2P {units: atm; caption: Atm headspace (yO2P); category: Final point}
-//output: double CYST {units: mmol/L; caption: Cystamine (CYST); category: Final point}
-//output: double VL {units: L; caption: Liquid volume (VL); category: Final point}
+//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100)}
 //editor: Compute:RichFunctionViewEditor
 export async function Bioreactor(initial: number, final: number, step: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
@@ -66,30 +53,11 @@ export async function Bioreactor(initial: number, final: number, step: number,
   _VLInitial: number, _qinVal: number, _yO2inVal: number, _HVal: number, _TVal: number, 
   _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<any>
 {
-  const globalSolution: DG.DataFrame = await _simulateBioreactor(initial, final, step,
+  return await _simulateBioreactor(initial, final, step,
     _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 
     _KfreeInitial, _FKredInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, 
     _yO2PInitial, _CYSTInitial, _VLInitial, _qinVal, _yO2inVal, 
-    _HVal, _TVal, _RVal, _PVal, _TimeToSwitchVal);
- 
-  const lastRowIndex = globalSolution.rowCount - 1;  
-  
-  return {
-    dfSolution: globalSolution,
-    FFox: globalSolution.get('FFox(t)', lastRowIndex),
-    KKox: globalSolution.get('KKox(t)', lastRowIndex),
-    FFred: globalSolution.get('FFred(t)', lastRowIndex),
-    KKred: globalSolution.get('KKred(t)', lastRowIndex),
-    Ffree: globalSolution.get('Ffree(t)', lastRowIndex),
-    Kfree: globalSolution.get('Kfree(t)', lastRowIndex),
-    FKred: globalSolution.get('FKred(t)', lastRowIndex),
-    FKox: globalSolution.get('FKox(t)', lastRowIndex),
-    MEA: globalSolution.get('MEA(t)', lastRowIndex),
-    CO2: globalSolution.get('CO2(t)', lastRowIndex),
-    yO2P: globalSolution.get('yO2P(t)', lastRowIndex),
-    CYST: globalSolution.get('CYST(t)', lastRowIndex),
-    VL: globalSolution.get('VL(t)', lastRowIndex),
-  }
+    _HVal, _TVal, _RVal, _PVal, _TimeToSwitchVal); 
 }
 
 //name: Bioreactor Demo
@@ -97,10 +65,10 @@ export async function Bioreactor(initial: number, final: number, step: number,
 //input: double initial = 0.0 {caption: Initial; category: Time, min}
 //input: double final = 1000.0 {caption: Final; category: Time, min}
 //input: double step = 0.1 {caption: Step; category: Time, min}
-//input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values} 
-//input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values}
-//input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values}
-//input: double _KKredInitial = 0.1 {units: mmol/L; caption: KK reduced (KKred); category: Initial values}
+//input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values; min: 0.15; max: 0.25} 
+//input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values; min: 0.15; max: 0.25}
+//input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values; min: 0.98; max: 0.12}
+//input: double _KKredInitial = 0.1 {units: mmol/L; caption: KK reduced (KKred); category: Initial values; min: 0.98; max: 0.12}
 //input: double _FfreeInitial = 0.0 {units: mmol/L; caption: F free (Ffree); category: Initial values}
 //input: double _KfreeInitial = 0.0 {units: mmol/L; caption: K free (Kfree); category: Initial values}
 //input: double _FKredInitial = 0.0 {units: mmol/L; caption: FK reduced (FKred); category: Initial values}
@@ -139,9 +107,6 @@ export async function BioreactorDemo(initial: number, final: number, step: numbe
 //meta.demoPath: Bioreactors | Bioreactor
 //test: demoBioreactor() //wait: 100
 export async function demoBioreactor(): Promise<any>  {
-  /*const demoScript = new DemoScript('Bioreactor', 
-    'No-code construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool.'); */
-
   const doeSimpleFunc: DG.Func = await grok.functions.eval('Bioreactors:BioreactorDemo');
   const doeSimpleFuncCall = doeSimpleFunc.prepare();
     

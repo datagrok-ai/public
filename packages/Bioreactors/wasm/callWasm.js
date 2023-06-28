@@ -433,7 +433,7 @@ export async function callWasm(module, funcName, inputs) {
     // CALL EXPORTED CPP-FUNCTION
     let callResult = cppFuncWrapper(module, funcName, 'num', cppFuncInput);
 
-    console.log('C++-function call result: ' + callResult);
+    //console.log('C++-function call result: ' + callResult);
 
     // store result that is returned by exported cpp-function
     args._callResult = Param.num(callResult);
