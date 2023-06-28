@@ -142,7 +142,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
-        ResultSet resultSet = null;
+        ResultSet resultSet;
         if (dataQuery.inputParamsCount() > 0) {
             queryLogger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.START), "Converting query");
             query = convertPatternParamsToQueryParams(queryRun, query);
@@ -183,31 +183,24 @@ public abstract class JdbcDataProvider extends DataProvider {
                     stringValues.add(stringValue);
                 }
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Parameters were replaced by: {}", stringValues);
-                setQueryTimeOut(statement, timeout);
-                queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing statement");
-                statement.setFetchSize(fetchSize);
-                if(statement.execute())
-                    resultSet = statement.getResultSet();
-                queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Statement was executed");
-                queryMonitor.removeStatement(mainCallId);
+                resultSet = executeStatement(statement, queryLogger, timeout, mainCallId, fetchSize);
             } else {
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Query will be manually interpolated");
                 query = manualQueryInterpolation(query, dataQuery);
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated query");
-                resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
+                resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
             }
         } else {
             queryLogger.debug(EventType.QUERY_PARSE.getMarker(), "Query without parameters");
-            resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
+            resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
         }
 
         return resultSet;
     }
 
-    private ResultSet executeStatement(String query, Connection connection, Logger queryLogger,
+    private ResultSet executeStatement(PreparedStatement statement, Logger queryLogger,
                                        int timeout, String mainCallId, int fetchSize) throws SQLException {
         ResultSet resultSet = null;
-        PreparedStatement statement = connection.prepareStatement(query);
         queryMonitor.addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
         queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing statement");
@@ -447,7 +440,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
-                                             PatternMatcherResult result) {
+                                               PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
             String name = param.name + n;
@@ -555,9 +548,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
 
         switch (matcher.op) {
-            case PatternMatcher.NONE:
-                result.query = "(1 = 1)";
-                break;
             case PatternMatcher.EQUALS:
                 result.query = "(" + matcher.colName + " = @" + param.name + ")";
                 result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
@@ -579,6 +569,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             case PatternMatcher.IS_NOT_NULL:
                 result.query = String.format("(%s %s)", matcher.colName, matcher.op);
                 break;
+            case PatternMatcher.NONE:
             default:
                 result.query = "(1 = 1)";
                 break;
