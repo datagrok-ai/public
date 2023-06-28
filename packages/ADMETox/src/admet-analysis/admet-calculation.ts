@@ -60,10 +60,8 @@ export function addColorCoding(columnNames: string[]) {
   for (const columnName of columnNames) {
     //@ts-ignore
     tv.grid.col(columnName)!.isTextColorCoded = true;
-    tv.grid.col(columnName)!.categoryColors = {
-      '<0.5': 0xFFF1B6B4,
-      '>0.5': 0xFFB4F1BC
-    };
+    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
+    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<0.5":"#FFF1B6B4",">0.5":"#FFB4F1BC"}`;
   }  
 }
 
@@ -92,9 +90,7 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     const malformedIndexes = await getMalformedSmiles(smilesCol);
     if (malformedIndexes.length > 0)
       smilesCol = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
-    await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, malformedIndexes);
-    addTooltip();
-    addColorCoding(selected);    
+    await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, malformedIndexes);   
   })
 }
 
@@ -116,6 +112,8 @@ function addResultColumnsBatch(table: DG.DataFrame, viewTable: DG.DataFrame, mal
       viewTable.columns.byName(modelName).set(j, value);
     }
   }
+  addTooltip();
+  addColorCoding(models!); 
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
