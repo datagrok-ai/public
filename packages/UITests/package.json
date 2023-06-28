@@ -8,7 +8,7 @@
   },
   "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.0.14",
+    "@datagrok-libraries/utils": "^4.0.16",
     "cash-dom": "latest",
     "datagrok-api": "latest",
     "dayjs": "latest"

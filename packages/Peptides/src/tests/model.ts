@@ -144,4 +144,4 @@ category('Model: Settings', () => {
     expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) === null, true,
       'Dendrogram is present in the view after disabling');
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
-}, false);
+}, {clear: false});

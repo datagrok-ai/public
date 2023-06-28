@@ -45,7 +45,7 @@ category('Shell: Windows', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});
 
 function checkElementVisible(selector: string, exists: boolean = true): void {
   const e = document.body.querySelector(selector);
