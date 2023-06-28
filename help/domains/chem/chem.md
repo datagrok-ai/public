@@ -33,7 +33,7 @@ with chemical data:
   * Automatic detection of chemical structures upon [data import](../../access/access.md).
   * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules.<!--Add links?-->
   * Multiple molecular [sketchers](#sketching).
-  * Support for multiple formats, such as SMILES, SMARTS, InChI,InChiKey, SDF, PDB, MOL2 and others.
+  * Support for multiple formats, such as SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2 and others.
   * Flexible and fast [chemically-aware spreadsheet](#chemically-aware-spreadsheet).
   * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers).
   * Customizable [chemical info panes](#chemical-scripts) with information about molecules and context actions.
@@ -113,7 +113,7 @@ When you open a dataset, Datagrok automatically detects molecules and makes avai
 The following info panes are shown by default for the current molecule:
 
 * Gasteiger Partial Charges (shows a 2D representation with partial charges highlighted).
-* Descriptors (shows [descriptors](descriptors.md)). 
+* Descriptors (shows [descriptors](descriptors.md)).
 * Properties (shows molecule properties).
 * [Drug Likeness](info-panels/drug-likeness.md).
 * [Structural Alerts](info-panels/structural-alerts.md).
@@ -152,7 +152,7 @@ To learn how to customize and extend the platform programmatically, see the [Dev
 
 :::note developers
 
-Info panes be extended with [functions](../../datagrok/functions/functions.md) in any supported language.
+Info panes can be extended with [functions](../../datagrok/functions/functions.md) in any supported language.
 
 :::
 
@@ -168,7 +168,7 @@ Datagrok _viewers_ recognize and display chemical data. The viewers were built f
 
 In addition to the chemical spreadsheet, examples of viewers include a [scatterplot](../../visualize/viewers/scatter-plot.md), a [network diagram](../../visualize/viewers/network-diagram.md), a [tile viewer](../../visualize/viewers/tile-viewer.md),a [bar chart](../../visualize/viewers/bar-chart.md), a [form viewer](../../visualize/viewers/form.md), and [trellis plot](../../visualize/viewers/trellis-plot.md), and [others](chemically-aware-viewers.md). All viewers can be saved as part of the [layout](../../visualize/view-layout.md) or a dashboard. Some viewers offer built-in statistics.
 
-To learn how to use viewers to explore chemical data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../visualize/viewers/viewers.md) section of our documentation. 
+To learn how to use viewers to explore chemical data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../visualize/viewers/viewers.md) section of our documentation.
 
 :::note developers
 
@@ -180,7 +180,7 @@ You can [add custom viewers](../../develop/how-to/develop-custom-viewer.md).
 
 :::note
 
-Datagrok provides integrations with various sketchers, but their availability depends on their licensing options. Some sketchers require a commercial license from the vendor before they can be used in Datagrok. To use these sketchers, you must provide a path to the license server. 
+Datagrok provides integrations with various sketchers, but their availability depends on their licensing options. Some sketchers require a commercial license from the vendor before they can be used in Datagrok. To use these sketchers, you must provide a path to the license server.
 
 <details>
 <summary> How to provide a license path </summary>
@@ -195,7 +195,7 @@ Datagrok provides integrations with various sketchers, but their availability de
 
 To launch a sketcher, double-click a molecule.  Alternatively, in the **Actions** info pane, select **Sketch**.
 
-You can sketch a molecule or retrieve one by entering SMILES, compound identifier,or a common name (like aspirin).<!--do we support FASTA sequences for small peptides?--> The following compound identifiers are natively understood since they have a prefix that uniquely identifies data source: SMILES, InChI, InChIKey, ChEMBL, MCULE, comptox, and zinc (example: CHEMBL358225). The rest of the 30+ identifier systems can be referenced by prefixing source name followed by colon to the identifier (example: 'pubchem:11122').
+You can sketch a molecule or retrieve one by entering SMILES, compound identifier, or a common name (like aspirin).<!--do we support FASTA sequences for small peptides?--> The following compound identifiers are natively understood since they have a prefix that uniquely identifies data source: SMILES, InChI, InChIKey, ChEMBL, MCULE, comptox, and zinc (example: CHEMBL358225). The rest of the 30+ identifier systems can be referenced by prefixing source name followed by colon to the identifier (example: 'pubchem:11122').
 
 <details>
 <summary> Supported identifier systems </summary>
@@ -251,7 +251,7 @@ From the **Hamburger** (☰) menu, you can access the following features:
 
 ![Sketcher features](img/sketcher-menu-0.png)
 
-Sketchers are synchronized with the **Context Panel**. As you draw or edit a molecule, the info panes on the right dynamically update with the information about the sketched compound.    
+Sketchers are synchronized with the **Context Panel**. As you draw or edit a molecule, the info panes on the right dynamically update with the information about the sketched compound.
 
 ## Structure search
 
@@ -360,7 +360,7 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 ### Scaffold tree analysis
 
-Scaffold tree organizes molecular datasets by arranging molecules into a tree hierarchy based on their scaffolds. This hierarchy can then be used for filtering or selecting the corresponding rows in the dataset. 
+Scaffold tree organizes molecular datasets by arranging molecules into a tree hierarchy based on their scaffolds. This hierarchy can then be used for filtering or selecting the corresponding rows in the dataset.
 
 A hierarchy can be either generated automatically, or sketched manually. To access, in the **Menu Ribbon** select **Chem** > **Analyze** > **Scaffold Tree**. When Scaffold Tree is initially created, a tree is generated automatically. You can also sketch the tree manually, or modify the automatically generated one. For tree generation, we use a derivative of the open-source
 [ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) library
@@ -368,7 +368,7 @@ developed by Oliver Scott.
 
 :::note
 
-Skaffold tree generation is computationally intensive and may take up to a minute.
+Scaffold tree generation is computationally intensive and may take up to a minute.
 
 :::
 
@@ -429,7 +429,7 @@ Scaffold tree can be combined with other [filters](../../visualize/viewers/filte
 
 ### Elemental analysis
 
-**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualize the results in a [radar viewer](../../visualize/viewers/radar.md). Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure.
+**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualizes the results in a [radar viewer](../../visualize/viewers/radar.md). Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure.
 
 <details>
 <summary>How to use</summary>
@@ -481,7 +481,7 @@ As you browse the dataset, the **Context Panel** updates with relevant informati
 [INSERT DETAILS ADMONITION]
 How to use
 
-For individual molecules, the ADME/Tox prediction happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available predictions in the **ADME/Tox** info pane. 
+For individual molecules, the ADME/Tox prediction happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available predictions in the **ADME/Tox** info pane.
 
 To predict properties for the entire column:
 
@@ -571,7 +571,7 @@ For a full list of chemical scripts, along with details on their implementation 
 
 ## Utilities
 
-Datagrok offers [multiple ways to transform and enrich your data](../../transform/data-wrangling.md). For example, you can link tables, extract values, or add metadata to annotate your dataset with experimental conditions or assay results<!--need a link out to how to add metadata-->. You can also use [chemical scripts](#chemical-scripts) to execute operations on chemical data, including calculation of fingerprints and descriptors, toxicity prediction, and more. 
+Datagrok offers [multiple ways to transform and enrich your data](../../transform/data-wrangling.md). For example, you can link tables, extract values, or add metadata to annotate your dataset with experimental conditions or assay results<!--need a link out to how to add metadata-->. You can also use [chemical scripts](#chemical-scripts) to execute operations on chemical data, including calculation of fingerprints and descriptors, toxicity prediction, and more.
 
 ### Calculators
 

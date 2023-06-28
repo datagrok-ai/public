@@ -135,6 +135,10 @@ export class ObjectPropertyBag {
       throw 'Call failed: object is not Viewer instance';
   }
 
+  static setDefaultProperty(viewerType: string, propertyName: string, propertyValue: any) {
+    api.grok_Viewer_Props_SetDefaultProperty(viewerType, propertyName, propertyValue);
+  }
+
   /** Clears the previously remembered default settings for viewers of this type. See also: [setDefault] */
   resetDefault() {
     if (this.source instanceof DG.Viewer)
