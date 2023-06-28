@@ -25,11 +25,11 @@ category('detectorsBenchmark', () => {
   });
 
   test('fastaDnaShorts50Many1E6', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
   });
 
   test('fastaDnaLong1e6Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
   });
 
   // -- separator --
