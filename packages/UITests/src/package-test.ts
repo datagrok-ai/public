@@ -30,6 +30,7 @@ import './views/files-view';
 import './viewers/viewers';
 import './viewers/filters';
 import './gui/viewers/scatter-plot';
+import './shell/windows';
 
 // import './gui/viewers/bar-chart';
 // import './gui/viewers/box-plot';
