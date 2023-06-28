@@ -97,6 +97,7 @@ export class PeptidesModel {
   _distanceMatrix!: DistanceMatrix;
   _treeHelper!: ITreeHelper;
   _dm!: DistanceMatrix;
+  _layoutEventInitialized = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -797,7 +798,7 @@ export class PeptidesModel {
   setCellRenderers(): void {
     const sourceGrid = this.analysisView.grid;
     sourceGrid.setOptions({'colHeaderHeight': 130});
-    sourceGrid.onCellRender.subscribe((gcArgs) => {
+    const headerRenderer = (gcArgs: DG.GridCellRenderArgs): void => {
       const ctx = gcArgs.g;
       const bounds = gcArgs.bounds;
       const col = gcArgs.cell.tableColumn;
@@ -831,7 +832,18 @@ export class PeptidesModel {
       } finally {
         ctx.restore();
       }
-    });
+    };
+    sourceGrid.onCellRender.subscribe((gcArgs) => headerRenderer(gcArgs));
+
+    if (!this._layoutEventInitialized) {
+      grok.events.onViewLayoutApplied.subscribe((layout) => {
+        if (layout.view.id === this.analysisView.id) {
+          // this.analysisView.grid.onCellRender.subscribe((gcArgs) => headerRenderer(gcArgs));
+          this.updateGrid();
+        }
+      });
+      this._layoutEventInitialized = true;
+    }
   }
 
   setTooltips(): void {

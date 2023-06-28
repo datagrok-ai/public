@@ -57,6 +57,7 @@ import {BioPackage, BioPackageProperties} from './package-types';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ObjectPropertyBag} from 'datagrok-api/dg';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 
 export const _package = new BioPackage();
 
@@ -216,6 +217,14 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 //output: widget result
 export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMacromoleculeColumnPropertyPanel(molColumn);
+}
+
+//name: Composition analysis
+//tags: panel, bio, widgets
+//input: semantic_value sequence { semType: Macromolecule }
+//output: widget result
+export function compositionAnalysisWidget(sequence: DG.SemanticValue): DG.Widget {
+  return getCompositionAnalysisWidget(sequence);
 }
 
 //name: separatorSequenceCellRenderer

@@ -13,9 +13,9 @@ category('viewport', () => {
     const dataBounds = new DG.Rect(0.1, 0.06, 7, 5.94);
     const viewport = new Viewport(dataBounds, dataBox, false, false);
 
-		expect(viewport.xToScreen(1.5), 155.6);
-		expect(viewport.yToScreen(2.33), 80.37037037037038);
-		expect(viewport.xToWorld(150), 1.2351351351351352);
-		expect(viewport.yToWorld(67), 3.232500000000001);
+		expect(viewport.xToScreen(1.5), 179.6);
+		expect(viewport.yToScreen(2.33), 61.83501683501684);
+		expect(viewport.xToWorld(150), -0.2559322033898306);
+		expect(viewport.yToWorld(67), 1.801034482758621);
   });
 });

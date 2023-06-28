@@ -1,9 +1,11 @@
-import {after, before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-//import {findMonomers, helmToFasta, helmToPeptide, helmToRNA, initHelm} from '../package';
-import {_package} from '../package-test';
-import {parseHelm} from '../utils';
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import {_package} from '../package-test';
+import {after, before, category, delay, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
+//import {findMonomers, helmToFasta, helmToPeptide, helmToRNA, initHelm} from '../package';
+import {parseHelm} from '../utils';
 
 
 category('Helm', () => {

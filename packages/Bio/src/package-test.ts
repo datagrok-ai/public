@@ -13,6 +13,7 @@ import './tests/splitters-test'; //Unhandled exceptions.exceptions : Cannot read
 
 import './tests/monomer-libraries-tests';
 import './tests/renderers-test';
+import './tests/renderers-monomer-placer';
 import './tests/converters-test';
 import './tests/fasta-handler-test';
 import './tests/fasta-export-tests';

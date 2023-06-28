@@ -21,16 +21,16 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {getChemPropertyFunc, propertiesWidget} from './widgets/properties';
+import {addPropertiesAsColumns, getChemPropertyFunc, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
-import {toxicityWidget} from './widgets/toxicity';
+import {addRisksAsColumns, toxicityWidget} from './widgets/toxicity';
 
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
-import {ScaffoldTreeViewer} from "./widgets/scaffold-tree";
-import {ScaffoldTreeFilter} from "./widgets/scaffold-tree-filter";
+import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
+import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, isSmarts} from './utils/mol-creation_rdkit';
@@ -332,7 +332,7 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
   assure.notNull(cutoff, 'cutoff');
 
   try {
-    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: limit, cutoff: cutoff});
+    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: limit, minScore: cutoff});
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | In findSimilar: ' + e.toString());
@@ -513,7 +513,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
       })
       .show();
   } else
-    return await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options)
+    return await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options);
 }
 
 
@@ -729,11 +729,11 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //input: bool inpharmatica {caption: Inpharmatica; default: false; description: "Inpharmatica filters"}
 //input: bool lint {caption: LINT; default: false; description: "Pfizer LINT filters"}
 //input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
-export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
+export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
-  ): Promise<void> {
-  if (col.semType !== DG.SEMTYPE.MOLECULE) {
-    grok.shell.error(`Column ${col.name} is not of Molecule semantic type`);
+): Promise<void> {
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
   }
 
@@ -747,9 +747,9 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Colum
 
   const progress = DG.TaskBarProgressIndicator.create('Detecting structural alerts...');
   try {
-    const resultDf = await runStructuralAlertsDetection(col, ruleSet, alertsDf, rdkitService);
+    const resultDf = await runStructuralAlertsDetection(molecules, ruleSet, alertsDf, rdkitService);
     for (const resultCol of resultDf.columns) {
-      resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${col.name})`);
+      resultCol.name = table.columns.getUnusedName(`${resultCol.name} (${molecules.name})`);
       table.columns.add(resultCol);
     }
   } catch (e) {
@@ -1162,6 +1162,43 @@ export async function callChemDiversitySearch(
   return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
 }
 
+//top-menu: Chem | Calculate | Properties...
+//name: addChemPropertiesColumns
+//input: dataframe table [Input data table]
+//input: column molecules {semType: Molecule}
+//input: bool MW = true
+//input: bool HBA = false
+//input: bool HBD = false
+//input: bool logP = false
+//input: bool logS = false
+//input: bool PSA = false
+//input: bool rotatableBonds = false
+//input: bool stereoCenters = false
+//input: bool moleculeCharge = false
+export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column,
+  MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean,
+  PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean,
+): Promise<void> {
+  const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
+    HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
+    rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
+    moleculeCharge ? ['Molecule charge'] : []);
+  await addPropertiesAsColumns(table, molecules, propArgs);
+}
+
+//top-menu: Chem | Calculate | Toxicity Risks...
+//name: addChemRisksColumns
+//input: dataframe table [Input data table]
+//input: column molecules {semType: Molecule}
+//input: bool mutagenicity = true
+//input: bool tumorigenicity = false
+//input: bool irritatingEffects = false
+//input: bool reproductiveEffects = false
+export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column,
+  mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean,
+): Promise<void> {
+  await addRisksAsColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
+}
 
 //top-menu: Chem | Analyze | Scaffold Tree
 //name: addScaffoldTree
