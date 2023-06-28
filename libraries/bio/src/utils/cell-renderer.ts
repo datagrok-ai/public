@@ -93,7 +93,7 @@ export const printLeftOrCentered = (
     }
   }
 
-  const placeX: number = maxWord[wordIdx];
+  const placeX: number = maxWord[wordIdx] - (maxWord[0] ?? 0);
   if (left || textSize > w) {
     draw(placeX, placeX + maxColorTextSize);
     return placeX + maxColorTextSize + g.measureText(grayPart).width;

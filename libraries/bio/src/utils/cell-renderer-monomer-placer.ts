@@ -25,6 +25,8 @@ export class MonomerPlacer {
   private readonly _splitter: SplitterFunc;
   private _monomerLengthList: number[][] | null = null;
 
+  // width of separator symbol
+  private separatorWidth = 5;
   private props: MonomerPlacerProps;
 
   private _updated: boolean = false;
@@ -63,7 +65,7 @@ export class MonomerPlacer {
       this.getCellMonomerLengthsForSeq(rowIdx);
 
     const resSum: number[] = new Array<number>(res.length + 1);
-    resSum[0] = 0;
+    resSum[0] = 5; // padding
     for (let pos: number = 1; pos < resSum.length; pos++)
       resSum[pos] = resSum[pos - 1] + res[pos - 1];
     return [res, resSum];
@@ -82,7 +84,8 @@ export class MonomerPlacer {
 
       for (const [seqMonI, seqMonLabel] of seqMonList.entries()) {
         const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
-        const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
+        const separatorWidth = this.props.unitsHandler.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
+        const seqMonWidth: number = separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = seqMonWidth;
       }
       this._updated = true;
@@ -158,5 +161,19 @@ export class MonomerPlacer {
     const alphabet = this.props.unitsHandler.alphabet ?? ALPHABET.UN;
     const polymerType = polymerTypeMap[alphabet as ALPHABET];
     return this.props.monomerLib?.getMonomer(polymerType, symbol) ?? null;
+  }
+
+  public setMonomerLengthLimit(limit: number): void {
+    this.props.monomerLengthLimit = limit;
+    this._updated = true;
+  }
+
+  public setSeparatorWidth(width: number): void {
+    this.props.separatorWidth = width;
+    this._updated = true;
+  }
+
+  public isMsa(): boolean {
+    return this.props.unitsHandler.isMsa();
   }
 }
