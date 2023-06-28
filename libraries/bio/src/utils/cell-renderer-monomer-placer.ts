@@ -5,7 +5,7 @@ import {Unsubscribable} from 'rxjs';
 import {UnitsHandler} from './units-handler';
 import {NOTATION, SplitterFunc, MonomerToShortFunc, getSplitterForColumn, ALPHABET} from './macromolecule';
 import {IMonomerLib, Monomer} from '../types';
-import { HELM_POLYMER_TYPE } from './const';
+import {HELM_POLYMER_TYPE} from './const';
 
 type MonomerPlacerProps = {
   unitsHandler: UnitsHandler,
@@ -19,7 +19,7 @@ const polymerTypeMap = {
   [ALPHABET.RNA]: HELM_POLYMER_TYPE.RNA,
   [ALPHABET.PT]: HELM_POLYMER_TYPE.PEPTIDE,
   [ALPHABET.UN]: HELM_POLYMER_TYPE.PEPTIDE,
-}
+};
 
 export class MonomerPlacer {
   private readonly _splitter: SplitterFunc;
