@@ -43,7 +43,7 @@ export async function admetoxCalculators() {
   }
 }
 
-//top-menu: Chem | ADME/Tox | Add Form...
+//top-menu: Chem | ADME/Tox | Add Form
 //name: addForm
 export async function testLayout() {
   const df = grok.shell.tv.dataFrame;
