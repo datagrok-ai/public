@@ -1,6 +1,7 @@
 package grok_connect.managers.string_column;
 
-import com.datastax.oss.driver.api.core.data.GettableByIndex;
+import com.datastax.oss.driver.internal.core.data.DefaultTupleValue;
+import com.datastax.oss.driver.internal.core.data.DefaultUdtValue;
 import com.ibm.db2.jcc.am.c9;
 import com.ibm.db2.jcc.am.db;
 import grok_connect.managers.ColumnManager;
@@ -12,6 +13,7 @@ import oracle.xdb.XMLType;
 import org.postgresql.jdbc.PgSQLXML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import serialization.Column;
 import serialization.StringColumn;
 import java.sql.Array;
@@ -40,7 +42,10 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
         converterMap.put(Object.class, new ArrayTypeConverter());
         converterMap.put(Array.class, sqlArrayConverter);
         converterMap.put(ARRAY.class, sqlArrayConverter);
-        converterMap.put(GettableByIndex.class, new GettableByIndexConverter());
+        Converter<String> gettableByIndexConverter = new GettableByIndexConverter();
+        converterMap.put(DefaultTupleValue.class, gettableByIndexConverter);
+        converterMap.put(DefaultUdtValue.class, gettableByIndexConverter);
+        converterMap.put(Document.class, new DocumentTypeConverter());
     }
 
     @Override

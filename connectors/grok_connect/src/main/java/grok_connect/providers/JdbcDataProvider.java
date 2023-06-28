@@ -369,7 +369,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             else throw e;
         }
     }
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, int maxIterations,
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, ResultSetManager resultSetManager, int maxIterations, int columnCount,
                                        Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
         if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
             queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
@@ -377,13 +377,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         try {
-            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-            queryLogger.debug(EventType.MISC.getMarker(), "Received resultSet meta data");
             EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_COLUMN_FILL;
             if (dryRun)
                 resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_COLUMN_FILL;
-            ResultSetManager resultSetManager = getResultSetManager();
-            int columnCount = resultSetMetaData.getColumnCount();
             queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
                     "Column filling was started");
             int rowCount = 0;
@@ -392,10 +388,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 for (int c = 1; c < columnCount + 1; c++) {
                     Object value = getObjectFromResultSet(resultSet, c);
 
-                    if (dryRun)
-                        continue;
+                    if (dryRun) continue;
 
-                    resultSetManager.processValue(value, c, resultSetMetaData);
+                    resultSetManager.processValue(value, c);
 
                     if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
                         queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
@@ -420,32 +415,26 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (resultSet != null && resultSet.isClosed()) {
                 throw new QueryCancelledByUser();
             }
-            else {
-                throw e;
-            }
+            throw new RuntimeException("Something went wrong", e);
         }
     }
 
     public DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
-        Connection connection = null;
-        try {
-            connection = getConnection(queryRun.func.connection);
+        try (Connection connection = getConnection(queryRun.func.connection)) {
             ResultSet resultSet = getResultSet(queryRun, connection, logger, 100);
 
             if (resultSet == null)
                 return new DataFrame();
-
-            return getResultSetSubDf(queryRun, resultSet, -1, logger, 1, false);
-        }
-        catch (SQLException e) {
+            ResultSetManager resultSetManager = getResultSetManager();
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            resultSetManager.init(metaData);
+            return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),
+                    logger, 1, false);
+        } catch (SQLException e) {
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
-        }
-        finally {
-            if (connection != null)
-                connection.close();
         }
     }
 

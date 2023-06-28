@@ -2,13 +2,7 @@ package grok_connect.managers.datetime_column;
 
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.Converter;
-import grok_connect.managers.datetime_column.converters.LocalDateTimeTypeConverter;
-import grok_connect.managers.datetime_column.converters.LocalDateTypeConverter;
-import grok_connect.managers.datetime_column.converters.MicrosoftDateTimeOffsetTypeConverter;
-import grok_connect.managers.datetime_column.converters.OffsetDateTimeTypeConverter;
-import grok_connect.managers.datetime_column.converters.OracleTimestampTZTypeConverter;
-import grok_connect.managers.datetime_column.converters.TimestampTypeConverter;
-import grok_connect.managers.datetime_column.converters.ZonedDateTimeTypeConverter;
+import grok_connect.managers.datetime_column.converters.*;
 import grok_connect.resultset.ColumnMeta;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.DATE;
@@ -19,10 +13,7 @@ import org.slf4j.LoggerFactory;
 import serialization.Column;
 import serialization.DateTimeColumn;
 import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.temporal.Temporal;
 import java.util.Date;
 import java.util.HashMap;
@@ -43,6 +34,8 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
         converterMap.put(TIMESTAMPTZ.class, new OracleTimestampTZTypeConverter());
         converterMap.put(Timestamp.class, new TimestampTypeConverter());
         converterMap.put(ZonedDateTime.class, new ZonedDateTimeTypeConverter());
+        converterMap.put(Instant.class, new InstantTypeConverter());
+        converterMap.put(LocalTime.class, new LocalTimeConverter());
     }
 
     @Override

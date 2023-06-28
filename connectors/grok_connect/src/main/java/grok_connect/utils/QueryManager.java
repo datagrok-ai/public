@@ -2,6 +2,7 @@ package grok_connect.utils;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -13,6 +14,7 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
 import grok_connect.providers.JdbcDataProvider;
+import grok_connect.resultset.ResultSetManager;
 import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,6 +36,7 @@ public class QueryManager {
     private final Logger logger;
     private final QueryLogger<DataFrame> queryLogger;
     private final FuncCall query;
+    private final ResultSetManager resultSetManager;
     private int currentFetchSize = MIN_FETCH_SIZE;
     private int initFetchSize = MIN_FETCH_SIZE;
     private int chunkSize = -1;
@@ -42,6 +45,7 @@ public class QueryManager {
     private boolean changedFetchSize;
     private boolean supportTransactions;
     private String initMessage;
+    private int columnCount;
 
     public QueryManager(String message, QueryLogger<DataFrame> queryLogger) {
         query = gson.fromJson(message, FuncCall.class);
@@ -50,6 +54,7 @@ public class QueryManager {
         this.logger = queryLogger.getLogger();
         this.queryLogger = queryLogger;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
+        resultSetManager = provider.getResultSetManager();
         initParams();
         if (dryRun)
             initMessage = message;
@@ -61,6 +66,9 @@ public class QueryManager {
         logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Connection was received");
         resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
         supportTransactions = connection.getMetaData().supportsTransactions();
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        resultSetManager.init(metaData);
+        columnCount = metaData.getColumnCount();
     }
 
     public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException, ClassNotFoundException {
@@ -73,20 +81,19 @@ public class QueryManager {
             resultSet.setFetchSize(currentFetchSize);
         }
         queryLogger.writeLog(!skipColumnFillingLog);
-        provider.getResultSetSubDf(query, resultSet, -1, logger, 1, true);
+        provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount, logger, 1, true);
         closeConnection();
         queryLogger.writeLog(true);
     }
 
     public DataFrame getSubDF(int dfNumber) throws SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
-        if (resultSet.isAfterLast() && !resultSet.isBeforeFirst())
+        if (resultSet == null || resultSet.isClosed())
             return df;
-
-        if (!connection.isClosed() && !resultSet.isClosed()) {
-
+        resultSetManager.empty();
+        if (!connection.isClosed()) {
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
-            df =  provider.getResultSetSubDf(query, resultSet, rowsNumber, logger, dfNumber, false);
+            df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);
         }
 
         if (dfNumber == 1 && supportTransactions && changedFetchSize) {

@@ -77,11 +77,10 @@ public class AccessDataProvider extends JdbcDataProvider {
         result.addColumn(columnName);
         result.addColumn(dataType);
         Connection dbConnection = getConnection(connection);
-        ResultSet columns = dbConnection.getMetaData().getColumns(null, null, null, null);
-        while (columns.next()) {
+        ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null);
+        while (columns.next())
             result.addRow(columns.getString(2), columns.getString(3),
                     columns.getString(4), columns.getString(6));
-        }
         return result;
     }
 

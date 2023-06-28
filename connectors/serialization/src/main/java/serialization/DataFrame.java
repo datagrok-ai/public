@@ -36,9 +36,9 @@ public class DataFrame {
         columns.add(col);
     }
 
-    public void addColumns(List<Column> cols) {
-        if (cols.size() > 0) {
-            Column column = cols.get(0);
+    public void addColumns(Column[] cols) {
+        if (cols.length > 0) {
+            Column column = cols[0];
             if (column.getType().equals(Types.COLUMN_LIST)) {
                 Column column1 = (Column) column.get(0);
                 rowCount = column1 == null ? 0 : (column1).length;
@@ -49,12 +49,12 @@ public class DataFrame {
         }
     }
 
-    private void addColumnsRecursive(List<Column> cols) {
+    private void addColumnsRecursive(Column[] cols) {
         for (Column col : cols) {
             if (col == null) break;
             if (col.getType().equals(Types.COLUMN_LIST)) {
                 ComplexTypeColumn complexTypeColumn = (ComplexTypeColumn) col;
-                addColumnsRecursive(new ArrayList<>(Arrays.asList(complexTypeColumn.getAll())));
+                addColumnsRecursive(complexTypeColumn.getAll());
             } else {
                 col.name = getUniqueName(col.name);
                 columns.add(col);
@@ -133,7 +133,7 @@ public class DataFrame {
             throw new RuntimeException("Can't merge dataframes with different row count");
         }
         if (rowCount == 0) {
-            addColumns(dataFrame.columns);
+            addColumns(dataFrame.columns.toArray(new Column[0]));
             return;
         }
         for (int i = 0; i < columns.size(); i++) {

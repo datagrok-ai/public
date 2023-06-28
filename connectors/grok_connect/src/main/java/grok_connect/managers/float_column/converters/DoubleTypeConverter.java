@@ -12,9 +12,9 @@ public class DoubleTypeConverter implements Converter<Float> {
         LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
         Double doubleValue = (Double) value;
         LOGGER.trace("value is {}", doubleValue);
-        if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
+        if (doubleValue > Float.MAX_VALUE) {
             return Float.POSITIVE_INFINITY;
-        } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < - Float.MAX_VALUE) {
+        } else if (doubleValue < - Float.MAX_VALUE) {
             return Float.NEGATIVE_INFINITY;
         } else if (Double.isNaN(doubleValue)) {
             return Float.NaN;

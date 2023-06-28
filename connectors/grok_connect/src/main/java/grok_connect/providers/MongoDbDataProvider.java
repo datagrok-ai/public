@@ -42,11 +42,12 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     @Override
     public DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, GrokConnectException, QueryCancelledByUser {
-
         DataQuery dataQuery = queryRun.func;
         Connection connection = getConnection(dataQuery.connection);
         ResultSet resultSet = getResultSet(queryRun, connection, logger, 1);
-        return getResultSetSubDf(queryRun, resultSet, -1, logger, 0, false);
+        ResultSetManager resultSetManager = getResultSetManager();
+        resultSetManager.init(resultSet.getMetaData());
+        return getResultSetSubDf(queryRun, resultSet, resultSetManager,-1, 1, logger, 0, false);
     }
 
     @Override
@@ -60,12 +61,11 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, int maxIterations,
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, ResultSetManager resultSetManager, int maxIterations, int columnCount,
                                        Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
-        ResultSetManager resultSetManager = getResultSetManager();
         while (resultSet.next()) {
             Object object = resultSet.getObject(OBJECT_INDEX);
-            resultSetManager.processValue(object, OBJECT_INDEX, resultSet.getMetaData());
+            resultSetManager.processValue(object, OBJECT_INDEX);
         }
         resultSet.close();
         DataFrame dataFrame = new DataFrame();
