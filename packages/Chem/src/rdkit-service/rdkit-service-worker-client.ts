@@ -24,8 +24,8 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
 
-  getFingerprints = async (fingerprintType: Fingerprint, molecules?: string[]) =>
-    this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType, molecules]);
+  getFingerprints = async (fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean) =>
+    this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType, molecules, getCanonicalSmiles]);
 
   convertMolNotation = async (targetNotation: string, bitset?: boolean[]) =>
     this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [targetNotation, bitset]);

@@ -3,6 +3,10 @@ import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint} from '../util
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, IMolContext} from '../utils/mol-creation_rdkit';
 
+export interface IFpResult{
+  fps: Array<Uint8Array | null>;
+  smiles: Array<string | null> | null;
+}
 
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   readonly _fpLength: number = defaultMorganFpLength;
@@ -18,18 +22,20 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
    * web-worker method.
    *
    * @param {Fingerprint} fingerprintType Type of Fingerprint
-   * @param {string[]} molecules List of molecule strings to calculate fingerprints on.
+   * @param {string[]} molecules List of molecule strings to calculate fingerprints on. If passed, fps mols are created on the fly
+   * @param {boolean} getCanonicalSmiles If passed canonical smiles are also calculated and returned
    * In case it is passed to function RDMols will be created on the fly.
    */
 
-  getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Array<Uint8Array | null> {
+  getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): IFpResult {
     if (this._rdKitMols === null && !molecules)
-      return [];
+      return {fps: [], smiles: null};
 
     const fpLength = molecules ? molecules.length : this._rdKitMols!.length;
     const fps = new Array<Uint8Array | null>(fpLength).fill(null);
     const morganFpParams = fingerprintType === Fingerprint.Morgan ?
       JSON.stringify({radius: this._fpRadius, nBits: this._fpLength}) : null;
+    const canonicalSmiles = getCanonicalSmiles ? new Array<string | null>(fpLength).fill(null) : null;
     for (let i = 0; i < fpLength; ++i) {
       let mol: IMolContext | null = null;
       if (molecules) {
@@ -40,6 +46,8 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       const rdMol = molecules ? mol?.mol : this._rdKitMols![i];
       const isQMol = molecules ? mol?.isQMol : this._rdKitMols![i]?.is_qmol;
       try {
+        if (canonicalSmiles && rdMol)
+          canonicalSmiles[i] = rdMol.get_smiles();
         switch (fingerprintType) {
         case Fingerprint.Pattern:
           try {
@@ -68,6 +76,6 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       if (molecules)
         mol?.mol?.delete();
     }
-    return fps;
+    return {fps: fps, smiles: canonicalSmiles};
   }
 }

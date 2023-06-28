@@ -81,9 +81,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   searchWithPatternFps(queryMol: RDMol, molecules: string[]): Uint32Array {
     const matches = new BitArray(molecules.length);
     let mol: RDMol | null = null;
+    const details = JSON.stringify({sanitize: false});
     for (let i = 0; i < molecules.length; ++i) {
           try{
-            mol = getMolSafe(molecules[i], {}, this._rdKitModule).mol;
+            mol = this._rdKitModule.get_mol(molecules[i], details);
             if (mol) {
               if (mol.get_substruct_match(queryMol) !== '{}')
                 matches.setBit(i, true);

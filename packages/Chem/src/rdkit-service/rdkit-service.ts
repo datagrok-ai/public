@@ -3,6 +3,7 @@ import {Fingerprint} from '../utils/chem-common';
 import { RuleId } from '../panels/structural-alerts';
 import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { IFpResult } from './rdkit-service-worker-similarity';
 
 export class RdKitService {
   workerCount: number;
@@ -109,7 +110,7 @@ export class RdKitService {
   async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], 
     useSubstructLib?: boolean): Promise<BitArray> {
     const t = this;
-    if (molecules) { //need to recalculate segments lengths since when using pattern fp numbsr of molecules to search can be less that totla molecules in column
+    if (molecules) { //need to recalculate segments lengths since when using pattern fp number of molecules to search can be less that totla molecules in column
       this.segmentLengthPatternFp = Math.floor(molecules.length / this.workerCount);
       for (let j = 0; j < this.workerCount; j++) {
         this.moleculesSegmentsLengthsPatternFp[j] = j < (this.workerCount - 1) ? this.segmentLengthPatternFp :
@@ -145,20 +146,26 @@ export class RdKitService {
    * @param {boolean} molecules - optional parameter, if passed RDMols objects are created on the fly (array of
    * predefined RDMols is not used) 
    * */
-  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Array<Uint8Array | null>> {
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): Promise<IFpResult> {
     const t = this;
+    const getResult = (data: IFpResult[]): IFpResult => {
+      return {
+        fps: ([] as Array<Uint8Array | null>).concat(...data.map((it => it.fps))),
+        smiles: getCanonicalSmiles ? ([] as Array<string | null>).concat(...data.map((it => it.smiles))) : null
+      };
+    }
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
-      (data: Array<Uint8Array | null>[]) => {
-        return ([] as Array<Uint8Array | null>).concat(...data);
-      }) :
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles),
+        (data: IFpResult[]) => {
+          return getResult(data);
+        }) :
       await this._doParallel(
         (i: number, _: number) => {
-          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules);
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles);
         },
-        (data: Array<Uint8Array | null>[]) => {
-          return ([] as Array<Uint8Array | null>).concat(...data);
+        (data: IFpResult[]) => {
+          return getResult(data);
         });
     return res;
   }

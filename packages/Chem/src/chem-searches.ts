@@ -16,6 +16,7 @@ import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
 import { _package } from './package';
+import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
 
 const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
@@ -24,6 +25,7 @@ const enum FING_COL_TAGS {
 }
 
 let lastColumnInvalidated: string = '';
+const canonicalSmilesColName = 'canonical_smiles';
 
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray | null)[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
@@ -109,59 +111,88 @@ async function _invalidate(molCol: DG.Column, createMols: boolean, useSubstructL
   }
 }
 
-function checkForFingerprintsColumn(col: DG.Column, fingerprintsType: Fingerprint): Uint8Array[] | null {
-  const colNameTag = '.' + fingerprintsType + '.Column';
-  const colVerTag = '.' + fingerprintsType + '.Version';
+
+function checkForSavedColumn(col: DG.Column, colTag: Fingerprint | string): DG.Column<any> | null{
+  const colNameTag = '.' + colTag + '.Column';
+  const colVerTag = '.' + colTag + '.Version';
 
   if (col.getTag(colNameTag) &&
       col.getTag(colVerTag) == String(col.version) &&
       col.dataFrame) {
-    const fingCol = col.dataFrame.columns.byName(col.getTag(colNameTag));
-    if (fingCol)
-      return fingCol.toList();
+    const savedCol = col.dataFrame.columns.byName(col.getTag(colNameTag));
+    return savedCol;
   }
   return null;
 }
 
-function saveFingerprintsToCol(col: DG.Column, fgs: (Uint8Array | null)[],
-  fingerprintsType: Fingerprint, createdMols: boolean): void {
+function saveColumns(col: DG.Column, data: ((Uint8Array | null)[] | (string | null)[])[],
+  tags: string[], colTypes: DG.COLUMN_TYPE[], createdMols: boolean): void {
+  
+  for (let i = 0; i < data.length; i++)
+    saveColumn(col, data[i], tags[i], colTypes[i]);
+
+  const colVersion = createdMols ? col.version + data.length + 2 : col.version + data.length + 1;
+  if (createdMols)
+    col.setTag(FING_COL_TAGS.molsCreatedForVersion, String(colVersion));
+  for (let i = 0; i < data.length; i++)
+    col.setTag('.' + tags[i] + '.Version', String(colVersion));
+  col.setTag(FING_COL_TAGS.invalidatedForVersion, String(colVersion));
+}
+
+
+function saveColumn(col: DG.Column, data: (Uint8Array | null)[] | (string | null)[],
+  tagName: string, colType: DG.COLUMN_TYPE): void {
   if (!col.dataFrame)
     throw new Error('Column has no parent dataframe');
 
-  const colNameTag = '.' + fingerprintsType + '.Column';
-  const colVerTag = '.' + fingerprintsType + '.Version';
+  const colNameTag = '.' + tagName + '.Column';
 
-  const fingerprintColumnName = col.getTag(colNameTag) ??
-    '~' + col.name + fingerprintsType + 'Fingerprints';
+  const savedColumnName = col.getTag(colNameTag) ??
+    '~' + col.name + '.' + tagName;
   const df = col.dataFrame;
   const newCol: DG.Column<Uint8Array> = df.columns.getOrCreate(
-    fingerprintColumnName, DG.COLUMN_TYPE.BYTE_ARRAY, fgs.length);
+    savedColumnName, colType, data.length);
 
-  newCol.init((i) => fgs[i]);
+  newCol.init((i) => data[i]);
 
-  col.setTag(colNameTag, fingerprintColumnName);
-  if (createdMols)
-    col.setTag(FING_COL_TAGS.molsCreatedForVersion, String(col.version + 3));
-  col.setTag(colVerTag, String(col.version + 2));
-  col.setTag(FING_COL_TAGS.invalidatedForVersion, String(col.version + 1));
+  col.setTag(colNameTag, savedColumnName);
+}
+
+async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fingerprint,
+  createMols: boolean, returnSmiles?: boolean): Promise<IFpResult> {
+  await _invalidate(molCol, createMols);
+  const molecules = createMols ? undefined : molCol.toList();
+  const fpRes = await (await getRdKitService()).getFingerprints(fingerprintsType, molecules, returnSmiles);
+  returnSmiles ?
+    saveColumns(molCol, [fpRes.fps, fpRes.smiles!], [fingerprintsType, canonicalSmilesColName],
+      [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING], createMols):
+    saveColumns(molCol, [fpRes.fps], [fingerprintsType], [DG.COLUMN_TYPE.BYTE_ARRAY], createMols);
+  chemEndCriticalSection();
+  return fpRes;
 }
 
 async function getUint8ArrayFingerprints(
   molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan,
-  useSection = true, createMols = true): Promise<(Uint8Array | null)[]> {
+  useSection = true, createMols = true, returnSmiles = false): Promise<IFpResult> {
   if (useSection)
     await chemBeginCriticalSection();
   try {
-    const fgsCheck = checkForFingerprintsColumn(molCol, fingerprintsType);
-    if (fgsCheck)
-      return fgsCheck;
-    else {
-      await _invalidate(molCol, createMols);
-      const molecules = createMols ? undefined : molCol.toList();
-      const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType, molecules);
-      saveFingerprintsToCol(molCol, fingerprints, fingerprintsType, createMols);
-      chemEndCriticalSection();
-      return fingerprints;
+    const fgsCheck = checkForSavedColumn(molCol, fingerprintsType);
+    if (returnSmiles) {
+      const smilesCheck = checkForSavedColumn(molCol, 'canonical_smiles');
+      if (fgsCheck && smilesCheck)
+        return {fps: fgsCheck.toList(), smiles: smilesCheck.toList()};
+      else {
+        const fpResult = await invalidateAndSaveColumns(molCol, fingerprintsType, createMols, returnSmiles);
+        return {fps: fpResult.fps, smiles: fpResult.smiles};
+      }
+    } else {
+      if (fgsCheck)
+        return {fps: fgsCheck.toList(), smiles: null};
+      else {
+        const fpResult = await invalidateAndSaveColumns(molCol, fingerprintsType, createMols);
+        return {fps: fpResult.fps, smiles: null};
+      }
     }
   } finally {
     if (useSection)
@@ -197,7 +228,7 @@ function substructureSearchPatternsMatch(molString: string, querySmarts: string,
 
 export async function chemGetFingerprints(...args: [DG.Column, Fingerprint?, boolean?, boolean?]):
   Promise<(BitArray | null)[]> {
-  return (await getUint8ArrayFingerprints(...args)).map((el) => el ? rdKitFingerprintToBitArray(el) : null);
+  return (await getUint8ArrayFingerprints(...args)).fps.map((el) => el ? rdKitFingerprintToBitArray(el) : null);
 }
 
 export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '')
@@ -242,9 +273,11 @@ export async function chemSubstructureSearchLibrary(
     let matchesBitArray = new BitArray(molStringsColumn.length);
     if (molString.length != 0) {
       if (usePatternFingerprints) {
-        const fgs: (Uint8Array | null)[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false);
-        const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
-        const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(molStringsColumn, filteredMolsIdxs);
+        const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false, true);
+        const fps = fgsResult.fps;
+        const smiles = fgsResult.smiles;
+        const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fps);
+        const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(smiles!, filteredMolsIdxs);
         const searchResults: BitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
         matchesBitArray = restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults);
       } else {
@@ -261,11 +294,11 @@ export async function chemSubstructureSearchLibrary(
   }
 }
 
-function getMoleculesFilteredByPatternFp(molStringsColumn: DG.Column, filteredMolsIdxs: BitArray): string[] {
+function getMoleculesFilteredByPatternFp(molStrings: (string | null)[], filteredMolsIdxs: BitArray): string[] {
   const filteredMolecules = Array<string>(filteredMolsIdxs.trueCount());
   let counter = 0;
   for (let i = filteredMolsIdxs.getBit(0) ? 0 : filteredMolsIdxs.findNext(0); i !== -1; i = filteredMolsIdxs.findNext(i)) {
-      filteredMolecules[counter] = molStringsColumn.get(i);
+      filteredMolecules[counter] = molStrings[i]!;
       counter++;
   }
   return filteredMolecules;
