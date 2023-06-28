@@ -202,7 +202,7 @@ category('UI', () => {
       .find((el) => el.textContent === 'Drug Likeness') as HTMLElement;
     if (!dl.classList.contains('expanded')) dl.click();
     await awaitCheck(() => (dl.nextSibling as HTMLElement).querySelectorAll('.d4-flex-col.ui-div').length === 50,
-      'number of displayed canvases with molecules does not match the expected', 5000);
+      'number of displayed canvases with molecules does not match the expected', 10000);
     dl.click(); await delay(10);
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();

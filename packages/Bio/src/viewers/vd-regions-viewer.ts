@@ -2,14 +2,16 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import * as rxjs from 'rxjs';
-import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+import {fromEvent, Unsubscribable} from 'rxjs';
+
 import {
   IVdRegionsViewer,
   VdRegion, VdRegionType,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
 import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {Unsubscribable} from 'rxjs';
+
+import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+
 import {_package} from '../package';
 
 const vrt = VdRegionType;
@@ -104,7 +106,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.mlbView.dockManager.dock(this.regionsFg.root, DG.DOCK_TYPE.LEFT, rootNode, 'Filter regions', 0.2);
 
     this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
-    this.subs.push(rxjs.fromEvent<MouseEvent>(this.root, 'mousemove').subscribe(this.rootOnMouseMove.bind(this)));
+    this.subs.push(fromEvent<MouseEvent>(this.root, 'mousemove').subscribe(this.rootOnMouseMove.bind(this)));
 
     // await this.buildView('init'); // init
   }

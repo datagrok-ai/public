@@ -489,7 +489,7 @@ export class TreeHelper implements ITreeHelper {
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
         values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.NumericDistance, false);
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = new UnitsHandler(col);
+        const uh = UnitsHandler.getOrCreate(col);
         // Use Hamming distance when sequences are aligned
         const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
 

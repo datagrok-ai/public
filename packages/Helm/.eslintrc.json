@@ -26,6 +26,7 @@
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "warn",
     "require-jsdoc": "off",
+    "valid-jsdoc": "warn",
     "spaced-comment": "off",
     "linebreak-style": "off",
     "curly": [

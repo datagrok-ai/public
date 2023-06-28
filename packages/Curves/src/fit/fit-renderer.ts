@@ -11,6 +11,7 @@ import {
   CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   FIT_CELL_TYPE,
   IFitSeries,
+  FitStatistics,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -38,7 +39,7 @@ export const OUTLIER_HITBOX_RADIUS = 2;
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
-  if (rect.width < 100 || rect.height < 100)
+  if (rect.width < 70 || rect.height < 55)
     return [rect, undefined, undefined];
   return [
     rect.cutLeft(30).cutBottom(30),
@@ -70,7 +71,7 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
     DG.Paint.marker(g,
-      p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
+      p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
       transform.xToScreen(p.x), transform.yToScreen(p.y),
       series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
       (p.outlier ? 6 : 4) * ratio);
@@ -166,7 +167,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   get cellType() { return FIT_CELL_TYPE; }
 
   getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
-    return {width: 160, height: 100};
+    return {width: 160, height: 120};
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -192,6 +193,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
           p.outlier = !p.outlier;
+          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn':
+            gridCell.cell.column.name, '.seriesNumber': i});
+          if (columns) {
+            const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
+            for (const column of columns) {
+              column.set(gridCell.cell.rowIndex, stats[column.name as keyof FitStatistics]);
+            }
+          }
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;

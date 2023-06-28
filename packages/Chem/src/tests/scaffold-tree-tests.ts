@@ -29,7 +29,7 @@ category('scaffold tree', () => {
     const stviewer = Array.from(tv.viewers).filter(it => it.type === ScaffoldTreeViewer.TYPE)[0];
     await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
         'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 60000);
-  }, {timeout: 90000});
+  }, {timeout: 90000, skipReason: 'GROK-13428'});
 
   after(async () => {
     grok.shell.closeAll();

@@ -16,14 +16,13 @@ category('server features', () => {
       DG.DataFrame.fromCsv(testCsv);
     const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
       ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
-    grok.shell.addTableView(t);
 
-    isColumnPresent(grok.shell.t.columns, 'MolWt');
-    isColumnPresent(grok.shell.t.columns, 'NumAromaticCarbocycles');
-    isColumnPresent(grok.shell.t.columns, 'NumHAcceptors');
-    isColumnPresent(grok.shell.t.columns, 'NumHeteroatoms');
-    isColumnPresent(grok.shell.t.columns, 'NumRotatableBonds');
-    isColumnPresent(grok.shell.t.columns, 'RingCount');
+    expect(t.columns.contains('MolWt'), true);
+    expect(t.columns.contains('NumAromaticCarbocycles'), true);
+    expect(t.columns.contains('NumHAcceptors'), true);
+    expect(t.columns.contains('NumHeteroatoms'), true);
+    expect(t.columns.contains('NumRotatableBonds'), true);
+    expect(t.columns.contains('RingCount'), true);
   });
 
   test('sketcher', async () => {

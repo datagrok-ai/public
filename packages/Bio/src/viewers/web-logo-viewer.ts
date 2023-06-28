@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {SliderOptions} from 'datagrok-api/dg';
 
 import wu from 'wu';
 import {fromEvent, Unsubscribable} from 'rxjs';
+
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
@@ -25,6 +25,7 @@ import {
   WebLogoPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+
 import {_package} from '../package';
 
 declare global {
@@ -452,7 +453,7 @@ export class WebLogoViewer extends DG.JsViewer {
     this.filterSource = this.string(PROPS.filterSource, defaults.filterSource,
       {category: PROPS_CATS.BEHAVIOR, choices: Object.values(FilterSources)}) as FilterSources;
 
-    const style: SliderOptions = {style: 'barbell'};
+    const style: DG.SliderOptions = {style: 'barbell'};
     this.slider = ui.rangeSlider(0, 100, 0, 20, false, style);
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
@@ -849,7 +850,8 @@ export class WebLogoViewer extends DG.JsViewer {
      *@param {boolean} recalcFreqs - indicates that need to recalculate data for rendering
      */
     const renderInt = (recalcLevel: RecalcLevel) => {
-      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), start `);
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), ` +
+        `start `);
       if (this.msgHost) {
         if (this.seqCol && !this.cp) {
           this.msgHost!.innerText = `Unknown palette (column semType: '${this.seqCol.semType}').`;

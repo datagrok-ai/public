@@ -12,6 +12,8 @@ import {_package, getScaffoldTree} from "../package";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
 let attached = false;
+let autoGenerate = true;
+let propertyChanged = false;
 
 enum BitwiseOp {
   AND = 'AND',
@@ -410,6 +412,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
     
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
+    this.allowGenerate = this.bool('allowGenerate', this.setAutoGenerate());
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
   }
@@ -465,6 +468,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._message.style.visibility = msg === null ? 'hidden' : 'visible';
     // @ts-ignore
     this._message.innerHTML = msg ?? '';
+  }
+
+  setAutoGenerate() {
+    autoGenerate = propertyChanged ? autoGenerate : this.allowGenerate;
+    return autoGenerate;
   }
 
   _initMenu(): void {
@@ -1176,6 +1184,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.changeCanvasSize(molStrings[i], canvases[i], this.sizesMap[this.size].width, this.sizesMap[this.size].height);
       this.updateSizes();
       this.updateUI();
+    }
+    else if (p.name === 'allowGenerate') {
+      propertyChanged = true;
+      autoGenerate = this.allowGenerate;
     }
   }
 

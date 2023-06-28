@@ -27,8 +27,8 @@ category('top menu r-groups', () => {
     await grok.data.detectSemanticTypes(empty);
     malformed = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(malformed);
-    coreEmpty = await findMCS('smiles', empty, true, true);
-    coreMalformed = await findMCS('canonical_smiles', malformed, true, true);
+    coreEmpty = getMCS(empty.col('smiles')!, true, true)!;
+    coreMalformed = getMCS(malformed.col('canonical_smiles')!, true, true)!;
     dfForMcs = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
       await readDataframe('tests/spgi-100.csv');
   });
