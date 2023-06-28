@@ -34,7 +34,6 @@
     "fastest-levenshtein": "^1.0.16",
     "openchemlib": "6.0.1",
     "rxjs": "^6.5.5",
-    "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
     "wu": "latest"
   },
@@ -45,6 +44,7 @@
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
+    "source-map-loader": "^4.0.1",
     "ts-loader": "^9.2.5",
     "typescript": "^5.0.4",
     "webpack": "^5.76.0",
