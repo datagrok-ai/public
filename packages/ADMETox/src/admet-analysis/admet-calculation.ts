@@ -87,14 +87,15 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
       viewTable.columns.addNewFloat(name);
       selected[i] = name;
     }
-    const malformedIndexes = await getMalformedSmiles(smilesCol);
-    if (malformedIndexes.length > 0)
-      smilesCol = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
-    await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, malformedIndexes);   
+    /*make it run in web worker */
+    //const malformedIndexes = await getMalformedSmiles(smilesCol);
+    //if (malformedIndexes.length > 0)
+      //smilesCol = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
+    await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, []);   
   })
 }
 
-function addResultColumnsBatch(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[], startIndex: number = 0, models?: any[], batchSize?: number): void {
+export function addResultColumnsBatch(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[], startIndex: number = 0, models?: any[], batchSize?: number): void {
   const columnCount = table.columns.length;
   const endIndex = startIndex + (batchSize || 0) + malformedIndexes!.length;
 
@@ -325,30 +326,67 @@ async function processBatch(batch: any, queryParams: string, viewTable: DG.DataF
   addResultColumnsBatch(table, viewTable, malformedIndexes, startIndex, modelNames, batchSize)
 }
 
-async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]) {
-  let index = 0;
+class Semaphore {
+  concurrency: number;
+  current: number;
+  queue: (() => void)[];
 
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
-
-  function processNextBatch(): any {
-    if (index >= column.length) {
-      return;
-    }
-
-    const remaining = column.length - index;
-    const currentBatchSize = Math.min(batchSize, remaining);
-    const batch = Array.from(column.values()).slice(index, index + currentBatchSize);
-
-    return processBatch(batch, queryParams, viewTable, index, currentBatchSize, modelNames, malformedIndexes)
-      .then(() => {
-        index += currentBatchSize;
-        const percent = 100 / (column.length/index);
-        index != column.length 
-        ? progressIndicator.update(percent, `${percent.toFixed(2)}% is evaluated...`)
-        : progressIndicator.close();
-        return delay(100);
-      })
-      .then(processNextBatch); 
+  constructor(concurrency: number) {
+    this.concurrency = concurrency;
+    this.current = 0;
+    this.queue = [];
   }
-  await processNextBatch();
+
+  async acquire() {
+    if (this.current < this.concurrency) {
+      this.current++;
+      return Promise.resolve();
+    } else {
+      return new Promise<void>(resolve => {
+        this.queue.push(resolve);
+      });
+    }
+  }
+
+  release() {
+    this.current--;
+    if (this.queue.length > 0) {
+      const resolve = this.queue.shift();
+      resolve?.();
+    }
+  }
+}
+
+async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]) {
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
+  const semaphore = new Semaphore(10);
+
+  const totalBatches = Math.ceil(column.length / batchSize);
+  let processedBatches = 0;
+
+  for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+    await semaphore.acquire();
+
+    const start = batchIndex * batchSize;
+    const end = start + batchSize;
+    const batch = Array.from(column.values()).slice(start, end);
+
+    processBatch(batch, queryParams, viewTable, start, batchSize, modelNames, malformedIndexes)
+      .then(() => {
+        processedBatches++;
+        const percent = (processedBatches / totalBatches) * 100;
+        progressIndicator.update(percent, `${percent.toFixed(2)}% is evaluated...`);
+        semaphore.release();
+      })
+      .catch(error => {
+        console.error('Error processing batch:', error);
+        semaphore.release();
+      });
+  }
+
+  while (processedBatches < totalBatches) {
+    await delay(100);
+  }
+
+  progressIndicator.close();
 }
