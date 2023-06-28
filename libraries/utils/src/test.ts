@@ -4,10 +4,13 @@ import {Observable, Subscription} from 'rxjs';
 import Timeout = NodeJS.Timeout;
 import {DataFrame} from 'datagrok-api/dg';
 
+const STANDART_TIMEOUT = 30000;
+const BENCHMARK_TIMEOUT = 1200000;
+
 export const tests: {
   [key: string]: {
     tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
-    beforeStatus?: string, afterStatus?: string, clear?: boolean
+    beforeStatus?: string, afterStatus?: string, clear?: boolean, timeout?: number
   }
 } = {};
 
@@ -26,6 +29,11 @@ export interface TestOptions {
   timeout?: number;
   unhandledExceptionTimeout?: number;
   skipReason?: string;
+}
+
+export interface CategoryOptions {
+  clear?: boolean;
+  timeout?: number;
 }
 
 export class TestContext {
@@ -48,7 +56,7 @@ export class Test {
     this.category = category;
     this.name = name;
     options ??= {};
-    options.timeout ??= 30000;
+    options.timeout ??= STANDART_TIMEOUT;
     this.options = options;
     this.test = async (): Promise<any> => {
       return new Promise(async (resolve, reject) => {
@@ -175,11 +183,13 @@ export function expectArray(actual: ArrayLike<any>, expected: ArrayLike<any>) {
 }
 
 /* Defines a test suite. */
-export function category(category: string, tests_: () => void, clear: boolean = true): void {
+export function category(category: string, tests_: () => void, options?: CategoryOptions): void {
   currentCategory = category;
   tests_();
-  if (tests[currentCategory])
-    tests[currentCategory].clear = clear;
+  if (tests[currentCategory]) {
+    tests[currentCategory].clear = options?.clear ?? true;
+    tests[currentCategory].timeout = options?.timeout;
+  }
 }
 
 /* Defines a function to be executed before the tests in this category are executed. */
@@ -269,13 +279,13 @@ export async function runTests(options?: {category?: string, test?: string, test
     const res = [];
     if (value.clear) {
       for (let i = 0; i < t.length; i++) {
-        res.push(await execTest(t[i], options?.test));
+        res.push(await execTest(t[i], options?.test, value.timeout));
         grok.shell.closeAll();
         DG.Balloon.closeAll();
       }
     } else {
       for (let i = 0; i < t.length; i++)
-        res.push(await execTest(t[i], options?.test));
+        res.push(await execTest(t[i], options?.test, value.timeout));
     }
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
@@ -321,7 +331,7 @@ export async function runTests(options?: {category?: string, test?: string, test
   return results;
 }
 
-async function execTest(t: Test, predicate: string | undefined) {
+async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number) {
   let r: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean };
   const filter = predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase()));
   const skip = t.options?.skipReason || filter;
@@ -333,8 +343,10 @@ async function execTest(t: Test, predicate: string | undefined) {
     if (skip) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     } else {
+      const timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
+        categoryTimeout ? categoryTimeout : t.options?.timeout!;
       r = {success: true, result: await timeout(t.test,
-        DG.Test.isInBenchmark ? 600000 : t.options?.timeout ?? 30000) ?? 'OK', ms: 0, skipped: false};
+        DG.Test.isInBenchmark ? BENCHMARK_TIMEOUT : timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
