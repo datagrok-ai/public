@@ -119,6 +119,8 @@ function helmToFormat(helmSequence: string, targetFormat: FORMAT): string {
     return helmCodes.includes(match) ? dict[match] :
       (match === 'p' || match === '.') ? match : '?';
   }).replace(/\?+/g, '<?>').replace(/p\.|\./g, '');
+  // remove double slash in LCMS codes
+  result = result.replace(/\/\//g, '/');
   return result;
 }
 
