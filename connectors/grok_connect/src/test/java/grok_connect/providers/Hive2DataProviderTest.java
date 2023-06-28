@@ -9,7 +9,6 @@ import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,7 +23,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -70,11 +68,8 @@ class Hive2DataProviderTest {
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
         ProviderManager providerManager = new ProviderManager();
-        ProviderManager spy = Mockito.spy(providerManager);
-        Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = spy.getByName(type.getProperties().get("providerName").toString());
+        provider = providerManager.getByName(type.getProperties().get("providerName").toString());
         dockerComposeContainer.waitingFor(SERVICE_NAME, new WaitAllStrategy());
         Optional<ContainerState> hiveServer = dockerComposeContainer.getContainerByServiceName(SERVICE_NAME);
         if (hiveServer.isPresent()) {

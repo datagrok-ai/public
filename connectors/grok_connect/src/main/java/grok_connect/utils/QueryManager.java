@@ -1,10 +1,12 @@
 package grok_connect.utils;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import grok_connect.GrokConnect;
@@ -12,10 +14,10 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
 import grok_connect.providers.JdbcDataProvider;
+import grok_connect.resultset.ResultSetManager;
 import org.slf4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import serialization.Column;
 import serialization.DataFrame;
 
 public class QueryManager {
@@ -34,15 +36,16 @@ public class QueryManager {
     private final Logger logger;
     private final QueryLogger<DataFrame> queryLogger;
     private final FuncCall query;
+    private final ResultSetManager resultSetManager;
     private int currentFetchSize = MIN_FETCH_SIZE;
     private int initFetchSize = MIN_FETCH_SIZE;
     private int chunkSize = -1;
-    private SchemeInfo schemeInfo;
     private ResultSet resultSet;
     private Connection connection;
     private boolean changedFetchSize;
     private boolean supportTransactions;
     private String initMessage;
+    private int columnCount;
 
     public QueryManager(String message, QueryLogger<DataFrame> queryLogger) {
         query = gson.fromJson(message, FuncCall.class);
@@ -51,6 +54,7 @@ public class QueryManager {
         this.logger = queryLogger.getLogger();
         this.queryLogger = queryLogger;
         provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
+        resultSetManager = provider.getResultSetManager();
         initParams();
         if (dryRun)
             initMessage = message;
@@ -62,47 +66,34 @@ public class QueryManager {
         logger.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Connection was received");
         resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
         supportTransactions = connection.getMetaData().supportsTransactions();
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        resultSetManager.init(metaData);
+        columnCount = metaData.getColumnCount();
     }
 
-    public void initScheme() throws QueryCancelledByUser, SQLException {
-        if (resultSet == null) {
-            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.END), "resultSet is null, return empty schemeInfo");
-            schemeInfo = new SchemeInfo(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        } else {
-            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.START), "Initializing schemeInfo");
-            schemeInfo = provider.resultSetScheme(query, resultSet, logger);
-            logger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.END), "Finished schemeInfo init");
-        }
-    }
-
-    public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, IOException, GrokConnectException, ClassNotFoundException {
+    public void dryRun(boolean skipColumnFillingLog) throws QueryCancelledByUser, SQLException, GrokConnectException, ClassNotFoundException {
         // need to create new FuncCall on every run because state of params changes irrevocably after each run
         queryLogger.writeLog(false);
         FuncCall query = gson.fromJson(initMessage, FuncCall.class);
         query.setParamValues();
         initResultSet(query);
-        initScheme();
         if (supportTransactions && changedFetchSize) {
             resultSet.setFetchSize(currentFetchSize);
         }
         queryLogger.writeLog(!skipColumnFillingLog);
-        provider.getResultSetSubDf(query, resultSet, schemeInfo.columns,
-                schemeInfo.supportedType, schemeInfo.initColumn, -1, logger, 1, true);
+        provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount, logger, 1, true);
         closeConnection();
         queryLogger.writeLog(true);
     }
 
-    public DataFrame getSubDF(int dfNumber) throws IOException, SQLException, QueryCancelledByUser {
+    public DataFrame getSubDF(int dfNumber) throws SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
-        if (resultSet.isAfterLast() && !resultSet.isBeforeFirst())
+        if (resultSet == null || resultSet.isClosed())
             return df;
-
-        schemeInfo.columns.forEach(Column::empty);
-
-        if (!connection.isClosed() && !resultSet.isClosed()) {
+        resultSetManager.empty();
+        if (!connection.isClosed()) {
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
-            df =  provider.getResultSetSubDf(query, resultSet, schemeInfo.columns,
-                    schemeInfo.supportedType, schemeInfo.initColumn, rowsNumber, logger, dfNumber, false);
+            df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, logger, dfNumber, false);
         }
 
         if (dfNumber == 1 && supportTransactions && changedFetchSize) {
@@ -121,11 +112,12 @@ public class QueryManager {
             logger.debug(EventType.MISC.getMarker(), "Closing DB connection");
             if (!connection.getAutoCommit())
                 connection.commit();
-            provider.providerManager.getQueryMonitor().removeResultSet(query.id);
+            QueryMonitor.getInstance().removeResultSet(query.id);
             connection.close();
+
             logger.debug(EventType.MISC.getMarker(), "DB connection was closed");
         } else
-            provider.providerManager.getQueryMonitor().removeResultSet(query.id);
+            QueryMonitor.getInstance().removeResultSet(query.id);
     }
 
     public boolean isResultSetInitialized() {
