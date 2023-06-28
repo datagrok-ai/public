@@ -88,8 +88,6 @@ export class Tags {
 
   static CustomFilterType = '.custom-filter-type';
 
-  static NotAddDefaultFilter = '.not-add-default-filter';
-
   static Charts = '.charts';
 
   /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
@@ -237,7 +235,5 @@ export class FuncParamOptions {
   static Editor = 'editor';
 
   static Nullable = 'nullable';
-
-  static Separators = 'separators';
 
 }

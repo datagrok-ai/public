@@ -53,7 +53,8 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
   const moleculeCol: DG.Column<string> = table.getCol(COLUMN_NAMES.MOLECULE);
   const idCol: DG.Column<string> = table.getCol(COLUMN_NAMES.DRUGBANK_ID);
   const nameCol: DG.Column<string> = table.getCol(COLUMN_NAMES.COMMON_NAME);
-  const similarityCol: DG.Column<number> = table.getCol(COLUMN_NAMES.SCORE);
+
+  const similarityCol: DG.Column<number> | null = searchType === SEARCH_TYPE.SIMILARITY ? table.getCol(COLUMN_NAMES.SCORE) : null;
 
   for (let n = 0; n < molCount; n++) {
     const piv = bitsetIndexes[n];
@@ -62,7 +63,8 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
     grok.functions.call('Chem:drawMolecule', {'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
       .then((res: HTMLElement) => {
         molHost.append(res);
-        molHost.append(ui.divText(`Score: ${similarityCol.get(n)?.toFixed(2)}`));
+        if (searchType === SEARCH_TYPE.SIMILARITY)
+          molHost.append(ui.divText(`Score: ${similarityCol?.get(n)?.toFixed(2)}`));
       });
 
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));

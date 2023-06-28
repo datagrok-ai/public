@@ -95,6 +95,7 @@ export async function _treeViewerDemo() {
 export async function _wordCloudViewerDemo() {
   await viewerDemo(DG.VIEWER.WORD_CLOUD, {drawOutOfBound: false});
 }
+
 export {_ChordViewer};
 export {_GlobeViewer};
 export {_GroupAnalysisViewer};

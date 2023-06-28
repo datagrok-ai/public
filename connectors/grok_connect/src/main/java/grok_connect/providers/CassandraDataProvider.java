@@ -15,7 +15,6 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.CassandraBigIntColumnManager;
-import grok_connect.managers.bigint_column.ClickHouseBigIntColumnManager;
 import grok_connect.managers.integer_column.CassandraIntColumnManager;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;

@@ -162,27 +162,35 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   }
   const resultDf = DG.DataFrame.fromObjects(moleculesJson)!;
 
-  const similarStructures = await grok.chem.findSimilar(resultDf!.getCol(COLUMN_NAMES.CANONICAL_SMILES), molString,
-    {limit: 20, cutoff: 0.75});
+  let similarStructures: DG.DataFrame | null = null;
+  let moleculesCol = resultDf.getCol(COLUMN_NAMES.CANONICAL_SMILES);
+  let indexes = new Int32Array(0);
+  let scoreCol: DG.Column<number> | null = null;
+  let rowCount = resultDf.rowCount;
+  if (searchType === 'similarity') {
+    similarStructures = await grok.chem.findSimilar(moleculesCol, molString, {limit: 20, cutoff: 0.75});
 
-  if (similarStructures === null || similarStructures.rowCount === 0) {
-    compsHost.firstChild?.remove();
-    compsHost.appendChild(ui.divText('No matches'));
-    return widget;
+    if (similarStructures === null || similarStructures.rowCount === 0) {
+      compsHost.firstChild?.remove();
+      compsHost.appendChild(ui.divText('No matches'));
+      return widget;
+    }
+    // moleculesCol = similarStructures.getCol(COLUMN_NAMES.MOLECULE);
+    scoreCol = similarStructures.getCol(COLUMN_NAMES.SCORE);
+    indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData() as Int32Array;
+    rowCount = indexes.length;
   }
 
   const cidCol = resultDf.getCol(COLUMN_NAMES.CID);
-  const moleculesCol = similarStructures.getCol(COLUMN_NAMES.MOLECULE);
-  const scoreCol = similarStructures.getCol(COLUMN_NAMES.SCORE);
-  const indexes = similarStructures.getCol(COLUMN_NAMES.INDEX).getRawData();
 
-  for (let idx = 0; idx < similarStructures.rowCount; idx++) {
-    const piv = indexes[idx];
+  for (let idx = 0; idx < rowCount; idx++) {
+    const piv = searchType === 'similarity' ? indexes[idx] : idx;
     const molHost = ui.divV([]);
     grok.functions.call('Chem:drawMolecule', {'molStr': moleculesCol.get(idx), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
       .then((res: HTMLElement) => {
         molHost.append(res);
-        molHost.append(ui.divText(`Score: ${scoreCol.get(idx)}`));
+        if (searchType === 'similarity' && scoreCol !== null)
+          molHost.append(ui.divText(`Score: ${scoreCol.get(idx)?.toFixed(2)}`));
       });
 
     ui.tooltip.bind(molHost, () => ui.divText(`CID: ${cidCol.get(piv)}\nClick to open in PubChem`));
