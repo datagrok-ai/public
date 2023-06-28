@@ -10,8 +10,10 @@ import {
   CONFIDENCE_INTERVAL_STROKE_COLOR,
   CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   FIT_CELL_TYPE,
+  IFitSeries,
+  FitStatistics,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
+import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
@@ -32,11 +34,12 @@ import {MultiCurveViewer} from './multi-curve-viewer';
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
 export const CANDLESTICK_BORDER_PX_SIZE = 4;
+export const OUTLIER_HITBOX_RADIUS = 2;
 
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
-  if (rect.width < 100 || rect.height < 100)
+  if (rect.width < 70 || rect.height < 55)
     return [rect, undefined, undefined];
   return [
     rect.cutLeft(30).cutBottom(30),
@@ -52,12 +55,65 @@ function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentV
 }
 
 /** Performs candlestick drawing */
-function drawCandlestick(g: CanvasRenderingContext2D, x: number, lowerAdjacentValue: number,
-  upperAdjacentValue: number, transform: Viewport): void {
-  drawCandlestickBorder(g, x, lowerAdjacentValue, transform);
-  g.moveTo(transform.xToScreen(x), transform.yToScreen(lowerAdjacentValue));
-  g.lineTo(transform.xToScreen(x), transform.yToScreen(upperAdjacentValue));
-  drawCandlestickBorder(g, x, upperAdjacentValue, transform);
+function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: BoxPlotStatistics,
+  transform: Viewport, ratio: number, markerColor: number): void {
+  drawCandlestickBorder(g, x, boxPlotStats.lowerAdjacentValue, transform);
+  g.moveTo(transform.xToScreen(x), transform.yToScreen(boxPlotStats.lowerAdjacentValue));
+  g.lineTo(transform.xToScreen(x), transform.yToScreen(boxPlotStats.upperAdjacentValue));
+  drawCandlestickBorder(g, x, boxPlotStats.upperAdjacentValue, transform);
+  DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, transform.xToScreen(x), transform.yToScreen(boxPlotStats.q2),
+    markerColor, 3.5 * ratio);
+}
+
+/** Performs points drawing */
+function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
+  transform: Viewport, ratio: number): void {
+  for (let i = 0; i < series.points.length!; i++) {
+    const p = series.points[i];
+    DG.Paint.marker(g,
+      p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
+      transform.xToScreen(p.x), transform.yToScreen(p.y),
+      series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
+      (p.outlier ? 6 : 4) * ratio);
+  }
+}
+
+/** Performs candles drawing */
+function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
+  transform: Viewport, ratio: number) : void {
+  for (let i = 0, candleStart = null; i < series.points.length!; i++) {
+    const p = series.points[i];
+    if (p.outlier)
+      continue;
+    const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
+    if (!candleStart && nextSame)
+      candleStart = i;
+    else if (candleStart !== null && !nextSame) {
+      const values: number[] = [];
+      for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
+        values[ind] = series.points[j].y;
+      }
+      const boxPlotStats = calculateBoxPlotStatistics(values);
+
+      g.beginPath();
+      drawCandlestick(g, p.x, boxPlotStats, transform, ratio, series.pointColor ?
+        DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker);
+      g.stroke();
+
+      if (series.showPoints === 'both') {
+        for (let ind = 0; ind < values.length; ind++) {
+          if (values[ind] < boxPlotStats.lowerAdjacentValue || values[ind] > boxPlotStats.upperAdjacentValue) {
+            DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER,
+              transform.xToScreen(p.x), transform.yToScreen(values[ind]),
+              series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
+              6 * ratio);
+          }
+        }
+      }
+
+      candleStart = null;
+    }
+  }
 }
 
 /** Performs a curve confidence interval drawing */
@@ -78,10 +134,7 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
 }
 
 // TODO: Denis will look at axes
-// TODO: change input type on colors
-// TODO: make show points as one parameter - show points/candles/nothing
 // TODO: automatic output of parameters
-// TODO: fix calculating column
 // TODO: add candlesticks to Curves documentation
 // TODO: add how to control options - series opitons, chart options, etc.
 
@@ -114,7 +167,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   get cellType() { return FIT_CELL_TYPE; }
 
   getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
-    return {width: 160, height: 100};
+    return {width: 160, height: 120};
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -130,26 +183,34 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showBoxPlot)
+      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
         const screenX = viewport.xToScreen(p.x);
         const screenY = viewport.yToScreen(p.y);
-        const pxPerMarkerType = (p.outlier ? 6 : 4) / 2;
+        const pxPerMarkerType = ((p.outlier ? 6 : 4) / 2) + OUTLIER_HITBOX_RADIUS;
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
-            p.outlier = !p.outlier;
-            // temporarily works only for JSON structure
-            if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
-              const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
-              gridCellValue.series![i].points[j].outlier = p.outlier;
-              gridCell.cell.value = JSON.stringify(gridCellValue);
+          p.outlier = !p.outlier;
+          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn':
+            gridCell.cell.column.name, '.seriesNumber': i});
+          if (columns) {
+            const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
+            for (const column of columns) {
+              column.set(gridCell.cell.rowIndex, stats[column.name as keyof FitStatistics]);
             }
-            return;
           }
+          // temporarily works only for JSON structure
+          if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
+            const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
+            gridCellValue.series![i].points[j].outlier = p.outlier;
+            gridCell.cell.value = JSON.stringify(gridCellValue);
+          }
+          return;
+        }
       }
-    }   
+    }
   }
 
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -175,6 +236,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
     for (const series of data.series!) {
+      if (w < 70 || h < 45) {
+        series.showPoints = '';
+        if (data.chartOptions)
+          data.chartOptions.showStatistics = [];
+      }
       series.points.sort((a, b) => a.x - b.x);
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
@@ -188,34 +254,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         userParamsFlag = false;
       }
 
-      if (series.showPoints ?? true) {
+      if (series.showPoints ?? 'points') {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
-        for (let i = 0, candleStart = null; i < series.points.length!; i++) {
-          const p = series.points[i];
-          const nextSame = i + 1 < series.points.length && series.points[i + 1].x === p.x;
-          if (!candleStart && nextSame)
-            candleStart = i;
-          else if ((series.showBoxPlot ?? false) && candleStart !== null && !nextSame) {
-            const values: number[] = [];
-            for (let j = candleStart, ind = 0; j <= i; j++, ind++) {
-              values[ind] = series.points[j].y;
-            }
-            const {lowerAdjacentValue, upperAdjacentValue} = calculateBoxPlotStatistics(values);
-
-            g.beginPath();
-            drawCandlestick(g, p.x, lowerAdjacentValue, upperAdjacentValue, viewport);
-            g.stroke();
-
-            candleStart = null;
-          }
-          else if (!candleStart || !series.showBoxPlot) {
-            DG.Paint.marker(g,
-              p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
-              viewport.xToScreen(p.x), viewport.yToScreen(p.y),
-              series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-              (p.outlier ? 6 : 4) * ratio);
-          }
-        }
+        if (series.showPoints === 'points')
+          drawPoints(g, series, viewport, ratio);
+        else if (['candlesticks', 'both'].includes(series.showPoints!))
+          drawCandles(g, series, viewport, ratio);
       }
 
       if (series.showFitLine ?? true) {
@@ -281,6 +325,33 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       const content = ui.divV([canvas]);
       ui.tooltip.show(content, e.x, e.y);
     }
+
+    // TODO: add caching
+    const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
+      ? convertXMLToIFitChartData(gridCell.cell.value)
+      : getChartData(gridCell);
+
+    const screenBounds = gridCell.bounds.inflate(-6, -6);
+    const dataBox = layoutChart(screenBounds)[0];
+    const dataBounds = getChartBounds(data);
+    const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
+
+    for (let i = 0; i < data.series?.length!; i++) {
+      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
+        continue;
+      for (let j = 0; j < data.series![i].points.length!; j++) {
+        const p = data.series![i].points[j];
+        const screenX = viewport.xToScreen(p.x);
+        const screenY = viewport.yToScreen(p.y);
+        const pxPerMarkerType = ((p.outlier ? 6 : 4) / 2) + OUTLIER_HITBOX_RADIUS;
+        if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
+          e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
+          document.body.style.cursor = 'pointer';
+          return;
+        }
+      }
+    }
+    document.body.style.cursor = 'default';
   }
 }
 
@@ -300,7 +371,7 @@ const sample: IFitChartData = {
     'pointColor': 'blue',
     'fitLineColor': 'red',
     'clickToToggle': true,
-    'showPoints': true,
+    'showPoints': 'points',
     'showFitLine': true,
     'showCurveConfidenceInterval': true,
   },

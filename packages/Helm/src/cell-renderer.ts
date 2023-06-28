@@ -6,6 +6,10 @@ import {findMonomers, parseHelm, getParts} from './utils';
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
+// Global flag is for replaceAll
+const helmGapStartRe = /\{(\*\.)+/g;
+const helmGapIntRe = /\.(\*\.)+/g;
+const helmGapEndRe = /(\.\*)+\}/g;
 
 export class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
@@ -70,13 +74,15 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
     const undefinedColor = 'rgb(100,100,100)';
     const grayColor = '#808080';
-    const monomers = findMonomers(gridCell.cell.value);
-    const s: string = gridCell.cell.value ?? '';
+
+    const s: string = !gridCell.cell.value ? '' : gridCell.cell.value
+      .replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.').replaceAll(helmGapEndRe, '}');
+    const monomers = findMonomers(s);
     const subParts: string[] = parseHelm(s);
     if (monomers.size == 0 && grid) {
       const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
-      host.setAttribute('data', gridCell.cell.value);
+      host.setAttribute('data', s);
       gridCell.element = host;
       //@ts-ignore
       const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});

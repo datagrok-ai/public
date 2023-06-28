@@ -40,7 +40,8 @@ export function renderMolecule(
   if (options.popupMenu) {
     const moreBtn = ui.iconFA(
       'ellipsis-v',
-      () => {
+      (e: MouseEvent) => {
+        e.stopImmediatePropagation();
         const menu = DG.Menu.popup();
         menu.item('Copy SMILES', () => {
           const smiles = !DG.chem.isMolBlock(molStr) && !isSmarts(molStr) ? molStr :

@@ -379,12 +379,14 @@ export class TestManager extends DG.ViewBase {
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    const res = await grok.functions.call(
+    const res: DG.DataFrame = await grok.functions.call(
       `${t.packageName}:test`, {
         'category': t.test.category,
         'test': t.test.name,
         'testContext': new TestContext(false),
       });
+    if (res.getCol('result').type !== 'string')
+      res.changeColumnType('result', 'string');
     const testSucceeded = res.get('success', 0);
     if (runSkipped) t.test.options.skipReason = skipReason;
     if (!this.testsResultsDf) {

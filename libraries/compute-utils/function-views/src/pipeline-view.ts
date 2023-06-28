@@ -398,7 +398,10 @@ export class PipelineView extends ComputationView {
     const stepsSaving = Object.values(this.steps)
       .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
       .map(async (step) => {
-        const scriptCall = step.view.funcCall;
+        const scriptCall = step.view.lastCall;
+
+        if (!scriptCall)
+          throw Error(`${step.func.name} was not called`);
 
         scriptCall.options['parentCallId'] = this.funcCall.id;
         scriptCall.newId();

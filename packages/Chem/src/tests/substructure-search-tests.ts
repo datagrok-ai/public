@@ -94,6 +94,15 @@ category('substructure search', () => {
     await _testSearchSubstructure(df, 'smiles1', testSubstructure, [1, 4]);
   });
 
+  test('searchSubstructure2Dataframes', async () => {
+    const df1 = grok.data.demo.molecules(50);
+    const df2 = grok.data.demo.molecules(50);
+
+    await _testSearchSubstructure(df1, 'smiles', 'c1ccncc1', [6, 26, 46]);
+    await _testSearchSubstructure(df2, 'smiles', 'c1ccccc1',
+      [0, 4, 5, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24, 25, 27, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 45, 47, 48]);
+  });
+
   test('searchSubstructureExplicitHydrogen', async () => {
     const df = await readDataframe('tests/explicit_h_test.csv');
     await _testSearchSubstructure(df, 'smiles', `

@@ -14,7 +14,7 @@ import {
   createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
 } from './analysis/sequence-activity-cliffs';
 import {convert} from './utils/convert';
-import {getMacroMolColumnPropertyPanel} from './widgets/representations';
+import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
@@ -53,8 +53,13 @@ import {WebLogoApp} from './apps/web-logo-app';
 import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomers-editor';
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
+import {BioPackage, BioPackageProperties} from './package-types';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ObjectPropertyBag} from 'datagrok-api/dg';
+import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
+import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 
-export const _package = new DG.Package();
+export const _package = new BioPackage();
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -82,11 +87,20 @@ export class SeqPaletteCustom implements SeqPalette {
 
 //tags: init
 export async function initBio() {
-  await MonomerLibHelper.instance.loadLibraries();
+  let module: RDModule;
+  await Promise.all([
+    (async () => { await MonomerLibHelper.instance.loadLibraries(); })(),
+    (async () => { module = await grok.functions.call('Chem:getRdKitModule'); })(),
+    (async () => {
+      const pkgProps = await _package.getProperties();
+      const bioPkgProps = new BioPackageProperties(pkgProps);
+      _package.properties = bioPkgProps;
+    })(),
+  ]);
+
   const monomerLib = MonomerLibHelper.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
-  const module = await grok.functions.call('Chem:getRdKitModule');
 
   const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
   Object.keys(series).forEach((symbol) => {
@@ -173,6 +187,21 @@ export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
   return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
 }
 
+// -- Package settings editor --
+
+//name: packageSettingsEditor
+//description: The database connection
+//tags: packageSettingsEditor
+//input: object propList
+//output: widget result
+export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
+  const widget = new PackageSettingsEditorWidget(propList);
+  widget.init().then(); // Ignore promise returned
+  return widget;
+}
+
+// -- Cell renderers --
+
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: sequence
@@ -187,7 +216,15 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 //tags: panel
 //output: widget result
 export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
-  return getMacroMolColumnPropertyPanel(molColumn);
+  return getMacromoleculeColumnPropertyPanel(molColumn);
+}
+
+//name: Composition analysis
+//tags: panel, bio, widgets
+//input: semantic_value sequence { semType: Macromolecule }
+//output: widget result
+export function compositionAnalysisWidget(sequence: DG.SemanticValue): DG.Widget {
+  return getCompositionAnalysisWidget(sequence);
 }
 
 //name: separatorSequenceCellRenderer
@@ -743,7 +780,7 @@ export async function webLogoLargeApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('WebLogo');
   try {
     const app = new WebLogoApp();
-    const df: DG.DataFrame = await _package.files.readCsv('data/sample_PT_10000.csv');
+    const df: DG.DataFrame = await _package.files.readCsv('data/sample_PT_100000x5.csv');
     await grok.data.detectSemanticTypes(df);
     await app.init(df, 'webLogoLargeApp');
   } finally {

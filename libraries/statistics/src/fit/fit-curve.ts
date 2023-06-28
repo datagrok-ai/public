@@ -92,7 +92,7 @@ export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
 export const TAG_FIT = '.fit';
 
-export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.7)';
+export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.4)';
 export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
 
 export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
@@ -100,7 +100,8 @@ export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
   BOTTOM: 'bottom',
 };
 
-export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
+export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
+  'triangle left' | 'triangle right' | 'triangle top';
 
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
@@ -154,11 +155,12 @@ export interface IFitSeriesOptions {
   name?: string;
   fitFunction?: string | IFitFunctionDescription;
   parameters?: number[];         // auto-fitting when not defined
+  markerType?: FitMarkerType;
   pointColor?: string;
   fitLineColor?: string;
   confidenceIntervalColor?: string;
   showFitLine?: boolean;
-  showPoints?: boolean;
+  showPoints?: string;
   showCurveConfidenceInterval?: boolean;   // show ribbon
   showIntercept?: boolean;
   showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
@@ -191,7 +193,8 @@ export const fitChartDataProperties: Property[] = [
     'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('logX', TYPE.BOOL, {defaultValue: false}),
   Property.js('logY', TYPE.BOOL, {defaultValue: false}),
-  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name)}),
+  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name),
+    inputType: 'MultiChoice'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
@@ -200,19 +203,25 @@ export const fitSeriesProperties: Property[] = [
   Property.js('fitFunction', TYPE.STRING,
     {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
   Property.js('pointColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
+    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
+      inputType: 'Color'}),
   Property.js('fitLineColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
+    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
+      inputType: 'Color'}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
   Property.js('autoFit', TYPE.BOOL,
     {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
   Property.js('showFitLine', TYPE.BOOL,
     {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
-  Property.js('showPoints', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether points should be rendered', defaultValue: true}),
-  Property.js('showBoxPlot', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
+  Property.js('showPoints', TYPE.STRING,
+    {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
+    defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+  // Property.js('showBoxPlot', TYPE.BOOL,
+  //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
@@ -222,6 +231,7 @@ export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
 
 
+// TODO?: add method to return parameters - get parameters from fit function
 export abstract class FitFunction {
   abstract get name(): string;
   abstract get parameterNames(): string[];

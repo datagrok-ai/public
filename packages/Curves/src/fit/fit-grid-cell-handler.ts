@@ -12,16 +12,26 @@ import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_C
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 
-function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
+const SOURCE_COLUMN_TAG = '.sourceColumn';
+const SERIES_NUMBER_TAG = '.seriesNumber';
+const STATISTICS_TAG = '.statistics';
+
+
+function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesNumber: number): void {
   const grid = chartColumn.grid;
-  grid.dataFrame.columns
-    .addNew(p.name, p.propertyType as DG.ColumnType)
+  const column = DG.Column.float(p.name, chartColumn.column?.length);
+  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
+  column.tags[SERIES_NUMBER_TAG] = seriesNumber;
+  column.tags[STATISTICS_TAG] = p.name;
+
+  column
     .init((i) => {
       const chartData = getChartData(
         DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
       const fitResult = getSeriesStatistics(chartData.series![0], getSeriesFitFunction(chartData.series![0]));
       return p.get(fitResult);
     });
+  grid.dataFrame.columns.add(column);
 }
 
 
@@ -41,11 +51,12 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const refresh = {onValueChanged: (_: any) => gridCell.grid.invalidate()};
 
     acc.addPane('Options', () => ui.divV([
-        ui.input.form(columnChartOptions.seriesOptions, fitSeriesProperties, refresh),
-        ui.input.form(columnChartOptions.chartOptions, fitChartDataProperties, refresh),
-      ]));
+      ui.input.form(columnChartOptions.seriesOptions, fitSeriesProperties, refresh),
+      ui.input.form(columnChartOptions.chartOptions, fitChartDataProperties, refresh),
+    ]));
 
-    acc.addPane('Results', () => {
+    // TODO: improve edit chart mode
+    acc.addPane('Fit', () => {
       const host = ui.divV([]);
 
       for (let i = 0; i < chartData.series!.length; i++) {
@@ -59,7 +70,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
           ui.input.form(seriesStatistics, statisticsProperties, {
             onCreated: (input) => input.root.appendChild(
               ui.iconFA('plus',
-                () => addStatisticsColumn(gridCell.gridColumn, input.property),
+                () => addStatisticsColumn(gridCell.gridColumn, input.property, i),
                 `Calculate ${input.property.name} for the whole column`))
           })
         ]));

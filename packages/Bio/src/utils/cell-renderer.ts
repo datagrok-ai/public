@@ -15,9 +15,10 @@ import {
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {Tags as mmcrTags, Temps as mmcrTemps} from '../utils/cell-renderer-consts';
 
-import {_package, getMonomerLibHelper} from '../package';
 import * as C from './constants';
+import {_package} from '../package';
 
 const enum tempTAGS {
   referenceSequence = 'reference-sequence',
@@ -154,19 +155,19 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const referenceSequence: string[] = splitterFunc(
       ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
         tempReferenceSequence : tempCurrentWord ?? '');
-    const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
+    const monomerWidth: string = tempMonomerWidth ?? 'short';
 
     let gapRenderer = 5;
     let maxIndex = 0;
-    let maxLengthOfMonomer = 8;
+    let maxLengthOfMonomer: number = 8;
 
     if (monomerWidth === 'short') {
       gapRenderer = 12;
-      maxLengthOfMonomer = 1;
+      maxLengthOfMonomer = colTemp[mmcrTemps.maxMonomerLength] ?? _package.properties.maxMonomerLength;
     }
 
     let maxLengthWords: any = {};
-    if (gridCell.cell.column.getTag('.calculatedCellRender') !== splitLimit.toString()) {
+    if (gridCell.cell.column.getTag(mmcrTags.calculated) !== splitLimit.toString()) {
       let samples = 0;
       while (samples < Math.min(gridCell.cell.column.length, 100)) {
         const column = gridCell.cell.column.get(samples);
@@ -188,7 +189,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         colTemp[tempTAGS.bioSumMaxLengthWords] = maxLengthWordSum;
         colTemp[tempTAGS.bioMaxIndex] = maxIndex;
         colTemp[tempTAGS.bioMaxLengthWords] = maxLengthWords;
-        gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
+        gridCell.cell.column.setTag(mmcrTags.calculated, splitLimit.toString());
       }
     } else {
       maxLengthWords = colTemp[tempTAGS.bioMaxLengthWords];

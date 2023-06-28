@@ -1,8 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
+
 import './connections/queries-test';
+import './benchmarks/benchmark';
 
 export const _package = new DG.Package();
 export {tests};
@@ -91,9 +94,9 @@ export async function testConnections(): Promise<DG.DataFrame> {
         df.columns.byName('TTC').set(row, Date.now() - startTime);
 
         row++;
-      };
-    };
-  };
+      }
+    }
+  }
   df;
   grok.shell.addTableView(df);
   return df;

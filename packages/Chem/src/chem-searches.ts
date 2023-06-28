@@ -84,8 +84,13 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   return diversities;
 }
 
+
+function invalidatedColumnKey(col: DG.Column): string {
+  return col.dataFrame?.name + '.' + col.name;
+}
+
 function colInvalidated(col: DG.Column, createMols: boolean, useSubstructLib?: boolean): Boolean {
-  return (lastColumnInvalidated == col.name &&
+  return (lastColumnInvalidated == invalidatedColumnKey(col) &&
     col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version) &&
     (!createMols || useSubstructLib ?
       col.getTag(FING_COL_TAGS.substrLibCreatedForVersion) == String(col.version) :
@@ -99,7 +104,7 @@ async function _invalidate(molCol: DG.Column, createMols: boolean, useSubstructL
       useSubstructLib ? molCol.setTag(FING_COL_TAGS.substrLibCreatedForVersion, String(molCol.version + 2)) :
         molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 2));
     }
-    lastColumnInvalidated = molCol.name;
+    lastColumnInvalidated = invalidatedColumnKey(molCol);
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
 }

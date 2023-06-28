@@ -46,7 +46,7 @@ export class RadarViewer extends DG.JsViewer {
     this.showMin = this.bool('showMin', true);
     this.showMax = this.bool('showMax', true);
     this.showValues = this.bool('showValues', true);
-    this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST);
+    this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null, {columnTypeFilter: DG.TYPE.NUMERICAL});
 
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
@@ -60,9 +60,9 @@ export class RadarViewer extends DG.JsViewer {
     for (const column of this.dataFrame.columns.numerical)
       columnNames.push(column.name);
 
-    this.columns = this.columns.length > 0  ? this.columns : this.getColumns();
+    this.columns = this.getColumns();
     for (const c of this.columns) {
-      let minimalVal = c.min < 0 ? c.min + c.min * 0.1 : c.min;
+      let minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
       option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
     }
     this.updateMin();
@@ -95,7 +95,7 @@ export class RadarViewer extends DG.JsViewer {
     this.init();
     this.initChartEventListeners();
     this.valuesColumnNames = Array.from(this.dataFrame.columns.numerical)
-    .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME && c.type !== DG.TYPE.BIG_INT)
+    .filter((c: DG.Column) => c.type !== DG.TYPE.DATE_TIME)
     .map((c: DG.Column) => c.name);
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
@@ -152,7 +152,7 @@ export class RadarViewer extends DG.JsViewer {
         for (let i = 0; i < this.dataFrame.rowCount; i++) {
           data.push({
             name: `row ${i}`,
-            value: this.columns.map((c) => c.get(i)),
+            value: this.columns.map((c) => Number(c.get(i))),
           });
         }
       } else {
@@ -180,31 +180,15 @@ export class RadarViewer extends DG.JsViewer {
       break;
     case 'showValues':
       if (this.showValues === false) {
-        option.series[2].data = [];
-        option.series[2].data.push({
-          value: this.columns.map((c) => {
-            const value = Number(c.get(this.dataFrame.currentRowIdx));
-            return value != -2147483648 ? value : 0}),
-          name: `row ${this.dataFrame.currentRowIdx + 1}`,
-          lineStyle: {
-            width: 2,
-            type: 'dashed',
-            color: 'rgba(66, 135, 204, 0.8)',
-          },
-          label: {
-            show: false,
-          },
-          symbolSize: 6,
-          itemStyle: {
-            color: 'rgba(66, 135, 204, 0.8)',
-          },
-        });
+        this.updateShowValues();
       } else
         this.checkConditions();
 
       break;
     case 'valuesColumnNames':
       this.init();
+      if (this.showValues === false)
+        this.updateShowValues();
       break;
     }
     this.render();
@@ -216,6 +200,28 @@ export class RadarViewer extends DG.JsViewer {
     if (this.showMax === true)
       this.updateMax();
     this.updateRow();
+  }
+
+  updateShowValues() {
+    option.series[2].data = [];
+    option.series[2].data.push({
+      value: this.columns.map((c) => {
+        const value = Number(c.get(this.dataFrame.currentRowIdx));
+        return value != -2147483648 ? value : 0}),
+      name: `row ${this.dataFrame.currentRowIdx + 1}`,
+      lineStyle: {
+        width: 2,
+        type: 'dashed',
+        color: 'rgba(66, 135, 204, 0.8)',
+      },
+      label: {
+        show: false,
+      },
+      symbolSize: 6,
+      itemStyle: {
+        color: 'rgba(66, 135, 204, 0.8)',
+      },
+    });
   }
 
   updateMin() {

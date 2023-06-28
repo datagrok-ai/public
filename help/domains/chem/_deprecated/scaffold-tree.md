@@ -101,4 +101,19 @@ To enhance the functionality of the filters panel, you can incorporate it with t
 By integrating Scaffold Tree into the filters panel, you unlock a broader spectrum of available operations and functionalities.
 
 Here is an example on how to do it:
-![scaffold-tree-filter-panel](scaffold-tree-filter-panel.gif)
+![scaffold-tree-filter](scaffold-tree-filter.gif)
+
+## Adding viewer programmatically
+
+To add a viewer programmatically, follow this example:
+
+```js
+//name: Scaffold Tree Viewer
+//description: Adds Scaffold Tree viewer for the dataset
+//language: javascript
+
+const df = grok.data.demo.molecules(100);
+grok.shell.addTableView(df);
+await(10);
+grok.shell.tv.addViewer(DG.VIEWER.SCAFFOLD_TREE);
+```

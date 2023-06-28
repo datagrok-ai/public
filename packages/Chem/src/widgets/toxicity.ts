@@ -5,19 +5,7 @@ import {renderDescription} from '../utils/chem-common-ocl';
 import {oclMol} from '../utils/chem-common-ocl';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-
-const riskTypes: {[index: number]: string} = {
-  0: 'Mutagenicity',
-  1: 'Tumorigenicity',
-  2: 'Irritating effects',
-  3: 'Reproductive effects',
-};
-const riskLevels: {[index: number]: string} = {
-  0: 'Unknown',
-  1: 'None',
-  2: 'Low',
-  3: 'High',
-};
+import {OCLService, riskLevels, riskTypes} from '../OCL-service';
 
 const riskColorCoding: {[index: string]: number} = {
   'Unknown': DG.Color.black,
@@ -38,6 +26,22 @@ export function getRisks(molStr: string): {[index: string]: string} {
   }
 
   return risks;
+}
+
+export async function addRisksAsColumns(table: DG.DataFrame, col: DG.Column,
+  mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean) {
+  // ids are from 0 to 3 in the order of arguments
+  const toxRiskIds: number[] = [];
+  [mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects].forEach((val, index) => {
+    val && toxRiskIds.push(index);
+  });
+  const oclService = new OCLService();
+  const risks = await oclService.getChemToxicity(col, toxRiskIds);
+  oclService.terminate();
+  toxRiskIds.forEach((riskId) => {
+    const riskName = riskTypes[riskId];
+    table.columns.add(DG.Column.fromStrings(riskName, risks[riskId].map((risk) => riskLevels[risk])));
+  });
 }
 
 export function toxicityWidget(molStr: string): DG.Widget {

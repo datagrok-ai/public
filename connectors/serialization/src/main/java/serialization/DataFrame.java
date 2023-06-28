@@ -3,6 +3,7 @@ package serialization;
 import java.util.*;
 import java.util.regex.*;
 import java.util.function.*;
+import java.util.stream.Collectors;
 
 
 // Data frame.
@@ -15,6 +16,16 @@ public class DataFrame {
     private static final String delimiter = ",";
 
     public DataFrame() {
+    }
+
+    @SuppressWarnings("unchecked")
+    public void addRow(Object... objects) {
+        if (objects.length != columns.size())
+            throw new RuntimeException("Objects length does not match columns length");
+        for (int i = 0; i < columns.size(); i++) {
+            columns.get(i).add(objects[i]);
+        }
+        rowCount++;
     }
 
     public void addColumn(Column col) {
@@ -41,21 +52,20 @@ public class DataFrame {
 
     public String toCsv() {
         StringBuilder buffer = new StringBuilder();
+        String collect = columns.stream()
+                .map(column -> column.name)
+                .collect(Collectors.joining(delimiter));
+        buffer.append(collect);
+        buffer.append(System.lineSeparator());
 
-        for (Column column : columns) {
-            buffer.append(column.name);
-            buffer.append(delimiter);
+        for (int r = 0; r < rowCount; r++) {
+            final int index = r;
+            String row = columns.stream()
+                    .map(column -> columnToStr(column, index))
+                    .collect(Collectors.joining(delimiter));
+            buffer.append(row);
+            buffer.append(System.lineSeparator());
         }
-        buffer.append("\n");
-
-        for (int r = 0; r < columns.get(0).length; r++) {
-            for (Column column : columns) {
-                buffer.append(columnToStr(column, r));
-                buffer.append(delimiter);
-            }
-            buffer.append("\n");
-        }
-
         return buffer.toString();
     }
 
@@ -137,8 +147,8 @@ public class DataFrame {
         return Objects.hash(name, rowCount, columns, tags);
     }
 
-    public int memoryInBytes() {
-        int sum = 0;
+    public long memoryInBytes() {
+        long sum = 0;
         for (Column col : columns)
             sum += col.memoryInBytes();
         return sum;
