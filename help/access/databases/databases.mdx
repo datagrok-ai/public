@@ -601,7 +601,7 @@ If you want to run the query with this parameter every time, add to the query de
 
     ```sql
     --meta.connectFetchSize: 10000
-    SELECT 1
+    SELECT * FROM very_big_table
     ```
     Or if you want to set it in megabytes:
 
@@ -628,7 +628,7 @@ If you want to run the query with this parameter every time, add to the query de
 
     ```sql
     --meta.initConnectFetchSize: 1000
-    SELECT 1
+    SELECT * FROM very_big_table
     ```
 
 </details>
