@@ -61,7 +61,7 @@ export function addColorCoding(columnNames: string[]) {
     //@ts-ignore
     tv.grid.col(columnName)!.isTextColorCoded = true;
     tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<0.5":"#FFF1B6B4",">0.5":"#FFB4F1BC"}`;
+    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<=0.5":"#FFF1B6B4",">0.5":"#FFB4F1BC"}`;
   }  
 }
 
