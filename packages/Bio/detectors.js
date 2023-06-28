@@ -9,7 +9,7 @@
  */
 
 const SEQ_SAMPLE_LIMIT = 100;
-const SEQ_SAMPLE_LENGTH_LIMIT = 500;
+const SEQ_SAMPLE_LENGTH_LIMIT = 100;
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 const NOTATION = {
@@ -85,6 +85,8 @@ class BioPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
+    const tableName = col.dataFrame ? col.dataFrame.name : null;
+    console.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), start`);
     const t1 = Date.now();
     try {
       const colName = col.name;
@@ -95,8 +97,10 @@ class BioPackageDetectors extends DG.Package {
       // Fail early
       if (col.type !== DG.TYPE.STRING) return null;
 
-      const categoriesSample = col.categories.length < SEQ_SAMPLE_LIMIT ? col.categories :
-        this.sample(col.categories, SEQ_SAMPLE_LIMIT);
+      const categoriesSample = [...new Set((col.length < SEQ_SAMPLE_LIMIT ?
+          wu.count(0).take(Math.max(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
+          this.sample(col, SEQ_SAMPLE_LIMIT)
+      ).map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : ''))];
 
       // To collect alphabet freq three strategies can be used:
       // as chars, as fasta (single or within square brackets), as with the separator.
@@ -209,9 +213,15 @@ class BioPackageDetectors extends DG.Package {
         }
         return DG.SEMTYPE.MACROMOLECULE;
       }
+    } catch (err) {
+      let errMsg = err instanceof Error ? err.message : err.toString();
+      const colTops = wu.count(0).take(Math.max(col.length, 4)).map((rowI) => col.get(rowI))
+        .reduce((a, b) => a === undefined ? b : a + '\n' + b, undefined);
+      errMsg += `\n${colTops}`;
+      console.error(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), error:\n${errMsg}`);
     } finally {
       const t2 = Date.now();
-      console.debug('Bio: detectMacromolecule() ' + `ET = ${t2 - t1} ms.`);
+      console.debug(`Bio: detectMacromolecule( table: ${tableName}.${col.name} ), ` + `ET = ${t2 - t1} ms.`);
     }
   }
 
@@ -283,7 +293,7 @@ class BioPackageDetectors extends DG.Package {
     let firstLength = null;
 
     for (const seq of values) {
-      const mSeq = splitter(seq);
+      const mSeq = !!seq ? splitter(seq) : [];
 
       if (firstLength === null) {
         //
@@ -442,17 +452,16 @@ class BioPackageDetectors extends DG.Package {
     }.bind(this);
   }
 
-  sample(src, n) {
-    if (src.length < n) {
+  sample(col, n) {
+    if (col.length < n)
       throw new Error('Sample source is less than n requested.');
-    }
 
     const idxSet = new Set();
     while (idxSet.size < n) {
-      const idx = Math.floor(Math.random() * src.length);
+      const idx = Math.floor(Math.random() * col.length);
       if (!idxSet.has(idx)) idxSet.add(idx);
     }
 
-    return [...idxSet].map((idx) => src[idx]);
+    return wu(idxSet).map((idx) => col.get(idx));
   }
 }
