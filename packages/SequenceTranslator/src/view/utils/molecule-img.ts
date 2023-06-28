@@ -53,8 +53,8 @@ export class MoleculeImage {
 
   private getMoleculeDimensions(): {height: number, width: number} {
     const molData = MolfileHandler.getInstance(this.molblock);
-    const height: number = Math.max(...molData.x) - Math.min(...molData.x);
-    const width: number = Math.max(...molData.y) - Math.min(...molData.y);
+    const width: number = Math.max(...molData.x) - Math.min(...molData.x);
+    const height: number = Math.max(...molData.y) - Math.min(...molData.y);
     return {height: height, width: width};
   }
 
@@ -65,21 +65,19 @@ export class MoleculeImage {
     };
     const dialogDiv = ui.div([], {style: dialogDivStyle});
 
-    // const clientHeight = $(window).height() * 0.7;
     const height = $(window).height() * 0.7;
     const molDimensions = this.getMoleculeDimensions();
-    const dialogCanvasHeight = height;
-    const dialogCanvasWidth = molDimensions.width * (height / molDimensions.height);
 
-    const dialogCanvas = ui.canvas(
-      dialogCanvasWidth * window.devicePixelRatio, dialogCanvasHeight * window.devicePixelRatio
-    );
-    dialogCanvas.style.width = `${dialogCanvasWidth}px`;
-    dialogCanvas.style.height = `${dialogCanvasHeight}px`;
+    const zoomRatio = height / molDimensions.height;
+
+    const dialogCanvasHeight = height;
+    const dialogCanvasWidth = molDimensions.width * zoomRatio;
+
+    const dialogCanvas = ui.canvas(dialogCanvasWidth, dialogCanvasHeight);
     await this.drawMolBlockOnCanvas(dialogCanvas);
 
     dialogDiv.appendChild(dialogCanvas);
-    ui.dialog('Molecule').add(dialogDiv).showModal(true);
+    dialog.add(dialogDiv).showModal(true);
   }
 
   public async drawMolecule(
