@@ -614,6 +614,16 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   const ffh = new FastaFileHandler(fileContent);
   return ffh.importFasta();
 }
+//name: importBam
+//description: Opens Bam file
+//tags: file-handler
+//meta.ext: bam, bai
+//input: string fileContent
+//output: list tables
+export function importBam(fileContent: string): DG.DataFrame [] {
+  console.log(fileContent);
+  return [];
+}
 
 //top-menu: Bio | Convert...
 //name: convertDialog

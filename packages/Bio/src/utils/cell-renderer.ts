@@ -7,10 +7,8 @@ import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/
 import * as C from './constants';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {
-  ALIGNMENT, ALPHABET,
   getPaletteByType,
   getSplitter,
-  getSplitterForColumn,
   monomerToShort,
   MonomerToShortFunc,
   NOTATION,
@@ -20,22 +18,8 @@ import {
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
-import {Tags as mmcrTags, Temps as mmcrTemps} from '../utils/cell-renderer-consts';
-import { HELM_POLYMER_TYPE } from '@datagrok-libraries/bio/src/utils/const';
-import { MonomerLib } from './monomer-lib';
-import { IMonomerLib } from '@datagrok-libraries/bio/src/types';
-
-const enum tempTAGS {
-  referenceSequence = 'reference-sequence',
-  currentWord = 'current-word',
-  monomerWidth = 'monomer-width',
-  bioSeqCol = 'bio-seqCol',
-}
-
-const enum rndrTAGS {
-  calculatedCellRender = '.calculatedCellRender',
-}
+import {Temps as mmcrTemps, Tags as mmcrTags,
+  tempTAGS, rendererSettingsChangedState} from '../utils/cell-renderer-consts';
 
 type TempType = { [tagName: string]: any };
 
@@ -85,7 +69,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     //   return;
 
     const tableCol: DG.Column = gridCell.cell.column;
-    const tableColTemp: TempType = tableCol.temp;
+    //const tableColTemp: TempType = tableCol.temp;
     const seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
     if (!seqColTemp) return; // Can do nothing without precalculated data
 
@@ -105,10 +89,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const monomerSymbol: string = seqMonList[left];
       const tooltipElements: HTMLElement[] = [ui.div(monomerSymbol)];
       const monomer = seqColTemp.getMonomer(monomerSymbol);
-      if(monomer) {
-      const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-      const monomerSVG = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-      tooltipElements.push(monomerSVG);
+      if (monomer) {
+        const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+        const monomerSVG = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
+        tooltipElements.push(monomerSVG);
       }
       ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
     } else {
@@ -130,9 +114,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle
+    _cellStyle: DG.GridCellStyle
   ): void {
-    let gapRenderer = 5;
+    let gapLength = 0;
+    const msaGapLength = 8;
     let maxLengthOfMonomer = 8;
 
     // TODO: Store temp data to GridColumn
@@ -144,9 +129,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     // Cell renderer settings
     const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidth];
     const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
-    if (monomerWidth === 'short') {
+    if (monomerWidth === 'short')
       maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties.maxMonomerLength;
-    }
+
 
     let seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
     if (!seqColTemp) {
@@ -155,16 +140,24 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           const uh = UnitsHandler.getOrCreate(tableCol);
           return {
             unitsHandler: uh,
-            monomerCharWidth: 7, separatorWidth: !uh.isMsa() ? gapRenderer : 8,
+            monomerCharWidth: 7, separatorWidth: !uh.isMsa() ? gapLength : msaGapLength,
             monomerToShort: monomerToShortFunction, monomerLengthLimit: maxLengthOfMonomer,
             monomerLib: getBioLib()
           };
         });
     }
 
+    if (tableCol.tags[mmcrTags.RendererSettingsChanged] === rendererSettingsChangedState.true) {
+      gapLength = tableColTemp[mmcrTemps.gapLength] as number ?? gapLength;
+      // this event means that the mm renderer settings have changed, particularly monomer representation and max width.
+      seqColTemp.setMonomerLengthLimit(maxLengthOfMonomer);
+      seqColTemp.setSeparatorWidth(seqColTemp.isMsa() ? msaGapLength : gapLength);
+      tableCol.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.false);
+    }
+
     const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
       seqColTemp.getCellMonomerLengths(gridCell.tableRowIndex!);
-    const maxIndex = maxLengthWords.length;
+    const _maxIndex = maxLengthWords.length;
 
     // Store updated seqColTemp to the col temp
     if (seqColTemp.updated) tableColTemp[tempTAGS.bioSeqCol] = seqColTemp;
