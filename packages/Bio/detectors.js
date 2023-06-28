@@ -98,7 +98,7 @@ class BioPackageDetectors extends DG.Package {
       if (col.type !== DG.TYPE.STRING) return null;
 
       const categoriesSample = [...new Set((col.length < SEQ_SAMPLE_LIMIT ?
-          wu.count(0).take(Math.max(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
+          wu.count(0).take(Math.min(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
           this.sample(col, SEQ_SAMPLE_LIMIT)
       ).map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : ''))];
 
