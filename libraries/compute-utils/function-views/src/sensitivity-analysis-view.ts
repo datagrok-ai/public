@@ -365,6 +365,8 @@ export class SensitivityAnalysisView {
       `${this.func.name} - Sensitivity Analysis`,
       0.25,
     );
+
+    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
   }
 
   private closeOpenedViewers() {
@@ -943,6 +945,7 @@ export class SensitivityAnalysisView {
     this.comparisonView.grid.props.allowEdit = false;
 
     this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.width = 70;
+    this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
 
     for (let i = 0; i < this.comparisonView.grid.columns.length; i++) {
       const gridCol = this.comparisonView.grid.columns.byIndex(i)!;
