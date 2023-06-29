@@ -100,7 +100,7 @@ The goal for today is to set up the environment and learn how to create simple p
 
    Developers use these resources on a regular basis, so consider adding them to your bookmarks.
 1. Read our [Contributor’s guide](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md) and [Git
-   policy](../advanced/git-policy.mdx)
+   policy](../../develop/advanced/git-policy.mdx)
 1. Clone our [public repository](https://github.com/datagrok-ai/public):
 
    ```sh

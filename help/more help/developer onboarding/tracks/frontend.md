@@ -24,7 +24,7 @@ icon on top) under the following folders:
 
 **Set up your IDE**. You want to be as productive as possible, so this is very important. Follow the steps outlined in
 the
-[Setting up the environment](exercises.md#setting-up-the-environment) section to make sure you can easily create, edit,
+[Setting up the environment](../exercises.md#setting-up-the-environment) section to make sure you can easily create, edit,
 and publish packages. Make sure you can debug your code with the assistance of IDE, including using breakpoints and code
 completion.
 
