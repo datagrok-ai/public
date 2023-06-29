@@ -12,6 +12,8 @@ import {
   FIT_CELL_TYPE,
   IFitSeries,
   FitStatistics,
+  fitChartDataProperties,
+  fitSeriesProperties,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -19,12 +21,13 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 import {
   fitSeries,
-  getChartData,
+  createDefaultChartData,
   getChartBounds,
   getSeriesFitFunction,
   getSeriesConfidenceInterval,
   getSeriesStatistics,
   getCurve,
+  getColumnChartOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -36,6 +39,40 @@ export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
 export const CANDLESTICK_BORDER_PX_SIZE = 4;
 export const OUTLIER_HITBOX_RADIUS = 2;
 
+
+/** Merges properties of the two objects by iterating over the specified {@link properties}
+ * and assigning properties from {@link source} to {@link target} only when
+ * the property is not defined in target and is defined in source. */
+export function mergeProperties(properties: DG.Property[], source: any, target: any): void {
+  if (!source || !target)
+    return;
+
+  for (const p of properties) {
+    if (!(p.name in target) && p.name in source)
+      target[p.name] = source[p.name];
+  }
+}
+
+/** Constructs {@link IFitChartData} from the grid cell, taking into account
+ * chart and fit settings potentially defined on the dataframe and column level. */
+export function getChartData(gridCell: DG.GridCell): IFitChartData {
+  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
+    (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+    convertXMLToIFitChartData(gridCell.cell.value) :
+    JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
+
+  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
+
+  cellChartData.series ??= [];
+  cellChartData.chartOptions ??= columnChartOptions.chartOptions;
+
+  // merge cell options with column options
+  mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
+  for (const series of cellChartData.series)
+    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
+
+  return cellChartData;
+}
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
@@ -73,7 +110,7 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
       transform.xToScreen(p.x), transform.yToScreen(p.y),
-      series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
+      series.pointColor ? DG.Color.fromHtml(series.pointColor) ?? DG.Color.scatterPlotMarker : DG.Color.scatterPlotMarker,
       (p.outlier ? 6 : 4) * ratio);
   }
 }
@@ -132,11 +169,6 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   }
   g.stroke();
 }
-
-// TODO: Denis will look at axes
-// TODO: automatic output of parameters
-// TODO: add candlesticks to Curves documentation
-// TODO: add how to control options - series opitons, chart options, etc.
 
 /** Performs a curve confidence interval color filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,

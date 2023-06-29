@@ -75,7 +75,7 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
         let color = DG.Color.toHtml(DG.Color.getCategoricalColor(colIdx * chartsPerCell + j));
         chartData.series?.push({
           parameters: undefined,
-          // TODO: make better parameter generating 
+          // TODO: make better parameter generating
           // parameters: j % 2 === 0 ? points.params : undefined,
           fitLineColor: color,
           pointColor: color,

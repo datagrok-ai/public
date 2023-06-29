@@ -3,12 +3,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {
   fitSeries,
-  getChartData,
   getColumnChartOptions,
   getSeriesStatistics,
   getSeriesFitFunction,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {getChartData} from './fit-renderer';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 
@@ -55,7 +55,6 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       ui.input.form(columnChartOptions.chartOptions, fitChartDataProperties, refresh),
     ]));
 
-    // TODO: improve edit chart mode
     acc.addPane('Fit', () => {
       const host = ui.divV([]);
 
