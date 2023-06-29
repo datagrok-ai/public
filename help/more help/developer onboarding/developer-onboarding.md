@@ -80,7 +80,7 @@ The goal for today is to gain experience with the platform by learning about its
    1. Create a JavaScript script and share it with your mentor:
       1. Cylinder Volume Calculator takes parameters `radius` and `height` and returns `volume` rounded to 2 decimal
          places.
-      1. Follow the [instructions](../how-to/add-package-tests.md#testing-functions) to add tests to the script (use
+      1. Follow the [instructions](../../develop/how-to/add-package-tests.md#testing-functions) to add tests to the script (use
          function `Round10` and constant `PI` in your tests)
 
 ## Day 3
@@ -114,11 +114,11 @@ The goal for today is to set up the environment and learn how to create simple p
    ```
 
    Example: `jdoe/exercises`
-1. Follow instructions from [Setting up development environment](../set-up-environment.md)
+1. Follow instructions from [Setting up development environment](../../develop/set-up-environment.md)
 1. Create your first project following instructions given in [Exercises](exercises.md#setting-up-the-environment)
 1. Add package unit tests:
-   1. Read about [package tests](../how-to/test-packages.md)
-   1. Follow the [instructions](../how-to/add-package-tests.md#adding-unit-tests) to add sample tests
+   1. Read about [package tests](../../develop/how-to/test-packages.md)
+   1. Follow the [instructions](../../develop/how-to/add-package-tests.md#adding-unit-tests) to add sample tests
    1. Publish your package to the platform and run tests using different approaches described in the above instructions
 
 At the end of the day share the package you created with your mentor and push your branch to GitHub.
@@ -176,11 +176,11 @@ After Day 5, you will learn how to:
    1. Complete [Exercise #3](exercises.md#exercise-3-composing-functions)
 1. Scripting viewers:
    1. Watch a [Scripting viewers video](https://www.youtube.com/watch?v=jHRpOnhBAz4)
-   1. Read [documentation](../how-to/develop-custom-viewer.md#scripting-viewers)
+   1. Read [documentation](../../develop/how-to/develop-custom-viewer.md#scripting-viewers)
    1. Complete [Exercise #6](exercises.md#exercise-6-creating-a-scripting-viewer)
 1. Data access:
    1. Complete [Exercise #4](exercises.md#exercise-4-querying-databases)
-   1. Read [documentation](../how-to/access-data)
+   1. Read [documentation](../../develop/how-to/access-data)
 1. Complete [Exercise #7](exercises.md#exercise-7-transforming-dataframes)
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.
@@ -194,14 +194,14 @@ After Day 6, you will learn how to:
 * Create a function that builds a dialog
 
 1. Cell renderers:
-   1. Read [documentation](../how-to/custom-cell-renderers.md)
+   1. Read [documentation](../../develop/how-to/custom-cell-renderers.md)
    1. Complete [Exercise #8](exercises.md#exercise-8-custom-cell-renderers)
 1. Connecting to a webservice:
-   1. Read [documentation](../how-to/access-data)
+   1. Read [documentation](../../develop/how-to/access-data)
    1. Complete [Exercise #9](exercises.md#exercise-9-creating-an-info-panel-with-a-rest-web-service)
 1. Building a user interface:
    1. Complete [Exercise #10](exercises.md#exercise-10-enhancing-datagrok-with-dialog-based-functions)
-   1. Refer to [UI components](../advanced/ui.md) article
+   1. Refer to [UI components](../../develop/advanced/ui.md) article
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.
 
@@ -213,8 +213,8 @@ After Day 7, you will learn how to:
 * Create and manage views
 
 1. Create a simple application from the template:
-   1. Read about [function roles](../function-roles.md)
-   1. See [instructions](../how-to/build-an-app.md) for building applications
+   1. Read about [function roles](../../develop/function-roles.md)
+   1. See [instructions](../../develop/how-to/build-an-app.md) for building applications
    1. Add a template application via `grok add`
    1. Publish your package and launch your app on the platform
 1. Modify the application:

@@ -48,4 +48,4 @@ title: "Developer qualifications"
 
 See also:
 
-* [JavaScript API](../js-api.md)
+* [JavaScript API](../../develop/js-api.md)
