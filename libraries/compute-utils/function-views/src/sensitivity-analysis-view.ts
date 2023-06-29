@@ -120,6 +120,7 @@ export class SensitivityAnalysisView {
                   ui.intInput(`${inputProp.caption ?? inputProp.name}`, getInputValue(inputProp, 'min'), (v: number) => ref.min.value = v);
 
                 (inp.input as HTMLInputElement).placeholder = 'Min';
+                $(inp.input).css({'padding-right': '0px', 'margin-right': '4px'});
                 return inp;
               })(),
             value: getInputValue(inputProp, 'min'),
@@ -132,6 +133,7 @@ export class SensitivityAnalysisView {
                   ui.intInput(` `, getInputValue(inputProp, 'max'), (v: number) => ref.max.value = v);
 
                 (inp.input as HTMLInputElement).placeholder = 'Max';
+                $(inp.input).css({'padding-left': '0px', 'margin-left': '4px'});
                 return inp;
               })(),
             value: getInputValue(inputProp, 'max'),
