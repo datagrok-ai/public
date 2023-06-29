@@ -5,19 +5,19 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
-import com.datastax.oss.driver.api.core.data.GettableByIndex;
-import com.datastax.oss.driver.internal.core.data.DefaultUdtValue;
+import java.util.*;
+
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.CassandraBigIntColumnManager;
+import grok_connect.managers.integer_column.CassandraIntColumnManager;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
@@ -25,7 +25,6 @@ import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
@@ -35,8 +34,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     private static final String DEFAULT_EXCEPTION_MESSAGE = "Cassandra doesn't support this feature";
     private static final String NULL_MESSAGE = "Cassandra doesn't have explicit null type";
 
-    public CassandraDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public CassandraDataProvider() {
         driverClassName = "com.wisecoders.dbschema.cassandra.JdbcDriver";
 
         descriptor = new DataSource();
@@ -254,16 +252,6 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return !typeName.equalsIgnoreCase("varint") && ((type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT));
-    }
-
-    @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.BIGINT) || typeName.equalsIgnoreCase("varint");
-    }
-
-    @Override
     protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
@@ -277,39 +265,10 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected Object convertArrayType(Object value) {
-        if (value instanceof GettableByIndex) {
-            return convertComplexType(value);
-        } else {
-            return value.toString();
-        }
-    }
-
-    @Override
-    protected boolean isArray(int type, String typeName) {
-        return typeName.startsWith("Tuple") || typeName.startsWith("UDT") || typeName.startsWith("List");
-    }
-
-    private String convertComplexType(Object value) {
-        GettableByIndex complex = (GettableByIndex) value;
-        StringBuilder builder = new StringBuilder("{");
-        for (int i = 0; i < complex.size(); i++) {
-            Object object = complex.getObject(i);
-            if (object instanceof GettableByIndex) {
-                builder.append(convertComplexType(object));
-            } else {
-                if (value instanceof DefaultUdtValue) {
-                    String fieldName = ((DefaultUdtValue) value).getType()
-                            .getFieldNames().get(i).toString();
-                    builder.append(fieldName).append("=");
-                }
-                builder.append(object);
-            }
-            if (i != complex.size() - 1) {
-                builder.append(", ");
-            }
-        }
-        builder.append("}");
-        return builder.toString();
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.BIG_INT, new CassandraBigIntColumnManager());
+        defaultManagersMap.put(Types.INT, new CassandraIntColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

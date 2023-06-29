@@ -49,4 +49,4 @@ category('UI: Accordion', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});

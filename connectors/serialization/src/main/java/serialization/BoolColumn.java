@@ -13,10 +13,10 @@ public class BoolColumn extends Column<Boolean> {
     public String getType() {
         return TYPE;
     }
-    
+
     public void empty() {
         length = 0;
-        data = new int[100]; 
+        data = new int[100];
     }
 
     public BoolColumn() {
@@ -53,6 +53,18 @@ public class BoolColumn extends Column<Boolean> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    /**
+     * don't use this method, should be used from complexTypeColumn
+     */
+    @Override
+    public void set(int index, Boolean value) {
+        if (index != length - 1) {
+            throw new IllegalArgumentException("Can set only penultimate element");
+        }
+        length--;
+        add(value);
     }
 
     public boolean isNone(int idx) {

@@ -8,8 +8,13 @@ export enum MonomerWidthMode {
 }
 
 export const enum Tags {
-  calculated = '.mm.cellRenderer.calculated',
+  RendererSettingsChanged = '.mm.cellRenderer.settingsChanged',
 }
+
+export const rendererSettingsChangedState = {
+  true: '1',
+  false: '0',
+};
 
 export const enum Temps {
   monomerWidth = '.mm.cellRenderer.monomerWidth',
@@ -17,6 +22,14 @@ export const enum Temps {
   colorCode = '.mm.cellRenderer.colorCode',
   compareWithCurrent = '.mm.cellRenderer.compareWithCurrent',
   highlightDifference = '.mm.cellRenderer.highlightDifference',
+  gapLength = '.mm.cellRenderer.gapLength',
+}
+
+export const enum tempTAGS {
+  referenceSequence = 'reference-sequence',
+  currentWord = 'current-word',
+  monomerWidth = 'monomer-width',
+  bioSeqCol = 'bio-seqCol',
 }
 
 // export const MacromoleculeCellRendererDefaults = new class {

@@ -16,6 +16,7 @@ export const defaultLaunchParameters: utils.Indexable = {
   ],
   ignoreHTTPSErrors: true,
   headless: 'new',
+  protocolTimeout: 0,
 };
 
 export async function getToken(url: string, key: string) {

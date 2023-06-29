@@ -45,4 +45,4 @@ category('UI: Buttons', () => {
 
     root.remove();
   }
-}, false);
+}, {clear: false});

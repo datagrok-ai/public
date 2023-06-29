@@ -1,13 +1,18 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import * as rxjs from 'rxjs';
-import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
-import {IVdRegionsViewer,
+import {fromEvent, Unsubscribable} from 'rxjs';
+
+import {
+  IVdRegionsViewer,
   VdRegion, VdRegionType,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
-import {FilterSources, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {Unsubscribable} from 'rxjs';
+import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+
+import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+
+import {_package} from '../package';
 
 const vrt = VdRegionType;
 
@@ -101,20 +106,27 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.mlbView.dockManager.dock(this.regionsFg.root, DG.DOCK_TYPE.LEFT, rootNode, 'Filter regions', 0.2);
 
     this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
-    this.subs.push(rxjs.fromEvent<MouseEvent>(this.root, 'mousemove').subscribe(this.rootOnMouseMove.bind(this)));
+    this.subs.push(fromEvent<MouseEvent>(this.root, 'mousemove').subscribe(this.rootOnMouseMove.bind(this)));
 
     // await this.buildView('init'); // init
   }
 
-  public override async onTableAttached() {
-    const superOnTableAttached = super.onTableAttached.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // onTableAttached
-      superOnTableAttached();
-      if (!this.viewed) {
-        await this.buildView('onTableAttached'); // onTableAttached
-        this.viewed = true;
+  override detach() {
+    if (this.setDataInProgress) return;
+    const superDetach = super.detach.bind(this);
+    this.detachPromise = this.detachPromise.then(async () => { // detach
+      await this.viewPromise;
+      if (this.viewed) {
+        await this.destroyView('detach');
+        this.viewed = false;
       }
+      superDetach();
     });
+  }
+
+  override onTableAttached() {
+    super.onTableAttached();
+    this.setData(this.dataFrame, this.regions);
   }
 
   public override onPropertyChanged(property: DG.Property | null): void {
@@ -156,39 +168,41 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
   public setData(mlbDf: DG.DataFrame, regions: VdRegion[]) {
-    console.debug('Bio: VdRegionsViewer.setData()');
+    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
+    _package.logger.debug('Bio: VdRegionsViewer.setData()');
+
     this.viewPromise = this.viewPromise.then(async () => { // setData
       if (this.viewed) {
-        await this.destroyView('setData'); // setData
+        await this.destroyView('setData');
         this.viewed = false;
       }
-    });
+    }).then(async () => {
+      await this.detachPromise;
+      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-    this.regions = regions;
-    this.dataFrame = mlbDf; // causes detach and onTableAttached
-
-    this.viewPromise = this.viewPromise.then(async () => { // setData
+      // -- Data --
+      this.regions = regions;
+      if (this.dataFrame.dart !== mlbDf.dart) this.dataFrame = mlbDf; // causes detach and onTableAttached
+    }).then(async () => {
       if (!this.viewed) {
-        await this.buildView('setData'); // setData
+        await this.buildView('setData');
         this.viewed = true;
       }
-    });
-  }
-
-  override detach() {
-    const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
-      if (this.viewed) {
-        await this.destroyView('detach'); // detach
-        this.viewed = false;
-      }
-      superDetach();
+    }).catch((err: any) => {
+      const errMsg = err instanceof Error ? err.message : err.toString();
+      const stack = err instanceof Error ? err.stack : undefined;
+      grok.shell.error(errMsg);
+      _package.logger.error(errMsg, undefined, stack);
+    }).finally(() => {
+      this.setDataInProgress = false;
     });
   }
 
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
+  private detachPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
   private filterSourceInput: DG.InputBase<boolean | null> | null = null;
@@ -223,25 +237,32 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     const regionsFiltered: VdRegion[] = this.regions.filter((r: VdRegion) => this.regionTypes.includes(r.type));
     const orderList: number[] = Array.from(new Set(regionsFiltered.map((r) => r.order))).sort();
 
-    this.logos = [];
+    const logoPromiseList: Promise<[number, string, WebLogoViewer]>[] = [];
     for (let orderI = 0; orderI < orderList.length; orderI++) {
-      const regionChains: { [chain: string]: WebLogoViewer } = {};
       for (const chain of this.chains) {
         const region: VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
-        regionChains[chain] = (await this.dataFrame.plot.fromType('WebLogo', {
-          sequenceColumnName: region!.sequenceColumnName,
-          startPositionName: region!.positionStartName,
-          endPositionName: region!.positionEndName,
-          fixWidth: true,
-          skipEmptyPositions: this.skipEmptyPositions,
-          positionWidth: this.positionWidth,
-          positionHeight: this.positionHeight,
-        })) as unknown as WebLogoViewer;
+        logoPromiseList.push((async () => {
+          const wl: WebLogoViewer = await this.dataFrame.plot.fromType('WebLogo', {
+            sequenceColumnName: region!.sequenceColumnName,
+            startPositionName: region!.positionStartName,
+            endPositionName: region!.positionEndName,
+            fixWidth: true,
+            skipEmptyPositions: this.skipEmptyPositions,
+            positionWidth: this.positionWidth,
+            positionHeight: this.positionHeight,
+          }) as WebLogoViewer;
+          return [orderI, chain, wl];
+        })());
       }
-      // WebLogo creation fires onRootSizeChanged event even before control being added to this.logos
-      this.logos[orderI] = regionChains;
     }
+    const logoList: [number, string, WebLogoViewer][] = await Promise.all(logoPromiseList);
+    // Fill in this.logos with created viewers
+    this.logos = new Array(orderList.length);
+    for (let orderI = 0; orderI < orderList.length; ++orderI)
+      this.logos[orderI] = {};
+    for (const [orderI, chain, wl] of logoList)
+      this.logos[orderI][chain] = wl;
 
     // ui.tableFromMap()
     // DG.HtmlTable.create()

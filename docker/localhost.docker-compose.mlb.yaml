@@ -1,0 +1,225 @@
+version: "3"
+services:
+  datagrok:
+    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "deployDemo": false,
+          "dbServer": "database",
+          "db": "datagrok",
+          "dbAdminLogin": "postgres",
+          "dbAdminPassword": "postgres",
+          "dbLogin": "dg",
+          "dbPassword": "dg",
+          "adminPassword": "admin",
+          "adminDevKey": "admin",
+          "isolatesCount": 2
+        }
+    ports:
+      - "${DATAGROK_PORT:-8080}:8080/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - datagrok
+    depends_on:
+      - db
+    volumes:
+      - datagrok_data:/home/grok/data
+      - datagrok_cfg:/home/grok/cfg
+      - mlb.jdob-ddl-results:/home/grok/mlb.jdob-ddl-results
+    restart: unless-stopped
+    profiles: ["all", "datagrok"]
+
+  grok_spawner:
+    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-latest}
+    user: root
+    environment:
+      X_API_KEY: test-x-api-key
+      GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
+    ports:
+      - "${DATAGROK_GROK_SPAWNER_PORT:-8000}:8000/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - grok_spawner
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    profiles: ["all", "grok_spawner"]
+
+  grok_connect:
+    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-latest}
+    networks:
+      datagrok:
+        aliases:
+          - grok_connect
+    ports:
+      - "${GROK_CONNECT_PORT:-1234}:1234/tcp"
+    restart: unless-stopped
+    profiles: ["all", "grok_connect"]
+
+  cvm_nginx:
+    image: datagrok/cvm_nginx:latest
+    ports:
+      - "${DATAGROK_CVM_PORT:-8090}:8090/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - cvm
+          - nginx_cvm
+    restart: unless-stopped
+    profiles: ["all", "nginx", "cvm", "chem", "jupyter_notebook", "notebook", "scripting",
+               "grok_compute", "jupyter_kernel_gateway", "jkg", "h2o"]
+
+  grok_compute:
+    image: datagrok/grok_compute:${GROK_COMPUTE_VERSION:-latest}
+    environment:
+      GROK_COMPUTE_NUM_CORES: 2
+    networks:
+      datagrok:
+        aliases:
+          - grok_compute
+    restart: unless-stopped
+    profiles: ["all", "cvm", "chem", "grok_compute"]
+
+  jupyter_notebook:
+    image: datagrok/jupyter_notebook:latest
+    networks:
+      datagrok:
+        aliases:
+          - jupyter_notebook
+    restart: unless-stopped
+    profiles: ["all", "cvm", "jupyter_notebook", "notebook"]
+
+  jupyter_kernel_gateway:
+    image: datagrok/jupyter_kernel_gateway:latest
+    networks:
+      datagrok:
+        aliases:
+          - jupyter_kernel_gateway
+    restart: unless-stopped
+    profiles: ["all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg"]
+
+  h2o:
+    image: datagrok/h2o:latest
+    ports:
+      - "${DATAGROK_H2O_PORT:-54321}:54321/tcp"
+      - "${DATAGROK_H2O_HELPER_PORT:-5005}:5005/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - h2o
+    restart: unless-stopped
+    profiles: ["all", "cvm", "modeling", "h2o"]
+
+  db:
+    image: postgres:12.9
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${DATAGROK_DB_PORT:-5432}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - database
+    volumes:
+      - datagrok_db:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=1000'
+    restart: on-failure
+    profiles: ["all", "db"]
+
+  northwind:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: northwind
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND:-5433}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - northwind
+    volumes:
+      - datagrok_demo_postgres_northwind:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: ["demo", "postgres_northwind", "northwind"]
+
+  chembl:
+    image: datagrok/demo_db_chembl:latest
+    environment:
+      POSTGRES_DB: chembl
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_CHEMBL:-5434}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - chembl
+    volumes:
+      - datagrok_demo_postgres_chembl:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: ["demo", "postgres_chembl", "chembl"]
+
+  unichem:
+    image: datagrok/demo_db_unichem:latest
+    environment:
+      POSTGRES_DB: unichem
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_UNICHEM:-5435}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - unichem
+    volumes:
+      - datagrok_demo_postgres_unichem:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: ["demo", "postgres_unichem", "unichem"]
+
+  starbucks:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: starbucks
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS:-5436}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - starbucks
+    volumes:
+      - datagrok_demo_postgres_starbucks:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: ["demo", "postgres_starbucks", "starbucks"]
+
+  world:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: world
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_WORLD:-5437}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - world
+    volumes:
+      - datagrok_demo_postgres_world:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: ["demo", "postgres_world", "world"]
+
+volumes:
+  datagrok_db:
+  datagrok_data:
+  datagrok_cfg:
+  datagrok_demo_postgres_northwind:
+  datagrok_demo_postgres_chembl:
+  datagrok_demo_postgres_starbucks:
+  datagrok_demo_postgres_world:
+  datagrok_demo_postgres_unichem:
+  mlb.jdob-ddl-results:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: D:/HOME/atanas/Datagrok/Data/MLB/files.jdob-ddb-results
+
+networks:
+  datagrok:

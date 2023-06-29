@@ -181,4 +181,4 @@ category('UI: Inputs', () => {
     input.fireChanged();
     input.root.remove();
   }
-}, false);
+}, {clear: false});

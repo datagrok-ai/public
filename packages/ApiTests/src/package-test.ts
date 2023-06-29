@@ -15,7 +15,6 @@ import './functions/math-functions';
 import './functions/stats-functions';
 import './functions/text-functions';
 import './shell/shell';
-import './shell/windows';
 import './shell/ml';
 import './shell/settings';
 import './dapi/files';

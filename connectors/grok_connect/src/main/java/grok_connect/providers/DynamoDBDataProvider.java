@@ -5,7 +5,6 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,8 +20,7 @@ public class DynamoDBDataProvider extends JdbcDataProvider {
             "GOVCLOUDWEST"
     ));
 
-    public DynamoDBDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public DynamoDBDataProvider() {
         driverClassName = "cdata.jdbc.amazondynamodb.AmazonDynamoDBDriver";
 
         descriptor = new DataSource();

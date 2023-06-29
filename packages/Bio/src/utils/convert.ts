@@ -4,8 +4,10 @@ import * as grok from 'datagrok-api/grok';
 
 import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {expect} from '@datagrok-libraries/utils/src/test';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -127,6 +129,8 @@ export async function convertDo(
     newColumn.semType = semType;
 
   // call to calculate 'cell.renderer' tag
+  const newUH = UnitsHandler.getOrCreate(newColumn);
+  expect(newUH.isMsa(), true);
   await grok.data.detectSemanticTypes(srcCol.dataFrame);
 
   return newColumn;

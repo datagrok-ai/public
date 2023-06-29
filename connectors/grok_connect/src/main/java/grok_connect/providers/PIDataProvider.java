@@ -12,26 +12,25 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 
 public class PIDataProvider extends JdbcDataProvider {
-    public PIDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public PIDataProvider() {
         driverClassName = "com.osisoft.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "PI";
         descriptor.description = "Query PI database";
         descriptor.connectionTemplate = new ArrayList<Property>() {{
-            add(new Property(Property.STRING_TYPE, DbCredentials.ACCESS_SERVER));
-            add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
-            add(new Property(Property.STRING_TYPE, DbCredentials.INITIAL_CATALOG, "Name of the catalog,"
-                    + " e.g. piarchive, pibatch, pids, pifunction, piheading, "
-                    + "pilog, pimodule, pipoint, pisystem or piuser"));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
-                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
+                add(new Property(Property.STRING_TYPE, DbCredentials.ACCESS_SERVER));
+                add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
+
+                add(new Property(Property.STRING_TYPE, DbCredentials.INITIAL_CATALOG, "Name of the catalog,"
+                        + " e.g. piarchive, pibatch, pids, pifunction, piheading, "
+                        + "pilog, pimodule, pipoint, pisystem or piuser"));
+                add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                        DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
+                add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
+                add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
+                add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
@@ -46,7 +45,7 @@ public class PIDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+    public void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         FuncParam param = dataQuery.getParam(paramName);
         if (param.propertyType.equals("list")) {
             @SuppressWarnings("unchecked")

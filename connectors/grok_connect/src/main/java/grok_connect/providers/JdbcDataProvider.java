@@ -1,47 +1,52 @@
 package grok_connect.providers;
 
-import java.io.*;
-import java.sql.*;
-import java.time.*;
-import java.util.*;
-import java.math.*;
-import java.text.*;
-import java.util.Date;
-import java.util.regex.*;
-import com.clickhouse.data.value.UnsignedByte;
-import com.clickhouse.data.value.UnsignedShort;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.Array;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
+import grok_connect.connectors_info.FuncParam;
 import grok_connect.log.EventType;
-import microsoft.sql.DateTimeOffset;
-import oracle.sql.TIMESTAMPTZ;
-import org.apache.commons.io.IOUtils;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.FieldPredicate;
+import grok_connect.table_query.GroupAggregation;
+import grok_connect.table_query.TableQuery;
+import grok_connect.utils.ConnectionPool;
+import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.PatternMatcher;
+import grok_connect.utils.PatternMatcherResult;
+import grok_connect.utils.QueryCancelledByUser;
+import grok_connect.utils.QueryMonitor;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import serialization.*;
-import grok_connect.utils.*;
-import grok_connect.table_query.*;
-import grok_connect.connectors_info.*;
+import serialization.DataFrame;
 import serialization.Types;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
 
 public abstract class JdbcDataProvider extends DataProvider {
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
-
+    protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
-
-    public ProviderManager providerManager;
-
-    public JdbcDataProvider(ProviderManager providerManager) {
-        this.providerManager = providerManager;
-    }
 
     public void prepareProvider() throws ClassNotFoundException {
         Class.forName(driverClassName);
@@ -127,9 +132,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
-    public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout,
-                                  Logger queryLogger, int fetchSize)
-            throws SQLException {
+    public ResultSet executeQuery(String query, FuncCall queryRun,
+                                  Connection connection, int timeout, Logger queryLogger, int fetchSize) throws SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
         queryLogger.trace(EventType.MISC.getMarker(), "Provider supports transactions: {}", supportsTransactions);
         if (supportsTransactions)
@@ -138,7 +142,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
-        ResultSet resultSet = null;
+        ResultSet resultSet;
         if (dataQuery.inputParamsCount() > 0) {
             queryLogger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.START), "Converting query");
             query = convertPatternParamsToQueryParams(queryRun, query);
@@ -152,7 +156,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated query: {}",
                         query);
                 PreparedStatement statement = connection.prepareStatement(query);
-                providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
+                queryMonitor.addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.START), "Query detected parameters: {}", names);
                 int i = 0;
@@ -165,7 +169,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         if (param.value == null)
                             stringValue = "null";
                         else
-                           stringValue = param.value.toString();
+                            stringValue = param.value.toString();
                         i = i + setArrayParamValue(statement, n + i + 1, param);
                     } else {
                         if (param.value == null) {
@@ -179,39 +183,32 @@ public abstract class JdbcDataProvider extends DataProvider {
                     stringValues.add(stringValue);
                 }
                 queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Parameters were replaced by: {}", stringValues);
-                setQueryTimeOut(statement, timeout);
-                queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing statement");
-                statement.setFetchSize(fetchSize);
-                if(statement.execute())
-                    resultSet = statement.getResultSet();
-                queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Statement was executed");
-                providerManager.getQueryMonitor().removeStatement(mainCallId);
+                resultSet = executeStatement(statement, queryLogger, timeout, mainCallId, fetchSize);
             } else {
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Query will be manually interpolated");
                 query = manualQueryInterpolation(query, dataQuery);
                 queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated query");
-                resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
+                resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
             }
         } else {
             queryLogger.debug(EventType.QUERY_PARSE.getMarker(), "Query without parameters");
-            resultSet = executeStatement(query, connection, queryLogger, timeout, mainCallId, fetchSize);
+            resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
         }
 
         return resultSet;
     }
 
-    private ResultSet executeStatement(String query, Connection connection, Logger queryLogger,
+    private ResultSet executeStatement(PreparedStatement statement, Logger queryLogger,
                                        int timeout, String mainCallId, int fetchSize) throws SQLException {
         ResultSet resultSet = null;
-        PreparedStatement statement = connection.prepareStatement(query);
-        providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
+        queryMonitor.addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
         queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing statement");
         statement.setFetchSize(fetchSize);
         if(statement.execute())
             resultSet = statement.getResultSet();
         queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Statement was executed");
-        providerManager.getQueryMonitor().removeStatement(mainCallId);
+        queryMonitor.removeStatement(mainCallId);
         return resultSet;
     }
 
@@ -332,7 +329,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection,
+                                  Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
@@ -359,310 +357,43 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             return resultSet;
         } catch (SQLException e) {
-            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
         }
     }
-
-    public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet, Logger queryLogger) throws QueryCancelledByUser, SQLException {
-        try {
-            // if (resultSet == null)
-            //     return new DataFrame();
-
-            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
-            int columnCount = resultSetMetaData.getColumnCount();
-            List<Column> columns = new ArrayList<>(columnCount);
-            List<Boolean> supportedType = new ArrayList<>(columnCount);
-            List<Boolean> initColumn = new ArrayList<>(columnCount);
-            for (int c = 1; c < columnCount + 1; c++) {
-                Column column;
-                String label = resultSetMetaData.getColumnLabel(c);
-                int type = resultSetMetaData.getColumnType(c);
-                String typeName = resultSetMetaData.getColumnTypeName(c);
-                supportedType.add(c - 1, true);
-                initColumn.add(c - 1, true);
-
-                int precision = resultSetMetaData.getPrecision(c);
-                int scale = resultSetMetaData.getScale(c);
-
-                if (isInteger(type, typeName, precision, scale))
-                    column = new IntColumn();
-                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName, scale))
-                    column = new FloatColumn();
-                else if (isBoolean(type, typeName, precision))
-                    column = new BoolColumn();
-                else if (isString(type, typeName) ||
-                        typeName.equalsIgnoreCase("uuid") ||
-                        typeName.equalsIgnoreCase("set"))
-                    column = new StringColumn();
-                else if (isBigInt(type, typeName, precision, scale)) {
-                    if (descriptor.type.equals("Oracle")) {
-                        column = new IntColumn();
-                    } else {
-                        column = new BigIntColumn();
-                    }
-                }
-                else if (isTime(type, typeName))
-                    column = new DateTimeColumn();
-                else if (isXml(type, typeName)) {
-                    column = new StringColumn();
-                } else if (isBitString(type, precision, typeName)) {
-                    column = new BigIntColumn();
-                } else if(isArray(type, typeName)) {
-                    column = new StringColumn();
-                }else {
-                    column = new StringColumn();
-                    supportedType.set(c - 1, false);
-                    initColumn.set(c - 1, false);
-                }
-                queryLogger.debug(EventType.SCHEME_INFO_INIT.getMarker(EventType.Stage.INTERMEDIATE), "Column: {}, type: {}, type name: {}, precision: {}, scale: {}. "
-                                + "Prepared column type {}",
-                        label, type, typeName, precision, scale, column.getType());
-                column.name = label;
-                columns.add(c - 1, column);
-            }
-            return new SchemeInfo(columns, supportedType, initColumn);
-
-        } catch (SQLException e) {
-            queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);
-            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
-                throw new QueryCancelledByUser();
-            else throw e;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
-                                       List<Boolean> supportedType,List<Boolean> initColumn,
-                                       int maxIterations, Logger queryLogger, int operationNumber, boolean dryRun)
-            throws IOException, SQLException, QueryCancelledByUser {
-        if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, ResultSetManager resultSetManager, int maxIterations, int columnCount,
+                                       Logger queryLogger, int operationNumber, boolean dryRun) throws SQLException, QueryCancelledByUser {
+        if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
             queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
             throw new QueryCancelledByUser();
         }
 
         try {
-            int columnCount = columns.size();
-
-            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-            queryLogger.debug(EventType.MISC.getMarker(), "Received resultSet meta data");
             EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_COLUMN_FILL;
             if (dryRun)
                 resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_COLUMN_FILL;
-
             queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
                     "Column filling was started");
             int rowCount = 0;
             while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
                 rowCount++;
-
                 for (int c = 1; c < columnCount + 1; c++) {
                     Object value = getObjectFromResultSet(resultSet, c);
 
-                    if (dryRun)
-                        continue;
+                    if (dryRun) continue;
 
-                    int type = resultSetMetaData.getColumnType(c);
-                    String typeName = resultSetMetaData.getColumnTypeName(c);
-                    int precision = resultSetMetaData.getPrecision(c);
-                    int scale = resultSetMetaData.getScale(c);
+                    resultSetManager.processValue(value, c);
 
-                    if (supportedType.get(c - 1)) {
-                        String colType = columns.get(c - 1).getType();
-                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName, precision) || colType.equals(Types.BOOL))
-                            if (value instanceof Short)
-                                columns.get(c - 1).add(((Short)value).intValue());
-                            else if (value instanceof Double)
-                                columns.get(c - 1).add(((Double)value).intValue());
-                            else if (value instanceof Float)
-                                columns.get(c - 1).add(((Float)value).intValue());
-                            else if (value instanceof BigDecimal)
-                                columns.get(c - 1).add(((BigDecimal)value).intValue());
-                            else if (value instanceof Long) {
-                                columns.get(c - 1).add(((Long)value).intValue());
-                            } else if (value instanceof Byte) {
-                                columns.get(c - 1).add(((Byte) value).intValue());
-                            } else if (value instanceof UnsignedByte) {
-                                columns.get(c - 1).add(((UnsignedByte) value).intValue());
-                            } else if (value instanceof UnsignedShort) {
-                                columns.get(c - 1).add(((UnsignedShort) value).intValue());
-                            } else
-                                columns.get(c - 1).add(value);
-                        else if (isString(type, typeName)) {
-                            if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
-                                Reader reader = ((Clob)value).getCharacterStream();
-                                StringWriter writer = new StringWriter();
-                                IOUtils.copy(reader, writer);
-                                columns.get(c - 1).add(writer.toString());
-                            } else
-                                columns.get(c - 1).add(value);
-                        } else if (isArray(type, typeName)) {
-                            columns.get(c - 1).add(convertArrayType(value));
-                        } else if (isXml(type, typeName)) {
-                            String valueToAdd = "";
-                            if (value != null) {
-                                if (value instanceof  SQLXML) {
-                                    SQLXML sqlxml = (SQLXML)value;
-                                    valueToAdd = sqlxml.getString();
-                                } else if (value instanceof java.lang.String) {
-                                    valueToAdd = value.toString();
-                                } else if (value instanceof Document) {
-                                    try {
-                                        StringWriter writer = new StringWriter();
-                                        TransformerFactory tf = TransformerFactory.newInstance();
-                                        Transformer transformer = tf.newTransformer();
-                                        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-                                        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-                                        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                                        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-                                        transformer.transform(new DOMSource((Node) value), new StreamResult(writer));
-                                        valueToAdd = writer.toString();
-                                    } catch (TransformerException exception) {
-                                        throw new RuntimeException("Something went wrong when "
-                                                + "converting xml to string");
-                                    }
-                                }
-                            }
-                            valueToAdd = valueToAdd
-                                    .replaceAll("&lt;", "<")
-                                    .replaceAll("&gt;", ">");
-                            columns.get(c - 1).add(valueToAdd);
-                        } else if (isBitString(type, precision, typeName)) {
-                            String valueToAdd = "";
-                            if (value != null) {
-                                valueToAdd = value.toString();
-                            }
-                            columns.get(c - 1).add(valueToAdd);
-                        } else if (isDecimal(type, typeName, scale)) {
-                            Float valueToAdd = null;
-                            if (value != null) {
-                                if (value.toString().equals("NaN")
-                                        && value.getClass().getName().equals("java.lang.Double")) {
-                                    valueToAdd = Float.NaN;
-                                } else {
-                                    valueToAdd = ((BigDecimal)value).floatValue();
-                                }
-                            }
-                            columns.get(c - 1).add(valueToAdd);
-                        }
-                        else if (isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT)))
-                            if (value instanceof Double) {
-                                Double doubleValue = (Double) value;
-                                if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
-                                    columns.get(c - 1).add(Float.POSITIVE_INFINITY);
-                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < - Float.MAX_VALUE) {
-                                    columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
-                                } else {
-                                    columns.get(c - 1).add(new Float((Double)value));
-                                }
-                            } else {
-                                columns.get(c - 1).add(value);
-                            }
-                        else if (isBigInt(type, typeName, precision, scale)||
-                                typeName.equalsIgnoreCase("uuid") ||
-                                typeName.equalsIgnoreCase("set") ||
-                                colType.equals(Types.STRING)) {
-                            if (!descriptor.type.equals("Oracle")) {
-                                columns.get(c - 1).add((value != null) ? value.toString() : "");
-                            } else {
-                                if (colType.equals(Types.BIG_INT)) {
-                                    columns.get(c - 1).add(value == null ? "" : value.toString());
-                                } else {
-                                    if (value == null) {
-                                        columns.get(c - 1).add(value);
-                                    } else {
-                                        String str = value.toString();
-                                        BigInteger bigIntValue = new BigInteger(str);
-                                        if (bigIntValue.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0 &&
-                                                bigIntValue.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) >= 0) {
-                                            columns.get(c - 1).add(bigIntValue.intValue());
-                                        } else {
-                                            Column current = columns.get(c - 1);
-                                            Column bigIntColumn = new BigIntColumn();
-                                            for (int i = 0; i < current.length; i++) {
-                                                Object currentValue = current.get(i);
-                                                bigIntColumn.add(currentValue == null ? "" : currentValue.toString());
-                                            }
-                                            bigIntColumn.add(str);
-                                            bigIntColumn.name = current.name;
-                                            columns.set(c - 1, bigIntColumn);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else if (isTime(type, typeName)) {
-                            java.util.Date time;
-                            if (value instanceof java.sql.Timestamp)
-                                time = java.util.Date.from(((java.sql.Timestamp)value).toInstant());
-                            else if (value instanceof java.time.ZonedDateTime)
-                                time = java.util.Date.from(((java.time.ZonedDateTime)value).toInstant());
-                            else if (value instanceof oracle.sql.TIMESTAMPTZ) {
-                                OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
-                                time = java.util.Date.from(offsetDateTime.toInstant());
-                            } else if (value instanceof microsoft.sql.DateTimeOffset) {
-                                time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
-                            } else if (value instanceof LocalDateTime) {
-                                time = java.sql.Timestamp.valueOf((LocalDateTime) value);
-                            } else if (value instanceof LocalDate) {
-                                time = java.util.Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault())
-                                        .toInstant());
-                            } else if (value instanceof OffsetDateTime) {
-                                time = java.util.Date.from(((OffsetDateTime) value)
-                                        .toInstant());
-                            } else if (value instanceof Instant) {
-                                time = java.util.Date.from((Instant) value);
-                            } else if (value instanceof LocalTime) {
-                                LocalTime localTime = (LocalTime) value;
-                                Instant instant = localTime.atDate(LocalDate.of(1970, 1, 1))
-                                        .atZone(ZoneId.systemDefault()).toInstant();
-                                time = java.util.Date.from(instant);
-                            } else {
-                                time = ((java.util.Date) value);
-                            }
-                            columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
-                        }
-                    } else {
-                        Column column = columns.get(c - 1);
-                        if (!initColumn.get(c - 1) && value != null) {
-                            if ((value instanceof Byte) || (value instanceof Short) || (value instanceof Integer)) {
-                                column = new IntColumn();
-                                column.addAll(new Integer[rowCount - 1]);
-                            } else if ((value instanceof Float) || (value instanceof Double)) {
-                                column = new FloatColumn();
-                                column.addAll(new Float[rowCount - 1]);
-                            } else if ((value instanceof Boolean)) {
-                                column = new BoolColumn();
-                                column.addAll(new Boolean[rowCount - 1]);
-                            }
-                            column.name = resultSetMetaData.getColumnLabel(c);
-                            columns.set(c - 1, column);
-                            initColumn.set(c - 1, true);
-                            logger.debug(EventType.MISC.getMarker(), "Data type '{}' is not supported yet. Write as '{}'", typeName, column.getType());
-                        }
-
-                        if (value instanceof Double)
-                            value = new Float((Double)value);
-                        else if (!(value instanceof Byte) && !(value instanceof Short) &&
-                                !(value instanceof Integer) && !(value instanceof Boolean))
-                            value = (value != null) ? value.toString() : null;
-
-                        column.add(value);
+                    if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
+                        queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
+                        DataFrame dataFrame = new DataFrame();
+                        dataFrame.addColumns(resultSetManager.getProcessedColumns());
+                        resultSet.close();
+                        queryMonitor.removeResultSet(queryRun.id);
+                        return dataFrame;
                     }
                 }
-
-                if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
-                    queryLogger.info(EventType.MISC.getMarker(), "Query was canceled");
-                    DataFrame dataFrame = new DataFrame();
-                    dataFrame.addColumns(columns);
-
-                    resultSet.close();
-                    providerManager.getQueryMonitor().removeResultSet(queryRun.id);
-                    return dataFrame;
-                }
-
             }
             queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
                     "Column filling was finished");
@@ -670,42 +401,33 @@ public abstract class JdbcDataProvider extends DataProvider {
             DataFrame dataFrame = new DataFrame();
             if (dryRun)
                 return dataFrame;
-            dataFrame.addColumns(columns);
+            dataFrame.addColumns(resultSetManager.getProcessedColumns());
             return dataFrame;
         } catch (Exception e) {
             queryLogger.warn(EventType.ERROR.getMarker(), "An exception was thrown", e);
             if (resultSet != null && resultSet.isClosed()) {
                 throw new QueryCancelledByUser();
             }
-            else {
-                throw e;
-            }
+            throw new RuntimeException("Something went wrong", e);
         }
-    };
+    }
 
-    @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
-        Connection connection = null;
-        try {
-            connection = getConnection(queryRun.func.connection);
+        try (Connection connection = getConnection(queryRun.func.connection)) {
             ResultSet resultSet = getResultSet(queryRun, connection, logger, 100);
 
             if (resultSet == null)
                 return new DataFrame();
-
-            SchemeInfo schemeInfo = resultSetScheme(queryRun, resultSet, logger);
-            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1,
+            ResultSetManager resultSetManager = getResultSetManager();
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            resultSetManager.init(metaData);
+            return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),
                     logger, 1, false);
-        }
-        catch (SQLException e) {
-            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+        } catch (SQLException e) {
+            if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
-        }
-        finally {
-            if (connection != null)
-                connection.close();
         }
     }
 
@@ -717,16 +439,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-    protected Object convertArrayType(Object value) {
-        return value.toString();
-    }
-
-    protected OffsetDateTime timestamptzToOffsetDateTime(TIMESTAMPTZ dbData) {
-        throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
-    }
-
     protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
-                                             PatternMatcherResult result) {
+                                               PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
             String name = param.name + n;
@@ -768,7 +482,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         return result;
     }
-
     protected String getInQuery(PatternMatcher matcher, String names) {
         return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
@@ -835,9 +548,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         PatternMatcherResult result = new PatternMatcherResult();
 
         switch (matcher.op) {
-            case PatternMatcher.NONE:
-                result.query = "(1 = 1)";
-                break;
             case PatternMatcher.EQUALS:
                 result.query = "(" + matcher.colName + " = @" + param.name + ")";
                 result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
@@ -859,6 +569,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             case PatternMatcher.IS_NOT_NULL:
                 result.query = String.format("(%s %s)", matcher.colName, matcher.op);
                 break;
+            case PatternMatcher.NONE:
             default:
                 result.query = "(1 = 1)";
                 break;
@@ -907,7 +618,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String sql = queryTableSql(conn, query);
-        System.out.println(sql);
         if (sql == null)
             return new DataFrame();
         queryRun.func.query = sql;
@@ -919,79 +629,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         return "datetime('" + param.value.toString() + "')";
     }
 
-    // TODO Convert following code into "List.contains() style
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT) ||
-                typeName.equalsIgnoreCase("int4") ||
-                typeName.equalsIgnoreCase("int2") ||
-                typeName.equalsIgnoreCase("int") ||
-                typeName.equalsIgnoreCase("serial2") ||
-                typeName.equalsIgnoreCase("serial4") ||
-                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale)
-                        || isDecimal(type, typeName, scale)));
-        // TODO Investigate precision value for current case
-    }
-
-    protected boolean isArray(int type, String typeName) {
-        return type == java.sql.Types.ARRAY;
-    }
-
-    private static boolean isBitString(int type, int precision, String typeName) {
-        return (type == java.sql.Types.BIT && precision > 1) || typeName.equalsIgnoreCase("varbit");
-    }
-
-    private static boolean isXml(int type, String typeName) {
-        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml")) ||
-                typeName.equalsIgnoreCase("XMLType");
-    }
-
-    protected boolean isTime(int type, String typeName) {
-        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
-                || type == java.sql.Types.TIMESTAMP_WITH_TIMEZONE
-                || type == java.sql.Types.TIME_WITH_TIMEZONE
-                || typeName.equalsIgnoreCase("timetz")
-                || typeName.equalsIgnoreCase("timestamptz")
-                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
-                || (typeName.equalsIgnoreCase("datetimeoffset"));
-    }
-
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.BIGINT) || typeName.equalsIgnoreCase("int8") ||
-                typeName.equalsIgnoreCase("serial8");
-    }
-
-    protected boolean isFloat(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.FLOAT) || (type == java.sql.Types.DOUBLE) || (type == java.sql.Types.REAL) ||
-                typeName.equalsIgnoreCase("float8") ||
-                typeName.equalsIgnoreCase("float4") ||
-                typeName.equalsIgnoreCase("money") ||
-                typeName.equalsIgnoreCase("binary_float") ||
-                typeName.equalsIgnoreCase("binary_double");
-    }
-
-    protected boolean isDecimal(int type, String typeName, int scale) {
-        return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
-                typeName.equalsIgnoreCase("decimal")
-                || typeName.equalsIgnoreCase("decfloat");
-    }
-
-    private static boolean isBoolean(int type, String typeName, int precision) {
-        return (type == java.sql.Types.BOOLEAN) ||
-                typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
-    }
-
-    protected boolean isString(int type, String typeName) {
-        return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
-                || (type == java.sql.Types.NCLOB) ||
-                typeName.equalsIgnoreCase("varchar") ||
-                typeName.equalsIgnoreCase("nvarchar") ||
-                typeName.equalsIgnoreCase("nchar") ||
-                typeName.equalsIgnoreCase("ntext")) &&
-                !typeName.equalsIgnoreCase("uuid") &&
-                !typeName.equalsIgnoreCase("set");
-    }
-
     public static java.util.Properties defaultConnectionProperties(DataConnection conn) {
         java.util.Properties properties = new java.util.Properties();
         if (conn.credentials != null) {
@@ -1001,5 +638,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 properties.setProperty("password", conn.credentials.getPassword());
         }
         return properties;
+    }
+
+    public ResultSetManager getResultSetManager() {
+        return DefaultResultSetManager.getDefaultManager();
     }
 }
