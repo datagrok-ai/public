@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.3](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.4](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.12](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -18,6 +18,16 @@ title: "Release History"
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../deploy/docker-compose.md)
+
+
+## 2023-06-29 1.15.4
+
+### Addressed Issues
+
+* null 
+* (Bug) [#1957](https://github.com/datagrok-ai/public/issues/1722230016): Trellis plot: cannot be added in specific case, error on setting structure column as X axis 
+* (Bug) GROK-13423: Scatter plot: in some cases does not respond to axis changes from the UI 
+* (Bug) [#2061](https://github.com/datagrok-ai/public/issues/1769241104): DataFrame in viewer property is null on "viewer added" event (WIP)
 
 
 ## 2023-06-19 1.15.3
