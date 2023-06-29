@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: datagrok
+  name: datagrok
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: datagrok.datagrok.internal
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: datagrok
+                port:
+                  number: 8080
