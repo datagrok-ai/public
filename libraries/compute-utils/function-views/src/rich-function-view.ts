@@ -78,6 +78,7 @@ export class RichFunctionView extends FunctionView {
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
   public beforeRenderControlls = new Subject<true>();
+  public afterRenderControlls = new Subject<true>();
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
   public afterOutputSacalarTableRender = new Subject<HTMLElement>();
 
@@ -87,6 +88,10 @@ export class RichFunctionView extends FunctionView {
    */
   public replaceControlls(div: HTMLElement) {
     this.controllsDiv = div;
+  }
+
+  get controlsDiv() {
+    return this.controllsDiv;
   }
 
   /*
@@ -113,7 +118,7 @@ export class RichFunctionView extends FunctionView {
    * @returns HTMLElement attached to the root of the view
    */
   public buildIO(): HTMLElement {
-    const {inputBlock, inputForm, outputForm} = this.buildInputBlock();
+    const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
 
     ui.tools.handleResize(inputBlock, () => {
       if (([
@@ -123,9 +128,11 @@ export class RichFunctionView extends FunctionView {
       $(inputBlock).width() < 350) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
+        $(controlsWrapper).addClass('ui-form-condensed');
       } else {
         $(inputForm).removeClass('ui-form-condensed');
         $(outputForm).removeClass('ui-form-condensed');
+        $(controlsWrapper).removeClass('ui-form-condensed');
       }
     });
 
@@ -161,13 +168,12 @@ export class RichFunctionView extends FunctionView {
       $(saveButton).hide();
 
       this.isUploadMode.subscribe((newValue) => {
-        if (newValue) {
+        if (newValue)
           $(saveButton).show();
-          $(runButton).hide();
-        } else {
+        else
           $(saveButton).hide();
-          $(runButton).show();
-        }
+
+        if (this.runningOnInput) $(runButton).hide();
 
         this.buildRibbonPanels();
       });
@@ -177,8 +183,18 @@ export class RichFunctionView extends FunctionView {
         saveButton,
         runButtonWrapper as any,
       ]);
-      $(this.controllsDiv.children.item(1)).css('gap', '0px');
-      $(this.controllsDiv).css({'margin-top': '0px', 'position': 'sticky'});
+
+      $(this.controllsDiv).css({
+        'margin-top': '0px',
+        'position': 'sticky',
+      });
+      $(this.controllsDiv.lastChild).css({
+        'justify-content': 'space-between',
+      });
+      $(this.controllsDiv.firstChild).css({
+        'margin-right': '0px',
+      });
+      this.afterRenderControlls.next(true);
     }
 
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
@@ -190,7 +206,7 @@ export class RichFunctionView extends FunctionView {
         ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
-      ...this.runningOnInput ? []: [controlsWrapper],
+      controlsWrapper,
     ], 'ui-box');
 
     this.isUploadMode.subscribe((newValue) => {
@@ -204,6 +220,7 @@ export class RichFunctionView extends FunctionView {
       inputBlock: form,
       inputForm: inputFormDiv,
       outputForm: outputFormDiv,
+      controlsWrapper,
     };
   }
 
