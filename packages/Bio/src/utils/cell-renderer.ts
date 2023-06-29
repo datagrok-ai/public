@@ -118,7 +118,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ): void {
     let gapLength = 0;
     const msaGapLength = 8;
-    let maxLengthOfMonomer = 8;
+    let maxLengthOfMonomer = 999; // in case of long monomer representation, do not limit max length
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
