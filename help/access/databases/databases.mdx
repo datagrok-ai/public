@@ -556,6 +556,7 @@ To open debug section follow the next steps:
 <img alt="Open debug section" src={require('./debug-section-open-saved-query.gif').default} width="800px"/>
 
 If you have a saved data query:
+
 1. Go to **Data > Databases**.
 2. In the **Database Manager**, click the desired connector, choose saved connection, and click on saved query.
 3. Activate **Context Panel** with F2 keyboard shortcut or with the help of **Windows > Context Panel**.
@@ -570,6 +571,7 @@ Additionally, you can open debug window by right-clicking on saved query and cli
 <img alt="Open debug section" src={require('./debug-section-open-new-query.gif').default} width="800px"/>
 
 If you don't have a saved query:
+
 1. Go to **Data > Databases**.
 2. In the **Database Manager**, click the desired connector, choose saved connection and click **Add query**.
 3. Write your query and click on Debug icon
@@ -597,17 +599,18 @@ To specify **Fetch size** for debugging use the corresponding input field in the
 If you want to run the query with this parameter every time, add to the query declaration an additional meta parameter.
 
 <details>
-    <summary> Here's an example </summary>
+<summary> Here's an example </summary>
 
-    ```sql
-    --meta.connectFetchSize: 10000
-    SELECT * FROM very_big_table
-    ```
-    Or if you want to set it in megabytes:
+```sql
+--meta.connectFetchSize: 10000
+SELECT * FROM very_big_table
+```
 
-    ```sql
-    --meta.connectFetchSize: 10 MB
-    ```
+Or if you want to set it in megabytes:
+
+```sql
+--meta.connectFetchSize: 10 MB
+```
 
 </details>
 
