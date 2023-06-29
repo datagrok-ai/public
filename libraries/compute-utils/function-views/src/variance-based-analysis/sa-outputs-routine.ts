@@ -71,7 +71,8 @@ function getEmptyOutputTable(funcCall: DG.FuncCall, outputsSpecification: Output
           for (const elem of item.elements) 
             columns.push(DG.Column.fromType(
               df.col(elem.columnName)?.type as DG.COLUMN_TYPE,
-              `${elem.columnName} `, // extra space is added due to the bug https://reddata.atlassian.net/browse/GROK-13415
+              elem.columnName,
+              //`${elem.columnName} `, // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13415
               //`${name}(${elem.columnName}, ${elem.idx})`,
               rowCount
             ));          
@@ -111,7 +112,7 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
   
           if (item.elements)
             for (const elem of item.elements)             
-              table.col(`${elem.columnName} `/*`${name}(${elem.columnName}, ${elem.idx})`*/)?.set(
+              table.col(elem.columnName)?.set(
                 row,
                 df.col(elem.columnName)?.get(elem.idx)
               ); 

@@ -634,27 +634,27 @@ export class SensitivityAnalysisView {
 
   private buildRunButton(): HTMLButtonElement {
     return ui.bigButton('Run', async () => {
-      this.closeOpenedViewers();
-
       if (!this.isAnyInputSelected()) {
         grok.shell.error('None of inputs is marked as mutable.');
         return;
       }
+
+      this.closeOpenedViewers();
 
       switch (this.store.analysisInputs.analysisType.value.value) {
       case ANALYSIS_TYPE.SIMPLE_ANALYSIS:
         this.runSimpleAnalysis();
         break;
       case ANALYSIS_TYPE.RANDOM_ANALYSIS:
-        if (!this.isAnyInputSelected()) {
-          grok.shell.error('None of inputs is marked as mutable.');
+        if (!this.isAnyOutputSelected()) {
+          grok.shell.error('None of outputs is marked as mutable.');
           return;
         }
         this.runRandomAnalysis();
         break;
       case ANALYSIS_TYPE.SOBOL_ANALYSIS:
-        if (!this.isAnyInputSelected()) {
-          grok.shell.error('None of inputs is marked as mutable.');
+        if (!this.isAnyOutputSelected()) {
+          grok.shell.error('None of outputs is marked as mutable.');
           return;
         }
         this.runSobolAnalysis();
@@ -754,7 +754,8 @@ export class SensitivityAnalysisView {
       funcEvalResults.columns.add(col);
 
     // hide columns with fixed inputs
-    grok.shell.tableView(funcEvalResults.name).grid.columns.setVisible(colNamesToShow);
+    this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
+    this.comparisonView.grid.columns.setVisible(colNamesToShow);
 
     // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
@@ -856,7 +857,8 @@ export class SensitivityAnalysisView {
       funcEvalResults.columns.add(col);
 
     // hide columns with fixed inputs
-    grok.shell.tableView(funcEvalResults.name).grid.columns.setVisible(colNamesToShow);
+    this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
+    this.comparisonView.grid.columns.setVisible(colNamesToShow);
 
     // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
