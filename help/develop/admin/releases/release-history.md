@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.3](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.15.4](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/access.md#data-connection) | [datagrok/grok_connect:2.0.13](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -18,6 +18,15 @@ title: "Release History"
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../deploy/docker-compose.mdx)
+
+
+## 2023-06-29 1.15.4
+
+### Addressed Issues
+
+* (Bug) [#2052](https://github.com/datagrok-ai/public/issues/2052): Colouring is missing on adding new table view  
+* (Bug) #1730 Filters: Select column for external filters now work 
+* (Bug) [#2061](https://github.com/datagrok-ai/public/issues/1769241104): DataFrame in viewer property is null on "viewer added" event (WIP)
 
 
 ## 2023-06-19 1.15.3
