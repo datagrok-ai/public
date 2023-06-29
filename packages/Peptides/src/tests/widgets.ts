@@ -207,4 +207,4 @@ category('Widgets: Actions', () => {
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) === -1, true,
       'Expected to have no custom cluster in the Logo Summary Table');
   });
-}, false);
+}, {clear: false});

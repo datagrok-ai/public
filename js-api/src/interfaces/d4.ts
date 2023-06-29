@@ -433,6 +433,8 @@ export interface IScatterPlotLookSettings {
   /// Toggle this option by pressing L.
   lassoTool: boolean;
 
+  allowZoom: boolean;
+
   backColor: number;
 
   filteredRowsColor: number;
@@ -552,6 +554,10 @@ export interface ILineChartLookSettings {
   showXSelector: boolean;
 
   xAxisLabelOrientation: string;
+
+  xMin: number;
+
+  xMax: number;
 
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
@@ -1404,6 +1410,8 @@ export interface ITrellisPlotLookSettings {
   showControlPanel: boolean;
 
   syncMouseOverRow: boolean;
+
+  packCategories: boolean;
 
   backColor: number;
 

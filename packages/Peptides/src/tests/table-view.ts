@@ -156,4 +156,4 @@ category('Table view', () => {
         `monomer-position filter`);
     }
   });
-}, false);
+}, {clear: false});

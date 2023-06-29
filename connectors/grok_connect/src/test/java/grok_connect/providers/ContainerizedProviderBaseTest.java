@@ -8,7 +8,6 @@ import grok_connect.providers.utils.ConstructorParameterResolver;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -21,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 /**
@@ -48,11 +46,8 @@ public abstract class ContainerizedProviderBaseTest {
     public void init() {
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
         ProviderManager providerManager = new ProviderManager();
-        ProviderManager spy = Mockito.spy(providerManager);
-        Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = spy.getByName(type.getProperties().get("providerName").toString());
+        provider = providerManager.getByName(type.getProperties().get("providerName").toString());
     }
 
     @BeforeEach

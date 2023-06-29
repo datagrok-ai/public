@@ -16,15 +16,13 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
 
 public class TeradataDataProvider extends JdbcDataProvider {
-    public TeradataDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public TeradataDataProvider() {
         driverClassName = "com.teradata.jdbc.TeraDriver";
 
         descriptor = new DataSource();
@@ -202,12 +200,5 @@ public class TeradataDataProvider extends JdbcDataProvider {
             statement.setObject(n + i, lst.get(i));
         }
         return lst.size() - 1;
-    }
-
-    @Override
-    protected boolean isString(int type, String typeName) {
-        return (type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
-                || (type == java.sql.Types.NCLOB) || typeName.equalsIgnoreCase("JSON");
     }
 }

@@ -10,12 +10,7 @@ import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.table_query.TableQuery;
-import grok_connect.utils.ConnectionPool;
-import grok_connect.utils.Property;
-import grok_connect.utils.PropertyAdapter;
-import grok_connect.utils.ProviderManager;
-import grok_connect.utils.Settings;
-import grok_connect.utils.SettingsManager;
+import grok_connect.utils.*;
 import org.slf4j.LoggerFactory;
 import serialization.BufferAccessor;
 import serialization.DataFrame;
@@ -201,8 +196,8 @@ public class GrokConnect {
 
         post("/cancel", (request, response) -> {
             FuncCall call = gson.fromJson(request.body(), FuncCall.class);
-            providerManager.getQueryMonitor().cancelStatement(call.id);
-            providerManager.getQueryMonitor().addCancelledResultSet(call.id);
+            QueryMonitor.getInstance().cancelStatement(call.id);
+            QueryMonitor.getInstance().addCancelledResultSet(call.id);
             response.status(HttpURLConnection.HTTP_OK);
             return response;
         });

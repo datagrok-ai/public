@@ -16,7 +16,6 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.Column;
 import serialization.DataFrame;
@@ -24,10 +23,9 @@ import serialization.StringColumn;
 import serialization.Types;
 
 public class ImpalaDataProvider extends JdbcDataProvider {
-    public ImpalaDataProvider(ProviderManager providerManager) {
-        super(providerManager);
-        driverClassName = "com.cloudera.impala.jdbc.Driver";
 
+    public ImpalaDataProvider() {
+        driverClassName = "com.cloudera.impala.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "Impala";
         descriptor.description = "Query Impala database";
@@ -173,12 +171,6 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
-    }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) ||
-                (type == java.sql.Types.SMALLINT);
     }
 
     private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {

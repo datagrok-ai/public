@@ -69,14 +69,12 @@ public class SessionHandler {
             queryManager = new QueryManager(message, queryLogger);
             if (queryManager.dryRun) {
                 logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.START), "Running dry run");
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < 2; i++)
                     queryManager.dryRun(i == 0);
-                }
                 logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.END), "Dry run finished");
             }
             queryManager.initResultSet(queryManager.getQuery());
             if (queryManager.isResultSetInitialized()) {
-                queryManager.initScheme();
                 dataFrame = queryManager.getSubDF(dfNumber);
             } else {
                 dataFrame = new DataFrame();

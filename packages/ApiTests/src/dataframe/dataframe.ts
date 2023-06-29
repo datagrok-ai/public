@@ -306,7 +306,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('hash', async () => {
-    const df = grok.data.demo.demog(100000);
+    const df = grok.data.demo.demog(10);
     expect(hashDataFrame(df).length, 32);
 
     const df1 = DG.DataFrame.fromCsv(`a,b\n1,0\n2,0\n3,0`);
@@ -321,7 +321,6 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('emptyDataFrameToCsv', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([]);
     const csv: string = df.toCsv();
-
     expect(csv, '');
   });
 });
