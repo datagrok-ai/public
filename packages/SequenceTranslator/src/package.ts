@@ -12,7 +12,7 @@ import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transfor
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
-import {demoSequenceTranslatorUI} from './demo/demo-st-ui';
+import {demoDesignPatternUI, demoVisualizeDuplexUI, demoTranslateSequenceUI} from './demo/demo-st-ui';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
@@ -88,12 +88,26 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
   return linkStrandsV3000(strands, true);
 }
 
-// demoSequenceTranslator
-//name: demoSequenceTranslator
-//meta.demoPath: Bioinformatics | Sequence Design
-//description: Sequence Translator is an application for design and visualization of oligonucleotide sequences
-//meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence,%20Translator
-//meta.isDemoScript: True
-export async function demoSequenceTranslator(): Promise<void> {
-  await demoSequenceTranslatorUI();
+//name: demoTranslateSequence
+//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Translate
+//description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
+export async function demoTranslateSequence(): Promise<void> {
+  await demoTranslateSequenceUI();
+}
+
+//name: demoDesignPattern
+//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Design
+//description: Design a modification pattern for an oligonucleotide sequence
+//meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
+export async function demoDesignPattern(): Promise<void> {
+  await demoDesignPatternUI();
+}
+
+//name: demoVisualizeDuplex
+//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Visualize duplex
+//description: Visualize duplex and save SDF
+//meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
+export async function demoVisualizeDuplex(): Promise<void> {
+  await demoVisualizeDuplexUI();
 }
