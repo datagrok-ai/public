@@ -32,7 +32,7 @@ enum ANALYSIS_TYPE {
 }
 
 enum DF_OPTIONS {
-  LAST_ROW = 'Last row',  
+  LAST_ROW = 'Last row',
   FIRST_ROW = 'First row',
   ALL_COLUMNS = 'All'
 }
@@ -78,20 +78,20 @@ export class SensitivityAnalysisView {
       analysisType: {
         input: ui.choiceInput(
           'Analysis type', ANALYSIS_TYPE.SIMPLE_ANALYSIS, [ANALYSIS_TYPE.SIMPLE_ANALYSIS, ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS],
-          (v: ANALYSIS_TYPE) => {                        
+          (v: ANALYSIS_TYPE) => {
             analysisInputs.analysisType.value.next(v);
             this.updateRunButtonText();
           }),
         value: new BehaviorSubject(ANALYSIS_TYPE.SIMPLE_ANALYSIS),
       },
       samplesCount: {
-        input: ui.intInput('Samples', 100, (v: number) => {          
+        input: ui.intInput('Samples', 100, (v: number) => {
           analysisInputs.samplesCount.value = v;
           this.updateRunButtonText();
         }),
         value: 100,
       },
-    } as AnalysisProps;   
+    } as AnalysisProps;
 
     const getInputValue = (input: DG.Property, key: string) => (
       input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
@@ -149,7 +149,7 @@ export class SensitivityAnalysisView {
           },
           isChanging: {
             input: (() => {
-              const input = ui.switchInput(' ', false, (v: boolean) => {                
+              const input = ui.switchInput(' ', false, (v: boolean) => {
                 ref.isChanging.value.next(v);
                 this.updateRunButtonText();
               });
@@ -223,7 +223,7 @@ export class SensitivityAnalysisView {
       }
 
       return acc;
-    }, {} as Record<string, SensitivityStore>);  
+    }, {} as Record<string, SensitivityStore>);
 
     const outputs = func.outputs.reduce((acc, outputProp) => {
       const temp = {
@@ -301,7 +301,7 @@ export class SensitivityAnalysisView {
         //identifier: string | null
       }
       isInterest: {input: DG.InputBase, value: BehaviorSubject<boolean>}
-    }>);      
+    }>);
 
     return {analysisInputs, inputs, outputs};
   };
@@ -376,40 +376,42 @@ export class SensitivityAnalysisView {
     let variedInputsCount = 0;
 
     switch (analysisInputs.analysisType.value.value) {
-      case ANALYSIS_TYPE.SIMPLE_ANALYSIS:
-        let product = 1;        
+    case ANALYSIS_TYPE.SIMPLE_ANALYSIS:
+      let product = 1;
 
-        for (const name of Object.keys(inputs))
-          if (inputs[name].isChanging.value.value) {
-            product *= (inputs[name] as SensitivityNumericStore).lvl.value;
-            ++variedInputsCount;
-          }
-            
-        if (variedInputsCount === 0)
-          return 0;
-          
-        return product;        
-      
-      case ANALYSIS_TYPE.RANDOM_ANALYSIS:
-        return analysisInputs.samplesCount.value;
+      for (const name of Object.keys(inputs)) {
+        if (inputs[name].isChanging.value.value) {
+          product *= (inputs[name] as SensitivityNumericStore).lvl.value;
+          ++variedInputsCount;
+        }
+      }
 
-      case ANALYSIS_TYPE.SOBOL_ANALYSIS:
-        for (const name of Object.keys(inputs))
-          if (inputs[name].isChanging.value.value)
-            ++variedInputsCount;
-            
-        if (variedInputsCount === 0)
-          return 0;
-          
-        return (variedInputsCount + 2) * analysisInputs.samplesCount.value;
-
-      default:
+      if (variedInputsCount === 0)
         return 0;
-    }  
+
+      return product;
+
+    case ANALYSIS_TYPE.RANDOM_ANALYSIS:
+      return analysisInputs.samplesCount.value;
+
+    case ANALYSIS_TYPE.SOBOL_ANALYSIS:
+      for (const name of Object.keys(inputs)) {
+        if (inputs[name].isChanging.value.value)
+          ++variedInputsCount;
+      }
+
+      if (variedInputsCount === 0)
+        return 0;
+
+      return (variedInputsCount + 2) * analysisInputs.samplesCount.value;
+
+    default:
+      return 0;
+    }
   }
 
   private getFuncCallCountAsString(): string {
-    const funcCallCount = this.getFuncCallCount(this.store.analysisInputs, this.store.inputs);    
+    const funcCallCount = this.getFuncCallCount(this.store.analysisInputs, this.store.inputs);
 
     if (funcCallCount < 1000)
       return String(funcCallCount);
@@ -419,11 +421,11 @@ export class SensitivityAnalysisView {
 
     if (funcCallCount < 1000000000)
       return String(Math.ceil(funcCallCount / 10000) / 100) + 'm';
-    
+
     return String(Math.ceil(funcCallCount / 10000000) / 100) + 'b';
   }
 
-  private updateRunButtonText(): void {   
+  private updateRunButtonText(): void {
     this.runButton.textContent = `Run (${this.getFuncCallCountAsString()})`;
   }
 
@@ -466,7 +468,7 @@ export class SensitivityAnalysisView {
     const outputsTitle = ui.h2('Outputs');
     form.container.appendChild(outputsTitle);
     prevCategory = 'Misc';
-    
+
     const outputForm = Object.values(this.store.outputs)
       .reduce(({container, switches}, outputConfig) => {
         const prop = outputConfig.prop;
@@ -502,7 +504,7 @@ export class SensitivityAnalysisView {
 
     this.updateRunButtonText();
 
-    const buttons = ui.buttonsInput([this.runButton /*
+    const buttons = ui.buttonsInput([this.runButton, /*
       ui.bigButton('Run sensitivity analysis', async () => {
       this.closeOpenedViewers();
 
@@ -517,7 +519,7 @@ export class SensitivityAnalysisView {
       'align-items': 'start',
     });
 
-    form.container.appendChild(outputForm.container);    
+    form.container.appendChild(outputForm.container);
     form.container.appendChild(
       buttons,
     );
@@ -526,8 +528,8 @@ export class SensitivityAnalysisView {
       'overflow-y': 'scroll',
     });
 
-    // add tooltips    
-    
+    // add tooltips
+
 
     return form.container;
   }
@@ -535,16 +537,17 @@ export class SensitivityAnalysisView {
   private addTooltips(): void {
     // type of analysis
     ui.tooltip.bind(this.store.analysisInputs.analysisType.input.root, () => {
-        switch (this.store.analysisInputs.analysisType.value.value) {
-          case ANALYSIS_TYPE.SIMPLE_ANALYSIS:
-            return 'Elementary analysis: the function is evaluated with respect to the selected inputs varying within the specified ranges';
-          case ANALYSIS_TYPE.RANDOM_ANALYSIS:
-            return 'Monte Carlo simulation: the function is evaluated with respect to random variation of the selected inputs within the specified ranges';
-          case ANALYSIS_TYPE.SOBOL_ANALYSIS:
-            return 'Variance-based sensitivity analysis: the Sobol\' indices are computed';
-          default:
-            return 'Unknown method!';
-    }});
+      switch (this.store.analysisInputs.analysisType.value.value) {
+      case ANALYSIS_TYPE.SIMPLE_ANALYSIS:
+        return 'Elementary analysis: the function is evaluated with respect to the selected inputs varying within the specified ranges';
+      case ANALYSIS_TYPE.RANDOM_ANALYSIS:
+        return 'Monte Carlo simulation: the function is evaluated with respect to random variation of the selected inputs within the specified ranges';
+      case ANALYSIS_TYPE.SOBOL_ANALYSIS:
+        return 'Variance-based sensitivity analysis: the Sobol\' indices are computed';
+      default:
+        return 'Unknown method!';
+      }
+    });
 
     // run button
     ui.tooltip.bind(this.runButton, () => {
@@ -553,14 +556,15 @@ export class SensitivityAnalysisView {
 
     // samples count
     ui.tooltip.bind(this.store.analysisInputs.samplesCount.input.root, () => {
-      switch (this.store.analysisInputs.analysisType.value.value) {        
-        case ANALYSIS_TYPE.RANDOM_ANALYSIS:
-          return 'Input parameters sets count';
-        case ANALYSIS_TYPE.SOBOL_ANALYSIS:
-          return 'Sample size for the Sobol\' indices computation';
-        default:
-          return 'Unknown method!';
-    }});
+      switch (this.store.analysisInputs.analysisType.value.value) {
+      case ANALYSIS_TYPE.RANDOM_ANALYSIS:
+        return 'Input parameters sets count';
+      case ANALYSIS_TYPE.SOBOL_ANALYSIS:
+        return 'Sample size for the Sobol\' indices computation';
+      default:
+        return 'Unknown method!';
+      }
+    });
 
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
@@ -575,7 +579,7 @@ export class SensitivityAnalysisView {
       ui.tooltip.bind(propConfig.const.input.root, 'Fixed input value');
       ui.tooltip.bind((propConfig as SensitivityNumericStore).min.input.root, 'Varied input range');
       ui.tooltip.bind((propConfig as SensitivityNumericStore).max.input.root, 'Varied input range');
-      ui.tooltip.bind((propConfig as SensitivityNumericStore).lvl.input.root, 'Range values count');      
+      ui.tooltip.bind((propConfig as SensitivityNumericStore).lvl.input.root, 'Range values count');
       ui.tooltip.bind((propConfig as SensitivityNumericStore).distrib.input.root, 'Range values grid type');
     }
 
@@ -590,68 +594,71 @@ export class SensitivityAnalysisView {
       });
 
       switch (propConfig.prop.propertyType) {
-        case DG.TYPE.DATA_FRAME:         
-          ui.tooltip.bind(propConfig.input.root, () => {
-            if (propConfig.isInterest.value.value === false)
-              return 'Dataframe';
-            return 'Specify dataframe part that requires analysis';
-          });          
-          break;
-        case DG.TYPE.INT:
-        case DG.TYPE.FLOAT:
-        case DG.TYPE.BIG_INT:
-          ui.tooltip.bind(propConfig.input.root, 'Scalar');
-          break;
-        default:
-          break;
+      case DG.TYPE.DATA_FRAME:
+        ui.tooltip.bind(propConfig.input.root, () => {
+          if (propConfig.isInterest.value.value === false)
+            return 'Dataframe';
+          return 'Specify dataframe part that requires analysis';
+        });
+        break;
+      case DG.TYPE.INT:
+      case DG.TYPE.FLOAT:
+      case DG.TYPE.BIG_INT:
+        ui.tooltip.bind(propConfig.input.root, 'Scalar');
+        break;
+      default:
+        break;
       }
     }
   }
 
   private isAnyInputSelected(): boolean {
-    for (const propName of Object.keys(this.store.inputs))       
-      if (this.store.inputs[propName].isChanging.value.value === true)        
+    for (const propName of Object.keys(this.store.inputs)) {
+      if (this.store.inputs[propName].isChanging.value.value === true)
         return true;
+    }
     return false;
   }
 
   private isAnyOutputSelected(): boolean {
-    for (const propName of Object.keys(this.store.outputs))
+    for (const propName of Object.keys(this.store.outputs)) {
       if (this.store.outputs[propName].isInterest.value.value === true)
         return true;
+    }
     return false;
   }
 
   private buildRunButton(): HTMLButtonElement {
-    return ui.bigButton('Run', async () => {      
+    return ui.bigButton('Run', async () => {
       this.closeOpenedViewers();
 
       if (!this.isAnyInputSelected()) {
         grok.shell.error('None of inputs is marked as mutable.');
         return;
       }
-      
+
       switch (this.store.analysisInputs.analysisType.value.value) {
-        case ANALYSIS_TYPE.SIMPLE_ANALYSIS:
-          this.runSimpleAnalysis();
-          break;
-        case ANALYSIS_TYPE.RANDOM_ANALYSIS:
-          if (!this.isAnyInputSelected()) {
-            grok.shell.error('None of inputs is marked as mutable.');
-            return;
-          }
-          this.runRandomAnalysis();
-          break;
-        case ANALYSIS_TYPE.SOBOL_ANALYSIS:
-          if (!this.isAnyInputSelected()) {
-            grok.shell.error('None of inputs is marked as mutable.');
-            return;
-          }
-          this.runSobolAnalysis();
-          break;
-        default:
-          break;      
-    }});
+      case ANALYSIS_TYPE.SIMPLE_ANALYSIS:
+        this.runSimpleAnalysis();
+        break;
+      case ANALYSIS_TYPE.RANDOM_ANALYSIS:
+        if (!this.isAnyInputSelected()) {
+          grok.shell.error('None of inputs is marked as mutable.');
+          return;
+        }
+        this.runRandomAnalysis();
+        break;
+      case ANALYSIS_TYPE.SOBOL_ANALYSIS:
+        if (!this.isAnyInputSelected()) {
+          grok.shell.error('None of inputs is marked as mutable.');
+          return;
+        }
+        this.runSobolAnalysis();
+        break;
+      default:
+        break;
+      }
+    });
   }
 
   private getFixedInputColumns(rowCount: number): DG.Column [] {
@@ -668,7 +675,7 @@ export class SensitivityAnalysisView {
     }).map((propName) => (DG.Column.fromList(
       this.store.inputs[propName].type as unknown as DG.COLUMN_TYPE,
       this.store.inputs[propName].prop.caption ?? propName,
-      Array(rowCount).fill(this.store.inputs[propName].const.value)
+      Array(rowCount).fill(this.store.inputs[propName].const.value),
     )));
   }
 
@@ -708,22 +715,23 @@ export class SensitivityAnalysisView {
           max: propConfig.max.value,
         };
       }),
-      samplesCount: this.store.analysisInputs.samplesCount.value || 1,      
-    };   
+      samplesCount: this.store.analysisInputs.samplesCount.value || 1,
+    };
 
-    const outputsOfInterest = [];    
+    const outputsOfInterest = [];
 
     for (const outputName of Object.keys(this.store.outputs)) {
       const output = this.store.outputs[outputName];
 
-      if (output.isInterest.value.value)
+      if (output.isInterest.value.value) {
         outputsOfInterest.push({
-          prop: output.prop, 
+          prop: output.prop,
           value: {
             row: output.value.returning === DF_OPTIONS.LAST_ROW ? -1 : 1,
             columns: output.value.colName,
-        }});          
-    }    
+          }});
+      }
+    }
 
     const analysis = new SobolAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
     const analysisResults = await analysis.perform();
@@ -736,11 +744,11 @@ export class SensitivityAnalysisView {
     this.comparisonView.dataFrame = funcEvalResults;
     const colNamesToShow = funcEvalResults.columns.names();
     const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
-    
+
     // add columns with fixed inputs
     for (const col of fixedInputs)
       funcEvalResults.columns.add(col);
-      
+
     // hide columns with fixed inputs
     grok.shell.tableView(funcEvalResults.name).grid.columns.setVisible(colNamesToShow);
 
@@ -815,33 +823,34 @@ export class SensitivityAnalysisView {
           max: propConfig.max.value,
         };
       }),
-      samplesCount: this.store.analysisInputs.samplesCount.value || 1,      
-    };   
+      samplesCount: this.store.analysisInputs.samplesCount.value || 1,
+    };
 
-    const outputsOfInterest = [];    
+    const outputsOfInterest = [];
 
     for (const outputName of Object.keys(this.store.outputs)) {
       const output = this.store.outputs[outputName];
 
-      if (output.isInterest.value.value)
+      if (output.isInterest.value.value) {
         outputsOfInterest.push({
-          prop: output.prop, 
+          prop: output.prop,
           value: {
             row: output.value.returning === DF_OPTIONS.LAST_ROW ? -1 : 1,
             columns: output.value.colName,
-        }});          
-    }    
+          }});
+      }
+    }
 
     const analysis = new RandomAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
     const funcEvalResults = await analysis.perform();
     this.comparisonView.dataFrame = funcEvalResults;
     const colNamesToShow = funcEvalResults.columns.names();
     const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
-    
+
     // add columns with fixed inputs
     for (const col of fixedInputs)
       funcEvalResults.columns.add(col);
-      
+
     // hide columns with fixed inputs
     grok.shell.tableView(funcEvalResults.name).grid.columns.setVisible(colNamesToShow);
 
@@ -855,8 +864,8 @@ export class SensitivityAnalysisView {
     // add scatterplot
     const scatPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults,
       {x: names[0],
-       y: names[options.variedInputs.length]
-      }));   
+        y: names[options.variedInputs.length],
+      }));
 
     this.openedViewers = this.openedViewers.concat([corPlot, scatPlot]);
   }
