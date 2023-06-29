@@ -68,10 +68,12 @@ export class ComputeView extends HitTriageBaseView {
       this.template.enrichedTable = this.template.hitsTable;
 
       chemDescriptorsDialog(async (descriptorsMap) => {
-        Object.keys(descriptorsMap).forEach(async (key) => {
-          await chemFunctionsMap[key as ChemPropNames](
+        await Promise.all(
+          Object.keys(descriptorsMap).filter((key) => descriptorsMap[key] && descriptorsMap[key].length > 0)
+            .map((key) => {
+              return chemFunctionsMap[key as ChemPropNames](
             this.template.hitsTable!, this.template.hitsMolColumn, descriptorsMap[key]);
-        });
+            }));
         resolve();
       }, resolve);
 
