@@ -258,7 +258,10 @@ export class SensitivityAnalysisView {
         },
         isInterest: {
           input: (() => {
-            const input = ui.switchInput(' ', outputProp.propertyType !== DG.TYPE.DATA_FRAME, (v: boolean) => temp.isInterest.value.next(v));
+            const input = ui.switchInput(' ', outputProp.propertyType !== DG.TYPE.DATA_FRAME, (v: boolean) => {
+              temp.isInterest.value.next(v);
+              this.updateRunButtonText();
+            });
             $(input.root).css({'min-width': '50px', 'width': '50px'});
             $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
             return input;
@@ -416,6 +419,9 @@ export class SensitivityAnalysisView {
   }
 
   private getFuncCallCountAsString(): string {
+    if (!this.canEvaluationBeRun())
+      return '0';
+
     const funcCallCount = this.getFuncCallCount(this.store.analysisInputs, this.store.inputs);
 
     if (funcCallCount < 1000)
@@ -430,7 +436,7 @@ export class SensitivityAnalysisView {
     return String(Math.ceil(funcCallCount / 10000000) / 100) + 'b';
   }
 
-  private updateRunButtonText(): void {
+  private updateRunButtonText(): void {    
     this.runButton.textContent = `Run (${this.getFuncCallCountAsString()})`;
   }
 
@@ -556,6 +562,12 @@ export class SensitivityAnalysisView {
 
     // run button
     ui.tooltip.bind(this.runButton, () => {
+      if (!this.isAnyInputSelected())
+        return 'Select mutable input(s) to run sensitivity analysis';
+
+      if (!this.isAnyOutputSelected())
+        return 'Select output(s) requiring analysis';
+
       return `Run sensitivity analysis: the function is evaluated ${this.getFuncCallCount(this.store.analysisInputs, this.store.inputs)} times`;
     });
 
@@ -633,9 +645,15 @@ export class SensitivityAnalysisView {
     return false;
   }
 
+  private canEvaluationBeRun(): boolean {
+    return this.isAnyInputSelected() && this.isAnyOutputSelected();
+  }
+
   private buildRunButton(): HTMLButtonElement {
     return ui.bigButton('Run', async () => {
-      if (!this.isAnyInputSelected()) {
+      if (!this.canEvaluationBeRun())
+        return;
+      /*if (!this.isAnyInputSelected()) {
         grok.shell.error('None of inputs is marked as mutable.');
         return;
       }
@@ -643,7 +661,7 @@ export class SensitivityAnalysisView {
       if (!this.isAnyOutputSelected()) {
         grok.shell.error('None of outputs is marked as mutable.');
         return;
-      }
+      }*/
 
       this.closeOpenedViewers();
 
