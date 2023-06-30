@@ -1163,7 +1163,7 @@ export async function callChemDiversitySearch(
 }
 
 //top-menu: Chem | Calculate | Properties...
-//name: addChemPropertiesColumns
+//name: Chemical Properties
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool MW = true
@@ -1192,7 +1192,7 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 }
 
 //top-menu: Chem | Calculate | Toxicity Risks...
-//name: addChemRisksColumns
+//name: Toxicity risks
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool mutagenicity = true

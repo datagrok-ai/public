@@ -11,21 +11,29 @@ export type Descriptor = {
     description: string,
 };
 
-export type IChemProperty = {
-   propertyName: string
-} & Descriptor;
-
-export type IChemPropertyGroup = {
-    name: ChemPropNames,
-    values: IChemProperty[],
+export type IFunctionInput = {
+    name: string,
+    displayName: string,
+    description?: string | null,
+    type: DG.TYPE,
+    defaultValue?: any,
+    choices?: string[] | null,
+    value?: any
 }
 
-export type IChemPropertyGroupMap = {
-    toxRisks: IChemPropertyGroup,
-    structuralAlerts: IChemPropertyGroup,
-    chemProperties: IChemPropertyGroup,
+export type IFunctionProps = {
+    name: string,
+    package: string,
+    displayName: string,
+    description?: string | null,
+    inputs: IFunctionInput[],
+    calculate: boolean,
+    onlyCheckboxes: boolean,
 }
 
-export type ChemPropNames = 'Descriptors' | 'Toxicity Risks' | 'Structural Alerts' | 'Chemical Properties';
-
-export type ChemFunctionType = (t: DG.DataFrame, col: string, props: string[]) => Promise<any>;
+export type IComputeDialogResult = {
+    descriptors: string[],
+    externals: {
+        [_: string]: {[key: string]: any}
+    }
+}
