@@ -24,10 +24,11 @@ See also:
 
 ### Addressed Issues
 
-* (Bug) [#2052](https://github.com/datagrok-ai/public/issues/2052): Colouring is missing on adding new table view  
-* (Bug) #1730 Filters: Select column for external filters now work 
-* (Bug) [#2061](https://github.com/datagrok-ai/public/issues/1769241104): DataFrame in viewer property is null on "viewer added" event (WIP)
-
+* Improvements: 
+  * [#1730](https://github.com/datagrok-ai/public/issues/1730) Scaffold Tree: Filters panel integration.
+* Fixed:
+  * [#2052](https://github.com/datagrok-ai/public/issues/2052): Colouring is missing on adding new table view.
+  * [#2061](https://github.com/datagrok-ai/public/issues/2061): DataFrame in viewer property is null on "viewer added" event.
 
 ## 2023-06-19 1.15.3
 
