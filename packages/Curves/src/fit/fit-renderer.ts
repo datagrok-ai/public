@@ -107,11 +107,12 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
   transform: Viewport, ratio: number): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
+    const color = p.outlier ? DG.Color.red :
+      series.pointColor ? DG.Color.fromHtml(series.pointColor) ?? DG.Color.scatterPlotMarker :
+      DG.Color.scatterPlotMarker;
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
-      transform.xToScreen(p.x), transform.yToScreen(p.y),
-      series.pointColor ? DG.Color.fromHtml(series.pointColor) ?? DG.Color.scatterPlotMarker : DG.Color.scatterPlotMarker,
-      (p.outlier ? 6 : 4) * ratio);
+      transform.xToScreen(p.x), transform.yToScreen(p.y), color, (p.outlier ? 12 : 4) * ratio);
   }
 }
 
