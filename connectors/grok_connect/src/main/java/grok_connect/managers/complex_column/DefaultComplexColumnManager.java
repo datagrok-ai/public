@@ -44,6 +44,7 @@ public class DefaultComplexColumnManager implements ColumnManager<List<Column>> 
         columnsMap.put(Map.class, serialization.Types.COLUMN_LIST);
         columnsMap.put(Temporal.class, serialization.Types.DATE_TIME);
         columnsMap.put(Date.class, serialization.Types.DATE_TIME);
+        columnsMap.put(java.sql.Date.class, serialization.Types.DATE_TIME);
         columnsMap.put(DateTimeOffset.class, serialization.Types.DATE_TIME);
         columnsMap.put(DATE.class, serialization.Types.DATE_TIME);
         columnsMap.put(TIMESTAMP.class, serialization.Types.DATE_TIME);

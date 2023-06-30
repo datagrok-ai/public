@@ -12,11 +12,20 @@ import java.sql.ResultSetMetaData;
 import java.util.Collection;
 
 public class OracleResultSetManager extends DefaultResultSetManager {
-    private final ColumnManager<String> bigintColumnManager;
-
     public OracleResultSetManager(Collection<ColumnManager<?>> columnManagers) {
         super(columnManagers);
-        bigintColumnManager = new OracleBigIntColumnManager();
+    }
+
+    @Override
+    public void init(ResultSetMetaData meta, int initColumnSize) {
+        super.init(meta, initColumnSize);
+        for (int i = 0; i < columns.length; i++) {
+            Column column = columns[i];
+            if (column.getType().equals(Types.BIG_INT)) {
+                columns[i] = new IntColumn(initColumnSize);
+                columns[i].name = column.name;
+            }
+        }
     }
 
     @Override
