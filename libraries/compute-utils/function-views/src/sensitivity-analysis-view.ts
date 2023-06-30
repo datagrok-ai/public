@@ -258,12 +258,12 @@ export class SensitivityAnalysisView {
         },
         isInterest: {
           input: (() => {
-            const input = ui.switchInput(' ', false, (v: boolean) => temp.isInterest.value.next(v));
+            const input = ui.switchInput(' ', outputProp.propertyType !== DG.TYPE.DATA_FRAME, (v: boolean) => temp.isInterest.value.next(v));
             $(input.root).css({'min-width': '50px', 'width': '50px'});
             $(input.captionLabel).css({'min-width': '0px', 'max-width': '0px'});
             return input;
           })(),
-          value: new BehaviorSubject<boolean>(false),
+          value: new BehaviorSubject<boolean>(outputProp.propertyType !== DG.TYPE.DATA_FRAME),
         },
       };
       $(temp.input.input).hide();
