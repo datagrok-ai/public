@@ -93,13 +93,13 @@ export const printLeftOrCentered = (
     }
   }
 
-  const placeX: number = maxWord[wordIdx] - (maxWord[0] ?? 0);
+  const placeX: number = (maxWord[wordIdx] ?? 0) - (maxWord[0] ?? 0);
   if (left || textSize > w) {
     draw(placeX, placeX + maxColorTextSize);
-    return placeX + maxColorTextSize + g.measureText(grayPart).width;
+    return x + placeX + maxColorTextSize + g.measureText(grayPart).width;
   } else {
     const dx = (w - textSize) / 2;
     draw(dx, dx + maxColorTextSize);
-    return placeX + dx + maxColorTextSize;
+    return x + placeX + dx + maxColorTextSize;
   }
 };
