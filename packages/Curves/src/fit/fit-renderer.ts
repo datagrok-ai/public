@@ -172,12 +172,12 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
 function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
   screenBounds: DG.Rect, transform: Viewport, confidenceType: string): void {
   g.beginPath();
-  for (let i = 0; i <= screenBounds.width; i++) {
+  for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
     const x = screenBounds.x + i;
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
       transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x))) :
       transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
-    if (i === 0)
+    if (i === AXES_LEFT_PX_MARGIN)
       g.moveTo(x, y);
     else
       g.lineTo(x, y);
@@ -189,17 +189,17 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
 function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
   screenBounds: DG.Rect, transform: Viewport): void {
   g.beginPath();
-  for (let i = 0; i <= screenBounds.width; i++) {
+  for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
     const x = screenBounds.x + i;
     const y = transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x)));
-    if (i === 0)
+    if (i === AXES_LEFT_PX_MARGIN)
       g.moveTo(x, y);
     else
       g.lineTo(x, y);
   }
 
   // reverse traverse to make a shape of confidence interval to fill it
-  for (let i = screenBounds.width; i >= 0; i--) {
+  for (let i = screenBounds.width; i >= AXES_LEFT_PX_MARGIN; i--) {
     const x = screenBounds.x + i;
     const y = transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
     g.lineTo(x, y);
@@ -230,7 +230,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
+      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points')
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
@@ -314,10 +314,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.lineWidth = 2 * ratio;
 
         g.beginPath();
-        for (let i = 0; i <= screenBounds.width; i++) {
+        for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
           const x = screenBounds.x + i;
           const y = viewport.yToScreen(curve(viewport.xToWorld(x)));
-          if (i === 0)
+          if (i === AXES_LEFT_PX_MARGIN)
             g.moveTo(x, y);
           else
             g.lineTo(x, y);
@@ -385,7 +385,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
+      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points')
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
