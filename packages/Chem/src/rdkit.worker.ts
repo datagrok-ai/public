@@ -36,9 +36,11 @@ ctx.addEventListener('message', async (e: any) => {
   } else if (op === WORKER_CALL.CONVERT_MOL_NOTATION) {
     const result = _rdKitServiceWorker!.convertMolNotation(args[0]);
     port.postMessage({op: op, retval: result});
-  }
-  else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
+  } else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
     const result = _rdKitServiceWorker!.getStructuralAlerts(args[0], args[1]);
+    port.postMessage({op: op, retval: result});
+  } else if (op === WORKER_CALL.GET_MOL_SAFE) {
+    const result = _rdKitServiceWorker!.getMolSafe(args[0], args[1], args[2], args[3]);
     port.postMessage({op: op, retval: result});
   }
 });

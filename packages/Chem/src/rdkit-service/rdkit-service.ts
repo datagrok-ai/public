@@ -2,6 +2,7 @@ import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
 import { RuleId } from '../panels/structural-alerts';
+import { IMolContext } from '../utils/mol-creation_rdkit';
 
 export class RdKitService {
   workerCount: number;
@@ -134,5 +135,13 @@ export class RdKitService {
     return molecules ? this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
         t.parallelWorkers[i].getStructuralAlerts(alerts, segment), fooGather) :
       this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
+  }
+
+  async getMolSafe(molecules: string[], details: object = {}, warnOff: boolean = true, checkIfSmarts: boolean = true): Promise<IMolContext[]> {
+    return this._initParallelWorkers(molecules, (i: number, segment: any) =>
+      this.parallelWorkers[i].getMolSafe(segment, details, warnOff, checkIfSmarts),
+      (data: any) => {
+        return [].concat(...data);
+      });
   }
 }

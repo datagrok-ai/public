@@ -1,6 +1,6 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {getMolSafe} from '../utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isSmarts} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { RuleId } from '../panels/structural-alerts';
@@ -214,5 +214,38 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._rdKitMols = null;
 
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
+  }
+
+  getMolSafe(molecules: string[], details: object = {}, warnOff: boolean = true, checkIfSmarts: boolean = true): IMolContext[] {
+    let isQMol = false;
+    const kekulizeProp = (details as any).kekulize;
+    let kekulize: boolean = typeof kekulizeProp === 'boolean' ? kekulizeProp : true;
+    let useMolBlockWedging: boolean = false;
+    let mol: RDMol | null = null;
+    const mols: IMolContext[] = [];
+    for (let i = 0; i < molecules.length; ++i) {
+      try {
+        const _isSmarts = checkIfSmarts && isSmarts(molecules[i]);
+        mol = _isSmarts ? this._rdKitModule.get_qmol(molecules[i]) : this._rdKitModule.get_mol(molecules[i], JSON.stringify(details));
+        isQMol = _isSmarts;
+      } catch (e) {}
+      if (!mol && kekulize) {
+        kekulize = false; //Pyrrole cycles
+        try {
+          mol = this._rdKitModule.get_mol(molecules[i], JSON.stringify({...details, kekulize}));
+        } catch (e) {}
+      }
+      if (!mol) {
+        try {
+          mol = this._rdKitModule.get_qmol(molecules[i]);
+        } catch (e) {}
+      }
+      if (mol)
+        useMolBlockWedging = (mol.has_coords() === 2);
+      else if (!warnOff)
+        console.error('Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molecules[i] + '`');
+      mols[i] = {mol, kekulize, isQMol, useMolBlockWedging};
+    }
+    return mols;
   }
 }

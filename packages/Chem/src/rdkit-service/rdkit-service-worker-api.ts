@@ -5,4 +5,5 @@ export enum WORKER_CALL {
   SEARCH_SUBSTRUCTURE = 'searchSubstructure',
   CONVERT_MOL_NOTATION = 'convertMolNotation',
   GET_STRUCTURAL_ALERTS = 'getStructuralAlerts',
+  GET_MOL_SAFE = 'getMolSafe',
 }
