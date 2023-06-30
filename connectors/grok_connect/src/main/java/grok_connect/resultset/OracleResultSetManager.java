@@ -28,7 +28,7 @@ public class OracleResultSetManager extends DefaultResultSetManager {
                 setBigIntValue(o, index, currentColumn);
             } else
                 currentColumn.add(currentManager
-                        .convert(o, columnsMeta[index - 1].getColumnLabel()));
+                        .convert(o, columnsMeta[index - 1]));
         } else
             throw new RuntimeException("ResultSetManager should be init");
     }

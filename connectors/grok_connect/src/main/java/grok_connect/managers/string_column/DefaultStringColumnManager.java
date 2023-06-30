@@ -49,7 +49,7 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
     }
 
     @Override
-    public String convert(Object value, String columnLabel) {
+    public String convert(Object value, ColumnMeta columnMeta) {
         LOGGER.trace("convert method was called");
         if (value == null) return "";
         Class<?> aClass = value.getClass();
@@ -91,12 +91,12 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
     }
 
     @Override
-    public boolean isApplicable(Object o) {
-        return o instanceof String;
+    public Column getColumn() {
+        return new StringColumn();
     }
 
     @Override
-    public Column getColumn() {
-        return new StringColumn();
+    public Column getColumn(int initColumnSize) {
+        return new StringColumn(initColumnSize);
     }
 }

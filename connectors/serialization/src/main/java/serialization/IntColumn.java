@@ -1,9 +1,5 @@
 package serialization;
 
-
-import java.util.Arrays;
-import java.util.Objects;
-
 // Integer column.
 public class IntColumn extends Column<Integer> {
     private static final String TYPE = Types.INT;
@@ -11,22 +7,27 @@ public class IntColumn extends Column<Integer> {
 
     private int[] data;
 
+    public IntColumn() {
+        data = new int[initColumnSize];
+    }
+
+    public IntColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new int[initColumnSize];
+    }
+
+    public IntColumn(Integer[] values) {
+        data = new int[initColumnSize];
+        addAll(values);
+    }
+
     public String getType() {
         return TYPE;
     }
 
     public void empty() {
         length = 0;
-        data = new int[100];
-    }
-
-    public IntColumn() {
-        data = new int[100];
-    }
-
-    public IntColumn(Integer[] values) {
-        data = new int[100];
-        addAll(values);
+        data = new int[initColumnSize];
     }
 
     public void encode(BufferAccessor buf) {

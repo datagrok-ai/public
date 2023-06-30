@@ -5,8 +5,6 @@ import grok_connect.managers.Converter;
 import grok_connect.managers.datetime_column.converters.*;
 import grok_connect.resultset.ColumnMeta;
 import microsoft.sql.DateTimeOffset;
-import oracle.sql.DATE;
-import oracle.sql.TIMESTAMP;
 import oracle.sql.TIMESTAMPTZ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +12,6 @@ import serialization.Column;
 import serialization.DateTimeColumn;
 import java.sql.Timestamp;
 import java.time.*;
-import java.time.temporal.Temporal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +36,7 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
     }
 
     @Override
-    public Double convert(Object value, String columnLabel) {
+    public Double convert(Object value, ColumnMeta columnMeta) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -67,14 +64,12 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
     }
 
     @Override
-    public boolean isApplicable(Object o) {
-        return o instanceof Temporal || o instanceof Date
-                || o instanceof DateTimeOffset || o instanceof DATE
-                || o instanceof TIMESTAMP || o instanceof TIMESTAMPTZ;
+    public Column getColumn() {
+        return new DateTimeColumn();
     }
 
     @Override
-    public Column getColumn() {
-        return new DateTimeColumn();
+    public Column getColumn(int initColumnSize) {
+        return new DateTimeColumn(initColumnSize);
     }
 }
