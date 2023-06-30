@@ -165,57 +165,75 @@ M  END
   });
 
   test('search_withoutSubstructLibrary_WithoutFp_benzene', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
     await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', false, false);
   });
 
   test('search_withoutSubstructLibrary_WithFp_benzene', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
     await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', true, false);
   });
 
   test('search_withSubstructLibrary_benzene', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', false, true);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', false, true);
   });
 
-  test('search_withoutSubstructLibrary_WithoutFp_aspirin', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+  test('search_withoutSubstructLibrary_WithoutFp_2_benzene_rings', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'CC(Oc1ccccc1C(O)=O)=O', false, false);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', false, false);
   });
 
-  test('search_withoutSubstructLibrary_WithFp_aspirin', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+  test('search_withoutSubstructLibrary_WithFp_2_benzene_rings', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'CC(Oc1ccccc1C(O)=O)=O', true, false);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', true, false);
   });
 
-  test('search_withSubstructLibrary_aspirin', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+  test('search_withSubstructLibrary_2_benzene_rings', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'CC(Oc1ccccc1C(O)=O)=O', false, true);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'Cc1ccccc1', false, true);
   });
 
-  test('search_withoutSubstructLibrary_WithoutFp_3_benzene_rings', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+  test('search_withoutSubstructLibrary_WithoutFp_complex_structure', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1cc2cc3ccccc3cc2cc1', false, false);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1', false, false);
   });
 
-  test('search_withoutSubstructLibrary_WithFp_3_benzene_rings', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+  test('search_withoutSubstructLibrary_WithFp_complex_structure', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1cc2cc3ccccc3cc2cc1', true, false);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1', true, false);
   });
 
-  test('search_withSubstructLibrary_complex_3_benzene_rings', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+  test('search_withSubstructLibrary_complex_complex_structure', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1cc2cc3ccccc3cc2cc1', false, true);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1', false, true);
+  });
+
+  test('search_withoutSubstructLibrary_WithoutFp_non_ring_structure', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O', false, false);
+  });
+
+  test('search_withoutSubstructLibrary_WithFp_non_ring_structure', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O', true, false);
+  });
+
+  test('search_withSubstructLibrary_complex_non_ring_structure', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O', false, true);
   });
 
   async function performanceTestWithConsoleLog(molCol: DG.Column, query: string, 
