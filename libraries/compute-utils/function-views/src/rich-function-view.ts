@@ -505,7 +505,7 @@ export class RichFunctionView extends FunctionView {
       'flex-grow': '0',
     });
     let prevCategory = 'Misc';
-    wu(this.funcCall.outputParams.values())
+    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[])
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;
@@ -569,7 +569,7 @@ export class RichFunctionView extends FunctionView {
       'flex-grow': '0',
     });
     let prevCategory = 'Misc';
-    wu(this.funcCall.inputParams.values())
+    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[])
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;

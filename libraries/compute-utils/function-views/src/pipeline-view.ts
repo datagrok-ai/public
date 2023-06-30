@@ -313,7 +313,7 @@ export class PipelineView extends ComputationView {
       const subscribeOnDisableEnable = () => {
         const outerSub = step.view.funcCallReplaced.subscribe(() => {
           const subscribeForTabsDisabling = () => {
-            wu(step.view.funcCall.inputParams.values()).forEach(
+            wu(step.view.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach(
               (param) => {
                 const disableFollowingTabs = () => {
                   Object.values(this.steps).forEach((iteratedStep) => {
