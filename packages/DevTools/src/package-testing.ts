@@ -520,6 +520,13 @@ export class TestManager extends DG.ViewBase {
     const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
     acc.addPane('Results', () => ui.div(grid), true);
+    if (tests.test !== undefined) {
+      acc.addPane('History', () => ui.waitBox(async () => {
+        const history = await grok.data.query('DevTools:TestHistory',
+          {packageName: tests.packageName, category: tests.test.category, test: tests.test.name});
+        return (await history.plot.grid()).root;
+      }), true);
+    }
     return acc.root;
   };
 
