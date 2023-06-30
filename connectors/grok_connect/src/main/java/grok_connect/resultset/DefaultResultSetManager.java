@@ -1,6 +1,5 @@
 package grok_connect.resultset;
 
-import grok_connect.log.EventType;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.DefaultBigIntColumnManager;
 import grok_connect.managers.bool_column.DefaultBoolColumnManager;
@@ -12,7 +11,6 @@ import grok_connect.managers.string_column.DefaultStringColumnManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.Column;
-import serialization.StringColumn;
 import serialization.Types;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
