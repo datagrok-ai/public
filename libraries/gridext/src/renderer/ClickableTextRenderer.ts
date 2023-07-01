@@ -4,7 +4,7 @@ import * as RendUtils from './RendUtils';
 import {GridCellRendererEx} from "./GridCellRendererEx";
 
 function isNullText(cell : DG.Cell) : boolean {
-  const bNull : boolean = cell === null || cell === undefined || cell.value === null || cell.value === undefined;
+  const bNull : boolean = cell === null || cell === undefined || cell.value === null || cell.value === undefined || cell.value === '';
   return bNull;
 }
 
@@ -43,7 +43,7 @@ export class ClickableTextRenderer extends GridCellRendererEx {
 
   isClickable(cellGrid : DG.GridCell, nXOnCell : number, nYOnCell : number) : boolean {
     const cell : DG.Cell = cellGrid.cell;
-    const str : string = isNullText(cell) ? null : cellGrid.cell.value.toString();
+    const str : string | null = isNullText(cell) ? null : this.formatValue(cellGrid);
     if (str === null)
       return false;
 
