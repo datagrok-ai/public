@@ -98,10 +98,20 @@ const FuncCallParamMapProxy = new Proxy(class {
 );
 
 
+export interface IFunctionRegistrationData {
+  signature: string;    // int foo(string bar)
+  run: Function;
+  tags?: string;        // comma-separated tags
+  isAsync?: boolean;    // whether is can be called synchronously
+  namespace?: string;
+  options?: {[key: string]: string}
+}
+
+
 /** Grok functions */
 export class Functions {
 
-  register(func: Func): void {
+  register(func: IFunctionRegistrationData): void {
     api.grok_RegisterFunc(func);
   }
 
@@ -211,7 +221,7 @@ export class Context {
 }
 
 class FuncCallParams {
-  [name: string]: FuncCallParam,
+  [name: string]: FuncCallParam;
 
   //@ts-ignore
   public values(): FuncCallParam[];
