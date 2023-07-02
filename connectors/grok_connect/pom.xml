@@ -176,11 +176,11 @@
             <url>https://s3.amazonaws.com/redshift-maven-repository/release</url>
         </repository>
 
-<!--        <repository>-->
-<!--            <id>data-local</id>-->
-<!--            <name>data</name>-->
-<!--            <url>file://${project.basedir}/lib</url>-->
-<!--        </repository>-->
+        <!--        <repository>-->
+        <!--            <id>data-local</id>-->
+        <!--            <name>data</name>-->
+        <!--            <url>file://${project.basedir}/lib</url>-->
+        <!--        </repository>-->
     </repositories>
 
     <dependencies>
@@ -491,7 +491,7 @@
             <artifactId>guava</artifactId>
             <version>31.0.1-jre</version>
         </dependency>
-    <!--        Hive2-->
+        <!--        Hive2-->
         <dependency>
             <groupId>org.apache.hive</groupId>
             <artifactId>hive-jdbc</artifactId>
@@ -505,9 +505,28 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion> <!-- installed in pom.xml later to remediate vulnerabilities -->
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
-    <!--Hive1-->
+        <dependency> <!-- remediating vulnerability -->
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>3.3.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--Hive1-->
         <dependency>
             <groupId>org.apache.hadoop.hive</groupId>
             <artifactId>hive-jdbc</artifactId>
