@@ -53,7 +53,6 @@ const CANDLESTICK_MEDIAN_PX_SIZE = 3.5;
 const CANDLESTICK_OUTLIER_PX_SIZE = 6;
 
 
-
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
@@ -263,7 +262,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
     ui.dialog({title: 'Edit chart'})
       .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
-      .show();
+      .show({resizable: true});
   }
 
   renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData): void {
