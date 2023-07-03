@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.51",
+  "version": "3.4.53",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1497,6 +1497,9 @@
         },
         "1.8.6": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.10.0": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -2931,6 +2934,9 @@
     "usage-analysis": {
       "dependencies": {
         "1.0.0": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.0.1": {
           "datagrok-api": "^1.13.8"
         }
       },
