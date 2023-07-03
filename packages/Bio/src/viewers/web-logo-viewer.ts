@@ -957,6 +957,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
   }
 
+  private _lastWidth: number;
+  private _lastHeight: number;
+
   /** Calculate canvas size an positionWidth and updates properties */
   private calcSize() {
     if (!this.host) return;
@@ -1037,7 +1040,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         this.host.style.setProperty('overflow-y', 'hidden', 'important');
       }
     }
-    this._onSizeChanged.next();
+
+    if (this._lastWidth !== this.root.clientWidth && this._lastHeight !== this.root.clientHeight) {
+      this._lastWidth = this.root.clientWidth;
+      this._lastHeight = this.root.clientHeight;
+      this._onSizeChanged.next();
+    }
   }
 
   public getAlphabetSize(): number {
