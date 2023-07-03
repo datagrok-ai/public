@@ -120,6 +120,12 @@ export interface IFitSeries extends IFitSeriesOptions {
   points: IFitPoint[];
 }
 
+export interface IFitChartLabelOptions {
+  visible: boolean;
+  color: string;
+  name: string;
+}
+
 /** Chart options. For fitted curves, this object is stored in the grid column tags and is used by the renderer. */
 export interface IFitChartOptions {
   minX?: number;
@@ -134,6 +140,7 @@ export interface IFitChartOptions {
   logY?: boolean;
 
   showStatistics?: string[];
+  labelOptions?: IFitChartLabelOptions[];
 }
 
 /** Data for the fit chart. */
@@ -166,7 +173,9 @@ export interface IFitSeriesOptions {
   showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
   showConfidenceForX?: number;
   clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
+  labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions
 }
+// TODO: show labels in property panel if present, color by default from series
 
 
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */

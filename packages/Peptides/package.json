@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "friendlyName": "Peptides",
-  "version": "1.9.7",
+  "version": "1.9.8",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"

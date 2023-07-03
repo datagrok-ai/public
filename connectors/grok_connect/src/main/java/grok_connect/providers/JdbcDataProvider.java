@@ -421,7 +421,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 return new DataFrame();
             ResultSetManager resultSetManager = getResultSetManager();
             ResultSetMetaData metaData = resultSet.getMetaData();
-            resultSetManager.init(metaData);
+            resultSetManager.init(metaData, 100);
             return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),
                     logger, 1, false);
         } catch (SQLException e) {

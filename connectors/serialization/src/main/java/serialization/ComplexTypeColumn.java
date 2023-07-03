@@ -8,16 +8,17 @@ import java.util.List;
 import java.util.Objects;
 
 public class ComplexTypeColumn extends Column<List<Column>> {
+    private static final int DEFAULT_ARRAY_SIZE = 25;
     private static final String DATA_FIELD_NAME = "data";
-    private static final int DEFAULT_ARRAY_SIZE = 100;
     private Column[] data;
 
     public ComplexTypeColumn() {
-        this.data = new Column[DEFAULT_ARRAY_SIZE];
+        this.data = new Column[initColumnSize];
     }
 
-    public ComplexTypeColumn(Column[] columns) {
-        this.data = columns;
+    public ComplexTypeColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        this.data = new Column[initColumnSize];
     }
 
     @Override
