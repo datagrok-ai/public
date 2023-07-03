@@ -23,7 +23,7 @@ type StepState = {
   idx: number,
   visibility: BehaviorSubject<VISIBILITY_STATE>,
   ability: BehaviorSubject<ABILITY_STATE>,
-  options?: {friendlyName?: string}
+  options?: {friendlyName?: string, helpUrl?: string | HTMLElement}
 }
 
 const getVisibleStepName = (step: StepState) => {
@@ -34,12 +34,12 @@ export class PipelineView extends ComputationView {
   public steps = {} as {[scriptNqName: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
-  private stepTabs: DG.TabControl | null = null;
+  private stepTabs!: DG.TabControl;
 
   // Sets current step of pipeline
   public set currentTabName(name: string) {
-    if (this.stepTabs?.getPane(name))
-      this.stepTabs!.currentPane = this.stepTabs?.getPane(name);
+    if (this.stepTabs.getPane(name))
+      this.stepTabs.currentPane = this.stepTabs.getPane(name);
   }
 
   // PipelineView unites several export files into single ZIP file
@@ -101,7 +101,7 @@ export class PipelineView extends ComputationView {
           .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
       ) {
         const temp = new ExcelJS.Workbook();
-        this.stepTabs!.currentPane = this.stepTabs!.getPane(getVisibleStepName(step));
+        this.stepTabs.currentPane = this.stepTabs.getPane(getVisibleStepName(step));
 
         await new Promise((r) => setTimeout(r, 100));
         await temp.xlsx.load(await (await step.view.exportConfig!.export('Excel')).arrayBuffer());
@@ -138,6 +138,7 @@ export class PipelineView extends ComputationView {
       funcName: string,
       friendlyName?: string,
       hiddenOnInit?: VISIBILITY_STATE,
+      helpUrl?: string | HTMLElement,
     }[],
   ) {
     super(
@@ -159,7 +160,7 @@ export class PipelineView extends ComputationView {
         ability: new BehaviorSubject<ABILITY_STATE>(
           this.isHistorical ? ABILITY_STATE.ENABLED: (idx === 0) ? ABILITY_STATE.ENABLED : ABILITY_STATE.DISABLED,
         ),
-        options: {friendlyName: stepConfig.friendlyName},
+        options: {friendlyName: stepConfig.friendlyName, helpUrl: stepConfig.helpUrl},
       };
     });
 
@@ -448,10 +449,10 @@ export class PipelineView extends ComputationView {
       this.subs.push(
         this.steps[stepConfig.funcName].visibility.subscribe((newValue) => {
           if (newValue === VISIBILITY_STATE.VISIBLE)
-            $(this.stepTabs?.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).show();
+            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).show();
 
           if (newValue === VISIBILITY_STATE.HIDDEN)
-            $(this.stepTabs?.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();
+            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();
         }),
       );
     });
@@ -460,12 +461,29 @@ export class PipelineView extends ComputationView {
       this.subs.push(
         step.ability.subscribe((newState) => {
           if (newState === ABILITY_STATE.ENABLED)
-            $(this.stepTabs?.getPane(getVisibleStepName(step)).header).removeClass('d4-disabled');
+            $(this.stepTabs.getPane(getVisibleStepName(step)).header).removeClass('d4-disabled');
           if (newState === ABILITY_STATE.DISABLED)
-            $(this.stepTabs?.getPane(getVisibleStepName(step)).header).addClass('d4-disabled');
+            $(this.stepTabs.getPane(getVisibleStepName(step)).header).addClass('d4-disabled');
         }),
       );
     });
+
+    const updateHelpPanel = async () => {
+      const newHelpUrl = Object.values(this.steps)
+        .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name)
+        ?.options?.helpUrl;
+
+
+      if (newHelpUrl) {
+        const path = `System:AppData/${this.func.package.name}/${newHelpUrl}`;
+        const file = await grok.dapi.files.readAsText(path);
+        grok.shell.windows.help.showHelp(ui.markdown(file));
+      }
+    };
+
+    this.stepTabs.onTabChanged.subscribe(async () => updateHelpPanel());
+    grok.shell.windows.help.visible = true;
+    updateHelpPanel();
 
     this.hideSteps(
       ...this.initialConfig
@@ -519,9 +537,9 @@ export class PipelineView extends ComputationView {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
-    const idxBeforeLoad = this.stepTabs!.panes
+    const idxBeforeLoad = this.stepTabs.panes
       .filter((tab) => ($(tab.header).css('display') !== 'none'))
-      .findIndex((tab) => tab.name === this.stepTabs!.currentPane.name);
+      .findIndex((tab) => tab.name === this.stepTabs.currentPane.name);
 
     await this.onBeforeLoadRun();
 
@@ -544,7 +562,7 @@ export class PipelineView extends ComputationView {
 
     this.lastCall = pulledParentRun;
 
-    this.stepTabs!.currentPane = this.stepTabs!.panes
+    this.stepTabs.currentPane = this.stepTabs.panes
       .filter((tab) => ($(tab.header).css('display') !== 'none'))[idxBeforeLoad];
 
     await this.onAfterLoadRun(pulledParentRun);
