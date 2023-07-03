@@ -353,7 +353,9 @@ export class DataQuery extends Func {
     super(dart);
   }
 
+  /** @deprecated Use FuncCall.adHoc instead **/
   get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.dart); }
+  /** @deprecated Use FuncCall.adHoc instead **/
   set adHoc(a: boolean) { api.grok_Query_Set_AdHoc(this.dart, a); }
 
   /** Query text */
