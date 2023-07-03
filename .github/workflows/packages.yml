@@ -235,7 +235,9 @@ jobs:
           while curl -s http://127.0.0.1:8080/api/admin/health | grep -e 'ApiError'
           do
             sleep 1
+            echo "Retrying..."
           done
+          curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'true' }}
         run: |
