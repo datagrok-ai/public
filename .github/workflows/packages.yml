@@ -235,8 +235,8 @@ jobs:
           until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
           do
             sleep 1
-            echo "Retrying..."
-            docker logs --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            docker logs $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            echo -e "\nRetrying..."
           done
           curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
