@@ -73,11 +73,11 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   test('isCorrect', async () => {
     await _testMsaIsCorrect(fromCsv, toCsv);
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectLong', async () => {
     await _testMsaIsCorrect(longFromCsv, longToCsv);
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectHelm', async () => {
     await awaitContainerStart();
@@ -93,13 +93,13 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
     await _testMSAOnColumn(
       SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectSeparatorLong', async () => {
     await _testMSAOnColumn(
       SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  }, {skipReason: 'GROK-13221'});
+  });
 });
 
 async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> {
