@@ -10,6 +10,7 @@ import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
 import {getOutput} from './variance-based-analysis/sa-outputs-routine';
+import {getCalledFuncCalls} from './variance-based-analysis/utils';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 
@@ -653,17 +654,6 @@ export class SensitivityAnalysisView {
     return ui.bigButton('Run', async () => {
       if (!this.canEvaluationBeRun())
         return;
-      /*if (!this.isAnyInputSelected()) {
-        grok.shell.error('None of inputs is marked as mutable.');
-        return;
-      }
-
-      if (!this.isAnyOutputSelected()) {
-        grok.shell.error('None of outputs is marked as mutable.');
-        return;
-      }*/
-
-      this.closeOpenedViewers();
 
       switch (this.store.analysisInputs.analysisType.value.value) {
       case ANALYSIS_TYPE.GRID_ANALYSIS:
@@ -755,7 +745,7 @@ export class SensitivityAnalysisView {
 
     const analysis = new SobolAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
     const analysisResults = await analysis.perform();
-
+    this.closeOpenedViewers();
     const funcEvalResults = analysisResults.funcEvalResults;
     const firstOrderIndeces = analysisResults.firstOrderSobolIndices;
     const totalOrderIndeces = analysisResults.totalOrderSobolIndices;
@@ -864,6 +854,7 @@ export class SensitivityAnalysisView {
 
     const analysis = new RandomAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
     const funcEvalResults = await analysis.perform();
+    this.closeOpenedViewers();
     this.comparisonView.dataFrame = funcEvalResults;
     const colNamesToShow = funcEvalResults.columns.names();
     const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
@@ -1060,9 +1051,10 @@ export class SensitivityAnalysisView {
         }, {} as Record<string, any>),
     ));
 
-    const pi = DG.TaskBarProgressIndicator.create(`Running ${funccalls.length} function calls...`);
-    const calledFuncCalls = await Promise.all(funccalls.map(async (funccall) => await funccall.call()));
-    pi.close(); 
+    //const calledFuncCalls = await Promise.all(funccalls.map(async (funccall) => await funccall.call()));
+    const calledFuncCalls = await getCalledFuncCalls(funccalls);    
+
+    this.closeOpenedViewers();
 
     const variedInputsColumns = [] as DG.Column[];
     const rowCount = calledFuncCalls.length;

@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForRandomAnalysis} from './input-tools';
 import {getOutputColumns} from './output-tools';
-import {checkSize} from './utils';
+import {checkSize, getCalledFuncCalls} from './utils';
 import {OutputInfo, getOutput} from './sa-outputs-routine'
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
@@ -91,7 +91,9 @@ export class RandomAnalysis {
 
   // Performs variance-based sensitivity analysis
   async perform(): Promise<DG.DataFrame> {
-    await this.run();
+    //await this.run();
+
+    this.funcCalls = await getCalledFuncCalls(this.funcCalls);
 
     // columns with the varied inputs values
     const inputColumns = this.variedInputs.map((varInput) => varInput.column as DG.Column);
