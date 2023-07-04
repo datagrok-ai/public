@@ -179,7 +179,7 @@ M  END
   test('search_withSubstructLibrary_benzene', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', false, true);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', false, true);
   });
 
   test('search_withoutSubstructLibrary_WithoutFp_2_benzene_rings', async () => {
@@ -197,7 +197,7 @@ M  END
   test('search_withSubstructLibrary_2_benzene_rings', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'Cc1ccccc1', false, true);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', false, true);
   });
 
   test('search_withoutSubstructLibrary_WithoutFp_complex_structure', async () => {
