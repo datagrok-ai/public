@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray, delay} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {_package, getHelmMonomers} from '../package';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -82,11 +82,11 @@ category('splitters', async () => {
     expect(newDf.columns.names().includes('17'), true);
 
     // TODO: Check cell.renderer for columns of monomers
-    // const _tv: DG.TableView = grok.shell.addTableView(df);
-    // await delay(500); // needed to account for table adding
-    // // call to calculate 'cell.renderer' tag
-    // await grok.data.detectSemanticTypes(df);
-  }, {skipReason: 'GROK-13300'});
+    grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    const resCellRenderer = seqCol.getTag(DG.TAGS.CELL_RENDERER);
+    expect(resCellRenderer, 'sequence');
+  });
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(

@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {ALPHABET, NOTATION, SplitterFunc, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {category, expect, expectArray, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   countForMonomerAtPosition,
   PositionInfo as PI,
@@ -19,17 +19,10 @@ ATC-G-TTGC--
 -TC-GCTTGC--
 -TC-GCTTGC--`;
 
-
-  before(async () => {
-  });
-
-  after(async () => {
-    // Closing opened views causes the error 'Cannot read properties of null (reading 'f')'
-  });
-
   test('allPositions', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -64,7 +57,7 @@ ATC-G-TTGC--
       for (const m of positions[i].getMonomers())
         expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
     }
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('positions with shrinkEmptyTail option true (filtered)', async () => {
     const csvDf2 = `seq
@@ -76,6 +69,7 @@ ATC-G-TTGC--
 -T--CCGT-`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf2);
     const tv: DG.TableView = grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -87,6 +81,7 @@ ATC-G-TTGC--
       return i > 2;
     });
     df.filter.fireChanged();
+    await delay(1000);
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
       {'shrinkEmptyTail': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
@@ -112,11 +107,12 @@ ATC-G-TTGC--
       for (const m of positions[i].getMonomers())
         expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
     }
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('positions with skipEmptyPositions option', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -148,13 +144,14 @@ ATC-G-TTGC--
       const tgtPos = tgtPosList[posI];
       expectPositionInfo(resPos, tgtPos);
     }
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('count sequences for monomer at position', async () => {
     const df: DG.DataFrame = buildDfWithSeqCol(csvDf1, NOTATION.FASTA, ALPHABET.DNA, 'SEQ.MSA');
     const seqCol: DG.Column = df.getCol('seq');
 
     const tv: DG.TableView = grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo', {
       startPositionName: '3',
@@ -182,7 +179,7 @@ ATC-G-TTGC--
     const uh = UnitsHandler.getOrCreate(seqCol);
     const countAt1 = countForMonomerAtPosition(df, uh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
-  }, {skipReason: 'GROK-13300'});
+  });
 });
 
 function expectPositionInfo(actualPos: PI, expectedPos: PI): void {

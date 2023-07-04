@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
@@ -12,54 +12,40 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
 
 category('renderers', () => {
-  let tvList: DG.TableView[];
-  let dfList: DG.DataFrame[];
-
-  before(async () => {
-    tvList = [];
-    dfList = [];
-  });
-
-  after(async () => {
-    // Closing viewes and data frames leads to exception
-    // dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    // tvList.forEach((tv: DG.TableView) => tv.close());
-  });
-
   test('long sequence performance ', async () => {
     performanceTest(generateLongSequence, 'Long sequences');
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('many sequence performance', async () => {
     performanceTest(generateManySequences, 'Many sequences');
-  }, {skipReason: 'GROK-13300'});
+  });
   test('many sequence performance', async () => {
     performanceTest(generateManySequences, 'Many sequences');
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('rendererMacromoleculeFasta', async () => {
     await _rendererMacromoleculeFasta();
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('rendererMacromoleculeSeparator', async () => {
     await _rendererMacromoleculeSeparator();
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('rendererMacromoleculeDifference', async () => {
     await _rendererMacromoleculeDifference();
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('afterMsa', async () => {
     await _testAfterMsa();
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('afterConvert', async () => {
     await _testAfterConvert();
-  }, {skipReason: 'GROK-13300'});
+  }, {skipReason: 'GROK-11212'});
 
   test('selectRendererBySemType', async () => {
     await _selectRendererBySemType();
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('setRendererManually', async () => {
     await _setRendererManually();
@@ -74,12 +60,8 @@ category('renderers', () => {
     if (semType)
       seqCol.semType = semType;
 
-    const tv: DG.TableView = grok.shell.addTableView(df);
-    // call to calculate 'cell.renderer' tag
-    await grok.data.detectSemanticTypes(df);
-
-    dfList.push(df);
-    tvList.push(tv);
+    grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const resCellRenderer = seqCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');
@@ -94,12 +76,8 @@ category('renderers', () => {
     if (semType)
       seqCol.semType = semType;
 
-    const tv: DG.TableView = grok.shell.addTableView(df);
-    // call to calculate 'cell.renderer' tag
-    await grok.data.detectSemanticTypes(df);
-
-    dfList.push(df);
-    tvList.push(tv);
+    grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const resCellRenderer = seqCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');
@@ -116,12 +94,8 @@ category('renderers', () => {
     seqDiffCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
 
-    const tv: DG.TableView = grok.shell.addTableView(df);
-    // call to calculate 'cell.renderer' tag
-    await grok.data.detectSemanticTypes(df);
-
-    dfList.push(df);
-    tvList.push(tv);
+    grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, C.SEM_TYPES.MACROMOLECULE_DIFFERENCE);
@@ -137,8 +111,7 @@ category('renderers', () => {
       srcSeqCol.semType = semType;
 
     const tv: DG.TableView = grok.shell.addTableView(df);
-    // call to calculate 'cell.renderer' tag
-    await grok.data.detectSemanticTypes(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     console.log('Bio: tests/renderers/afterMsa, table view');
 
@@ -153,6 +126,7 @@ category('renderers', () => {
 
     const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol});
     tv.grid.invalidate();
+    await delay(1000);
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
@@ -162,9 +136,6 @@ category('renderers', () => {
 
     // check newColumn with UnitsHandler constructor
     const _uh: UnitsHandler = UnitsHandler.getOrCreate(msaSeqCol);
-
-    dfList.push(df);
-    tvList.push(tv);
   }
 
   async function _testAfterConvert() {
@@ -176,12 +147,8 @@ category('renderers', () => {
     if (semType)
       srcCol.semType = semType;
 
-    const tv: DG.TableView = grok.shell.addTableView(df);
-    // call to calculate 'cell.renderer' tag
-    await grok.data.detectSemanticTypes(df);
-
-    tvList.push(tv);
-    dfList.push(df);
+    grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
 
@@ -205,11 +172,8 @@ category('renderers', () => {
     seqDiffCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
     seqDiffCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
-    const tv = grok.shell.addTableView(df);
-    dfList.push(df);
-    tvList.push(tv);
-
-    await delay(100);
+    grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const renderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
     if (renderer !== 'MacromoleculeDifference') { // this is value of MacromoleculeDifferenceCR.cellType
       throw new Error(`Units 'separator', separator '/' and semType 'MacromoleculeDifference' ` +
@@ -233,11 +197,8 @@ category('renderers', () => {
     seqDiffCol.setTag(DG.TAGS.CELL_RENDERER, tgtCellRenderer);
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
     await grok.data.detectSemanticTypes(df);
-    const tv = grok.shell.addTableView(df);
-    dfList.push(df);
-    tvList.push(tv);
-
-    await delay(100);
+    grok.shell.addTableView(df);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
     if (resCellRenderer !== tgtCellRenderer) { // this is value of MacromoleculeDifferenceCR.cellType
       throw new Error(`Tag 'cell.renderer' has been manually set to '${tgtCellRenderer}' for column ` +
