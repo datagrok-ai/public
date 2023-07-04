@@ -158,7 +158,7 @@ class BioPackageDetectors extends DG.Package {
       const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, colNameLikely ? -0.05 : 0);
       if (decoy !== ALPHABET.UN) return null;
 
-      const separator = this.detectSeparator(statsAsChars.freq);
+      const separator = this.detectSeparator(statsAsChars.freq, categoriesSample);
       if (this.checkForbiddenSeparator(separator)) return null;
 
       const units = separator ? NOTATION.SEPARATOR : NOTATION.FASTA;
@@ -227,8 +227,10 @@ class BioPackageDetectors extends DG.Package {
 
   /** Detects the most frequent char with a rate of at least 0.15 of others in sum.
    * Does not use any splitting strategies, estimates just by single characters.
-   * */
-  detectSeparator(freq) {
+   * @param freq Dictionary of characters freqs
+   * @param sample A string array of seqs sample
+   */
+  detectSeparator(freq, categoriesSample) {
     // To detect a separator we analyze col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
@@ -254,8 +256,24 @@ class BioPackageDetectors extends DG.Package {
     const sepFreq = freq[sep];
     const otherSumFreq = Object.entries(freq).filter((kv) => kv[0] !== sep)
       .map((kv) => kv[1]).reduce((pSum, a) => pSum + a, 0);
-    const freqThreshold = 3.5 * (1 / Object.keys(freq).length);
-    return sepFreq / otherSumFreq > freqThreshold ? sep : null;
+
+    // Splitter with separator test application
+    const splitter = this.getSplitterWithSeparator(sep, SEQ_SAMPLE_LENGTH_LIMIT);
+    const stats = this.getStats(categoriesSample, 0, splitter);
+    // TODO: Test for Gamma/Erlang distribution
+    const totalMonomerCount = wu(Object.values(stats.freq)).reduce((sum, a) => sum + a, 0);
+    const mLengthAvg = wu.entries(stats.freq)
+      .reduce((sum, [m, c]) => sum + m.length * c, 0) / totalMonomerCount;
+    const mLengthVarN = Math.sqrt(wu.entries(stats.freq)
+      .reduce((sum, [m, c]) => sum + Math.pow(m.length - mLengthAvg, 2) * c, 0) / (totalMonomerCount - 1),
+    ) / mLengthAvg;
+
+    const sepRate = sepFreq / (sepFreq + otherSumFreq);
+    const expSepRate = 1 / Object.keys(freq).length; // expected
+    // const freqThreshold = (1 / (Math.log2(Object.keys(freq).length) + 2));
+
+    return (sepRate / expSepRate > 2.2 && mLengthVarN < 0.7) ||
+    (sepRate / expSepRate > 4) ? sep : null;
   }
 
   checkForbiddenSeparator(separator) {

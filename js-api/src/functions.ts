@@ -98,10 +98,20 @@ const FuncCallParamMapProxy = new Proxy(class {
 );
 
 
+export interface IFunctionRegistrationData {
+  signature: string;    // int foo(string bar)
+  run: Function;
+  tags?: string;        // comma-separated tags
+  isAsync?: boolean;    // whether is can be called synchronously
+  namespace?: string;
+  options?: {[key: string]: string}
+}
+
+
 /** Grok functions */
 export class Functions {
 
-  register(func: Func): void {
+  register(func: IFunctionRegistrationData): void {
     api.grok_RegisterFunc(func);
   }
 
@@ -211,7 +221,7 @@ export class Context {
 }
 
 class FuncCallParams {
-  [name: string]: FuncCallParam,
+  [name: string]: FuncCallParam;
 
   //@ts-ignore
   public values(): FuncCallParam[];
@@ -262,6 +272,9 @@ export class FuncCall extends Entity {
 
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
+
+  get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
+  set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
   override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)) }
 

@@ -56,7 +56,7 @@ function assembleCheckboxTree(treeNode: DG.TreeViewGroup, functionView: IFunctio
       functionView.inputs[i].value = child.checked;
       isAnyChecked ||= child.checked;
     });
-    functionView.calculate = isAnyChecked;
+    functionView.calculate = isAnyChecked || treeNode.checked;
   }
 
   treeNode.enableCheckBox(false);

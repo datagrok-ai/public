@@ -14,37 +14,35 @@ export enum DrawStyle {
   classic = 'classic',
 }
 
-/**
- * A function that prints a string aligned to left or centered.
- *
- * @param {number} x x coordinate.
- * @param {number} y y coordinate.
- * @param {number} w Width.
- * @param {number} h Height.
- * @param {CanvasRenderingContext2D} g Canvas rendering context.
- * @param {string} s String to print.
- * @param {string} [color=undefinedColor] String color.
- * @param {number} [pivot=0] Pirvot.
- * @param {boolean} [left=false] Is left aligned.
- * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
- * @param {string} [separator=''] Is separator for sequence.
- * @param {boolean} [last=false] Is checker if element last or not.
- * @param drawStyle Is draw style. MSA - for multicharSeq, classic - for other seq.
- * @param maxWord {{[pos: number]: number}}  Max word lengths per position.
- * @param wordIdx Is index of word we currently draw.
- * @param gridCell Is grid cell.
- * @param referenceSequence Is reference sequence for diff mode.
- * @param maxLengthOfMonomer Is max length of monomer.
- * @return {number} x coordinate to start printing at.
- */
-export const printLeftOrCentered = (
+/** A function that prints a string aligned to left or centered.
+ * @param {number}x x coordinate.
+ * @param {number}y y coordinate.
+ * @param {number}w Width.
+ * @param {number}h Height.
+ * @param {CanvasRenderingContext2D}g Canvas rendering context.
+ * @param {string}s String to print.
+ * @param {string}color String color.
+ * @param {number}pivot Pirvot.
+ * @param {boolean}left Is left aligned.
+ * @param {number}transparencyRate Transparency rate where 1.0 is fully transparent
+ * @param {string}separator Is separator for sequence.
+ * @param {boolean}last Is checker if element last or not.
+ * @param {DrawStyle}drawStyle Is draw style. MSA - for multicharSeq, classic - for other seq.
+ * @param {number[]}maxWord {{[pos: number]: number}}  Max word lengths per position.
+ * @param {number}wordIdx Is index of word we currently draw.
+ * @param {DG.GridCell}gridCell Is grid cell.
+ * @param {string[]}referenceSequence Is reference sequence for diff mode.
+ * @param {number}maxLengthOfMonomer Is max length of monomer.
+ * @param {{[key: string]: TextMetrics}}monomerTextSizeMap Is map of monomer text sizes.
+ * @return {number} x coordinate to start printing at.*/
+export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color: string = undefinedColor,
-  pivot: number = 0, left = false, transparencyRate: number = 1.0,
+  pivot: number = 0, left: boolean = false, transparencyRate: number = 1.0,
   separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic,
   maxWord: number[] = [], wordIdx: number = 0, gridCell: DG.GridCell | null = null,
-  referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null
-): number => {
+  referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null,
+  monomerTextSizeMap: {[key: string]: TextMetrics} = {}): number {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -66,10 +64,14 @@ export const printLeftOrCentered = (
   if (maxLengthOfMonomer != null)
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
 
-  let textSize: any = g.measureText(colorPart + grayPart);
+  const fullText = colorPart + grayPart;
+  monomerTextSizeMap[fullText] ??= g.measureText(fullText);
+  let textSize: any = monomerTextSizeMap[fullText];
+  monomerTextSizeMap[colorPart] ??= g.measureText(colorPart);
+  let maxColorTextSize = monomerTextSizeMap[colorPart].width;
 
-  let maxColorTextSize = g.measureText(colorPart).width;
-  const colorTextSize = g.measureText(colorPart).width;
+  monomerTextSizeMap[grayPart] ??= g.measureText(grayPart);
+  const grayPartSize = monomerTextSizeMap[grayPart].width;
   const dy = h / 2 - (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2 + 1;
   textSize = textSize.width;
   if (drawStyle === DrawStyle.MSA) {
@@ -87,16 +89,14 @@ export const printLeftOrCentered = (
       g.fillStyle = grayColor;
       g.fillText(grayPart, x + dx2, y + dy);
     }
-    if (drawStyle === DrawStyle.MSA) {
-      g.fillStyle = drawColor;
+    if (drawStyle === DrawStyle.MSA)
       g.fillText(colorPart, x + dx1, y + dy);
-    }
   }
 
   const placeX: number = (maxWord[wordIdx] ?? 0) - (maxWord[0] ?? 0);
   if (left || textSize > w) {
     draw(placeX, placeX + maxColorTextSize);
-    return x + placeX + maxColorTextSize + g.measureText(grayPart).width;
+    return x + placeX + maxColorTextSize + grayPartSize;
   } else {
     const dx = (w - textSize) / 2;
     draw(dx, dx + maxColorTextSize);
