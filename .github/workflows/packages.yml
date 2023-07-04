@@ -232,7 +232,7 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
         run: |
-          while .github/scripts/wait-for.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
+          while .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
           do
             sleep 1
             echo "Retrying..."
