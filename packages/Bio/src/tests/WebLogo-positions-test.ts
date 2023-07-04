@@ -22,7 +22,6 @@ ATC-G-TTGC--
   test('allPositions', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -33,6 +32,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -69,7 +69,6 @@ ATC-G-TTGC--
 -T--CCGT-`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf2);
     const tv: DG.TableView = grok.shell.addTableView(df);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -81,11 +80,11 @@ ATC-G-TTGC--
       return i > 2;
     });
     df.filter.fireChanged();
-    await delay(1000);
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
       {'shrinkEmptyTail': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -112,7 +111,6 @@ ATC-G-TTGC--
   test('positions with skipEmptyPositions option', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -124,6 +122,7 @@ ATC-G-TTGC--
       {'skipEmptyPositions': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero');
     const resPosList: PI[] = wlViewer['positions'];
 
     const tgtPosList: PI[] = [
@@ -151,7 +150,6 @@ ATC-G-TTGC--
     const seqCol: DG.Column = df.getCol('seq');
 
     const tv: DG.TableView = grok.shell.addTableView(df);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo', {
       startPositionName: '3',
@@ -160,6 +158,7 @@ ATC-G-TTGC--
     })) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
     const resPosList: PI[] = wlViewer['positions'];
     const tgtPosList: PI[] = [
       new PI(2, '3', {'C': new PMI(5)}),
