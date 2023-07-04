@@ -318,7 +318,7 @@ Hierarchical clustering groups sequences into an interactive [dendrogram](../../
 
 To add a dendrogram viewer, do the following:
 
-1. In the **Top Menu**, select **ML** > **Hierarchical clustering**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **Hierarchical clustering**. A dialog opens.
 1. In the dialog, select the parameters and click **OK** to add the dendrogram to the **Table View**.
 
 </details>
