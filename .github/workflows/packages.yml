@@ -232,10 +232,11 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
         run: |
-          while curl -s http://127.0.0.1:8080/api/admin/health | grep -e 'ApiError'
+          while curl -s --fail-with-body http://127.0.0.1:8080/api/admin/health | grep -e 'ApiError'
           do
             sleep 1
             echo "Retrying..."
+            docker logs --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
           done
           curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
