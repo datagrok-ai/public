@@ -209,12 +209,12 @@ export class Data {
   /** Executes a parameterized query.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-access/parameterized-query}
    */
-  query(queryName: string, queryParameters: object | null = null, adHoc: boolean = false, pollingInterval: number = 1000): Promise<DataFrame | any> {
-    return new Promise((resolve, reject) => api.grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
+  query(queryName: string, queryParameters: object | null = null, adHoc: boolean = false): Promise<DataFrame | any> {
+    return new Promise((resolve, reject) => api.grok_Query(queryName, queryParameters, adHoc, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
   }
 
-  callQuery(queryName: string, queryParameters: object | null = null, adHoc: boolean = false, pollingInterval: number = 1000): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c: any) => resolve(new FuncCall(c)), (e: any) => reject(e)));
+  callQuery(queryName: string, queryParameters: object | null = null, adHoc: boolean = false): Promise<FuncCall> {
+    return new Promise((resolve, reject) => api.grok_CallQuery(queryName, queryParameters, adHoc, (c: any) => resolve(new FuncCall(c)), (e: any) => reject(e)));
   }
 
   detectSemanticTypes(t: DataFrame): Promise<void> {

@@ -2,7 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray, delay} from '@datagrok-libraries/utils/src/test';
+import {
+  after,
+  before,
+  category,
+  test,
+  expect,
+  expectArray,
+  delay,
+  awaitCheck
+} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {_package, getHelmMonomers} from '../package';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -80,13 +89,14 @@ category('splitters', async () => {
 
     const newDf = await splitToMonomersUI(df, seqCol);
     expect(newDf.columns.names().includes('17'), true);
+    // call to calculate 'cell.renderer' tag
+    await grok.data.detectSemanticTypes(newDf);
 
     // TODO: Check cell.renderer for columns of monomers
-    // const _tv: DG.TableView = grok.shell.addTableView(df);
-    // await delay(500); // needed to account for table adding
-    // // call to calculate 'cell.renderer' tag
-    // await grok.data.detectSemanticTypes(df);
-  }, {skipReason: 'GROK-13300'});
+    const tv: DG.TableView = grok.shell.addTableView(newDf);
+    await awaitCheck(() => { return tv.grid.dataFrame != df; },
+      'View grid has wrong data frame', 100);
+  });
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(

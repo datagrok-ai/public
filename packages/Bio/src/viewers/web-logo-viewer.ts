@@ -99,14 +99,15 @@ export class PositionInfo {
     return Object.keys(this._freqs);
   }
 
+  public hasMonomer(m: string): boolean {
+    return m in this._freqs;
+  }
+
+  /** Creates empty PositionMonomerInfo for {@link m} key if missed in {@link _freqs}. */
   public getFreq(m: string): PositionMonomerInfo {
     let res: PositionMonomerInfo = this._freqs[m];
     if (!res) res = this._freqs[m] = new PositionMonomerInfo();
     return res;
-  }
-
-  public setFreq(m: string, value: PositionMonomerInfo): void {
-
   }
 
   getMonomerAt(calculatedX: number, y: number): string | undefined {
@@ -606,8 +607,11 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     if (!this.seqCol)
       return;
 
-    const maxLength = wu(this.unitsHandler!.splitted).map((mList) => mList ? mList.length : 0)
-      .reduce((max, l) => Math.max(max, l), 0);
+    const dfFilter = this.filterSource === FilterSources.Filtered ? this.dataFrame.filter :
+      this.dataFrame.selection;
+    const maxLength = wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
+      return dfFilter.get(rowI) && !!mList ? mList.length : 0;
+    }).reduce((max, l) => Math.max(max, l), 0);
 
     /** positionNames and positionLabel can be set up through the column's tags only */
     const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
@@ -777,25 +781,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     return '';
   }
 
-  /** Helper function for remove empty positions */
-  // TODO: use this function in from core
-  protected removeWhere<T>(array: Array<T>, predicate: (item: T) => boolean): Array<any> {
-    const length = array.length;
-    let updateIterator = 0;
-    for (let deleteIterator = 0; deleteIterator < length; deleteIterator++) {
-      if (!predicate(array[deleteIterator])) {
-        array[updateIterator] = array[deleteIterator];
-        updateIterator++;
-      }
-    }
-    array.length = updateIterator;
-    return array;
-  }
-
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
-    if (this.skipEmptyPositions)
-      this.removeWhere(this.positions, (item) => item?.getFreq('-')?.count === item?.rowCount);
+    if (this.skipEmptyPositions) {
+      this.positions = wu(this.positions)
+        .filter((pi) => !pi.hasMonomer('-') || pi.getFreq('-').count !== pi.rowCount).toArray();
+    }
   }
 
   private renderRequested: boolean = false;
@@ -824,14 +815,18 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
-      const selRowIndices = this.filter.getSelectedIndexes();
-
-      for (const rowI of selRowIndices) {
-        const seqMList: string[] = this.unitsHandler.splitted[rowI];
-        for (let jPos = 0; jPos < length; ++jPos) {
-          const m: string = seqMList[this.startPosition + jPos] || '-';
-          const pmInfo = this.positions[jPos].getFreq(m);
-          pmInfo.count++;
+      const dfFilter =
+        this.filterSource === FilterSources.Filtered ? this.dataFrame.filter : this.dataFrame.selection;
+      const dfRowCount = this.dataFrame.rowCount;
+      const splitted = this.unitsHandler.splitted;
+      for (let rowI = 0; rowI < dfRowCount; ++rowI) {
+        if (dfFilter.get(rowI)) {
+          const seqMList: string[] = splitted[rowI];
+          for (let jPos = 0; jPos < length; ++jPos) {
+            const m: string = seqMList[this.startPosition + jPos] || '-';
+            const pmInfo = this.positions[jPos].getFreq(m);
+            pmInfo.count++;
+          }
         }
       }
 

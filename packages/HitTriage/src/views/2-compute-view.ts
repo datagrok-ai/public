@@ -61,7 +61,7 @@ export class ComputeView extends HitTriageBaseView {
           if (props)
             promises.push(grok.functions.call(funcName, props));
         });
-
+        await Promise.all(promises);
         resolve();
       }, resolve, this.template.enrichedTable!, functions);
 

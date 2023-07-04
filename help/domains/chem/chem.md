@@ -278,7 +278,8 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 
 ### Similarity and diversity search
 
-Datagrok offers two analytical tools to help you analyze a collection of molecules based on molecular similarity: _similarity search_ and _diversity search_ (**Menu Ribbon** > **Chem** > **Search**). Similarity search finds structures similar to the reference molecule, while diversity search shows N different classes of compounds present in the dataset. Both tools are based on fingerprints, with the customizable distance metric.
+Datagrok offers two analytical tools to help you analyze a collection of molecules based on molecular similarity: _similarity search_ and _diversity search_ (**Menu Ribbon** > **Chem** > **Search**). Similarity search finds structures similar to the reference molecule, while diversity search shows N molecules of different chemical classes presented in the dataset. Both tools are based on fingerprints, with the customizable distance metric.
+One may also perform a sorting of the dataset by similarity based on the structure of interest (**Right click** > **Current value** > **Sort by similarity**), it will be pinned at the top of the dataset.;
 
 <details>
 <summary> Available distance metrics </summary>
@@ -286,8 +287,6 @@ Datagrok offers two analytical tools to help you analyze a collection of molecul
 * Tanimoto
 * Dice
 * Cosine
-* Hamming
-* Euclidean
 
 </details>
 
@@ -368,7 +367,7 @@ developed by Oliver Scott.
 
 :::note
 
-Scaffold tree generation is computationally intensive and may take up to a minute.
+Scaffold tree generation is computationally intensive and may take a significant time.
 
 :::
 
@@ -429,7 +428,7 @@ Scaffold tree can be combined with other [filters](../../visualize/viewers/filte
 
 ### Elemental analysis
 
-**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualizes the results in a [radar viewer](../../visualize/viewers/radar.md). Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure.
+**Elemental Analysis** analyzes the elemental composition of a molecular structure and visualizes the results in a [radar viewer](../../visualize/viewers/radar.md). Each point on the chart represents an element, and the distance from the center of the chart to the point indicates the relative abundance of that element in the structure. Use it as a basic tool to explore the dataset and detect rare elements, unique properties.
 
 <details>
 <summary>How to use</summary>
@@ -505,7 +504,7 @@ using these modeling methods:
 <summary>Train</summary>
 
 Train a model based on a measured response, using calculated descriptors as features. Use an integrated [model building mechanism](../../learn/predictive-modeling.md) that supports different backends and dozens of
-models with hundreds of hyperparameters available.
+models with hundreds of hyperparameters available. You may try it as a [tutorial](https://dev.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening) and walk through an illustrative example of virtual screening exercise.
 
 ![Training](../../uploads/gifs/chem-train-model.gif "Training")
 
