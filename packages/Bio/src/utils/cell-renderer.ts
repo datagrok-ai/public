@@ -88,11 +88,16 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (left !== null && left < seqMonList.length) {
       const monomerSymbol: string = seqMonList[left];
       const tooltipElements: HTMLElement[] = [ui.div(monomerSymbol)];
-      const monomer = seqColTemp.getMonomer(monomerSymbol);
-      if (monomer) {
-        const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-        const monomerSVG = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-        tooltipElements.push(monomerSVG);
+      if (seqColTemp._monomerStructureMap[monomerSymbol]) {
+        tooltipElements.push(seqColTemp._monomerStructureMap[monomerSymbol]);
+      } else {
+        const monomer = seqColTemp.getMonomer(monomerSymbol);
+        if (monomer) {
+          const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+          const monomerSVG = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
+          tooltipElements.push(monomerSVG);
+          seqColTemp._monomerStructureMap[monomerSymbol] = monomerSVG;
+        }
       }
       ui.tooltip.show(ui.divV(tooltipElements), e.x + 16, e.y + 16);
     } else {
@@ -122,7 +127,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
-    const view = gridCell.grid.view;
+    const grid = gridCell.grid;
     const tableCol: DG.Column = gridCell.cell.column;
     const tableColTemp: TempType = tableCol.temp;
 
@@ -135,7 +140,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     let seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
     if (!seqColTemp) {
-      seqColTemp = new MonomerPlacer(view, tableCol,
+      seqColTemp = new MonomerPlacer(grid, tableCol,
         () => {
           const uh = UnitsHandler.getOrCreate(tableCol);
           return {
@@ -236,7 +241,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         /*x1 = */
         printLeftOrCentered(x + this.padding, y, w, h,
           g, amino, color, 0, true, 1.0, separator, last, drawStyle,
-          maxLengthWordsSum, index, gridCell, referenceSequence, maxLengthOfMonomer);
+          maxLengthWordsSum, index, gridCell, referenceSequence, maxLengthOfMonomer, seqColTemp._monomerLengthMap);
         if (minDistanceRenderer > w) break;
       }
     } catch (err: any) {
