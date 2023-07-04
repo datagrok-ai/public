@@ -53,7 +53,7 @@ export class MonomerPlacer {
         this._rowsProcessed = DG.BitSet.create(this.col.length);
       }));
       this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
-        if (this.grid?.view! .id === view.id) this.destroy();
+        if (this.grid?.view?.id === view.id) this.destroy();
       }));
     }
   }
