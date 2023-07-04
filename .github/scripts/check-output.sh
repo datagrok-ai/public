@@ -4,7 +4,7 @@ set -ex
 
 command=$1
 expected_result=$2
-exact_match=$3
+exact_match=${3:-false}
 
 result=$(eval "$command")
 
