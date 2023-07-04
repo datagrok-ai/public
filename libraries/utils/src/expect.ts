@@ -26,6 +26,7 @@ export const defaulCheckersSeq: CheckerItem[] = [
   {name: 'Integer', predicate: integerPredicate, checker: eqChecker},
   {name: 'Float', predicate: floatPredicate, checker: floatChecker},
   {name: 'Array', predicate: arrayPredicate, checker: arrayChecker},
+  {name: 'FuncCall', predicate: funccallPredicate, checker: funccallChecker},
   {name: 'DataFrame', predicate: dataframePredicate, checker: dataframeChecker},
   {name: 'Object', predicate: objectPredicate, checker: objectChecker},
 ];
@@ -154,6 +155,17 @@ function dataframeChecker(actual: DG.DataFrame, expected: DG.DataFrame,
     }
   }
   return errors;
+}
+
+
+function funccallPredicate(actual: any, expected: any) {
+  return (actual instanceof DG.FuncCall && expected instanceof DG.FuncCall);
+}
+
+function funccallChecker(actual: DG.FuncCall, expected: DG.FuncCall,
+                         _state: Readonly<ExpectRunnerState>, checkDeep: NestedChecker) {
+  checkDeep(['inputs'], [...actual.inputs.entries()], [...expected.inputs.entries()]);
+  checkDeep(['outputs'], [...actual.outputs.entries()], [...expected.outputs.entries()]);
 }
 
 

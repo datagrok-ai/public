@@ -10,25 +10,17 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
+import {FuncCallInput} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 
-// custom input like
-export interface InputLike<T = any> {
-  root: HTMLElement;
-  value: T;
-  notify: boolean;
-  onInput: (cb: Function) => any;
-}
+export type InputVariants = DG.InputBase | FuncCallInput;
 
-export type InputVariants = DG.InputBase | FileInput | InputLike;
-
-function isInputBase(input: InputVariants): input is DG.InputBase {
-  return !!(input as DG.InputBase).input;
+function isInputBase(input: FuncCallInput): input is DG.InputBase {
+  return input instanceof DG.InputBase;
 }
 
 export interface AfterInputRenderPayload {
@@ -58,7 +50,8 @@ export class RichFunctionView extends FunctionView {
   private isUploadMode = new BehaviorSubject<boolean>(false);
 
   private controllsDiv?: HTMLElement;
-  private customObjectInput?: InputLike;
+
+  private inputsOverride: Record<string, FuncCallInput> = {};
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -77,6 +70,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   protected async onFuncCallReady() {
+    await this.loadInputsOverrides();
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
@@ -113,14 +107,6 @@ export class RichFunctionView extends FunctionView {
     this.controllsDiv = div;
   }
 
-  /*
-   * Will work only if called synchronously inside
-   * beforeInputPropertyRender subscriber.
-   */
-  public addCustomObjectInput(input: InputLike) {
-    this.customObjectInput = input;
-  }
-
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
     const disabilitySub = this.checkDisability.subscribe(() => {
@@ -129,6 +115,18 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(disabilitySub);
     return runButton;
+  }
+
+  public async loadInputsOverrides() {
+    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    await Promise.all(inputParams.map(async (param) => {
+      if (param.property.options.input) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.input);
+        const call = func.prepare({params: JSON.parse(param.property.options.inputOptions || '{}')});
+        await call.call();
+        this.inputsOverride[param.name] = call.outputs.input;
+      }
+    }));
   }
 
   /**
@@ -491,7 +489,7 @@ export class RichFunctionView extends FunctionView {
     return map;
   }
 
-  private async doRun(): Promise<void> {
+  public async doRun(): Promise<void> {
     this.isRunning = true;
     this.checkDisability.next();
     try {
@@ -521,7 +519,7 @@ export class RichFunctionView extends FunctionView {
     });
 
     let prevCategory = 'Misc';
-    const params =  this.funcCall[syncParams[field]].values() as DG.FuncCallParam[];
+    const params = this.funcCall[syncParams[field]].values() as DG.FuncCallParam[];
     wu(params as DG.FuncCallParam[])
       .filter((val) => !!val)
       .forEach((val) => {
@@ -533,9 +531,9 @@ export class RichFunctionView extends FunctionView {
           return;
         }
         this.syncInput(val, input, field);
-        if (field === 'inputs') {
+        if (field === 'inputs')
           this.bindInputRun(val, input);
-        }
+
         this.renderInput(inputs, val, input, prevCategory);
         this.afterInputPropertyRender.next({prop, input: input});
         prevCategory = prop.category;
@@ -552,18 +550,16 @@ export class RichFunctionView extends FunctionView {
 
   private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
     const prop = val.property;
-    if (this.customObjectInput) {
-      const obj = this.customObjectInput;
-      this.customObjectInput = undefined;
-      return obj;
-    }
+    if (this.inputsOverride[val.property.name])
+      return this.inputsOverride[val.property.name];
+
     switch (prop.propertyType as any) {
-      case DG.TYPE.DATA_FRAME:
-        return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
-      case FILE_INPUT_TYPE:
-        return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
-      default:
-        return ui.input.forProperty(prop)
+    case DG.TYPE.DATA_FRAME:
+      return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
+    case FILE_INPUT_TYPE:
+      return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
+    default:
+      return ui.input.forProperty(prop);
     }
   }
 
@@ -589,9 +585,8 @@ export class RichFunctionView extends FunctionView {
     if (prop.category !== prevCategory)
       inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
 
-    if (isInputBase(t)) {
+    if (isInputBase(t))
       this.inputBaseAdditionalRenderHandler(val, t);
-    }
 
     inputsDiv.append(t.root);
   }
@@ -624,7 +619,7 @@ export class RichFunctionView extends FunctionView {
       t.value = newValue;
       this.funcCall![field][name] = newValue;
       const newParam = this.funcCall[syncParams[field]][name];
-      this.syncValOnChanged(t, newParam, field)
+      this.syncValOnChanged(t, newParam, field);
     });
     this.subs.push(sub);
   }
@@ -657,11 +652,10 @@ export class RichFunctionView extends FunctionView {
     t.onInput(() => {
       this.funcCall![field][val.name] = t.value;
       if (isInputBase(t)) {
-        if (t.value === null) {
+        if (t.value === null)
           setTimeout(() => t.input.classList.add('d4-invalid'), 100);
-        } else {
+        else
           t.input.classList.remove('d4-invalid');
-        }
       }
       this.checkDisability.next();
       this.hideOutdatedOutput();
