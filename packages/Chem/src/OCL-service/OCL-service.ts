@@ -13,13 +13,16 @@ export class OCLService {
     molCol:DG.Column, argList: any[], op: OCLServiceCall,
   ): Promise<{[key: string]: Array<number>}> {
     const molList = molCol.toList();
+    // detect if the column is smiles or molblock notation
+    const notationType = DG.chem.isMolBlock(molList[0]) ? 'molblock' : 'smiles';
+
     const colLenght = molList.length;
     const chunkSize = Math.ceil(colLenght / this._threadCount);
     const result: {[key: string]: Array<number>} = {};
     const promises: Promise<{res:{[key: string]: Array<number>}, errors: string[]}>[] = new Array(this._threadCount);
     for (let i = 0; i < this._threadCount; i++) {
       const chunk = molList.slice(i * chunkSize, (i === (this._threadCount - 1)) ? colLenght : (i + 1) * chunkSize);
-      this._workers[i].postMessage({op, data: chunk, argList});
+      this._workers[i].postMessage({op, data: chunk, argList, notationType});
       promises[i] = new Promise((resolve) => {
         this._workers[i].onmessage = ({data: {res, errors}}) => {
           resolve({res, errors});
@@ -53,7 +56,11 @@ export class OCLService {
     return this._doParallel(molCol, riskTypes, OCLServiceCall.TOXICITY);
   }
 
-  public terminate() {
+  async getDrugLikeness(molCol: DG.Column): Promise<{[key: string]: Array<number>}> {
+    return this._doParallel(molCol, [], OCLServiceCall.DRUG_LIKENESS);
+  }
+
+  public async terminate() {
     this._workers.forEach((worker) => worker.terminate());
   }
 }
