@@ -5,6 +5,7 @@ import {oclMol} from '../utils/chem-common-ocl';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {OCLService, riskLevels, riskTypes} from '../OCL-service';
+import '../../css/chem.css';
 
 const riskColorCoding: {[index: string]: number} = {
   'Unknown': DG.Color.black,
@@ -63,7 +64,7 @@ export function toxicityWidget(molSemValue: DG.SemanticValue): DG.Widget {
     const tableDiv = ui.div();
     const risksTable: {[index: string]: HTMLDivElement} = {};
     for (const [type, risk] of Object.entries(res)) {
-      const currentRiskHost = ui.divText(risk);
+      const currentRiskHost = ui.divText(risk, {classes: 'chem-toxicity-widget-risk-row'});
       currentRiskHost.style.color = DG.Color.toHtml(riskColorCoding[risk]);
       currentRiskHost.style.fontWeight = 'bolder';
       const numTypeId = parseInt(Object.keys(riskTypes).find((key) => riskTypes[parseInt(key)] === type)!);
@@ -80,10 +81,7 @@ export function toxicityWidget(molSemValue: DG.SemanticValue): DG.Widget {
           pi.close();
         }
       }, `Calculate ${type} for whole table`);
-      calcForWholeButton.style.marginRight = '5px';
-      calcForWholeButton.style.color = '#2083d5';
-      currentRiskHost.style.display = 'flex';
-      currentRiskHost.style.alignItems = 'center';
+      calcForWholeButton.classList.add('chem-toxicity-widget-calc-all-button');
       currentRiskHost.prepend(calcForWholeButton);
       ui.tools.setHoverVisibility(tableDiv, [calcForWholeButton]);
 

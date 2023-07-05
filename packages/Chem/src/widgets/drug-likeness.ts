@@ -5,6 +5,7 @@ import {oclMol, renderDescription} from '../utils/chem-common-ocl';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
 import {OCLService} from '../OCL-service';
+import '../../css/chem.css';
 
 const _dlp = new OCL.DruglikenessPredictor();
 
@@ -15,7 +16,7 @@ export function assessDruglikeness(molString: string): [number, OCL.IParameteriz
 
 export function drugLikenessWidget(molString: DG.SemanticValue): DG.Widget {
   const rdKitModule = getRdKitModule();
-  let convertedMolstring: string;
+  let convertedMolstring: string = '';
   try {
     convertedMolstring = _convertMolNotation(molString.value,
       DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, rdKitModule);
@@ -39,7 +40,7 @@ export function drugLikenessWidget(molString: DG.SemanticValue): DG.Widget {
       const res = await oclService.getDrugLikeness(molString.cell.column);
       oclService.terminate();
       Object.keys(res).forEach((k) => {
-        molString.cell.dataFrame.columns.add(DG.Column.fromList('double', k, res[k]));
+        molString.cell.dataFrame.columns.add(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, k, res[k]));
       });
     } catch (e) {
       console.error(e);
@@ -47,11 +48,9 @@ export function drugLikenessWidget(molString: DG.SemanticValue): DG.Widget {
       pi.close();
     }
   }, 'Calculate drug likeness for the whole table');
-  const scoreDiv = ui.divH([ui.label(`Score: ${score.toFixed(2)}`), calcFowWholeButton]);
-  scoreDiv.style.display = 'flex';
-  scoreDiv.style.alignItems = 'center';
-  calcFowWholeButton.style.marginLeft = '3px';
-  calcFowWholeButton.style.color = '#2083d5';
+  const scoreDiv = ui.divH([ui.label(`Score: ${score.toFixed(2)}`), calcFowWholeButton],
+    {classes: 'chem-drug-likeness-widget-score-div'});
+  calcFowWholeButton.classList.add('chem-drug-likeness-calc-all-button');
 
   const host = ui.divV([scoreDiv,
     ui.label(` ${description[0].value}`), descriptionHost], {classes: 'ui-box'});

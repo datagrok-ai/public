@@ -1,4 +1,4 @@
-import {OCLServiceCall} from './consts';
+import {MolNotationType, OCLServiceCall} from './consts';
 import {CHEM_PROP_MAP} from './calculations';
 import * as OCL from 'openchemlib/full';
 
@@ -18,7 +18,7 @@ onmessage = ({data: {op, data, argList, notationType}}) => {
 };
 
 function isSmiles(notationType: string): boolean {
-  return notationType === 'smiles';
+  return notationType === MolNotationType.SMILES;
 }
 
 function getChemProperties(molList: Array<string>, propList: string[], notationType: string): OCLWorkerReturnType {
@@ -59,14 +59,15 @@ function getToxRisks(molList: Array<string>, riskTypes: number[], notationType: 
 }
 
 function getDrugLikeliness(molList: Array<string>, notationType: string): OCLWorkerReturnType {
-  const res: {[key: string]: Array<number>} = {'Drug likeness score': new Array(molList.length).fill(0)};
+  const colName = 'Drug likeness score';
+  const res: {[key: string]: Array<number>} = {[colName]: new Array(molList.length).fill(0)};
   const errors: string[] = [];
   const dlp = new OCL.DruglikenessPredictor();
   molList.forEach((smiles, i) => {
     try {
       const mol = isSmiles(notationType) ? OCL.Molecule.fromSmiles(smiles) : OCL.Molecule.fromMolfile(smiles);
       const score = dlp.assessDruglikeness(mol);
-      res['Drug likeness score'][i] = score;
+      res[colName][i] = score;
     } catch (e) {
       errors.push(e instanceof Error ? e.message : e as string);
     }

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {OCLServiceCall} from './consts';
+import {MolNotationType, OCLServiceCall} from './consts';
 
 export class OCLService {
   _threadCount: number = Math.max((navigator.hardwareConcurrency || 6) - 2, 1);
@@ -14,7 +14,7 @@ export class OCLService {
   ): Promise<{[key: string]: Array<number>}> {
     const molList = molCol.toList();
     // detect if the column is smiles or molblock notation
-    const notationType = DG.chem.isMolBlock(molList[0]) ? 'molblock' : 'smiles';
+    const notationType = DG.chem.isMolBlock(molList[0]) ? MolNotationType.MOLBLOCK : MolNotationType.SMILES;
 
     const colLenght = molList.length;
     const chunkSize = Math.ceil(colLenght / this._threadCount);

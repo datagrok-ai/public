@@ -18,3 +18,7 @@ export const riskLevels: {[index: number]: string} = {
   3: 'High',
 } as const;
 
+export const enum MolNotationType {
+  SMILES = 'smiles',
+  MOLBLOCK = 'molblock',
+}
