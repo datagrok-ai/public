@@ -205,7 +205,7 @@ export class PeptidesModel {
       }
     }
 
-    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1')
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
       grok.shell.v = this._analysisView;
 
     this._analysisView.grid.invalidate();
