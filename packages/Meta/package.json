@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.58",
+  "version": "3.4.59",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2900,6 +2900,9 @@
         },
         "1.0.9": {
           "datagrok-api": "^1.10.2"
+        },
+        "1.0.10": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
