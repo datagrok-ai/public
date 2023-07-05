@@ -280,6 +280,13 @@ export class FuncCall extends Entity {
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
 
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
+
+  set started(value: dayjs.Dayjs) {
+    if (!(dayjs.isDayjs(value) || value == null))
+      value = dayjs(value);
+    api.grok_FuncCall_Set_Started(this.dart, value?.valueOf());
+  }
+
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
 
   get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
