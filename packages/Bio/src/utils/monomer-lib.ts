@@ -99,6 +99,43 @@ export async function getLibraryPanelUI(): Promise<DG.Widget> {
   return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
 }
 
+export async function manageFiles() {
+  const a = ui.dialog({title: 'Manage files'})
+    //@ts-ignore
+    .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
+    .addButton('OK', () => a.close())
+    .show();
+}
+
+export async function getLibraryPanelUI(): Promise<DG.Widget> {
+  //@ts-ignore
+  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  const inputsForm: HTMLDivElement = ui.inputs([]);
+  const libFileNameList: string[] = await getLibFileNameList();
+
+  let userStoragePromise: Promise<void> = Promise.resolve();
+  for (const libFileName of libFileNameList) {
+    const settings = await getUserLibSettings();
+    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
+      () => {
+        userStoragePromise = userStoragePromise.then(async () => {
+          if (libInput.value == true) {
+            // Checked library remove from excluded list
+            settings.exclude = settings.exclude.filter((l) => l != libFileName);
+          } else {
+            // Unchecked library add to excluded list
+            if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
+          }
+          await setUserLibSetting(settings);
+          await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+          grok.shell.info('Monomer library user settings saved.');
+        });
+      });
+    inputsForm.append(libInput.root);
+  }
+  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
+}
+
 export class MonomerLib implements IMonomerLib {
   public readonly error: string | undefined;
 

@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.57",
+  "version": "3.4.60",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2251,6 +2251,9 @@
         },
         "2.6.1": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.7.0": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2675,6 +2678,9 @@
         },
         "2.1.12": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.13": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
@@ -2897,6 +2903,9 @@
         },
         "1.0.9": {
           "datagrok-api": "^1.10.2"
+        },
+        "1.0.10": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
