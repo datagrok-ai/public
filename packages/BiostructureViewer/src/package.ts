@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DockingApp} from './apps/docking-app';
 import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
@@ -46,19 +45,6 @@ export async function init() {
 //output: grid_cell_renderer result
 export function Molecule3dCellRenderer(): PdbGridCellRenderer {
   return new PdbGridCellRenderer();
-}
-
-//name: Docking
-//tags: app
-export async function dockingApp() {
-  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
-  try {
-    grok.shell.warning('dockingApp demo deprecated');
-    const app = new DockingApp('dockingApp');
-    await app.init();
-  } finally {
-    pi.close();
-  }
 }
 
 //name: viewPdbById
@@ -374,9 +360,9 @@ export async function inGridDemo() {
 
 // demoBio06
 //name: demoBioDockingConformations
-//meta.demoPath: Cheminformatics | Docking Conformations
+//meta.demoPath: Bioinformatics | Docking Conformations
 //description: Docking ligands along the structure
-//meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20Conformations
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
 //test: demoBioDockingConformations() //wait: 2000, skip: skip
 export async function demoBioDockingConformations(): Promise<void> {
   // Do not use any script for this demo (askalkin, 2023-05-17)
@@ -386,9 +372,9 @@ export async function demoBioDockingConformations(): Promise<void> {
 
 // demoBio07
 //name: demoBioProteins
-//meta.demoPath: Cheminformatics | Proteins
+//meta.demoPath: Bioinformatics | Proteins
 //description: View structures PDB in grids
-//meta.path: /apps/Tutorials/Demo/Cheminformatics/Proteins
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Proteins
 //test: demoBioProteins() //wait: 3000
 export async function demoBioProteins(): Promise<void> {
   await demoBio07NoScript();
