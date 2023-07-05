@@ -5,6 +5,7 @@ import {_package} from '../package';
 
 export class PackageSettingsEditorWidget extends DG.Widget {
   maxMonomerLengthProp: DG.Property;
+  tooltipWebLogo: DG.Property;
 
   constructor(propList: DG.Property[]) {
     super(ui.div([], {}));
@@ -13,6 +14,7 @@ export class PackageSettingsEditorWidget extends DG.Widget {
       Object.assign({}, ...propList.map((p) => ({[p.name]: p})));
 
     this.maxMonomerLengthProp = props['MaxMonomerLength'];
+    this.tooltipWebLogo = props['TooltipWebLogo'];
   }
 
   async init(): Promise<void> {
@@ -23,6 +25,14 @@ export class PackageSettingsEditorWidget extends DG.Widget {
         _package.properties.maxMonomerLength = value;
       });
 
-    this.root.appendChild(ui.form([maxMonomerLengthInput,]));
+    const tooltipWebLogo = ui.boolInput('Tooltip WebLogo',
+      _package.properties.tooltipWebLogo,
+      (value: boolean) => {
+        _package.properties.tooltipWebLogo = value;
+      });
+
+    this.root.appendChild(ui.form([
+      maxMonomerLengthInput,
+      tooltipWebLogo]));
   }
 }

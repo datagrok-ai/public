@@ -370,9 +370,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         try {
-            EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_COLUMN_FILL;
+            EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
             if (dryRun)
-                resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_COLUMN_FILL;
+                resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL;
             queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
                     "Column filling was started");
             int rowCount = 0;

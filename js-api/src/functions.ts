@@ -111,6 +111,8 @@ export interface IFunctionRegistrationData {
 /** Grok functions */
 export class Functions {
 
+  get clientCache(): ClientCache { return new ClientCache(); }
+
   register(func: IFunctionRegistrationData): void {
     api.grok_RegisterFunc(func);
   }
@@ -154,6 +156,13 @@ export class Functions {
   get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
   get onParamsUpdated(): Observable<FuncCall> { return __obs('d4-func-call-output-params-updated'); }
+}
+
+
+export class ClientCache {
+
+  /** Clears cache content. */
+  clear(): void { api.grok_ClientCache_Clear(); }
 }
 
 
