@@ -1,6 +1,8 @@
 // random-sensitivity-analysis.ts
 
-/* 
+/* Random or Monte Carlo sensitivity analysis: 
+   the function is evaluated with respect to random variation 
+   of the selected inputs within the specified ranges.
 */
 
 import * as grok from 'datagrok-api/grok';
@@ -8,7 +10,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForRandomAnalysis} from './input-tools';
-import {getOutputColumns} from './output-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
 import {OutputInfo, getOutput} from './sa-outputs-routine'
 
@@ -25,9 +26,7 @@ type OutputDataFromUI = {
 const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
 
 export class RandomAnalysis {
-  private samplesCount: number;
-  private dimension: number;
-  private fixedInputs: FixedInputItem[];
+  private dimension: number;  
 
   private variedInputs: VariedNumericalInputValues[];
   private func: DG.Func;
@@ -44,14 +43,8 @@ export class RandomAnalysis {
   ) {
     // check size
     checkSize(samplesCount);
-
-    this.samplesCount = samplesCount;
-    this.fixedInputs = fixedInputs;
-
     this.func = func;
-
     const numericalColumns = getVariedNumericalInputColumnsForRandomAnalysis(samplesCount, variedInputs);
-
     this.dimension = variedInputs.length;
 
     this.variedInputs = [...Array(this.dimension).keys()].map((i) =>

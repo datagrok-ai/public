@@ -199,7 +199,7 @@ export class SobolAnalysis {
     const funcEvalResults = DG.DataFrame.fromColumns(inputColumns);
     funcEvalResults.name = `Sensitivity Analysis of ${this.func.friendlyName}`;
 
-    //const outputColumns = getOutputColumns(this.funcCalls);
+    // extract the required outputs
     const outputColumns = getOutput(this.funcCalls, this.outputInfo).columns.toList();
 
     // add columns with outputs

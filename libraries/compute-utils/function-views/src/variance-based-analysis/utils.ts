@@ -46,6 +46,10 @@ export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.F
 
     ++idx;
 
+    // computation cancel check
+    if ((pi as any).canceled)
+      break;
+
     if (idx >= FUNCCALL_CONSTS.BATCH_SIZE) {
       pi.update(100 * i / funcCallsCount, `Running sensitivity analysis...`);
       await sleep(FUNCCALL_CONSTS.MS_TO_SLEEP);
