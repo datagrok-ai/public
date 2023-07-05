@@ -101,7 +101,7 @@ async function invalidationCacheTest(dataQuery: DataQuery, minutes: number): Pro
   const funcCall1 = dataQuery.prepare();
   const firstExecutionTime = await getCallTime(funcCall1);
   funcCall1.started = dayjs().subtract(minutes, 'minute');
-  await grok.dapi.functions.save(funcCall1);
+  await grok.dapi.functions.calls.save(funcCall1);
   const secondExecutionTime = await getCallTime(dataQuery.prepare());
   const isEqual: boolean = (secondExecutionTime <= firstExecutionTime + firstExecutionTime * 0.1) &&
       (secondExecutionTime >= firstExecutionTime - firstExecutionTime * 0.1);
