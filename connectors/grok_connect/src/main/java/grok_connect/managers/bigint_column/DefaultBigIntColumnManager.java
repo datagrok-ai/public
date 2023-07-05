@@ -7,14 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.BigIntColumn;
 import serialization.Column;
-import java.math.BigInteger;
 
 public class DefaultBigIntColumnManager implements ColumnManager<String> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBigIntColumnManager.class);
     private static final Converter<String> DEFAULT_CONVERTER = Object::toString;
 
     @Override
-    public String convert(Object value, String columnLabel) {
+    public String convert(Object value, ColumnMeta columnMetal) {
         LOGGER.trace("convert method was called");
         LOGGER.trace("using default converter");
         return value == null ? "" : DEFAULT_CONVERTER.convert(value);
@@ -34,12 +33,12 @@ public class DefaultBigIntColumnManager implements ColumnManager<String> {
     }
 
     @Override
-    public boolean isApplicable(Object o) {
-        return o instanceof Long || o instanceof BigInteger;
+    public Column getColumn() {
+        return new BigIntColumn();
     }
 
     @Override
-    public Column getColumn() {
-        return new BigIntColumn();
+    public Column getColumn(int initColumnSize) {
+        return new BigIntColumn(initColumnSize);
     }
 }

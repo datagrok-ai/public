@@ -46,7 +46,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         Connection connection = getConnection(dataQuery.connection);
         ResultSet resultSet = getResultSet(queryRun, connection, logger, 1);
         ResultSetManager resultSetManager = getResultSetManager();
-        resultSetManager.init(resultSet.getMetaData());
+        resultSetManager.init(resultSet.getMetaData(), 100);
         return getResultSetSubDf(queryRun, resultSet, resultSetManager,-1, 1, logger, 0, false);
     }
 

@@ -56,11 +56,15 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     const moleculeCol = table.getCol('smiles');
     const molregnoCol = table.getCol('molregno');
     const molCount = Math.min(table.rowCount, 20);
-  
+
     for (let i = 0; i < molCount; i++) {
-      const molHost = ui.div();
+      const molHost = ui.divV([]);
       grok.functions.call('Chem:drawMolecule', {'molStr': moleculeCol.get(i), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-        .then((res: HTMLElement) => molHost.append(res));
+        .then((res: HTMLElement) => {
+          molHost.append(res);
+          if (!substructure)
+            molHost.append(ui.divText(`Score: ${table.getCol('similarity').get(i).toFixed(2)}`));
+        });
 
       ui.tooltip.bind(molHost,
         () => ui.divText(`ChEMBL ID: ${molregnoCol.get(i)}\nClick to open in ChEMBL Database`));

@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.45",
+  "version": "3.4.57",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -570,6 +570,9 @@
           "datagrok-api": "^1.14.0"
         },
         "1.6.19": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.6.20": {
           "datagrok-api": "^1.14.0"
         }
       },
@@ -1258,6 +1261,9 @@
         },
         "1.7.5": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.7.7": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1497,6 +1503,9 @@
         },
         "1.8.6": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.10.0": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1570,6 +1579,9 @@
           "datagrok-api": "^1.14.1"
         },
         "1.0.28": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.30": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -1779,6 +1791,9 @@
           "datagrok-api": "^1.14.1"
         },
         "1.0.10": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.11": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -2217,6 +2232,24 @@
           "datagrok-api": "^1.13.3"
         },
         "2.4.51": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.52": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.53": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.54": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.5.0": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.6.0": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.6.1": {
           "datagrok-api": "^1.13.3"
         }
       },
@@ -2913,6 +2946,9 @@
     "usage-analysis": {
       "dependencies": {
         "1.0.0": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.0.1": {
           "datagrok-api": "^1.13.8"
         }
       },

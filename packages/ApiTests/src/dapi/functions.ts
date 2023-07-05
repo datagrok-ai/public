@@ -85,7 +85,7 @@ category('Dapi: functions calls', async () => {
     await GDF.calls.save(funcCall);
     const loadedWithFunc = await GDF.calls.include('func').find(funcCall.id);
   
-    expect(loadedWithFunc.func.nqName, 'ApiTests:dummyPackageScript');
+    expect(loadedWithFunc.func.nqName, 'ApiTests:DummyPackageScript');
   });
 
   test('list', async () => {

@@ -1,5 +1,6 @@
 package grok_connect.resultset;
 
+import grok_connect.managers.ColumnManager;
 import serialization.Column;
 import java.sql.ResultSetMetaData;
 
@@ -11,24 +12,9 @@ public interface ResultSetManager {
      *
      * @param meta ResultSetMetaData (JDBC interface)
      */
-    void init(ResultSetMetaData meta);
+    void init(ResultSetMetaData meta, int initColumnSize);
 
-    /**
-     * Used by ComplexTypeColumnManager. In future may be deleted.
-     *
-     * @param o Object to convert
-     * @param columnMeta ColumnMeta for Object
-     * @return converted Object
-     */
-    Object convert(Object o, ColumnMeta columnMeta);
-
-    /**
-     * Used by ComplexTypeColumnManager. In future may be deleted.
-     *
-     * @param o Object for which provide Column
-     * @return Column for object
-     */
-    Column getColumn(Object o);
+    ColumnManager<?> getApplicableColumnManager(ColumnMeta meta);
 
     /**
      * Used to process Object from ResultSet based on previously generated ColumnsMeta, Column and ColumnManager.

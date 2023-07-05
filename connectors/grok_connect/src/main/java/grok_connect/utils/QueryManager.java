@@ -67,7 +67,7 @@ public class QueryManager {
         resultSet = provider.getResultSet(query, connection, logger, initFetchSize);
         supportTransactions = connection.getMetaData().supportsTransactions();
         ResultSetMetaData metaData = resultSet.getMetaData();
-        resultSetManager.init(metaData);
+        resultSetManager.init(metaData, currentFetchSize);
         columnCount = metaData.getColumnCount();
     }
 

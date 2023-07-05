@@ -1,117 +1,147 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {ChemPropNames, IDescriptorTree} from './types';
-import {ChemPropertyGroupMap} from './consts';
+import {IComputeDialogResult, IDescriptorTree, IFunctionInput, IFunctionProps} from './types';
+
+function getArgsFromFuncName(packageName: string, name: string) {
+  const func = DG.Func.find({package: packageName, name: name})[0];
+  const funcObj: IFunctionProps = {
+    name: func.name,
+    package: packageName,
+    description: func.description,
+    calculate: false,
+    displayName: func.friendlyName ?? func.name,
+    inputs: func.inputs.slice(2)// first two args are table and column
+      .map(({caption, choices, defaultValue, description, name, propertyType}): IFunctionInput => ({
+        name,
+        displayName: caption ?? name,
+        description,
+        type: propertyType,
+        defaultValue,
+        choices,
+        value: defaultValue,
+      })),
+    onlyCheckboxes: func.inputs.slice(2).every((input) => input.propertyType === DG.TYPE.BOOL),
+  };
+  return funcObj;
+}
+
+function getInput(inputProps: IFunctionInput, dataframe: DG.DataFrame, onChange: (val: any) => void) {
+  if (inputProps.choices)
+    return ui.choiceInput(inputProps.displayName, inputProps.defaultValue, inputProps.choices, onChange);
+
+  switch (inputProps.type) {
+  case DG.TYPE.BOOL:
+    return ui.boolInput(inputProps.displayName, inputProps.defaultValue ?? false, onChange);
+  case DG.TYPE.STRING:
+    return ui.stringInput(inputProps.displayName, inputProps.defaultValue ?? null, onChange);
+  case DG.TYPE.FLOAT:
+    return ui.floatInput(inputProps.displayName, inputProps.defaultValue ?? null, onChange);
+  case DG.TYPE.INT:
+  case DG.TYPE.BIG_INT:
+    return ui.intInput(inputProps.displayName, inputProps.defaultValue ?? null, onChange);
+  case DG.TYPE.COLUMN:
+    return ui.columnInput(inputProps.displayName, dataframe, inputProps.defaultValue ?? null, onChange);
+  case DG.TYPE.COLUMN_LIST:
+    return ui.columnsInput(inputProps.displayName, dataframe, onChange);
+  default:
+    throw new Error(`Unsupported input type: ${inputProps.type}`);
+  }
+}
+
+function assembleCheckboxTree(treeNode: DG.TreeViewGroup, functionView: IFunctionProps) {
+  function onSelectionChange() {
+    let isAnyChecked = false;
+    treeNode.items.forEach((child, i) => {
+      functionView.inputs[i].value = child.checked;
+      isAnyChecked ||= child.checked;
+    });
+    functionView.calculate = isAnyChecked || treeNode.checked;
+  }
+
+  treeNode.enableCheckBox(false);
+  treeNode.checkBox!.onchange = () => {
+    treeNode.items.forEach((child) => child.checked = treeNode.checked); onSelectionChange();
+  };
+
+  functionView.inputs.forEach((prop) => {
+    const item = treeNode.item(prop.displayName, prop);
+    item.enableCheckBox(false);
+    item.checkBox!.onchange = () => onSelectionChange();
+    prop.description && ui.tooltip.bind(item.root, prop.description);
+  });
+}
+
+function assembleFunctionTree(treeNode: DG.TreeViewGroup, functionView: IFunctionProps, dataframe: DG.DataFrame): void {
+  const group = treeNode.group(functionView.displayName, null, false);
+
+  if (functionView.onlyCheckboxes) {
+    assembleCheckboxTree(group, functionView);
+    return;
+  }
+  group.enableCheckBox(false);
+  group.checkBox!.onchange = (_e) => {functionView.calculate = group.checked;};
+  const groupLabel = group.root.getElementsByClassName('d4-tree-view-node')[0] as HTMLElement;
+  functionView.description && groupLabel && ui.tooltip.bind(groupLabel, functionView.description);
+  functionView.inputs.forEach((prop, i) => {
+    const inputView = getInput(prop, dataframe,
+      (val: any) => {
+        functionView.inputs[i].value = val;
+        functionView.calculate = true;
+        group.checked = true;
+      });
+    group.root.getElementsByClassName('d4-tree-view-group-host')[0].appendChild(inputView.root);
+  });
+}
 
 
-export async function chemDescriptorsDialog(onOk: (selected: {[_: string]: string[]}) => void, onCancel: () => void) {
-  // select all, none buttons and count label
-  const selectAll = ui.label('All', {classes: 'd4-link-label', onClick: () => toggleAll(true)});
-  selectAll.style.marginLeft = '6px';
-  selectAll.style.marginRight = '12px';
-  const selectNone = ui.label('None', {classes: 'd4-link-label', onClick: () => toggleAll(false)});
-  const countLabel = ui.label('0 checked');
-  countLabel.style.marginLeft = '24px';
-  countLabel.style.display = 'inline-flex';
-
+export async function chemDescriptorsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
+  dataframe: DG.DataFrame, functions: {packageName: string, name: string}[]) {
   // tree groups
   const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
   const tree = ui.tree();
-  tree.root.style.maxHeight = '400px';
-  tree.root.style.width = '300px';
+  tree.root.style.maxHeight = '500px';
+  tree.root.style.width = '400px';
 
-  const descriptorGroups: { [_: string]: DG.TreeViewGroup } = {};
   const descriptorItems: DG.TreeViewNode[] = [];
-  const toxicityItems: DG.TreeViewNode[] = [];
-  const alertsItems: DG.TreeViewNode[] = [];
-  const propertiesItems: DG.TreeViewNode[] = [];
-  const allItemsMap: { [_ in ChemPropNames]: DG.TreeViewNode[] } = {
-    'Descriptors': descriptorItems,
-    'Toxicity Risks': toxicityItems,
-    'Structural Alerts': alertsItems,
-    'Chemical Properties': propertiesItems,
-  };
 
-  function onSelectionChange() {
-    countLabel.textContent = `${
-      Object.values(allItemsMap)
-        .map((items) => items.filter((i) => i.checked).length).reduce((a, b) => a + b, 0)
-    } checked`;
-  }
   function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
     const res = treeNode.group(name, null, false);
     res.enableCheckBox(false);
-    res.checkBox!.onchange = (_e) => onSelectionChange();
     return res;
   };
-  const toxicityGroup = createTreeGroup('Toxicity Risks', tree);
-  const alertsGroup = createTreeGroup('Structural Alerts', tree);
-  const propertiesGroup = createTreeGroup('Chemical Properties', tree);
-  const descriptorsGroup = createTreeGroup('Descripors', tree);
 
-  const allGroupsMap: { [_ in ChemPropNames]: DG.TreeViewGroup } = {
-    'Descriptors': descriptorsGroup,
-    'Toxicity Risks': toxicityGroup,
-    'Structural Alerts': alertsGroup,
-    'Chemical Properties': propertiesGroup,
-  };
-  const toggleAll = (val: boolean) => {
-    for (const g of Object.values(descriptorGroups))
-      g.checked = val;
-    Object.values(allGroupsMap).forEach((g) => g.checked = val);
-    Object.values(allItemsMap).forEach((items) => {
-      for (const i of items)
-        i.checked = val;
-    });
-    onSelectionChange();
-  };
-  // processing chem descriptprs tree
+  const descriptorsGroup = createTreeGroup('Descriptors', tree);
   const keys = Object.keys(descriptorsTree);
   for (const groupName of keys) {
     const group = createTreeGroup(groupName, descriptorsGroup);
-    descriptorGroups[groupName] = group;
 
     for (const descriptor of descriptorsTree[groupName].descriptors) {
       const item = group.item(descriptor.name, descriptor);
       descriptorItems.push(item);
       item.enableCheckBox(false);
-        item.checkBox!.onchange = (_e) => onSelectionChange();
     }
-    toggleAll(false);
   };
-
-  //adding toxicity risks, alerts and properties to the tree
-
-  Object.values(ChemPropertyGroupMap).forEach((group) => {
-    const groupName = group.name;
-    const curGroup = allGroupsMap[groupName];
-    group.values.forEach((prop) => {
-      const item = curGroup.item(prop.name, prop);
-      item.enableCheckBox(false);
-      item.checkBox!.onchange = (_e) => onSelectionChange();
-      allItemsMap[groupName].push(item);
-    });
+  const externalFunctions = functions.map((func) => {
+    const args = getArgsFromFuncName(func.packageName, func.name);
+    assembleFunctionTree(tree, args, dataframe);
+    return args;
   });
 
   function onOkProxy() {
-    const res: {[_: string]: string[]} = {};
-    Object.keys(allItemsMap).forEach((groupName) => {
-      res[groupName] = allItemsMap[groupName as ChemPropNames].filter((i) => i.checked)
-        .map((i) => i.value[groupName === 'Descriptors' ? 'name' : 'propertyName']);
+    const res: IComputeDialogResult = {descriptors: [], externals: {}};
+    res.descriptors = descriptorItems.filter((i) => i.checked).map((i) => i.value.name);
+    externalFunctions.filter((func) => func.calculate).forEach((func) => {
+      const funcName = func.name;
+      const packageName = func.package;
+      const funcArgs = func.inputs.map((i) => ({name: i.name, value: i.value}));
+      res.externals[`${packageName}:${funcName}`] = {};
+      funcArgs.forEach((arg) => res.externals[`${packageName}:${funcName}`][arg.name] = arg.value);
     });
     onOk(res);
   }
 
-  // enable toxicity risks and structural alerts by default
-  toxicityGroup.checked = true;
-  alertsGroup.checked = true;
-  toxicityItems.forEach((i) => i.checked = true);
-  alertsItems.forEach((i) => i.checked = true);
-  onSelectionChange();
-
-  ui.dialog('Select descriptors')
-    .add(ui.divH([selectAll, selectNone, countLabel]))
+  ui.dialog('Calculate')
     .add(tree.root)
     .onOK(() => onOkProxy())
     .onCancel(onCancel)

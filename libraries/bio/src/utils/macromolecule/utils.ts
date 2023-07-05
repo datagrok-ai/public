@@ -139,6 +139,8 @@ const longMonomerPartRe: RegExp = /(\w+)/g;
 
 /** Convert long monomer names to short ones */
 export function monomerToShort(amino: string, maxLengthOfMonomer: number): string {
+  if (amino.length <= maxLengthOfMonomer)
+    return amino;
   const shortAminoMatch: RegExpMatchArray | null = amino.match(longMonomerPartRe);
   const needAddDots: boolean = amino.length > maxLengthOfMonomer || (shortAminoMatch?.length ?? 0) > 1;
   const shortAmino = shortAminoMatch?.[0] ?? ' ';

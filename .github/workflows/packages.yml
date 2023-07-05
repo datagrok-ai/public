@@ -232,14 +232,17 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
         run: |
-          while curl -s http://localhost:8080/api/admin/health | grep -e 'ApiError'
+          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
           do
             sleep 1
+            docker logs $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            echo -e "\nRetrying..."
           done
+          curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'true' }}
         run: |
-          echo 'N' | grok config add --default --alias ${HOST} --server 'http://localhost:8080/api' --key admin
+          echo 'N' | grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
           cat /home/runner/.grok/config.yaml
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'true' }}

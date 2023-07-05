@@ -3,8 +3,8 @@ package grok_connect.connectors_info;
 import java.util.*;
 
 
-public class FuncCall
-{
+public class FuncCall {
+    public static final String DEBUG_QUERY_KEY = "debugQuery";
     public String id;
     public DataQuery func;
     public Map options;
@@ -26,10 +26,6 @@ public class FuncCall
     }
 
     public void afterDeserialization() {
-        Boolean debugQuery = (Boolean) aux.get("debugQuery");
-        if (debugQuery == null)
-            debugQuery = false;
-
-        this.debugQuery = debugQuery;
+        this.debugQuery = Boolean.parseBoolean(options.get(DEBUG_QUERY_KEY).toString()) ;
     }
 }

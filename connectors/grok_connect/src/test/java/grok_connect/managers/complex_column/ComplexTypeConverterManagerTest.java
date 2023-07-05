@@ -3,6 +3,7 @@ package grok_connect.managers.complex_column;
 import grok_connect.GrokConnect;
 import grok_connect.managers.ColumnManager;
 import grok_connect.providers.utils.DataFrameComparator;
+import grok_connect.resultset.ColumnMeta;
 import grok_connect.utils.ProviderManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 class ComplexColumnManagerTest {
-    private static final String DEFAULT_MAIN_COLUMN_NAME = "Column";
     private static final String firstColumnName = "id";
     private static final String secondColumnName = "firstName";
     private static final String thirdColumnName = "someList";
@@ -41,6 +41,7 @@ class ComplexColumnManagerTest {
     private static final Boolean seventhColumnData = true;
     private static ColumnManager<List<Column>> complexColumnManager;
     private static DataFrameComparator dataFrameComparator;
+    private static ColumnMeta columnMeta;
 
     @BeforeAll
     public static void init() {
@@ -50,25 +51,26 @@ class ComplexColumnManagerTest {
         thirdColumnData.add("play");
         GrokConnect.providerManager = new ProviderManager();
         complexColumnManager = new DefaultComplexColumnManager();
+        columnMeta = new ColumnMeta(1111, "test", -1, -1, "Column", 100);
     }
 
     @Test
     public void testNullArgument_ok() {
         Assertions.assertDoesNotThrow(() -> complexColumnManager
-                .convert(null, DEFAULT_MAIN_COLUMN_NAME));
+                .convert(null, columnMeta));
     }
 
     @Test
     public void testFlatMapArgument_ok() {
         List<Column> actual = Assertions.assertDoesNotThrow(() -> complexColumnManager
-                .convert(getFlatMap(), DEFAULT_MAIN_COLUMN_NAME));
+                .convert(getFlatMap(), columnMeta));
         Assertions.assertTrue(dataFrameComparator.isColumnsEqualUnOrdered(getExpectedForFlatMap(), actual));
     }
 
     @Test
     public void testNestedMapArgument_ok() {
         List<Column> actual = Assertions.assertDoesNotThrow(() -> complexColumnManager
-                .convert(getNestedMap(), DEFAULT_MAIN_COLUMN_NAME));
+                .convert(getNestedMap(), columnMeta));
         Assertions.assertTrue(dataFrameComparator.isColumnsEqualUnOrdered(getExpectedForNestedMap(), actual));
     }
 
@@ -106,25 +108,25 @@ class ComplexColumnManagerTest {
         String formatName = "%s.%s";
         Column firstColumn = new BigIntColumn();
         firstColumn.add(firstColumnData.toString());
-        firstColumn.name = String.format(formatName, DEFAULT_MAIN_COLUMN_NAME, firstColumnName);
+        firstColumn.name = String.format(formatName, columnMeta.getColumnLabel(), firstColumnName);
         Column secondColumn = new StringColumn();
         secondColumn.add(secondColumnData);
-        secondColumn.name = String.format(formatName, DEFAULT_MAIN_COLUMN_NAME, secondColumnName);
+        secondColumn.name = String.format(formatName, columnMeta.getColumnLabel(), secondColumnName);
         Column thirdColumn = new StringColumn();
         thirdColumn.add(thirdColumnData.toString());
-        thirdColumn.name = String.format(formatName, DEFAULT_MAIN_COLUMN_NAME, thirdColumnName);
+        thirdColumn.name = String.format(formatName, columnMeta.getColumnLabel(), thirdColumnName);
         Column fourthColumn = new DateTimeColumn();
         fourthColumn.add(fourthColumnData.getTime() * 1000.0);
-        fourthColumn.name = String.format(formatName, DEFAULT_MAIN_COLUMN_NAME, fourthColumnName);
+        fourthColumn.name = String.format(formatName, columnMeta.getColumnLabel(), fourthColumnName);
         Column fifthColumn = new FloatColumn();
         fifthColumn.add(fifthColumnData.floatValue());
-        fifthColumn.name = String.format(formatName, DEFAULT_MAIN_COLUMN_NAME, fifthColumnName);
+        fifthColumn.name = String.format(formatName, columnMeta.getColumnLabel(), fifthColumnName);
         Column sixthColumn = new IntColumn();
         sixthColumn.add(sixthColumnData);
-        sixthColumn.name = String.format(formatName, DEFAULT_MAIN_COLUMN_NAME, sixthColumnName);
+        sixthColumn.name = String.format(formatName, columnMeta.getColumnLabel(), sixthColumnName);
         Column seventhColumn = new BoolColumn();
         seventhColumn.add(seventhColumnData);
-        seventhColumn.name = String.format(formatName, DEFAULT_MAIN_COLUMN_NAME, seventhColumnName);
+        seventhColumn.name = String.format(formatName, columnMeta.getColumnLabel(), seventhColumnName);
         List<Column> expected = new ArrayList<>();
         expected.addAll(Arrays.asList(firstColumn, secondColumn, thirdColumn, fourthColumn, fifthColumn,
                 sixthColumn, seventhColumn));

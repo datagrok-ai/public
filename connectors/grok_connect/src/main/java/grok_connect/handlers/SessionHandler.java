@@ -2,6 +2,7 @@ package grok_connect.handlers;
 
 import com.google.gson.Gson;
 import grok_connect.connectors_info.DataQueryRunResult;
+import grok_connect.connectors_info.FuncCall;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
 import grok_connect.utils.QueryChunkNotSent;
@@ -129,8 +130,11 @@ public class SessionHandler {
     }
 
     private void sendLog() {
-        logger.debug(EventType.LOG_SEND.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
-        DataFrame logs = queryLogger.dumpLogMessages();
-        session.getRemote().sendBytesByFuture(ByteBuffer.wrap(logs.toByteArray()));
+        FuncCall query = queryManager.getQuery();
+         if (query.debugQuery) {
+            logger.debug(EventType.LOG_SEND.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
+            DataFrame logs = queryLogger.dumpLogMessages();
+            session.getRemote().sendBytesByFuture(ByteBuffer.wrap(logs.toByteArray()));
+        }
     }
 }

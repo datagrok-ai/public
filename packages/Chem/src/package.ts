@@ -149,7 +149,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
     if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
       const molIds = await chemDiversitySearch(
         col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, true);
-  
+
       Object.assign(col.temp, {
         'version': version,
         'molIds': molIds,
@@ -159,7 +159,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
     const molIdsCached = col.temp['molIds'];
     for (let i = 0; i < molIdsCached.length; ++i)
       divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
-  }
+  };
 
   divMain.append(divStructures);
   const widget = new DG.Widget(divMain);
@@ -425,7 +425,7 @@ export function searchSubstructureEditor(call: DG.FuncCall) {
     call.func.prepare({molecules: molColumns[0]}).call(true);
   else {
     const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0]);
-    ui.dialog({title: 'Substructure search'})
+    ui.dialog({title: 'Substructure search'});
     ui.dialog({title: 'Substructure search'})
       .add(colInput)
       .onOK(async () => {
@@ -1163,7 +1163,7 @@ export async function callChemDiversitySearch(
 }
 
 //top-menu: Chem | Calculate | Properties...
-//name: addChemPropertiesColumns
+//name: Chemical Properties
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool MW = true
@@ -1183,11 +1183,16 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
     HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
     rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
     moleculeCharge ? ['Molecule charge'] : []);
-  await addPropertiesAsColumns(table, molecules, propArgs);
+  const pb = DG.TaskBarProgressIndicator.create('Chemical properties ...');
+  try {
+    await addPropertiesAsColumns(table, molecules, propArgs);
+  } finally {
+    pb.close();
+  }
 }
 
 //top-menu: Chem | Calculate | Toxicity Risks...
-//name: addChemRisksColumns
+//name: Toxicity risks
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool mutagenicity = true
@@ -1197,7 +1202,12 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column,
   mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean,
 ): Promise<void> {
-  await addRisksAsColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
+  const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
+  try {
+    await addRisksAsColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
+  } finally {
+    pb.close();
+  }
 }
 
 //top-menu: Chem | Analyze | Scaffold Tree

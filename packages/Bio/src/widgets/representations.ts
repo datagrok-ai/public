@@ -42,13 +42,13 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     `The max length of monomer name displayed without shortening in '${MonomerWidthMode.short}' monomer width mode.`
   );
 
-  const gapLengthInput = ui.intInput('Monomer gap size', col.temp[mmcrTemps.gapLength] ?? 0,
+  const gapLengthInput = ui.intInput('Monomer margin', col.temp[mmcrTemps.gapLength] ?? 0,
     (value: number) => {
       col.temp[mmcrTemps.gapLength] = value;
       col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
       col.dataFrame.fireValuesChanged();
     });
-  gapLengthInput.setTooltip('The size of Gap between monomers (in pixels)');
+  gapLengthInput.setTooltip('The size of margin between monomers (in pixels)');
 
   const colorCode = ui.boolInput('Color code',
     (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,

@@ -104,14 +104,9 @@ jobs:
             echo "tar=${tar}" >> $GITHUB_OUTPUT
             echo "dest=type=docker,dest=/tmp/${tar}" >> $GITHUB_OUTPUT
 
-            platform_add='linux/arm64'
-            echo "platform_add=${platform_add}" >> $GITHUB_OUTPUT
-            tar_add="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform_add#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
-            echo "tar_add=${tar_add}" >> $GITHUB_OUTPUT
-            echo "dest_add=type=docker,dest=/tmp/${tar_add}" >> $GITHUB_OUTPUT
             echo "tags=datagrok/grok_connect:${{ needs.build.outputs.version }}-${commit_sha}" >> $GITHUB_OUTPUT
           else
-            echo "platform=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
+            echo "platform=linux/amd64" >> $GITHUB_OUTPUT
             if [[ ${{ needs.build.outputs.latest }} == 'true' ]]; then
               echo "cache_to=type=registry,ref=datagrok/grok_connect:cache,mode=max" >> $GITHUB_OUTPUT
               echo "tags=datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}" >> $GITHUB_OUTPUT
@@ -165,30 +160,4 @@ jobs:
         with:
           name: ${{ steps.param.outputs.tar }}
           path: /tmp/${{ steps.param.outputs.tar }}
-          retention-days: 7
-
-      - name: Build and push additional platform
-        uses: docker/build-push-action@v3
-        if: steps.param.outputs.platform_add != '' && steps.param.outputs.dest_add != ''
-        with:
-          context: ./connectors
-          platforms: ${{ steps.param.outputs.platform_add }}
-          push: false
-          tags: datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}
-          cache-from: type=registry,ref=datagrok/grok_connect:cache
-          cache-to: ${{ steps.param.outputs.cache_to }}
-          outputs: ${{ steps.param.outputs.dest_add }}
-          build-args: |
-            BRANCH=${{ steps.param.outputs.branch }}
-            COMMIT_PUBLIC=${{ github.sha }}
-          labels: |
-            BRANCH=${{ steps.param.outputs.branch }}
-            COMMIT_PUBLIC=${{ github.sha }}
-
-      - name: Upload Artifact
-        if: github.ref != 'refs/heads/master' && steps.param.outputs.tar_add != ''
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ steps.param.outputs.tar_add }}
-          path: /tmp/${{ steps.param.outputs.tar_add }}
           retention-days: 7

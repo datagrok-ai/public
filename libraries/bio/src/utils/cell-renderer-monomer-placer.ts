@@ -28,29 +28,32 @@ export class MonomerPlacer {
   // width of separator symbol
   private separatorWidth = 5;
   private props: MonomerPlacerProps;
+  private _rowsProcessed: DG.BitSet; // rows for which monomer lengths were processed
 
   private _updated: boolean = false;
   public get updated(): boolean { return this._updated; }
-
+  public _monomerLengthMap: {[key: string]: TextMetrics} = {}; // caches the lengths to save time on g.measureText
+  public _monomerStructureMap: {[key: string]: HTMLDivElement} = {}; // caches the atomic structures of monomers
   private readonly subs: Unsubscribable[] = [];
 
   /** View is required to subscribe and handle for data frame changes */
   constructor(
-    public readonly view: DG.View | null,
+    public readonly grid: DG.Grid | null,
     public readonly col: DG.Column<string>,
     private readonly propsProvider: () => MonomerPlacerProps
   ) {
     this._splitter = getSplitterForColumn(this.col);
     this.props = this.propsProvider();
-
-    if (this.view) {
+    this._rowsProcessed = DG.BitSet.create(this.col.length);
+    if (this.grid) {
       // Changes handling is available only in with a view
       this.subs.push(col.dataFrame.onDataChanged.subscribe(() => {
         this.props = this.propsProvider();
         this._monomerLengthList = null;
+        this._rowsProcessed = DG.BitSet.create(this.col.length);
       }));
       this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
-        if (this.view!.id === view.id) this.destroy();
+        if (this.grid?.view?.id === view.id) this.destroy();
       }));
     }
   }
@@ -90,7 +93,6 @@ export class MonomerPlacer {
       }
       this._updated = true;
     }
-
     return res;
   }
 
@@ -99,19 +101,21 @@ export class MonomerPlacer {
       this._monomerLengthList = new Array(1).fill(null);
       this._updated = true;
     }
-    let res: number[] | null = this._monomerLengthList[0];
-    if (res === null) {
-      res = this._monomerLengthList[0] = new Array(0);
-      for (let seqIdx = 0; seqIdx < Math.max(this.col.length, 100); seqIdx++) {
-        const seqMonList: string[] = this.getSeqMonList(seqIdx);
-        if (seqMonList.length > res.length)
-          res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
+    this._monomerLengthList[0] ??= new Array(0);
+    const res = this._monomerLengthList[0];
+    const startIdx = Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0);
+    const endIdx = Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length);
+    for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
+      if (this._rowsProcessed.get(seqIdx))
+        continue;
+      const seqMonList: string[] = this.getSeqMonList(seqIdx);
+      if (seqMonList.length > res.length)
+        res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
 
-        for (const [seqMonI, seqMonLabel] of seqMonList.entries()) {
-          const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
-          const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
-          res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
-        }
+      for (const [seqMonI, seqMonLabel] of seqMonList.entries()) {
+        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
+        const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
+        res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
       }
       this._updated = true;
     }
