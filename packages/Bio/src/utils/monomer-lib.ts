@@ -1,14 +1,16 @@
-// import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
 import {Observable, Subject} from 'rxjs';
+
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
   createJsonMonomerLibFromSdf,
   IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+
 import {_package} from '../package';
 
 const _HELM_REQUIRED_FIELDS_ARRAY = [
@@ -49,6 +51,43 @@ export async function getUserLibSettings(): Promise<LibSettings> {
 
 export async function setUserLibSetting(value: LibSettings): Promise<void> {
   await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
+}
+
+export async function manageFiles() {
+  const a = ui.dialog({title: 'Manage files'})
+    //@ts-ignore
+    .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
+    .addButton('OK', () => a.close())
+    .show();
+}
+
+export async function getLibraryPanelUI(): Promise<DG.Widget> {
+  //@ts-ignore
+  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  const inputsForm: HTMLDivElement = ui.inputs([]);
+  const libFileNameList: string[] = await getLibFileNameList();
+
+  let userStoragePromise: Promise<void> = Promise.resolve();
+  for (const libFileName of libFileNameList) {
+    const settings = await getUserLibSettings();
+    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
+      () => {
+        userStoragePromise = userStoragePromise.then(async () => {
+          if (libInput.value == true) {
+            // Checked library remove from excluded list
+            settings.exclude = settings.exclude.filter((l) => l != libFileName);
+          } else {
+            // Unchecked library add to excluded list
+            if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
+          }
+          await setUserLibSetting(settings);
+          await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+          grok.shell.info('Monomer library user settings saved.');
+        });
+      });
+    inputsForm.append(libInput.root);
+  }
+  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
 }
 
 export class MonomerLib implements IMonomerLib {
