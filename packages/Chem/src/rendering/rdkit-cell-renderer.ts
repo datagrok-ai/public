@@ -92,7 +92,7 @@ M  END
       } else {
         try {
           mol = this.rdKitModule.get_qmol(molString);
-          mol.set_aromatic_form();
+          mol.convert_to_aromatic_form();
         } catch (e) {
           if (mol) {
             mol.delete();
