@@ -70,9 +70,9 @@ export interface RDMol {
 
   get_stereo_tags(): string;
   get_aromatic_form(): string;
-  set_aromatic_form(): void;
+  convert_to_aromatic_form(): void;
   get_kekule_form(): string;
-  set_kekule_form(): void;
+  convert_to_kekule_form(): void;
   get_new_coords(useCoordGen?: boolean): string;
   set_new_coords(useCoordGen?: boolean): boolean;
   has_prop(key: string): boolean;

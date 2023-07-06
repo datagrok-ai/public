@@ -878,7 +878,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         let molArom;
         try {
           molArom = _rdKitModule.get_qmol(molStr);
-          molArom.set_aromatic_form();
+          molArom.convert_to_aromatic_form();
           this.molColumn.temp['chem-scaffold-filter'] = molArom.get_molblock();
         } catch (e) {
         } finally {
