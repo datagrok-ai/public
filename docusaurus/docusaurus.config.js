@@ -10,8 +10,9 @@ const config = {
   tagline: 'Datagrok: Swiss Army Knife for Data',
   url: 'https://datagrok.ai',
   baseUrl: '/',
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'throw',
+  // TODO: Set to throw in the end of wiki reorganization
+  onBrokenLinks: 'warn',
+  onBrokenMarkdownLinks: 'warn',
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
