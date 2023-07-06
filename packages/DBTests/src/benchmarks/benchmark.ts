@@ -1,7 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {DataQuery, FuncCall} from 'datagrok-api/dg';
-import dayjs from 'dayjs';
+import {FuncCall} from 'datagrok-api/dg';
 
 category('Benchmarks', () => {
   test('Sequential 100', async () => {
@@ -52,28 +51,6 @@ category('Benchmarks', () => {
     const compressionOffTime = await getDataQueryTime('PostgresqlCompressionIntOff');
     expect(compressionOnTime < compressionOffTime * 2, true);
   }, {skipReason: 'Feature of compression in development'});
-
-  test('Scalar float cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestFloat'));
-
-  test('Scalar int cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestInt'));
-
-  test('Scalar string cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestString'));
-
-  test('TestWide table cache test', async () => await basicCacheTest('PostgresqlTestCacheTableWide'));
-
-  test('TestNormal table cache test', async () => await basicCacheTest('PostgresqlTestCacheTableNormal'));
-
-  test('Connection cache test', async () => await basicCacheTest('PostgresqlCachedConnTest'));
-
-  test('Connection cache invalidation test', async () => {
-    const connection = await grok.dapi.connections.filter(`name="PostgreSQLDBTestsCached"`).first();
-    await invalidationCacheTest(connection.query('test1', 'SELECT * FROM MOCK_DATA;'), 1);
-  });
-
-  test('Query cache invalidation test', async () => {
-    const dataQuery = await grok.dapi.queries.filter(`friendlyName="PostgresqlCacheInvalidateQueryTest"`).first();
-    await invalidationCacheTest(dataQuery, 1);
-  });
 });
 
 function getTestResult(times: number[], expectedCount: number): String {
@@ -85,7 +62,7 @@ function getTestResult(times: number[], expectedCount: number): String {
       `Min execution time, ms: ${Math.min(...times)}\n`;
 }
 
-async function getCallTime(call: FuncCall): Promise<number> {
+export async function getCallTime(call: FuncCall): Promise<number> {
   const start = Date.now();
   await call.call();
   return Date.now() - start;
@@ -95,26 +72,4 @@ async function getDataQueryTime(dataQueryName: string): Promise<number> {
   const startTime = Date.now();
   await grok.functions.eval('Dbtests:' + dataQueryName);
   return Date.now() - startTime;
-}
-
-async function invalidationCacheTest(dataQuery: DataQuery, minutes: number): Promise<void> {
-  const funcCall1 = dataQuery.prepare();
-  const firstExecutionTime = await getCallTime(funcCall1);
-  funcCall1.started = dayjs().subtract(minutes, 'minute');
-  await grok.dapi.functions.calls.save(funcCall1);
-  const secondExecutionTime = await getCallTime(dataQuery.prepare());
-  const isEqual: boolean = (secondExecutionTime <= firstExecutionTime + firstExecutionTime * 0.1) &&
-      (secondExecutionTime >= firstExecutionTime - firstExecutionTime * 0.1);
-  expect(isEqual, true,
-    `The second execution time ${secondExecutionTime} ms
-        is not approximately equals to the first execution time ${firstExecutionTime} ms`);
-}
-
-async function basicCacheTest(query: String): Promise<void> {
-  const dataQuery = await grok.dapi.queries.filter(`friendlyName="${query}"`).first();
-  const firstExecutionTime = await getCallTime(dataQuery.prepare());
-  const secondExecutionTime = await getCallTime(dataQuery.prepare());
-  expect(firstExecutionTime > secondExecutionTime * 2, true,
-    `The first execution time ${firstExecutionTime} ms
-        is no more than twice the second execution time ${secondExecutionTime} ms for ${query}`);
 }
