@@ -201,8 +201,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     const dfUuid = uuid.v4();
     newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
-    model = PeptidesModel.getInstance(newDf);
-    // await model.addViewers();
+
+    model = PeptidesModel.getInstance(currentDf.filter.anyFalse ? newDf.clone(currentDf.filter) : newDf);
     if (clustersColumn) await model.addLogoSummaryTable();
     await model.addMonomerPosition();
     await model.addMostPotentResidues();
