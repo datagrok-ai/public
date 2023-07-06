@@ -52,6 +52,7 @@ export class RichFunctionView extends FunctionView {
   private controllsDiv?: HTMLElement;
 
   private inputsOverride: Record<string, FuncCallInput> = {};
+  private inputsMap: Record<string, FuncCallInput> = {};
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -503,6 +504,24 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  public getInput(name: string) {
+    return this.inputsMap[name];
+  }
+
+  // TODO: implement warn if really needed
+  public setInput(name: string, value: any, state: 'default' | 'disabled' | 'warn' = 'disabled') {
+    const input = this.getInput(name);
+    if (!input) {
+      throw new Error(`No input named ${name}`);
+    }
+    // input value will not be synced, since doesn't trigger on
+    // onInput for inputBase
+    this.funcCall.inputs[name] = value;
+    if (state === 'disabled') {
+      input.enabled = false;
+    }
+  }
+
   private renderOutputForm(): HTMLElement {
     return this.renderIOForm('outputs');
   }
@@ -530,6 +549,7 @@ export class RichFunctionView extends FunctionView {
           prevCategory = prop.category;
           return;
         }
+        this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
         if (field === 'inputs')
           this.bindInputRun(val, input);

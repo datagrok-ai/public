@@ -157,7 +157,10 @@ export abstract class ComputationView extends FunctionView {
    * @stability Stable
   */
   private async getPackageUrls() {
-    const pack = await grok.dapi.packages.find(this.parentCall!.func.package.id);
+    if (!this.parentCall)
+      return;
+
+    const pack = await grok.dapi.packages.find(this.parentCall.func.package.id);
 
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
     if (reportBugUrl && !this.reportBug)

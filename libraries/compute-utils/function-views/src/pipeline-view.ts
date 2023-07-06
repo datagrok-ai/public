@@ -40,6 +40,10 @@ export class PipelineView extends ComputationView {
       this.stepTabs!.currentPane = this.stepTabs?.getPane(name);
   }
 
+  public getStepView<T extends FunctionView>(name: string) {
+    return this.steps[name]?.view as T;
+  }
+
   // PipelineView unites several export files into single ZIP file
   protected pipelineViewExportExtensions: () => Record<string, string> = () => {
     return {
