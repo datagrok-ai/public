@@ -107,8 +107,9 @@ export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
   return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Chembl Browser
-//tags: app
+/*
+//name_: Chembl Browser
+//tags_: app
 export async function Browser() {
   // Filter inputs
   const molecule = ui.moleculeInput('Substructure', 'C1CCCCC1');
@@ -398,3 +399,4 @@ export async function Browser() {
     },
   };
 }
+*/
