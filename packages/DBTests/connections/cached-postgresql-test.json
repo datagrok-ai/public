@@ -7,7 +7,7 @@
     "port": 54327,
     "db": "test",
     "cacheResults": true,
-    "cacheInvalidateSchedule": "* * * * *"
+    "cacheInvalidateSchedule": "0 1 * * *"
   },
   "credentials" : {
     "parameters" : {
