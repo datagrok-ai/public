@@ -1,10 +1,17 @@
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import {DataQuery} from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {getCallTime} from '../benchmarks/benchmark';
 
 category('Cache', () => {
+  before(async () => {
+    await grok.functions.call('DropConnectionCache',
+      {connection: await grok.dapi.connections.filter(`name="PostgreSQLDBTests"`).first()});
+    await grok.functions.call('DropConnectionCache',
+      {connection: await grok.dapi.connections.filter(`name="PostgreSQLDBTestsCached"`).first()});
+  });
+
   test('Scalar float cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestFloat'));
 
   test('Scalar int cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestInt'));
