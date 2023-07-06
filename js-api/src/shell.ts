@@ -7,8 +7,8 @@ import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils";
-import {FuncCall} from "./functions";
-import { SettingsInterface } from "../dg";
+import { FuncCall } from "./functions";
+import { SettingsInterface } from './api/xamgle.api.g';
 
 declare let ui: any;
 declare let grok: { shell: Shell };
