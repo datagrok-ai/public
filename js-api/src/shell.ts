@@ -8,6 +8,7 @@ import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils";
 import {FuncCall} from "./functions";
+import { SettingsInterface } from "../dg";
 
 declare let ui: any;
 declare let grok: { shell: Shell };
@@ -20,7 +21,7 @@ let api = <any>window;
  * */
 export class Shell {
   windows: Windows = new Windows();
-  settings: Settings = new Settings();
+  settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
 
   /** Current table, or null. */
   get t(): DataFrame {
@@ -374,7 +375,6 @@ export class Windows {
   get simpleMode(): boolean { return api.grok_Get_SimpleMode(); }
   set simpleMode(x: boolean) { api.grok_Set_SimpleMode(x); }
 }
-
 
 /** User-specific platform settings. */
 export class Settings {
