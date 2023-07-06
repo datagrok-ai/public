@@ -17,9 +17,7 @@ SELECT * FROM Test_Normal;
 --connection: PostgreSQLDBTests
 --output: double maxValue
 --meta.cache: true
-SELECT pg_sleep(3);
---batch
-SELECT max(float_data) as maxValue FROM Test_Long;
+SELECT max(float_data) as maxValue, pg_sleep(3) FROM Test_Long;
 --end
 
 --name: PostgresqlScalarCacheTestInt
@@ -27,9 +25,7 @@ SELECT max(float_data) as maxValue FROM Test_Long;
 --connection: PostgreSQLDBTests
 --output: int count
 --meta.cache: true
-SELECT pg_sleep(3);
---batch
-SELECT count(*) as count FROM Test_Long;
+SELECT count(*) as count, pg_sleep(3) FROM Test_Long;
 --end
 
 --name: PostgresqlScalarCacheTestString
@@ -37,9 +33,7 @@ SELECT count(*) as count FROM Test_Long;
 --connection: PostgreSQLDBTests
 --output: string first_name
 --meta.cache: true
-SELECT pg_sleep(3);
---batch
-SELECT first_name FROM MOCK_DATA WHERE id = 10;
+SELECT first_name, pg_sleep(3) FROM MOCK_DATA WHERE id = 10;
 --end
 
 --name: PostgresqlScalarCacheTestDate
@@ -47,17 +41,13 @@ SELECT first_name FROM MOCK_DATA WHERE id = 10;
 --connection: PostgreSQLDBTests
 --output: datetime date
 --meta.cache: true
-SELECT pg_sleep(3);
---batch
-SELECT date FROM MOCK_DATA WHERE id = 10;
+SELECT date, pg_sleep(3) FROM MOCK_DATA WHERE id = 10;
 --end
 
 --name: PostgresqlCachedConnTest
 --friendlyName: PostgresqlCachedConnTest
 --connection: PostgreSQLDBTestsCached
-SELECT pg_sleep(3);
---batch
-SELECT * FROM MOCK_DATA;
+SELECT *, pg_sleep(3) FROM MOCK_DATA;
 --end
 
 --name: PostgresqlCacheInvalidateQueryTest
@@ -65,9 +55,7 @@ SELECT * FROM MOCK_DATA;
 --connection: PostgreSQLDBTests
 --meta.cache: true
 --meta.invalidate: * * * * *
-SELECT pg_sleep(3);
---batch
-SELECT * FROM MOCK_DATA;
+SELECT *, pg_sleep(3) FROM MOCK_DATA;
 --end
 
 --name: PostgresqlScalarCacheInvalidationTestFloat
@@ -76,9 +64,7 @@ SELECT * FROM MOCK_DATA;
 --output: double maxValue
 --meta.cache: true
 --meta.invalidate: * * * * *
-SELECT pg_sleep(3);
---batch
-SELECT max(float_data) as maxValue FROM Test_Long;
+SELECT max(float_data) as maxValue, pg_sleep(3) FROM Test_Long;
 --end
 
 --name: PostgresqlScalarCacheInvalidationTestInt
@@ -87,9 +73,7 @@ SELECT max(float_data) as maxValue FROM Test_Long;
 --output: int count
 --meta.cache: true
 --meta.invalidate: * * * * *
-SELECT pg_sleep(3);
---batch
-SELECT count(*) as count FROM Test_Long;
+SELECT count(*) as count, pg_sleep(3) FROM Test_Long;
 --end
 
 --name: PostgresqlScalarCacheInvalidationTestString
@@ -98,9 +82,7 @@ SELECT count(*) as count FROM Test_Long;
 --output: string first_name
 --meta.cache: true
 --meta.invalidate: * * * * *
-SELECT pg_sleep(3);
---batch
-SELECT first_name FROM MOCK_DATA WHERE id = 10;
+SELECT first_name FROM MOCK_DATA, pg_sleep(3) WHERE id = 10;
 --end
 
 --name: PostgresqlScalarCacheInvalidationTestDate
@@ -109,7 +91,5 @@ SELECT first_name FROM MOCK_DATA WHERE id = 10;
 --output: datetime date
 --meta.cache: true
 --meta.invalidate: * * * * *
-SELECT pg_sleep(3);
---batch
-SELECT date FROM MOCK_DATA WHERE id = 10;
+SELECT date FROM MOCK_DATA, pg_sleep(3) WHERE id = 10;
 --end
