@@ -3,9 +3,10 @@ import * as grok from 'datagrok-api/grok';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
-
 import './connections/queries-test';
+import './sync/data-sync-test';
 import './benchmarks/benchmark';
+import './cache/cache-test';
 
 export const _package = new DG.Package();
 export {tests};
@@ -22,7 +23,6 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //name: testConnections
 //output: dataframe result
-//top-menu: Tools | Dev | Test Connections
 export async function testConnections(): Promise<DG.DataFrame> {
   const connections: string[] = ['PostgreSQLDBTests', 'SnowflakeDBTests', 'MSSQLDBTests', 'OracleDBTests'];
   const tables: string[] = ['Long', 'Normal', 'Wide', 'Tiny'];
@@ -97,7 +97,6 @@ export async function testConnections(): Promise<DG.DataFrame> {
       }
     }
   }
-  df;
   grok.shell.addTableView(df);
   return df;
 }

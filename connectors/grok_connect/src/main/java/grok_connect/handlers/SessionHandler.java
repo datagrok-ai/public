@@ -2,6 +2,7 @@ package grok_connect.handlers;
 
 import com.google.gson.Gson;
 import grok_connect.connectors_info.DataQueryRunResult;
+import grok_connect.connectors_info.FuncCall;
 import grok_connect.log.EventType;
 import grok_connect.log.QueryLogger;
 import grok_connect.utils.QueryChunkNotSent;
@@ -69,14 +70,12 @@ public class SessionHandler {
             queryManager = new QueryManager(message, queryLogger);
             if (queryManager.dryRun) {
                 logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.START), "Running dry run");
-                for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < 2; i++)
                     queryManager.dryRun(i == 0);
-                }
                 logger.info(EventType.DRY_RUN.getMarker(EventType.Stage.END), "Dry run finished");
             }
             queryManager.initResultSet(queryManager.getQuery());
             if (queryManager.isResultSetInitialized()) {
-                queryManager.initScheme();
                 dataFrame = queryManager.getSubDF(dfNumber);
             } else {
                 dataFrame = new DataFrame();
@@ -131,8 +130,11 @@ public class SessionHandler {
     }
 
     private void sendLog() {
-        logger.debug(EventType.LOG_SEND.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
-        DataFrame logs = queryLogger.dumpLogMessages();
-        session.getRemote().sendBytesByFuture(ByteBuffer.wrap(logs.toByteArray()));
+        FuncCall query = queryManager.getQuery();
+         if (query.debugQuery) {
+            logger.debug(EventType.LOG_SEND.getMarker(EventType.Stage.START), "Converting logs to binary data and sending them to the server");
+            DataFrame logs = queryLogger.dumpLogMessages();
+            session.getRemote().sendBytesByFuture(ByteBuffer.wrap(logs.toByteArray()));
+        }
     }
 }

@@ -31,21 +31,9 @@ function createFromProperties(properties: DG.Property[]): any {
   return o;
 }
 
-/** Merges properties of the two objects by iterating over the specified {@link properties}
- * and assigning properties from {@link source} to {@link target} only when
- * the property is not defined in target and is defined in source. */
-export function mergeProperties(properties: DG.Property[], source: any, target: any): void {
-  if (!source || !target)
-    return;
-
-  for (const p of properties) {
-    if (!(p.name in target) && p.name in source)
-      target[p.name] = source[p.name];
-  }
-}
-
+// TODO: set column with fit readonly value (in detectors) - try to only show chart - remove editable or prevent it??
 /** Creates default {@link IFitChartData} object */
-function createDefaultChartData(): IFitChartData {
+export function createDefaultChartData(): IFitChartData {
   return {
     chartOptions: createFromProperties(fitChartDataProperties),
     seriesOptions: createFromProperties(fitSeriesProperties),
@@ -84,25 +72,6 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
     }
     return bounds;
   }
-}
-
-/** Constructs {@link IFitChartData} from the grid cell, taking into account
- * chart and fit settings potentially defined on the dataframe and column level. */
-export function getChartData(gridCell: DG.GridCell): IFitChartData {
-  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
-    (JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
-
-  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
-
-  cellChartData.series ??= [];
-  cellChartData.chartOptions ??= columnChartOptions.chartOptions;
-
-  // merge cell options with column options
-  mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
-  for (const series of cellChartData.series)
-    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
-
-  return cellChartData;
 }
 
 /** Returns series fit function */

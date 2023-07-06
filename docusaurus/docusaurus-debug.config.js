@@ -3,6 +3,7 @@
 
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+const imagePlaceholder = require('./src/remark/image-placeholder');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -12,6 +13,7 @@ const config = {
   baseUrl: '/',
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
+  onDuplicateRoutes: 'warn',
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
@@ -83,6 +85,7 @@ const config = {
           path: '../help',
           routeBasePath: 'help',
           exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
+          beforeDefaultRemarkPlugins: [imagePlaceholder],
         }
       }),
     ],

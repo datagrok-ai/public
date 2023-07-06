@@ -13,7 +13,7 @@ export async function getMonomericMols(
   const uh = UnitsHandler.getOrCreate(mcol);
   let molV3000Array;
   monomersDict ??= new Map();
-  const monomers = uh.units === NOTATION.HELM ?
+  const monomers = uh.isHelm() ?
     getHelmMonomers(mcol) : Object.keys(uh.stats.freq).filter((it) => it !== '');
 
   for (let i = 0; i < monomers.length; i++) {
@@ -21,7 +21,7 @@ export async function getMonomericMols(
       monomersDict.set(monomers[i], `${monomersDict.size + 1}`);
   }
 
-  if (uh.units === NOTATION.HELM) {
+  if (uh.isHelm()) {
     molV3000Array = await grok.functions.call('HELM:getMolFiles', {col: mcol});
     molV3000Array = changeV2000ToV3000(molV3000Array, monomersDict, pattern);
   } else {

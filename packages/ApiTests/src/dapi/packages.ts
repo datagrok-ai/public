@@ -14,4 +14,9 @@ category('Dapi: packages', () => {
     const apiTestsPackage = await grok.dapi.packages.find(_package.id);
     expect(apiTestsPackage.updatedOn.toString(), _package.updatedOn.toString());
   });
+
+  test('webRoot content', async () => {
+    const apiTestsPackage = await grok.dapi.packages.find(_package.id);
+    expect(apiTestsPackage.webRoot, _package.webRoot);
+  });
 });

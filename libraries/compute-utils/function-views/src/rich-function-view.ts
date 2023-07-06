@@ -136,7 +136,7 @@ export class RichFunctionView extends FunctionView {
    * @returns HTMLElement attached to the root of the view
    */
   public buildIO(): HTMLElement {
-    const {inputBlock, inputForm, outputForm} = this.buildInputBlock();
+    const {inputBlock, inputForm, outputForm, controlsWrapper} = this.buildInputBlock();
 
     ui.tools.handleResize(inputBlock, () => {
       if (([
@@ -146,9 +146,11 @@ export class RichFunctionView extends FunctionView {
       $(inputBlock).width() < 350) {
         $(inputForm).addClass('ui-form-condensed');
         $(outputForm).addClass('ui-form-condensed');
+        $(controlsWrapper).addClass('ui-form-condensed');
       } else {
         $(inputForm).removeClass('ui-form-condensed');
         $(outputForm).removeClass('ui-form-condensed');
+        $(controlsWrapper).removeClass('ui-form-condensed');
       }
     });
 
@@ -184,13 +186,12 @@ export class RichFunctionView extends FunctionView {
       $(saveButton).hide();
 
       this.isUploadMode.subscribe((newValue) => {
-        if (newValue) {
+        if (newValue)
           $(saveButton).show();
-          $(runButton).hide();
-        } else {
+        else
           $(saveButton).hide();
-          $(runButton).show();
-        }
+
+        if (this.runningOnInput) $(runButton).hide();
 
         this.buildRibbonPanels();
       });
@@ -200,8 +201,18 @@ export class RichFunctionView extends FunctionView {
         saveButton,
         runButtonWrapper as any,
       ]);
-      $(this.controllsDiv.children.item(1)).css('gap', '0px');
-      $(this.controllsDiv).css({'margin-top': '0px', 'position': 'sticky'});
+
+      $(this.controllsDiv).css({
+        'margin-top': '0px',
+        'position': 'sticky',
+      });
+      $(this.controllsDiv.lastChild).css({
+        'justify-content': 'space-between',
+      });
+      $(this.controllsDiv.firstChild).css({
+        'margin-right': '0px',
+      });
+      this.afterRenderControlls.next(true);
     }
 
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
@@ -213,7 +224,7 @@ export class RichFunctionView extends FunctionView {
         ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
-      ...this.runningOnInput ? []: [controlsWrapper],
+      controlsWrapper,
     ], 'ui-box');
 
     this.isUploadMode.subscribe((newValue) => {
@@ -227,6 +238,7 @@ export class RichFunctionView extends FunctionView {
       inputBlock: form,
       inputForm: inputFormDiv,
       outputForm: outputFormDiv,
+      controlsWrapper,
     };
   }
 
@@ -309,7 +321,7 @@ export class RichFunctionView extends FunctionView {
 
         const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then((loadedViewer) => {
           const subscribeOnFcChanges = () => {
-            const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
             const paramSub = currentParam.onChanged.subscribe(async () => {
               $(this.outputsTabsElem.root).show();
@@ -360,7 +372,7 @@ export class RichFunctionView extends FunctionView {
 
         if (tabLabel === 'Input') {
           const subscribeOnFcChanges = () => {
-            const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
+            const currentParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
 
             const paramSub = currentParam.onChanged.subscribe(() => {
               $(this.outputsTabsElem.root).show();
@@ -417,7 +429,7 @@ export class RichFunctionView extends FunctionView {
 
       tabScalarProps.forEach((tabScalarProp) => {
         const subscribeOnFcChanges = () => {
-          const paramSub = (this.funcCall!.outputParams[tabScalarProp.name] as DG.FuncCallParam).onChanged.subscribe(() => {
+          const paramSub = this.funcCall!.outputParams[tabScalarProp.name].onChanged.subscribe(() => {
             const newScalarsTable = generateScalarsTable();
             scalarsTable.replaceWith(newScalarsTable);
             scalarsTable = newScalarsTable;
@@ -712,14 +724,15 @@ export class RichFunctionView extends FunctionView {
     });
 
     // DataFrame inputs have internal mutability, so we need check for it
-    const ref = t.value as DG.DataFrame | null;
-    if (ref) {
-      const sub = ref.onDataChanged.subscribe(async () => {
+    val.onChanged.subscribe(() => {
+      if (!val.value) return;
+
+      const sub = val.value.onDataChanged.subscribe(async () => {
         if (this.isRunnable())
           await this.doRun();
       });
       this.subs.push(sub);
-    }
+    });
   }
 
   private hideOutdatedOutput() {
@@ -779,8 +792,8 @@ export class RichFunctionView extends FunctionView {
     const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
     const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
 
-    const inputParams = [...lastCall.inputParams.values()] as DG.FuncCallParam[];
-    const outputParams = [...lastCall.outputParams.values()] as DG.FuncCallParam[];
+    const inputParams = [...lastCall.inputParams.values()];
+    const outputParams = [...lastCall.outputParams.values()];
 
     dfInputs.forEach((dfInput) => {
       const visibleTitle = dfInput.options.caption || dfInput.name;

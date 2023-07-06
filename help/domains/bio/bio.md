@@ -318,7 +318,7 @@ Hierarchical clustering groups sequences into an interactive [dendrogram](../../
 
 To add a dendrogram viewer, do the following:
 
-1. In the **Top Menu**, select **ML** > **Hierarchical clustering**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **Hierarchical clustering**. A dialog opens.
 1. In the dialog, select the parameters and click **OK** to add the dendrogram to the **Table View**.
 
 </details>
@@ -380,7 +380,7 @@ alignment is.
 
 ### Activity cliffs
 
-The **Activity Cliffs** tool in Datagrok detects and visualizes pairs of sequences with highly similar structures but significantly different activity levels, known as "activity cliffs". The **Activity Cliffs** tool is an enhanced version of [Sequence Space](#sequence-space), specifically designed for Sequence-Activity Relationship (SAR) analysis. To run the analysis, you need a dataframe that contains peptide/DNA sequences
+The **Activity Cliffs** tool in Datagrok detects and visualizes pairs of sequences with highly similar monomer composition but significantly different activity levels, known as "activity cliffs". The **Activity Cliffs** tool is an enhanced version of [Sequence Space](#sequence-space), specifically designed for Sequence-Activity Relationship (SAR) analysis. To run the analysis, you need a dataframe that contains peptide/DNA sequences
 along with numerical data representing the associated activity.
 For example, you can use sequences of short peptides with measured antimicrobial effects
 or DNA sequences with measured affinity to a specific protein.
@@ -575,7 +575,7 @@ For individual macromolecules, the conversion happens automatically as you inter
 
 ### Split to monomers
 
-You can split macromolecules to monomers.
+You can split linear macromolecules to monomers.
 
 ![Split to monomers](img/split-to-monomers.gif)
 

@@ -225,6 +225,11 @@ MWRSWY-CKHP`;
     await _testPos(readCsv(csvTests.fastaPt1), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false);
   });
+  test('FastaPtGaps', () => _testPosList(['FW-PH-EYY', 'FYNRQWYV-', 'FKP-Q-SEYV'],
+    NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false));
+  test('FastaPtGapsMsa', () => _testPosList(['FW-PH-EYY', 'FYNRQWYV-', 'FKP-Q-SEY'],
+    NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.PT, 20, false));
+
   test('FastaUn', async () => {
     await _testPos(readCsv(csvTests.fastaUn), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 12, true);
@@ -384,6 +389,31 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
     const msg = `Negative test detected semType='${col.semType}', units='${col.getTag(DG.TAGS.UNITS)}'.`;
     throw new Error(msg);
+  }
+}
+
+export async function _testPosList(list: string[], units: NOTATION,
+  aligned: ALIGNMENT, alphabet: ALPHABET, alphabetSize: number, alphabetIsMultichar: boolean,
+  separator: string | null = null
+): Promise<void> {
+  const col: DG.Column = DG.Column.fromList(DG.TYPE.STRING, 'seq', list);
+  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+  if (semType)
+    col.semType = semType;
+
+  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
+  expect(col.getTag(DG.TAGS.UNITS), units);
+  expect(col.getTag(bioTAGS.aligned), aligned);
+  expect(col.getTag(bioTAGS.alphabet), alphabet);
+  if (separator)
+    expect(col.getTag(bioTAGS.separator), separator);
+
+  const uh = UnitsHandler.getOrCreate(col);
+  expect(uh.getAlphabetSize(), alphabetSize);
+  expect(uh.getAlphabetIsMultichar(), alphabetIsMultichar);
+  if (!uh.isHelm()) {
+    expect(uh.aligned, aligned);
+    expect(uh.alphabet, alphabet);
   }
 }
 

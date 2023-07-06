@@ -58,7 +58,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     grok.events.fireCustomEvent(COLUMN_NAME_CHANGED, {
       colName: state.columnName,
     });
-    this.viewer.loadTreeStr(state.savedTree);
+    if (state.savedTree) this.viewer.loadTreeStr(state.savedTree);
   }
 
   applyFilter(): void {

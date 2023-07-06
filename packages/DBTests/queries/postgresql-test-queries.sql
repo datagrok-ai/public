@@ -136,16 +136,6 @@ SELECT * FROM Test_Wide;
 SELECT * FROM Test_Long;
 --end
 
---name: PostgresqlScalarCacheTestTableLong
---friendlyName: PostgresqlScalarCacheTestTableLong
---connection: PostgreSQLDBTests
---output: int maxValue
---meta.cache: true
-SELECT pg_sleep(3);
---batch
-SELECT max(float_data) FROM Test_Long;
---end
-
 --name: PostgresqlCompressionIntOn
 --friendlyName: PostgresqlCompressionIntOn
 --connection: PostgreSQLDBTests
@@ -153,5 +143,3 @@ SELECT pg_sleep(3);
 --batch
 SELECT * FROM COMPRESS_INT;
 --end
-
-

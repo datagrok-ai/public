@@ -24,7 +24,7 @@
     "webpack-cli": "latest"
   },
   "scripts": {
-    "link-all": "",
+    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
     "debug-dbtests": "webpack && grok publish",
     "release-dbtests": "webpack && grok publish --release",
     "build-dbtests": "webpack",

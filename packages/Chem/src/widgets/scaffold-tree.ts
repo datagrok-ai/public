@@ -12,8 +12,6 @@ import {_package, getScaffoldTree} from "../package";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
 let attached = false;
-let autoGenerate = true;
-let propertyChanged = false;
 
 enum BitwiseOp {
   AND = 'AND',
@@ -412,7 +410,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
     
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
-    this.allowGenerate = this.bool('allowGenerate', this.setAutoGenerate());
+    this.allowGenerate = this.bool('allowGenerate');
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
   }
@@ -468,11 +466,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._message.style.visibility = msg === null ? 'hidden' : 'visible';
     // @ts-ignore
     this._message.innerHTML = msg ?? '';
-  }
-
-  setAutoGenerate() {
-    autoGenerate = propertyChanged ? autoGenerate : this.allowGenerate;
-    return autoGenerate;
   }
 
   _initMenu(): void {
@@ -885,7 +878,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         let molArom;
         try {
           molArom = _rdKitModule.get_qmol(molStr);
-          molArom.set_aromatic_form();
+          molArom.convert_to_aromatic_form();
           this.molColumn.temp['chem-scaffold-filter'] = molArom.get_molblock();
         } catch (e) {
         } finally {
@@ -1186,8 +1179,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateUI();
     }
     else if (p.name === 'allowGenerate') {
-      propertyChanged = true;
-      autoGenerate = this.allowGenerate;
+      this._generateLink!.style.visibility = !this.allowGenerate ? 'hidden' : 'visible';
+      if (this.allowGenerate === true)
+        setTimeout(() => this.generateTree(), 1000);
     }
   }
 

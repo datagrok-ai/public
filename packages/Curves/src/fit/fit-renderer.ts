@@ -12,6 +12,8 @@ import {
   FIT_CELL_TYPE,
   IFitSeries,
   FitStatistics,
+  fitChartDataProperties,
+  fitSeriesProperties,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -19,12 +21,13 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 import {
   fitSeries,
-  getChartData,
+  createDefaultChartData,
   getChartBounds,
   getSeriesFitFunction,
   getSeriesConfidenceInterval,
   getSeriesStatistics,
   getCurve,
+  getColumnChartOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -33,18 +36,65 @@ import {MultiCurveViewer} from './multi-curve-viewer';
 
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
-export const CANDLESTICK_BORDER_PX_SIZE = 4;
-export const OUTLIER_HITBOX_RADIUS = 2;
+const MIN_CELL_RENDERER_PX_WIDTH = 20;
+const MIN_CELL_RENDERER_PX_HEIGHT = 10;
+const MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH = 70;
+const MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT = 45;
+const OUTLIER_PX_SIZE = 12;
+const POINT_PX_SIZE = 4;
+const OUTLIER_HITBOX_RADIUS = 2;
+const MIN_AXES_CELL_PX_WIDTH = 70;
+const MIN_AXES_CELL_PX_HEIGHT = 55;
+const AXES_LEFT_PX_MARGIN = 30;
+const AXES_TOP_PX_MARGIN = 5;
+const AXES_BOTTOM_PX_MARGIN = 15;
+const CANDLESTICK_BORDER_PX_SIZE = 4;
+const CANDLESTICK_MEDIAN_PX_SIZE = 3.5;
+const CANDLESTICK_OUTLIER_PX_SIZE = 6;
 
+
+/** Merges properties of the two objects by iterating over the specified {@link properties}
+ * and assigning properties from {@link source} to {@link target} only when
+ * the property is not defined in target and is defined in source. */
+export function mergeProperties(properties: DG.Property[], source: any, target: any): void {
+  if (!source || !target)
+    return;
+
+  for (const p of properties) {
+    if (!(p.name in target) && p.name in source)
+      target[p.name] = source[p.name];
+  }
+}
+
+/** Constructs {@link IFitChartData} from the grid cell, taking into account
+ * chart and fit settings potentially defined on the dataframe and column level. */
+export function getChartData(gridCell: DG.GridCell): IFitChartData {
+  const cellChartData: IFitChartData = gridCell.cell?.column?.type === DG.TYPE.STRING ?
+    (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+    convertXMLToIFitChartData(gridCell.cell.value) :
+    JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
+
+  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
+
+  cellChartData.series ??= [];
+  cellChartData.chartOptions ??= columnChartOptions.chartOptions;
+
+  // merge cell options with column options
+  mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
+  for (const series of cellChartData.series)
+    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
+
+  return cellChartData;
+}
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
-  if (rect.width < 70 || rect.height < 55)
+  if (rect.width < MIN_AXES_CELL_PX_WIDTH || rect.height < MIN_AXES_CELL_PX_HEIGHT)
     return [rect, undefined, undefined];
   return [
-    rect.cutLeft(30).cutBottom(30),
-    rect.getBottom(30).cutLeft(30),
-    rect.getLeft(30).cutBottom(30)
+    rect.cutLeft(AXES_LEFT_PX_MARGIN).cutBottom(AXES_BOTTOM_PX_MARGIN).cutTop(AXES_TOP_PX_MARGIN),
+    rect.getBottom(AXES_BOTTOM_PX_MARGIN).getTop(AXES_TOP_PX_MARGIN).cutLeft(AXES_LEFT_PX_MARGIN),
+    rect.getLeft(AXES_LEFT_PX_MARGIN).cutBottom(AXES_BOTTOM_PX_MARGIN).cutTop(AXES_TOP_PX_MARGIN)
   ];
 }
 
@@ -62,7 +112,7 @@ function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: B
   g.lineTo(transform.xToScreen(x), transform.yToScreen(boxPlotStats.upperAdjacentValue));
   drawCandlestickBorder(g, x, boxPlotStats.upperAdjacentValue, transform);
   DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, transform.xToScreen(x), transform.yToScreen(boxPlotStats.q2),
-    markerColor, 3.5 * ratio);
+    markerColor, CANDLESTICK_MEDIAN_PX_SIZE * ratio);
 }
 
 /** Performs points drawing */
@@ -70,11 +120,12 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
   transform: Viewport, ratio: number): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
+    const color = p.outlier ? DG.Color.red :
+      series.pointColor ? DG.Color.fromHtml(series.pointColor) ?? DG.Color.scatterPlotMarker :
+      DG.Color.scatterPlotMarker;
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
-      transform.xToScreen(p.x), transform.yToScreen(p.y),
-      series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-      (p.outlier ? 6 : 4) * ratio);
+      transform.xToScreen(p.x), transform.yToScreen(p.y), color, (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
   }
 }
 
@@ -106,7 +157,7 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
             DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER,
               transform.xToScreen(p.x), transform.yToScreen(values[ind]),
               series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-              6 * ratio);
+              CANDLESTICK_OUTLIER_PX_SIZE * ratio);
           }
         }
       }
@@ -120,12 +171,12 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
 function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
   screenBounds: DG.Rect, transform: Viewport, confidenceType: string): void {
   g.beginPath();
-  for (let i = 0; i <= screenBounds.width; i++) {
+  for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
     const x = screenBounds.x + i;
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
       transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x))) :
       transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
-    if (i === 0)
+    if (i === AXES_LEFT_PX_MARGIN)
       g.moveTo(x, y);
     else
       g.lineTo(x, y);
@@ -133,26 +184,21 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   g.stroke();
 }
 
-// TODO: Denis will look at axes
-// TODO: automatic output of parameters
-// TODO: add candlesticks to Curves documentation
-// TODO: add how to control options - series opitons, chart options, etc.
-
 /** Performs a curve confidence interval color filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
   screenBounds: DG.Rect, transform: Viewport): void {
   g.beginPath();
-  for (let i = 0; i <= screenBounds.width; i++) {
+  for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
     const x = screenBounds.x + i;
     const y = transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x)));
-    if (i === 0)
+    if (i === AXES_LEFT_PX_MARGIN)
       g.moveTo(x, y);
     else
       g.lineTo(x, y);
   }
 
   // reverse traverse to make a shape of confidence interval to fill it
-  for (let i = screenBounds.width; i >= 0; i--) {
+  for (let i = screenBounds.width; i >= AXES_LEFT_PX_MARGIN; i--) {
     const x = screenBounds.x + i;
     const y = transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
     g.lineTo(x, y);
@@ -183,13 +229,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
+      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points')
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
         const screenX = viewport.xToScreen(p.x);
         const screenY = viewport.yToScreen(p.y);
-        const pxPerMarkerType = ((p.outlier ? 6 : 4) / 2) + OUTLIER_HITBOX_RADIUS;
+        const pxPerMarkerType = ((p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) / 2) + OUTLIER_HITBOX_RADIUS;
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
           p.outlier = !p.outlier;
@@ -216,7 +262,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
     ui.dialog({title: 'Edit chart'})
       .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
-      .show();
+      .show({resizable: true});
   }
 
   renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData): void {
@@ -236,7 +282,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
     for (const series of data.series!) {
-      if (w < 70 || h < 45) {
+      if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
         series.showPoints = '';
         if (data.chartOptions)
           data.chartOptions.showStatistics = [];
@@ -267,10 +313,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.lineWidth = 2 * ratio;
 
         g.beginPath();
-        for (let i = 0; i <= screenBounds.width; i++) {
+        for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
           const x = screenBounds.x + i;
           const y = viewport.yToScreen(curve(viewport.xToWorld(x)));
-          if (i === 0)
+          if (i === AXES_LEFT_PX_MARGIN)
             g.moveTo(x, y);
           else
             g.lineTo(x, y);
@@ -309,7 +355,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   render(g: CanvasRenderingContext2D,
          x: number, y: number, w: number, h: number,
          gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
-    if (w < 20 || h < 10) return;
+    if (w < MIN_CELL_RENDERER_PX_WIDTH || h < MIN_CELL_RENDERER_PX_HEIGHT)
+      return;
 
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
@@ -337,13 +384,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints === 'candlesticks')
+      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points')
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
         const screenX = viewport.xToScreen(p.x);
         const screenY = viewport.yToScreen(p.y);
-        const pxPerMarkerType = ((p.outlier ? 6 : 4) / 2) + OUTLIER_HITBOX_RADIUS;
+        const pxPerMarkerType = ((p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) / 2) + OUTLIER_HITBOX_RADIUS;
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
           document.body.style.cursor = 'pointer';

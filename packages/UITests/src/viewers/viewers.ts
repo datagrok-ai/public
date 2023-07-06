@@ -230,7 +230,7 @@ category('Viewers', () => {
     }
     viewerList = [];
   });
-}, false);
+}, {clear: false});
 
 function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());

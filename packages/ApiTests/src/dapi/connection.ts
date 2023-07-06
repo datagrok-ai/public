@@ -103,7 +103,7 @@ category('Dapi: TableQuery', () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
   }, {skipReason: 'GROK-11670'});
-}, false);
+}, {clear: false});
 
 /*
 category('Dapi: TableQueryBuilder', () => {

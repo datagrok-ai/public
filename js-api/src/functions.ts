@@ -98,10 +98,22 @@ const FuncCallParamMapProxy = new Proxy(class {
 );
 
 
+export interface IFunctionRegistrationData {
+  signature: string;    // int foo(string bar)
+  run: Function;
+  tags?: string;        // comma-separated tags
+  isAsync?: boolean;    // whether is can be called synchronously
+  namespace?: string;
+  options?: {[key: string]: string}
+}
+
+
 /** Grok functions */
 export class Functions {
 
-  register(func: Func): void {
+  get clientCache(): ClientCache { return new ClientCache(); }
+
+  register(func: IFunctionRegistrationData): void {
     api.grok_RegisterFunc(func);
   }
 
@@ -144,6 +156,13 @@ export class Functions {
   get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
   get onParamsUpdated(): Observable<FuncCall> { return __obs('d4-func-call-output-params-updated'); }
+}
+
+
+export class ClientCache {
+
+  /** Clears cache content. */
+  clear(): void { api.grok_ClientCache_Clear(); }
 }
 
 
@@ -211,7 +230,7 @@ export class Context {
 }
 
 class FuncCallParams {
-  [name: string]: FuncCallParam,
+  [name: string]: FuncCallParam;
 
   //@ts-ignore
   public values(): FuncCallParam[];
@@ -261,7 +280,17 @@ export class FuncCall extends Entity {
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
 
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
+
+  set started(value: dayjs.Dayjs) {
+    if (!(dayjs.isDayjs(value) || value == null))
+      value = dayjs(value);
+    api.grok_FuncCall_Set_Started(this.dart, value?.valueOf());
+  }
+
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
+
+  get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
+  set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
   override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)) }
 

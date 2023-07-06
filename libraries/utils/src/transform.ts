@@ -59,7 +59,7 @@ export class Viewport {
   logX: boolean = false;
   logY: boolean = false;
   inverseX: boolean = false;
-  inverseY: boolean = true;
+  inverseY: boolean = false;
 
   get xt(): ITransform { return this.logX ? logTransform : linearTransform; }
   get yt(): ITransform { return this.logY ? logTransform : linearTransform; }

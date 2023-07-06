@@ -1,9 +1,5 @@
 package serialization;
 
-
-import java.util.Arrays;
-import java.util.Objects;
-
 // Float column.
 public class FloatColumn extends Column<Float> {
     private static final String TYPE = Types.FLOAT;
@@ -11,22 +7,27 @@ public class FloatColumn extends Column<Float> {
 
     private float[] data;
 
+    public FloatColumn() {
+        data = new float[initColumnSize];
+    }
+
+    public FloatColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new float[initColumnSize];
+    }
+
+    public FloatColumn(Float[] values) {
+        data = new float[initColumnSize];
+        addAll(values);
+    }
+
     public String getType() {
         return TYPE;
     }
 
     public void empty() {
         length = 0;
-        data = new float[100];
-    }
-
-    public FloatColumn() {
-        data = new float[100];
-    }
-
-    public FloatColumn(Float[] values) {
-        data = new float[100];
-        addAll(values);
+        data = new float[initColumnSize];
     }
 
     public void encode(BufferAccessor buf) {
@@ -48,6 +49,11 @@ public class FloatColumn extends Column<Float> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    @Override
+    public void set(int index, Float value) {
+        data[index] = value;
     }
 
     @Override

@@ -16,7 +16,6 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.Column;
 import serialization.DataFrame;
@@ -24,8 +23,7 @@ import serialization.IntColumn;
 import serialization.Types;
 
 public class VerticaDataProvider extends JdbcDataProvider {
-    public VerticaDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public VerticaDataProvider() {
         driverClassName = "com.vertica.jdbc.Driver";
 
         descriptor = new DataSource();
@@ -86,7 +84,7 @@ public class VerticaDataProvider extends JdbcDataProvider {
     }
 
     /**
-     * Vertica doesn't have a 32 bit integers, so is_view column is BigInt.
+     * Vertica doesn't have a 32-bit integers, so is_view column is BigInt.
      * Replace it with InColumn for easy handle in next steps
      */
     @Override
