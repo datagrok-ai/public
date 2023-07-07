@@ -24,14 +24,11 @@ export abstract class TreeRendererBase<TNode extends NodeType, THover extends Ho
 
   set treeRoot(value: TNode | null) {
     this._treeRoot = value;
-
     this._current = null;
     this._mouseOver = null;
     this._selections = [];
-
     this.render('set treeRoot()');
   }
-
   //#region current
 
   public get currentNode(): TNode | null { return this._current ? this._current.node : null; }
@@ -53,9 +50,7 @@ export abstract class TreeRendererBase<TNode extends NodeType, THover extends Ho
       this._onCurrentChanged.next();
     }
   }
-
   //#endregion current
-
   //#region mouseOver
 
   public get mouseOverNode(): TNode | null { return this._mouseOver ? this._mouseOver.node : null; }
@@ -146,4 +141,3 @@ export abstract class TreeRendererBase<TNode extends NodeType, THover extends Ho
     this.render('viewOnSizeChanged');
   }
 }
-

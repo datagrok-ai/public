@@ -11,22 +11,27 @@ public class DateTimeColumn extends Column<Double> {
 
     private double[] data;
 
+    public DateTimeColumn() {
+        data = new double[initColumnSize];
+    }
+
+    public DateTimeColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new double[initColumnSize];
+    }
+
+    public DateTimeColumn(Double[] values) {
+        data = new double[initColumnSize];
+        addAll(values);
+    }
+
     public String getType() {
         return TYPE;
     }
 
     public void empty() {
         length = 0;
-        data = new double[100];
-    }
-
-    public DateTimeColumn() {
-        data = new double[100];
-    }
-
-    public DateTimeColumn(Double[] values) {
-        data = new double[100];
-        addAll(values);
+        data = new double[initColumnSize];
     }
 
     public void encode(BufferAccessor buf) {
@@ -85,6 +90,11 @@ public class DateTimeColumn extends Column<Double> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    @Override
+    public void set(int index, Double value) {
+        data[index] = value;
     }
 
     @Override

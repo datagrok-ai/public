@@ -31,9 +31,10 @@ export const enum TAGS {
   alphabetSize = '.alphabetSize',
   alphabetIsMultichar = '.alphabetIsMultichar',
   separator = 'separator',
+  isHelmCompatible = '.isHelmCompatible',
 }
 
-export const monomerRe: RegExp = /\[(\w+)\]|(\w)|(-)/g;
+export const monomerRe: RegExp = /(\[[A-Za-z0-9-_]+\]|.)/g;
 
 export const Alphabets = new class {
   fasta = {

@@ -9,11 +9,22 @@ on:
   push:
     paths:
       - 'packages/**'
+  pull_request:
+    paths:
+      - 'packages/**'
 
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   matrix:
     name: Check changes
     runs-on: ubuntu-20.04
+    needs: common-check
+    if: needs.common-check.outputs.continue == 'true'
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
@@ -26,7 +37,7 @@ jobs:
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]]; then
               commit="$(git log --format="%H" -n 1 --no-merges)"
             else
               commit=${{ github.sha }}
@@ -96,7 +107,8 @@ jobs:
     name: Test and publish to npm
     needs:
       - matrix
-    if: needs.matrix.outputs.publish == 'yes'
+      - common-check
+    if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     env:
       HOST: GitHubAction
@@ -163,12 +175,14 @@ jobs:
             DATAGROK_VERSION='bleeding-edge'
           fi
           export DATAGROK_VERSION
+          export GROK_COMPUTE_VERSION=1.5.1
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
-          docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
+          docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
-          echo "Notify abour version used for tests"
-          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
+          echo "Notify about version used for tests"
+          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
+          df -h
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -211,19 +225,24 @@ jobs:
       - name: Install datagrok tools
         id: datagrok-tools
         if: ${{ matrix.test == 'true' }}
-        run: npm install -g datagrok-tools@latest
+        run: |
+          df -h
+          npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
         run: |
-          while curl -s http://localhost:8080/api/admin/health | grep -e 'ApiError'
+          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
           do
             sleep 1
+            docker logs $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            echo -e "\nRetrying..."
           done
+          curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'true' }}
         run: |
-          echo 'N' | grok config add --default --alias ${HOST} --server 'http://localhost:8080/api' --key admin
+          echo 'N' | grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
           cat /home/runner/.grok/config.yaml
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'true' }}
@@ -235,15 +254,16 @@ jobs:
               cd node_modules/$dep
               count=0
               retries=5
+              echo "Publishing $dep to ${HOST}..."
               until grok publish ${HOST}; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
                 if [ $count -lt "$retries" ]; then
-                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' for $dep in $wait seconds..."
                   sleep $wait
                 else
-                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}' for $dep."
                   exit $exit
                 fi
               done
@@ -272,11 +292,22 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
-        continue-on-error: ${{ contains(matrix.package, 'Tests') }}
+        continue-on-error: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'DrugBank') }}
         timeout-minutes: 15
         id: test-package
-        run: npm run test -- --skip-build --skip-publish
+        run: npm run test -- --skip-build --skip-publish --record --csv
         working-directory: packages/${{ matrix.package }}
+      - name: Upload Artifact
+        if: always() && steps.test-package.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package }}.test-results
+          path: |
+            packages/${{ matrix.package }}/test-record.mp4
+            packages/${{ matrix.package }}/test-report.csv
+            packages/${{ matrix.package }}/test-console-output.log
+          retention-days: 14
+          if-no-files-found: warn
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
@@ -345,7 +376,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
@@ -379,10 +410,14 @@ jobs:
           continue=false
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
             git add packages/${{ matrix.package }}/package-lock.json
-            git commit -m 'GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]
+            skip_ci=""
+            if [ ${{ github.ref }} == 'refs/heads/master' ]; then
+              skip_ci="[skip ci]"
+            fi
+            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json $skip_ci
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then

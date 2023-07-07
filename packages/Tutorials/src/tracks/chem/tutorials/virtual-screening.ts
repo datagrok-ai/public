@@ -22,7 +22,7 @@ export class VirtualScreeningTutorial extends Tutorial {
   }
 
   get steps() {
-    return 46;
+    return 35;
   }
 
   prerequisites: TutorialPrerequisites = {packages: ['Chem', 'PowerPack'], jupyter: true, grokCompute: true, h2o: true};
@@ -98,7 +98,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
         'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
         'body in a neutralized form.';
-      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'Curate', chemMenu, curationInfo);
+      const curationDlg = await this.openDialog('Open "Chem | Transform | Curate"', 'Curate', chemMenu, curationInfo);
 
       const neutralizationInfo = 'Perform "Neutralization" to remove charges.';
       await this.dlgInputAction(curationDlg, 'Check "Neutralization"', 'Neutralization', 'true', neutralizationInfo);
@@ -118,33 +118,14 @@ export class VirtualScreeningTutorial extends Tutorial {
           call.inputs.get('mainFragment');
         })), null, outputComment);
 
-      let ppColumn: DG.Accordion;
-      const ppDescription = 'In the context panel, you should now see all the actions ' +
-        'applicable to the column under the "Actions" section. Let\'s calculate some ' +
-        'molecular descriptors for the given dataset.';
-
-      await this.action('Click on the header of the column with curated molecules',
-        grok.events.onAccordionConstructed.pipe(filter((acc) => {
-          if (acc.context instanceof DG.Column && acc.context?.name === curatedMolColName) {
-            ppColumn = acc;
-            return true;
-          }
-          return false;
-        })), null, ppDescription);
-
-      ppColumn!.getPane('Actions').expanded = true;
-      const descriptorsLabel = $(ppColumn!.root)
-        .find('label.d4-link-action')
-        .filter((idx, el) => el.textContent == 'Chem | Descriptors...')[0];
-
       const descDlg = 'To characterize the molecules, we should calculate molecular descriptors – ' +
         'useful values that reflect the molecule\'s structure and thus have structural interpretation. ' +
         'Each chemical structure will have a facilitated representation as vector of descriptors. There ' +
         'are different types of descriptors, you can select them either by category or individually. We ' +
         'will combine the ones that describe molecular graph itself, as well as the surface of the whole ' +
         'molecule and its physico-chemical properties.';
-      const descriptorDlg = await this.openDialog('Click on "Chem | Descriptors..." action in the context panel',
-        'Descriptors', descriptorsLabel, descDlg);
+      const descriptorDlg = await this.openDialog('Open "Chem | Calculate | Descriptors..."',
+        'Descriptors', chemMenu, descDlg);
 
       const groupHints = $(descriptorDlg.root)
         .find('.d4-tree-view-node')
@@ -195,7 +176,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'descriptors are now used as features and the first dataset is now a training set. Build the ' +
       'model and create an "observed versus predicted" plot to make sure that the model adequately ' +
       'predicts activity in the training set.';
-    await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN', modelInfo);
+    await this.buttonClickAction(pmv.root, 'Click the "TRAIN" button', 'TRAIN', modelInfo);
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
       `${this.t!.toString()}"`, this.t!.toString(), null, 'The menu opens both from the status bar with the model ' +
       'name and from <b>Functions | Models</b>. The result will be available in the selected ' +

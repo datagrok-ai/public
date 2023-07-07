@@ -1,4 +1,0 @@
-.ui-input-root > input.ui-input-editor.disabled:focus {
-    outline: none;
-    border-bottom: 1px solid var(--grey-2)!important;
-}

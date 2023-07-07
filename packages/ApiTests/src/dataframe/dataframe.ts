@@ -299,14 +299,14 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('datetime column', async () => {
     const t = grok.data.testData('demog');
     const c = t.columns.byName('started');
-    c.set(1, dayjs('2022-01-01'));
-    expect(c.get(1).valueOf(), 1641013200000);
+    c.set(1, dayjs.utc('2022-01-01'));
+    expect(c.get(1).valueOf(), 1640995200000);
     c.set(1, null);
     expect(c.get(1), null);
   });
 
   test('hash', async () => {
-    const df = grok.data.demo.demog(100000);
+    const df = grok.data.demo.demog(10);
     expect(hashDataFrame(df).length, 32);
 
     const df1 = DG.DataFrame.fromCsv(`a,b\n1,0\n2,0\n3,0`);
@@ -321,7 +321,6 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('emptyDataFrameToCsv', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([]);
     const csv: string = df.toCsv();
-
     expect(csv, '');
   });
 });

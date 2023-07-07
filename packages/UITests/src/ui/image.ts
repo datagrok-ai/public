@@ -1,4 +1,4 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -23,11 +23,10 @@ category('UI: Image', () => {
 
   test('image.size', async () => {
     if (image.style.width != '400px' || image.style.height != '200px')
-      throw 'image size error';
+      throw new Error('image size error');
   });
 
   after(async () => {
-    v.close();
     grok.shell.closeAll();
   });
 
@@ -42,8 +41,8 @@ category('UI: Image', () => {
     root.click();
 
     if (check == false)
-      throw `"${root}": OnClick error`;
+      throw new Error(`"${root}": OnClick error`);
 
     root.remove();
   }
-});
+}, {clear: false});

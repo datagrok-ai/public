@@ -25,19 +25,18 @@ category('packageFuncs', () => {
   });
 
   test('injectTreeToGrid', async () => {
-    const treeHelper: ITreeHelper = await getTreeHelper();
     const nwk = await grok.dapi.files.readAsText(`System:AppData/${_package.name}/data/tree95.nwk`);
     const df: DG.DataFrame = await grok.dapi.files.readCsv(`System.AppData/${_package.name}/data/tree95df.csv`);
     const view: DG.TableView = grok.shell.addTableView(df);
     await grok.functions.call(`${_package.name}:injectTreeToGrid`,
       {grid: view.grid, newickText: nwk, leafColName: 'id'});
     await awaitCheck(() => true, 'Error', 200);
-  }, {skipReason: 'GROK-12877'});
+  });
 
   test('treeToGridApp', async () => {
     const app: TreeToGridApp = await grok.functions.call(`${_package.name}:treeToGridApp`, {});
     await awaitCheck(() => true, 'Error', 200);
-  }, {skipReason: 'GROK-12877'});
+  });
 
   test('treeCutAsTreeApp', async () => {
     await grok.functions.call(`${_package.name}:treeCutAsTreeApp`, {});

@@ -8,11 +8,24 @@ on:
       - 'help/**'
       - 'docusaurus/**'
       - 'js-api/**'
+  pull_request:
+    paths:
+      - 'help/**'
+      - 'docusaurus/**'
+      - 'js-api/**'
 
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   lint:
     name: Lint
+    needs: common-check
     runs-on: ubuntu-20.04
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -45,7 +58,8 @@ jobs:
 
   convert:
     name: Convert to HTML
-    needs: [lint]
+    needs: [lint, common-check]
+    if: needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -114,11 +128,11 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: convert
+    needs: [convert, common-check]
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -162,12 +176,12 @@ jobs:
 
   scrape:
     name: Scrape
-    needs: deploy
+    needs: [deploy, common-check]
     environment: Help
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout

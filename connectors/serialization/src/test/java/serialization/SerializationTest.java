@@ -10,8 +10,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 @Disabled
 public class SerializationTest {
@@ -21,20 +19,20 @@ public class SerializationTest {
 
     @Test
     public void testSerialization() throws IOException, InterruptedException {
-        List<Column> columns = new ArrayList<>(5);
-        columns.add(new FloatColumn(new Float[] {1.0F, 2.0F, 3.0F, 4.0F}));
-        columns.add(new IntColumn(new Integer[] {1, 2, 3, 4}));
-        columns.add(new StringColumn(new String[] {"A", "B", "C", "D"}));
-        columns.add(new BoolColumn(new Boolean[] {true, false, true, false}));
-        columns.add(new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, FloatColumn.None, FloatColumn.None}));
-        columns.add(new BigIntColumn(new String[] {"1234567890", "2345678901", "3456789012", "4567890123"}));
+        Column[] columns = new Column[6];
+        columns[0] = new FloatColumn(new Float[] {1.0F, 2.0F, 3.0F, 4.0F});
+        columns[1] = new IntColumn(new Integer[] {1, 2, 3, 4});
+        columns[2] = new StringColumn(new String[] {"A", "B", "C", "D"});
+        columns[3] = new BoolColumn(new Boolean[] {true, false, true, false});
+        columns[4] = new DateTimeColumn(new Double[] {1099511627776000.0, 2099511627777000.0, FloatColumn.None, FloatColumn.None});
+        columns[5] = new BigIntColumn(new String[] {"1234567890", "2345678901", "3456789012", "4567890123"});
 
-        columns.get(0).name = "double";
-        columns.get(1).name = "int";
-        columns.get(2).name = "string";
-        columns.get(3).name = "bool";
-        columns.get(4).name = "datetime";
-        columns.get(5).name = "bigint";
+        columns[0].name = "double";
+        columns[1].name = "int";
+        columns[2].name = "string";
+        columns[3].name = "bool";
+        columns[4].name = "datetime";
+        columns[5].name = "bigint";
 
         DataFrame df = new DataFrame();
         df.addColumns(columns);

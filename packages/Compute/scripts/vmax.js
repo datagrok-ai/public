@@ -19,6 +19,10 @@
 //output: dataframe sampleCharacteristics {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Sample characteristics; category: OUTPUT}
 //output: dataframe filter {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Filter; category: OUTPUT}
 //editor: Compute:ComputationView
+//meta.runOnOpen: true
+//meta.runOnInput: true
+
+
 // inputTable = grok.shell.tables[0]; reportingParameters = grok.shell.tables[1];
 // testFilterArea = 3.5; desiredVolumeOfBatch = 25; desiredProcessTime = 0.5; sf = 1.5;
 

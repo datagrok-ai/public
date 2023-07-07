@@ -61,7 +61,19 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   const height = 100;
   const descriptionCol = alertsDf!.getCol('description');
   const smartsCol = alertsDf!.getCol('smarts');
-
+  const calcForWholeButton = ui.button('Calculate for whole dataset', async () => {
+    const alertsFunc = DG.Func.find({package: 'Chem', name: 'structuralAlertsTopMenu'})[0];
+    const alertsFuncCall = alertsFunc.prepare();
+    ui.dialog('Structural alers')
+      .add(await alertsFuncCall.getEditor())
+      .onOK(() => {
+        const args: any = {};
+        Object.entries(alertsFuncCall.inputs).forEach(([key, val]) => args[key] = val);
+        alertsFunc.apply(args);
+      })
+      .show({center: true});
+  });
+  calcForWholeButton.style.justifyContent = 'flex-start';
   const list = ui.div(alerts.map((i) => {
     const description = ui.divText(descriptionCol.get(i));
     const imageHost = ui.canvas(width, height);
@@ -70,14 +82,14 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
     imageHost.height = height * r;
     imageHost.style.width = width.toString() + 'px';
     imageHost.style.height = height.toString() + 'px';
-      //in case molecule is smiles setting correct coordinates to save molecule orientation
+    //in case molecule is smiles setting correct coordinates to save molecule orientation
     if (!DG.chem.isMolBlock(molecule))
       molecule = _convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdKitModule!);
     drawMoleculeToCanvas(0, 0, width * r, height * r, imageHost, molecule, smartsCol.get(i));
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
-  }), {classes: 'd4-flex-wrap', style: {overflow: 'hidden', 'max-height': '400px'}});
+  }), {classes: 'd4-flex-wrap', style: {'overflow': 'hidden', 'max-height': '400px'}});
 
-  return new DG.Widget(ui.box(list));
+  return new DG.Widget(ui.divV([calcForWholeButton, ui.box(list)]));
 }

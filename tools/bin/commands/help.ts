@@ -51,12 +51,14 @@ Usage: grok init
 Modify a package template by adding config files for linters, IDE, etc.
 
 Options:
-[--eslint] [--ide] [--test] [--ts]
+[--eslint] [--ide] [--test] [--ts] [--git]
 
 --eslint    Add a configuration for eslint
 --ide       Add an IDE-specific configuration for debugging (vscode)
 --test      Add tests support (TypeScript packages only)
 --ts        Convert a JavaScript package to TypeScript
+--git       Configure GIT and install commit linting tools.
+            Read more: https://datagrok.ai/help/develop/advanced/git-policy
 `;
 
 const HELP_API = `
@@ -126,13 +128,16 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--host] [--csv]
+[--category] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--catchUnhandled] [--report]
 
---host           Host alias as in the config file
---csv            Save the test report in a CSV file
---gui            Launch graphical interface (non-headless mode)
---skip-build     Skip the package build step
---skip-publish   Skip the package publication step
+--category          Specify a category name to run tests for
+--host              Host alias as in the config file
+--csv               Save the test report in a CSV file
+--gui               Launch graphical interface (non-headless mode)
+--catchUnhandled    Catch unhandled exceptions during test execution (default=true)
+--report            Report failed tests to audit, notifies package author (default=false)
+--skip-build        Skip the package build step
+--skip-publish      Skip the package publication step
 
 Run package tests
 

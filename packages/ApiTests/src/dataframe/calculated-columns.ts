@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 import {after, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
-category('DataFrame', () => {
+category('DataFrame: Calculated columns', () => {
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3]),
     DG.Column.fromList(DG.TYPE.FLOAT, 'y', [4, 5, 6]),
@@ -78,9 +78,9 @@ category('DataFrame', () => {
       data.args.columns.forEach((column: DG.Column) => {
         if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
           resolve('OK');
-    })));
+      })));
 
-    setTimeout(() => reject('Failed to add a calculated column'), 50);
+    setTimeout(() => reject(new Error('Failed to add a calculated column')), 50);
     t.columns.addNewInt('regular column').init(1);
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
   }));
@@ -91,9 +91,9 @@ category('DataFrame', () => {
       data.args.columns.forEach((column: DG.Column) => {
         if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
           resolve('OK');
-    })));
+      })));
 
-    setTimeout(() => reject('Failed to delete a calculated column'), 50);
+    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 50);
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
     t.columns.addNewInt('regular column').init(1);
     t.columns.remove('regular column');

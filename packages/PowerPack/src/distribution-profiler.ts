@@ -9,13 +9,13 @@ export class DistributionProfilerViewer extends DG.JsViewer {
   }
 
   init() {
-    let df = grok.data.demo.demog();
+    const df = grok.data.demo.demog();
 
-    var header = ui.inputs([
-      ui.columnInput('Split by', df, df.col('sex'))
+    const header = ui.inputs([
+      ui.columnInput('Split by', df, df.col('sex')),
     ]);
 
-    let host = ui.divV([
+    const host = ui.divV([
       header,
       DG.Viewer.grid(df).root,
       DG.Viewer.scatterPlot(df).root,

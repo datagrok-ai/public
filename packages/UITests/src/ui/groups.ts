@@ -112,6 +112,6 @@ category('UI: Groups', () => {
   });
 
   after(async () => {
-    v.close();
+    grok.shell.closeAll();
   });
-});
+}, {clear: false});

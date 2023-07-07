@@ -4,7 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import '../css/injected-dendrogram.css';
-/** By Dimitri Petrov */
+/** By Dimitri Petrov
+ * Attach a div to a grid
+ * @param {DG.Grid} grid
+ * @param {number} neighborWidth
+ * @return {GridNeighbor}*/
 export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): GridNeighbor {
   // const nRowCount = 100;
   // const nColCount = 5;

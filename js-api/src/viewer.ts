@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {Column, DataFrame} from "./dataframe.js";
+import {DataFrame} from "./dataframe.js";
 import {Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
@@ -268,7 +268,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
   }
 
-  static wordCloud(t: DataFrame, options: object | null = null): Viewer<interfaces.IWordCloudLookSettings> {
+  /** @deprecated */
+  static wordCloud(t: DataFrame, options: object | null = null): Viewer {
     return <Viewer>Viewer.fromType(VIEWER.WORD_CLOUD, t, options);
   }
 
@@ -444,6 +445,10 @@ export class FilterGroup extends Viewer {
 
   add<T extends FilterState>(state: T) {
     api.grok_FilterGroup_Add(this.dart, state);
+  }
+
+  updateOrAdd<T extends FilterState>(state: T) {
+    api.grok_FilterGroup_UpdateOrAdd(this.dart, state);
   }
 }
 

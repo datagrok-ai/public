@@ -7,7 +7,7 @@ import {EntityType} from './constants';
 import '../css/styles.css';
 // import * as tests from './tests/test-examples';
 import {TestManager} from './package-testing';
-import {functionSignatureEditor} from './function-signature-editor';
+import {functionSignatureEditor} from './signature-editor/function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, hasSupportedType, _renderDevPanel} from './dev-panel';
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
 
@@ -22,6 +22,13 @@ export let c: DG.FuncCall;
 //output: widget panel
 export function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
   return _renderDevPanel(ent, minifiedClassNameMap);
+}
+
+//friendlyName: DevTools
+//output: widget panel
+//meta.inspectorPanel: true
+export function _makeInspectorPanel(): DG.Widget {
+  return DG.Widget.fromRoot(ui.divText('Custom panel from DevTools'));
 }
 
 //tags: autostart

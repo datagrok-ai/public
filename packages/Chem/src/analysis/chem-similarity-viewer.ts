@@ -8,9 +8,10 @@ import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
-import { malformedDataWarning } from '../utils/malformed-data-utils';
-import { getMolSafe } from '../utils/mol-creation_rdkit';
+import {malformedDataWarning} from '../utils/malformed-data-utils';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 import '../../css/chem.css';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   followCurrentRow: boolean;
@@ -53,10 +54,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           }
         })
         .show();
-    })
+    });
     this.sketchButton.classList.add('similarity-search-edit');
     this.sketchButton.classList.add('chem-mol-view-icon');
-    this.updateMetricsLink(this , {});
+    this.updateMetricsLink(this, {});
   }
 
   init(): void {
@@ -83,11 +84,12 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         }
         try {
           const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-            this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
+            this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
+            this.fingerprint as Fingerprint);
           this.molCol = df.getCol('smiles');
           this.idxs = df.getCol('indexes');
           this.scores = df.getCol('score');
-        } catch (e: any){
+        } catch (e: any) {
           grok.shell.error(e.message);
           return;
         } finally {
@@ -185,7 +187,7 @@ export async function chemSimilaritySearch(
   table: DG.DataFrame,
   smiles: DG.Column,
   molecule: string,
-  metricName: string,
+  metricName: BitArrayMetrics,
   limit: number,
   minScore: number,
   fingerprint: Fingerprint,

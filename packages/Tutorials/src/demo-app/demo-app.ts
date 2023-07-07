@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {sortFunctionsByHierarchy} from './utils';
+import {sortFunctionsByHierarchy, getParentCategoryName} from './utils';
 import {DEMO_APP_HIERARCHY} from './const';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
@@ -19,7 +19,8 @@ type DemoFunc = {
 };
 
 const resultContainer = ui.div([], 'hidden');
-
+const dockRoot = ui.panel([]);
+let treeNodeY: number = 0;
 
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
@@ -46,8 +47,9 @@ export class DemoView extends DG.ViewBase {
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(grok.shell.tv.root, true);
-        grok.shell.newView(func.name, [ ui.panel([
-          ui.h1(func.name),
+      const pathElements = viewPath.split('|').map((s) => s.trim());  
+      grok.shell.newView(pathElements[pathElements.length - 1], [ ui.panel([
+          ui.h1(pathElements[pathElements.length - 1]),
           ui.divText(func.description),
           ui.bigButton('Start', async () => { await func.apply() })
         ], 'demo-app-script-view')
@@ -58,9 +60,17 @@ export class DemoView extends DG.ViewBase {
       await func.apply();
       ui.setUpdateIndicator(grok.shell.tv.root, false);
     }
-    grok.shell.v.path.includes('/apps/Tutorials/Demo') ?
-      grok.shell.v.path = grok.shell.v.basePath = `/${path}` :
-      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`;
+    grok.shell.v.path = grok.shell.v.basePath = '';
+    if (grok.shell.v.basePath.includes('/apps/Tutorials/Demo')) {
+      grok.shell.v.path = `/${path}`;
+    }
+    else {
+      grok.shell.v.basePath = '/apps/Tutorials/Demo';
+      grok.shell.v.path = `/${path}`;
+    }
+    // temporary fix, change after all demo scripts are using meta.isDemoScript
+    if ((func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes('Visualization'))    
+      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`
     
     this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
@@ -80,7 +90,10 @@ export class DemoView extends DG.ViewBase {
     });
 
     const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
-    viewNameRoot?.firstChild?.replaceWith(breadcrumbs.root);
+    if (viewNameRoot) {
+      viewNameRoot.textContent = '';
+      viewNameRoot.appendChild(breadcrumbs.root);
+    }
   }
 
   private _closeAll(): void {
@@ -203,7 +216,7 @@ export class DemoView extends DG.ViewBase {
     });
     
     for (let i = 0; i < directionFuncs.length; i++) {
-      
+
       const path = directionFuncs[i].path.split('|').map((s) => s.trim());
 
       const img = ui.div('', 'ui-image');
@@ -245,21 +258,8 @@ export class DemoView extends DG.ViewBase {
 
     return root;
   }
-  
-
-  // TODO: pause on exceptions in browser and vscode, check PowerGrid problem
-
-  // TODO: demos: FileManager: show files in folder with demo, show molecules table
-  // TODO: demos: Table linking: make custom view with 2 grids and link them with the proper API (filter in one table will set uo the second table)
-  // TODO: demos: Grid customizations (in PowerGrid): have to add some sparklines, also add frozen columns (check in PowerGrid)
 
   // TODO: add demoScript node to class
-
-  // TODO: start demo scripts only by double click or enter, then create button to start it
-  // TODO: also create view of 'starting the demo script'
-  // TODO: reset scaling in network diagram viewer (miss simulation property)
-  // TODO: change color of last breadcrumbs element to --grey-6
-  // TODO: make autotests using meta.demoPath (search for it)
 
   nodeView(viewName: string, path: string): void {
     this._initWindowOptions();
@@ -329,6 +329,8 @@ export class DemoView extends DG.ViewBase {
     if (this._isDockPanelInit())
       this._closeDockPanel();
 
+    dockRoot.innerHTML = '';
+      
     this._createHomeNode();
 
     for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
@@ -397,10 +399,13 @@ export class DemoView extends DG.ViewBase {
     };
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
+      treeNodeY = dockRoot.parentElement?.scrollTop!;
+      
       if (DemoScript.currentObject) {
         DemoScript.currentObject.cancelScript();
         this._closeAll();
         grok.shell.addView(new DemoView());
+        dockRoot.parentElement?.scrollTo(0, treeNodeY);
       }
 
       if (value.root.classList.contains('d4-tree-view-item')) {
@@ -416,12 +421,13 @@ export class DemoView extends DG.ViewBase {
         this.tree.root.focus();
         this.nodeView(value.text, value.value.path);
       }
+      
+      dockRoot.parentElement?.scrollTo(0, treeNodeY);
     });
-
-    this.dockPanel = grok.shell.dockManager.dock(ui.panel([
-      this.searchInput.root,
-      this.tree.root,
-    ]), DG.DOCK_TYPE.LEFT, null, 'Categories');
+    
+    dockRoot.append(this.searchInput.root);
+    dockRoot.append(this.tree.root);
+    this.dockPanel = grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Categories');
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     this.tree.root.classList.add('demo-app-tree-group');
@@ -456,9 +462,13 @@ export class DemoView extends DG.ViewBase {
       }
       else if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase())) {
         item.classList.remove('hidden');
-        // if (!DIRECTIONS.includes(this.searchInput.value.toLowerCase())) {
+        let parentCategoryName = getParentCategoryName(item.innerText);
+        while (parentCategoryName !== '') {
+          const parentCategory = this.tree.root.querySelector(`[data-name="${parentCategoryName}"]`);
+          parentCategory?.classList.remove('hidden');
 
-        // }
+          parentCategoryName = getParentCategoryName(parentCategoryName);
+        }
       }
       else
         item.classList.add('hidden');

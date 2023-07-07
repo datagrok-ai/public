@@ -6,12 +6,11 @@ import wu from 'wu';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {IPdbHelper, PdbResDataFrameType} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 
-import * as NGL from 'NGL';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {DefaultPluginSpec, PluginSpec} from 'molstar/lib/mol-plugin/spec';
 import {PluginConfig} from 'molstar/lib/mol-plugin/config';
-import {StateObject, StateObjectSelector} from 'molstar/lib/mol-state';
-import {Model, Trajectory} from 'molstar/lib/mol-model/structure';
+import {StateObjectSelector} from 'molstar/lib/mol-state';
+import {Model} from 'molstar/lib/mol-model/structure';
 import {PluginStateObject} from 'molstar/lib/mol-plugin-state/objects';
 import {Sequence} from 'molstar/lib/mol-model/sequence';
 
@@ -32,7 +31,7 @@ export class PdbResDataFrame extends DG.DataFrame implements PdbResDataFrameType
     seqId: 'seqId',
     label: 'label',
     seq: 'seq',
-    frame: 'frame'
+    frame: 'frame',
   };
 
   public readonly code: DG.Column<string>;
@@ -56,21 +55,21 @@ export class PdbResDataFrame extends DG.DataFrame implements PdbResDataFrameType
   public static createDf(length: number,
     code: (i: number) => string, compId: (i: number) => string,
     seqId: (i: number) => number, label: (i: number) => string,
-    seq: string, frame: number
+    seq: string, frame: number,
   ): PdbResDataFrame {
     const codeCol = DG.Column.string('code', length).init((i) => code(i));
     const compIdCol = DG.Column.int('compId', length).init((i) => compId(i));
     const seqIdCol = DG.Column.int('seqId', length).init((i) => seqId(i));
     const labelCol = DG.Column.string('label', length).init((i) => label(i));
-    const seqCol = DG.Column.string('seq', length).init((i) => seq);
-    const frameCol = DG.Column.int('frame', length).init((i) => frame);
+    const seqCol = DG.Column.string('seq', length).init((_i) => seq);
+    const frameCol = DG.Column.int('frame', length).init((_i) => frame);
     const cols = [
       codeCol,
       compIdCol,
       seqIdCol,
       labelCol,
       seqCol,
-      frameCol
+      frameCol,
     ];
     const resDf = new PdbResDataFrame(DG.DataFrame.fromColumns(cols));
     return resDf;
@@ -91,7 +90,7 @@ export class PdbHelper implements IPdbHelper {
     await this.plugin.init();
   }
 
-  async pdbToDf(pdbStr: string, name: string): Promise<PdbResDataFrameType> {
+  async pdbToDf(pdbStr: string, _name: string): Promise<PdbResDataFrameType> {
     //https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html
     // using molstar parser
     const pdbData: StateObjectSelector = await this.plugin.builders.data.rawData({data: pdbStr});
@@ -99,10 +98,8 @@ export class PdbHelper implements IPdbHelper {
 
     if (!trState.isOk || !trState.obj) throw new Error(`Trajectory is not Ok`);
     const tr: PluginStateObject.Molecule.Trajectory = trState.obj;
-    const trLabel: string = tr.label;
 
     function seqToDf(src: Sequence, seq: string, frame: number): PdbResDataFrame {
-      const length: number = src.length;
       const codeAL: ArrayLike<string> = src.code.toArray();
       const compIdAL: ArrayLike<string> = src.compId.toArray();
       const seqIdAL: ArrayLike<number> = src.seqId.toArray();
@@ -123,7 +120,7 @@ export class PdbHelper implements IPdbHelper {
     }).toArray().flat();
 
     const resDf: PdbResDataFrameType = PdbResDataFrame.createDf(0,
-      (i) => '', (i) => '', (i) => -1, (i) => '',
+      (_i) => '', (_i) => '', (_i) => -1, (_i) => '',
       '', -1);
     for (const seqDf of resDfList)
       resDf.append(seqDf, true);

@@ -547,7 +547,6 @@ public class CassandraObjectsMother {
                 .build();
         // --input: string date = "last year" {pattern: datetime}
         DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 yesterday.getYear() < now.getYear() ? yesterday.toString() : null,
                                 dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),

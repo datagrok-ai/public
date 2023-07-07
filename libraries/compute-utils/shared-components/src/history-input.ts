@@ -69,7 +69,7 @@ export class HistoryInput {
     this._visibleInput.input.addEventListener('click', () => {
       const _historyDialog = ui.dialog();
 
-      $(_historyDialog.root).addClass('arrow-box');
+      $(_historyDialog.root).addClass('hi-arrow-box');
 
       _historyDialog.onOK(() => { });
       _historyDialog.onCancel(() => {

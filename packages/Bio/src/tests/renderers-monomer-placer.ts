@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {_package} from '../package-test';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -22,13 +22,14 @@ category('renderers: monomerPlacer', () => {
         'id3,mon1-M-mon3-mon4-mon5-MON8-N9\n', //
       testList: [
         {src: {row: 0, x: -1}, tgt: {pos: null}},
-        {src: {row: 1, x: 0}, tgt: {pos: 0}},
-        {src: {row: 1, x: 1}, tgt: {pos: 0}},
+        {src: {row: 1, x: 0}, tgt: {pos: null}},
+        {src: {row: 1, x: 5}, tgt: {pos: 0}},
+        {src: {row: 1, x: 6}, tgt: {pos: 0}},
         {src: {row: 1, x: 26}, tgt: {pos: 1}},
         {src: {row: 1, x: 170}, tgt: {pos: 6}},
-        {src: {row: 1, x: 208}, tgt: {pos: null}},
-        {src: {row: 2, x: 170}, tgt: {pos: 6}},
-        {src: {row: 2, x: 175}, tgt: {pos: null}},
+        {src: {row: 1, x: 208}, tgt: {pos: 7}},
+        {src: {row: 2, x: 170}, tgt: {pos: 5}},
+        {src: {row: 2, x: 175}, tgt: {pos: 5}},
       ]
     },
     splitterMsa: {
@@ -41,13 +42,13 @@ category('renderers: monomerPlacer', () => {
         'id3,mon1-M-mon3-mon4-mon5---MON8-N9\n', //
       testList: [
         {src: {row: 0, x: -1}, tgt: {pos: null}},
-        {src: {row: 1, x: 0}, tgt: {pos: 0}},
-        {src: {row: 1, x: 1}, tgt: {pos: 0}},
-        {src: {row: 1, x: 26}, tgt: {pos: 1}},
-        {src: {row: 1, x: 170}, tgt: {pos: 6}},
-        {src: {row: 1, x: 227}, tgt: {pos: null}},
-        {src: {row: 2, x: 220}, tgt: {pos: 8}},
-        {src: {row: 2, x: 227}, tgt: {pos: null}},
+        {src: {row: 1, x: 0}, tgt: {pos: null}},
+        {src: {row: 1, x: 1}, tgt: {pos: null}},
+        {src: {row: 1, x: 26}, tgt: {pos: 0}},
+        {src: {row: 1, x: 170}, tgt: {pos: 4}},
+        {src: {row: 1, x: 227}, tgt: {pos: 5}},
+        {src: {row: 2, x: 220}, tgt: {pos: 5}},
+        {src: {row: 2, x: 227}, tgt: {pos: 5}},
       ]
     },
     fastaMsa: {
@@ -61,13 +62,13 @@ id3,QHIRE--LT
 `,
       testList: [
         {src: {row: 1, x: -1}, tgt: {pos: null}},
-        {src: {row: 1, x: 0}, tgt: {pos: 0}},
-        {src: {row: 1, x: 1}, tgt: {pos: 0}},
-        {src: {row: 1, x: 19}, tgt: {pos: 1}},
+        {src: {row: 1, x: 0}, tgt: {pos: null}},
+        {src: {row: 1, x: 1}, tgt: {pos: null}},
+        {src: {row: 1, x: 19}, tgt: {pos: 0}},
         {src: {row: 1, x: 170}, tgt: {pos: 8}},
-        {src: {row: 1, x: 171}, tgt: {pos: null}},
+        {src: {row: 1, x: 171}, tgt: {pos: 8}},
         {src: {row: 2, x: 170}, tgt: {pos: 8}},
-        {src: {row: 2, x: 171}, tgt: {pos: null}},
+        {src: {row: 2, x: 181}, tgt: {pos: null}},
       ]
     },
   };
@@ -78,11 +79,11 @@ id3,QHIRE--LT
       await grok.data.detectSemanticTypes(df);
       const seqCol: DG.Column = df.getCol('seq');
 
-      const monLength: number = 1;
+      const monLength: number = 3;
       const charWidth: number = 7;
       const sepWidth: number = 12;
       const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, () => {
-        const uh = new UnitsHandler(seqCol);
+        const uh = UnitsHandler.getOrCreate(seqCol);
         return {
           unitsHandler: uh,
           monomerCharWidth: charWidth,

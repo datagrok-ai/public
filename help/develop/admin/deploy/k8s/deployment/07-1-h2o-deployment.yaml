@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: h2o
+  name: h2o
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: h2o
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        network: "datagrok"
+        service: h2o
+    spec:
+      containers:
+        - image: datagrok/h2o:latest
+          imagePullPolicy: Always
+          name: h2o
+          ports:
+            - containerPort: 54321
+            - containerPort: 5005
+      restartPolicy: Always

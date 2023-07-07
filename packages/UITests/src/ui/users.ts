@@ -64,7 +64,7 @@ category('UI: Users', () => {
     user.firstName = 'new';
     user.lastName = 'user';
     // TODO: add save and delete when will work
-  }, {skipReason: 'blocked by GROK-11318'});
+  }, {skipReason: 'GROK-11318'});
 
   test('actions.addServiceUser', async () => {
     const asu = Array.from(tb.querySelectorAll('label'))
@@ -100,16 +100,9 @@ category('UI: Users', () => {
     }, 'cannot load all users', 3000);
     const user = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showProperties = true;
-    user.click();
-    // await awaitCheck(() => {
-    //   if (document.querySelector('.grok-entity-prop-panel') !== null)
-    //     return document.querySelector('.grok-entity-prop-panel')!.querySelectorAll('*').length === 48;
-    //   return false;
-    // }, 'cannot find user\'s widgets', 3000);
-    // const expand = document.querySelector('.grok-icon.fal.fa-chevron-square-down') as HTMLElement;
-    // expand.click();
     const regex = new RegExp('Groups', 'g');
     await awaitCheck(() => {
+      user.click();
       if (document.querySelector('.grok-entity-prop-panel') !== null)
         return regex.test((document.querySelector('.grok-entity-prop-panel') as HTMLElement).innerText);
       return false;
@@ -122,6 +115,6 @@ category('UI: Users', () => {
   });
 
   after(async () => {
-    v.close();
+    grok.shell.closeAll();
   });
-});
+}, {clear: false});

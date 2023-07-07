@@ -16,11 +16,25 @@ type PepseaBodyUnit = { ID: string, HELM: string };
 
 /** Gets the column containing MSA sequences produced by the 'PepSeA' tool from the {@link srcCol} column.
  * Does not add the result column to the dataframe of {@link srcCol}.
+ * @async
+ * @param {DG.Column} srcCol - The column containing the sequences to be aligned.
+ * @param {string} unUsedName - The name of the result column.
+ * @param {string} method - The method used for alignment.
+ * @param {number} gapOpen - The gap open penalty.
+ * @param {number} gapExtend - The gap extension penalty.
+ * @param {DG.Column} clustersCol - The column containing the clusters of the sequences.
  */
 export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   method: typeof pepseaMethods[number] = 'ginsi', gapOpen: number = 1.53, gapExtend: number = 0.0,
   clustersCol: DG.Column<string | number> | null = null,
-): Promise<DG.Column<string>> {
+): Promise<DG.Column<string> | null> {
+  const pepseaContainer = await grok.dapi.docker.dockerContainers.filter('bio').first();
+  if (pepseaContainer.status !== 'started' && pepseaContainer.status !== 'checking') {
+    grok.log.warning('PepSeA container has not started yet');
+    return null;
+  }
+
+
   const peptideCount = srcCol.length;
   clustersCol ??= DG.Column.int('Clusters', peptideCount).init(0);
   if (clustersCol.type != DG.COLUMN_TYPE.STRING)
@@ -41,14 +55,12 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
       (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
 
-  //@ts-ignore: this is a temporary workaround for the issue with docker containers. This will be fixed in 1.14.0
-  const pepseaContainer = await (grok.dapi.docker !== undefined ? grok.dapi.docker.dockerContainers : grok.dapi.dockerfiles).filter('bio').first();
   const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
     const alignedObject = await requestAlignedObjects(pepseaContainer.id, body, method, gapOpen, gapExtend);
     const alignments = alignedObject.Alignment;
 
-    for (const alignment of alignments) {  // filling alignedSequencesCol
+    for (const alignment of alignments) { // filling alignedSequencesCol
       alignedSequences[parseInt(alignment.ID)] = Object.entries(alignment)
         .filter((v) => !alignmentObjectMetaKeys.includes(v[0]))
         .map((v) => v[1] !== '-' ? v[1] : '')
@@ -75,8 +87,6 @@ async function requestAlignedObjects(dockerfileId: string, body: PepseaBodyUnit[
     body: JSON.stringify(body),
   };
   const path = `/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
-  //@ts-ignore: this is a temporary workaround for the issue with docker containers
-  const response = await (grok.dapi.docker !== undefined ? grok.dapi.docker.dockerContainers : grok.dapi.dockerfiles)
-    .request(dockerfileId, path, params);
+  const response = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params);
   return JSON.parse(response ?? '{}');
 }

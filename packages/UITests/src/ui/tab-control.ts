@@ -1,4 +1,4 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -6,7 +6,7 @@ import {checkHTMLElement} from './utils';
 
 category('UI: Tab control', () => {
   let v: DG.View;
-  let tabs = ui.tabControl();
+  const tabs = ui.tabControl();
 
   before(async () => {
     v = grok.shell.newView('');
@@ -23,7 +23,7 @@ category('UI: Tab control', () => {
   test('tabControl.addPane', async () => {
     tabs.addPane('New pane', ()=> ui.div([], 'new-pane'));
     if (tabs.panes.length == 0)
-      throw 'addPane error';
+      throw new Error('addPane error');
   });
 
   test('tabControl.currentPane', async () => {
@@ -53,7 +53,7 @@ category('UI: Tab control', () => {
     });
     tabs.addPane('New pane 2', ()=> ui.div([]));
     if (check)
-      throw 'onTabAdded event error';
+      throw new Error('onTabAdded event error');
   });
 
   test('tabControl.onTabChanged', async () => {
@@ -63,7 +63,7 @@ category('UI: Tab control', () => {
     });
     tabs.currentPane = tabs.panes[1];
     if (check)
-      throw 'onTabChanged event error';
+      throw new Error('onTabChanged event error');
   });
 
   test('tabControl.onBeforeTabChanged', async () => {
@@ -71,12 +71,10 @@ category('UI: Tab control', () => {
     tabs.onBeforeTabChanged.subscribe((_)=> {check=false;});
     tabs.currentPane = tabs.panes[0];
     if (check)
-      throw 'onBeforeTabChanged event error';
+      throw new Error('onBeforeTabChanged event error');
   });
 
   after(async () => {
-    v.close();
-    tabs = ui.tabControl();
     grok.shell.closeAll();
   });
-});
+}, {clear: false});

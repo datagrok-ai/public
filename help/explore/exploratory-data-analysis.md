@@ -28,8 +28,8 @@ _billions of rows_ at the speed of thought right in your browser.
 
 With Datagrok, you can:
 
-* [Seamlessly load data from any data source](../access/file-shares.mdx). Datagrok supports all popular databases,
-  multiple [file formats](../access/supported-formats.md) and is both data-agnostic and
+* [Seamlessly load data from any data source](../access/files/files.mdx). Datagrok supports all popular databases,
+  multiple [file formats](../access/files/supported-formats.md) and is both data-agnostic and
   domain-intelligent. <!--TODO link to a section on domains once ready-->
 
 * Visualize the data using domain-specific value renderers (such as molecules on scatter plot axes).
@@ -50,7 +50,7 @@ With Datagrok, you can:
   * Dataset overview, including summary statistics for numerical data columns and distribution for categorical data
     columns
   * Custom cell renderers for molecules, sequences, dose-response curves, and sparklines
-  * Editing datasets (for example, adding new molecules using [sketchers](../domains/chem/sketcher.md))
+  * Editing datasets (for example, adding new molecules using [sketchers](../domains/chem/chem.md))
 
 * Filter, zoom in and out, aggregate, pivot, and cross-link data. All our viewers work in tandem and are customizable,
   [high-performant, and interactive](../develop/advanced/performance.md#viewers).

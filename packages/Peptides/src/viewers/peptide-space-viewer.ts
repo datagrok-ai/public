@@ -6,11 +6,12 @@ import $ from 'cash-dom';
 
 import {getSequenceMolecularWeight} from '../utils/molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {createDimensinalityReducingWorker, IReduceDimensionalityResult,
+import {createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
+import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;
@@ -47,7 +48,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
   async onPropertyChanged(property: DG.Property | null): Promise<void> {
     super.onPropertyChanged(property);
-    if (this.prevProps[property?.name as 'method' | 'measure' | 'cyclesCount' ?? ''] == property?.get(this))
+    if (this.prevProps[property?.name as 'method' | 'measure' | 'cyclesCount' ?? ''] === property?.get(this))
       return;
 
     if (this.model)
@@ -90,7 +91,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
         viewerRoot.addEventListener('mousemove', (ev) => {
           const idx = scatterPlot.hitTest(ev.offsetX, ev.offsetY);
-          if (idx != -1) {
+          if (idx !== -1) {
             const table = ui.tableFromMap({
               'Activity': colorCol.get(idx),
               'Sequence': alignedSeqCol.get(idx),

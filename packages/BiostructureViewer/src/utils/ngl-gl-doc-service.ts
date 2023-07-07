@@ -2,10 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import * as NGL from 'NGL';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {SignalBinding} from 'signals';
 
+import {_package} from '../package';
+
+const TASK_TIMEOUT: number = 2000;
 
 export class NglGlDocService implements NglGlServiceBase {
   private readonly nglDiv: HTMLDivElement;
@@ -17,13 +20,12 @@ export class NglGlDocService implements NglGlServiceBase {
   private readonly _queueDict: { [key: keyof any]: NglGlTask };
   /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
   private _busy: boolean = false;
+  private nglRenderedBinding: SignalBinding<any>;
 
   constructor() {
-    const r = window.devicePixelRatio;
-
+    // const r = window.devicePixelRatio;
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
     this.ngl = new NGL.Stage(this.nglDiv);
-    this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     // The single NGL component
     this.hostDiv = ui.box(this.nglDiv);
@@ -31,8 +33,9 @@ export class NglGlDocService implements NglGlServiceBase {
     this.hostDiv.style.position = 'absolute';
     this.hostDiv.style.left = '0px';
     this.hostDiv.style.right = '0px';
-    this.hostDiv.style.width = '0px';
-    this.hostDiv.style.height = '0px';
+    this.hostDiv.style.width = '300px';
+    this.hostDiv.style.height = '300px';
+    this.hostDiv.style.visibility = 'hidden';
     document.body.appendChild(this.hostDiv);
 
     this._queue = [];
@@ -65,8 +68,17 @@ export class NglGlDocService implements NglGlServiceBase {
   }
 
   private async _processQueue() {
-    const {key, task} = this._queue.shift()!;
-    if (key) delete this._queueDict[key];
+    const queueItem = this._queue.shift();
+    if (!queueItem) {
+      _package.logger.error('BsV: NglGlService._processQueue() queueItem = undefined ');
+      return;
+    } // in case of empty queue
+
+    const {key, task} = queueItem!;
+    if (key) {
+      _package.logger.debug('NglGlService._processQueue() ' + `key = ${key.toString()}`);
+      delete this._queueDict[key];
+    }
     try {
       const r = window.devicePixelRatio;
 
@@ -84,11 +96,15 @@ export class NglGlDocService implements NglGlServiceBase {
 
       this.nglDiv.style.width = `${Math.floor(task.props.width) / r}px`;
       this.nglDiv.style.height = `${Math.floor(task.props.height) / r}px`;
+      const canvas = this.ngl.viewer.renderer.domElement;
+      canvas.width = Math.floor(task.props.width);
+      canvas.height = Math.floor(task.props.height);
+      await this.ngl.viewer.setSize(task.props.width, task.props.height);
 
       this.task = task;
       this.key = key;
-      this.emptyPaintingSize = undefined;
-      await this.ngl.handleResize();
+      this.nglRenderedBinding = this.ngl.viewer.signals.rendered.add(this.onNglRendered, this);
+      this.ngl.viewer.render(false);
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
       _package.logger.error(`BsV:NglGlService._processQueue() no rethrown error: ${errMsg}`, undefined,
@@ -103,8 +119,8 @@ export class NglGlDocService implements NglGlServiceBase {
     let swept: boolean = false;
 
     for (let qI = this._queue.length - 1; qI >= 0; qI--) {
-      const {key, task, dt} = this._queue[qI];
-      if ((nowDt - dt) > 400) {
+      const {key, task: _task, dt} = this._queue[qI];
+      if ((nowDt - dt) > TASK_TIMEOUT) {
         // stalled task
         this._queue.splice(qI);
         delete this._queueDict[key!];
@@ -118,20 +134,18 @@ export class NglGlDocService implements NglGlServiceBase {
     }
   }
 
-  private emptyPaintingSize?: number = undefined;
   private task?: NglGlTask = undefined;
   private key?: keyof any = undefined;
 
   private async onNglRendered(): Promise<void> {
+    this.nglRenderedBinding.detach();
+    if (this.task === undefined) return;
+    _package.logger.debug('NglGlService.onNglRendered() ' + `key = ${JSON.stringify(this.key)}`);
     try {
-      if (this.task === undefined) return;
-      _package.logger.debug('NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
-
       const canvas = this.ngl.viewer.renderer.domElement;
       await this.task.onAfterRender(canvas);
       this.task = undefined;
       this.key = undefined;
-      this.emptyPaintingSize = undefined;
 
       if (this._queue.length > 0) {
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
@@ -142,14 +156,14 @@ export class NglGlDocService implements NglGlServiceBase {
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
-      _package.logger.error(`BsV:NglGlService.onNglRendered() no rethrown error : ${errMsg}`, undefined,
+      _package.logger.error(`NglGlService.onNglRendered() no rethrown error : ${errMsg}`, undefined,
         err instanceof Error ? err.stack : undefined);
       //throw err; // Do not throw to prevent disabling event/signal handler
     }
   }
 
   public renderOnGridCell(
-    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource
+    gCtx: CanvasRenderingContext2D, bd: DG.Rect, gCell: DG.GridCell, canvas: CanvasImageSource,
   ): void {
     gCtx.save();
     try {
@@ -172,11 +186,11 @@ export class NglGlDocService implements NglGlServiceBase {
       // gCtx.fillStyle = '#E0E0FF';
       // gCtx.fillRect(bd.x + 1, bd.y + 1, bd.width - 2, bd.height - 2);
 
-      /* eslint-disable max-len */
-      const cw: number = canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number;
-      const ch: number = canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number;
-      /* eslint-enabled max-len */
-
+      const cw = 'width' in canvas && (
+        canvas.width instanceof SVGAnimatedLength ? canvas.width.baseVal.value : canvas.width as number);
+      const ch = 'height' in canvas && (
+        canvas.height instanceof SVGAnimatedLength ? canvas.height.baseVal.value : canvas.height as number);
+      if (!cw || !ch) throw new Error('NglGlService.renderOnGridCell() canvas size is not available');
       gCtx.transform(bd.width / cw, 0, 0, bd.height / ch, bd.x, bd.y);
 
       gCtx.drawImage(canvas, 0 + 1, 0 + 1);

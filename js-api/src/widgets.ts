@@ -125,7 +125,7 @@ export class ObjectPropertyBag {
 
   /** Sets the current state of viewer properties as the default configuration used to create new viewer
   * instances of this type. Equivalent to the "Pick Up / Apply | Set as Default" context menu command.
-  * Read more about viewer commands: {@link https://datagrok.ai/help/visualize/viewers/#common-actions}
+  * Read more about viewer commands: https://datagrok.ai/help/visualize/viewers/#common-actions
   * @param data indicates if data settings should be copied.
   * @param style indicates if style (non-data) settings should be copied. */
   setDefault(data: boolean = false, style: boolean = true) {
@@ -133,6 +133,10 @@ export class ObjectPropertyBag {
       api.grok_Viewer_Props_SetDefault(this.source.dart, data, style);
     else
       throw 'Call failed: object is not Viewer instance';
+  }
+
+  static setDefaultProperty(viewerType: string, propertyName: string, propertyValue: any) {
+    api.grok_Viewer_Props_SetDefaultProperty(viewerType, propertyName, propertyValue);
   }
 
   /** Clears the previously remembered default settings for viewers of this type. See also: [setDefault] */
@@ -984,6 +988,11 @@ export class InputBase<T = any> {
     return toJs(api.grok_InputBase_ForProperty(property.dart, source));
   }
 
+  /** Creates input for the specified input type */
+  static forInputType(inputType: string): InputBase {
+    return toJs(api.grok_InputBase_ForInputType(inputType));
+  }
+
   /** Creates input for the specified column */
   static forColumn<T = any>(column: Column<T>): InputBase<T | null> {
     return toJs(api.grok_InputBase_ForColumn(column.dart));
@@ -1153,13 +1162,11 @@ export class ProgressIndicator {
     return api.grok_ProgressIndicator_Get_Percent(this.dart);
   }
 
-  get description(): string {
-    return api.grok_ProgressIndicator_Get_Description(this.dart);
-  }
+  /** Flag indicating whether the operation was canceled by the user. */
+  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
 
-  set description(s: string) {
-    api.grok_ProgressIndicator_Set_Description(this.dart, s);
-  }
+  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
+  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
 
   update(percent: number, description: string): void {
     api.grok_ProgressIndicator_Update(this.dart, percent, description);

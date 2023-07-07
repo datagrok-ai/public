@@ -1,4 +1,4 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -43,16 +43,15 @@ category('UI: Range slider', () => {
       range.onValuesChanged.subscribe((_) => {check = true;});
       range.setValues(1, 9, 3, 4);
       if (check == false)
-        throw 'onValuesChanged error';
+        throw new Error('onValuesChanged error');
     } catch (x) {
-      throw 'rangeSlider: ' + x;
+      throw new Error('rangeSlider: ' + x);
     } finally {
       range.setValues(minRange, maxRange, min, max);
     }
   });
 
   after(async () => {
-    v.close();
     grok.shell.closeAll();
   });
-});
+}, {clear: false});

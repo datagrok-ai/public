@@ -9,7 +9,6 @@ import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
 import {MouseDispatcher} from "../ui/MouseDispatcher";
 import {ColumnsArgs, toDart} from "datagrok-api/dg";
-
 function getRenderer(cell : DG.GridCell) : GridCellRendererEx | null {
   const colGrid = cell.gridColumn;
   if (colGrid === null || colGrid === undefined)
@@ -21,7 +20,6 @@ function getRenderer(cell : DG.GridCell) : GridCellRendererEx | null {
 
   return null;
 }
-
 function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
   let grid : DG.Grid | null = colGrid.grid;
   if( grid === null) {
@@ -32,7 +30,6 @@ function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
 
   return grid;
 }
-
 function notifyAllColsRowsResized(grid : DG.Grid, nHRows : number, bAdjusting : boolean) : void {
 
   let renderer : GridCellRendererEx | null = null
@@ -51,19 +48,16 @@ function notifyAllColsRowsResized(grid : DG.Grid, nHRows : number, bAdjusting : 
     }
   }
 }
-
 function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows : number, bAdjusting : boolean) : void {
 
   const colGridSource  = colPinnedSource.getGridColumn();
-  if(colGridSource === null){
+  if(colGridSource === null)
     return;
-  }
 
   const grid = getGrid(colGridSource);
   const dart = DG.toDart(grid);
-  if(dart.m_arPinnedCols === undefined) {
+  if(dart.m_arPinnedCols === undefined)
     throw new Error('Pinned Columns are not installed.');
-  }
 
   let renderer : GridCellRendererEx | null = null
   let colPinned = null;
@@ -77,9 +71,8 @@ function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows :
     }
 
     renderer = GridUtils.getGridColumnRenderer(colGrid);
-    if (renderer instanceof GridCellRendererEx  && colPinned.m_root !== null && grid !== null) {
+    if (renderer instanceof GridCellRendererEx  && colPinned.m_root !== null && grid !== null)
       renderer.onResizeHeight(colPinned, grid, nHRows, bAdjusting);
-    }
   }
 }
 
@@ -760,8 +753,6 @@ export class PinnedColumn {
       // @ts-ignore
       eDivHamb?.style.visibility = 'hidden';
     }
-
-
   }
 
   public onMouseDblClick(e : MouseEvent) : void {
@@ -774,9 +765,8 @@ export class PinnedColumn {
     const grid = this.m_colGrid.grid;
     const viewTable = grid?.view;
 
-    if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+    if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable))
       return;
-    }
 
     if(this.m_colGrid?.name === '')
       return;
@@ -790,49 +780,88 @@ export class PinnedColumn {
     const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
 
     if(0 <= e.offsetX && e.offsetX <= this.m_root.offsetWidth &&
-        0 <= e.offsetY && e.offsetY <= nHHeaderCols)   //on the rows header
+       0 <= e.offsetY && e.offsetY <= nHHeaderCols)   //on the rows header
     {
       this.m_bThisColumnIsSorting = true;
       grid?.sort(this.m_bSortedAscending === null ? [] : [this.m_colGrid?.name], this.m_bSortedAscending === null ? [] : [this.m_bSortedAscending]);
       return;
     }
 
-
     const column = this.m_colGrid.column;
-    if (column !== null && column.semType === DG.SEMTYPE.MOLECULE) {
-      function isColMolBlock(col: DG.Column) : boolean {
-        let str = null;
-        for (let n = 0; n < col.length; ++n) {
-          str = col.get(n);
-          if (str === null)
-            continue;
+    if (column !== null) {
+      if (column.semType === DG.SEMTYPE.MOLECULE) {
+        function isColMolBlock(col: DG.Column): boolean {
+          let str = null;
+          for (let n = 0; n < col.length; ++n) {
+            str = col.get(n);
+            if (str === null)
+              continue;
 
-          if (DG.chem.isMolBlock(str))
-            return true;
+            if (DG.chem.isMolBlock(str))
+              return true;
+          }
+
+          return false;
         }
 
-        return false;
+        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined);
+        const b = isColMolBlock(column);
+        const dialog = ui.dialog({title: 'Edit Structure'});
+        const sketcher = new DG.chem.Sketcher();
+        dialog.add(sketcher);
+
+        const strMol = column.get(nRow);
+        if (strMol !== null && strMol !== undefined)
+          sketcher.setMolecule(strMol);
+
+        const headerThis = this;
+        dialog.onOK(() => {
+          column.set(nRow, b ? sketcher.getMolFile() : sketcher.getSmiles(), true);
+          const g = headerThis.m_root!.getContext('2d');
+          headerThis.paint(g, grid);
+        });
+
+        dialog.show();
+        return;
+      } else {
+        const grid = this.m_colGrid.grid;
+        const nHColHead = GridUtils.getGridColumnHeaderHeight(grid);
+        const nHRows = GridUtils.getGridRowHeight(grid);
+        const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined);
+        const arRowsMinMax = [-1, -1];
+        GridUtils.fillVisibleViewportRows(arRowsMinMax, grid);
+        const nRowMin = arRowsMinMax[0];
+
+        const value = column.get(nRow);
+        const strValue = value === null || value === undefined ? '' : value.toString();
+
+        const input: HTMLInputElement = document.createElement('INPUT') as HTMLInputElement;
+        input.classList.add('d4-value-editor');
+        input.classList.add('d4-value-editor-text');
+        input.style.position = 'absolute';
+        input.style.left = this.m_root.offsetLeft + 'px';
+        input.style.top = (nHColHead + (nRow - nRowMin) * nHRows) + 'px';
+        input.style.width = this.m_root.offsetWidth + 'px';
+        input.style.height = nHRows + 'px';
+        input.style.textAlign = 'right';
+        input.addEventListener('focusout', () => {
+          input.parentElement!.removeChild(input);
+        });
+
+        const thisPinnedColumn = this;
+        input.onkeyup = (e: KeyboardEvent) => {
+          if (e.code === 'Enter') {
+            column.setString(nRow, input.value);
+            input.blur();
+            const g = thisPinnedColumn.getRoot()!.getContext('2d');
+            thisPinnedColumn.paint(g, grid);
+          }
+        };
+
+        grid.root.append(input);
+        input.focus();
+        input.value = strValue;
       }
-
-
-      const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined);
-      const b = isColMolBlock(column);
-      const dialog = ui.dialog({title: 'Edit Structure'});
-      const sketcher = new DG.chem.Sketcher();
-      dialog.add(sketcher);
-
-      const strMol = column.get(nRow);
-      if (strMol !== null && strMol !== undefined)
-        sketcher.setMolecule(strMol);
-
-      const headerThis = this;
-      dialog.onOK(() => {
-        column.set(nRow, b ? sketcher.getMolFile() : sketcher.getSmiles(), true);
-        const g = headerThis.m_root!.getContext('2d');
-        headerThis.paint(g, grid);
-      });
-
-      dialog.show();
     }
   }
 
@@ -883,6 +912,18 @@ export class PinnedColumn {
       const renderer = getRenderer(cell);
       if (renderer !== null)
         renderer.onMouseDownEx(cell, e, this.m_arXYMouseOnCellDown[0], this.m_arXYMouseOnCellDown[1]);
+      else {
+        const rendererdg = cell.renderer;
+        if (rendererdg.name == 'bool') {
+          const value = cell.cell.value;
+          const tableRowIdx = cell.tableRowIndex;
+          if (tableRowIdx !== null) {
+            this.m_colGrid.column!.set(tableRowIdx, !value);
+            const g = this.getRoot()!.getContext('2d');
+            this.paint(g, grid);
+          }
+        }
+      }
     }
 
     this.m_bResizeColPinMoving = false;

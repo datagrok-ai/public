@@ -9,7 +9,9 @@ category('Viewers', () => {
   const viewers = DG.Func.find({package: 'Charts', tags: ['viewer']}).map((f) => f.friendlyName);
   const viewersToSkip: {[v: string]: string} = {
     'Tree': 'GROK-12569',
+    'Word cloud': 'GROK-13198',
   };
+
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {
@@ -17,7 +19,7 @@ category('Viewers', () => {
         else if (['Tree', 'Sunburst'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
         else if (v === 'Globe') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
-      })(), true);
+      })(), {detectSemanticTypes: true});
     }, v in viewersToSkip ? {skipReason: viewersToSkip[v]} : {});
   }
 });

@@ -364,7 +364,7 @@ export class HistoryPanel {
   }
 
   updateSharedPane(sharedRuns: DG.FuncCall[]) {
-    const sharedCards = (sharedRuns.length > 0) ? this.renderSharedCards(sharedRuns) : ui.divText('No runs are marked as shared', 'no-elements-label');
+    const sharedCards = (sharedRuns.length > 0) ? this.renderSharedCards(sharedRuns) : ui.divText('No runs are marked as shared', 'hi-no-elements-label');
     const sharedTab = ui.divV([
       this.sharedPaneFilter,
       ui.element('div', 'splitbar-horizontal'),
@@ -375,7 +375,7 @@ export class HistoryPanel {
   };
 
   updateFavoritesPane(favoriteRuns: DG.FuncCall[]) {
-    const favCards = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'no-elements-label');
+    const favCards = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'hi-no-elements-label');
     const favTab = ui.divV([
       this.favoritesPaneFilter,
       ui.element('div', 'splitbar-horizontal'),
@@ -386,7 +386,7 @@ export class HistoryPanel {
   };
 
   updateMyPane(myRuns: DG.FuncCall[]) {
-    const myCards = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'no-elements-label');
+    const myCards = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'hi-no-elements-label');
     const newTab = ui.divV([
       this.myPaneFilter,
       this.actionsSection,

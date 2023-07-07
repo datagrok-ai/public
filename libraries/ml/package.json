@@ -8,13 +8,13 @@
     "email": "vdyma@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.3.23",
+  "version": "6.3.39",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4",
+    "@datagrok-libraries/utils": "^4.0.11",
     "@keckelt/tsne": "^1.0.2",
     "cash-dom": "latest",
-    "datagrok-api": "^1.10.2",
+    "datagrok-api": "^1.15.0",
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.12",
     "jaro-winkler-typescript": "^1.0.1",

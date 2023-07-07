@@ -433,6 +433,8 @@ export interface IScatterPlotLookSettings {
   /// Toggle this option by pressing L.
   lassoTool: boolean;
 
+  allowZoom: boolean;
+
   backColor: number;
 
   filteredRowsColor: number;
@@ -552,6 +554,10 @@ export interface ILineChartLookSettings {
   showXSelector: boolean;
 
   xAxisLabelOrientation: string;
+
+  xMin: number;
+
+  xMax: number;
 
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
@@ -788,6 +794,8 @@ export interface IBarChartLookSettings {
   /// Only works for cumulative aggregations such as count.
   showSelectedRows: boolean;
 
+  showMouseOverRect: boolean;
+
   maxCategoryWidth: number;
 
   categoryValueWidth: number;
@@ -829,6 +837,10 @@ export interface IBarChartLookSettings {
   outerMarginTop: number;
 
   outerMarginBottom: number;
+
+  showEmptyBars: boolean;
+
+  showLabels: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1133,9 +1145,7 @@ export interface IMatrixPlotLookSettings {
 }
 
 export interface IGridLookSettings {
-  /// Whether the spreadsheet should only show rows that pass the filter
-  showFilteredRowsOnly: boolean;
-
+  /// Determines the rows shown in grid
   /// Indicates whether the grid is editable.
   /// See also *Show Add New Row Icon*
   allowEdit: boolean;
@@ -1151,9 +1161,6 @@ export interface IGridLookSettings {
 
   showColumnLabels: boolean;
 
-  /// Orientation of the column header text.
-  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
-  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Column header height. If not specified, it is calculated automatically.
   /// See also *Col Labels Orientation*, *Horz Col Labels Height*
   colHeaderHeight: number;
@@ -1257,6 +1264,9 @@ export interface IGridLookSettings {
 
   colHeaderFont: string;
 
+  /// Orientation of the column header text.
+  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
+  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Resizing column header by dragging the border between the header and the first row
   allowColHeaderResizing: boolean;
 
@@ -1389,7 +1399,10 @@ export interface ITrellisPlotLookSettings {
 
   categoryLabelFont: string;
 
-  //Map innerViewerLookState;
+  globalScale: boolean;
+
+  showGridlines: string;
+
   showXAxes: boolean;
 
   showYAxes: boolean;
@@ -1397,6 +1410,8 @@ export interface ITrellisPlotLookSettings {
   showControlPanel: boolean;
 
   syncMouseOverRow: boolean;
+
+  packCategories: boolean;
 
   backColor: number;
 
@@ -1483,6 +1498,12 @@ export interface IPcPlotLookSettings {
   showDensity: boolean;
 
   showMinMax: boolean;
+
+  showLabels: boolean;
+
+  maxCategories: number;
+
+  horzMargin: number;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1674,52 +1695,6 @@ export interface IMarkupViewerLookSettings {
   /// Whether the rendered html is passed through Grok's [Markup] engine (don't confuse it
   /// with the Markup that might be used for html rendering)
   markupEnabled: boolean;
-
-  //StreamController _changes;
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
-  description: string;
-
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-}
-
-export interface IWordCloudLookSettings {
-  wordColumnName: string;
-
-  minSize: number;
-
-  maxSize: number;
-
-  backColor: number;
-
-  autoFontSize: boolean;
-
-  font: string;
-
-  maxWords: number;
-
-  sizeColumnName: string;
-
-  sizeColumnAggrType: string;
-
-  colorColumnName: string;
-
-  colorColumnAggrType: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

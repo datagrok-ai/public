@@ -24,7 +24,7 @@ RUN savedAptMark="$(apt-mark showmanual)" ; \
     ; \
     apt-mark auto '.*' > /dev/null ; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
-	wget https://mafft.cbrc.jp/alignment/software/mafft_7.511-1_amd64.deb -O mafft.deb; \
+	wget https://mafft.cbrc.jp/alignment/software/mafft_7.520-1_amd64.deb -O mafft.deb; \
 	apt install -y ./mafft.deb; \
 	rm -rf mafft.deb; \
     wget https://github.com/Merck/PepSeA/archive/refs/heads/main.zip -O PepSeA.zip; \

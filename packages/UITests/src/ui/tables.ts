@@ -44,7 +44,6 @@ category('UI: Tables', () => {
   });
 
   after(async () => {
-    v.close();
     grok.shell.closeAll();
   });
 
@@ -80,4 +79,4 @@ category('UI: Tables', () => {
       grok.shell.closeTable(ageDF);
     }
   }
-});
+}, {clear: false});

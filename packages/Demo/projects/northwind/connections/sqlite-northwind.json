@@ -4,8 +4,8 @@
   "friendlyName": "Northwind",
   "parameters": {
     "server": "",
-    "db": "/home/grok/datagrok/data/demo/northwind/Northwind.sl3",
-    "port": 5432
+    "db": "/home/grok/northwind/Northwind.sl3",
+    "port": 0
   },
   "credentials": {
     "parameters": {

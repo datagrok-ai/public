@@ -118,7 +118,7 @@ export class TwinPviewer {
 
     MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
 
-    grok.events.onCustomEvent('selectionChanged').subscribe((v) => {
+    grok.events.onCustomEvent('selectionChanged').subscribe((_v) => {
       this.ngl.render(false, this.ligandSelection);
     });
 
@@ -140,11 +140,11 @@ export class TwinPviewer {
 
   private changeChoices(): void {
     // ---- INPUTS PANEL ----
-    if (!this.accOptions) {
+    if (!this.accOptions)
       this.accOptions = ui.accordion();
-    } else {
+    else
       this.accOptions.removePane(this.accOptions.getPane('3D model'));
-    }
+
 
     this.accOptions.addPane('3D model', () => ui.inputs([this.repChoice]));
     this.root.append(this.accOptions.root);

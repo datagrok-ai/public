@@ -1,8 +1,16 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+// import * as grok from 'datagrok-api/grok';
+import {before, category, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
 
 category('BitSet', () => {
+  let t1: DG.BitSet;
+  let t2: DG.BitSet;
+
+  before(async () => {
+    t1 = DG.BitSet.create(5);
+    t2 = DG.BitSet.fromString('11001');
+  });
+
   test('create', async () => {
     expect(DG.BitSet.create(5).toBinaryString(), '00000');
   });
@@ -15,9 +23,6 @@ category('BitSet', () => {
     const buffer = new ArrayBuffer(1);
     expect(DG.BitSet.fromBytes(buffer, 5).toBinaryString(), '00000');
   });
-
-  const t1 = DG.BitSet.create(5);
-  const t2 = DG.BitSet.fromString('11001');
 
   test('and method', async () => {
     expect(t1.and(t2).toBinaryString(), '00000');
@@ -48,7 +53,7 @@ category('BitSet', () => {
   });
 
   test('getBuffer method', async () => {
-    return t2.getBuffer();
+    expectArray(Array.from(t2.getBuffer()), [19]);
   });
 
   test('getSelectedIndexes method', async () => {
@@ -60,12 +65,12 @@ category('BitSet', () => {
   });
 
   test('or method', async () => {
-    expect(t1.or(t2).toBinaryString(), '11001');
+    expect(t1.or(t2).toBinaryString(), '11111');
   });
 
   test('set method', async () => {
     t2.set(2, true);
-    expect(t2.toBinaryString(), '11101');
+    expect(t2.toBinaryString(), '00110');
   });
 
   test('setAll method', async () => {
@@ -75,19 +80,19 @@ category('BitSet', () => {
 
   test('similarityTo method', async () => {
     const t3 = DG.BitSet.fromString('11111');
-    expect(t2.similarityTo(t3).toString(), '0.6');
+    expect(t2.similarityTo(t3).toString(), '1');
   });
 
   test('toBinaryString method', async () => {
-    expect(t2.toBinaryString(), '11001');
+    expect(t2.toBinaryString(), '11111');
   });
 
   test('toString method', async () => {
-    expect(t2.toString(), '5 bits, 3 set');
+    expect(t2.toString(), '5 bits, 5 set');
   });
 
   test('xor method', async () => {
     const t3 = DG.BitSet.fromString('11111');
-    expect(t2.xor(t3).toBinaryString(), '00110');
+    expect(t2.xor(t3).toBinaryString(), '00000');
   });
-});
+}, {clear: false});

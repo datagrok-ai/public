@@ -49,3 +49,17 @@ export function sortFunctionsByHierarchy(func1: DG.Func, func2: DG.Func): number
 function getDemoPath(func: DG.Func): string[] {
 	return func.options[DG.FUNC_OPTIONS.DEMO_PATH].split('|').map((elem: string) => elem.trim());
 }
+
+export function getParentCategoryName(categoryName: string, parentName: string = '',
+	obj: Category[] = DEMO_APP_HIERARCHY.children): string {
+	let result = '';
+	for (let i = 0; i < obj.length; i++) {
+		if (obj[i].name.toLowerCase() === categoryName.toLowerCase())
+			return parentName;
+		if (obj[i].children)
+			result = getParentCategoryName(categoryName, obj[i].name, obj[i].children);
+		if (result !== '')
+			return result;
+	}
+	return '';
+}

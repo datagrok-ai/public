@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, test, expectObject} from '@datagrok-libraries/utils/src/test';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {TreeHelper} from '../utils/tree-helper';
@@ -21,7 +21,7 @@ const enum Tests{
     clust2
 };
 
-const testData: {[test: string] : {
+const testData: {[test: string]: {
     root: NodeType
 }} = {
   [Tests.clust1]: {
@@ -30,34 +30,34 @@ const testData: {[test: string] : {
       children: [
         {
           name: '3',
-          branch_length: 5.3333001136779785
+          branch_length: 5.3333001136779785,
         },
         {
           name: '',
           children: [
             {
               name: '0',
-              branch_length: 2.5
+              branch_length: 2.5,
             },
             {
               name: '',
               children: [
                 {
                   name: '1',
-                  branch_length: 1
+                  branch_length: 1,
                 },
                 {
                   name: '2',
-                  branch_length: 1
-                }
+                  branch_length: 1,
+                },
               ],
-              branch_length: 1.5
-            }
+              branch_length: 1.5,
+            },
           ],
-          branch_length: 2.8333001136779785
-        }
+          branch_length: 2.8333001136779785,
+        },
       ],
-      branch_length: 0
+      branch_length: 0,
     },
   },
   [Tests.clust2]: {
@@ -66,26 +66,26 @@ const testData: {[test: string] : {
       children: [
         {
           name: '1',
-          branch_length: 4.5
+          branch_length: 4.5,
         },
         {
           name: '',
           children: [
             {
               name: '0',
-              branch_length: 3
+              branch_length: 3,
             },
             {
               name: '2',
-              branch_length: 3
-            }
+              branch_length: 3,
+            },
           ],
-          branch_length: 1.5
-        }
+          branch_length: 1.5,
+        },
       ],
-      branch_length: 0
-    }
-  }
+      branch_length: 0,
+    },
+  },
 };
 
 // Tests for converting matrix to tree

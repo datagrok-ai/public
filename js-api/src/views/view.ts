@@ -290,8 +290,8 @@ export class View extends ViewBase {
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link saveLayout}
    *  @param {ViewLayout} layout */
-  loadLayout(layout: ViewLayout): void {
-    return api.grok_View_Load_Layout(this.dart, layout.dart);
+  loadLayout(layout: ViewLayout, pickupColumnTags?: boolean): void {
+    return api.grok_View_Load_Layout(this.dart, layout.dart, pickupColumnTags);
   }
 
   /** 
@@ -644,6 +644,7 @@ export class TableView extends View {
   /**
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/word-cloud | word cloud}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud}
+   *  @deprecated
    *  @param options
    *  @returns {Viewer} */
   wordCloud(options: object | null = null): Viewer {

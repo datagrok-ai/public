@@ -2,18 +2,19 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package, activityCliffs,} from '../package';
+import {_package, activityCliffs} from '../package';
 import $ from 'cash-dom';
 
 import {TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import * as lev from 'fastest-levenshtein';
-import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
-const dataFn: string = 'samples/sample_FASTA.csv';
+const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
 export async function demoBio01bUI() {
   let treeHelper: ITreeHelper;
@@ -23,8 +24,7 @@ export async function demoBio01bUI() {
   let view: DG.TableView;
   let activityCliffsViewer: DG.ScatterPlotViewer;
 
-  const method: string = 'UMAP';
-  const idRows: { [id: number]: number } = {};
+  const dimRedMethod: DimReductionMethods = DimReductionMethods.UMAP;
 
   try {
     const demoScript = new DemoScript(
@@ -38,15 +38,14 @@ export async function demoBio01bUI() {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
-          getDendrogramService()
+          getDendrogramService(),
         ]);
 
         view = grok.shell.addTableView(df);
         view.grid.props.rowHeight = 22;
-        const uniProtKbGCol = view.grid.columns.byName('UniProtKB')!;
-        uniProtKbGCol.width = 75;
-        const lengthGCol = view.grid.columns.byName('Length')!;
-        lengthGCol.width = 0;
+        view.grid.columns.byName('cluster')!.visible = false;
+        view.grid.columns.byName('sequence')!.width = 300;
+        view.grid.columns.byName('is_cliff')!.visible = false;
       }, {
         description: 'Load dataset with macromolecules of \'fasta\' notation, \'DNA\' alphabet.',
         delay: 2000,
@@ -54,7 +53,7 @@ export async function demoBio01bUI() {
       .step('Find activity cliffs', async () => {
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
-          80, method)) as DG.ScatterPlotViewer;
+          80, dimRedMethod)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
 
         // Show grid viewer with the cliffs
@@ -63,7 +62,7 @@ export async function demoBio01bUI() {
         cliffsLink.click();
       }, {
         description: 'Reveal similar sequences with a cliff of activity.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol('sequence');
@@ -80,13 +79,13 @@ export async function demoBio01bUI() {
         activityGCol.scrollIntoView();
       }, {
         description: 'Perform hierarchical clustering to reveal relationships between sequences.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Browse the cliff', async () => {
         //cliffsDfGrid.dataFrame.currentRowIdx = -1; // reset
         const cliffsDfGrid: DG.Grid = activityCliffsViewer.dataFrame.temp[acTEMPS.cliffsDfGrid];
         //cliffsDfGrid.dataFrame.selection.init((i) => i == currentCliffIdx);
-        cliffsDfGrid.dataFrame.currentRowIdx = 0;
+        if (cliffsDfGrid.dataFrame.rowCount > 0) cliffsDfGrid.dataFrame.currentRowIdx = 0;
         //cliffsDfGrid.dataFrame.selection.set(currentCliffIdx, true, true);
 
         // /* workaround to select rows of the cliff */
@@ -100,7 +99,7 @@ export async function demoBio01bUI() {
         // }
       }, {
         description: 'Zoom in to explore selected activity cliff details.',
-        delay: 2000
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

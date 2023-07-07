@@ -15,6 +15,8 @@ export const defaultLaunchParameters: utils.Indexable = {
     '--disable-features=site-per-process',
   ],
   ignoreHTTPSErrors: true,
+  headless: 'new',
+  protocolTimeout: 0,
 };
 
 export async function getToken(url: string, key: string) {
@@ -98,3 +100,31 @@ export function exitWithCode(code: number): void {
   console.log(`Exiting with code ${code}`);
   process.exit(code);
 }
+
+export class TestContext {
+  catchUnhandled = true;
+  report = false;
+
+  constructor(catchUnhandled?: boolean, report?: boolean) {
+    if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
+    if (report !== undefined) this.report = report;
+  };
+}
+
+export const recorderConfig = {
+  followNewTab: true,
+  fps: 25,
+  ffmpeg_Path: null,
+  videoFrame: {
+    width: 1024,
+    height: 768,
+  },
+  videoCrf: 18,
+  videoCodec: 'libx264',
+  videoPreset: 'ultrafast',
+  videoBitrate: 1000,
+  autopad: {
+    color: 'black',
+  },
+  aspectRatio: '4:3',
+};

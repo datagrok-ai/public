@@ -67,6 +67,6 @@ category('UI: Tags', () => {
   });
 
   after(async () => {
-    v.close();
+    grok.shell.closeAll();
   });
-});
+}, {clear: false});

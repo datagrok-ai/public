@@ -4,9 +4,15 @@ import {expect} from '@datagrok-libraries/utils/src/test';
 import {PeptideSimilaritySpaceWidget, createPeptideSimilaritySpaceViewer} from '../utils/peptide-similarity-space';
 import {
   createDimensinalityReducingWorker,
-  IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+
+export enum TEST_COLUMN_NAMES {
+  SEQUENCE = 'sequence',
+  ACTIVITY = 'activity',
+  CLUSTER = 'cluster',
+}
 
 /**
  * Tests if a table has non zero rows and columns.
