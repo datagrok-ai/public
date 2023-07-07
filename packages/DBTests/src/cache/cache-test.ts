@@ -1,6 +1,6 @@
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {DataQuery} from 'datagrok-api/dg';
+import {DataFrame, DataQuery} from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {getCallTime} from '../benchmarks/benchmark';
 
@@ -11,6 +11,24 @@ category('Cache', () => {
   before(async () => {
     await cleanCache(testConnections);
     grok.shell.settings.clientSideCache = true;
+  });
+
+  test('Client function cache dataframe', async () => {
+    grok.functions.register({
+      signature: 'dataframe getNowDf()',
+      run: async () => {
+        const connection = await grok.dapi.connections.filter(`name="${testConnections[0]}"`).first();
+        const dataQuery = connection.query('test', 'select now();');
+        const funcCall = await dataQuery.prepare().call();
+        return funcCall.outputs.result;
+      },
+      isAsync: true,
+      options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
+    });
+    const first: DataFrame = await grok.functions.call('getNowDf');
+    await new Promise((res) => setTimeout(res, 100));
+    const second: DataFrame = await grok.functions.call('getNowDf');
+    expect(first.rows.get(0).get('now').isSame(second.rows.get(0).get('now')), true);
   });
 
   test('Client function cache scalar int', async () => {
