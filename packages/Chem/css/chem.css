@@ -369,3 +369,18 @@
 .d4-flex-row.ui-div.chem-scaffold-tree-scrollbar {
   overflow: hidden!important;
 }
+
+.chem-drug-likeness-widget-score-div, .chem-toxicity-widget-risk-row {
+  display: flex;
+  align-items: center;
+}
+
+.chem-drug-likeness-calc-all-button {
+  margin-left: 4px;
+  color: #2083d5;
+}
+
+.chem-toxicity-widget-calc-all-button {
+  margin-right: 5px;
+  color: #2083d5;
+}

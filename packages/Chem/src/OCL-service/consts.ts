@@ -1,6 +1,7 @@
 export const enum OCLServiceCall {
   TOXICITY = 'toxicity',
   CHEM_PROPERTIES = 'chem_properties',
+  DRUG_LIKENESS = 'drug_likeness',
 };
 
 export const riskTypes: {[index: number]: string} = {
@@ -17,3 +18,7 @@ export const riskLevels: {[index: number]: string} = {
   3: 'High',
 } as const;
 
+export const enum MolNotationType {
+  SMILES = 'smiles',
+  MOLBLOCK = 'molblock',
+}
