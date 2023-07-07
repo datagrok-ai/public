@@ -6,6 +6,8 @@ import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
 import './connections/queries-test';
 import './sync/data-sync-test';
 import './benchmarks/benchmark';
+import './cache/cache-test';
+
 export const _package = new DG.Package();
 export {tests};
 
@@ -95,7 +97,6 @@ export async function testConnections(): Promise<DG.DataFrame> {
       }
     }
   }
-  df;
   grok.shell.addTableView(df);
   return df;
 }

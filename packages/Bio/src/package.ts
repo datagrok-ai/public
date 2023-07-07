@@ -33,7 +33,13 @@ import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {MonomerLibHelper, getUserLibSettings, setUserLibSetting, getLibFileNameList} from './utils/monomer-lib';
+import {
+  MonomerLibHelper,
+  getUserLibSettings,
+  setUserLibSetting,
+  getLibFileNameList,
+  getLibraryPanelUI
+} from './utils/monomer-lib';
 import {getMacromoleculeColumn} from './utils/ui-utils';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
@@ -55,9 +61,9 @@ import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {ObjectPropertyBag} from 'datagrok-api/dg';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
+import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 
 export const _package = new BioPackage();
 
@@ -126,17 +132,14 @@ export async function initBio() {
 //tags: tooltip
 //input: column col {semType: Macromolecule}
 //output: widget result
-export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
-  const tv = grok.shell.tv;
-  const viewer = await tv.dataFrame.plot.fromType('WebLogo', {
-    sequenceColumnName: col.name,
-    backgroundColor: 0xFFfdffe5,
-    fitArea: false,
-    positionHeight: 'Entropy',
-    fixWidth: true,
-  });
-  viewer.root.style.height = '50px';
-  return viewer;
+export function sequenceTooltip(col: DG.Column): DG.Widget<any> {
+  const resWidget = new MacromoleculeColumnWidget(col);
+  const _resPromise = resWidget.init().then(() => { })
+    .catch((err: any) => {
+      const errMsg = err instanceof Error ? err.message : err.toString();
+      grok.shell.error(errMsg);
+    });
+  return resWidget;
 }
 
 //name: getBioLib
@@ -145,46 +148,12 @@ export function getBioLib(): IMonomerLib {
   return MonomerLibHelper.instance.getBioLib();
 }
 
-//name: manageFiles
-export async function manageFiles() {
-  const a = ui.dialog({title: 'Manage files'})
-    //@ts-ignore
-    .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
-    .addButton('OK', () => a.close())
-    .show();
-}
-
 //name: Manage Libraries
 //input: column seqColumn {semType: Macromolecule}
 //tags: panel, exclude-actions-panel
 //output: widget result
 export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
-  //@ts-ignore
-  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  const inputsForm: HTMLDivElement = ui.inputs([]);
-  const libFileNameList: string[] = await getLibFileNameList();
-
-  let userStoragePromise: Promise<void> = Promise.resolve();
-  for (const libFileName of libFileNameList) {
-    const settings = await getUserLibSettings();
-    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
-      () => {
-        userStoragePromise = userStoragePromise.then(async () => {
-          if (libInput.value == true) {
-            // Checked library remove from excluded list
-            settings.exclude = settings.exclude.filter((l) => l != libFileName);
-          } else {
-            // Unchecked library add to excluded list
-            if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
-          }
-          await setUserLibSetting(settings);
-          await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
-          grok.shell.info('Monomer library user settings saved.');
-        });
-      });
-    inputsForm.append(libInput.root);
-  }
-  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
+  return getLibraryPanelUI();
 }
 
 // -- Package settings editor --
@@ -614,6 +583,7 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   const ffh = new FastaFileHandler(fileContent);
   return ffh.importFasta();
 }
+
 //name: importBam
 //description: Opens Bam file
 //tags: file-handler

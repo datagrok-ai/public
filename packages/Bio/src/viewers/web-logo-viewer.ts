@@ -26,6 +26,7 @@ import {
   WebLogoPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
 
 import {_package} from '../package';
 
@@ -155,6 +156,7 @@ export class PositionInfo {
     jPos: number, absoluteMaxHeight: number, heightMode: PositionHeight, alphabetSizeLog: number,
     positionWidthWithMargin: number, positionWidth: number, r: number, axisHeight: number
   ): void {
+    const dpr = window.devicePixelRatio;
     // const rowCount = this.positions[jPos].rowCount;
     // const alphabetSize = this.getAlphabetSize();
     // if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
@@ -207,7 +209,7 @@ export class PositionInfo {
       // const m: string = entry[0];
       const h: number = maxHeight * pmInfo.count / this.rowCount;
 
-      pmInfo.bounds = new DG.Rect(jPos * positionWidthWithMargin, y, positionWidth, h);
+      pmInfo.bounds = new DG.Rect(jPos * dpr * positionWidthWithMargin, y, positionWidth * dpr, h);
       y += h;
     }
   }
@@ -755,9 +757,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   // -- Routines --
 
-  getMonomer(p: DG.Point): [number, string | null, PositionMonomerInfo | null] {
-    const calculatedX = p.x + this.firstVisibleIndex * this.positionWidthWithMargin;
-    const jPos = Math.floor(p.x / this.positionWidthWithMargin + this.firstVisibleIndex);
+  getMonomer(p: DG.Point, dpr: number): [number, string | null, PositionMonomerInfo | null] {
+    const calculatedX = p.x + this.firstVisibleIndex * this.positionWidthWithMargin * dpr;
+    const jPos = Math.floor(p.x / (this.positionWidthWithMargin * dpr) + this.firstVisibleIndex);
     const position: PositionInfo = this.positions[jPos];
 
     if (position === undefined)
@@ -887,7 +889,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       const length: number = this.Length;
       g.resetTransform();
-      g.fillStyle = DG.Color.toHtml(this.backgroundColor);
+      g.fillStyle = intToHtmlA(this.backgroundColor);
       g.fillRect(0, 0, this.canvas.width, this.canvas.height);
       g.textBaseline = this.textBaseline;
 
@@ -902,14 +904,15 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       g.textAlign = 'center';
       g.font = `${positionFontSize.toFixed(1)}px Roboto, Roboto Local, sans-serif`;
       const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
-      const hScale = posNameMaxWidth < (this._positionWidth - 2) ? 1 : (this._positionWidth - 2) / posNameMaxWidth;
+      const hScale = posNameMaxWidth < (this._positionWidth * dpr - 2) ? 1 :
+        (this._positionWidth * dpr - 2) / posNameMaxWidth;
 
       for (let jPos = this.firstVisibleIndex; jPos < lastVisibleIndex; jPos++) {
         const pos: PositionInfo = this.positions[jPos];
         g.resetTransform();
         g.setTransform(
           hScale, 0, 0, 1,
-          jPos * this.positionWidthWithMargin + this._positionWidth / 2 -
+          jPos * this.positionWidthWithMargin * dpr + this._positionWidth * dpr / 2 -
           this.positionWidthWithMargin * firstVisibleIndex, 0);
         g.fillText(pos.label, 0, 0);
       }
@@ -1097,12 +1100,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   }
 
   private canvasOnMouseMove(e: MouseEvent) {
+    const dpr = window.devicePixelRatio;
     try {
       const args = e as MouseEvent;
 
-      const dpr: number = window.devicePixelRatio;
       const cursorP: DG.Point = this.canvas.getCursorPosition(args, dpr);
-      const [jPos, monomer] = this.getMonomer(cursorP);
+      const [jPos, monomer] = this.getMonomer(cursorP, dpr);
       // if (jPos != undefined && monomer == undefined) {
       //   const preEl = ui.element('pre');
       //   preEl.innerHTML = jPos < this.positions.length ?
@@ -1133,8 +1136,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private canvasOnMouseDown(e: MouseEvent): void {
     try {
       const args = e as MouseEvent;
-      const r: number = window.devicePixelRatio;
-      const [jPos, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, r));
+      const dpr: number = window.devicePixelRatio;
+      const [jPos, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, dpr), dpr);
 
       // prevents deselect all rows if we miss monomer bounds
       if (this.dataFrame && this.seqCol && this.unitsHandler && monomer) {

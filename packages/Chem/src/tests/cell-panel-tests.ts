@@ -42,7 +42,7 @@ category('cell panel', async () => {
     expect(JSON.stringify(dl[1]), expectedDescription);
 
     for (const mol of molFormats)
-      drugLikenessWidget(mol);
+      drugLikenessWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
   });
 
   test('identifiers', async () => {
@@ -100,7 +100,7 @@ category('cell panel', async () => {
     expect(JSON.stringify(risks), JSON.stringify(expectedRisks));
 
     for (const mol of molFormats)
-      toxicityWidget(mol);
+      toxicityWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
   });
 
 

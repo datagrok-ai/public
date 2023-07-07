@@ -290,8 +290,8 @@ export class View extends ViewBase {
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link saveLayout}
    *  @param {ViewLayout} layout */
-  loadLayout(layout: ViewLayout): void {
-    return api.grok_View_Load_Layout(this.dart, layout.dart);
+  loadLayout(layout: ViewLayout, pickupColumnTags?: boolean): void {
+    return api.grok_View_Load_Layout(this.dart, layout.dart, pickupColumnTags);
   }
 
   /** 

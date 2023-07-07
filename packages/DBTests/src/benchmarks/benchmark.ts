@@ -8,8 +8,9 @@ category('Benchmarks', () => {
     const times = [];
     for (let i = 0; i < 100; i++) {
       const dataQuery = await dataConnection.query('test', 'SELECT 1');
-      dataQuery.adHoc = true;
-      times.push(await getCallTime(dataQuery.prepare()));
+      const funcCall = dataQuery.prepare();
+      funcCall.adHoc = true;
+      times.push(await getCallTime(funcCall));
     }
     return getTestResult(times, times.length);
   }, {timeout: 120000});
@@ -20,8 +21,9 @@ category('Benchmarks', () => {
     const calls = [];
     for (let i = 0; i < callCount; i++) {
       const dataQuery = await dataConnection.query('test', 'SELECT 1');
-      dataQuery.adHoc = true;
-      calls.push(getCallTime(dataQuery.prepare()));
+      const funcCall = dataQuery.prepare();
+      funcCall.adHoc = true;
+      calls.push(getCallTime(funcCall));
     }
     const times: number[] = [];
     const results = await Promise.allSettled(calls);
@@ -44,32 +46,11 @@ category('Benchmarks', () => {
     return `Execution time: ${await getDataQueryTime('PostgresqlPerfTestTableLong')}`;
   });
 
-  test('Scalar Cache test', async () => {
-    const dataQueryName = 'PostgresqlScalarCacheTestTableLong';
-    const firstExecutionTime = await getDataQueryTime(dataQueryName);
-    const secondExecutionTime = await getDataQueryTime(dataQueryName);
-    expect(firstExecutionTime > secondExecutionTime * 2, true);
-  }, {skipReason: 'Feature of caching scalars in development'});
-
   test('Compression int', async () => {
     const compressionOnTime = await getDataQueryTime('PostgresqlCompressionIntOn');
     const compressionOffTime = await getDataQueryTime('PostgresqlCompressionIntOff');
     expect(compressionOnTime < compressionOffTime * 2, true);
   }, {skipReason: 'Feature of compression in development'});
-
-  test('Cache test for Table_Wide', async () => {
-    const dataQueryName = 'PostgresqlTestCacheTableWide';
-    const firstExecutionTime = await getDataQueryTime(dataQueryName);
-    const secondExecutionTime = await getDataQueryTime(dataQueryName);
-    expect(firstExecutionTime > secondExecutionTime * 2, true);
-  });
-
-  test('Cache test for Table_Normal', async () => {
-    const dataQueryName = 'PostgresqlTestCacheTableNormal';
-    const firstExecutionTime = await getDataQueryTime(dataQueryName);
-    const secondExecutionTime = await getDataQueryTime(dataQueryName);
-    expect(firstExecutionTime > secondExecutionTime * 2, true);
-  });
 });
 
 function getTestResult(times: number[], expectedCount: number): String {
@@ -81,7 +62,7 @@ function getTestResult(times: number[], expectedCount: number): String {
       `Min execution time, ms: ${Math.min(...times)}\n`;
 }
 
-async function getCallTime(call: FuncCall): Promise<number> {
+export async function getCallTime(call: FuncCall): Promise<number> {
   const start = Date.now();
   await call.call();
   return Date.now() - start;

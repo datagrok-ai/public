@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {after, awaitCheck, before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
@@ -102,6 +102,7 @@ category('Viewers: Most Potent Residues', () => {
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     expect(showTooltip(gc, 0, 0, model), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   });
 });
 
