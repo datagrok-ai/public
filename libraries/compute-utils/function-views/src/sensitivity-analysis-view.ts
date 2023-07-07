@@ -514,6 +514,21 @@ export class SensitivityAnalysisView {
       }
     });
 
+    // make at least one output of interest
+    let isAnyOutputSelectedAsOfInterest = false;
+
+    for (const name of Object.keys(this.store.outputs))
+      if (this.store.outputs[name].isInterest.value.value === true) {
+        isAnyOutputSelectedAsOfInterest = true;
+        break;
+      }
+
+    if (!isAnyOutputSelectedAsOfInterest) {      
+      const firstOutput = this.store.outputs[Object.keys(this.store.outputs)[0]];
+      firstOutput.isInterest.value.next(true);
+      firstOutput.isInterest.input.value = true;
+    }
+
     this.updateRunButtonText();
 
     const buttons = ui.buttonsInput([this.runButton, /*

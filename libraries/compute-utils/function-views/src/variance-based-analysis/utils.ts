@@ -33,6 +33,10 @@ export function checkSize(size: any): void {
 export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.FuncCall[]> {
   const calledFuncCalls = [] as DG.FuncCall[];
   const pi = DG.TaskBarProgressIndicator.create(`Running sensitivity analysis...`);
+
+  // the feature cancelable should be added
+  (pi as any).cancelable = true;
+
   let idx = 0;    
   const funcCallsCount = funccalls.length;
 
