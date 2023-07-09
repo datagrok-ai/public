@@ -17,10 +17,13 @@ let monomerLib: IMonomerLib | null = null;
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  return Promise.all([new Promise((resolve, reject) => {
-    // @ts-ignore
-    dojo.ready(function() { resolve(null); });
-  }), grok.functions.call('Bio:getBioLib')])
+  return Promise.all([
+    new Promise((resolve, reject) => {
+      // @ts-ignore
+      dojo.ready(function() { resolve(null); });
+    }),
+    grok.functions.call('Bio:getBioLib'),
+  ])
     .then(([_, lib]: [void, IMonomerLib]) => {
       monomerLib = lib;
       rewriteLibraries(); // initHelm()
@@ -49,6 +52,10 @@ export async function initHelm(): Promise<void> {
       errRes.stack = err.stack;
       throw errRes;
     });
+}
+
+export function getMonomerLib(): IMonomerLib {
+  return monomerLib;
 }
 
 function rewriteLibraries() {

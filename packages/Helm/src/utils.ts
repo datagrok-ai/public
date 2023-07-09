@@ -60,7 +60,7 @@ export function parseHelm(s: string) {
           const firstPiece = monomer.substring(0, monomer.indexOf('('));
           const thirdPiece = monomer.substring(monomer.lastIndexOf(')') + 1);
           const secondPiece = monomer.substring(firstPiece.length + 1, monomer.length - thirdPiece.length - 1);
-          const elements =[firstPiece, secondPiece, thirdPiece];
+          const elements = [firstPiece, secondPiece, thirdPiece];
           for (const el of elements)
             ss.push(el);
         } else {
@@ -94,7 +94,8 @@ export function parseHelm(s: string) {
 //   return new Set(helmPartList.filter((val) => !monomerNameList.includes(val)));
 // }
 
-export function findMonomers(helmString: string) {
+/** Searches monomers of {@link helmString} for missed. */
+export function findMonomers(monomerSymbolList: string[]): Set<string> {
   //@ts-ignore
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
   const monomers: any = [];
@@ -107,8 +108,7 @@ export function findMonomers(helmString: string) {
       monomerNames.push(monomers[i][k].id);
     });
   }
-  const splitString = parseHelm(helmString);
-  return new Set(splitString.filter((val) => !monomerNames.includes(val)));
+  return new Set(monomerSymbolList.filter((val) => !monomerNames.includes(val)));
 }
 
 function split(s: string, sep: string) {
@@ -192,14 +192,14 @@ function unescape(s: string) {
 
   return s.replace(/[\\]./g, function(m) {
     switch (m) {
-    case '\\r':
-      return '\r';
-    case '\\n':
-      return '\n';
-    case '\\t':
-      return '\t';
-    default:
-      return m.substring(1);
+      case '\\r':
+        return '\r';
+      case '\\n':
+        return '\n';
+      case '\\t':
+        return '\t';
+      default:
+        return m.substring(1);
     }
   });
 }
