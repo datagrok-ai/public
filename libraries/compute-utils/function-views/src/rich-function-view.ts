@@ -95,6 +95,7 @@ export class RichFunctionView extends FunctionView {
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
   // input run buttons
   public beforeRenderControlls = new Subject<true>();
+  public afterRenderControlls = new Subject<true>();
   // output viewers
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
   // output scalars table
@@ -106,6 +107,10 @@ export class RichFunctionView extends FunctionView {
    */
   public replaceControlls(div: HTMLElement) {
     this.controllsDiv = div;
+  }
+
+  get controlsDiv() {
+    return this.controllsDiv;
   }
 
   public getRunButton(name = 'Run') {
@@ -599,7 +604,7 @@ export class RichFunctionView extends FunctionView {
     const prop = val.property;
     if (this.runningOnInput) {
       if (prop.propertyType === DG.TYPE.DATA_FRAME)
-        this.runOnDgInput(t as DG.InputBase<DG.DataFrame>);
+        this.runOnDgInput(t as DG.InputBase<DG.DataFrame>, val);
       else
         this.runOnInput(t);
     }
@@ -718,7 +723,7 @@ export class RichFunctionView extends FunctionView {
     });
   }
 
-  private runOnDgInput(t: DG.InputBase<DG.DataFrame>) {
+  private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
     t.onInput(async () => {
       if (this.isRunnable()) await this.doRun();
     });
