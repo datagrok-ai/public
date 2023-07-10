@@ -72,9 +72,10 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
         }
       } catch {
         // nothing to do, fp is already null
-      }
+      } finally {
       if (molecules)
         mol?.mol?.delete();
+      }
     }
     return {fps: fps, smiles: canonicalSmiles};
   }

@@ -224,7 +224,7 @@ export class SubstructureFilter extends DG.Filter {
     const smarts = await this.sketcher.getSmarts();
     if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
       return null;
-    return await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts!, false, true);
+    return await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts!, true);
   }
 
   updateExternalSketcher() {

@@ -63,7 +63,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
     else {
       try {
         queryMol = rdKitModule.get_qmol(queryMolString);
-        queryMol.set_aromatic_form();
+        queryMol.convert_to_aromatic_form();
       } catch (e) {
         if (queryMol) {
           queryMol.delete();

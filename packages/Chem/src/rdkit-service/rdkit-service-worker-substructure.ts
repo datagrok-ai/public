@@ -1,7 +1,6 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
-import {isMolBlock} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { RuleId } from '../panels/structural-alerts';
 
@@ -32,9 +31,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   initMoleculesStructures(molecules: string[], useSubstructLib?: boolean): number {
     console.log(`initMoleculesStructures`);
     this.freeMoleculesStructures();
-    useSubstructLib ? this._substructLibrary = new this._rdKitModule.SubstructLibrary() : 
-      this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
-    let malformed = 0;
+    if (useSubstructLib) {
+      this._substructLibrary = new this._rdKitModule.SubstructLibrary();
+      this._malformedIdxs = new BitArray(molecules.length);
+    } else
+      this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);     
+    let numMalformed = 0;
     for (let i = 0; i < molecules.length; ++i) {
       const item = molecules[i];
       if (item && item !== '') {
@@ -43,15 +45,23 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         if (mol) {
           mol.is_qmol = molSafe.isQMol;
           if (useSubstructLib) {
-            this._substructLibrary?.add_trusted_smiles(mol.get_smiles());
+            if (mol.is_qmol) {
+              this._malformedIdxs!.setBit(i, true, false);
+              numMalformed++;
+            }
+            else
+              this._substructLibrary?.add_trusted_smiles(mol.get_smiles());
             mol.delete();
           } else
             this._rdKitMols![i] = mol;
-        } else
-          malformed++;
+        } else {
+          if (useSubstructLib)
+            this._malformedIdxs!.setBit(i, true, false);
+          numMalformed++;
+        }
       }
     }
-    return malformed;
+    return numMalformed;
   }
 
   searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
@@ -71,17 +81,26 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
   searchWithSubstructLib(queryMol: RDMol): Uint32Array {
-    const matches = new BitArray(this._substructLibrary!.size());
-    const matchesIdxs = JSON.parse(this._substructLibrary!.get_matches(queryMol));
-    for (let i = 0; i < matchesIdxs.length; i++)
-      matches.setBit(matchesIdxs[i], true);
+    const matches = new BitArray(this._substructLibrary!.size() + this._malformedIdxs!.trueCount());
+    const str = this._substructLibrary!.get_matches(queryMol, undefined, undefined, this._substructLibrary!.size());
+    const matchesIdxs = JSON.parse(str);
+    // re-calculate matches idxs considering malformed data
+    let nonMalformedCounter = 0;
+    let matchesCounter = 0;
+    for (let i = !this._malformedIdxs!.getBit(0) ? 0 : this._malformedIdxs!.findNext(0, false); i !== -1; i = this._malformedIdxs!.findNext(i, false)) {
+      if (nonMalformedCounter === matchesIdxs[matchesCounter]) {
+        matchesCounter++;
+        matches.setBit(i, true, false);
+      }
+      nonMalformedCounter++;
+    }
     return matches.buffer;
   } 
 
   searchWithPatternFps(queryMol: RDMol, molecules: string[]): Uint32Array {
     const matches = new BitArray(molecules.length);
     let mol: RDMol | null = null;
-    const details = JSON.stringify({sanitize: false});
+    const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
           try{
             mol = this._rdKitModule.get_mol(molecules[i], details);
@@ -116,6 +135,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (this._substructLibrary){
       this._substructLibrary.delete();
       this._substructLibrary = null;
+      this._malformedIdxs = null;
     }
     if (this._rdKitMols !== null) {
       for (const mol of this._rdKitMols!)

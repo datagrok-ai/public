@@ -145,6 +145,7 @@ export class RdKitService {
    * @param {Fingerprint} fingerprintType - type of fingerprint (Morgan or Pattern)
    * @param {boolean} molecules - optional parameter, if passed RDMols objects are created on the fly (array of
    * predefined RDMols is not used) 
+   * @param {boolean} getCanonicalSmiles - optional parameter, if passed, in addition to fps function returns canonical smiles
    * */
   async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): Promise<IFpResult> {
     const t = this;
