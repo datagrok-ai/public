@@ -2687,9 +2687,6 @@
         },
         "2.1.13": {
           "datagrok-api": "^1.10.2"
-        },
-        "2.1.14": {
-          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
