@@ -9,6 +9,7 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmMonomerPlacer} from './helm-monomer-placer';
+import {TAGS as helmTAGS} from './constants';
 
 const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
@@ -109,21 +110,22 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
+    /* Can not do anything without tableColumn containing temp */
+    let tableCol: DG.Column | null = null;
+    try { tableCol = gridCell.tableColumn; } catch { }
+    if (!tableCol) return;
+
     g.save();
     try {
-      /* Can not do anything without tableColumn containing temp */
-      let tableCol: DG.Column | null = null;
-      try { tableCol = gridCell.tableColumn; } catch { }
-      if (!tableCol) return;
-
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
       const missedColor = 'red';
       const monomerColor: string = '#404040';
       const frameColor: string = '#C0C0C0';
 
       const seq = gridCell.cell.value;
-      const monomers: Set<string> = new Set<string>(parseHelm(seq));
-      const missedMonomers: Set<string> = findMonomers(seq);
+      const monomerList: string[] = parseHelm(seq);
+      const monomers: Set<string> = new Set<string>(monomerList);
+      const missedMonomers: Set<string> = findMonomers(monomerList);
 
       if (missedMonomers.size == 0) {
         const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
@@ -165,6 +167,11 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
           printLeftOrCentered(sumLengths[i], 0, w, h, g, allParts[i], color, 0, true, 1.0);
         }
       }
+    } catch (err: any) {
+      const errMsg = err instanceof Error ? err.message : err.toString();
+      const errStack = err instanceof Error ? err.stack : undefined;
+      tableCol.setTag(helmTAGS.cellRendererRenderError, JSON.stringify({message: errMsg, stack: errStack}));
+      throw err;
     } finally {
       g.restore();
     }
