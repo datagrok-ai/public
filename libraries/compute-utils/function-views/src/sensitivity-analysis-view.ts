@@ -437,7 +437,7 @@ export class SensitivityAnalysisView {
     return String(Math.ceil(funcCallCount / 10000000) / 100) + 'b';
   }
 
-  private updateRunButtonText(): void {    
+  private updateRunButtonText(): void {
     this.runButton.textContent = `Run (${this.getFuncCallCountAsString()})`;
   }
 
@@ -517,13 +517,14 @@ export class SensitivityAnalysisView {
     // make at least one output of interest
     let isAnyOutputSelectedAsOfInterest = false;
 
-    for (const name of Object.keys(this.store.outputs))
+    for (const name of Object.keys(this.store.outputs)) {
       if (this.store.outputs[name].isInterest.value.value === true) {
         isAnyOutputSelectedAsOfInterest = true;
         break;
       }
+    }
 
-    if (!isAnyOutputSelectedAsOfInterest) {      
+    if (!isAnyOutputSelectedAsOfInterest) {
       const firstOutput = this.store.outputs[Object.keys(this.store.outputs)[0]];
       firstOutput.isInterest.value.next(true);
       firstOutput.isInterest.input.value = true;
@@ -674,10 +675,10 @@ export class SensitivityAnalysisView {
       case ANALYSIS_TYPE.GRID_ANALYSIS:
         this.runElementaryAnalysis();
         break;
-      case ANALYSIS_TYPE.RANDOM_ANALYSIS:        
+      case ANALYSIS_TYPE.RANDOM_ANALYSIS:
         this.runRandomAnalysis();
         break;
-      case ANALYSIS_TYPE.SOBOL_ANALYSIS:        
+      case ANALYSIS_TYPE.SOBOL_ANALYSIS:
         this.runSobolAnalysis();
         break;
       default:
@@ -1067,7 +1068,7 @@ export class SensitivityAnalysisView {
     ));
 
     //const calledFuncCalls = await Promise.all(funccalls.map(async (funccall) => await funccall.call()));
-    const calledFuncCalls = await getCalledFuncCalls(funccalls);    
+    const calledFuncCalls = await getCalledFuncCalls(funccalls);
 
     this.closeOpenedViewers();
 
@@ -1075,7 +1076,7 @@ export class SensitivityAnalysisView {
     const rowCount = calledFuncCalls.length;
     const fixedInputsColumns = this.getFixedInputColumns(rowCount);
     const colNamesToShow = [] as string[];
-    
+
     for (const inputName of Object.keys(this.store.inputs)) {
       const input = this.store.inputs[inputName];
       const prop = input.prop;
@@ -1085,21 +1086,22 @@ export class SensitivityAnalysisView {
         variedInputsColumns.push(DG.Column.fromType(
           prop.propertyType as unknown as DG.COLUMN_TYPE,
           prop.caption ?? prop.name,
-          rowCount
+          rowCount,
         ));
       }
     }
 
     const funcEvalResults = DG.DataFrame.fromColumns(variedInputsColumns);
 
-    for (let row = 0; row < rowCount; ++row)
+    for (let row = 0; row < rowCount; ++row) {
       for (const inputName of Object.keys(this.store.inputs)) {
         const input = this.store.inputs[inputName];
         const prop = input.prop;
-        
+
         if (input.isChanging.value.value)
           funcEvalResults.set(prop.caption ?? prop.name, row, calledFuncCalls[row].inputs[inputName]);
       }
+    }
 
     const outputsOfInterest = [];
 
@@ -1109,7 +1111,7 @@ export class SensitivityAnalysisView {
       if (output.isInterest.value.value) {
         outputsOfInterest.push({
           prop: output.prop,
-          elements: [],          
+          elements: [],
           row: output.value.returning === DF_OPTIONS.LAST_ROW ? -1 : 1,
         });
       }
