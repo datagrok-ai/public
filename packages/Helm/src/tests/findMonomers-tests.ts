@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package-test';
 import {after, before, category, delay, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
-import {findMonomers} from '../utils';
+import {findMonomers, parseHelm} from '../utils';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 const LIB_STORAGE_NAME = 'Libraries';
@@ -50,7 +50,8 @@ category('findMonomers', () => {
   }
 
   function _testFindMonomers(testHelmValue: string, tgtMissedSet: Set<string>): void {
-    const resMissedSet: Set<string> = findMonomers(testHelmValue);
+    const monomerSymbolList: string[] = parseHelm(testHelmValue);
+    const resMissedSet: Set<string> = findMonomers(monomerSymbolList);
     expectObject(resMissedSet, tgtMissedSet);
   }
 });
