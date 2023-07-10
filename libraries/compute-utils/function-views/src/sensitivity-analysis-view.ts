@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
-import {getDfFromRuns} from './shared/utils';
+import {getDfFromRuns, getPropViewers} from './shared/utils';
 import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
@@ -1091,7 +1091,11 @@ export class SensitivityAnalysisView {
       }
     }
 
-    const funcEvalResults = DG.DataFrame.fromColumns(variedInputsColumns);
+    const ID_COLUMN_NAME = 'ID';
+    const funcEvalResults = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)),
+      ...variedInputsColumns,
+    ]);
 
     for (let row = 0; row < rowCount; ++row) {
       for (const inputName of Object.keys(this.store.inputs)) {
@@ -1128,6 +1132,53 @@ export class SensitivityAnalysisView {
       funcEvalResults.columns.add(col);
 
     this.comparisonView.dataFrame = funcEvalResults;
+    this.comparisonView.grid.col(ID_COLUMN_NAME)!.visible = false;
+    this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      const selectedRunId = cell.tableRow?.get(ID_COLUMN_NAME);
+      const selectedRun = calledFuncCalls.find((call) => call.id === selectedRunId);
+
+      if (!selectedRun) return;
+
+      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
+      const scalarTable = DG.HtmlTable.create(
+        scalarParams,
+        (scalarVal: DG.FuncCallParam) =>
+          [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
+      ).root;
+
+      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
+      const dfPanes = dfParams.reduce((acc, param) => {
+        const configs = getPropViewers(param.property).config;
+
+        const dfValue = selectedRun.outputs[param.name];
+        const paneName = param.property.caption ?? param.property.name;
+        configs.map((config) => {
+          const viewerType = config['type'] as string;
+          const viewer = DG.Viewer.fromType(viewerType, dfValue);
+          viewer.setOptions(config);
+          $(viewer.root).css({'width': '100%'});
+          if (acc[paneName])
+            acc[paneName].push(viewer.root);
+          else acc[paneName] = [viewer.root];
+        });
+
+        return acc;
+      }, {} as {[name: string]: HTMLElement[]});
+
+      const overviewPanelConfig = {
+        'Output scalars': [scalarTable],
+        ...dfPanes,
+      };
+      const overviewPanel = ui.accordion();
+      $(overviewPanel.root).css({'width': '100%'});
+      Object.entries(overviewPanelConfig).map((e) => {
+        overviewPanel.addPane(e[0], () => ui.divV(e[1]));
+      });
+
+      grok.shell.o = overviewPanel.root;
+    });
 
     // hide columns with fixed inputs
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
