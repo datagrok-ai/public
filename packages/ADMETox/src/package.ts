@@ -19,44 +19,23 @@ export function admetWidget(smiles: DG.SemanticValue): DG.Widget<any> {
   return getModelsSingle(smiles);
 }
 
-/*function addColorCoding(table: DG.DataFrame, column: DG.Column) {
-  table.onCurrentColChanged.subscribe((_) => {
-    let column = table.currentCol;
-    table.onMetadataChanged.subscribe((_) => {
-      if (column.colors.getType() === 'Conditional') {
-        column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
-      }
-      if (column.colors.getType() === 'Linear') {
-        column.tags[DG.TAGS.COLOR_CODING_LINEAR] = `["#f1b6b4", "#b4f1bc"]`;
-      }
-    })
-  });
-}*/
-
 //top-menu: Chem | ADME/Tox | Calculations...
 //name: ADME/Tox...
 export async function admetoxCalculators() {
-  let table = grok.shell.tv.dataFrame;
-  let col = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (col) {
-    addPredictions(col, table);
-  }
+  const table = grok.shell.tv.dataFrame;
+  addPredictions(table);
 }
 
 //top-menu: Chem | ADME/Tox | Add Form
-//name: addForm
-export async function testLayout() {
+export async function addFormViewer() {
   const df = grok.shell.tv.dataFrame;
   const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (col)
     await addForm(col, df);
-  const layout = await _package.files.readAsText('layout.json');
+  const layout = await _package.files.readAsText('form-layout.json');
   const tableName = df.name;
   const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", col!.name);
-  console.log(JSON.parse(modifiedLayout));
-  //console.log(JSON.parse(modifiedLayout));
   let view = grok.shell.tv;
   view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
-  addColorCoding(df.columns.names());
   addTooltip();
 }

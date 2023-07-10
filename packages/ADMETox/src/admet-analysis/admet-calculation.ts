@@ -4,10 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
 import { models, properties } from './const';
 import { delay } from '@datagrok-libraries/utils/src/test';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
-let _COLOR = 'true';
+const _COLUMN_NAME_STORAGE = 'column_names';
 
 export async function accessServer(csvString: string, queryParams: string) {
   //@ts-ignore
@@ -76,45 +77,70 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
   addResultColumns(table, viewTable);
 }
 
-export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
-  openModelsDialog(await getSelected(), async (selected: any) => {
+export async function addPredictions(viewTable: DG.DataFrame): Promise<void> {
+  const selected = await getSelected();
+  openModelsDialog(selected, async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-    selected = await getSelected();
+    if (selected.length === 0) {
+      grok.shell.warning('No models have been selected!');
+      return;
+    }
     const queryParams = selected.join(',');
 
-    for (let i = 0; i < selected.length; ++i) {
-      let name = viewTable.columns.getUnusedName(selected[i]);
-      viewTable.columns.addNewFloat(name);
-      selected[i] = name;
+    const colName = await grok.dapi.userDataStorage.getValue(_COLUMN_NAME_STORAGE, _KEY);
+    const smilesCol = viewTable.columns.byName(colName);
+
+    if (smilesCol.length > 10000) {
+      const dialog = ui.dialog({ title: 'Proceed with computations' });
+      dialog
+        .add(ui.divText(`Performing computations could potentially consume
+         a significant amount of time.
+         Do you want to continue?`))
+        .onCancel(() => {
+          return;
+        })
+        .addButton('YES', async () => {
+          dialog.close();
+          await addColumnsAndProcessInBatches(viewTable, selected, smilesCol, queryParams);
+        })
+        .show();
+    } else {
+      await addColumnsAndProcessInBatches(viewTable, selected, smilesCol, queryParams);
     }
-    /*make it run in web worker */
-    //const malformedIndexes = await getMalformedSmiles(smilesCol);
-    //if (malformedIndexes.length > 0)
-      //smilesCol = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
-    await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, []);   
-  })
+  });
+}
+
+async function addColumnsAndProcessInBatches(viewTable: DG.DataFrame, selected: any[], smilesCol: DG.Column, queryParams: string): Promise<void> {
+  for (let i = 0; i < selected.length; ++i) {
+    let name = viewTable.columns.getUnusedName(selected[i]);
+    viewTable.columns.addNewFloat(name);
+    selected[i] = name;
+  }
+
+  await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, []);
 }
 
 export function addResultColumnsBatch(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[], startIndex: number = 0, models?: any[], batchSize?: number): void {
   const columnCount = table.columns.length;
   const endIndex = startIndex + (batchSize || 0) + malformedIndexes!.length;
 
-  if (malformedIndexes!.length > 0)
-      malformedIndexes!.map((index) => table.rows.insertAt(index));
-  
+  if (malformedIndexes!.length > 0) {
+    malformedIndexes!.forEach((index) => table.rows.insertAt(index));
+  }
+
   for (let i = 0; i < columnCount; i++) {
     const column: DG.Column = table.columns.byIndex(i);
     const modelName = models && models[i];
-    
+
     for (let j = startIndex; j < endIndex; j++) {
       const rowIndex = j - startIndex;
       const value = column.get(rowIndex);
-      
+
       viewTable.columns.byName(modelName).set(j, value);
     }
   }
   addTooltip();
-  addColorCoding(models!); 
+  addColorCoding(models!);
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
@@ -158,27 +184,32 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
     if (accPanes[i].innerHTML === 'ADME/Tox') 
       accPanes[i].append(ui.icons.help(() => {window.open('https://github.com/datagrok-ai/public/blob/1ef0f6c050754a432640301139f41fcc26e2b6c3/packages/ADMETox/README.md', '_blank')}));
   }
-  const update = (result: HTMLDivElement, modelName: string) => {
+  const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties[modelName]['models'].map((model: any) => model['name']);
-    result.appendChild(ui.loader());
-    accessServer(
-      `smiles
-      ${smiles.value}`,
-      queryParams.toString()
-    ).catch((e: any) => {
-      console.log(e);
-      grok.shell.warning(e.toString());
-    }).then((csvString: any) => {
-      removeChildren(result);
-      const table = processCsv(csvString);
-      const map: { [_: string]: any } = {};
-      for (const model of queryParams)
-        map[model] = Number(table.col(model)?.get(0)).toFixed(2);
-
-        result.appendChild(ui.tableFromMap(map));
-    });
-  };
+    if (smiles.value === 'MALFORMED_INPUT_VALUE') {
+      result.appendChild(ui.divText('The molecule is possibly malformed'));
+    } else {
+      result.appendChild(ui.loader());
+      accessServer(
+        `smiles
+        ${smiles.value}`,
+        queryParams.toString()
+      ).catch((e: any) => {
+        console.log(e);
+        //grok.shell.warning(e.toString());
+      }).then((csvString: any) => {
+        removeChildren(result);
+        const table = processCsv(csvString);
+        const map: { [_: string]: any } = {};
+        for (const model of queryParams)
+          map[model] = Number(table.col(model)?.get(0)).toFixed(2);
   
+          result.appendChild(ui.tableFromMap(map));
+      }); 
+    }
+  };
+
+
   for (const property of Object.keys(properties)) {
     const result = ui.div();
     acc.addPane(property, () => {
@@ -190,11 +221,7 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
   return acc;
 }
 
-function openModelsDialog(selected: any, onOK: any): void {
-  /*_package.files.readAsText('properties.json').then((res) => {
-    properties = JSON.parse(res);
-  })*/
-
+async function openModelsDialog(selected: any, onOK: any): Promise<void> {
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
   tree.root.style.width = '200px';
@@ -276,17 +303,20 @@ function openModelsDialog(selected: any, onOK: any): void {
     }
     countLabel.textContent = `${keys.length} checked`;
   }
-
-  //let bIColor = ui.boolInput('Color Coding', true);
-  //tree.root.appendChild(bIColor.root);
-
-  /*bIColor.onChanged(async () => {
-    _COLOR = bIColor.value!.toString();
-  });*/
   
-
+  const df = grok.shell.tv.dataFrame;
+  let column = DG.Utils.firstOrNull(df.columns.byTags({'units': 'smiles'}));
+  await grok.dapi.userDataStorage.postValue(_COLUMN_NAME_STORAGE, _KEY, column!.name);
+  const molInput = ui.columnInput('Molecules', df, column, 
+  async (col: DG.Column) => {
+    column = col;
+    await grok.dapi.userDataStorage.postValue(_COLUMN_NAME_STORAGE, _KEY, column.name);
+    //@ts-ignore
+  }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && col.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES} as ColumnInputOptions);
+  molInput.root.style.marginLeft = '-70px';
   let dlg = ui.dialog('ADME/Tox');
   dlg.add(ui.divH([selectAll, selectNone, countLabel]))
+    .add(molInput)
     .add(tree.root)
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
     .show()
@@ -308,22 +338,12 @@ function removeChildren(node: any): void {
     node.removeChild(node.firstChild);
 }
 
-async function getMalformedSmiles(col: DG.Column) {
-  const indices = await Promise.all(
-    Array.from(col.values()).map(async (molStr, i) => {
-      const mol = await grok.functions.call('Chem:_getMolSafe', { molString: molStr});
-      return mol.kekulize === false ? i : null;
-    })
-  );
-  return indices.filter((index) => index !== null);
-}
-
 async function processBatch(batch: any, queryParams: string, viewTable: DG.DataFrame, startIndex: number, batchSize: number, modelNames: any[], malformedIndexes: any[]) {
   const [csvString] = await Promise.all([
     accessServer(DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', batch)]).toCsv(), queryParams),
     new Promise((resolve) => setTimeout(resolve, 1000))]);
   const table = processCsv(csvString);
-  addResultColumnsBatch(table, viewTable, malformedIndexes, startIndex, modelNames, batchSize)
+  addResultColumnsBatch(table, viewTable, malformedIndexes, startIndex, modelNames, batchSize);
 }
 
 class Semaphore {

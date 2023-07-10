@@ -1,0 +1,922 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 744,
+      "height": 496
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 373,
+          "height": 496,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 373,
+              "height": 496,
+              "element": {
+                "id": "f184c530-ed50-11ed-8f0c-6d84622fead7",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "rowHeight": 100,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 36,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header"
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 200,
+                      "columnName": "smilesColumn",
+                      "cellType": "Molecule",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "CYP1A2-Inhibitor",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.00 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 135,
+                      "columnName": "CYP1A2-Substrate",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "CYP3A4-Inhibitor",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 135,
+                      "columnName": "CYP3A4-Substrate",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 135,
+                      "columnName": "CYP2C19-Inhibitor",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 142,
+                      "columnName": "CYP2C19-Substrate",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "CYP2C9-Inhibitor",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.00 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 135,
+                      "columnName": "CYP2C9-Substrate",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "CYP2D6-Inhibitor",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.00 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 135,
+                      "columnName": "CYP2D6-Substrate",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.00 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "Pgp-Inhibitor",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "Pgp-Substrate",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "HIA",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "F(20%)",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.00 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "F(30%)",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "BBB",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.00 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "Ames",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "isTextColorCoded": true,
+                      "width": 127,
+                      "columnName": "SkinSen",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000",
+                      "colorCodingType": "Conditional",
+                      "colorCodingCategorical": {
+                        "<0.5": 4294031028,
+                        ">0.5": 4290048444
+                      },
+                      "colorCodingConditional": {
+                        "0.0 - 0.5": "#f1b6b4",
+                        "0.5 - 1.0": "#b4f1bc"
+                      }
+                    }
+                  ]
+                },
+                "title": "Grid",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 370,
+          "height": 496,
+          "element": {
+            "id": "f18ba300-ed50-11ed-a7f2-971e578cced0",
+            "type": "Form",
+            "look": {
+              "#type": "FormLook",
+              "sketchState": {
+                "#type": "SketchState",
+                "elementStates": [
+                  {
+                    "left": 490,
+                    "top": 225,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP2C9-Substrate",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 105,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP3A4-Inhibitor",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 177,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP2C19-Substrate"
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 153,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP2C19-Inhibitor",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 362,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "SkinSen",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 201,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP2C9-Inhibitor",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 81,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP1A2-Substrate"
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 337,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "Ames",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 57,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP1A2-Inhibitor",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 187,
+                    "width": 250,
+                    "height": 15,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "                         Absorption",
+                      "backgroundColor": 4293717745
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 242,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "Pgp-Substrate"
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 129,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP3A4-Substrate"
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 81,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP1A2-Substrate",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 2,
+                    "top": 1,
+                    "width": 680,
+                    "height": 10,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "",
+                      "backgroundColor": 4284779971
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 273,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP2D6-Substrate",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 57,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP1A2-Inhibitor"
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 249,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP2D6-Inhibitor",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 249,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP2D6-Inhibitor"
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 153,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP2C19-Inhibitor"
+                    }
+                  },
+                  {
+                    "left": 192,
+                    "top": 317,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "F(30%)",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 192,
+                    "top": 217,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "Pgp-Inhibitor",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 105,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP3A4-Inhibitor"
+                    }
+                  },
+                  {
+                    "left": 192,
+                    "top": 292,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "F(20%)",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 192,
+                    "top": 242,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "Pgp-Substrate",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 267,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "HIA"
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 352,
+                    "width": 250,
+                    "height": 15,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "                         Distribution",
+                      "backgroundColor": 4293717745
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 292,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "F(20%)"
+                    }
+                  },
+                  {
+                    "left": 310,
+                    "top": 308,
+                    "width": 280,
+                    "height": 15,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "                         Toxicity",
+                      "backgroundColor": 4293717745
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 317,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "F(30%)"
+                    }
+                  },
+                  {
+                    "left": 62,
+                    "top": 27,
+                    "width": 206,
+                    "height": 151,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "smilesColumn",
+                      "format": null,
+                      "textColor": 4280252340
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 337,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "Ames"
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 273,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP2D6-Substrate"
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 382,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "BBB"
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 201,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP2C9-Inhibitor"
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 177,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP2C19-Substrate",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 192,
+                    "top": 382,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "BBB",
+                      "format": null,
+                      "textColor": 4294031028
+                    }
+                  },
+                  {
+                    "left": 490,
+                    "top": 129,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "CYP3A4-Substrate",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 42,
+                    "top": 217,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "Pgp-Inhibitor"
+                    }
+                  },
+                  {
+                    "left": 310,
+                    "top": 27,
+                    "width": 280,
+                    "height": 15,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "                         Metabolism",
+                      "backgroundColor": 4293717745
+                    }
+                  },
+                  {
+                    "left": 192,
+                    "top": 267,
+                    "width": 100,
+                    "height": 20,
+                    "type": "field",
+                    "viewerSettings": {
+                      "table": "tableName",
+                      "column": "HIA",
+                      "format": null,
+                      "textColor": 4290048444
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 225,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "CYP2C9-Substrate"
+                    }
+                  },
+                  {
+                    "left": 320,
+                    "top": 362,
+                    "width": 150,
+                    "height": 20,
+                    "type": "html",
+                    "viewerSettings": {
+                      "markup": "<input type=\"text\" class=\"d4-sketch-column-name ui-input-editor\">",
+                      "input-value": "SkinSen"
+                    }
+                  }
+                ]
+              }
+            },
+            "title": "Form"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "",
+    "tableName": "tableName"
+  },
+  "name": "tableName",
+  "friendlyName": "tableName",
+  "author": {
+    "id": "6d59a1c0-7820-11ed-b7ca-25f92a91f24c"
+  },
+  "createdOn": "2023-05-12T08:35:26.080Z"
+}
