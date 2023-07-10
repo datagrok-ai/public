@@ -5,6 +5,7 @@ export const _package = new DG.Package();
 export {tests};
 
 import './tests/test';
+import './tests/scripts';
 
 //name: test
 //input: string category {optional: true}
