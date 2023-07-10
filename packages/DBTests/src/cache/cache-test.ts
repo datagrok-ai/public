@@ -1,24 +1,116 @@
-import {before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {DataQuery} from 'datagrok-api/dg';
+import {DataFrame, DataQuery} from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {getCallTime} from '../benchmarks/benchmark';
 
 category('Cache', () => {
+  const clientSideCache: boolean = grok.shell.settings.clientSideCache;
+  const testConnections: String[] = ['PostgreSQLDBTests', 'PostgreSQLDBTestsCached'];
+
   before(async () => {
-    await grok.functions.call('DropConnectionCache',
-      {connection: await grok.dapi.connections.filter(`name="PostgreSQLDBTests"`).first()});
-    await grok.functions.call('DropConnectionCache',
-      {connection: await grok.dapi.connections.filter(`name="PostgreSQLDBTestsCached"`).first()});
+    await cleanCache(testConnections);
+    grok.shell.settings.clientSideCache = true;
   });
 
-  test('Scalar float cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestFloat'));
+  test('Client function cache dataframe', async () => {
+    grok.functions.register({
+      signature: 'dataframe getNowDf()',
+      run: async () => {
+        const connection = await grok.dapi.connections.filter(`name="${testConnections[0]}"`).first();
+        const dataQuery = connection.query('test', 'select now();');
+        const funcCall = await dataQuery.prepare().call();
+        return funcCall.outputs.result;
+      },
+      isAsync: true,
+      options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
+    });
+    const first: DataFrame = await grok.functions.call('getNowDf');
+    await new Promise((res) => setTimeout(res, 100));
+    const second: DataFrame = await grok.functions.call('getNowDf');
+    expect(first.rows.get(0).get('now').isSame(second.rows.get(0).get('now')), true);
+  });
 
-  test('Scalar int cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestInt'));
+  test('Client function cache scalar int', async () => {
+    grok.functions.register({
+      signature: 'int getEpochDate()',
+      run: () => {
+        return Date.now();
+      },
+      options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
+    });
 
-  test('Scalar string cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestString'));
+    await compareTwoFunctionResults('getEpochDate');
+  });
 
-  test('Scalar datetime cache test', async () => await basicCacheTest('PostgresqlScalarCacheTestDate'));
+  test('Client function cache scalar double', async () => {
+    grok.functions.register({
+      signature: 'double getRandomDouble()',
+      run: () => {
+        return Math.random();
+      },
+      options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
+    });
+
+    await compareTwoFunctionResults('getRandomDouble');
+  });
+
+  test('Client function cache scalar string', async () => {
+    grok.functions.register({
+      signature: 'string getRandomStringDate()',
+      run: () => {
+        return new Date().toISOString();
+      },
+      options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
+    });
+
+    await compareTwoFunctionResults('getRandomStringDate');
+  });
+
+  test('Client function cache invalidation', async () => {
+    const functionName = 'getEpochDateInv()';
+    const functionCallName = 'getEpochDateInv';
+    grok.functions.register({
+      signature: `int ${functionName}`,
+      run: () => {
+        return Date.now();
+      },
+      options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
+    });
+    const first = await compareTwoFunctionResults(functionCallName);
+    let transaction: any;
+    let db: any;
+    const cacheName = 'function_results_cache';
+    try {
+      const request = window.indexedDB.open(cacheName, 4);
+      request.onsuccess = function() {
+        db = request.result;
+        transaction = db.transaction(cacheName, 'readwrite');
+        const objectStore = transaction.objectStore(cacheName);
+        let map;
+        const getRequest = objectStore.get(functionName);
+        getRequest.onsuccess = function() {
+          map = getRequest.result;
+          map['.expires'] = new Date(1970).toISOString();
+          objectStore.delete(functionName);
+          objectStore.add(map, functionName);
+        };
+      };
+      if (transaction != null)
+        transaction.commit();
+    } catch (e) {
+      if (transaction != null)
+        transaction.abort();
+      throw e;
+    } finally {
+      if (db != null)
+        db.close;
+    }
+    const second = await grok.functions.call(functionCallName);
+    expect(first == second, false);
+  });
+
+  test('Scalars cache test', async () => await basicCacheTest('PostgresqlScalarCacheTest'));
 
   test('TestWide table cache test', async () => await basicCacheTest('PostgresqlTestCacheTableWide'));
 
@@ -27,7 +119,7 @@ category('Cache', () => {
   test('Connection cache test', async () => await basicCacheTest('PostgresqlCachedConnTest'), {timeout: 120000});
 
   test('Connection cache invalidation test', async () => {
-    const connection = await grok.dapi.connections.filter(`name="PostgreSQLDBTestsCached"`).first();
+    const connection = await grok.dapi.connections.filter(`name="${testConnections[1]}"`).first();
     await invalidationCacheTest(connection.query('test1', 'SELECT *, pg_sleep(0.1) FROM MOCK_DATA;'), 2);
   }, {timeout: 120000});
 
@@ -36,28 +128,15 @@ category('Cache', () => {
     await invalidationCacheTest(dataQuery, 2);
   });
 
-  test('Scalar float cache invalidation test', async () => {
+  test('Scalars cache invalidation test', async () => {
     const dataQuery = await grok.dapi.queries
-      .filter(`friendlyName="PostgresqlScalarCacheInvalidationTestFloat"`).first();
+      .filter(`friendlyName="PostgresqlScalarCacheInvalidationTest"`).first();
     await invalidationCacheTest(dataQuery, 2);
   });
 
-  test('Scalar int cache invalidation test', async () => {
-    const dataQuery = await grok.dapi.queries
-      .filter(`friendlyName="PostgresqlScalarCacheInvalidationTestInt"`).first();
-    await invalidationCacheTest(dataQuery, 2);
-  });
-
-  test('Scalar string cache invalidation test', async () => {
-    const dataQuery = await grok.dapi.queries
-      .filter(`friendlyName="PostgresqlScalarCacheInvalidationTestString"`).first();
-    await invalidationCacheTest(dataQuery, 2);
-  });
-
-  test('Scalar date cache invalidation test', async () => {
-    const dataQuery = await grok.dapi.queries
-      .filter(`friendlyName="PostgresqlScalarCacheInvalidationTestDate"`).first();
-    await invalidationCacheTest(dataQuery, 2);
+  after(async () => {
+    await cleanCache(testConnections);
+    grok.shell.settings.clientSideCache = clientSideCache;
   });
 });
 
@@ -85,4 +164,19 @@ async function basicCacheTest(query: String): Promise<void> {
   expect(firstExecutionTime > secondExecutionTime * 2, true,
     `The first execution time ${firstExecutionTime} ms
         is no more than twice the second execution time ${secondExecutionTime} ms for ${query}`);
+}
+
+async function compareTwoFunctionResults(funcName: string): Promise<any> {
+  const first = await grok.functions.call(funcName);
+  await new Promise((res) => setTimeout(res, 25));
+  const second = await grok.functions.call(funcName);
+  expect(first, second);
+  return second;
+}
+
+async function cleanCache(connections: String[]): Promise<void> {
+  for (const conn of connections) {
+    await grok.functions.call('DropConnectionCache',
+      {connection: await grok.dapi.connections.filter(`name="${conn}"`).first()});
+  }
 }
