@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {PHOSPHATE_SYMBOL} from './const';
 import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
+import {monomersWithPhosphateLinkers} from '../data-loading-utils/json-loader';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
  * omitted linkers, if needed)  */
@@ -31,18 +32,17 @@ export class MonomerSequenceParser {
     const monomerSymbolSequence: string[] = [];
     parsedRawCodes.forEach((code, i) => {
       const monomerSymbol = this.getSymbolForCode(code);
+      if (i > 0 && monomerHasLeftPhosphateLinker(monomerSymbol))
+        monomerSymbolSequence.pop();
+
       monomerSymbolSequence.push(monomerSymbol);
 
-      // todo: to be deleted
-      const LINKER_CODES = ['s', 'ps', '*', 'Rpn', 'Spn', 'Rps', 'Sps'];
-
-      const isPhosphate = LINKER_CODES.includes(code);
-      const hasPhosphate = isMonomerWithPhosphate(code);
+      const isPhosphate = monomerIsPhosphateLinker(monomerSymbol);
       const lastMonomer = i === parsedRawCodes.length - 1;
-      const nextMonomerIsPhosphate = (i + 1 < parsedRawCodes.length && LINKER_CODES.includes(parsedRawCodes[i + 1]));
+      const nextMonomerIsPhosphate = (i + 1 < parsedRawCodes.length && monomerIsPhosphateLinker(this.getSymbolForCode(parsedRawCodes[i + 1])));
 
       // todo: refactor as molfile-specific
-      if (!isPhosphate && !hasPhosphate && !nextMonomerIsPhosphate && !lastMonomer) {
+      if (!isPhosphate && !monomerHasRightPhosphateLinker(monomerSymbol) && !nextMonomerIsPhosphate && !lastMonomer) {
         monomerSymbolSequence.push(PHOSPHATE_SYMBOL);
       }
     });
@@ -78,8 +78,15 @@ export class MonomerSequenceParser {
   }
 }
 
-// todo: eliminate this strange legacy condition, leads to bugs
-function isMonomerWithPhosphate(code: string) {
-  const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
-  return legacyList.includes(code);
+// todo: to be eliminated after full helm support
+function monomerHasLeftPhosphateLinker(monomerSymbol: string): boolean {
+  return monomersWithPhosphateLinkers['left'].includes(monomerSymbol);
+}
+
+function monomerHasRightPhosphateLinker(monomerSymbol: string): boolean {
+  return monomersWithPhosphateLinkers['right'].includes(monomerSymbol);
+}
+
+function monomerIsPhosphateLinker(monomerSymbol: string): boolean {
+  return monomersWithPhosphateLinkers['phosphate'].includes(monomerSymbol);
 }

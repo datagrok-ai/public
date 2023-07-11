@@ -3,27 +3,47 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {APP_PATH, FORMAT_DICT_FILENAME, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME} from './const';
+import {APP_PATH, FORMAT_DICT_FILENAME, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME, CODES_TO_SYMBOLS_FILENAME, MONOMERS_WITH_PHOSPHATE_LINKERS} from './const';
 import {FormatDict, AxolabsStyle, FormatToHELMDict, CodeToSymbol} from './types';
 
 const fileSource = new DG.FileSource(APP_PATH);
 async function parse(path: string): Promise<any> {
-  return JSON.parse(await fileSource.readAsText(path));
+  let parsedJson: string;
+  try {
+    parsedJson = JSON.parse(await fileSource.readAsText(path))
+  } catch (err: any) {
+    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
+    throw new Error(`Error loading json from ${path}: ` + errMsg);
+  }
+  return parsedJson;
 }
 
 export let formatDictionary: FormatDict;
 export let axolabsStyleMap: AxolabsStyle;
 export let codesToHelmDictionary: FormatToHELMDict;
 export let codesToSymbolsDictionary: CodeToSymbol;
+export let monomersWithPhosphateLinkers: {[key: string]: string[]};
 
 export async function getJsonData(): Promise<void> {
   try {
     formatDictionary = await parse(FORMAT_DICT_FILENAME);
     axolabsStyleMap = await parse(AXOLABS_STYLE_FILENAME);
     codesToHelmDictionary = await parse(CODES_TO_HELM_DICT_FILENAME);
-    codesToSymbolsDictionary = await parse(CODES_TO_SYMBOLS_FILENAME);
   } catch (err: any) {
     const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
     throw new Error('ST: Loading format dictionary error: ' + errMsg);
   }
+  try {
+    formatDictionary = await parse(FORMAT_DICT_FILENAME);
+    axolabsStyleMap = await parse(AXOLABS_STYLE_FILENAME);
+    codesToHelmDictionary = await parse(CODES_TO_HELM_DICT_FILENAME);
+  } catch (err: any) {
+    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
+    throw new Error('ST: Loading format dictionary error: ' + errMsg);
+  }
+  formatDictionary = await parse(FORMAT_DICT_FILENAME);
+  axolabsStyleMap = await parse(AXOLABS_STYLE_FILENAME);
+  codesToHelmDictionary = await parse(CODES_TO_HELM_DICT_FILENAME);
+  codesToSymbolsDictionary = await parse(CODES_TO_SYMBOLS_FILENAME);
+  monomersWithPhosphateLinkers = await parse(MONOMERS_WITH_PHOSPHATE_LINKERS);
 }
