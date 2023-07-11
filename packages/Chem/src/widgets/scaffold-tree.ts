@@ -481,7 +481,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   /** Saves sketched tree to disk (under Downloads) */
   saveTree(): void {
     const s = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree));
-    DG.Utils.download('scaffold-tree.tree', s);
+    const dialog = ui.dialog({title: 'Enter file name'});
+    dialog
+    .add(ui.stringInput('Name', ''))
+    .onOK(() => {
+      DG.Utils.download(`${dialog.inputs[0].stringValue}.tree`, s);
+      dialog.close();
+    })
+    .show();
   }
 
   /** Loads previously saved tree. See also {@link saveTree} */
