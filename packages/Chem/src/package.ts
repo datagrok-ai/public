@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
-import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {getDescriptorsSingle} from './widgets/descriptors-calculation';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
@@ -359,12 +359,6 @@ export async function searchSubstructure(
     console.error('Chem | In substructureSearch: ' + e.toString());
     throw e;
   }
-}
-
-//name: Molecular Descriptors
-//tags: app
-export function descriptorsApp(): void {
-  getDescriptorsApp();
 }
 
 //name: saveAsSdf

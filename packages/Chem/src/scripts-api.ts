@@ -19,14 +19,6 @@ export async function smilesTo3DCoordinates(molecule: string): Promise<string> {
   return await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule});
 }
 
-export async function getDescriptorsPy(
-  smiles: string,
-  df1: DG.DataFrame,
-  selected: string,
-  df2: DG.DataFrame): Promise<any> {
-  return await grok.functions.call('Chem:Desc', {smiles, df1, selected, df2});
-}
-
 export async function generateScaffoldTree(
   data: DG.DataFrame,
   smilesColumn: string,
