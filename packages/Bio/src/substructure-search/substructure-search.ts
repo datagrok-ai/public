@@ -105,6 +105,7 @@ export async function helmSubstructureSearch(substructure: string, col: DG.Colum
   if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
     await invalidateMols(col, true);
   const substructureCol: DG.Column<string> = DG.Column.string('helm', 1).init((_i) => substructure);
+  substructureCol.semType = DG.SEMTYPE.MACROMOLECULE;
   substructureCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
   const substructureMolsCol =
     await getMonomericMols(substructureCol, true, col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT]);
