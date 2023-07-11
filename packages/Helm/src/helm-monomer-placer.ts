@@ -14,8 +14,8 @@ export const enum Temps {
 }
 
 export class HelmMonomerPlacer {
-  private _allPartsList: string[][] = null;
-  private _lengthsList: number[][] = null;
+  private _allPartsList: (string[] | null)[] | null = null;
+  private _lengthsList: (number[] | null) [] | null = null;
 
   private monomerLib: IMonomerLib;
 
@@ -30,10 +30,10 @@ export class HelmMonomerPlacer {
   /** @param rowIdx Row index of the table {@link DG.DataFrame}, HelmMonomerPlacer is {@link DG.Column} based */
   public getCellAllPartsLengths(rowIdx: number): [string[], number[], number[]] {
     if (this._allPartsList === null)
-      this._allPartsList = new Array<string[]>(this.col.length).fill(null);
+      this._allPartsList = new Array<string[] | null>(this.col.length).fill(null);
 
     if (this._lengthsList === null)
-      this._lengthsList = new Array<number[]>(this.col.length).fill(null);
+      this._lengthsList = new Array<number[] | null>(this.col.length).fill(null);
 
     const [allParts, lengths] = this.getCellMonomerLengthsForSeq(rowIdx);
 
@@ -45,8 +45,8 @@ export class HelmMonomerPlacer {
   }
 
   private getCellMonomerLengthsForSeq(rowIdx: number): [string[], number[]] {
-    const allParts: string[] = this._allPartsList[rowIdx] = this.getAllParts(rowIdx);
-    const lengths: number[] = this._lengthsList[rowIdx] = new Array<number>(allParts.length);
+    const allParts: string[] = this._allPartsList![rowIdx] = this.getAllParts(rowIdx);
+    const lengths: number[] = this._lengthsList![rowIdx] = new Array<number>(allParts.length);
 
     for (const [part, partI] of wu.enumerate(allParts)) {
       const partWidth: number = part.length * this.monomerCharWidth;
@@ -58,17 +58,17 @@ export class HelmMonomerPlacer {
 
   getAllParts(rowIdx: number): string[] {
     const seq: string | null = this.col.get(rowIdx);
-    const subParts: string[] = parseHelm(seq);
-    return seq ? getParts(subParts, seq) : [];
+    const monomerList: string[] = seq ? parseHelm(seq) : [];
+    return seq ? getParts(monomerList, seq) : [];
   }
 
   getMonomer(monomerSymbol: any): Monomer | null {
-    let res: Monomer = null;
+    let res: Monomer | null = null;
     for (const polymerType of this.monomerLib.getPolymerTypes()) {
       res = this.monomerLib.getMonomer(polymerType, monomerSymbol);
       if (res) break;
     }
-    return res ?? null;
+    return res;
   }
 
   public static getOrCreate(col: DG.Column<string>): HelmMonomerPlacer {

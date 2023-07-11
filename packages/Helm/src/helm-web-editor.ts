@@ -7,6 +7,7 @@ export class HelmWebEditor {
   editor: any;
   w = 200;
   h = 100;
+
   constructor() {
     this.host = ui.div([], {style: {width: `${this.w}px`, height: `${this.h}px`}});
     this.editor = new JSDraw2.Editor(this.host, {width: this.w, height: this.h, viewonly: true});
@@ -18,7 +19,9 @@ export class HelmWebEditor {
 
   createWebEditor(value: string) {
     const editorView = ui.div();
+    // @ts-ignore
     org.helm.webeditor.MolViewer.molscale = 0.8;
+    // @ts-ignore
     const webEditor = new scil.helm.App(editorView, {
       showabout: false,
       mexfontsize: '90%',
