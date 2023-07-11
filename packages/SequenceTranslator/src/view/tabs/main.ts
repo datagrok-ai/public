@@ -9,7 +9,6 @@ import $ from 'cash-dom';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
-import {SequenceToSmilesConverter} from '../../model/sequence-to-structure-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
 import {getTranslatedSequences} from '../../model/format-translation/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
@@ -106,7 +105,7 @@ export class MainTabUI {
   }
 
   private copySmiles(): void {
-    const smiles = (new SequenceToSmilesConverter(this.sequence, false, this.formatChoiceInput.value!)).convert();
+    const smiles = DG.chem.convert(this.molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
     navigator.clipboard.writeText(smiles).then(
       () => grok.shell.info(SEQUENCE_COPIED_MSG)
     );

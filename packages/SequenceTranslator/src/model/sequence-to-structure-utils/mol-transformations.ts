@@ -338,14 +338,6 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true): st
   const entries = 4;
   const collNumber = Math.ceil(collection.length / entries);
 
-  //if (oclRender) {
-  // collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length;
-
-  // for (let j = 0; j < collection.length; j++)
-  //   collectionBlock += ' ' + collection[j];
-
-  // collectionBlock += ')\n';
-  //} else {
   collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
   for (let i = 0; i < collNumber; i++) {
     collectionBlock += 'M  V30 ';
@@ -493,9 +485,7 @@ function reflect(molBlock: string): string {
 }
 
 
-function invertNucleotidesV3000(molecule: string) {
-  // @ts-ignore
-  let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
+function invertNucleotidesV3000(molBlock: string) {
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;
 

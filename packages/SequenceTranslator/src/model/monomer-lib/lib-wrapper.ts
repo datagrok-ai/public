@@ -76,18 +76,6 @@ export class MonomerLibWrapper {
     return monomer.molfile;
   }
 
-  getSmilesBySymbol(monomerSymbol: string): string {
-    const monomer = this.getMonomer(monomerSymbol);
-    return monomer.smiles;
-  }
-
-  get3PrimeTerminalSmiles(modificationSymbol: string): string {
-    if (!this.isModification(modificationSymbol))
-      throw new Error(`SequenceTranslator: ${modificationSymbol} is not a modification`);
-    const monomer = this.getMonomer(modificationSymbol);
-    return monomer[OPT.META]![MET.TERMINAL_SMILES];
-  }
-
   // todo: a better criterion
   isModification(monomerSymbol: string): boolean {
     const molfile = this.getMolfileBySymbol(monomerSymbol);
