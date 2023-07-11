@@ -9,7 +9,6 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm} from './utils';
 import {HelmMonomerPlacer} from './helm-monomer-placer';
-import {TAGS as helmTAGS} from './constants';
 
 const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
@@ -45,7 +44,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       if (!tableCol) return;
 
       const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
-      const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex);
+      const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
 
       const maxIndex = Object.values(lengths).length - 1;
       const argsX = e.offsetX - gridCell.bounds.x;
@@ -110,20 +109,20 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
-    /* Can not do anything without tableColumn containing temp */
-    let tableCol: DG.Column | null = null;
-    try { tableCol = gridCell.tableColumn; } catch { }
-    if (!tableCol) return;
-
     g.save();
     try {
+      /* Can not do anything without tableColumn containing temp */
+      let tableCol: DG.Column | null = null;
+      try { tableCol = gridCell.tableColumn; } catch { }
+      if (!tableCol) return;
+
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
       const missedColor = 'red';
       const monomerColor: string = '#404040';
       const frameColor: string = '#C0C0C0';
 
       const seq = gridCell.cell.value;
-      const monomerList: string[] = parseHelm(seq);
+      const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
       const missedMonomers: Set<string> = findMonomers(monomerList);
 
@@ -154,7 +153,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         g.font = '12px monospace';
         g.textBaseline = 'top';
         const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
-        const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRow.idx);
+        const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
 
         for (let i = 0; i < allParts.length; ++i) {
           const part: string = allParts[i];
@@ -167,11 +166,6 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
           printLeftOrCentered(sumLengths[i], 0, w, h, g, allParts[i], color, 0, true, 1.0);
         }
       }
-    } catch (err: any) {
-      const errMsg = err instanceof Error ? err.message : err.toString();
-      const errStack = err instanceof Error ? err.stack : undefined;
-      tableCol.setTag(helmTAGS.cellRendererRenderError, JSON.stringify({message: errMsg, stack: errStack}));
-      throw err;
     } finally {
       g.restore();
     }

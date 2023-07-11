@@ -13,11 +13,11 @@ module.exports = {
   },
   resolve: {
     fallback: {'url': false},
-    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
+    extensions: ['.ts', '.tsx', '.js', '.wasm', '.mjs', '.json'],
   },
   module: {
     rules: [
-      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader']},
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
       {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: /node_modules/},
     ],
