@@ -8,7 +8,14 @@ import {FormatDict, AxolabsStyle, FormatToHELMDict} from './types';
 
 const fileSource = new DG.FileSource(APP_PATH);
 async function parse(path: string): Promise<any> {
-  return JSON.parse(await fileSource.readAsText(path));
+  let parsedJson: string;
+  try {
+    parsedJson = JSON.parse(await fileSource.readAsText(path))
+  } catch (err: any) {
+    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
+    throw new Error(`Error loading json from ${path}: ` + errMsg);
+  }
+  return parsedJson;
 }
 
 export let formatDictionary: FormatDict;
@@ -17,13 +24,8 @@ export let codesToHelmDictionary: FormatToHELMDict;
 export let monomersWithPhosphateLinkers: {[key: string]: string[]};
 
 export async function getJsonData(): Promise<void> {
-  try {
-    formatDictionary = await parse(FORMAT_DICT_FILENAME);
-    axolabsStyleMap = await parse(AXOLABS_STYLE_FILENAME);
-    codesToHelmDictionary = await parse(CODES_TO_HELM_DICT_FILENAME);
-    monomersWithPhosphateLinkers = await parse(MONOMERS_WITH_PHOSPHATE_LINKERS);
-  } catch (err: any) {
-    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-    throw new Error('ST: Loading format dictionary error: ' + errMsg);
-  }
+  formatDictionary = await parse(FORMAT_DICT_FILENAME);
+  axolabsStyleMap = await parse(AXOLABS_STYLE_FILENAME);
+  codesToHelmDictionary = await parse(CODES_TO_HELM_DICT_FILENAME);
+  monomersWithPhosphateLinkers = await parse(MONOMERS_WITH_PHOSPHATE_LINKERS);
 }
