@@ -779,25 +779,44 @@ export class SensitivityAnalysisView {
 
     // hide columns with fixed inputs
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
-    this.comparisonView.grid.columns.setVisible(colNamesToShow);
+    this.comparisonView.grid.columns.setVisible(colNamesToShow);    
 
     // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
+    this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
+    this.openedViewers.push(corPlot);
 
-    this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.25);
+    const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, options.variedInputs.length);
 
-    // add scatterplot
-    const scatPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults,
-      {x: evalDataframeNames[0],
-        y: outputNames[1],
-      },
-    ));
+    // add other vizualizations depending on the varied inputs dimension
+    if (options.variedInputs.length === 1) {
+      const lineChart = this.comparisonView.addViewer(
+        DG.Viewer.lineChart(DG.DataFrame.fromColumns(funcEvalResults.columns.byNames(colNamesToShow)),{
+          x: colNamesToShow[0],
+          markerSize: 1,
+          markerType: 'gradient',
+          sharex: true,multiAxis: true,
+          multiAxisLegendPosition: "RightCenter",
+      }));
+      this.openedViewers.push(lineChart);
+    }
+    else {
+      const scatterPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot( funcEvalResults, {
+        x: colNamesToShow[0],
+        y: colNamesToShow[1],
+        color: nameOfNonFixedOutput,
+        size: nameOfNonFixedOutput,
+        markerMaxSize: 12,
+        jitterSize: 5,
+      }));      
+      this.openedViewers.push(scatterPlot);      
+    }
 
     // add barchart with 1-st order Sobol' indices
     const bChartSobol1 = this.comparisonView.addViewer(DG.Viewer.barChart(firstOrderIndeces,
       {title: firstOrderIndeces.name,
         split: outputNames[0],
-        value: outputNames[1],
+        value: nameOfNonFixedOutput,//outputNames[1],
         valueAggrType: 'avg',
       },
     ));
@@ -808,12 +827,12 @@ export class SensitivityAnalysisView {
     const bChartSobolT = this.comparisonView.addViewer(DG.Viewer.barChart(totalOrderIndeces,
       {title: totalOrderIndeces.name,
         split: outputNames[0],
-        value: outputNames[1],
+        value: nameOfNonFixedOutput,//outputNames[1],
         valueAggrType: 'avg',
       },
     ));
 
-    this.openedViewers = this.openedViewers.concat([corPlot, scatPlot, bChartSobol1, bChartSobolT]);
+    this.openedViewers = this.openedViewers.concat([bChartSobol1, bChartSobolT]);
   }
 
   private async runRandomAnalysis() {
@@ -887,18 +906,34 @@ export class SensitivityAnalysisView {
 
     // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
-
     this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
+    this.openedViewers.push(corPlot);
 
-    const names = funcEvalResults.columns.names();
+    const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, options.variedInputs.length);
 
-    // add scatterplot
-    const scatPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults,
-      {x: names[0],
-        y: names[options.variedInputs.length],
+    // add other vizualizations depending on the varied inputs dimension
+    if (options.variedInputs.length === 1) {
+      const lineChart = this.comparisonView.addViewer(
+        DG.Viewer.lineChart(DG.DataFrame.fromColumns(funcEvalResults.columns.byNames(colNamesToShow)),{
+          x: colNamesToShow[0],
+          markerSize: 1,
+          markerType: 'gradient',
+          sharex: true,multiAxis: true,
+          multiAxisLegendPosition: "RightCenter",
       }));
-
-    this.openedViewers = this.openedViewers.concat([corPlot, scatPlot]);
+      this.openedViewers.push(lineChart);
+    }
+    else {
+      const scatterPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot( funcEvalResults, {
+        x: colNamesToShow[0],
+        y: colNamesToShow[1],
+        color: nameOfNonFixedOutput,
+        size: nameOfNonFixedOutput,
+        markerMaxSize: 12,
+        jitterSize: 5,
+      }));      
+      this.openedViewers.push(scatterPlot);      
+    }
   }
 
   private async runSimpleAnalysis() {
@@ -1069,7 +1104,6 @@ export class SensitivityAnalysisView {
         }, {} as Record<string, any>),
     ));
 
-    //const calledFuncCalls = await Promise.all(funccalls.map(async (funccall) => await funccall.call()));
     const calledFuncCalls = await getCalledFuncCalls(funccalls);
 
     this.closeOpenedViewers();
@@ -1188,15 +1222,60 @@ export class SensitivityAnalysisView {
 
     // add correlation plot
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
-
     this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
+    this.openedViewers.push(corPlot);
 
-    // add scatterplot
-    const scatPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot(funcEvalResults,
-      {x: colNamesToShow[0],
-        y: colNamesToShow[variedInputsColumns.length],
-      }));
+    const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, variedInputsColumns.length);
 
-    this.openedViewers = this.openedViewers.concat([corPlot, scatPlot]);
+    console.log(nameOfNonFixedOutput);
+
+    // add other vizualizations depending on the varied inputs dimension
+    switch (variedInputsColumns.length) {
+      case 1: 
+        const lineChart = this.comparisonView.addViewer(
+          DG.Viewer.lineChart(DG.DataFrame.fromColumns(funcEvalResults.columns.byNames(colNamesToShow)),{
+            x: colNamesToShow[0],
+            markerSize: 1,
+            markerType: 'gradient',
+            sharex: true,multiAxis: true,
+            multiAxisLegendPosition: "RightCenter",
+        }));
+        this.openedViewers.push(lineChart);
+        break;
+
+      case 2:  
+        const surfacePlot = this.comparisonView.addViewer(DG.VIEWER.SURFACE_PLOT, {
+          X: colNamesToShow[0], // here, captials are used due to features of surface plot
+          Y: colNamesToShow[1],
+          Z: nameOfNonFixedOutput,
+        });
+        this.openedViewers.push(surfacePlot);
+        break;     
+
+      default:
+        const scatterPlot = this.comparisonView.addViewer(DG.Viewer.scatterPlot(
+          funcEvalResults, {
+            x: colNamesToShow[0], 
+            y: colNamesToShow[1],
+            color: nameOfNonFixedOutput,
+            size: nameOfNonFixedOutput,
+            markerMaxSize: 12,
+            jitterSize: 5,
+        }));
+        this.openedViewers.push(scatterPlot);
+        break;
+    }
+  }
+
+  private getOutputNameForScatterPlot(names: string[], table: DG.DataFrame, start: number): string {
+    for (let i = start; i < names.length; ++i) {
+      const min = table.col(names[i])?.min ?? 0;
+      const max = table.col(names[i])?.max ?? 0;
+
+      if (min < max)
+        return names[i];
+    }
+
+    return names[start];
   }
 }
