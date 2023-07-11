@@ -1355,7 +1355,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const itemCount = this.tree.items.length;
     this._iconDelete!.style.display = itemCount > 0 ? 'flex' : 'none';
     this._generateLink!.style.visibility = (itemCount > 0 || !this.allowGenerate) ? 'hidden' : 'visible';
-    this._message!.style.visibility = itemCount > 0 ? 'hidden' : 'visible';
+    this._message!.style.visibility = (itemCount > 0 || !this.allowGenerate) ? 'hidden' : 'visible';
 
     const c = this.root.getElementsByClassName('grok-icon fal fa-filter grok-icon-filter');
     if (c.length > 0)
