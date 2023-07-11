@@ -1,6 +1,7 @@
 import {HitTriageBaseView} from './base-view';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from '../hit-triage-app';
 import {_package} from '../../package';
 import {ICampaign} from '../types';
@@ -14,10 +15,16 @@ export class SubmitView extends HitTriageBaseView {
 
   render(): void {
     ui.empty(this.root);
+    const submitDiv = ui.divH([]);
+    if (this.app.template?.submit && this.app.template.submit.fName)
+      submitDiv.appendChild(ui.bigButton('SUBMIT', () => this.submit()));
+
+    submitDiv.appendChild(ui.bigButton('Save Campaign', () => this.saveCampaign()));
+
     const content = ui.divV([
       ui.h1('Summary'),
       ui.div([ui.tableFromMap(this.app.getSummary())]),
-      ui.divH([ui.bigButton('SUBMIT', () => this.submit()), ui.bigButton('Save Campaign', () => this.saveCampaign())]),
+      submitDiv,
     ]);
     this.root.appendChild(content);
   }
@@ -27,15 +34,13 @@ export class SubmitView extends HitTriageBaseView {
   }
 
   async submit(): Promise<any> {
-    //TODO
-    // const d = new Date();
-    // const time =
-    //   `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}-${d.getMinutes()}-${d.getSeconds()}`;
-    // const folder = `${time}_${grok.shell.user.login}`;
-    // await _package.files.writeAsText(`${folder}/session.json`, JSON.stringify(this.app.template));
-
-    // await _package.files.writeAsText(`${folder}/molecules.csv`, this.app.template.enrichedTable!.toCsv());
-
+    const submitFname = this.app.template!.submit!.fName;
+    const submitFn = await grok.functions.find(submitFname);
+    if (!submitFn) {
+      grok.shell.error(`Function ${submitFname} not found.`);
+      return;
+    }
+    await submitFn.apply({df: this.app.dataFrame, molecules: this.app.template?.ingest.molColName});
     grok.shell.info('Submitted successfully.');
   }
 

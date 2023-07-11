@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {IComputeDialogResult, IDescriptorTree} from '../types';
-import '../../css/hit-triage.css';
+import '../../../css/hit-triage.css';
 
 export async function chemDescriptorsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
   functions: {packageName: string, name: string}[], useDescriptors: boolean = true) {

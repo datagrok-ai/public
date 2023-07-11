@@ -51,8 +51,7 @@ export type ITemplateCompute = {
 };
 
 export type ITemplateSubmit = {
-    url: string,
-    argName: string,
+    fName: string,
 };
 
 export type ICampaign = {
