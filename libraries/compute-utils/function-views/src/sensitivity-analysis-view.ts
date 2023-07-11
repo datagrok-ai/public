@@ -141,7 +141,7 @@ export class SensitivityAnalysisView {
             value: getInputValue(inputProp, 'max'),
           },
           lvl: {
-            input: ui.intInput('Levels', 3, (v: number) => {
+            input: ui.intInput('Samples', 3, (v: number) => {
               ref.lvl.value = v;
               this.updateRunButtonText();
             }),
@@ -610,11 +610,13 @@ export class SensitivityAnalysisView {
         return 'Switch to mark input as immutable';
       });
 
-      ui.tooltip.bind(propConfig.const.input.root, 'Fixed input value');
-      ui.tooltip.bind((propConfig as SensitivityNumericStore).min.input.root, 'Varied input range');
-      ui.tooltip.bind((propConfig as SensitivityNumericStore).max.input.root, 'Varied input range');
-      ui.tooltip.bind((propConfig as SensitivityNumericStore).lvl.input.root, 'Range values count');
-      ui.tooltip.bind((propConfig as SensitivityNumericStore).distrib.input.root, 'Range values grid type');
+      const name = propConfig.prop.caption ?? propConfig.prop.name;
+
+      ui.tooltip.bind(propConfig.const.input.root, 'Input value');
+      ui.tooltip.bind((propConfig as SensitivityNumericStore).min.input.root, `Min & Max values of ${name}`);
+      ui.tooltip.bind((propConfig as SensitivityNumericStore).max.input.root, `Min & Max values of ${name}`);
+      ui.tooltip.bind((propConfig as SensitivityNumericStore).lvl.input.root, `Number of samples along the axis ${name}`);
+      ui.tooltip.bind((propConfig as SensitivityNumericStore).distrib.input.root, 'Type of grid');
     }
 
     // switchInputs for outputs
