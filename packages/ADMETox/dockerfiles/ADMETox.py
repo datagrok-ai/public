@@ -341,42 +341,70 @@ import numpy as np
 import pandas as pd
 import csv
 
-def handle_uploaded_file(f, models):
-    """Calculate ADMET properties
+def process_batch(smiles_batch, models):
+    """Process a batch of SMILES strings
 
-    :param f: input file content
+    :param smiles_batch: a batch of SMILES strings
     :param models: list of models to be used for calculation
-    :return: zip(predict_label, predict_proba)
+    :return: pandas DataFrame with the calculated predictions
     """
-
-    global smiles_global
     global Maccs
     global Ecfp2
     global Ecfp4
-    smiles = [list(row.values()) for row in f]
-    predicts = []
-    encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
+    global smiles_global
+
+    smiles = [smile[0] for smile in smiles_batch]
+    encoded_smiles = [smile.encode('utf8') for smile in smiles]
+
     if len(smiles_global) == 0 or smiles_global != encoded_smiles:
         smiles_global = encoded_smiles
         Maccs = np.array(getMACCS(smiles_global))
         Ecfp2 = np.array(getECFP(smiles_global, 1, 2048))
         Ecfp4 = np.array(getECFP(smiles_global, 2, 1024))
+
     models_res = [model.encode('utf8') for model in models.split(",")]
-    process_handlers = []
+
+    predicts = []
     for model in models_res:
+        predicts.append(model_computation(model))
+
+    transposed_predicts = list(zip(*predicts))
+    result = np.zeros((len(smiles_global), 0), float)
+    result = np.concatenate([result, np.array(transposed_predicts).reshape(len(smiles_global), len(models_res))], axis=1)
+    res_df = pd.DataFrame(result, columns=models_res)
+
+    return res_df
+
+def handle_uploaded_file(f, models):
+    """Calculate ADMET properties
+
+    :param f: input file content
+    :param models: list of models to be used for calculation
+    :return: CSV string with the calculated predictions
+    """
+    global Maccs
+    global Ecfp2
+    global Ecfp4
+    global smiles_global
+
+    smiles = [list(row.values()) for row in f]
+    batches = [smiles[i:i+1000] for i in range(0, len(smiles), 1000)]
+
+    process_handlers = []
+    results = []
+    smiles_global = []
+
+    for batch in batches:
         process_handler = ProcessHandler()
-        process_handler.start_process(model_computation, args=(model,))
+        process_handler.start_process(process_batch, args=(batch, models))
         process_handlers.append(process_handler)
 
     for process_handler in process_handlers:
         process_handler.stop_process()
-        predicts.extend(process_handler.get_results())
-    transposed_predicts = list(zip(*predicts))
-    result = np.zeros((len(smiles_global), 0), float)
-    result = np.concatenate([ result, np.array(transposed_predicts).reshape(len(smiles_global),len(models_res))], axis=1)
-    res_df = pd.DataFrame(result, columns=models_res)
-    res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
-    del smiles, predicts, encoded_smiles, models_res, process_handlers, transposed_predicts, result, res_df
+        results.extend(process_handler.get_results())
+
+    final_df = pd.concat(results)
+    res_str = final_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
     return res_str
 
 from django.conf.urls import url, include 
