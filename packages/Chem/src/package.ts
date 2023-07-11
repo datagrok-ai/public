@@ -719,6 +719,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 
 //top-menu: Chem | Analyze | Structural Alerts...
 //name: Structural Alerts
+//tags: HitTriageFunction
 //input: dataframe table [Input data table] {caption: Table}
 //input: column molecules {caption: Molecules; type: categorical; semType: Molecule}
 //input: bool pains {caption: PAINS; default: true; description: "Pan Assay Interference Compounds filters"}
@@ -1164,6 +1165,7 @@ export async function callChemDiversitySearch(
 
 //top-menu: Chem | Calculate | Properties...
 //name: Chemical Properties
+//tags: HitTriageFunction
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool MW = true
@@ -1193,6 +1195,7 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 
 //top-menu: Chem | Calculate | Toxicity Risks...
 //name: Toxicity risks
+//tags: HitTriageFunction
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Molecule}
 //input: bool mutagenicity = true

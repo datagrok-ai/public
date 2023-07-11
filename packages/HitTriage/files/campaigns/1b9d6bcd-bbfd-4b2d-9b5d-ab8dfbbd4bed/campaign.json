@@ -1,0 +1,6 @@
+{
+    "templateName": "Secret molecules 1",
+    "filters": [
+        {"type": "histogram","column": "Hit","filterOutMissingValues": false,"showMissingValuesOnly": false,"min": 1358090.7262569834,"max": 1364125,"showHistogram": true,"showSlider": true,"showMinMax": false,"boolInput": null,"active": true},
+        {"type": "histogram","column": "MW","active": true,"filterOutMissingValues": false,"showMissingValuesOnly": false,"min": 311.017257605185,"max": 511.1347961425781,"showHistogram": true,"showSlider": true,"showMinMax": false,"boolInput": null}]
+}

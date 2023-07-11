@@ -2,3 +2,9 @@
     width: initial !important;
     height: initial !important;
 }
+
+.hit-triage-compute-dialog-pane-header{
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}

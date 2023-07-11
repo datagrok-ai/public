@@ -2,13 +2,23 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitTriageApp, HitTriageTemplate} from "./hit-triage-app";
+import {HitTriageApp} from './app/hit-triage-app';
 
-export let _package = new DG.Package();
-
+export const _package = new DG.Package();
 
 //tags: app
 //name: Hit Triage
 export async function hitTriageApp() {
-  new HitTriageApp(HitTriageTemplate.demo());
+  new HitTriageApp();
+}
+
+//name: demosmth
+//tags: HitTriageFunction
+export async function demosmth() {
+  return 1;
+};
+
+//name: Demo Molecules 100
+export async function DemoFileIngest() {
+
 }

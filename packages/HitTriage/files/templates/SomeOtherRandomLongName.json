@@ -1,0 +1,23 @@
+{
+  "name": "Template 2",
+  "ingest": {
+    "type": "File",
+    "query": "System:AppData/HitTriage/samples/hits.csv",
+    "molColName": "Smiles"
+  },
+  "compute": {
+    "descriptors": {
+      "enabled": true
+    },
+    "functions": [
+      {
+        "package": "Chem",
+        "name": "structuralAlertsTopMenu"
+      }
+    ]
+  },
+  "submit": {
+    "url": "https://somewebsite.com",
+    "argName": "file"
+  }
+}

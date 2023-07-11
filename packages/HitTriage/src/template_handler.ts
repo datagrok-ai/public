@@ -1,12 +1,12 @@
 // Defines the way Datagrok handles entities of the specified type
-import * as DG from "datagrok-api/dg";
-import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
-import {HitTriageTemplate} from "./hit-triage-app";
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import {HitTriageTemplate} from './hit-triage-app';
 
 export class TemplateHandler extends DG.ObjectHandler {
   get type() {
-    return 'HitTriageTemplate'
+    return 'HitTriageTemplate';
   }
 
   // Checks whether this is the handler for [x]
@@ -33,7 +33,7 @@ export class TemplateHandler extends DG.ObjectHandler {
   renderCard(x: HitTriageTemplate, context?: any): HTMLElement {
     return ui.bind(x, ui.divV([
       this.renderMarkup(x),
-      ui.divText(`Context: ${context}`)
+      ui.divText(`Context: ${context}`),
     ], 'd4-gallery-item'));
   }
 
