@@ -31,3 +31,7 @@ export const RGROUP_ALTER_ID = 'alternateId';
 export const RGROUP_CAP_GROUP_NAME = 'capGroupName';
 export const RGROUP_LABEL = 'label';
 export const SDF_MONOMER_NAME = 'MonomerName';
+
+export const enum TAGS {
+  cellRendererRenderError = '.cell-renderer.render.error',
+}
