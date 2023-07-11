@@ -54,7 +54,7 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
 }
 
 //description: Open descriptors selection dialog
-async function openDescriptorsDialog(selected: any, onOK: any): Promise<void> {
+async function openDescriptorsDialog(selected: string[], onOK: any): Promise<void> {
   descriptors = await grok.chem.descriptorsTree();
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
