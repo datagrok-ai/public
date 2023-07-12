@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {getRdKitModule, getRdKitService} from './utils/chem-common-rdkit';
 import {
   chemBeginCriticalSection,
@@ -246,6 +247,9 @@ export async function chemSubstructureSearchLibrary(
         result.set(match, true, false);
     }
     return result;
+  } catch (e: any) {
+    grok.shell.error(e.message);
+    throw e;
   } finally {
     chemEndCriticalSection();
   }
