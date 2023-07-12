@@ -15,8 +15,8 @@ import {drawAxolabsPattern} from '../../model/axolabs/draw-svg';
 import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
-type BooleanInput = DG.InputBase<boolean | null>;     
-type StringInput = DG.InputBase<string | null>;   
+type BooleanInput = DG.InputBase<boolean | null>;
+type StringInput = DG.InputBase<string | null>;
 
 export class AxolabsTabUI {
   get htmlDivElement() {
@@ -434,7 +434,7 @@ export class AxolabsTabUI {
       (strand) => [strand, ui.textInput(
         `${STRAND_NAME[strand]}`, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
       ]));
-   
+
     // todo: rename to strandColumnInput
     const inputStrandColumn = Object.fromEntries(STRANDS.map((strand) => {
       const input: StringInput = ui.choiceInput(`${STRAND_NAME[strand]} Column`, '', [], (colName: string) => {
@@ -523,7 +523,7 @@ export class AxolabsTabUI {
     ]);
 
     const asLengthDiv = ui.div([strandLengthInput[AS].root]);
-    
+
     const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
       STRANDS.forEach((strand) => {
         inputStrandColumn[strand] = ui.choiceInput(`${strand} Column`, '', t.columns.names(), (colName: string) => {

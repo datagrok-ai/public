@@ -101,7 +101,7 @@ function formatToHelm(sequence: string, sourceFormat: string): string {
   });
   helm = helm.replace(/\?+/g, '<?>.');
   helm = helm.slice(0, -1); // strip last dot
-  if (helm[helm.length - 1] === PHOSPHATE) 
+  if (helm[helm.length - 1] === PHOSPHATE)
     helm = helm.slice(0, -1);
   helm = helm.replace(phosphateRegExp, (match, group) => group);
   return `${HELM_WRAPPER.LEFT + helm + HELM_WRAPPER.RIGHT}`;

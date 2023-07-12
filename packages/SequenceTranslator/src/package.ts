@@ -24,18 +24,19 @@ class StPackage extends DG.Package {
   }
 
   public async initMonomerLib(): Promise<void> {
-    if (this._monomerLib === undefined) {
-      const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
-        'Initializing Sequence Translator monomer library ...');
-      try {
-        const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
-        this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
-      } catch (err: any) {
-        const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-        throw new Error('ST: Loading monomer library error: ' + errMsg);
-      } finally {
-        pi.close();
-      }
+    if (this._monomerLib !== undefined)
+      return;
+
+    const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
+      'Initializing Sequence Translator monomer library ...');
+    try {
+      const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
+      this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
+    } catch (err: any) {
+      const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
+      throw new Error('Sequence Translator: Loading monomer library error: ' + errMsg);
+    } finally {
+      pi.close();
     }
   }
 }
