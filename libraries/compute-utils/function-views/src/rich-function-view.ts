@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
+import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import {FileInput} from '../../shared-components/src/file-input';
@@ -78,29 +79,11 @@ export class RichFunctionView extends FunctionView {
   // scripting api events
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
-  public beforeRenderControlls = new Subject<true>();
-  public afterRenderControlls = new Subject<true>();
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
   public afterOutputSacalarTableRender = new Subject<HTMLElement>();
 
-  /*
-   * Will work only if called synchronously inside
-   * beforeRenderControlls subscriber.
-   */
-  public replaceControlls(div: HTMLElement) {
-    this.controllsDiv = div;
-  }
-
   get controlsDiv() {
     return this.controllsDiv;
-  }
-
-  /*
-   * Will work only if called synchronously inside
-   * beforeInputPropertyRender subscriber.
-   */
-  public addCustomObjectInput(div: HTMLElement) {
-    this.customObjectInput = div;
   }
 
   public getRunButton(name = 'Run') {
@@ -113,8 +96,63 @@ export class RichFunctionView extends FunctionView {
     return runButton;
   }
 
+  private getSaveButton(name = 'Save') {
+    const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+    $(saveButton).hide();
+
+    this.isUploadMode.subscribe((newValue) => {
+      if (newValue)
+        $(saveButton).show();
+      else
+        $(saveButton).hide();
+
+      if (this.runningOnInput) $(saveButton).hide();
+
+      this.buildRibbonPanels();
+    });
+
+    return saveButton;
+  }
+
+  private getStandardButtons(): HTMLElement[] {
+    const runButton = this.getRunButton();
+    const runButtonWrapper = ui.div([runButton]);
+    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    const saveButton = this.getSaveButton();
+
+    return [saveButton, runButtonWrapper];
+  }
+
   /**
-   * RichFunctionView has adavanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
+   * Override to change additional buttons placed between navigation and run buttons.
+   */
+  protected additionalBtns = ui.divH([]) as HTMLElement;
+  /**
+   * Changes additional buttons to provided ones.
+   * @param additionalBtns Array of HTML elements to place instead of the existing additional buttons.
+   */
+  public setAdditionalButtons(additionalBtns: HTMLElement[]) {
+    const additionalBtnsContainer = ui.divH(additionalBtns);
+    this.additionalBtns.replaceWith(additionalBtnsContainer);
+    this.additionalBtns = additionalBtnsContainer;
+  }
+
+  /**
+   * Override to change navigation buttons placed next to the additional buttons.
+   */
+  protected navBtns = ui.divH([]) as HTMLElement;
+  /**
+   * Changes navigation buttons to provided ones.
+   * @param navBtns Array of HTML elements to place instead of the existing navigation buttons.
+   */
+  public setNavigationButtons(navBtns: HTMLElement[]) {
+    const navBtnsContainer = ui.divH(navBtns);
+    this.navBtns.replaceWith(navBtnsContainer);
+    this.navBtns = navBtnsContainer;
+  }
+
+  /**
+   * RichFunctionView has advanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
    * This view is updated automatically when {@link this.funcCallReplaced} is emitted or any of input/output param changes.
    * @returns HTMLElement attached to the root of the view
    */
@@ -159,47 +197,30 @@ export class RichFunctionView extends FunctionView {
   public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
+    const standardButtons = this.getStandardButtons();
 
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const runButtonWrapper = ui.div([runButton]);
-      const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
-      $(saveButton).hide();
-
-      this.isUploadMode.subscribe((newValue) => {
-        if (newValue)
-          $(saveButton).show();
-        else
-          $(saveButton).hide();
-
-        if (this.runningOnInput) $(runButton).hide();
-
-        this.buildRibbonPanels();
-      });
-
-      ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([
-        saveButton,
-        runButtonWrapper as any,
-      ]);
-
-      $(this.controllsDiv).css({
-        'margin-top': '0px',
-        'position': 'sticky',
-      });
-      $(this.controllsDiv.lastChild).css({
-        'justify-content': 'space-between',
-      });
-      $(this.controllsDiv.firstChild).css({
-        'margin-right': '0px',
-      });
-      this.afterRenderControlls.next(true);
-    }
+    this.controllsDiv = ui.buttonsInput([
+      this.navBtns as any,
+      ui.divH([
+        this.additionalBtns,
+        ...standardButtons,
+      ], {style: {'gap': '5px'}}),
+    ]);
+    $(this.controllsDiv.firstChild).addClass('rfv-buttons-label');
+    $(this.controllsDiv).css({
+      'margin-top': '0px',
+      'position': 'sticky',
+    });
+    $(this.controllsDiv.lastChild).css({
+      'justify-content': 'space-between',
+    });
 
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
-    $(controlsWrapper).css('padding', '0px');
+    $(controlsWrapper).css({
+      'padding-left': '0px',
+      'padding-bottom': '0px',
+      'max-width': '100%',
+    });
 
     const form = ui.divV([
       inputFormDiv,
@@ -660,14 +681,10 @@ export class RichFunctionView extends FunctionView {
         }
         prevCategory = prop.category;
       });
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const buttonWrapper = ui.div([runButton]);
-      ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
-    };
+    const runButton = this.getRunButton();
+    const buttonWrapper = ui.div([runButton]);
+    ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
