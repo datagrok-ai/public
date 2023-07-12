@@ -494,7 +494,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const s = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree));
     const dialog = ui.dialog({title: 'Enter file name'});
     dialog
-    .add(ui.stringInput('Name', ''))
+    .add(ui.stringInput('Name', 'scaffold-tree'))
     .onOK(() => {
       DG.Utils.download(`${dialog.inputs[0].stringValue}.tree`, s);
       dialog.close();
