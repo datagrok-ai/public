@@ -21,6 +21,11 @@ export type OutputInfo = {
   row: number,
 };
 
+export type SensitivityAnalysisResult ={
+  funcEvalResults: DG.DataFrame,
+  funcCalls: DG.FuncCall[],
+};
+
 function getCellCoordinatesFromRow(df: DG.DataFrame, row: number): CellCoordinates[] {  
   const rowCount = df.rowCount;
   let idx: number = 0;

@@ -70,7 +70,7 @@ type SensitivityBoolStore = {
 type SensitivityConstStore = {
   prop: DG.Property,
   type: Exclude<DG.TYPE, DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT | DG.TYPE.BOOL>,
-} & InputValues
+} & InputValues;
 
 type SensitivityStore = SensitivityNumericStore | SensitivityBoolStore | SensitivityConstStore;
 
@@ -765,10 +765,10 @@ export class SensitivityAnalysisView {
     const analysisResults = await analysis.perform();
     this.closeOpenedViewers();
     const funcEvalResults = analysisResults.funcEvalResults;
+    const calledFuncCalls = analysisResults.funcCalls;
     const firstOrderIndeces = analysisResults.firstOrderSobolIndices;
     const totalOrderIndeces = analysisResults.totalOrderSobolIndices;
-    const outputNames = firstOrderIndeces.columns.names();
-    const evalDataframeNames = funcEvalResults.columns.names();
+    const outputNames = firstOrderIndeces.columns.names();    
     this.comparisonView.dataFrame = funcEvalResults;
     const colNamesToShow = funcEvalResults.columns.names();
     const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
@@ -776,6 +776,9 @@ export class SensitivityAnalysisView {
     // add columns with fixed inputs
     for (const col of fixedInputs)
       funcEvalResults.columns.add(col);
+
+    const ID_COLUMN_NAME = 'ID';
+    funcEvalResults.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)));
 
     // hide columns with fixed inputs
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
@@ -795,7 +798,8 @@ export class SensitivityAnalysisView {
           x: colNamesToShow[0],
           markerSize: 1,
           markerType: 'gradient',
-          sharex: true,multiAxis: true,
+          sharex: true,
+          multiAxis: true,
           multiAxisLegendPosition: "RightCenter",
       }));
       this.openedViewers.push(lineChart);
@@ -833,6 +837,53 @@ export class SensitivityAnalysisView {
     ));
 
     this.openedViewers = this.openedViewers.concat([bChartSobol1, bChartSobolT]);
+
+    this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      const selectedRunId = cell.tableRow?.get(ID_COLUMN_NAME);
+      const selectedRun = calledFuncCalls.find((call) => call.id === selectedRunId);
+
+      if (!selectedRun) return;
+
+      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
+      const scalarTable = DG.HtmlTable.create(
+        scalarParams,
+        (scalarVal: DG.FuncCallParam) =>
+          [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
+      ).root;
+
+      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
+      const dfPanes = dfParams.reduce((acc, param) => {
+        const configs = getPropViewers(param.property).config;
+
+        const dfValue = selectedRun.outputs[param.name];
+        const paneName = param.property.caption ?? param.property.name;
+        configs.map((config) => {
+          const viewerType = config['type'] as string;
+          const viewer = DG.Viewer.fromType(viewerType, dfValue);
+          viewer.setOptions(config);
+          $(viewer.root).css({'width': '100%'});
+          if (acc[paneName])
+            acc[paneName].push(viewer.root);
+          else acc[paneName] = [viewer.root];
+        });
+
+        return acc;
+      }, {} as {[name: string]: HTMLElement[]});
+
+      const overviewPanelConfig = {
+        'Output scalars': [scalarTable],
+        ...dfPanes,
+      };
+      const overviewPanel = ui.accordion();
+      $(overviewPanel.root).css({'width': '100%'});
+      Object.entries(overviewPanelConfig).map((e) => {
+        overviewPanel.addPane(e[0], () => ui.divV(e[1]));
+      });
+
+      grok.shell.o = overviewPanel.root;
+    });
   }
 
   private async runRandomAnalysis() {
@@ -890,15 +941,22 @@ export class SensitivityAnalysisView {
     }
 
     const analysis = new RandomAnalysis(options.func, options.fixedInputs, options.variedInputs, outputsOfInterest, options.samplesCount);
-    const funcEvalResults = await analysis.perform();
+    const analysiResults = await analysis.perform();
+    const funcEvalResults = analysiResults.funcEvalResults;
+    const calledFuncCalls = analysiResults.funcCalls;    
+
     this.closeOpenedViewers();
     this.comparisonView.dataFrame = funcEvalResults;
+    //this.comparisonView.grid.col(ID_COLUMN_NAME)!.visible = false;
     const colNamesToShow = funcEvalResults.columns.names();
     const fixedInputs = this.getFixedInputColumns(funcEvalResults.rowCount);
 
     // add columns with fixed inputs
     for (const col of fixedInputs)
       funcEvalResults.columns.add(col);
+
+    const ID_COLUMN_NAME = 'ID';
+    funcEvalResults.columns.add(DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)));
 
     // hide columns with fixed inputs
     this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
@@ -918,7 +976,8 @@ export class SensitivityAnalysisView {
           x: colNamesToShow[0],
           markerSize: 1,
           markerType: 'gradient',
-          sharex: true,multiAxis: true,
+          sharex: true,
+          multiAxis: true,
           multiAxisLegendPosition: "RightCenter",
       }));
       this.openedViewers.push(lineChart);
@@ -934,6 +993,53 @@ export class SensitivityAnalysisView {
       }));      
       this.openedViewers.push(scatterPlot);      
     }
+
+    this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      const selectedRunId = cell.tableRow?.get(ID_COLUMN_NAME);
+      const selectedRun = calledFuncCalls.find((call) => call.id === selectedRunId);
+
+      if (!selectedRun) return;
+
+      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
+      const scalarTable = DG.HtmlTable.create(
+        scalarParams,
+        (scalarVal: DG.FuncCallParam) =>
+          [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
+      ).root;
+
+      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
+      const dfPanes = dfParams.reduce((acc, param) => {
+        const configs = getPropViewers(param.property).config;
+
+        const dfValue = selectedRun.outputs[param.name];
+        const paneName = param.property.caption ?? param.property.name;
+        configs.map((config) => {
+          const viewerType = config['type'] as string;
+          const viewer = DG.Viewer.fromType(viewerType, dfValue);
+          viewer.setOptions(config);
+          $(viewer.root).css({'width': '100%'});
+          if (acc[paneName])
+            acc[paneName].push(viewer.root);
+          else acc[paneName] = [viewer.root];
+        });
+
+        return acc;
+      }, {} as {[name: string]: HTMLElement[]});
+
+      const overviewPanelConfig = {
+        'Output scalars': [scalarTable],
+        ...dfPanes,
+      };
+      const overviewPanel = ui.accordion();
+      $(overviewPanel.root).css({'width': '100%'});
+      Object.entries(overviewPanelConfig).map((e) => {
+        overviewPanel.addPane(e[0], () => ui.divV(e[1]));
+      });
+
+      grok.shell.o = overviewPanel.root;
+    });
   }
 
   private async runSimpleAnalysis() {

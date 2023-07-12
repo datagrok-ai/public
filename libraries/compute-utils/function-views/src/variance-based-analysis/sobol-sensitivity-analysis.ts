@@ -24,7 +24,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {VariedNumericalInputInfo, FixedInputItem, getVariedNumericalInputColumnsForSobolAnalysis} from './input-tools';
 import {checkSize, getCalledFuncCalls} from './utils';
-import {OutputInfo, getOutput} from './sa-outputs-routine'
+import {OutputInfo, getOutput, SensitivityAnalysisResult} from './sa-outputs-routine'
 
 type VariedNumericalInputValues = VariedNumericalInputInfo & {column: DG.Column};
 
@@ -43,11 +43,16 @@ type OutputDataFromUI = {
 
 const DEFAULT_VALUE_OF_SOBOL_INDEX = 0;
 
-export type ResultOfSobolAnalysis = {
+/*export type ResultOfSobolAnalysis = {
   funcEvalResults: DG.DataFrame,
   firstOrderSobolIndices: DG.DataFrame,
   totalOrderSobolIndices: DG.DataFrame
-};
+};*/
+
+export type ResultOfSobolAnalysis = {  
+  firstOrderSobolIndices: DG.DataFrame,
+  totalOrderSobolIndices: DG.DataFrame
+} & SensitivityAnalysisResult;
 
 export class SobolAnalysis {
   private samplesCount: number;
@@ -229,6 +234,7 @@ export class SobolAnalysis {
 
     return {
       funcEvalResults: funcEvalResults,
+      funcCalls: this.funcCalls,
       firstOrderSobolIndices: firstOrderSobolIndicesDF,
       totalOrderSobolIndices: totalOrderSobolIndicesDF
     };
