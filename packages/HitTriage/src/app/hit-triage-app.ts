@@ -1,13 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ITemplate} from './types';
+import {ITemplate, ITemplateIngest, IngestType} from './types';
 import {InfoView} from './views/info-view';
 import {HitTriageBaseView} from './views/base-view';
 import {ComputeView} from './views/compute-view';
 import {SubmitView} from './views/submit-view';
 import {v4 as uuidv4} from 'uuid';
 import {CampaignIdKey} from './consts';
+import {fileInputDialog} from './dialogs/file-input-dialog';
 
 export class HitTriageApp {
   template?: ITemplate;
@@ -22,6 +23,9 @@ export class HitTriageApp {
   private _filterViewName = 'Pick';
   private _campaignFilters?: {[key: string]: any}[];
   private _campaignId?: string;
+  private _dfName?: string;
+  private _molColName?: string;
+  private _fileInputType?: IngestType;
   protected _filterDescriptions: string[] = [];
   constructor() {
     this._infoView = new InfoView(this);
@@ -33,16 +37,31 @@ export class HitTriageApp {
     grok.shell.addView(this.multiView);
   }
 
-  public async setTemplate(template: ITemplate, presetFilters?: {[key: string]: any}[], campaignId?: string) {
+  public async setTemplate(template: ITemplate, presetFilters?: {[key: string]: any}[],
+    campaignId?: string, ingestProps?: ITemplateIngest) {
     if (!campaignId) {
       campaignId = uuidv4();
       modifyUrl(CampaignIdKey, campaignId);
+      const res = await fileInputDialog();
+      this.dataFrame = res.df;
+      this._fileInputType = res.type;
+    } else if (ingestProps) {
+      this._fileInputType = ingestProps.type;
+      if (ingestProps.type === 'File')
+        this.dataFrame = await grok.dapi.files.readCsv(ingestProps.query);
+      else
+        this.dataFrame = await grok.functions.call(ingestProps.query);
     }
+    if (!this.dataFrame) {
+      console.error('Dataframe is empty.');
+      return;
+    }
+    await this.dataFrame.meta.detectSemanticTypes();
+    this._molColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? undefined;
+    this._dfName = this.dataFrame.name ?? ingestProps?.query;
     this._campaignId = campaignId;
     this.template = template;
     this._campaignFilters = presetFilters;
-    const df = await grok.dapi.files.readCsv(template.ingest.query);
-    this.dataFrame = df;
     await this.dataFrame.meta.detectSemanticTypes();
     this._computeView ??= new ComputeView(this);
     this.multiView.addView(this._computeView.name, () => this._computeView!, !presetFilters);
@@ -57,6 +76,10 @@ export class HitTriageApp {
   get campaignId(): string | undefined {return this._campaignId;}
 
   get pickView(): DG.TableView {return this._pickView ??= this.getFilterView();}
+
+  get molColName(): string | undefined {return this._molColName;}
+
+  get fileInputType(): IngestType | undefined {return this._fileInputType;}
   /**
    * A view that lets you filter the molecules using either molecules, or
    * their properties derived at the enrichment step.
@@ -97,7 +120,7 @@ export class HitTriageApp {
     };
     return {
       'Template': this.template!.name,
-      'File path': ui.divH([ui.divText(this.template!.ingest.query), getStyledDownloadButton(
+      'File path': ui.divH([ui.divText(this._dfName ?? ''), getStyledDownloadButton(
         () => this.download(this.dataFrame!, 'molecules'))], {style: {alignItems: 'center'}}),
       'Number of molecules': this.dataFrame!.rowCount.toString(),
       'Enrichment methods': [this.template!.compute.descriptors.enabled ? 'descriptors' : '',

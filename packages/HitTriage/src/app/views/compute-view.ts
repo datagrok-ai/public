@@ -40,13 +40,13 @@ export class ComputeView extends HitTriageBaseView {
         const promises: Promise<any>[] = [];
         if (resultMap.descriptors && resultMap.descriptors.length > 0) {
           promises.push(
-            grok.chem.descriptors(this.app.dataFrame!, this.template.ingest.molColName, resultMap.descriptors,
+            grok.chem.descriptors(this.app.dataFrame!, this.app.molColName!, resultMap.descriptors,
             ));
         }
         Object.keys(resultMap.externals).forEach((funcName) => {
           const props = resultMap.externals[funcName];
           props['table'] = this.app.dataFrame!;
-          props['molecules'] = this.template.ingest.molColName;
+          props['molecules'] = this.app.molColName!;
           if (props)
             promises.push(grok.functions.call(funcName, props));
         });

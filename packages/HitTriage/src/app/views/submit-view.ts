@@ -6,6 +6,7 @@ import {HitTriageApp} from '../hit-triage-app';
 import {_package} from '../../package';
 import {ICampaign} from '../types';
 import {CampaignJsonName, CampaignTableName} from '../consts';
+import {saveCampaignDialog} from '../dialogs/save-campaign-dialog';
 
 export class SubmitView extends HitTriageBaseView {
   constructor(app: HitTriageApp) {
@@ -34,13 +35,14 @@ export class SubmitView extends HitTriageBaseView {
   }
 
   async submit(): Promise<any> {
-    const submitFname = this.app.template!.submit!.fName;
-    const submitFn = await grok.functions.find(submitFname);
+    const submitParams= this.app.template!.submit!;
+    const submitFn = DG.Func.find({name: submitParams.fName, package: submitParams.package})[0];
     if (!submitFn) {
-      grok.shell.error(`Function ${submitFname} not found.`);
+      grok.shell.error(`Function ${submitParams.fName} not found.`);
       return;
     }
-    await submitFn.apply({df: this.app.dataFrame, molecules: this.app.template?.ingest.molColName});
+    const filteredDf = DG.DataFrame.fromCsv(this.app.dataFrame!.toCsv({filteredRowsOnly: true}));
+    await submitFn.apply({df: filteredDf, molecules: this.app.molColName});
     grok.shell.info('Submitted successfully.');
   }
 
@@ -49,9 +51,17 @@ export class SubmitView extends HitTriageBaseView {
     const filters = this.app.filterSettings!;
     const templateName = this.app.template!.name;
     const enrichedDf = this.app.dataFrame!;
+    const campaignPrefix = `System:AppData/HitTriage/campaigns/${campaignId}/`;
+    const campaignName = await saveCampaignDialog(campaignId);
     const campaign: ICampaign = {
+      name: campaignName,
       templateName,
       filters: filters.slice(1), // TODO: because the first filter is chem substructure which does not work
+      ingest: {
+        type: 'File',
+        query: `${campaignPrefix}${CampaignTableName}`,
+        molColName: this.app.molColName!,
+      },
     };
     await _package.files.writeAsText(`campaigns/${campaignId}/${CampaignJsonName}`, JSON.stringify(campaign));
     await _package.files.writeAsText(`campaigns/${campaignId}/${CampaignTableName}`, enrichedDf.toCsv());

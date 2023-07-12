@@ -1,0 +1,48 @@
+{
+  "name": "Campaign Test",
+  "templateName": "Template 1",
+  "filters": [
+    {
+      "type": "histogram",
+      "column": "LogD",
+      "active": true,
+      "filterOutMissingValues": false,
+      "showMissingValuesOnly": false,
+      "showHistogram": true,
+      "showSlider": true,
+      "showMinMax": false,
+      "boolInput": null
+    },
+    {
+      "type": "histogram",
+      "column": "MW",
+      "active": true,
+      "filterOutMissingValues": false,
+      "showMissingValuesOnly": false,
+      "min": 376.0863662719727,
+      "max": 449.8478088378906,
+      "showHistogram": true,
+      "showSlider": true,
+      "showMinMax": false,
+      "boolInput": null
+    },
+    {
+      "type": "histogram",
+      "column": "PSA",
+      "active": true,
+      "filterOutMissingValues": false,
+      "showMissingValuesOnly": false,
+      "min": 51.512109491560196,
+      "max": 111.44999694824219,
+      "showHistogram": true,
+      "showSlider": true,
+      "showMinMax": false,
+      "boolInput": null
+    }
+  ],
+  "ingest": {
+    "type": "File",
+    "query": "System:AppData/HitTriage/campaigns/da45a44f-0101-4085-b947-50b4d3b10c98/enriched_table.csv",
+    "molColName": "smiles"
+  }
+}

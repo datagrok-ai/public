@@ -22,14 +22,28 @@ export async function demosmth() {
 //tags: HitTriageDataSource
 //output: dataframe result
 export async function demoFileIngest(): Promise<DG.DataFrame> {
-  return grok.data.demo.molecules(100);
+  const df = grok.data.demo.molecules(100);
+  df.name = '100 Molecules';
+  return df;
 }
 
 //name: Demo Molecules 5000
 //tags: HitTriageDataSource
 //output: dataframe result
 export async function demoFileIngest1(): Promise<DG.DataFrame> {
-  return grok.data.demo.molecules(5000);
+  const df = grok.data.demo.molecules(5000);
+  df.name = '5000 Molecules';
+  return df;
+}
+
+//name: Demo Molecules variable
+//input: int numberOfMolecules [Molecules count]
+//tags: HitTriageDataSource
+//output: dataframe result
+export async function demoFileIngest2(numberOfMolecules: number): Promise<DG.DataFrame> {
+  const df = grok.data.demo.molecules(numberOfMolecules);
+  df.name = 'Variable Molecules number';
+  return df;
 }
 
 //name: Demo File Submit
@@ -37,7 +51,7 @@ export async function demoFileIngest1(): Promise<DG.DataFrame> {
 //input: dataframe df [Dataframe]
 //input: string molecules [Molecules column name]
 export async function demoFileSubmit(df: DG.DataFrame, molecules: string): Promise<void> {
-  grok.shell.info(df.name);
+  grok.shell.info(df.rowCount);
   grok.shell.info(molecules);
 }
 

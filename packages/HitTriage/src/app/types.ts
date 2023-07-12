@@ -30,12 +30,11 @@ export type IComputeDialogResult = {
 
 export type ITemplate = {
     name: string,
-    ingest: ITemplateIngest,
     compute: ITemplateCompute,
     submit?: ITemplateSubmit,
 }
 
-type IngestType = 'File' | 'Function';
+export type IngestType = 'File' | 'Function';
 
 export type ITemplateIngest = {
     type: IngestType,
@@ -52,9 +51,12 @@ export type ITemplateCompute = {
 
 export type ITemplateSubmit = {
     fName: string,
+    package: string
 };
 
 export type ICampaign = {
+    name: string,
     templateName: string,
-    filters: {[key: string]: any}[]
+    filters: {[key: string]: any}[],
+    ingest: ITemplateIngest,
 };

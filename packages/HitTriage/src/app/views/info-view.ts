@@ -6,7 +6,7 @@ import {HitTriageBaseView} from './base-view';
 import {_package} from '../../package';
 import {ITemplate} from '../types';
 import {createTemplateDialog} from '../dialogs/templateDialog';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName} from '../consts';
+import {CampaignIdKey, CampaignJsonName} from '../consts';
 import {ICampaign} from '../types';
 
 export class InfoView extends HitTriageBaseView {
@@ -28,16 +28,16 @@ export class InfoView extends HitTriageBaseView {
     const wikiLink = ui.link('wiki', _package.webRoot + 'README.md');
     const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
 
-    const appDescription = ui.info([
+    const appDescription = ui.divV([
+      ui.h1('Process, analyse and filter molecules for your needs using Hit Triage:'),
       ui.list([
-        '-  ipsum lorem dolor sit amet, consectetur adipiscing elit, ut labore et dolore magna aliqua.',
-        '-  suscipit urna quis, placerat dui. Aliquam erat volutpat.',
-        '-  Mauris sit amet orci eleifend nunc viverra varius',
-        '-  Donec auctor, nunc vel tempor aliquam, nisl nunc ultricies nunc, quis aliquam nunc nunc nec nunc.',
-        '-  Maecenas vehicula nunc vel augue lobortis, ut ultrices nibh suscipit.',
-        '-  roin nec lectus tempus, ultrices eros auctor',
+        '-  Configure your own workflow using the template editor.',
+        '-  Calculate differnet molecular properties.',
+        '-  Filter molecules using different criteria.',
+        '-  Submit processed dataframe to the function of your choice.',
+        '-  Save campaigns and continue any time from where you left off.',
       ]),
-    ], 'Process, analyse and filter molecules for your needs using Hit Triage:',
+    ],
     );
 
     const templates = (await _package.files.list('templates')).map((file) => file.name.slice(0, -5));
@@ -48,6 +48,21 @@ export class InfoView extends HitTriageBaseView {
         this.app.setTemplate(templateJson);
       });
     }, '');
+
+    const campaignFolders = await _package.files.list('campaigns');
+    const campaignNamesMap: {[name: string]: string} = {};
+    for (const folder of campaignFolders) {
+      const campaignJson = JSON.parse(await _package.files
+        .readAsText(`campaigns/${folder.name}/${CampaignJsonName}`));
+      campaignNamesMap[campaignJson.name] = folder.name;
+    }
+    const campaignsInput = ui.choiceInput('Select campaign', Object.keys(campaignNamesMap)[0],
+      Object.keys(campaignNamesMap), null);
+    const useCampaignButton = ui.button('Continue campaign', () => {
+      const campaignId = campaignNamesMap[campaignsInput.value!];
+      const url = location.href.split('?')[0] + '?' + CampaignIdKey + '=' + campaignId;
+      location.href = url;
+    });
     this.root.appendChild(ui.divV([
       appDescription,
       ui.info([textLink]),
@@ -56,6 +71,11 @@ export class InfoView extends HitTriageBaseView {
         useTemplateButton,
         ui.button('Create new template', () => createTemplateDialog().then((t) => this.app.setTemplate(t)), ''),
       ]),
+      ui.divH([
+        campaignsInput.root,
+        useCampaignButton,
+      ]),
+      await this.getCampaignsTable(),
     ]));
   }
 
@@ -73,7 +93,21 @@ export class InfoView extends HitTriageBaseView {
     // Load the template and modify it
     const template: ITemplate = JSON.parse(await _package.files.readAsText(`templates/${campaign.templateName}.json`));
     // modify the template with path to the campaign's precalculated table
-    template.ingest.query = `System:AppData/HitTriage/campaigns/${campaignId}/${CampaignTableName}`;
-    this.app.setTemplate(template, campaign.filters, campaignId!);
+    this.app.setTemplate(template, campaign.filters, campaignId!, campaign.ingest);
+  }
+
+  private async getCampaignsTable() {
+    const campaignFolders = await _package.files.list('campaigns');
+    const campaignNamesMap: {[name: string]: ICampaign} = {};
+    for (const folder of campaignFolders) {
+      const campaignJson: ICampaign = JSON.parse(await _package.files
+        .readAsText(`campaigns/${folder.name}/${CampaignJsonName}`));
+      campaignNamesMap[campaignJson.name] = campaignJson;
+    }
+
+    const campaignsInfo = Object.values(campaignNamesMap).map((campaign) =>
+      ({name: campaign.name, template: campaign.templateName}));
+    const table = ui.table(campaignsInfo, (info) => ([info.name, info.template]), ['Campaign', 'Template']);
+    return table;
   }
 };

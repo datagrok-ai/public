@@ -107,6 +107,26 @@ export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
   return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
+//name: Chembl targets by organism
+//tags: HitTriageDataSource
+//input: int maxNumberOfMolecules = 1000 [Maximum number of rows to return]
+//input: string organism = "Shigella" [Organism name]
+//output: dataframe compounds
+export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number, organism: string): Promise<DG.DataFrame> {
+  const df = await grok.data.query('Chembl:_cbOfStructuresByOrganism', {maxNumberOfMolecules: maxNumberOfMolecules, organism: organism});
+  return df;
+}
+
+//name: Chembl Compounds
+//tags: HitTriageDataSource
+//input: int maxNumberOfMolecules = 1000 [Maximum number of rows to return]
+//output: dataframe compounds
+export async function getChemblCompounds(maxNumberOfMolecules: number): Promise<DG.DataFrame> {
+  const df = await grok.data.query('Chembl:_cbAllChemblNumberOfStructures', {maxNumberOfMolecules: maxNumberOfMolecules});
+  return df;
+}
+
+
 /*
 //name_: Chembl Browser
 //tags_: app

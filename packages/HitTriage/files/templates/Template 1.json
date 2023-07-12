@@ -1,10 +1,5 @@
 {
   "name": "Template 1",
-  "ingest": {
-    "type": "File",
-    "query": "System:AppData/HitTriage/samples/hits.csv",
-    "molColName": "Smiles"
-  },
   "compute": {
     "descriptors": {
       "enabled": false
@@ -21,6 +16,7 @@
     ]
   },
   "submit": {
-    "fName": "HitTriage:demoFileSubmit"
+    "package": "HitTriage",
+    "fName": "demoFileSubmit"
   }
 }
