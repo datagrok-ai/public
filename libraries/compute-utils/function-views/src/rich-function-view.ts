@@ -86,6 +86,8 @@ export class RichFunctionView extends FunctionView {
       runButton.disabled = !isValid;
     });
     this.subs.push(disabilitySub);
+
+    if (this.runningOnInput) $(runButton).hide();
     return runButton;
   }
 
@@ -94,15 +96,15 @@ export class RichFunctionView extends FunctionView {
     $(saveButton).hide();
 
     this.isUploadMode.subscribe((newValue) => {
+      this.buildRibbonPanels();
+      if (this.runningOnInput) return;
+
       if (newValue)
         $(saveButton).show();
       else
         $(saveButton).hide();
-
-      if (this.runningOnInput) $(saveButton).hide();
-
-      this.buildRibbonPanels();
     });
+    if (this.runningOnInput) $(saveButton).show();
 
     return saveButton;
   }
@@ -216,7 +218,7 @@ export class RichFunctionView extends FunctionView {
         outputFormDiv,
       ]: [],
       controlsForm,
-    ], 'ui-box');
+    ], 'ui-box rfv-form');
 
     this.isUploadMode.subscribe((newValue) => {
       if (newValue)
@@ -271,7 +273,7 @@ export class RichFunctionView extends FunctionView {
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...(this.hasUploadMode && this.isUploadMode.value) ? [save] : [],
+        ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
       ],
     ];
@@ -527,7 +529,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private renderOutputForm(): HTMLElement {
-    const outputs = ui.divV([], 'ui-form ui-form-wide');
+    const outputs = ui.divH([], 'ui-form ui-form-wide');
     $(outputs).css({
       'flex-wrap': 'wrap',
       'flex-grow': '0',
@@ -663,9 +665,6 @@ export class RichFunctionView extends FunctionView {
         }
         prevCategory = prop.category;
       });
-    const runButton = this.getRunButton();
-    const buttonWrapper = ui.div([runButton]);
-    ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
