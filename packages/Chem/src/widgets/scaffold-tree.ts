@@ -979,8 +979,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const notIcon = ui.iconFA('equals',
       () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
       'Exclude structures containing this scaffold');
-    //notIcon.onclick = (e) => e.stopImmediatePropagation();
-    //changes notIcon.onmousedown = (e) => e.stopImmediatePropagation();
+    notIcon.onclick = (e) => e.stopImmediatePropagation();
+    notIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const zoomIcon = ui.iconFA('search-plus');
     zoomIcon.onclick = (e) => e.stopImmediatePropagation();
