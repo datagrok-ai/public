@@ -236,16 +236,37 @@ M  END
     await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O', false, true);
   }, {timeout: 10800000});
 
+  test('search_withPatternFp_1M', async () => {
+    await performanceTestWithCreatedFp('Demo:Files/chem/smiles_1M_withPatternFp.zip');
+  }, {timeout: 10800000});
+
   async function performanceTestWithConsoleLog(molCol: DG.Column, query: string, 
     usePattern: boolean, useSubstructLib: boolean) {
     const startTime = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, useSubstructLib);
+    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false, useSubstructLib);
     const midTime1 = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, useSubstructLib);
+    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false, useSubstructLib);
     const midTime2 = performance.now();
 
     console.log(`Use patten fp: ${usePattern}, use SubstructLibrary: ${useSubstructLib}`)
     console.log(`first Call to substructure search took ${midTime1 - startTime} milliseconds`);
     console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
+  }
+
+  async function performanceTestWithCreatedFp(fileName: string) {
+      const df = await grok.data.files.openTable(fileName);
+      console.log(`Table ${fileName} opened`);
+      const rows = df.rowCount;
+      const colVersion = df.col("smiles")!.version;
+      df.col("smiles")!.setTag('.invalideted.for.version', `${colVersion + 3}`);
+      df.col("smiles")!.setTag('.Pattern.Version', `${colVersion + 3}`);
+      df.col("smiles")!.setTag('.canonical_smiles.Version', `${colVersion + 3}`);
+      const startTime = performance.now();
+      const res = await chemSubstructureSearchLibrary(df.col('smiles')!, 'c1ccccc1', '', true, false);
+      const benzeneTime = performance.now();
+      const res1 = await chemSubstructureSearchLibrary(df.col('smiles')!, 'c1ccc2ccccc2c1', '', true, false);
+      const twoBenzeneTime = performance.now();
+      console.log(`search for benzene in ${rows} rows took ${benzeneTime - startTime} milliseconds`);
+      console.log(`search for two benzene rings in ${rows} rows took ${twoBenzeneTime - benzeneTime} milliseconds`);
   }
 });

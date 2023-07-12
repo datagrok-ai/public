@@ -266,16 +266,16 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, usePatternFingerprints = false,
-  useSubstructLib?: boolean)
+  columnIsCanonicalSmiles = false, useSubstructLib?: boolean)
   : Promise<DG.BitSet> {
   await chemBeginCriticalSection();
   try {
     let matchesBitArray = new BitArray(molStringsColumn.length);
     if (molString.length != 0) {
       if (usePatternFingerprints) {
-        const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false, true);
+        const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false, !columnIsCanonicalSmiles);
         const fps = fgsResult.fps;
-        const smiles = fgsResult.smiles;
+        const smiles = columnIsCanonicalSmiles ? molStringsColumn.toList() : fgsResult.smiles;
         const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fps);
         const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(smiles!, filteredMolsIdxs);
         const searchResults: BitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);

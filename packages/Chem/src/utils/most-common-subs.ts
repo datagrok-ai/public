@@ -14,7 +14,7 @@ export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, e
   const rdkit = getRdKitModule();
   let mols;
   try {
-    mols = new rdkit.MolIterator();
+    mols = new rdkit.MolList();
 
     for (let i = 0; i < molecules.length; i++) {
       const molString = molecules.get(i);
