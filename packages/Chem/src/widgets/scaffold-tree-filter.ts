@@ -19,6 +19,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
     super();
     this.root = ui.divV([]);
     this.subs = this.viewer.subs;
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
+      this.viewer.clearFilters();
+    }));
   }
 
   get isFiltering(): boolean {

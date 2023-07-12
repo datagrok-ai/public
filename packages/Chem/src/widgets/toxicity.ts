@@ -4,7 +4,7 @@ import * as OCL from 'openchemlib/full';
 import {oclMol} from '../utils/chem-common-ocl';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {OCLService, riskLevels, riskTypes} from '../OCL-service';
+import {OCLService, riskLevels, riskTypes} from '../open-chem/ocl-service';
 import '../../css/chem.css';
 
 const riskColorCoding: {[index: string]: number} = {

@@ -4,7 +4,7 @@ import * as OCL from 'openchemlib/full';
 import {oclMol, renderDescription} from '../utils/chem-common-ocl';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {OCLService} from '../OCL-service';
+import {OCLService} from '../open-chem/ocl-service';
 import '../../css/chem.css';
 
 const _dlp = new OCL.DruglikenessPredictor();

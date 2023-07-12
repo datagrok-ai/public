@@ -416,6 +416,29 @@ export function isDialogPresent(dialogTitle: string): boolean {
   return false;
 }
 
+/** Expects an asynchronous {@link action} to throw an exception. Use {@link check} to perform
+ * deeper inspection of the exception if necessary.
+ * @param  {function(): Promise<void>} action
+ * @param  {function(any): boolean} check
+ * @return {Promise<void>}
+ */
+export async function expectExceptionAsync(action: () => Promise<void>,
+  check?: (exception: any) => boolean): Promise<void> {
+  let caught: boolean = false;
+  let checked: boolean = false;
+  try {
+    await action();
+  } catch (e) {
+    caught = true;
+    checked = !check || check(e);
+  } finally {
+    if (!caught)
+      throw new Error('An exception is expected but not thrown');
+    if (!checked)
+      throw new Error('An expected exception is thrown, but it does not satisfy the condition');
+  }
+}
+
 /**
  * Universal test for viewers. It search viewers in DOM by tags: canvas, svg, img, input, h1, a
  * @param  {string} v Viewer name
