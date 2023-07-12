@@ -38,9 +38,6 @@ export class RichFunctionView extends FunctionView {
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
 
-  private controllsDiv?: HTMLElement;
-  private customObjectInput?: HTMLElement;
-
   static fromFuncCall(
     funcCall: DG.FuncCall,
     options: {historyEnabled: boolean, isTabbed: boolean} =
@@ -82,10 +79,6 @@ export class RichFunctionView extends FunctionView {
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
   public afterOutputSacalarTableRender = new Subject<HTMLElement>();
 
-  get controlsDiv() {
-    return this.controllsDiv;
-  }
-
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
     const disabilitySub = this.checkDisability.subscribe(() => {
@@ -97,7 +90,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private getSaveButton(name = 'Save') {
-    const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+    const saveButton = ui.bigButton(name, async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
     $(saveButton).hide();
 
     this.isUploadMode.subscribe((newValue) => {
@@ -199,27 +192,21 @@ export class RichFunctionView extends FunctionView {
     const outputFormDiv = this.renderOutputForm();
     const standardButtons = this.getStandardButtons();
 
-    this.controllsDiv = ui.buttonsInput([
+    const controllsDiv = ui.buttonsInput([
       this.navBtns as any,
       ui.divH([
         this.additionalBtns,
         ...standardButtons,
       ], {style: {'gap': '5px'}}),
     ]);
-    $(this.controllsDiv.firstChild).addClass('rfv-buttons-label');
-    $(this.controllsDiv).css({
-      'margin-top': '0px',
-      'position': 'sticky',
-    });
-    $(this.controllsDiv.lastChild).css({
-      'justify-content': 'space-between',
-    });
+    $(controllsDiv).addClass('rfv-buttons');
 
-    const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
-    $(controlsWrapper).css({
+    const controlsForm = ui.div(controllsDiv, 'ui-form ui-form-wide');
+    $(controlsForm).css({
       'padding-left': '0px',
       'padding-bottom': '0px',
       'max-width': '100%',
+      'min-height': '50px',
     });
 
     const form = ui.divV([
@@ -228,7 +215,7 @@ export class RichFunctionView extends FunctionView {
         ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
-      controlsWrapper,
+      controlsForm,
     ], 'ui-box');
 
     this.isUploadMode.subscribe((newValue) => {
@@ -242,7 +229,7 @@ export class RichFunctionView extends FunctionView {
       inputBlock: form,
       inputForm: inputFormDiv,
       outputForm: outputFormDiv,
-      controlsWrapper,
+      controlsWrapper: controlsForm,
     };
   }
 
@@ -636,11 +623,6 @@ export class RichFunctionView extends FunctionView {
           });
           inputs.append(t.root);
           this.afterInputPropertyRender.next({prop, input: t});
-        } else if (prop.propertyType.toString() === DG.TYPE.OBJECT) {
-          if (this.customObjectInput) {
-            inputs.append(this.customObjectInput);
-            this.customObjectInput === null;
-          }
         } else {
           const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
@@ -684,7 +666,6 @@ export class RichFunctionView extends FunctionView {
     const runButton = this.getRunButton();
     const buttonWrapper = ui.div([runButton]);
     ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-    this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
@@ -851,9 +832,6 @@ export class RichFunctionView extends FunctionView {
     const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
     const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
     const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
-
-    const inputParams = [...lastCall.inputParams.values()];
-    const outputParams = [...lastCall.outputParams.values()];
 
     dfInputs.forEach((dfInput) => {
       const visibleTitle = dfInput.options.caption || dfInput.name;

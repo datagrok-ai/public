@@ -1,3 +1,12 @@
-.ui-form-condensed .rfv-buttons-label {
+.rfv-buttons {
+    margin-top: 0px;
+    position: sticky;
+}
+
+.ui-form-condensed .rfv-buttons > .ui-label {
     margin-right: 0px!important;
+}
+
+.ui-form .rfv-buttons > .ui-input-editor {
+    justify-content: space-between
 }
