@@ -166,7 +166,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   isEmptyOrMalformedValue(): boolean {
-    const malformed = !getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
+    const mol = getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
+    const malformed = !mol;
+    mol?.delete();
     const empty = !this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule);
     const moleculeError = malformed ? `Malformed` : empty ? `Empty` : '';
     if (moleculeError) {

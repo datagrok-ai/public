@@ -197,8 +197,9 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (options.straightenDepiction ?? true)
     !isMol ? mol.straighten_depiction(false) : mol.straighten_depiction(true);
 
+  let scaffoldMol: RDMol | null = null;
   try {
-    const scaffoldMol = scaffoldMolString == null ? null :
+    scaffoldMol = scaffoldMolString == null ? null :
       (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
         getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
@@ -218,6 +219,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
     context.putImageData(image, x, y);
   } finally {
     mol?.delete();
+    scaffoldMol?.delete();
   }
 }
 

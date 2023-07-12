@@ -221,6 +221,8 @@ function substructureSearchPatternsMatch(molString: string, querySmarts: string,
       return result;
     } catch (e: any) { 
      throw new Error(`Chem | Substructure Search failed with error: ${e.toString()}`);
+    } finally {
+      queryMol?.delete();
     }
   } else
     throw new Error(`Chem | Invalid search pattern: ${molString}`);
