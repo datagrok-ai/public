@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {addCopyIcon} from '../utils/ui-utils';
-import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../OCL-service';
+import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../open-chem/ocl-service';
 
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
