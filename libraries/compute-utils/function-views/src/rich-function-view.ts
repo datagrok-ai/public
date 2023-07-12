@@ -528,15 +528,25 @@ export class RichFunctionView extends FunctionView {
   // TODO: implement warn if really needed
   public setInput(name: string, value: any, state: 'default' | 'disabled' | 'warn' = 'disabled') {
     const input = this.getInput(name);
-    if (!input) {
+    if (!input)
       throw new Error(`No input named ${name}`);
-    }
+
     // input value will not be synced, since doesn't trigger on
     // onInput for inputBase
     this.funcCall.inputs[name] = value;
-    if (state === 'disabled') {
-      input.enabled = false;
+    this.setInputState(input, state);
+    if (state !== 'default') {
+      const param: DG.FuncCallParam = this.funcCall.inputParams[name];
+      param.property.options.editState = state;
     }
+  }
+
+  private setInputState(input: FuncCallInput, state?: string) {
+    if (state === 'disabled')
+      input.enabled = false;
+
+    if (state === 'default' || !state)
+      input.enabled = true;
   }
 
   private renderOutputForm(): HTMLElement {
@@ -657,6 +667,7 @@ export class RichFunctionView extends FunctionView {
       this.funcCall![field][name] = newValue;
       const newParam = this.funcCall[syncParams[field]][name];
       this.syncValOnChanged(t, newParam, field);
+      this.setInputState(t, newParam.property.options.editState);
     });
     this.subs.push(sub);
   }

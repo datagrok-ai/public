@@ -22,7 +22,7 @@ export class FileInput implements FuncCallInput<File>, InputWrapper<any> {
     return this.primaryInput.enabled;
   }
 
-  public set enbaled(val: boolean) {
+  public set enabled(val: boolean) {
     this.primaryInput.enabled = val;
   }
 
