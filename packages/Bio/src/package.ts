@@ -262,7 +262,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Bio | SAR | Activity Cliffs...
+//top-menu: Bio | Analyze | Activity Cliffs...
 //name: Sequence Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
@@ -356,7 +356,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Bio | Structure | Sequence Space...
+//top-menu: Bio | Analyze | Sequence Space...
 //name: Sequence Space
 //input: dataframe table
 //input: column molecules { semType: Macromolecule }
@@ -454,7 +454,7 @@ export async function sequenceSpaceTopMenu(
   } */
 };
 
-//top-menu: Bio | Atomic Level | To Atomic Level...
+//top-menu: Bio | Convert | To Atomic Level...
 //name: To Atomic Level
 //description: returns molfiles for each monomer from HELM library
 //input: dataframe df [Input data table]
@@ -477,8 +477,8 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
     grok.shell.warning(ui.list(atomicLevelRes.warnings));
 }
 
-//top-menu: Bio | Alignment | MSA...
-//name: MSA...
+//top-menu: Bio | Analyze | MSA...
+//name: MSA
 //tags: bio, panel
 export function multipleSequenceAlignmentDialog(): void {
   multipleSequenceAlignmentUI();
@@ -495,7 +495,7 @@ export async function alignSequences(sequenceCol: DG.Column<string> | null = nul
   return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol});
 }
 
-//top-menu: Bio | Structure | Composition Analysis
+//top-menu: Bio | Analyze | Composition
 //name: Composition Analysis
 //meta.icon: files/icons/composition-analysis.svg
 //output: viewer result
@@ -554,7 +554,7 @@ export async function compositionAnalysis(): Promise<void> {
   await handler(col);
 }
 
-//top-menu: Bio | Atomic Level | SDF to JSON Library...
+//top-menu: Bio | Convert | SDF to JSON Library...
 //name: SDF to JSON Library
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
@@ -595,7 +595,7 @@ export function importBam(fileContent: string): DG.DataFrame [] {
   return [];
 }
 
-//top-menu: Bio | Convert...
+//top-menu: Bio | Convert | Notation...
 //name: convertDialog
 export function convertDialog() {
   const col = getMacromoleculeColumn();
@@ -675,7 +675,7 @@ export function SplitToMonomersEditor(call: DG.FuncCall): void {
     .show();
 }
 
-//top-menu: Bio | Split to Monomers
+//top-menu: Bio | Convert | Split to Monomers...
 //name: Split to Monomers
 //input: dataframe table
 //input: column sequence { semType: Macromolecule }
@@ -702,7 +702,7 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
 }
 
-//top-menu: Bio | Search | Similarity Search
+//top-menu: Bio | Search | Similarity
 //name: similaritySearch
 //description: finds the most similar sequence
 //output: viewer result
@@ -720,7 +720,7 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
 }
 
-//top-menu: Bio | Search | Diversity Search
+//top-menu: Bio | Search | Diversity
 //name: diversitySearch
 //description: finds the most diverse molecules
 //output: viewer result
@@ -730,7 +730,7 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//top-menu: Bio | Structure | Substructure Search ...
+//top-menu: Bio | Search | Substructure...
 //name: bioSubstructureSearch
 export function bioSubstructureSearch(): void {
   const col = getMacromoleculeColumn();
