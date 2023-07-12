@@ -107,6 +107,11 @@ export class SurfacePlot extends EChartViewer {
         },
         axisLabel: {
           show: true,
+          formatter: (val: any) => {
+            if (typeof val === 'number' && !Number.isInteger(val))
+              return val.toFixed(2);
+            return val;
+          },
         },
       },
       series: [
