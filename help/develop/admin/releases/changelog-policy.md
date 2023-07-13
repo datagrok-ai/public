@@ -18,7 +18,7 @@ As a software developer, it is your responsibility to maintain a clean and clear
    <details>
    <summary>Example</summary>
    
-   ## 1.3.6 - 2023-06-31
+   ## 97.89.83 (2023-06-31)
    
    This release focuses on improving data access speed and convenience, 
    new visualization and usability features, and ensuring platform stability.
@@ -81,7 +81,7 @@ As a software developer, it is your responsibility to maintain a clean and clear
 ```markdown
 # `<PACKAGE NAME>` changelog
 
-## X.X.X - YYYY-MM-DD
+## X.X.X (YYYY-MM-DD)
 
 This release focuses on improving feature stability and usability.
 
@@ -107,7 +107,7 @@ This release focuses on improving feature stability and usability.
 
 # `<PACKAGE NAME>` changelog
 
-## X.X.X - YYYY-MM-DD
+## X.X.X (YYYY-MM-DD)
 
 This release focuses on improving feature stability and usability.
 
