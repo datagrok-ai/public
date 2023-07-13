@@ -37,12 +37,12 @@ def mol_add_collection(mol: Mol,
     """
     res: str = Chem.MolToMolBlock(mol, forceV3000=True)  # MolToMolFile
 
-    mb_line_list: list[str] = res.split('\n')
+    molblock_line_list: list[str] = res.split('\n')
     if title:
-        mb_line_list[1] = title
+        molblock_line_list[1] = title
 
-    if name and name not in mb_line_list[1]:
-        mb_line_list[1] += '|' + name
+    if name and name not in molblock_line_list[1]:
+        molblock_line_list[1] += '|' + name
 
     chirality = [atom.GetChiralTag() for atom in mol.GetAtoms()]
 
@@ -53,6 +53,8 @@ def mol_add_collection(mol: Mol,
         src_mol_file_map = MolFileMap.parse(src_mol)
         if len(tgt_mol_file_map.mol_file.atom_list) != len(src_mol_file_map.mol_file.atom_list):
             raise ValueError(f"Atoms count of src and tgt differs for monomer '{name}'.")
+
+        # restore bond cfg values lost/transformed by rdkit
         for (src_bond_idx0, (bond_key, src_bond)) in enumerate(src_mol_file_map.mol_file.bonds.items()):
             if src_bond.cfg:
                 if bond_key not in tgt_mol_file_map.mol_file.bonds:
@@ -61,17 +63,30 @@ def mol_add_collection(mol: Mol,
                 tgt_bond_cfg_str: str = ' '.join(tgt_bond.cfg)
                 src_bond_cfg_str: str = ' '.join(src_bond.cfg)
                 if tgt_bond_cfg_str != src_bond_cfg_str:
-                    mb_line_list[tgt_mol_file_map.begin_bond_idx + tgt_bond.bond_idx] += f" {src_bond_cfg_str}"
+                    molblock_line_list[tgt_mol_file_map.begin_bond_idx + tgt_bond.bond_idx] += f" {src_bond_cfg_str}"
+
+
+        # remove bond cfg values added by rdkit
+        for (tgt_bond_idx0, (bond_key, tgt_bond)) in enumerate(tgt_mol_file_map.mol_file.bonds.items()):
+            if tgt_bond.cfg:
+                if bond_key not in src_mol_file_map.mol_file.bonds:
+                    raise KeyError(f"Bond key '{bond_key}' not found in src bonds.")
+                src_bond: MolFileBond = src_mol_file_map.mol_file.bonds[bond_key]
+                src_bond_cfg_str: str = ' '.join(src_bond.cfg)
+                tgt_bond_cfg_str: str = ' '.join(tgt_bond.cfg)
+                if tgt_bond_cfg_str != src_bond_cfg_str:
+                    new_line = molblock_line_list[tgt_mol_file_map.begin_bond_idx + tgt_bond.bond_idx].replace(tgt_bond_cfg_str, "")
+                    molblock_line_list[tgt_mol_file_map.begin_bond_idx + tgt_bond.bond_idx] = new_line
 
         for (tgt_atom_idx0, tgt_atom) in enumerate(tgt_mol_file_map.mol_file.atom_list):
             src_atom = src_mol_file_map.mol_file.atom_list[tgt_atom_idx0]
-            atom_ch = chirality[tgt_atom_idx0]
+            atom_chirality = chirality[tgt_atom_idx0]
             if src_atom.cfg:
-                mb_line_list[tgt_mol_file_map.begin_atom_idx + tgt_atom_idx0 + 1] += " {0}".format(
+                molblock_line_list[tgt_mol_file_map.begin_atom_idx + tgt_atom_idx0 + 1] += " {0}".format(
                     ' '.join(src_atom.cfg))
                 steabs.append(tgt_atom_idx0 + 1)
-            elif atom_ch != Chem.rdchem.CHI_UNSPECIFIED:
-                mb_line_list[tgt_mol_file_map.begin_atom_idx + tgt_atom_idx0 + 1] += " CFG={0}".format(int(atom_ch))
+            elif atom_chirality != Chem.rdchem.CHI_UNSPECIFIED:
+                molblock_line_list[tgt_mol_file_map.begin_atom_idx + tgt_atom_idx0 + 1] += " CFG={0}".format(int(atom_chirality))
                 steabs.append(tgt_atom_idx0 + 1)
             elif src_atom.atom_idx in src_mol_file_map.mol_file.collection_steabs:
                 raise KeyError(f"Source STEABS atom '{src_atom}' not accounted")
@@ -83,19 +98,19 @@ def mol_add_collection(mol: Mol,
             count=len(steabs),
             list=' '.join([str(idx) for idx in steabs]))
         if tgt_mol_file_map.collection_steabs_idx:
-            mb_line_list[tgt_mol_file_map.collection_steabs_idx] = steabs_str
+            molblock_line_list[tgt_mol_file_map.collection_steabs_idx] = steabs_str
         elif tgt_mol_file_map.begin_collection_idx is not None:
             tgt_collection_steabs_idx = tgt_mol_file_map.begin_collection_idx + 1
-            mb_line_list = mb_line_list[:tgt_collection_steabs_idx] + \
+            molblock_line_list = molblock_line_list[:tgt_collection_steabs_idx] + \
                            [steabs_str] + \
-                           mb_line_list[tgt_collection_steabs_idx:]
+                           molblock_line_list[tgt_collection_steabs_idx:]
         else:
             tgt_collection_idx = tgt_mol_file_map.end_bond_idx + 1
-            mb_line_list = mb_line_list[:tgt_collection_idx] + \
+            molblock_line_list = molblock_line_list[:tgt_collection_idx] + \
                            [BEGIN_COLLECTION_LINE, steabs_str, END_COLLECTION_LINE] + \
-                           mb_line_list[tgt_collection_idx:]
+                           molblock_line_list[tgt_collection_idx:]
 
-    return '\n'.join(mb_line_list)
+    return '\n'.join(molblock_line_list)
 
 
 def prepare_molblock(src_molblock: str, name: str) -> str:
