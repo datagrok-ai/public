@@ -1,13 +1,7 @@
-export type KeyToValue = {[key: string]: string};
+type KeyToValue = {[key: string]: string};
 
 export type Edges = {
   [key: string]: KeyToValue
-}
-
-export type FormatDict = {
-  [sourceFormat: string]: {
-    [targetFormat: string]: KeyToValue | Edges
-  }
 }
 
 export type AxolabsStyle = {

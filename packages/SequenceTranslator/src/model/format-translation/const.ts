@@ -3,6 +3,4 @@ export const GROUP_TYPE = {
   LINKAGE: 'phosphateBackbone',
 } as const;
 
-export const EDGES = 'edges';
-export const CENTER = 'center';
-export const PHOSPHATE = 'p';
+export const PHOSPHATE_SYMBOL = 'p';

@@ -1,9 +1,8 @@
 import * as DG from 'datagrok-api/dg';
-import {sortByReverseLength} from '../helpers';
 import {DEFAULT_FORMATS} from '../const';
-import {GROUP_TYPE, EDGES, CENTER, PHOSPHATE} from './const';
-import {KeyToValue, CodesInfo} from '../data-loading-utils/types';
-import {formatDictionary, codesToHelmDictionary} from '../data-loading-utils/json-loader';
+import {GROUP_TYPE, PHOSPHATE_SYMBOL} from './const';
+import {CodesInfo} from '../data-loading-utils/types';
+import {codesToHelmDictionary} from '../data-loading-utils/json-loader';
 
 const HELM_WRAPPER = {
   LEFT: 'RNA1{',
@@ -93,7 +92,7 @@ function formatToHelm(sequence: string, sourceFormat: string): string {
     new Set(Object.values(codesInfoObject[GROUP_TYPE.LINKAGE]))
   ).sort(sortCallback);
   const phosphateHELMPattern = getRegExpPattern(phosphateHELMCodes);
-  const phosphateRegExp = new RegExp(`${PHOSPHATE}\.(${phosphateHELMPattern})`, 'g');
+  const phosphateRegExp = new RegExp(`${PHOSPHATE_SYMBOL}\.(${phosphateHELMPattern})`, 'g');
 
   let helm = sequence.replace(formatRegExp, (match) => {
     const result = formatCodes.includes(match) ?  dict[match] + '.' : '?';
@@ -101,7 +100,7 @@ function formatToHelm(sequence: string, sourceFormat: string): string {
   });
   helm = helm.replace(/\?+/g, '<?>.');
   helm = helm.slice(0, -1); // strip last dot
-  if (helm[helm.length - 1] === PHOSPHATE)
+  if (helm[helm.length - 1] === PHOSPHATE_SYMBOL)
     helm = helm.slice(0, -1);
   helm = helm.replace(phosphateRegExp, (match, group) => group);
   return `${HELM_WRAPPER.LEFT + helm + HELM_WRAPPER.RIGHT}`;
