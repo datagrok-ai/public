@@ -240,10 +240,17 @@ export class RichFunctionView extends FunctionView {
       'min-height': '50px',
     });
 
+    const experimentalDataSwitch = ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v));
+    this.isUploadMode.subscribe((newValue) => {
+      experimentalDataSwitch.notify = false;
+      experimentalDataSwitch.value = newValue,
+      experimentalDataSwitch.notify = true;
+    });
+
     const form = ui.divV([
       inputFormDiv,
       ...this.hasUploadMode ? [
-        ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
+        ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
       controlsForm,
