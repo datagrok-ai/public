@@ -106,6 +106,7 @@ Every Docker container has information about the version and branch it was built
 
 ## More information
 
+- [Changelog policy](changelog-policy.md)
 - [Release History](release-history.md)
 - [Quality assurance](../quality-assurance.md)
 - [CI/CD Flow](ci-flow.mdx)
