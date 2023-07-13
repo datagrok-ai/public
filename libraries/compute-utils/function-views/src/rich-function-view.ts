@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
+import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import {startWith} from 'rxjs/operators';
@@ -48,9 +49,6 @@ export class RichFunctionView extends FunctionView {
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
-
-  private controllsDiv?: HTMLElement;
-
   private inputsOverride: Record<string, FuncCallInput> = {};
   private inputsMap: Record<string, FuncCallInput> = {};
 
@@ -94,25 +92,9 @@ export class RichFunctionView extends FunctionView {
   // regular and experimental inputs
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
-  // input run buttons
-  public beforeRenderControlls = new Subject<true>();
-  public afterRenderControlls = new Subject<true>();
-  // output viewers
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
   // output scalars table
   public afterOutputSacalarTableRender = new Subject<HTMLElement>();
-
-  /*
-   * Will work only if called synchronously inside
-   * beforeRenderControlls subscriber.
-   */
-  public replaceControlls(div: HTMLElement) {
-    this.controllsDiv = div;
-  }
-
-  get controlsDiv() {
-    return this.controllsDiv;
-  }
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
@@ -121,6 +103,8 @@ export class RichFunctionView extends FunctionView {
       runButton.disabled = !isValid;
     });
     this.subs.push(disabilitySub);
+
+    if (this.runningOnInput) $(runButton).hide();
     return runButton;
   }
 
@@ -136,8 +120,63 @@ export class RichFunctionView extends FunctionView {
     }));
   }
 
+  private getSaveButton(name = 'Save') {
+    const saveButton = ui.bigButton(name, async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+    $(saveButton).hide();
+
+    this.isUploadMode.subscribe((newValue) => {
+      this.buildRibbonPanels();
+      if (this.runningOnInput) return;
+
+      if (newValue)
+        $(saveButton).show();
+      else
+        $(saveButton).hide();
+    });
+    if (this.runningOnInput) $(saveButton).show();
+
+    return saveButton;
+  }
+
+  private getStandardButtons(): HTMLElement[] {
+    const runButton = this.getRunButton();
+    const runButtonWrapper = ui.div([runButton]);
+    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    const saveButton = this.getSaveButton();
+
+    return [saveButton, runButtonWrapper];
+  }
+
   /**
-   * RichFunctionView has adavanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
+   * Override to change additional buttons placed between navigation and run buttons.
+   */
+  protected additionalBtns = ui.divH([]) as HTMLElement;
+  /**
+   * Changes additional buttons to provided ones.
+   * @param additionalBtns Array of HTML elements to place instead of the existing additional buttons.
+   */
+  public setAdditionalButtons(additionalBtns: HTMLElement[]) {
+    const additionalBtnsContainer = ui.divH(additionalBtns);
+    this.additionalBtns.replaceWith(additionalBtnsContainer);
+    this.additionalBtns = additionalBtnsContainer;
+  }
+
+  /**
+   * Override to change navigation buttons placed next to the additional buttons.
+   */
+  protected navBtns = ui.divH([]) as HTMLElement;
+  /**
+   * Changes navigation buttons to provided ones.
+   * @param navBtns Array of HTML elements to place instead of the existing navigation buttons.
+   */
+  public setNavigationButtons(navBtns: HTMLElement[]) {
+    const navBtnsContainer = ui.divH(navBtns);
+    this.navBtns.replaceWith(navBtnsContainer);
+    this.navBtns = navBtnsContainer;
+  }
+
+  /**
+   * RichFunctionView has advanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
    * This view is updated automatically when {@link this.funcCallReplaced} is emitted or any of input/output param changes.
    * @returns HTMLElement attached to the root of the view
    */
@@ -182,47 +221,24 @@ export class RichFunctionView extends FunctionView {
   public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
+    const standardButtons = this.getStandardButtons();
 
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const runButtonWrapper = ui.div([runButton]);
-      const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
-      $(saveButton).hide();
+    const controllsDiv = ui.buttonsInput([
+      this.navBtns as any,
+      ui.divH([
+        this.additionalBtns,
+        ...standardButtons,
+      ], {style: {'gap': '5px'}}),
+    ]);
+    $(controllsDiv).addClass('rfv-buttons');
 
-      this.isUploadMode.subscribe((newValue) => {
-        if (newValue)
-          $(saveButton).show();
-        else
-          $(saveButton).hide();
-
-        if (this.runningOnInput) $(runButton).hide();
-
-        this.buildRibbonPanels();
-      });
-
-      ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([
-        saveButton,
-        runButtonWrapper as any,
-      ]);
-
-      $(this.controllsDiv).css({
-        'margin-top': '0px',
-        'position': 'sticky',
-      });
-      $(this.controllsDiv.lastChild).css({
-        'justify-content': 'space-between',
-      });
-      $(this.controllsDiv.firstChild).css({
-        'margin-right': '0px',
-      });
-      this.afterRenderControlls.next(true);
-    }
-
-    const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
-    $(controlsWrapper).css('padding', '0px');
+    const controlsForm = ui.div(controllsDiv, 'ui-form ui-form-wide');
+    $(controlsForm).css({
+      'padding-left': '0px',
+      'padding-bottom': '0px',
+      'max-width': '100%',
+      'min-height': '50px',
+    });
 
     const form = ui.divV([
       inputFormDiv,
@@ -230,8 +246,8 @@ export class RichFunctionView extends FunctionView {
         ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
-      controlsWrapper,
-    ], 'ui-box');
+      controlsForm,
+    ], 'ui-box rfv-form');
 
     this.isUploadMode.subscribe((newValue) => {
       if (newValue)
@@ -244,7 +260,7 @@ export class RichFunctionView extends FunctionView {
       inputBlock: form,
       inputForm: inputFormDiv,
       outputForm: outputFormDiv,
-      controlsWrapper,
+      controlsWrapper: controlsForm,
     };
   }
 
@@ -286,7 +302,7 @@ export class RichFunctionView extends FunctionView {
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...(this.hasUploadMode && this.isUploadMode.value) ? [save] : [],
+        ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
       ],
     ];
@@ -829,9 +845,6 @@ export class RichFunctionView extends FunctionView {
     const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
     const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
     const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
-
-    const inputParams = [...lastCall.inputParams.values()];
-    const outputParams = [...lastCall.outputParams.values()];
 
     dfInputs.forEach((dfInput) => {
       const visibleTitle = dfInput.options.caption || dfInput.name;
