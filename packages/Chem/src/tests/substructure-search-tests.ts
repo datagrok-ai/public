@@ -237,7 +237,18 @@ M  END
   }, {timeout: 10800000});
 
   test('search_withPatternFp_1M', async () => {
-    await performanceTestWithCreatedFp('Demo:Files/chem/smiles_1M_withPatternFp.zip');
+    if (DG.Test.isInBenchmark)
+      await performanceTestWithCreatedFp('Demo:Files/chem/smiles_1M_withPatternFp.d42', 'smiles');
+  }, {timeout: 10800000});
+
+  test('search_withPatternFp_Chembl', async () => {
+    if (DG.Test.isInBenchmark)
+      await performanceTestWithCreatedFp('Demo:Files/chem/smiles_Chembl_withPatternFp.d42', 'canonical_smiles');
+  }, {timeout: 10800000});
+
+  test('search_withPatternFp_5M', async () => {
+    if (DG.Test.isInBenchmark)
+      await performanceTestWithCreatedFp('Demo:Files/chem/smiles_5M_withPatternFp.d42', 'canonical_smiles');
   }, {timeout: 10800000});
 
   async function performanceTestWithConsoleLog(molCol: DG.Column, query: string, 
@@ -253,18 +264,18 @@ M  END
     console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
   }
 
-  async function performanceTestWithCreatedFp(fileName: string) {
+  async function performanceTestWithCreatedFp(fileName: string, colName: string) {
       const df = await grok.data.files.openTable(fileName);
       console.log(`Table ${fileName} opened`);
       const rows = df.rowCount;
-      const colVersion = df.col("smiles")!.version;
-      df.col("smiles")!.setTag('.invalideted.for.version', `${colVersion + 3}`);
-      df.col("smiles")!.setTag('.Pattern.Version', `${colVersion + 3}`);
-      df.col("smiles")!.setTag('.canonical_smiles.Version', `${colVersion + 3}`);
+      const colVersion = df.col(colName)!.version;
+      df.col(colName)!.setTag('.invalideted.for.version', `${colVersion + 3}`);
+      df.col(colName)!.setTag('.Pattern.Version', `${colVersion + 3}`);
+      df.col(colName)!.setTag('.canonical_smiles.Version', `${colVersion + 3}`);
       const startTime = performance.now();
-      const res = await chemSubstructureSearchLibrary(df.col('smiles')!, 'c1ccccc1', '', true, false);
+      const res = await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccccc1', '', true, false);
       const benzeneTime = performance.now();
-      const res1 = await chemSubstructureSearchLibrary(df.col('smiles')!, 'c1ccc2ccccc2c1', '', true, false);
+      const res1 = await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccc2ccccc2c1', '', true, false);
       const twoBenzeneTime = performance.now();
       console.log(`search for benzene in ${rows} rows took ${benzeneTime - startTime} milliseconds`);
       console.log(`search for two benzene rings in ${rows} rows took ${twoBenzeneTime - benzeneTime} milliseconds`);
