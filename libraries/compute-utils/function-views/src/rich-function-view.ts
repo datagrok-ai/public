@@ -121,7 +121,6 @@ export class RichFunctionView extends FunctionView {
 
   private getSaveButton(name = 'Save') {
     const saveButton = ui.bigButton(name, async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
-    $(saveButton).hide();
 
     this.isUploadMode.subscribe((newValue) => {
       this.buildRibbonPanels();
@@ -132,7 +131,7 @@ export class RichFunctionView extends FunctionView {
       else
         $(saveButton).hide();
     });
-    if (this.runningOnInput) $(saveButton).show();
+    if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
 
     return saveButton;
   }
