@@ -26,19 +26,16 @@ As a software developer, it is your responsibility to maintain a clean and clear
    *Dependency: datgarok-api >= Y.Y.Y*
 
    </details>
-3. Group the changes by type, such as New, Improved, Fixed, Breaking change. 
+3. Group the changes by type, such as Features (all improvements also go here), Bug Fixes, Breaking change. 
    <details>
    <summary>Example</summary>
 
-   ### New
+   ### Features
 
    * Added [logger for packages](https://datagrok.ai/help/develop/advanced/debugging#logger) to report debug records to the server
-
-   ### Improved
-   
    * [#1988](https://github.com/datagrok-ai/public/issues/1988): Improved the ability to resize a legend on [Trellis Plot](https://datagrok.ai/help/visualize/viewers/trellis-plot)
    
-   ### Fixed
+   ### Bug Fixes
 
    * [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views
 
@@ -90,15 +87,12 @@ This release focuses on improving feature stability and usability.
 
 *Dependency: datgarok-api >= Y.Y.Y*
 
-### Added
+### Features
 
 * New [super cool feature](https://datagrok.ai/help/super-cool-feature)
-
-### Improved
-
 * Moved Feature from the Context Pane to the Top Menu ( Feature > Calculate).
 
-### Fixed
+### Bug Fixes
 
 * [#123](https://github.com/datagrok-ai/public/issues/123) Fixed very nasty bug in feature
 
@@ -119,15 +113,12 @@ This release focuses on improving feature stability and usability.
 
 *Dependency: datagrok-api >= Y.Y.Y*
 
-### Added
+### Features
 
 * New [super cool feature](https://datagrok.ai/help/super-cool-feature)
-
-### Improved
-
 * Moved Feature from the Context Pane to the Top Menu ( Feature > Calculate).
 
-### Fixed
+### Bug Fixes
 
 * [#123](https://github.com/datagrok-ai/public/issues/123) Fixed very nasty bug in feature
 
