@@ -15,13 +15,16 @@ import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 import {FuncCallInput} from '../../shared-components/src/FuncCallInput';
+import {FileInput} from '../../shared-components/src/file-input';
 
 const FILE_INPUT_TYPE = 'file';
 
 export type InputVariants = DG.InputBase | FuncCallInput;
 
 function isInputBase(input: FuncCallInput): input is DG.InputBase {
-  return input instanceof DG.InputBase;
+  const inputAny = input as any;
+  return input instanceof FileInput ||
+    (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
 }
 
 export interface AfterInputRenderPayload {

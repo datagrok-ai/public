@@ -26,6 +26,14 @@ export class FileInput implements FuncCallInput<File>, InputWrapper<any> {
     this.primaryInput.enabled = val;
   }
 
+  public get input() {
+    return this.primaryInput;
+  }
+
+  public get captionLabel() {
+    return this.primaryInput.captionLabel;
+  }
+
   // HTML root of component
   public root = ui.div();
   // Validation object
