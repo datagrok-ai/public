@@ -708,9 +708,9 @@ export class RichFunctionView extends FunctionView {
     const name = val.name;
     // don't use val directly, get a fresh one, since it will be replaced with fc
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      const newValue = this.funcCall![field][name] ?? prop.defaultValue ?? null;
+      const newValue = this.funcCall[field][name] ?? prop.defaultValue ?? null;
       t.value = newValue;
-      this.funcCall![field][name] = newValue;
+      this.funcCall[field][name] = newValue;
       const newParam = this.funcCall[syncParams[field]][name];
       this.syncValOnChanged(t, newParam, field);
       this.setInputState(t, newParam.aux.editState);
@@ -720,7 +720,7 @@ export class RichFunctionView extends FunctionView {
 
   private syncValOnChanged(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
     const sub = val.onChanged.subscribe(() => {
-      const newValue = this.funcCall![field][val.name];
+      const newValue = this.funcCall[field][val.name];
       // there is no notify for DG.FuncCallParam, so we need to
       // check if the value is not the same for floats, otherwise we
       // will overwrite a user input with a lower precicsion decimal
@@ -746,7 +746,7 @@ export class RichFunctionView extends FunctionView {
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
     t.onInput(() => {
-      this.funcCall![field][val.name] = t.value;
+      this.funcCall[field][val.name] = t.value;
       if (isInputBase(t)) {
         if (t.value === null)
           setTimeout(() => t.input.classList.add('d4-invalid'), 100);
