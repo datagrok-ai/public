@@ -37,10 +37,15 @@ export interface AfterOutputRenderPayload {
   output: DG.Viewer;
 }
 
-type SyncFields = 'inputs' | 'outputs';
+enum SYNC_FIELD {
+  INPUTS = 'inputs',
+  OUTPUTS = 'outputs'
+}
+
+type SyncFields = SYNC_FIELD.INPUTS | SYNC_FIELD.OUTPUTS;
 const syncParams = {
-  'inputs': 'inputParams',
-  'outputs': 'outputParams',
+  [SYNC_FIELD.INPUTS]: 'inputParams',
+  [SYNC_FIELD.OUTPUTS]: 'outputParams',
 } as const;
 
 export class RichFunctionView extends FunctionView {
@@ -596,11 +601,11 @@ export class RichFunctionView extends FunctionView {
   }
 
   private renderOutputForm(): HTMLElement {
-    return this.renderIOForm('outputs');
+    return this.renderIOForm(SYNC_FIELD.OUTPUTS);
   }
 
   private renderInputForm(): HTMLElement {
-    return this.renderIOForm('inputs');
+    return this.renderIOForm(SYNC_FIELD.INPUTS);
   }
 
   private renderIOForm(field: SyncFields) {
@@ -624,7 +629,7 @@ export class RichFunctionView extends FunctionView {
         }
         this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
-        if (field === 'inputs')
+        if (field === SYNC_FIELD.INPUTS)
           this.bindInputRun(val, input);
 
         this.renderInput(inputs, val, input, prevCategory);
@@ -733,7 +738,7 @@ export class RichFunctionView extends FunctionView {
         t.value = newValue;
         t.notify = true;
       }
-      if (field === 'inputs') {
+      if (field === SYNC_FIELD.INPUTS) {
         this.hideOutdatedOutput();
         this.checkDisability.next();
 
