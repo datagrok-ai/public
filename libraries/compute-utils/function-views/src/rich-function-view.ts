@@ -104,7 +104,6 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(disabilitySub);
 
-    if (this.runningOnInput) $(runButton).hide();
     return runButton;
   }
 
@@ -143,6 +142,8 @@ export class RichFunctionView extends FunctionView {
     const runButtonWrapper = ui.div([runButton]);
     ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
     const saveButton = this.getSaveButton();
+
+    if (this.runningOnInput) $(runButtonWrapper).hide();
 
     return [saveButton, runButtonWrapper];
   }
