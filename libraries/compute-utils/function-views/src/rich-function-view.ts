@@ -733,11 +733,13 @@ export class RichFunctionView extends FunctionView {
         t.value = newValue;
         t.notify = true;
       }
-      this.hideOutdatedOutput();
-      this.checkDisability.next();
+      if (field === 'inputs') {
+        this.hideOutdatedOutput();
+        this.checkDisability.next();
 
-      if (this.runningOnInput && this.isRunnable())
-        this.doRun();
+        if (this.runningOnInput && this.isRunnable())
+          this.doRun();
+      }
     });
     this.subs.push(sub);
   }
