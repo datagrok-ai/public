@@ -62,7 +62,7 @@ export function addColorCoding(columnNames: string[]) {
     //@ts-ignore
     tv.grid.col(columnName)!.isTextColorCoded = true;
     tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<=0.5":"#FFF1B6B4",">0.5":"#FFB4F1BC"}`;
+    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<=0.5":"#FFE87C79",">0.5":"#FF43B579"}`;
   }  
 }
 
@@ -314,9 +314,17 @@ async function openModelsDialog(selected: any, onOK: any): Promise<void> {
     //@ts-ignore
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && col.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES} as ColumnInputOptions);
   molInput.root.style.marginLeft = '-70px';
+  const choiceInput = ui.choiceInput('Type', '', ['', 'Form'], (item: string) => {
+    if (item === 'Form') {
+      checkAll(true);
+    }
+  });
+  choiceInput.root.style.marginLeft = '-70px';
   let dlg = ui.dialog('ADME/Tox');
-  dlg.add(ui.divH([selectAll, selectNone, countLabel]))
+  dlg
     .add(molInput)
+    .add(choiceInput)
+    .add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
     .show()

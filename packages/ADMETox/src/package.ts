@@ -19,14 +19,15 @@ export function admetWidget(smiles: DG.SemanticValue): DG.Widget<any> {
   return getModelsSingle(smiles);
 }
 
-//top-menu: Chem | ADME/Tox | Calculations...
+//top-menu: Chem | ADME/Tox | Calculate...
 //name: ADME/Tox...
 export async function admetoxCalculators() {
   const table = grok.shell.tv.dataFrame;
   addPredictions(table);
 }
 
-//top-menu: Chem | ADME/Tox | Add Form
+//top-menu: Chem | ADME/Tox | Full Profile
+//meta.action: Calculates all properties and visualizes on the form
 export async function addFormViewer() {
   const df = grok.shell.tv.dataFrame;
   const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
