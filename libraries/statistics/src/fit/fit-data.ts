@@ -88,7 +88,7 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
 export function fitSeries(series: IFitSeries, fitFunc: FitFunction): FitCurve {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
     y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
-  return fitData(data, fitFunc, FitErrorModel.Constant);
+  return fitData(data, fitFunc, FitErrorModel.Constant, series.parameterBounds);
 }
 
 /** Returns series confidence interval functions */
