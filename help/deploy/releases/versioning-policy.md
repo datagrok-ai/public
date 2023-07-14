@@ -57,7 +57,7 @@ or [Datagrok Docker image](https://hub.docker.com/u/datagrok).
 
 ## Release process
 
-Before publishing the release, the new version goes through all [quality assurance](../quality-assurance.md) operations,
+Before publishing the release, the new version goes through all [quality assurance](../../datagrok/solutions/enterprise/quality-assurance.md) operations,
 including the QA Engineer's manual testing of critical changes. The full process of release can be found
 in [wiki](ci-flow.mdx#release-cicd-flow).
 
@@ -78,7 +78,7 @@ It may contain breaking changes, unstable features, and serious errors, which co
 
 The image is built overnight and released to [the development environment](https://dev.datagrok.ai). It includes all the
 latest developments, which
-help develop [packages](../../develop.md#packages).
+help develop [packages](../../develop/develop.md#packages).
 
 ## Check current version
 
@@ -108,5 +108,5 @@ Every Docker container has information about the version and branch it was built
 
 - [Changelog policy](changelog-policy.md)
 - [Release History](release-history.md)
-- [Quality assurance](../quality-assurance.md)
+- [Quality assurance](../../datagrok/solutions/enterprise/quality-assurance.md)
 - [CI/CD Flow](ci-flow.mdx)

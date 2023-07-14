@@ -29,7 +29,7 @@ To configure login-password authentication for Datagrok:
 3. Signup option is alterable; you can disable it using the 'Signup Allowed' option
 4. To restrict from which domains people can sign up to the platform, use the 'Signup Domains Whitelist' option. You can
    set several domains separated with commas
-5. Enable the 'Require Email Confirm' option to force people to use working emails
+5. Enable the 'Require Email Confirm' option to force people to use working emails.
 
 ### Email service
 

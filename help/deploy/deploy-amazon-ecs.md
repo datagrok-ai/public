@@ -3,16 +3,16 @@ title: "AWS ECS using Docker Compose"
 sidebar_position: 4
 ---
 
-The deployment consists of a few docker containers, [database](../infrastructure.md#database) for storing metadata,
-and [persistent file storage](../infrastructure.md#storage) for storing files
+The deployment consists of a few docker containers, [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
+and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) for storing files
 
 Docker containers allow installing Datagrok on any platform, including container services in cloud providers, for
 example [AWS ECS](https://aws.amazon.com/ecs/).
 
-As [database](../infrastructure.md#database) Datagrok supports any PostgreSQL database out-of-the-box, including cloud
+As [database](../develop/under-the-hood/infrastructure.md#database) Datagrok supports any PostgreSQL database out-of-the-box, including cloud
 solutions for PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/).
 
-For [persistent file storage](../infrastructure.md#storage) Datagrok supports a lot of options, including cloud solutions,
+For [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) Datagrok supports a lot of options, including cloud solutions,
 for example [AWS S3](https://aws.amazon.com/s3/).
 
 This document contains instructions to deploy Datagrok using [Docker Compose](https://docs.docker.com/compose/)
@@ -21,8 +21,8 @@ and [AWS S3](https://aws.amazon.com/s3/).
 
 More information about Datagrok design and components:
 
-* [Architecture](../architecture.md)
-* [Infrastructure](../infrastructure.md)
+* [Architecture](../develop/under-the-hood/architecture.md)
+* [Infrastructure](../develop/under-the-hood/infrastructure.md)
 
 ## Prerequisites
 

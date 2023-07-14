@@ -2,8 +2,8 @@
 title: "Deployment"
 ---
 
-The deployment consists of a few docker containers, [database](../infrastructure.md#database) for storing metadata,
-and [persistent file storage](../infrastructure.md#storage) for storing files.
+The deployment consists of a few docker containers, [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
+and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) for storing files.
 
 Using Docker containers, you can deploy Datagrok on many environments, such as bare-metal machines,
 on-premise virtual machines or virtual machines in cloud providers, for example [AWS EC2](https://aws.amazon.com/ec2/),
@@ -11,10 +11,10 @@ on-premise Kubernetes cluster or Kubernetes service in cloud providers, for
 instance [AWS EKS](https://aws.amazon.com/eks/), and container services in the cloud providers, for
 example [AWS ECS](https://aws.amazon.com/ecs/).
 
-Datagrok requires PostgreSQL [database](../infrastructure.md#database) to store metadata.
+Datagrok requires PostgreSQL [database](../develop/under-the-hood/infrastructure.md#database) to store metadata.
 We recommend using scalable and highly reliable solutions, such as [AWS RDS](https://aws.amazon.com/rds/).
 
-For [persistent file storage](../infrastructure.md#storage) Datagrok supports Local File System, Network shares or cloud
+For [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) Datagrok supports Local File System, Network shares or cloud
 solutions, for example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://cloud.google.com/storage).
 We recommend using scalable and highly reliable solutions for storage, such as [AWS S3](https://aws.amazon.com/s3/).
 
@@ -22,9 +22,9 @@ This document contains different deployment options for Datagrok.
 
 More information:
 
-* [What is Datagrok?](../../../home.md)
-* [Architecture](../architecture.md)
-* [Infrastructure explanation](../infrastructure.md)
+* [What is Datagrok?](../home.md)
+* [Architecture](../develop/under-the-hood/architecture.md)
+* [Infrastructure explanation](../develop/under-the-hood/infrastructure.md)
 
 ## Deployment options
 
@@ -83,7 +83,7 @@ resiliently.
 
 Datagrok requires persistent storage, which can be created using Kubernetes persistent volumes. PostgreSQL database can
 be both deployed in Kubernetes or on any other server. Set the database address and credentials
-in [Datagrok configuration](../configuration.md). Datagrok server will deploy all required schemas and users on the
+in [Datagrok configuration](configuration.md). Datagrok server will deploy all required schemas and users on the
 startup.
 
 To deploy Datagrok in Kubernetes, including Cloud solutions for Kubernetes, such
@@ -103,5 +103,5 @@ More information:
 
 Next steps:
 
-* [Configure authentification](../configure-auth.md)
-* [Configure SMTP](../configure-smtp.md)
+* [Configure authentification](configure-auth.md)
+* [Configure SMTP](configure-smtp.md)

@@ -64,7 +64,7 @@ Let's open JS editor:
 
 * Tools | Scripting | JavaScript
 * paste code of corresponding JS functions
-* run using "Run" button on toolbar
+* run using "Run" button on toolbar.
 
 ## 3. writing a parameter value suggestion function
 
