@@ -192,9 +192,9 @@ History of all modifications applied to that table. Applies to tables.
 
 ## .script
 
-[Grok script](../datagrok/grok-script.md) that was used to create a table. It could represent getting a data via
+[Grok script](../develop/under-the-hood/grok-script.md) that was used to create a table. It could represent getting a data via
 a [database query](../access/access.md#data-query), from a web service, from a file share, or using any
-other [function](../datagrok/concepts/functions/functions.md) that returns a [table](../datagrok/table.md).
+other [function](../datagrok/concepts/functions/functions.md) that returns a [table](../datagrok/concepts/table.md).
 
 If this tag is present in a table, a "data sync" option appears next to this table in the
 "Upload table" dialog. If the option is checked, the table will not be uploaded to the server. Instead, the script will
@@ -204,11 +204,11 @@ Applies to tables.
 
 ## Chem-descriptor
 
-A [molecular descriptor](../domains/chem/descriptors.md) used for calculating the values of that column.
+A [molecular descriptor](../datagrok/solutions/domains/chem/descriptors.md) used for calculating the values of that column.
 
 ## Chem-fingerprinter
 
-A [molecular fingerprinter](../domains/chem/fingerprints.md) used for calculating the values of that column.
+A [molecular fingerprinter](../datagrok/solutions/domains/chem/fingerprints.md) used for calculating the values of that column.
 
 See also:
 
