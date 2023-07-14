@@ -7,6 +7,7 @@ import {Accordion, Dialog, InputBase} from "./widgets";
 import { View, ViewLayout } from './views/view';
 import { Viewer } from "./viewer";
 import { Column } from "./dataframe";
+import {GridCell} from "./grid";
 
 let api = <any>window;
 
@@ -171,6 +172,8 @@ export class Events {
   get onAccordionConstructed(): rxjs.Observable<Accordion> { return __obs('d4-accordion-constructed'); }
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
+
+  get onLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-link-clicked'); }
 }
 
 /*
@@ -318,4 +321,9 @@ export class ColumnsArgs extends EventData {
   set columns(list: Column[]) {
     api.grok_ColumnsArgs_Set_Columns(this.dart, list);
   }
+}
+
+export interface GridCellArgs {
+  gridCell: GridCell;
+  link: string;
 }

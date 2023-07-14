@@ -285,7 +285,9 @@ export const TAGS = {
 
   CHEM: {
     SCAFFOLD: 'chem-scaffold'
-  }
+  },
+
+  LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
 }
     
 export const InputType = {

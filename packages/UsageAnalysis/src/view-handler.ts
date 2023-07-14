@@ -8,7 +8,7 @@ import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
-import {LogView} from "./tabs/log";
+import {LogView} from './tabs/log';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 

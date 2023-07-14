@@ -62,6 +62,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // public sequenceColumnNamePostfix: string;
 
   public skipEmptyPositions: boolean;
+  /* A value of zero means autofit to the width. */
   public positionWidth: number;
   public positionHeight: PositionHeight;
 
@@ -76,7 +77,10 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.sequenceColumnNamePostfix = this.string('sequenceColumnNamePostfix', 'chain sequence');
 
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
-    this.positionWidth = this.float('positionWidth', 16);
+    this.positionWidth = this.float('positionWidth', 16, {
+      editor: 'slider', min: 0, max: 64,
+      description: 'Internal WebLogo viewers property width of position. A value of zero means autofit to the width.'
+    });
     this.positionHeight = this.string('positionHeight', PositionHeight.Entropy,
       {choices: Object.keys(PositionHeight)}) as PositionHeight;
   }
@@ -105,7 +109,6 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
     // this.mlbView.dockManager.dock(this.regionsFg.root, DG.DOCK_TYPE.LEFT, rootNode, 'Filter regions', 0.2);
 
-    this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
     this.subs.push(fromEvent<MouseEvent>(this.root, 'mousemove').subscribe(this.rootOnMouseMove.bind(this)));
 
     // await this.buildView('init'); // init
@@ -213,7 +216,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   private async destroyView(purpose: string): Promise<void> {
     // TODO: Unsubscribe from and remove all view elements
-    console.debug(`Bio: VdRegionsViewer.destroyView( mainLayout = ${!this.mainLayout ? 'none' : 'value'} ), ` +
+    _package.logger.debug(`Bio: VdRegionsViewer.destroyView( mainLayout = ${!this.mainLayout ? 'none' : 'value'} ), ` +
       `purpose = '${purpose}'`);
     if (this.filterSourceInput) {
       //
@@ -232,7 +235,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   private async buildView(purpose: string): Promise<void> {
-    console.debug(`Bio: VdRegionsViewer.buildView() begin, ` + `purpose = '${purpose}'`);
+    _package.logger.debug(`Bio: VdRegionsViewer.buildView() begin, ` + `purpose = '${purpose}'`);
 
     const regionsFiltered: VdRegion[] = this.regions.filter((r: VdRegion) => this.regionTypes.includes(r.type));
     const orderList: number[] = Array.from(new Set(regionsFiltered.map((r) => r.order))).sort();
@@ -252,6 +255,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
             positionWidth: this.positionWidth,
             positionHeight: this.positionHeight,
           }) as WebLogoViewer;
+          wl.onSizeChanged.subscribe(() => { this.calcSize(); });
           return [orderI, chain, wl];
         })());
       }
@@ -321,23 +325,59 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     this.root.style.overflowX = 'auto';
 
     this.calcSize();
+    this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
-    console.debug('Bio: VdRegionsViewer.buildView() end');
+    _package.logger.debug('Bio: VdRegionsViewer.buildView() end');
   }
 
+  private calcSizeRequested: boolean = false;
+
   private calcSize() {
-    const logoHeight = (this.root.clientHeight - 54) / this.chains.length;
+    _package.logger.debug(`Bio: VdRegionsViewer.calcSize(), start`);
+    const calcSizeInt = (): void => {
+      const dpr: number = window.devicePixelRatio;
+      const logoHeight = (this.root.clientHeight - 54) / this.chains.length;
 
-    const maxHeight: number = Math.min(logoHeight,
-      Math.max(...this.logos.map((wlDict) =>
-        Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight)))),
-    );
+      const maxHeight: number = Math.min(logoHeight,
+        Math.max(...this.logos.map((wlDict) =>
+          Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight)))),
+      );
 
-    for (let orderI = 0; orderI < this.logos.length; orderI++) {
-      for (let chainI = 0; chainI < this.chains.length; chainI++) {
-        const chain: string = this.chains[chainI];
-        this.logos[orderI][chain].root.style.height = `${maxHeight}px`;
+      let totalPos: number = 0;
+      for (let orderI = 0; orderI < this.logos.length; orderI++) {
+        for (const chain of this.chains)
+          this.logos[orderI][chain].root.style.height = `${maxHeight}px`;
+
+        totalPos += Math.max(...this.chains.map((chain) => this.logos[orderI][chain].Length));
       }
+
+      if (this.positionWidth === 0 && this.logos.length > 0 && totalPos > 0) {
+        const leftPad = 22/* Chain label */;
+        const rightPad = 6 + 6 + 1;
+        const logoMargin = 8 + 1;
+        const fitPositionWidth =
+          (this.root.clientWidth - leftPad - (this.logos.length - 1) * logoMargin - rightPad) / totalPos * dpr;
+
+        for (let orderI = 0; orderI < this.logos.length; orderI++) {
+          for (let chainI = 0; chainI < this.chains.length; chainI++) {
+            const chain: string = this.chains[chainI];
+            this.logos[orderI][chain].setOptions({positionWidth: fitPositionWidth});
+          }
+        }
+      }
+
+      if (this.positionWidth === 0)
+        this.host!.style.setProperty('overflow-x', 'hidden', 'important');
+      else
+        this.host!.style.removeProperty('overflow-x');
+    };
+
+    if (!this.calcSizeRequested) {
+      this.calcSizeRequested = true;
+      window.setTimeout(() => {
+        calcSizeInt();
+        this.calcSizeRequested = false;
+      }, 0 /* next event cycle */);
     }
   }
 

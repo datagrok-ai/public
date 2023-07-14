@@ -218,7 +218,7 @@ async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes 
 
     const bitset = thisViewer.molColumn === null ?
       null :
-      await chemSubstructureSearchLibrary(thisViewer.molColumn, v.smiles, '');
+      await handleMalformedStructures(thisViewer.molColumn, v.smiles);
 
     v.bitset = bitset;
     v.init = true;
@@ -303,6 +303,17 @@ function getNotIcon(group: TreeViewGroup) : HTMLElement | null {
 function isNotBitOperation(group: TreeViewGroup) : boolean {
   const isNot = (group.value as ITreeNode).bitwiseNot;
   return isNot;
+}
+
+async function handleMalformedStructures(molColumn: DG.Column, smiles: string): Promise<DG.BitSet> {
+  let bitset;
+  try {
+    bitset = await chemSubstructureSearchLibrary(molColumn, smiles, '');
+  } catch (e) {
+    console.log(e);
+    bitset = DG.BitSet.create(molColumn.length).setAll(false);
+  }
+  return bitset;
 }
 
 const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
@@ -481,7 +492,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   /** Saves sketched tree to disk (under Downloads) */
   saveTree(): void {
     const s = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree));
-    DG.Utils.download('scaffold-tree.tree', s);
+    const dialog = ui.dialog({title: 'Enter file name'});
+    dialog
+    .add(ui.stringInput('Name', 'scaffold-tree'))
+    .onOK(() => {
+      DG.Utils.download(`${dialog.inputs[0].stringValue}.tree`, s);
+      dialog.close();
+    })
+    .show();
   }
 
   /** Loads previously saved tree. See also {@link saveTree} */
@@ -678,7 +696,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       async (molStrSketcher: string, node: TreeViewGroup, errorMsg: string | null) => {
         ui.empty(node.captionLabel);
         const bitset = thisViewer.molColumn === null ? null :
-          await chemSubstructureSearchLibrary(thisViewer.molColumn, molStrSketcher, '');
+          await handleMalformedStructures(thisViewer.molColumn, molStrSketcher);
         const molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height);
         this.addIcons(molHost, bitset!.trueCount.toString(), group);
         node.captionLabel.appendChild(molHost);
@@ -764,7 +782,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           const v = value(child);
           const bitset = thisViewer.molColumn === null ?
             null :
-            await chemSubstructureSearchLibrary(thisViewer.molColumn, v.smiles, '');
+            await handleMalformedStructures(thisViewer.molColumn, v.smiles);
           v.bitset = bitset;
           v.init = true;
           updateNodeHitsLabel(child, bitset!.trueCount.toString());
@@ -878,7 +896,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         let molArom;
         try {
           molArom = _rdKitModule.get_qmol(molStr);
-          molArom.set_aromatic_form();
+          molArom.convert_to_aromatic_form();
           this.molColumn.temp['chem-scaffold-filter'] = molArom.get_molblock();
         } catch (e) {
         } finally {
@@ -920,7 +938,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         mol.delete();
         this.molColumn.temp['chem-scaffold-filter'] = molFile;
       }
-      const bitset = await chemSubstructureSearchLibrary(this.molColumn, strMol, '');
+      const bitset = await handleMalformedStructures(this.molColumn, strMol);
       if (this.bitset === null)
         this.bitset = bitset;
       else {
@@ -961,8 +979,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const notIcon = ui.iconFA('equals',
       () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
       'Exclude structures containing this scaffold');
-    //notIcon.onclick = (e) => e.stopImmediatePropagation();
-    //changes notIcon.onmousedown = (e) => e.stopImmediatePropagation();
+    notIcon.onclick = (e) => e.stopImmediatePropagation();
+    notIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const zoomIcon = ui.iconFA('search-plus');
     zoomIcon.onclick = (e) => e.stopImmediatePropagation();
@@ -1348,7 +1366,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const itemCount = this.tree.items.length;
     this._iconDelete!.style.display = itemCount > 0 ? 'flex' : 'none';
     this._generateLink!.style.visibility = (itemCount > 0 || !this.allowGenerate) ? 'hidden' : 'visible';
-    this._message!.style.visibility = itemCount > 0 ? 'hidden' : 'visible';
+    this._message!.style.visibility = (itemCount > 0 || !this.allowGenerate) ? 'hidden' : 'visible';
 
     const c = this.root.getElementsByClassName('grok-icon fal fa-filter grok-icon-filter');
     if (c.length > 0)

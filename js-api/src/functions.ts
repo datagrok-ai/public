@@ -111,10 +111,12 @@ export interface IFunctionRegistrationData {
 /** Grok functions */
 export class Functions {
 
+  /** Controls client caching. */
   get clientCache(): ClientCache { return new ClientCache(); }
 
-  register(func: IFunctionRegistrationData): void {
-    api.grok_RegisterFunc(func);
+  /** Registers a function globally. */
+  register(func: IFunctionRegistrationData): Func {
+    return new Func(api.grok_RegisterFunc(func));
   }
 
   registerParamFunc(name: string, type: Type, run: Function, check: boolean | null = null, description: string | null = null): void {
@@ -159,10 +161,27 @@ export class Functions {
 }
 
 
+/** Client caching service that caches results of function invocations and stores
+ * them in the IndexedDb. */
 export class ClientCache {
 
   /** Clears cache content. */
-  clear(): void { api.grok_ClientCache_Clear(); }
+  clear(): Promise<void> { return api.grok_ClientCache_Clear(); }
+
+  /** Starts client function caching service. */
+  start(): Promise<void> { return api.grok_ClientCache_Start(); }
+
+  /** Stops client function caching service. */
+  stop(): void { api.grok_ClientCache_Stop(); }
+
+  /** Removes expired records. Normally, Datagrok does it automatically when needed. */
+  cleanup(): Promise<void> { return api.grok_ClientCache_Cleanup(); }
+
+  /** Returns the number of */
+  getRecordCount(): Promise<number> { return api.grok_ClientCache_GetRecordCount(); }
+
+  /** Indicates whether the caching service is running. */
+  get isRunning() { return api.grok_ClientCache_Get_IsRunning(); }
 }
 
 
@@ -280,6 +299,13 @@ export class FuncCall extends Entity {
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
 
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
+
+  set started(value: dayjs.Dayjs) {
+    if (!(dayjs.isDayjs(value) || value == null))
+      value = dayjs(value);
+    api.grok_FuncCall_Set_Started(this.dart, value?.valueOf());
+  }
+
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
 
   get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }

@@ -3,6 +3,7 @@
 #language: python
 #input: dataframe table
 #output: string newick
+#test: getNewick(ApiTests:getTable('tree95df', path='Dendrogram/data'))
 
 import numpy as np
 import pandas as pd

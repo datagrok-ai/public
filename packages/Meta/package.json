@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.60",
+  "version": "3.4.72",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1264,6 +1264,9 @@
         },
         "1.7.7": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.7.8": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1505,6 +1508,12 @@
           "datagrok-api": "^1.14.0"
         },
         "1.10.0": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.11.0": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.11.1": {
           "datagrok-api": "^1.14.0"
         }
       },
@@ -2254,6 +2263,12 @@
         },
         "2.7.0": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.7.1": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.7.2": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2523,6 +2538,9 @@
         },
         "1.1.24": {
           "datagrok-api": "^1.13.11"
+        },
+        "1.1.25": {
+          "datagrok-api": "1.15.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2680,6 +2698,15 @@
           "datagrok-api": "^1.10.2"
         },
         "2.1.13": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.14": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.15": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.16": {
           "datagrok-api": "^1.10.2"
         }
       },
@@ -2864,6 +2891,9 @@
           "datagrok-api": "^1.15.0"
         },
         "1.2.17": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.2.18": {
           "datagrok-api": "^1.15.0"
         }
       },
@@ -3070,6 +3100,9 @@
           "datagrok-api": "latest"
         },
         "1.0.1": {
+          "datagrok-api": "latest"
+        },
+        "1.0.2": {
           "datagrok-api": "latest"
         }
       },

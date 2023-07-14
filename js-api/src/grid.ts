@@ -569,8 +569,9 @@ export class GridCell {
   /** Grid cell bounds, relative to the document. Useful for showing hints, tooltips, etc.*/
   get documentBounds(): Rect {
     const r = this.bounds;
-    this.grid.root.offsetLeft
-    return this.bounds;
+    const clientRect = this.grid.root.getBoundingClientRect();
+    const documentBounds = new Rect(window.scrollX + clientRect.x + r.x, window.scrollY + clientRect.y + r.y, r.width, r.height);
+    return documentBounds;
   }
 
   /** Returns grid cell renderer. */

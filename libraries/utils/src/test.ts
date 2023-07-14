@@ -5,7 +5,7 @@ import Timeout = NodeJS.Timeout;
 import {DataFrame} from 'datagrok-api/dg';
 
 const STANDART_TIMEOUT = 30000;
-const BENCHMARK_TIMEOUT = 1200000;
+const BENCHMARK_TIMEOUT = 10800000;
 
 export const tests: {
   [key: string]: {
@@ -343,10 +343,10 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
     if (skip) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     } else {
-      const timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
+      let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
-      r = {success: true, result: await timeout(t.test,
-        DG.Test.isInBenchmark ? BENCHMARK_TIMEOUT : timeout_) ?? 'OK', ms: 0, skipped: false};
+      timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
+      r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
@@ -414,6 +414,29 @@ export function isDialogPresent(dialogTitle: string): boolean {
       return true;
   }
   return false;
+}
+
+/** Expects an asynchronous {@link action} to throw an exception. Use {@link check} to perform
+ * deeper inspection of the exception if necessary.
+ * @param  {function(): Promise<void>} action
+ * @param  {function(any): boolean} check
+ * @return {Promise<void>}
+ */
+export async function expectExceptionAsync(action: () => Promise<void>,
+  check?: (exception: any) => boolean): Promise<void> {
+  let caught: boolean = false;
+  let checked: boolean = false;
+  try {
+    await action();
+  } catch (e) {
+    caught = true;
+    checked = !check || check(e);
+  } finally {
+    if (!caught)
+      throw new Error('An exception is expected but not thrown');
+    if (!checked)
+      throw new Error('An expected exception is thrown, but it does not satisfy the condition');
+  }
 }
 
 /**

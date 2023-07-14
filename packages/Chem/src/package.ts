@@ -787,11 +787,11 @@ export function descriptorsWidget(smiles: string): DG.Widget {
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: semantic_value smiles { semType: Molecule }
 //output: widget result
-export function drugLikeness(smiles: string): DG.Widget {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
-    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+export function drugLikeness(smiles: DG.SemanticValue): DG.Widget {
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
+    isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
       drugLikenessWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
@@ -866,11 +866,11 @@ export function structure2d(molecule: string): DG.Widget {
 //description: Toxicity prediction. Calculated by openchemlib
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: semantic_value smiles { semType: Molecule }
 //output: widget result
-export function toxicity(smiles: string): DG.Widget {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
-    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+export function toxicity(smiles: DG.SemanticValue): DG.Widget {
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
+    isSmarts(smiles.value) || isFragment(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
       toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
@@ -1204,7 +1204,7 @@ export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Col
 ): Promise<void> {
   const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
   try {
-    await addRisksAsColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
+    await addRisksAsColumns(table, molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
   } finally {
     pb.close();
   }
