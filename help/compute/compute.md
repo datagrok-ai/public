@@ -443,12 +443,32 @@ Automatic outliers detection Manual outliers markup and annotation Used as an in
 
 ### Sensitivity analysis
 
-* Sample inputs:
-  * by specified number of samples
-  * by a specified distribution or within a range
-  * for a specified set of scalar inputs and/or columns of the matrix input
-* Produce variability analysis for outputs based on the sampled inputs
-* Visualize the results of analysis with Datagrok viewers
+Study what happens to a function when varying its inputs. Datagrok provides investigation of how uncertainty in its output can be divided to different sources of uncertainty in the inputs.
+
+To run analysis, click on the icon "Run sensitivity analysis", choose a method, specify inputs & outputs, and press "RUN".
+
+Available types of analysis:
+* Grid
+* Monte Carlo
+* Sobol method
+
+In Grid analysis, inputs are varied within a grid of the specified ranges. When applying [the Monte Carlo method](https://en.wikipedia.org/wiki/Monte_Carlo_method), the studied function is evaluated at randomly taken points.
+
+![monte-carlo-analysis.png](monte-carlo-analysis.png)
+
+[The Sobol method](https://en.wikipedia.org/wiki/Variance-based_sensitivity_analysis) provides a decomposition of the output variance into fractions, which can be attributed to inputs.
+
+![sobol-analysis.png](sobol-analysis.png)
+
+First-order Sobol indices indicate the main effect of varying each input alone. Total-order indices measure the contribution to the output variance of each input, including variance caused by its interactions with any other inputs.
+
+When exploring complex models, some evaluations may be of particular interest. In this case, specify inputs set and find the required outputs in the context panel
+
+![bioreactor-analysis.png](bioreactor-analysis.png)
+
+Below, we are studying the bioreactor sumulation model
+
+![add-to-workspace](sensitivity-analysis.gif)
 
 ### Input parameter optimization
 
