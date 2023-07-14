@@ -3,7 +3,7 @@ title: "Aggregation functions"
 ---
 
 The same set of aggregation functions is used across the whole platform in different context
-(["Aggregate Rows" dialog](aggregate-rows.md), transformations, [markup](../datagrok/markup.md))
+(["Aggregate Rows" dialog](../aggregate-rows.md), transformations, [markup](../../datagrok/navigation/markup.md))
 
 ## Common
 
@@ -58,4 +58,4 @@ Markup syntax for referring to aggregations: `t.stats.avg(AGE)`
 
 See also:
 
-* [Aggregate rows](aggregate-rows.md)
+* [Aggregate rows](../aggregate-rows.md)

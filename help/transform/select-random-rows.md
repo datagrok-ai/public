@@ -10,6 +10,6 @@ to select.
 This functionality is commonly used for sampling. Click on the _keyboard_arrow_down_ icon in order to access the
 following commands:
 
-![Select random rows](../../uploads/gifs/select-random-rows.gif "Select random rows")
+![Select random rows](../uploads/gifs/select-random-rows.gif "Select random rows")
 
 * `#{x.CmdExtractSelectedRows}`
