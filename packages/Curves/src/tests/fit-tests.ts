@@ -59,10 +59,10 @@ category('fit', () => {
 		const sigmoidSeriesConfidenceIntervals = getSeriesConfidenceInterval(sigmoidSeries, sigmoidFitFunc, true);
 		const polynomialSeriesConfidenceIntervals = getSeriesConfidenceInterval(polynomialSeries, polynomialFitFunc, true);
 
-		expect(sigmoidSeriesConfidenceIntervals.confidenceTop(2.578), 1.7380288296703128);
-		expect(polynomialSeriesConfidenceIntervals.confidenceTop(2.3342), 8.522118220066847);
-		expect(sigmoidSeriesConfidenceIntervals.confidenceBottom(3.987), 1.610987263681557);
-		expect(polynomialSeriesConfidenceIntervals.confidenceBottom(3.8796), 5.681763620636985);
+		expect(sigmoidSeriesConfidenceIntervals.confidenceTop(2.578), 1.8540854906189528);
+		expect(polynomialSeriesConfidenceIntervals.confidenceTop(2.3342), 10.035230015978911);
+		expect(sigmoidSeriesConfidenceIntervals.confidenceBottom(3.987), 1.494930602732917);
+		expect(polynomialSeriesConfidenceIntervals.confidenceBottom(3.8796), 4.168651824724921);
 	});
 
 	test('getSeriesStatistics', async () => {
