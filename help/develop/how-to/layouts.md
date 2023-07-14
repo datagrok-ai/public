@@ -78,7 +78,7 @@ The `JSON` representation of a layout has the following main fields:
 }
 ```
 
-Some of these attributes are common to all [entities](../../datagrok/objects.md), so we will mention only the
+Some of these attributes are common to all [entities](../../concepts/objects.md), so we will mention only the
 layout-specific ones. The `viewStateMap` field contains the essential part describing in which positions viewers are
 docked and which viewer properties are set. The metadata needed for further layout application is stored in `columns`.
 However, a bare view state is enough to reuse the layout:
@@ -115,8 +115,8 @@ This method checks whether all the columns the layout was originally applied to 
 specified table. The matching mechanism consists of the following steps:
 
 1. Column names and column types match
-2. Both columns have the same [layout-id](../../discover/tags.md#layout-id)
-3. Both columns have the same [semantic type](../../discover/tags.md#quality)
+2. Both columns have the same [layout-id](../../catalog/tags.md#layout-id)
+3. Both columns have the same [semantic type](../../catalog/tags.md#quality)
 
 ## Storing metadata
 
@@ -124,7 +124,7 @@ Layouts remember the columns they were constructed from (the field `columns`) an
 columns so that they can be applied to the original or similar data. In particular, metadata includes column names,
 types, and tags (such as `layout-id` or `quality`). This is what the mapping rules described above rely on. Apart from
 that, layouts as
-[entities](../../datagrok/objects.md) are capable of storing metadata in a form of properties.
+[entities](../../concepts/objects.md) are capable of storing metadata in a form of properties.
 
 See also:
 

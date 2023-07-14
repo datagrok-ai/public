@@ -74,7 +74,7 @@ title: "Grid"
 
 See also:
 
-* [Formatting notation](../../discover/tags.md#format) for dates and numbers
+* [Formatting notation](../../catalog/tags.md#format) for dates and numbers
 * [Formatting via JS API](../../develop/how-to/customize-grid.md#formatting)
 
 ## Color coding

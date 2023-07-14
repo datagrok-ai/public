@@ -69,7 +69,7 @@ All groups can be a member of any other group, but circular membership is forbid
 group, which called by the name of the user, so it can be added to any other security group.
 
 A [user group](group.md) might have a number of rules associated with it. A rule applies to all members of the group and
-grants a privilege to a list of [entities](../datagrok/objects.md) of the specified type that pass a
+grants a privilege to a list of [entities](../concepts/objects.md) of the specified type that pass a
 [specified filter](#defining-entities-for-a-rule). You can think of a group with defined privileges as a 'role'.
 
 ## Defining entities for a rule

@@ -204,7 +204,7 @@ color(<column name>)
 
 ### Formula
 
-Shows result of defined formula, see formulas format [there](../transform/add-new-column.md).
+Shows result of defined formula, see formulas format [there](../../transform/add-new-column.md).
 
 Format:
 
@@ -253,7 +253,7 @@ t.stats.<statistics>(<column name>)
 
 ### Chart
 
-Chart markup allows to embed any of [Viewers](../visualize/viewers/viewers.md) into page.
+Chart markup allows to embed any of [Viewers](../../visualize/viewers/viewers.md) into page.
 
 Format:
 
@@ -296,4 +296,4 @@ Chart types:
 
 See also:
 
-* [Markup viewer](../visualize/viewers/markup.md)
+* [Markup viewer](../../visualize/viewers/markup.md)

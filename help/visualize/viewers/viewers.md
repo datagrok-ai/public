@@ -9,7 +9,7 @@ of
 millions of rows (or millions of columns).
 
 Viewers belonging to the same [view](../../datagrok/table-view.md) share the same row selection and filter. Viewers are
-saved as part of the [project](../../datagrok/project.md). Also, it is possible to save viewers and views individually
+saved as part of the [project](../../collaborate/project.md). Also, it is possible to save viewers and views individually
 and
 reuse them (or share with teammates) later on.
 

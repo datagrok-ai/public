@@ -81,7 +81,7 @@ extensions.
 
 [Release notes]: https://datagrok.ai/help/develop/release-history
 
-[architecture]: admin/architecture.md
+[architecture]: under-the-hood/architecture.md
 
 [Extending and customizing Datagrok]: packages/extensions.md
 

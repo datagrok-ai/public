@@ -650,7 +650,7 @@ property setter).
 
 [107]: ../../datagrok/table-view.md "Table Views"
 
-[108]: ../../discover/tags.md#format "Values of a format tag"
+[108]: ../../catalog/tags.md#format "Values of a format tag"
 
 [109]: ../../catalog/semantic-types.md "Semantic types"
 

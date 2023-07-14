@@ -5,7 +5,7 @@
 
 Audit system is intended to store all meaningful user activity for future analysis.
 
-All of the changes made to the different [entities](../datagrok/objects.md) are tracked and can be analyzed using
+All of the changes made to the different [entities](../concepts/objects.md) are tracked and can be analyzed using
 activity sections. All events are joined to user session. Changes made to the entities are connected with corresponding
 entities. Audit records can be posted both from client and server.
 

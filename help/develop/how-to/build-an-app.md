@@ -170,7 +170,7 @@ There's a variety of data sources which Datagrok can handle out of the box:
 * Access a file from a network file share (Windows Shares, SAMBA and the like) ([link](access-data.md#file-shares))
 
 Connections to databases, respective database queries, and file shares connections live in Datagrok
-as [entities](../../datagrok/objects.md). These may be published to only you, the package author, or to any specific
+as [entities](../../concepts/objects.md). These may be published to only you, the package author, or to any specific
 user group. Main code works for accessing databases are concentrated around `grok.data.query`
 method ([a sample](https://public.datagrok.ai/js/samples/data-access/parameterized-query)), whereas accessing files from
 file shares and servers is made by `grok.functions.eval('OpenServerFile("...")')`.
@@ -365,7 +365,7 @@ Properties..." (or press F2 in the grid).
 
 *References:*
 
-* [Tags](../../discover/tags.md)
+* [Tags](../../catalog/tags.md)
 
 ##### Semantic types
 
@@ -378,7 +378,7 @@ semantic type `'Molecule'`. Some viewers, such as Map, use the semantic type to 
 visualized against specific datasets. Function parameters could be annotated with the semantic type. This is used for
 automatic suggestions of applicable functions.
 
-Semantic type is a special kind of a [column tag](../../discover/tags.md#quality). It could be either detected
+Semantic type is a special kind of a [column tag](../../catalog/tags.md#quality). It could be either detected
 automatically by column semantic type detectors, or set manually in the JavaScript code with `.semType` property.
 
 *References:*
@@ -515,7 +515,7 @@ with a name, as we did [here](#the-entry-point), and a typed signature.
 
 *References:*:
 
-* [Datagrok architecture](../admin/architecture.md)
+* [Datagrok architecture](../under-the-hood/architecture.md)
 * [Exercises](../exercises/exercises.md)
 * [Scripting](../../compute/scripting.md)
 
@@ -590,7 +590,7 @@ included in another group, which is useful for both reflecting organization hier
 role-based [security](../../govern/security.md).
 
 Many types of objects within the Datagrok platform can be shared with other users or
-[groups](../../govern/group.md). Such shareable objects are called [entities](../../datagrok/objects.md). When an object
+[groups](../../govern/group.md). Such shareable objects are called [entities](../../concepts/objects.md). When an object
 is shared, you are essentially granting a [privilege](../../govern/authorization.md)
 (typically, 'view' or 'edit') to a grantee. See the [Security](../../govern/security.md) article for details.
 

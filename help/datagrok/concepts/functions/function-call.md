@@ -2,9 +2,9 @@
 title: "Function call"
 ---
 
-Function Call is a result of executing a Data Job
-, [Data Query](../../../access/access.md#data-query),
-[Script](../../../compute/scripting.md) or any other [Function](functions.md).
+Function Call is a result of executing a <!--data job
+, -->[data query](../../../access/access.md#data-query),
+[script](../../../compute/scripting.md), or any other [function](functions.md).
 
 ## Data
 
@@ -15,7 +15,7 @@ Each function call contains the following data:
 * Started on
 * Completed on
 * Status
-* [Runs](function-call.md) produced as a result of executing child actions
+* Runs produced as a result of executing child actions.
 
 ## Access control
 
@@ -30,7 +30,7 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 ## Filtering
 
-You can use these fields to filter action runs with [smart search](../navigation/smart-search.md):
+You can use these fields to filter action runs with [smart search](../../../explore/search-filter-select/smart-search.md):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|

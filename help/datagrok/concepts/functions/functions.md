@@ -6,38 +6,38 @@ sidebar_position: 0
 Grok platform provides first-class support for functions, which is an incredibly powerful concept. Pretty much anything
 that can be executed within the platform is a function. Here are some examples of the different types of functions:
 
-* [Querying](../../access/access.md#data-query) external Postgres database
-* Executing a [JavaScript function](../../develop/develop.md) in the browser that uses Grok API for integration purposes
+* [Querying](../../../access/access.md#data-query) external Postgres database
+* Executing a [JavaScript function](../../../develop/develop.md) in the browser that uses Grok API for integration purposes
 * Calculating Sin(PI)
 * Deleting a column from the table
 * Sending an email
-* Applying [predictive model](../../learn/learn.md) to a dataset
-* Calculating molecule properties via a [Python script](../../compute/scripting.md)
-* Showing a dialog
+* Applying [predictive model](../../../learn/learn.md) to a dataset
+* Calculating molecule properties via a [Python script](../../../compute/scripting.md)
+* Showing a dialog.
 
 All of the above-mentioned functions are quite different in terms of what and how they do - some of them execute on the
 server and others in the browser, some of them perform scientific computation while others show UI elements. Yet, they
 all share the same mechanism and therefore have the same features:
 
 * Scriptable - each function call is represented as a string, which can be executed
-  from [console](../../datagrok/navigation.md#console), or as part of a bigger script
+  from [console](../../navigation/navigation.md#console), or as part of a bigger script
 * Findable - open `Help | Functions` to search
 * Introspectable - programmatically find out function parameter's metadata
 * Secure - A function can have privileges associated with it. For instance, you might want the
   "ApproveExpense" function be available only to people belonging to the "
-  Managers" [group](../../govern/group.md).
+  Managers" [group](../../../govern/group.md).
 * Auditable - find out who and when executed a particular function, and which parameters were used
 * Ability to get a table with all parameters used for a particular function
 * Runnable - dynamically generated UI for editing parameter values
-* Linkable - simply drag-and-drop a function to a [conversation](../../collaborate/chat.md) or to a dashboard to link to
+* Linkable - simply drag-and-drop a function to a [conversation](../../../collaborate/chat.md) or to a dashboard to link to
   it. Run it by right-clicking on the link and choosing "Run..."
-* Usable in workflow designers and [query result transformations](../../transform/recipe-editor.md)
+* Usable in workflow designers and [query result transformations](../../../transform/recipe-editor.md).
 
 ## Macros
 
 Interactive visual data munging is a powerful feature. Every transformation that is triggered visually
 (such as by clicking "Delete selected rows" icon) is backed by a corresponding function. By printing function call in
-the [console](../../datagrok/navigation.md#console)), we get macro recording capability - and unlike Excel, there is no
+the [console](../../navigation/navigation.md#console)), we get macro recording capability - and unlike Excel, there is no
 need to start recording, simply open `View | Console` to see what had been executed.
 
 This feature is especially useful for data cleansing, where you would visually clean one dataset and get a script that
@@ -47,7 +47,7 @@ share it with your team.
 When enabled, a history of all changes made to the table is saved automatically, so that users will later be able to
 figure out how that particular table was produced, or to reproduce the process on a new table with the structure similar
 to the original one. To access it, open table's 'History' pane on
-the [context panel](../../datagrok/navigation.md#context-panel).
+the [context panel](../../navigation/navigation.md#context-panel).
 
 ## Data flow
 
@@ -56,10 +56,10 @@ enterprise version of the Datagrok platform in a virtual private cloud, but it m
 public environment.
 
 While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
-[training a predictive model](../../learn/learn.md),
-[running an R script](../../compute/scripting.md), or
-[computing chemical descriptors](../../datagrok/solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
-run on a [server](../../develop/admin/architecture.md#compute-engine). When such operation executes, the
+[training a predictive model](../../../learn/learn.md#train-model),
+[running an R script](../../../compute/scripting.md), or
+[computing chemical descriptors](../../../datagrok/solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
+run on a [server](../../../develop/under-the-hood/architecture.md#compute-engine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back to the client.
 Results of the computations reside on the server until either the client retrieves it, or an automatic cleanup happens.
 Neither inputs nor outputs can be accessed by functions executed by other users. Only administrators can access compute
@@ -73,7 +73,7 @@ corresponding audit record will contain a reference to it.
 
 ## Filtering
 
-You can use these fields to filter functions with [smart search](../../navigation/smart-search.md):
+You can use these fields to filter functions with [smart search](../../../explore/search-filter-select/smart-search.md):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|

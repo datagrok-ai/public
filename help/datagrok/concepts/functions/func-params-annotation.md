@@ -91,7 +91,7 @@ Named validators:
 * containsMissingValues
 * columnName - checks if table contains the column name
 * columnIsNumerical
-* columnIsCategorical
+* columnIsCategorical.
 
 Any function can be a validator if it returns `null` when validation is right, or string with error message otherwise.
 

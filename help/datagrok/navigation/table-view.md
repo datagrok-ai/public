@@ -2,7 +2,7 @@
 title: "Table View"
 ---
 
-A default view for the interactive exploration of [tables](table.md) that might contain multiple
+A default view for the interactive exploration of [tables](../concepts/table.md) that might contain multiple
 different [viewers](../../visualize/viewers/viewers.md), all sharing the same row filter and row selection.
 
 ## Selection and filter
@@ -29,6 +29,6 @@ Contains gallery of saved [layouts](../../visualize/view-layout.md).
 
 See also:
 
-* [Table](table.md)
-* [Table Manager](table-manager.md)
-* [Column Manager](../explore/column-manager.md)
+* [Table](../concepts/table.md)
+* [Table Manager](../../explore/table-manager.md)
+* [Column Manager](../../explore/column-manager.md)

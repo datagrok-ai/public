@@ -13,7 +13,7 @@ Project browser allows you to view previously created [projects](project.md), vi
 
 * List of saved projects appeared on the "Welcome" tab
 
-1. Use [search](../datagrok//navigation/smart-search.md) to find the "Test" [project](project.md)
+1. Use [search](../explore/search-filter-select/smart-searchsmart-search.md) to find the "Test" [project](project.md)
 
 1. Open "Share" dialog for the "Test" [project](project.md) from its context menu
 
