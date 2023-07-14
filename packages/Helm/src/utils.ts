@@ -24,7 +24,7 @@ export function getParts(subParts: string[], s: string): string[] {
   return allParts;
 }
 
-export function parseHelm(s: string) {
+export function parseHelm(s: string): string[] {
   const sections = split(s, '$');
   s = sections[0];
   const monomers = [];
@@ -181,8 +181,8 @@ function _detachAppendix(s: string, c: string) {
     }
   }
   if (tag != null)
-    tag = tag.replace(new RegExp('\\' + c, 'g'), c);
-  return {tag: unescape(tag), str: s};
+    tag = unescape(tag.replace(new RegExp('\\' + c, 'g'), c));
+  return {tag: tag, str: s};
 }
 
 function unescape(s: string) {

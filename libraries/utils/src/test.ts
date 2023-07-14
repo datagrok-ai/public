@@ -5,7 +5,7 @@ import Timeout = NodeJS.Timeout;
 import {DataFrame} from 'datagrok-api/dg';
 
 const STANDART_TIMEOUT = 30000;
-const BENCHMARK_TIMEOUT = 1200000;
+const BENCHMARK_TIMEOUT = 10800000;
 
 export const tests: {
   [key: string]: {
@@ -343,10 +343,10 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
     if (skip) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     } else {
-      const timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
+      let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
-      r = {success: true, result: await timeout(t.test,
-        DG.Test.isInBenchmark ? BENCHMARK_TIMEOUT : timeout_) ?? 'OK', ms: 0, skipped: false};
+      timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
+      r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};

@@ -42,6 +42,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   protected async onFuncCallReady() {
     this.changeViewName(this.funcCall.func.friendlyName);
+    await historyUtils.augmentFuncWithPackage(this.func);
 
     this.build();
     const runId = this.getStartId();

@@ -89,16 +89,37 @@ export class SurfacePlot extends EChartViewer {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: (val: any) => {
+            if (this.option.xAxis3D.type === 'value' && typeof val === 'number' && !Number.isInteger(val))
+              return val.toFixed(2);
+            return val;
+          },
+        },
       },
       yAxis3D: {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: (val: any) => {
+            if (this.option.yAxis3D.type === 'value' && typeof val === 'number' && !Number.isInteger(val))
+              return val.toFixed(2);
+            return val;
+          },
+        },
       },
       zAxis3D: {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: (val: any) => {
+            if (typeof val === 'number' && !Number.isInteger(val))
+              return val.toFixed(2);
+            return val;
+          },
+        },
       },
       grid3D: {
         show: true,
@@ -178,6 +199,8 @@ export class SurfacePlot extends EChartViewer {
     type: 'value'};
 
     this.ZArr = this.colsDict[this.ZColumnName];
+    if (this.ZArr.type !== 'value')
+      this.option.zAxis3D.axisLabel = {};
 
     this.render(true, false);
   }
@@ -210,6 +233,8 @@ export class SurfacePlot extends EChartViewer {
       case 'ZColumnName':
         this.ZColumnName = newVal;
         this.ZArr = col;
+        if (col.type !== 'value')
+          this.option.zAxis3D.axisLabel = {};
         break;
       }
       this.render(true);

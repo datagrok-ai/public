@@ -1,27 +1,27 @@
 export const jsonSdfMonomerLibDict = {
-    "monomerType": null,
-    "smiles": null,
-    "name": "MonomerName",
-    "author": null,
-    "molfile": "molecule",
-    "naturalAnalog": "MonomerNaturalAnalogCode",
-    "rgroups": "MonomerCaps",
-    "createDate": null,
-    "id": null,
-    "polymerType": "MonomerType",
-    "symbol": "MonomerCode"
-}
+  'monomerType': null,
+  'smiles': null,
+  'name': 'MonomerName',
+  'author': null,
+  'molfile': 'molecule',
+  'naturalAnalog': 'MonomerNaturalAnalogCode',
+  'rgroups': 'MonomerCaps',
+  'createDate': null,
+  'id': null,
+  'polymerType': 'MonomerType',
+  'symbol': 'MonomerCode'
+};
 
 export type WebEditorMonomer = {
-    id: string,     //symbol
-    n: string,      //name
-    na: string,     //natural analog
-    type: string,   //polymer type
-    mt: string,     //monomer type
-    m: string,      //molfile
-    at: {[group: string]: string},   //substituents
-    rs: number      //number of substituents
-  };
+  /** symbol */ id: string,
+  /** name */ n: string,
+  /** natural analog */ na?: string,
+  /** polymer type */type: string,
+  /** monomer type */ mt: string,
+  /** molfile */ m: string,
+  /** substituents */ at: { [group: string]: string },
+  /** number of substituents */ rs: number
+};
 
 export const SMILES = 'smiles';
 export const RGROUPS = 'rgroups';
