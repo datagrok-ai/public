@@ -552,6 +552,11 @@ export class PinnedColumn {
     this.m_colGrid = null;
   }
 
+  invalidate() {
+    const g = this.getRoot()!.getContext('2d');
+    this.paint(g, this.getGridColumn()!.grid);
+  }
+
   public onMouseEnter(e : MouseEvent) : void {
     if(DEBUG)
       console.log('Mouse Enter Pinned Column: ' + this.getGridColumn()?.name);

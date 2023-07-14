@@ -108,6 +108,20 @@ export interface IFunctionRegistrationData {
 }
 
 
+export interface IFunctionCallOptions {
+  /** Function call context. */
+  context: Context;
+
+  /** Specifies if this call could be cached, even if the parent function/connection is not. */
+  cacheable?: boolean;
+
+  /** Whether Func.beforeCommandExecuted and afterCommandExecuted events are fired. */
+  reportable?: boolean;
+
+  progress?: ProgressIndicator;
+}
+
+
 /** Grok functions */
 export class Functions {
 

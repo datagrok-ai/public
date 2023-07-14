@@ -362,9 +362,7 @@ function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
 }
 
 function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (params: number[], x: number) => number,
-  of: ObjectiveFunction): Optimizable {
-  const fixed: number[] = [];
-
+  of: ObjectiveFunction, fixed: number[]): Optimizable {
   return {
     getValue: (parameters: number[]) => {
       return of(curveFunction, data, parameters).value;
@@ -404,12 +402,11 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
   const paramValues = fitFunction.getInitialParameters(data.x, data.y);
 
   const of = createObjectiveFunction(errorModel);
-  const optimizable = createOptimizable(data, curveFunction, of);
-
   const fixed: number[] = [];
   let overLimits = true;
 
   while (overLimits) {
+    const optimizable = createOptimizable(data, curveFunction, of, fixed);
     limitedMemoryBFGS(optimizable, paramValues);
     limitedMemoryBFGS(optimizable, paramValues);
 
@@ -457,22 +454,22 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
     of(curveFunction, data, paramValues).mult :
     of(curveFunction, data, paramValues).const;
 
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
+  const quantile = jStat.normal.inv(1 - confidenceLevel/2, 0, 1);
 
   const top = (x: number) =>{
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value + studentQ * error / Math.sqrt(data.x.length);
+      return value + quantile * error;
     else
-      return value + studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value + quantile * Math.abs(value) * error;
   };
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value - studentQ * error / Math.sqrt(data.x.length);
+      return value - quantile * error;
     else
-      return value - studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value - quantile * Math.abs(value) * error;
   };
 
   return {confidenceTop: top, confidenceBottom: bottom};
