@@ -1,5 +1,6 @@
 ---
 title: "Compare tables"
+sidebar_position: 6
 ---
 
 Compares the content of two tables.

@@ -1,5 +1,6 @@
 ---
 title: "Link tables"
+sidebar_position: 7
 ---
 
 You can link tables based on the key columns. The link type determines which records should be synchronized between the

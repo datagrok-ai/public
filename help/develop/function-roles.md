@@ -1,5 +1,6 @@
 ---
 title: "Function roles"
+sidebar_position: 5
 ---
 
 A package can contain functions that get discovered and integrated with the platform at runtime.
