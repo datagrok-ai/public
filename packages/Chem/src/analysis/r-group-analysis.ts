@@ -93,7 +93,7 @@ export function rGroupAnalysis(col: DG.Column): void {
                 mol = module.get_mol(molStr);
                 molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
               } catch (e) {
-                console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+                //do nothing here, molsArray[i] is empty for invalid molecules  
               } finally {
                 mol?.delete();
               }

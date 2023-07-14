@@ -1144,7 +1144,8 @@ export async function callChemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
-  return await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+  return res ?? DG.DataFrame.create();
 }
 
 

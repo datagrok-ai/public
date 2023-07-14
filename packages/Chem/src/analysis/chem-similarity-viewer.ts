@@ -12,6 +12,7 @@ import {malformedDataWarning} from '../utils/malformed-data-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import '../../css/chem.css';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   followCurrentRow: boolean;
@@ -78,17 +79,22 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect && this.followCurrentRow) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyOrMalformedValue()) {
-          progressBar.close();
+        if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
+          this.closeWithError('Empty', progressBar);
           return;
         }
         try {
           const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
             this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
             this.fingerprint as Fingerprint);
-          this.molCol = df.getCol('smiles');
-          this.idxs = df.getCol('indexes');
-          this.scores = df.getCol('score');
+          if (df) {
+            this.molCol = df.getCol('smiles');
+            this.idxs = df.getCol('indexes');
+            this.scores = df.getCol('score');
+          } else {
+            this.closeWithError('Malformed', progressBar);
+            return;
+          }
         } catch (e: any) {
           grok.shell.error(e.message);
           return;
@@ -165,18 +171,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     }
   }
 
-  isEmptyOrMalformedValue(): boolean {
-    const mol = getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
-    const malformed = !mol;
-    mol?.delete();
-    const empty = !this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule);
-    const moleculeError = malformed ? `Malformed` : empty ? `Empty` : '';
-    if (moleculeError) {
-      grok.shell.error(`${moleculeError} molecule cannot be used for similarity search`);
-      this.clearResults();
-      return true;
-    }
-    return false;
+  closeWithError(error: string, progressBar: DG.TaskBarProgressIndicator) {
+    grok.shell.error(`${error} molecule cannot be used for similarity search`);
+    this.clearResults();
+    progressBar.close();
   }
 
   clearResults() {
@@ -193,8 +191,14 @@ export async function chemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: Fingerprint,
-) : Promise<DG.DataFrame> {
-  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
+) : Promise<DG.DataFrame | null> {
+
+  let targetFingerprint: BitArray | null = null;
+  try {
+    targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
+  } catch {
+    return null; //returning null in case target molecule is malformed
+  }
   const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, true, false);
   malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];
