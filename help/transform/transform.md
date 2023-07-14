@@ -15,14 +15,14 @@ the commonly used routines:
 * [Batch Data Editor](batch-edit.md)
 * [Change Type](change-column-type.md)
 * [Aggregate Rows](aggregate-rows.md)
-* [Compare Tables](../explore/compare-tables.md)
+* [Compare Tables](compare-tables.md)
 * [Extract regular expression](extract-regexp.md)
-* [Filter to Column](../explore/filter-to-column.md)
+* [Filter to Column](filter-to-column.md)
 * [Join Tables](join-tables.md)
 * [Impute Missing Values](missing-values-imputation.md)
-* [Select Duplicates](../explore/select-duplicates.md)
-* [Select Missing Values](../explore/select-missing-values.md)
-* [Select Random Rows](../explore/select-random-rows.md)
+* [Select Duplicates](select-duplicates.md)
+* [Select Missing Values](select-missing-values.md)
+* [Select Random Rows](select-random-rows.md)
 * [Text to Columns](text-to-columns.md)
 
 ## Aggregation
@@ -33,4 +33,4 @@ Press Alt+A to open data aggregation tool
 
 See also:
 
-* [Macros](../datagrok/navigation.md#console)
+* [Macros](../datagrok/navigation/navigation.md#console)
