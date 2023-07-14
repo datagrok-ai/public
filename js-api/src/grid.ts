@@ -668,8 +668,8 @@ export class GridColumn {
   set tooltipForm(x: string) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
   /** Tooltip columns. Also requires {@link tooltipType} to be 'Columns'. */
-  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
-  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
+  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipColumns(this.dart); }
+  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipColumns(this.dart, x); }
 
   /** isTextColorCoded. Whether to apply color to the text or background. */
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
