@@ -151,7 +151,7 @@ function dataframeChecker(actual: DG.DataFrame, expected: DG.DataFrame,
     for (let i = 0; i < expected.rowCount; i++) {
       const actualValue = actualColumn.get(i);
       const expectedValue = column.get(i);
-      checkDeep([column.name], actualValue, expectedValue);
+      checkDeep([column.name, String(i)], actualValue, expectedValue);
     }
   }
   return errors;
