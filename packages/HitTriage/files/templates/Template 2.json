@@ -1,5 +1,8 @@
 {
   "name": "Template 2",
+  "key": "TMP2",
+  "campaignFields": [{"name": "oneS", "type": "Boolean", "required": false}, {"name": "TwoS", "type": "Boolean", "required": false}],
+  "dataSourceType": "Query",
   "compute": {
     "descriptors": {
       "enabled": true

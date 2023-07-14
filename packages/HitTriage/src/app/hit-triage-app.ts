@@ -1,14 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ITemplate, ITemplateIngest, IngestType} from './types';
+import {ICampaign, ITemplate, ITemplateIngest, IngestType} from './types';
 import {InfoView} from './views/info-view';
 import {HitTriageBaseView} from './views/base-view';
 import {ComputeView} from './views/compute-view';
 import {SubmitView} from './views/submit-view';
-import {v4 as uuidv4} from 'uuid';
 import {CampaignIdKey} from './consts';
-import {fileInputDialog} from './dialogs/file-input-dialog';
+import {modifyUrl} from './utils';
+import {_package} from '../package';
+import '../../css/hit-triage.css';
 
 export class HitTriageApp {
   template?: ITemplate;
@@ -25,8 +26,11 @@ export class HitTriageApp {
   private _campaignId?: string;
   private _dfName?: string;
   private _molColName?: string;
-  private _fileInputType?: IngestType;
+  public _fileInputType?: IngestType;
+
+  private _campaign?: ICampaign;
   protected _filterDescriptions: string[] = [];
+  public campaignProps: {[key: string]: any} = {};
   constructor() {
     this._infoView = new InfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
@@ -40,11 +44,8 @@ export class HitTriageApp {
   public async setTemplate(template: ITemplate, presetFilters?: {[key: string]: any}[],
     campaignId?: string, ingestProps?: ITemplateIngest) {
     if (!campaignId) {
-      campaignId = uuidv4();
+      campaignId = await this.getNewCampaignName(template.key);
       modifyUrl(CampaignIdKey, campaignId);
-      const res = await fileInputDialog();
-      this.dataFrame = res.df;
-      this._fileInputType = res.type;
     } else if (ingestProps) {
       this._fileInputType = ingestProps.type;
       if (ingestProps.type === 'File')
@@ -80,6 +81,10 @@ export class HitTriageApp {
   get molColName(): string | undefined {return this._molColName;}
 
   get fileInputType(): IngestType | undefined {return this._fileInputType;}
+
+  get campaign(): ICampaign | undefined {return this._campaign;}
+
+  set campaign(campaign: ICampaign | undefined) {this._campaign = campaign;}
   /**
    * A view that lets you filter the molecules using either molecules, or
    * their properties derived at the enrichment step.
@@ -113,15 +118,15 @@ export class HitTriageApp {
   getSummary(): {[_: string]: any} {
     const getStyledDownloadButton = (callBackFn: () => void): HTMLElement => {
       const db = ui.iconFA('arrow-to-bottom', callBackFn);
-      db.style.color = '#2083d5';
-      db.style.marginLeft = '4px';
-      db.style.fontWeight = '600';
+      db.classList.add('hit-triage-download-button');
       return db;
     };
+    const campaignProps = this.campaign?.campaignFields ?? this.campaignProps;
     return {
-      'Template': this.template!.name,
+      'Template': this.template?.name ?? 'Molecules',
       'File path': ui.divH([ui.divText(this._dfName ?? ''), getStyledDownloadButton(
         () => this.download(this.dataFrame!, 'molecules'))], {style: {alignItems: 'center'}}),
+      ...campaignProps,
       'Number of molecules': this.dataFrame!.rowCount.toString(),
       'Enrichment methods': [this.template!.compute.descriptors.enabled ? 'descriptors' : '',
         ...this.template!.compute.functions.map((func) => func.name)].filter((f) => f && f.trim() !== '').join(', '),
@@ -139,16 +144,14 @@ export class HitTriageApp {
     element.setAttribute('download', name + '.csv');
     element.click();
   }
-}
 
-function modifyUrl(key: string, value: string) {
-  const title = document.title;
-  const url = window.location.href.split('?')[0] + '?' + key + '=' + value;
-  if (history.replaceState) {
-    const obj = {
-      Title: title,
-      Url: url,
-    };
-    history.replaceState(obj, obj.Title, obj.Url);
+  async getNewCampaignName(templateKey: string) {
+    const templateCampaigns = (await _package.files.list('campaigns'))
+      .map((file) => file.name)
+      .filter((name) => name.startsWith(templateKey));
+    if (templateCampaigns.length === 0)
+      return templateKey + '-1';
+    const postFixes = templateCampaigns.map((c) => c.split('-')[1]).filter(Boolean).map((c) => parseInt(c, 10)).sort();
+    return templateKey + '-' + ((postFixes[postFixes.length - 1] + 1).toString());
   }
 }

@@ -8,3 +8,92 @@
     align-items: center;
     justify-content: end;
 }
+
+table.hit-triage-table {
+    margin: 10px;
+    width: calc(100% - 20px);
+}
+
+table.hit-triage-table tr {
+    border: 1px solid black;
+}
+
+table.hit-triage-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+table.hit-triage-table tr td:not(:last-child) {
+    border-right: 1px solid black;
+}
+
+.hit-triage-table-container {
+    max-width: 600px;
+    max-height: 500px;
+    overflow-y: scroll;
+}
+
+.hit-triage-download-button {
+    color: #2083d5;
+      margin-left: 4px;
+      font-weight: 600;
+}
+
+.hit-triage-new-campaign-accordeon .d4-accordion-pane, .hit-triage-new-template-accordeon .d4-accordion-pane {
+    border-bottom: 1px solid gray;
+}
+
+.hit-triage-new-campaign-accordeon .d4-accordion-pane, .hit-triage-new-template-accordeon .d4-accordion-pane {
+    border-bottom: 1px solid gray;
+}
+
+.hit-triage-accordeon-cancel-button {
+    margin-left: 10px;
+}
+
+.hit-triage-error-div {
+    color: red;
+    text-align: start;
+}
+
+.mx-5 {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.hit-triage-add-campaign-field-button {
+    aspect-ratio: 1;
+    align-self: start;
+    margin-top: 15px;
+ }
+
+ .hit-triage-new-template-functions-input {
+    max-height: 150px;
+    overflow-y: scroll;
+ }
+
+ .hit-triage-compute-dialog-host {
+    max-height: 550px;
+    max-width: 500px;
+ }
+
+ .hit-triage-compute-dialog-descriptors-group {
+    margin-left: 16px;
+ }
+
+ .hit-triage-campaign-field-div {
+    align-items: center;
+ }
+
+ .oy-scroll {
+    overflow-y: scroll;
+ }
+
+ .hit-triage-start-new-campaign-button {
+    align-self: start;
+ }
+
+ .hit-triage-templates-input-div {
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid gray;
+  }

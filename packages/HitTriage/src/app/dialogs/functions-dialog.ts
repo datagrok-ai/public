@@ -4,15 +4,13 @@ import * as grok from 'datagrok-api/grok';
 import {IComputeDialogResult, IDescriptorTree} from '../types';
 import '../../../css/hit-triage.css';
 
-export async function chemDescriptorsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
+export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
   functions: {packageName: string, name: string}[], useDescriptors: boolean = true) {
   // tree groups
   const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
   const descriptorsGroup = ui.tree();
-  const host = ui.div();
-  host.style.maxHeight = '500px';
-  host.style.maxWidth = '500px';
-  descriptorsGroup.root.style.marginLeft = '16px';
+  descriptorsGroup.root.classList.add('hit-triage-compute-dialog-descriptors-group');
+  const host = ui.div([], {classes: 'hit-triage-compute-dialog-host'});
   const descriptorItems: DG.TreeViewNode[] = [];
 
   function createTreeGroup(name: string, treeNode: DG.TreeViewGroup): DG.TreeViewGroup {
@@ -45,7 +43,7 @@ export async function chemDescriptorsDialog(onOk: (result: IComputeDialogResult)
     const keyName = `${func.packageName}:${func.name}`;
     funcInputsMap[keyName] = funcCall;
     const editor = await funcCall.getEditor();
-    editor.style.overflowY = 'scroll';
+    editor.classList.add('oy-scroll');
     tabControlArgs[f.friendlyName ?? f.name] = editor;
     funcNamesMap[f.friendlyName ?? f.name] = keyName;
     calculatedFunctions[keyName] = true;

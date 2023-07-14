@@ -1,5 +1,8 @@
 {
   "name": "Template 1",
+  "key": "TMP1",
+  "campaignFields": [{"name": "oneS", "type": "String", "required": true}, {"name": "TwoS", "type": "Number", "required": true}],
+  "dataSourceType": "File",
   "compute": {
     "descriptors": {
       "enabled": false

@@ -1,6 +1,13 @@
 {
-  "name": "Campaign Test",
+  "name": "TMP1-1",
   "templateName": "Template 1",
+  "createDate": "2023/10/02",
+  "status": "In Progress",
+  "campaignFields": {
+    "Chemist": "Davit Rizhinashvili",
+    "Stage": 1,
+    "Project": "Project 1"
+  },
   "filters": [
     {
       "type": "histogram",
@@ -42,7 +49,7 @@
   ],
   "ingest": {
     "type": "File",
-    "query": "System:AppData/HitTriage/campaigns/da45a44f-0101-4085-b947-50b4d3b10c98/enriched_table.csv",
+    "query": "System:AppData/HitTriage/campaigns/TMP1-1/enriched_table.csv",
     "molColName": "smiles"
   }
 }

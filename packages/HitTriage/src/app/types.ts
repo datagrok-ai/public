@@ -30,11 +30,25 @@ export type IComputeDialogResult = {
 
 export type ITemplate = {
     name: string,
+    key: string,
     compute: ITemplateCompute,
     submit?: ITemplateSubmit,
+    campaignFields: ICampaignField[],
+    dataSourceType: IngestType,
 }
 
-export type IngestType = 'File' | 'Function';
+export const CampaignFieldTypes = {
+  String: DG.TYPE.STRING,
+  Number: DG.TYPE.FLOAT,
+  Boolean: DG.TYPE.BOOL,
+  Date: DG.TYPE.DATE_TIME,
+} as const;
+
+export type ICampaignFieldType = keyof typeof CampaignFieldTypes;
+
+export type ICampaignField = {name: string, type: ICampaignFieldType, required?: boolean};
+
+export type IngestType = 'File' | 'Query';
 
 export type ITemplateIngest = {
     type: IngestType,
@@ -54,9 +68,14 @@ export type ITemplateSubmit = {
     package: string
 };
 
+export type ICampaignStatus = 'In Progress' | 'Submitted';
+
 export type ICampaign = {
     name: string,
     templateName: string,
+    status: ICampaignStatus,
+    createDate: string,
+    campaignFields: {[key: string]: any},
     filters: {[key: string]: any}[],
     ingest: ITemplateIngest,
 };
