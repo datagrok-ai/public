@@ -5,7 +5,7 @@ title: "IT customizations"
 We understand the need to comply to the organization's standards, so we made the platform easily customizable. Here are
 some of the features that can be controlled by the IT:
 
-* [Authentication](../../govern/authentication.md)
+* [Authentication](../../../govern/authentication.md)
   * Login / password
   * OAUTH
   * Active Directory
@@ -13,10 +13,10 @@ some of the features that can be controlled by the IT:
 * Authorization
   * Role- and group-based privileges
   * Dataset sharing policies
-* [Audit](../../govern/audit.md)
-* Managing [network file shares](../../access/files/files.mdx)
-* Managing [database connections](../../access/access.md#data-connection)
-  and [queries](../../access/access.md#data-query)
+* [Audit](../../../govern/audit.md)
+* Managing [network file shares](../../../access/files/files.mdx)
+* Managing [database connections](../../../access/access.md#data-connection)
+  and [queries](../../../access/access.md#data-query)
 * Data Storage
   * AWS
   * GCP

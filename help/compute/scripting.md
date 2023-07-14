@@ -84,7 +84,7 @@ First of all, a script can be executed right from the script editor (see picture
 
 Other ways involve saving the script as a part of a [package](../develop/develop.md#packages). In this case, it gets
 registered in the platform as a
-[function](../datagrok/functions/functions.md), and can be invoked in different ways:
+[function](../datagrok/concepts/functions/functions.md), and can be invoked in different ways:
 
 * From the [console](../datagrok/navigation.md#console)
 * From the data job
@@ -97,7 +97,7 @@ When a function is invoked with no explicitly specified parameters, a dialog is 
 by creating editors for each parameter. Depending on the metadata associated with the parameters, the editor can be
 enriched by [validators](#parameter-validators), [choices](#parameter-choices),
 and [suggestions](#parameter-suggestions). Validators, choices, and suggestions are
-[functions](../datagrok/functions/functions.md), that means they can be implemented in different ways (db query, script,
+[functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways (db query, script,
 etc), and reused.
 
 Registered scripts can be called via [JavaScript API](../develop/js-api.md) in the following manner:
@@ -592,5 +592,5 @@ See also:
 * [JavaScript](https://www.javascript.com)
 * [Packages](../develop/develop.md#packages)
 * [JavaScript API](../develop/js-api.md)
-* [Functions](../datagrok/functions/functions.md)
+* [Functions](../datagrok/concepts/functions/functions.md)
 * [Function call](../datagrok/functions/function-call.md)

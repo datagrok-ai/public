@@ -121,8 +121,8 @@ presented as a data table, a report, an interactive visualization, or something 
 
 Datagrok platform was specifically designed with that in mind. In addition to traditional model deployment techniques
 such as table and reports, Datagrok offers a unique way of distributing predictive model results via
-the [data augmentation](../discover/data-augmentation.md)
-and [info panels](../discover/info-panels.md#predicting-molecule-solubility).
+the [data augmentation](../explore/data-augmentation/data-augmentation.md)
+and [info panels](../explore/data-augmentation/info-panels.md#predicting-molecule-solubility).
 
 ### Videos
 
@@ -130,7 +130,7 @@ and [info panels](../discover/info-panels.md#predicting-molecule-solubility).
 
 See also:
 
-* [Cheminformatics predictive modeling](../domains/chem/chem.md#qsar-and-qspr-modeling)
+* [Cheminformatics predictive modeling](../datagrok/solutions/domains/chem/chem.md#qsar-and-qspr-modeling)
 * [Predictive modeling](https://en.wikipedia.org/wiki/Predictive_modelling)
 * [Statistical classification](https://en.wikipedia.org/wiki/Statistical_classification)
 * [R Caret package](https://topepo.github.io/caret/index.html)

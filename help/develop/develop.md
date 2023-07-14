@@ -11,7 +11,7 @@ including [data manipulation](js-api.md#data-manipulation), adding [views](js-ap
 or [viewers](how-to/manipulate-viewers.md),
 [developing custom viewers](how-to/develop-custom-viewer.md),
 [registering functions](js-api.md#registering-functions), training and
-applying [predictive models](../learn/predictive-modeling.md), and
+applying [predictive models](../learn/learn.md), and
 even [building custom apps](../develop/how-to/build-an-app.md).
 
 There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), use the built-in
@@ -26,7 +26,7 @@ This article describes what a [package](#packages) is, as well as techniques for
 A package is a versionable unit of content distribution within Datagrok. Essentially, it is a folder with files in it. A
 package might contain different things:
 
-* JavaScript [functions](../datagrok/functions/functions.md), [viewers](../visualize/viewers/viewers.md)
+* JavaScript [functions](../datagrok/concepts/functions/functions.md), [viewers](../visualize/viewers/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
 * [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/access.md#data-query) and [connections](../access/access.md#data-connection)
@@ -128,7 +128,7 @@ file. If you choose to include other files, such as CSS, in your package, import
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
 [headers](../datagrok/functions/func-params-annotation.md#header-parameters) are registered as Grok
-[functions](../datagrok/functions/functions.md)
+[functions](../datagrok/concepts/functions/functions.md)
 . By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
 JS object `{param1: value, param2: value}`:

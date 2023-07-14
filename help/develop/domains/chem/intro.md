@@ -55,7 +55,7 @@ and [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) for
 that SMARTS is the same thing as regular expressions in cheminformatics. Datagrok uses SMARTS for
 finding [structural alerts](../../../domains/chem/info-panels/structural-alerts.md)
 , performing substructure
-search, [R-group analysis](../../../datagrok/solutions/domains/chem/chem.md#r-groups-analysis) (*revision required*).
+search, [R-group analysis](../../../domains/chem/chem.md#r-groups-analysis) (*revision required*).
 
 ## Operating with chemical information
 
@@ -71,10 +71,10 @@ chemical spaces.
 
 Descriptors are frequently used for proceeding [similar](https://en.wikipedia.org/wiki/Chemical_similarity) chemical
 structures. These principles yield
-in [similarity search](../../../datagrok/solutions/domains/chem/chem.md#similarity-and-diversity-search)
-and [diversity search](../../../datagrok/solutions/domains/chem/chem.md#similarity-and-diversity-search)
+in [similarity search](../../../domains/chem/chem.md#similarity-and-diversity-search)
+and [diversity search](../../../domains/chem/chem.md#similarity-and-diversity-search)
 . In combination with clustering and self-organizing maps, methods such
-as [stochastic proximity embedding](../../../datagrok/solutions/domains/chem/chem.md#chemical-space)
+as [stochastic proximity embedding](../../../domains/chem/chem.md#chemical-space)
 allow to reduce dimensionality of used vectors and to separate the most significant features of the molecule. It helps
 us to visualize the chemical space in [2D maps](https://public.datagrok.ai/script/c7e74227-ca12-5337-b7d0-8c4d1bacfbb9).
 
@@ -90,7 +90,7 @@ All described methods are implemented in different analysis pipelines, and assum
 molecule perfectly. Data-associated errors lead to biases in descriptors, wrong interpretations of modeling outputs, and
 irrelevance of the whole work. The most sensitive cases are duplicated vectors in the training set, and errors derived
 from the incorrect structure representation.
-Thus, [curation](../../../datagrok/solutions/domains/chem/chem.md#curation)
+Thus, [curation](../../../domains/chem/chem.md#curation)
 of chemical data is usually integrated to analysis pipeline.
 
 ## Freely available tools and public databases
@@ -118,5 +118,5 @@ other *in silico* approaches including but not limited to:
 See also:
 
 - [Cheminformatics in Datagrok](https://datagrok.ai/cheminformatics)
-- [Cheminformatics API](../../../datagrok/solutions/domains/chem/chem.md)
+- [Cheminformatics API](../../../domains/chem/chem.md)
 - [Cheminformatics 101](https://openbabel.org/docs/dev/Cheminf101/index.html)

@@ -30,7 +30,7 @@ that can be applied to the table. Then you can predict the outcome in one click.
 
 ## Suggesting applicable actions
 
-Using the repository of [functions](../datagrok/functions/functions.md) (over 200+ functions), historical activity, and
+Using the repository of [functions](../datagrok/concepts/functions/functions.md) (over 200+ functions), historical activity, and
 the structure of the current table, the system uses AI techniques to suggest actions that are likely to be relevant at
 the moment. For instance, if it finds a column that looks like street address, it will suggest to convert it to
 geographical positions by doing the geo-coding and adding two columns (longitude, latitude). Or, it may suggest to
@@ -65,5 +65,5 @@ how to contribute to the public repository of scientific functions.
 See also:
 
 * [Info panels](info-panels.md)
-* [Predictive modeling](../learn/predictive-modeling.md)
+* [Predictive modeling](../learn/learn.md)
 * [Public repository](../collaborate/public-repository.md)

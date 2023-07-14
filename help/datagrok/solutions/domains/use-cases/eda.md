@@ -24,57 +24,57 @@ what we are viewing and how we are viewing it:
 
 From the ground up, we designed Datagrok for visually-driven EDA of big, complex datasets. Unlike other tools that use
 conventional client-server architecture,
-Datagrok's [proprietary in-memory database](../develop/advanced/performance.md#in-memory-database) makes it possible to
+Datagrok's [proprietary in-memory database](../../../../develop/under-the-hood/performance.md#in-memory-database) makes it possible to
 analyze _millions of columns_ and
 _billions of rows_ at the speed of thought right in your browser.
 
 With Datagrok, you can:
 
-* [Seamlessly load data from any data source](../access/files/files.mdx). Datagrok supports all popular databases,
-  multiple [file formats](../access/files/supported-formats.md) and is both data-agnostic and
+* [Seamlessly load data from any data source](../../../../access/files/files.mdx). Datagrok supports all popular databases,
+  multiple [file formats](../../../../access/files/supported-formats.md) and is both data-agnostic and
   domain-intelligent. <!--TODO link to a section on domains once ready-->
 
 * Visualize the data using domain-specific value renderers (such as molecules on scatter plot axes).
 
 * Analyze big datasets that other tools struggle with (billions of rows, or millions of columns).
 
-* Use multiple interactive tools to [wrangle data](../transform/data-wrangling.md) right from your visualization
-  workspace. [Cluster data](cluster-data.md), [impute missing values](../transform/missing-values-imputation.md), find
+* Use multiple interactive tools to [wrangle data](../../../../transform/transform.md) right from your visualization
+  workspace. [Cluster data](../../../../explore/cluster-data.md), [impute missing values](../../../../transform/missing-values-imputation.md), find
   and treat duplicates and outliers.
 
-* Visualize data at the click of a button using [30+ native viewers](../visualize/viewers/viewers.md). We support all popular
+* Visualize data at the click of a button using [30+ native viewers](../../../../visualize/viewers/viewers.md). We support all popular
   visualizations (
-  like [scatterplots with built-in regression lines](../visualize/viewers/scatter-plot.md#regression-line)
-  or [box-plots with built-in statistical tests](../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
-  viewers, such as [chemically-aware   viewers](../domains/chem/chemically-aware-viewers.md). The tabular viewer, [_grid_](../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
+  like [scatterplots with built-in regression lines](../../../../visualize/viewers/scatter-plot.md#regression-line)
+  or [box-plots with built-in statistical tests](../../../../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
+  viewers, such as [chemically-aware   viewers](../chem/chemically-aware-viewers.md). The tabular viewer, [_grid_](../../../../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
 
   * Viewing datasets with _millions of columns_ and _billions of rows_
   * Dataset overview, including summary statistics for numerical data columns and distribution for categorical data
     columns
   * Custom cell renderers for molecules, sequences, dose-response curves, and sparklines
-  * Editing datasets (for example, adding new molecules using [sketchers](../domains/chem/chem.md))
+  * Editing datasets (for example, adding new molecules using [sketchers](../chem/chem.md#sketching))
 
 * Filter, zoom in and out, aggregate, pivot, and cross-link data. All our viewers work in tandem and are customizable,
-  [high-performant, and interactive](../develop/advanced/performance.md#viewers).
+  [high-performant, and interactive](../../../../develop/under-the-hood/performance.md#viewers).
 
-* Perform calculations on data using predefined statistical [functions](../datagrok/functions/functions.md).
-* Get details on demand using a variety of [widgets](../visualize/widgets.md), including customizable
-  [tooltips](../explore/select-tooltip-columns.md#viewer-tooltips) and
-  context-driven [info panels](../discover/info-panels.md).
+* Perform calculations on data using predefined statistical [functions](../../../concepts/functions/functions.md).
+* Get details on demand using a variety of [widgets](../../../../visualize/widgets.md), including customizable
+  [tooltips](../../../../explore/search-filter-select/select-tooltip-columns.md#viewer-tooltips) and
+  context-driven [info panes](../../../../explore/data-augmentation/info-panels.md).
 
 * Build on collective knowledge of Datagrok users. Using
-  built-in [data augmentation capabilities](../discover/data-augmentation.md), Datagrok understands the nature of your
+  built-in [data augmentation capabilities](../../../../explore/data-augmentation/data-augmentation.md), Datagrok understands the nature of your
   data, and offers actionable insights based on it. For example, the platform
-  [automatically suggests visualizations](../visualize/view-layout.md#layout-suggestions) for datasets or predicts
+  [automatically suggests visualizations](../../../../visualize/view-layout.md#layout-suggestions) for datasets or predicts
   properties for chemical structures.
 
 You can also leverage Datagrok's component-based architecture to extend or create any element you like. For example, you
-can [add custom viewers](../develop/how-to/develop-custom-viewer.md) or develop new functions
-in [R, Python, or Julia](../compute/scripting.md).
+can [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md) or develop new functions
+in [R, Python, or Julia](../../../../compute/scripting.md).
 
-Each of these actions can be [automated](../datagrok/functions/functions.md#macros) and used in
+Each of these actions can be [automated](../../../concepts/functions/functions.md#macros) and used in
 pipelines. Sharing the results of your analysis is easy and
-[secure](../govern/security.md).<!--TODO rewrite for clarity-->
+[secure](../../../../govern/security.md).<!--TODO rewrite for clarity-->
 
 With Datagrok, anyone can use their domain knowledge and perceptive abilities to explore data and uncover its meaning.
 
@@ -112,6 +112,6 @@ With Datagrok, anyone can use their domain knowledge and perceptive abilities to
 
 ## See also
 
-* [Viewers](../visualize/viewers/viewers.md)
-* [Data science](../learn/data-science.md)
-* [Predictive modeling](../learn/predictive-modeling.md)
+* [Viewers](../../../../visualize/viewers/viewers.md)
+* [Data science](../data-science.md)
+* [Predictive modeling](../../../../learn/learn.md)

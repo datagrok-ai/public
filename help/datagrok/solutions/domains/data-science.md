@@ -7,11 +7,11 @@ Datagrok was built for data scientists, by data scientists. Our goal is to let s
 infrastructure.
 
 Out of the box, Datagrok provides all tools necessary for
-[data ingestion](../access/files/files.mdx),
-[transformation](../transform/data-wrangling.md),
-[visualization](../visualize/viewers/viewers.md),
-[analysis](../explore/exploratory-data-analysis.md),
-[modeling](predictive-modeling.md), as well as [deploying models](predictive-modeling.md#deployment)
+[data ingestion](../../../access/files/files.mdx),
+[transformation](../../../transform/transform.md),
+[visualization](../../../visualize/viewers/viewers.md),
+[analysis](use-cases/eda.md),
+[modeling](../../../learn/learn.md), as well as [deploying models](../../../learn/learn.md#deployment)
 and scientific analyses. Scripts and models can be written in any language, such as R or Python.
 
 ## Data munging
@@ -27,7 +27,7 @@ mechanisms and having built-in collaboration features, we drastically reduce tha
 
 ## Data provenance
 
-[Data provenance](../govern/data-provenance.md) is the ability to fully understand everything that the result depends
+[Data provenance](../../../govern/data-provenance.md) is the ability to fully understand everything that the result depends
 upon.
 
 ## Data pipelines
@@ -61,23 +61,23 @@ Actions", see "Math" section.
 
 ## Interactive methods
 
-### [Clustering](../explore/cluster-data.md)
+### [Clustering](../../../explore/cluster-data.md)
 
 Performs clustering using k-means algorithm. An interactive visualization lets you see clustering results in real-time,
 which makes the process a lot more intuitive.
 
-### [Missing Value Imputation](../transform/missing-values-imputation.md)
+### [Missing Value Imputation](../../../transform/missing-values-imputation.md)
 
 Allows to do fast and simple missing values imputation using k-nearest neighbours algorithm.
 
-### [Random Data Generation](../transform/random-data.md)
+### [Random Data Generation](../../../transform/random-data.md)
 
 Generate columns with random data with different distributions (Normal, Log-Normal, Binomial, Poisson, Uniform), using
 the specified parameters.
 
 ### Multivariate analysis
 
-[Multivariate Analysis](../explore/multivariate-analysis/pls.md) plugin implements partial least squares (PLS)
+[Multivariate Analysis](../../../explore/multivariate-analysis/pls.md) plugin implements partial least squares (PLS)
 algorithm. It is an easy-to-interpret, commonly used approach for multidimensional data analysis. It shows the following
 on the interactive viewers: scores, explained variance, correlation loadings, predicted vs. reference, and regression
 coefficients.
@@ -101,10 +101,10 @@ Train models, apply them, compare performance characteristics, deploy, share. Cu
   * Principal Component Analysis (PCA)
 
 Trained models can be shared with other users. In addition to making them discoverable and reusable, the platform might
-also [suggest applying models to the datasets](self-learning-platform.md) (
+also [suggest applying models to the datasets](../../../learn/self-learning-platform.md) (
 potentially opened by other users) when it deduces that the input dataset is of the same structure as the dataset the
 model was trained on.
 
 See also:
 
-* [Life sciences](../solutions/life-sciences.md)
+* [Life sciences](use-cases/life-sciences.md)

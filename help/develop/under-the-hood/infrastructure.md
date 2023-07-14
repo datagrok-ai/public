@@ -422,7 +422,7 @@ Resources (differs based on your needs):
 
 See also:
 
-* [Predictive Modeling](../../learn/predictive-modeling.md)
+* [Predictive Modeling](../../learn/learn.md)
 
 ### Grok Compute
 
@@ -435,7 +435,7 @@ At the moment some limitations are exists:
 
 See also:
 
-* [Cheminformatics](../../domains/chem/chem.md)
+* [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md)
 
 ## Storage
 

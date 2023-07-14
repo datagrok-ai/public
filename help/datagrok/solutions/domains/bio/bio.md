@@ -25,11 +25,11 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 Datagrok lets you work with macromolecules both on the macro (sequence) level and atomic level:
 
 * Data visualization and exploration
-  * Support for multiple formats, such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
-  * [Automatic detection of sequences](../../discover/semantic-types.md) upon data import.
+  * Support for multiple formats, such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+  * [Automatic detection of sequences](../../../../catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
-  * Customizable [info panes](../../discover/info-panels.md) with information about macromolecules and context actions.
+  * Customizable [info panes](../../../../explore/data-augmentation/info-panels.md) with information about macromolecules and context actions.
   * [Sequence editing](#sketching-and-editing), [search, and filtering](#searching-and-filtering).
   * Sequence analysis
     * [Sequence composition](#sequence-composition)
@@ -39,39 +39,39 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
   * Structure-Activity Relation (SAR) analysis
     * [Activity cliffs](#activity-cliffs)
     * A fit-for-purpose application for [SAR analysis for peptides](#sar-for-peptides)
-  * A comprehensive [ML toolkit](../../learn/data-science.md) for
+  * A comprehensive [ML toolkit](../../../../datagrok/solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../access/databases/databases.mdx#sharing-query-results).
+  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
 * [Macromolecule format conversion](#sequence-translation).
 * Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#get-atomic-level-structure).
 * [Extensible environment](#customizing-and-extending-the-platform)
-  * Ability to add or customize any functionality using [scripts](../../compute/scripting.md) in Python, R, Matlab, and other supported languages.
+  * Ability to add or customize any functionality using [scripts](../../../../compute/scripting.md) in Python, R, Matlab, and other supported languages.
   * Ability to create custom plugins and fit-for-purpose applications.
-* [Enterprise-grade platform](../../develop/admin/enterprise-evaluation-faq.md) for efficient data access and management.
+* [Enterprise-grade platform](../../../solutions/enterprise/enterprise-evaluation-faq.md) for efficient data access and management.
 
 ## Data access
 
 Datagrok provides a single, unified access point for organizations.
 You can connect to local file storage, clouds (Amazon S3, Google cloud, etc),
 SQL and NoSQL databases or any other of the
-[30+ supported data sources](../../access/databases/connectors/connectors.md),
+[30+ supported data sources](../../../../access/databases/connectors/connectors.md),
 retrieve data, and securely share data with others.
-Datagrok can ingest data in [multiple file formats](../../access/files/supported-formats.md) (such as Fasta or CSV)
+Datagrok can ingest data in [multiple file formats](../../../../access/files/supported-formats.md) (such as Fasta or CSV)
 and multiple notations for nucleotide and amino acid sequences, with natural and modified monomers,
 aligned and non-aligned forms.
 
-You can also create macromolecule queries against data sources using built-in quering tools. To learn more about querying data and data access in general, see the [Access](../../access/access.md) section of our documentation.
+You can also create macromolecule queries against data sources using built-in quering tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
 
 ## Exploring biological data
 
 Datagrok provides a range of tools for analyzing macromolecules (**Top Menu** > **Bio**).
 In addition, Datagrok provides a comprehensive
-[machine learning toolkit](../../learn/data-science.md) for
+[machine learning toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks (**Top Menu** > **ML**). Some of these tools can be applied directly to macromolecules.
 
 When you open a dataset, Datagrok automatically detects macromolecules and makes available macromolecule-specific context actions. For example, when you open a CSV file containing macromolecules in the FASTA format, the following happens:
 
-* Data is parsed, and the [semantic type](../../discover/semantic-types.md) _macromolecule_ is assigned to the corresponding column.
+* Data is parsed, and the [semantic type](../../../../catalog/semantic-types.md) _macromolecule_ is assigned to the corresponding column.
 * Macromolecules are automatically rendered in the spreadsheet.
 * Column tooltip now shows the sequence composition.
 * Default column filter is now a subsequence search.
@@ -105,19 +105,19 @@ Some info panes can be customized. To reveal an info pane's available options, h
 * Change the info pane's settings (click the **Gear** icon).
 * Append info pane as a column (click the **More actions** icon and select **Add as a column**).
 
-To learn how to customize and extend the platform programmatically, see the [Develop](../../develop/) section of our documentation.
+To learn how to customize and extend the platform programmatically, see the [Develop](../../../../develop/develop.md) section of our documentation.
 
 </details>
 
 :::note developers
 
-Info panes be extended with [functions](../../datagrok/functions/functions.md) in any supported language.
+Info panes be extended with [functions](../../../concepts/functions/functions.md) in any supported language.
 
 :::
 
 ### Spreadsheet
 
-The [spreadsheet](../../visualize/viewers/grid.md) lets you visualize and [edit](#sketching-and-editing) sequences and macromolecules. You can add new columns with calculated values, interactively [filter and search](#searching-and-filtering) rows, color-code columns, pin rows or columns, set edit permissions, and more.
+The [spreadsheet](../../../../visualize/viewers/grid.md) lets you visualize and [edit](#sketching-and-editing) sequences and macromolecules. You can add new columns with calculated values, interactively [filter and search](#searching-and-filtering) rows, color-code columns, pin rows or columns, set edit permissions, and more.
 
 ```mdx-code-block
 <Tabs>
@@ -156,9 +156,9 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 
 ### Macromolecule aware viewers
 
-Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
+Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
 
-Macromolecule-specific viewers inlude [sequence logo](../../visualize/viewers/aminoacids-web-logo.md), 3D structure viewers ([biostructure](../../visualize/viewers/biostructure-viewer.png) and [NGL viewer](../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../visualize//viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../visualize/viewers/scatter-plot.md), a [network diagram](../../visualize/viewers/network-diagram.md), a [tile viewer](../../visualize/viewers/tile-viewer.md),a [bar chart](../../visualize/viewers/bar-chart.md), a [form viewer](../../visualize/viewers/form.md), and [trellis plot](../../visualize/viewers/trellis-plot.md), and others.
+Macromolecule-specific viewers inlude [sequence logo](../../../../visualize/viewers/aminoacids-web-logo.md), 3D structure viewers ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../../../visualize//viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
 
 <details>
 <summary>Examples</summary>
@@ -170,7 +170,7 @@ Macromolecule-specific viewers inlude [sequence logo](../../visualize/viewers/am
 
 Composition analysis for MSA.
 
-![Composition analysis for MSA](../../uploads/macromolecules/macromolecules-bar-chart-800.gif "MSA for peptides")
+![Composition analysis for MSA](../../../../uploads/macromolecules/macromolecules-bar-chart-800.gif "MSA for peptides")
 
 ```mdx-code-block
 </TabItem>
@@ -188,26 +188,26 @@ Activity cliffs analysis using a scatterplot.
 
 </details>
 
-All viewers can be saved as part of the [layout](../../visualize/view-layout.md) or a dashboard. Some viewers offer built-in statistics.
+All viewers can be saved as part of the [layout](../../../../visualize/view-layout.md) or a dashboard. Some viewers offer built-in statistics.
 
-To learn how to use viewers to explore data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../visualize/viewers/viewers.md) section of our documentation.
+To learn how to use viewers to explore data, complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers) or visit the [Visualize](../../../../visualize/viewers/viewers.md) section of our documentation.
 
 :::note developers
 
-You can [add custom viewers](../../develop/how-to/develop-custom-viewer.md).
+You can [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md).
 
 :::
 
 ### Analyzing docking results
 
-To explore the binding interactions between small ligand molecules and biological structures, you can use either the [NGL](../../visualize/viewers/ngl.md) or [biostructure](../../visualize/viewers/biostructure.md) viewer. Both viewers visualize the docked ligands in their spatial context and let you examine their orientation and positioning within the binding site.
+To explore the binding interactions between small ligand molecules and biological structures, you can use either the [NGL](../../../../visualize/viewers/ngl.md) or [biostructure](../../../../visualize/viewers/biostructure.md) viewer. Both viewers visualize the docked ligands in their spatial context and let you examine their orientation and positioning within the binding site.
 
 <details>
 <summary>How to use</summary>
 
 Prerequisites: Prepare the simulation data in two separate files:
   
-* File 1: Contains the structure of a macromolecule in a [supported format](../../access/files/supported-formats.md), such as PDB.
+* File 1: Contains the structure of a macromolecule in a [supported format](../../../../access/files/supported-formats.md), such as PDB.
 * File 2: Contains the simulation results of the position of small molecules relative to the structure.
 
 To visualize docked ligands, follow these steps:
@@ -273,11 +273,11 @@ To search a dataset for matching sequences, do the following:
 
 </details>
 
-To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../visualize/viewers/viewers.md#filter).
+To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/viewers/viewers.md#filter).
 
 ## Managing monomer libraries
 
-When you install the [HELM package](https://github.com/datagrok-ai/public/tree/master/packages/Helm), the basic monomer library comes with it automatically. You can add your own libraries by [adding them to a file share](../../access/files/files.mdx#connecting-to-file-storage). Once the library is connected, it appears in the **Manage Libraries** info pane for the selected column. You can use the info pane to add more libraries or switch between different libraries based on your specific requirements.
+When you install the [HELM package](https://github.com/datagrok-ai/public/tree/master/packages/Helm), the basic monomer library comes with it automatically. You can add your own libraries by [adding them to a file share](../../../../access/files/files.mdx#connecting-to-file-storage). Once the library is connected, it appears in the **Manage Libraries** info pane for the selected column. You can use the info pane to add more libraries or switch between different libraries based on your specific requirements.
 
 ## Sequence analysis
 
@@ -288,7 +288,7 @@ You can create a
 and helps identify patterns and variations within those sequences.
 A common use is to visualize protein-binding sites in DNA or functional motives in proteins.
 
-![Logo plot](../../uploads/macromolecules/macromolecules-10.gif "Logo plot") <!--redo gif due to poor resolution-->
+![Logo plot](../../../../uploads/macromolecules/macromolecules-10.gif "Logo plot") <!--redo gif due to poor resolution-->
 
 <details>
 <summary>How to use</summary>
@@ -442,7 +442,7 @@ application performs SAR analysis of peptides. The app offers the following feat
 * Dynamic calculations of statistically significant differences in activity distributions between groups.
 * Analyzing the peptide space.
 
-![Peptides plugin](../../uploads/macromolecules/macromolecules-12.png "Peptides plugin")
+![Peptides plugin](../../../../uploads/macromolecules/macromolecules-12.png "Peptides plugin")
 
 <!--replace with a gif-->
 
@@ -607,7 +607,7 @@ This approach could be used for any given case of HELM notation
 in order to get a visually appropriate form of monomers
 in cycles etc. Structure at atomic level could be saved in available notations.
 
-![Restoring structure atomic level](../../uploads/macromolecules/restoreStructures.gif)<!--retake gif to compy with DG standards-->
+![Restoring structure atomic level](../../../../uploads/macromolecules/restoreStructures.gif)<!--retake gif to compy with DG standards-->
 
 <details>
 <summary>How to use</summary>
@@ -620,8 +620,8 @@ in cycles etc. Structure at atomic level could be saved in available notations.
 ## Customizing and extending the platform
 
 Datagrok is a highly flexible platform that can be tailored to meet your specific needs and requirements.
-With its comprehensive set of [functions](../../develop/function-roles.md) and
-[scripting capabilities](../../compute/scripting.md),
+With its comprehensive set of [functions](../../../../develop/function-roles.md) and
+[scripting capabilities](../../../../compute/scripting.md),
 you can customize and enhance any aspect of the platform to suit your biological data needs.
 
 For instance, you can add new data formats,
@@ -636,7 +636,7 @@ You can also add or change UI elements, create custom connectors, menus, context
 You can even develop entire applications on top of the platform
 or customize any existing [open-source plugins](https://github.com/datagrok-ai/public/tree/master/packages).
 
-[Learn more about extending and customizing Datagrok](../../develop/develop.md).
+[Learn more about extending and customizing Datagrok](../../../../develop/develop.md).
 
 ## Resources
 

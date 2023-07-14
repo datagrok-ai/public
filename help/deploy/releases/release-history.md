@@ -473,7 +473,7 @@ The package provides the functionality of two viewers  that enable the visualiza
   * Customization of dimensionality reduction algorithms is now possible, especially in the context of **Chemical Space** and **Activity Cliffs** functions. For details, see [Dimensionality reduction algorithms](https://community.datagrok.ai/t/cheminformatics-updates/457/21).
   * Implemented improvements for Similarity and Diversity Search viewers. Information from any column of the initial dataset can now be added to these viewers, and the color coding applied to the initial dataframe is also displayed there. To learn more, see [New functionality in Similarity/Diversity search](https://community.datagrok.ai/t/cheminformatics-updates/457/19).
   * When a large structure is depicted in the sketch box of the filters panel, it is now rendered in a tooltip.
-  * [Scaffold tree](../../../domains/chem/chem.md#scaffold-tree-analysis) improvements:
+  * [Scaffold tree](../../../datagrok/solutions/domains/chem/chem.md#scaffold-tree-analysis) improvements:
     * Scaffold tree now uses the default sketcher set in the Chem package properties.
     * Implemented logical AND, OR, NOT operations for scaffold tree elements.
 * Fixed:
@@ -1182,7 +1182,7 @@ Here are some of the biggest improvements:
 
 * New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by
   arranging molecules into a tree hierarchy based on their scaffolds. For details,
-  see [Scaffold tree](../../../domains/chem/chem.md#scaffold-tree-analysis).
+  see [Scaffold tree](../../../datagrok/solutions/domains/chem/chem.md#scaffold-tree-analysis).
 * [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
   For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
 * Brand new [Map](release-history.md/#enhancements-in-packages). To learn more,
@@ -1219,7 +1219,7 @@ Here are some of the biggest improvements:
 #### [Chem](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Chem#readme)
 
 We've added new **Scaffold Tree** visualization that organizes molecular data sets by arranging molecules into a tree
-hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/chem.md#scaffold-tree-analysis).
+hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../datagrok/solutions/domains/chem/chem.md#scaffold-tree-analysis).
 
 * Improvements:
   * Added the package property to [set the default **Sketcher

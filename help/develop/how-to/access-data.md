@@ -122,7 +122,7 @@ Datagrok has a [built-in credentials management system](../../govern/security.md
 Once the connection is established, you can extract data by sending a [query](../../access/access.md#data-query) to the data source. In a package, queries are typically placed in the `queries` folder.
 
 Similar to [scripts](../../compute/scripting.md), you can annotate SQL statements with comments as the underlying
-mechanism is fundamentally the same ([learn more about functions](../../datagrok/functions/functions.md)). To use an existing connection in a query, provide its name along with the namespace in the `connection` parameter.
+mechanism is fundamentally the same ([learn more about functions](../../datagrok/concepts/functions/functions.md)). To use an existing connection in a query, provide its name along with the namespace in the `connection` parameter.
 
 Here's an example for your `queries.sql` file:
 
@@ -140,7 +140,7 @@ select * from protein_classification
 
 SQL statements are annotated with comments, just like [functions](../../datagrok/functions/func-params-annotation.md),
 since the underlying mechanism is essentially the same (read more on the concept of
-[functions](../../datagrok/functions/functions.md)). Here we have two header parameters: the query `name` and the
+[functions](../../datagrok/concepts/functions/functions.md)). Here we have two header parameters: the query `name` and the
 `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify
 `connection` if the package only has one. Similarly, the tag `end` is not required if there is only one query per file:
 the parser needs it to understand where the current query ends and the next one begins. So safely omit the name of
@@ -301,4 +301,4 @@ You can also use one of the following options to open files using JavaScript:
 See also:
 
 * [JavaScript Development](../develop.md)
-* [Functions](../../datagrok/functions/functions.md)
+* [Functions](../../datagrok/concepts/functions/functions.md)

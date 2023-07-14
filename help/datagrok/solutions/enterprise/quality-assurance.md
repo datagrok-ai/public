@@ -4,18 +4,18 @@ title: "Quality assurance"
 
 Datagrok is an incredibly powerful platform. To give users the best possible
 performance, we have created a number of unique, proprietary technologies, such
-as [in-memory columnar database](architecture.md#data-engine) and fast
-[visualizations](architecture.md#viewers). To provide the seamless
-end-to-end-experience, we took ownership of [data access](../../home.md#access),
-[data governance](../../home.md#access),
-[data exploration](../../home.md#explore),
-[scientific computing](../../compute/scripting.md),[machine learning and artificial intelligence](../../home.md#explore),
-and [collaboration](../../home.md#share).
+as [in-memory columnar database](../../../develop/under-the-hood/architecture.md#data-engine) and fast
+[visualizations](../../../develop/under-the-hood/architecture.md#viewers). To provide the seamless
+end-to-end-experience, we took ownership of [data access](../../../home.md#access),
+[data governance](../../../home.md#access),
+[data exploration](../../../home.md#explore),
+[scientific computing](../../../compute/scripting.md),[machine learning and artificial intelligence](../../../home.md#explore),
+and [collaboration](../../../home.md#share).
 To make sure our enterprise customers can work with their data in a secure and
 efficient manner, we have built features like
-[authentication](../../govern/authentication.md),
-[audit](../../govern/audit.md), and
-[role management system](../../govern/authentication.md). The list goes on and on.
+[authentication](../../../govern/authentication.md),
+[audit](../../../govern/audit.md), and
+[role management system](../../../govern/user.md). The list goes on and on.
 
 This sort of power comes at the cost of significantly increasing the platform's
 complexity. And our QA processes, along with the CI/СD concept, maintain the
@@ -25,11 +25,11 @@ integrate with dependencies and interactions they bring.
 ## Continuous integration and deployment system
 
 To ensure quick and reliable code delivery, we apply the
-[CI/CD flow](../admin/releases/ci-flow.mdx)
+[CI/CD flow](../../../deploy/releases/ci-flow.mdx)
 using the following tools:
 
 * We use Git as a VCS, and we follow the
-[Versioning policy](../admin/releases/versioning-policy.md) for Datagrok
+[versioning policy](../../../deploy/releases/versioning-policy.md) for Datagrok
 [JS APIs](https://github.com/datagrok-ai/public/tree/master/js-api),
 [packages](https://github.com/datagrok-ai/public/tree/master/packages),
 [libraries](https://github.com/datagrok-ai/public/tree/master/libraries), and
@@ -76,18 +76,18 @@ between different modules, while unit tests tend to address isolated modules.
 * **JS API tests**. We have a  a regular
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests)
 containing a suite of tests for the
-[JS API](../js-api.md). These tests are
+[JS API](../../../develop/packages/js-api.md). These tests are
 executed automatically on a server using a headless browser mode.
 * **UI tests**. We have over 100 complex UI tests for automated testing of the
 platform.  Each test is associated with a separate story, which describes the
 intended objective, actions, and expected outcome of the user. To emulate user
 input, we use Selenium. It also checks the expected result.
-* [**Package tests**](../how-to/add-package-tests.md). These tests include
-[unit tests](../how-to/add-package-tests.md/#adding-unit-tests) and
-[function tests](../how-to/add-package-tests.md/#testing-functions). We provide
+* [**Package tests**](../../../develop/how-to/add-package-tests.md). These tests include
+[unit tests](../../../develop/how-to/add-package-tests.md/#adding-unit-tests) and
+[function tests](../../../develop/how-to/add-package-tests.md/#testing-functions). We provide
 function tests for packages, scripts, and APIs, as they all utilize the
 concept of
-[functions](../../datagrok/functions/functions.md).
+[functions](../../concepts/functions/functions.md).
 * **Performance benchmarks**. We run performance benchmarks as part of the build
 and keep track of the results to ensure that the platform only gets better
 with time.
@@ -122,7 +122,7 @@ Additionally, we use manual tests, automatic tests, monitoring and logging
 systems, and our [community](https://community.datagrok.ai/) to gather feedback
 and identify issues.
 
-You can [report an issue](../how-to/report-tickets.md) directly in one of our issue
+You can [report an issue](../../../develop/how-to/report-tickets.md) directly in one of our issue
 tracking systems. We use [JIRA](https://reddata.atlassian.net/) for internal
 issues, integrated with BitBucket, and [GitHub
 Tracker](https://github.com/datagrok-ai/public/issues) for all externally
@@ -131,13 +131,13 @@ but if you don't, use GitHub Tracker.
 
 Tracking the issues, we stay on
 top of the platform's current status, including critical issues, promised
-features, and upcoming changes. You can also track our latest updates in [Release notes](../admin/releases/release-history.md).
+features, and upcoming changes. You can also track our latest updates in [Release notes](../../../deploy/releases/release-history.md).
 
 ## QA tools
 
 ### GrokTester
 
-Is an integrated monitoring system that runs automated package tests every hour. It's also possible to run [package testing locally](../how-to/test-packages#local-testing) before publishing.
+Is an integrated monitoring system that runs automated package tests every hour. It's also possible to run [package testing locally](../../../develop/how-to/test-packages#local-testing) before publishing.
 
 ### Test tracking system
 
@@ -155,16 +155,16 @@ Test Manager is a tool within the Datagrok platform that provides a convenient i
 selecting and running package unit tests with additional capabilities for
 exploring the test results. **Test manager** is a component of the
 [**DevTools** package](https://github.com/datagrok-ai/public/tree/master/packages/DevTools).
-See [Test Manager](../how-to/test-packages.md#test-manager) to learn more.
+See [Test Manager](../../../develop/how-to/test-packages.md#test-manager) to learn more.
 
 ### Usage Analysis
 
 Usage Analysis is the
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) that facilitates understanding of Datagrok platform usage through different viewers, displaying data on usage statistics, errors, and platform events.
-See [Usage Analysis](../../govern/usage-analysis.md)
+See [Usage Analysis](../../../govern/usage-analysis.md)
 to learn more.
 
 See also:
 
-* [Architecture](architecture.md)
-* [Infrastructure](infrastructure.md)
+* [Architecture](../../../develop/under-the-hood/architecture.md)
+* [Infrastructure](../../../develop/under-the-hood/infrastructure.md)

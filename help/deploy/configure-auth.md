@@ -1,5 +1,6 @@
 ---
-title: "Authentication"
+title: "Configure authentication"
+sidebar_position: 14
 ---
 
 Out-of-the-box, Datagrok offers many authentication methods, including popular methods such as SSO and OAuth.
@@ -8,7 +9,7 @@ To accommodate any enterprise needs, we can develop a customer-specific integrat
 
 All methods can be enabled separately or combined.
 
-More information about authentication can be found on [our wiki](../../govern/authentication.md).
+[Learn more about authentification](../govern/authentication.md).
 
 ## Common options
 
@@ -21,7 +22,7 @@ Enable the 'Send Welcome Email' option to send welcome emails to new signed-up u
 
 It is the most basic method to authenticate users with Datagrok.
 
-To configure [login-password authentication](../../govern/authentication.md) for Datagrok:
+To configure login-password authentication for Datagrok:
 
 1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2. Enable 'Internal authentication' to use the login-password method
@@ -35,7 +36,7 @@ To configure [login-password authentication](../../govern/authentication.md) for
 For login-password authentication, it is important to configure an Email service that will deliver signup, welcome,
 confirmation and forgot password emails.
 
-To configure SMTP for Datagrok check [the instructions on wiki](configure-smtp.md).
+[Learn how to configure SMTP for Datagrok](configure-smtp.md).
 
 ## Oauth authentication
 

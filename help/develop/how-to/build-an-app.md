@@ -12,7 +12,7 @@ executing database queries, accessing web services, or running
 * [Enamine molecule browser](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
 <!--* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
 
-From the technical perspective, an app is a [function](../../datagrok/functions/functions.md)
+From the technical perspective, an app is a [function](../../datagrok/concepts/functions/functions.md)
 that resides in a [package](../develop.md#packages) and is tagged with the `#app` tag. Similarly to the `main` function
 in C++, this is an entry point that gets executed when the app is [launched](#launching-applications).
 
@@ -345,12 +345,12 @@ Most of the objects in Datagrok can be annotated with metadata (key-value pairs)
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
 with the platform; other have no effect at all, except that you can search objects by metadata.
 
-There is a variety of metadata in Datagrok, discussed [here](../../discover/metadata.md). Out of all metadata, column
+There is a variety of metadata in Datagrok, discussed [here](../../catalog/metadata.md). Out of all metadata, column
 tags and semantic types are of particular interest in application development and working with dataframes.
 
 *References:*
 
-* [Metadata](../../discover/metadata.md)
+* [Metadata](../../catalog/metadata.md)
 
 ##### Column tags
 
@@ -383,7 +383,7 @@ automatically by column semantic type detectors, or set manually in the JavaScri
 
 *References:*
 
-* [Semantic Types](../../discover/semantic-types.md)
+* [Semantic Types](../../catalog/semantic-types.md)
 
 #### Aggregations and joining
 
@@ -546,7 +546,7 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 *References:*
 
 * [Running a script](../../compute/scripting.md#running-a-script)
-* [Functions](../../datagrok/functions/functions.md)
+* [Functions](../../datagrok/concepts/functions/functions.md)
 
 ### Visualizations
 

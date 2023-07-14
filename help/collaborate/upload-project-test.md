@@ -7,7 +7,7 @@ A [project](project.md) is a collection of different objects that you want to us
 [Project](project.md) can contain [tables](table.md), [queries](../access/access.md#data-query),
 [connections](../access/access.md#data-connection), data jobs,
 [Jupyter notebooks](../compute/jupyter-notebook.md)
-, [predictive models](../learn/predictive-modeling.md), and other.
+, [predictive models](../learn/learn.md), and other.
 
 ## Testing scenario
 

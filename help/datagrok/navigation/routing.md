@@ -23,7 +23,7 @@ The platform has browsers for the following entities:
 | [Scripts](../compute/scripting.md)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
 | [Functions](functions/functions.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
 | [Applications](../develop/develop.md)          | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
-| [Models](../learn/predictive-modeling.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
+| [Models](../learn/learn.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
 | [Notebooks](../compute/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
 | [Users](../govern/user.md)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
 | [Groups](../govern/group.md)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |

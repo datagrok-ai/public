@@ -2,14 +2,14 @@
 title: "Enterprise evaluation FAQ"
 ---
 
-* [Architecture](architecture.md)
+* [Architecture](../../../develop/under-the-hood/architecture.md)
   * Data flows
-  * [Deployment](deploy/deploy.md)
+  * [Deployment](../../../deploy/deploy.md)
 
 * Security
   * [Security overview](security.md)
-  * [Authentication](../../govern/authentication.md)
-  and [authorization](../../govern/authorization.md)
+  * [Authentication](../../../govern/authentication.md)
+  and [authorization](../../../govern/authorization.md)
   * [Encryption at rest](#encryption-at-rest)
   and [encryption in transit](#encryption-in-transit)
 
@@ -23,23 +23,23 @@ title: "Enterprise evaluation FAQ"
   * Calling web services from client and server with proper auth and integrate that data with Datagrok API
   * Interacting with Datagrok
     * [server API](#server-api)
-    * [client API](../js-api.md)
+    * [client API](../../../develop/packages/js-api.md)
   * Connecting to common data sources
     * [relational databases](https://youtu.be/YJmSvh3_uCM)
     * [local files](https://datagrok.ai/img/slides/access-file-formats.mp4)
     * datastore files
   * [Embedding a Datagrok visualization into a custom web application](https://datagrok.ai/embed_test.html)
-  * [Embedding a custom visualization into Datagrok](../../visualize/viewers/markup.md)
+  * [Embedding a custom visualization into Datagrok](../../../visualize/viewers/markup.md)
 
 * Developer experience
   * [Debug environment when developing customizations](https://youtu.be/PDcXLMsu6UM)
   * [Devops process including deployment of packages, their dependencies and versioning](../../../develop/develop.md)
-  * [Concurrent work by team of developers](../../../devlop/develop.md#development)
+  * [Concurrent work by team of developers](../../../develop/develop.md#development)
 
 * Scalability and Performance
   * Maximum dataset sizes
   * Stability under concurrent user load
-  * [Scaling and stability under load](infrastructure.md#scalability)
+  * [Scaling and stability under load](../../../develop/under-the-hood/infrastructure.md#scalability)
 
 * Extensibility
   * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/Sequence)

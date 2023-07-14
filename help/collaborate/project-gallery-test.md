@@ -77,7 +77,7 @@ Project browser allows you to view previously created [projects](project.md), vi
 1. Open the "Models" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Models" tab is open
-* Display all [models](../learn/predictive-modeling.md) which are included in project
+* Display all [models](../learn/learn.md) which are included in project
 
 1. Open [project](project.md) "Test" (by double clicking or from context menu)
 

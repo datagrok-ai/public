@@ -9,10 +9,10 @@ governance, and other IT-controlled mechanisms for storage administration, backu
 ## Security
 
 Give the right access to the right people. We offer several
-[authentication](authentication.md) and [authorization](authorization.md) options, as well as role- and group-based
+[authentication](../../../govern/authentication.md) and [authorization](../../../govern/authorization.md) options, as well as role- and group-based
 privileges for all objects available in the platform.
 
-[Learn more](security.md)
+[Learn more](security.md).
 
 ## Storage
 

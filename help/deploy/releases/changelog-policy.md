@@ -18,14 +18,14 @@ As a software developer, it is your responsibility to maintain a clean and clear
    <details>
    <summary>Example</summary>
    
-   ## 97.89.83 (2023-06-31)
+    ## 97.89.83 (2023-06-31)
    
-   This release focuses on improving data access speed and convenience, 
-   new visualization and usability features, and ensuring platform stability.
+    This release focuses on improving data access speed and convenience, 
+    new visualization and usability features, and ensuring platform stability.
    
-   *Dependency: datgarok-api >= Y.Y.Y*
-
-   </details>
+    *Dependency: datagrok-api >= Y.Y.Y*
+    
+    </details>
 3. Group the changes by type, such as Features (all improvements also go here), Bug Fixes, Breaking change. 
    <details>
    <summary>Example</summary>

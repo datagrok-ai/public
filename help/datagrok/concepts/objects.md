@@ -15,7 +15,7 @@ objects _entities_. Here they are:
 * [DB Column Info](../access/databases/databases.mdx#working-with-queries)
 * [User](../govern/user.md)
 * [Group](../govern/group.md)
-* [Model](../learn/predictive-modeling.md)
+* [Model](../learn/learn.md)
 * [Notebook](../compute/jupyter-notebook.md)
 * [Package](../develop/develop.md#packages)
 * [Project](project.md)

@@ -4383,8 +4383,8 @@ like [here](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials
 * Wiki: a docker compose possible issue.
 * Wiki: "Defining semantic type detectors" reformatting and links
 * Updated beta users list.
-* Wiki: video-contents.md adjustments (cases, links, Dev Session 10, 11)
-* Wiki: video-contents.md adjustments
+* Wiki: resources/video-contents.md adjustments (cases, links, Dev Session 10, 11)
+* Wiki: resources/video-contents.md adjustments
 * Wiki: links adjustments
 * JS API Examples: Drag and Drop
 * MultiPlot: manual categories setting in multi linechart

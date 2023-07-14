@@ -11,7 +11,7 @@ that can be executed within the platform is a function. Here are some examples o
 * Calculating Sin(PI)
 * Deleting a column from the table
 * Sending an email
-* Applying [predictive model](../../learn/predictive-modeling.md) to a dataset
+* Applying [predictive model](../../learn/learn.md) to a dataset
 * Calculating molecule properties via a [Python script](../../compute/scripting.md)
 * Showing a dialog
 
@@ -56,9 +56,9 @@ enterprise version of the Datagrok platform in a virtual private cloud, but it m
 public environment.
 
 While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
-[training a predictive model](../../learn/predictive-modeling.md),
+[training a predictive model](../../learn/learn.md),
 [running an R script](../../compute/scripting.md), or
-[computing chemical descriptors](../../domains/chem/chem.md#molecular-descriptors-and-fingerprints)
+[computing chemical descriptors](../../datagrok/solutions/domains/chem/chem.md#molecular-descriptors-and-fingerprints)
 run on a [server](../../develop/admin/architecture.md#compute-engine). When such operation executes, the
 relevant part of the input gets sent to the server, where it gets processed, and the result is sent back to the client.
 Results of the computations reside on the server until either the client retrieves it, or an automatic cleanup happens.

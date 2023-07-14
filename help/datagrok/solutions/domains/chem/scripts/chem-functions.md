@@ -1,32 +1,33 @@
 ---
-title: Chemical functions
+title: Chemical scripts
+unlisted: true
 ---
 
-## Supported functions
+## Supported scripts
 
-| Category         | Name                               | Function                  |
-|------------------|------------------------------------|---------------------------|
-|Cheminformatics   | Substructure search                |<br /><pre>`\#{x.ChemSubstructureSearch}`</pre>|
-|Cheminformatics   | [PLACEHOLDER]                      |<br /><pre>`\#{x.ChemFindMCS}`</pre> |
-|Cheminformatics   | Descriptors                        |<br /><pre>`\#{x.ChemDescriptors}`</pre> |
-|Cheminformatics   | R-Groups                           |<br /><pre>`\#{x.ChemGetRGroups}`</pre> |
-|Cheminformatics   | Fingerprints                       |<br /><pre>`\#{x.ChemFingerprints}`</pre> |
-|Cheminformatics   | [PLACEHOLDER]                      |<br /><pre>`\#{x.ChemSimilaritySPE}`</pre> |
-|Cheminformatics   | SMILES to InchI                    |<br /><pre>`\#{x.ChemSmilesToInchi}`</pre> |
-|Cheminformatics   | SMILES to Canonical                |<br /><pre>`\#{x.ChemSmilesToCanonical}`</pre> |
-|Cheminformatics   | Chemical map identifiers           |<br /><pre>`\#{x.ChemMapIdentifiers}`</pre> |
-|Chemical analysis | Butina cluster                     |<br /><pre>`\#{x.ChemScripts:ButinaMoleculesClustering}`</pre> |
-|Chemical analysis | Filter by catalogs                 |<br /><pre>`\#{x.ChemScripts:FilterByCatalogs}`</pre> |
-|Chemical analysis | Gasteiger partial charges          |<br /><pre>`\#{x.ChemScripts:GasteigerPartialCharges}`</pre> |
-|Chemical analysis | Murcko scaffolds                   |<br /><pre>`\#{x.ChemScripts:MurckoScaffolds}`</pre>|
-|Chemical analysis | Similarity maps using fingerprints |<br /><pre>`\#{x.ChemScripts:SimilarityMapsUsingFingerprints}`</pre> |
-|Chemical analysis | Chemical space using tSNE          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingtSNE}`</pre> |
-|Chemical analysis | Two component reactions            |<br /><pre>`Chem:TwoComponentReaction`</pre> |
-|Chemical analysis | Chemical space using UMAP          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingUMAP}`</pre> |
-|Chemical analysis | USRCAT                             |<br /><pre>`\#{x.ChemScripts:USRCAT}`</pre> |
-|TBD               | Mutate                             |<br /><pre>`[PLACEHOLDER]`</pre> |
-|TBD               | Solubility prediction              |<br /><pre>`\#{x.18b704d0-0b50-11e9-b846-1fa94a4da5d1."Predict Solubility"}`</pre>|
-|TBD               | Curate                             |<br /><pre>`[PLACEHOLDER]`</pre> |
+| Name                               | Function                  |
+|------------------------------------|---------------------------|
+| Substructure search                |<br /><pre>`\#{x.ChemSubstructureSearch}`</pre>|
+| Find MCS                           |<br /><pre>`\#{x.ChemFindMCS}`</pre> |
+| Descriptors                        |<br /><pre>`\#{x.ChemDescriptors}`</pre> |
+| R-Groups                           |<br /><pre>`\#{x.ChemGetRGroups}`</pre> |
+| Fingerprints                       |<br /><pre>`\#{x.ChemFingerprints}`</pre> |
+| Similarity SPE                     |<br /><pre>`\#{x.ChemSimilaritySPE}`</pre> |
+| SMILES to InchI                    |<br /><pre>`\#{x.ChemSmilesToInchi}`</pre> |
+| SMILES to Canonical                |<br /><pre>`\#{x.ChemSmilesToCanonical}`</pre> |
+| Chemical map identifiers           |<br /><pre>`\#{x.ChemMapIdentifiers}`</pre> |
+| Butina cluster                     |<br /><pre>`\#{x.ChemScripts:ButinaMoleculesClustering}`</pre> |
+| Filter by catalogs                 |<br /><pre>`\#{x.ChemScripts:FilterByCatalogs}`</pre> |
+| Gasteiger partial charges          |<br /><pre>`\#{x.ChemScripts:GasteigerPartialCharges}`</pre> |
+| Murcko scaffolds                   |<br /><pre>`\#{x.ChemScripts:MurckoScaffolds}`</pre>|
+| Similarity maps using fingerprints |<br /><pre>`\#{x.ChemScripts:SimilarityMapsUsingFingerprints}`</pre> |
+| Chemical space using tSNE          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingtSNE}`</pre> |
+| Two component reactions            |<br /><pre>`Chem:TwoComponentReaction`</pre> |
+| Chemical space using UMAP          |<br /><pre>`\#{x.ChemScripts:ChemicalSpaceUsingUMAP}`</pre> |
+| USRCAT                             |<br /><pre>`\#{x.ChemScripts:USRCAT}`</pre> |
+| Mutate                             |<br /><pre>`[PLACEHOLDER]`</pre> |
+| Solubility prediction              |<br /><pre>`\#{x.18b704d0-0b50-11e9-b846-1fa94a4da5d1."Predict Solubility"}`</pre>|
+| Curate                             |<br /><pre>`[PLACEHOLDER]`</pre> |
 
 The following table gives an indicative data for the performance of certain chemical functions:
 

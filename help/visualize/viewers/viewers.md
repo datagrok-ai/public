@@ -4,7 +4,7 @@ sidebar_position: 0
 ---
 
 A viewer is a visual component associated with a [table](../../datagrok/table.md). Unlike other products, our viewers
-are [superfast](../../develop/advanced/performance.md#viewers), completely interactive, and are capable of handling tens
+are [superfast](../../develop/under-the-hood/performance.md#viewers), completely interactive, and are capable of handling tens
 of
 millions of rows (or millions of columns).
 

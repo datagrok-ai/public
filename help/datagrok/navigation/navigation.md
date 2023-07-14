@@ -144,7 +144,7 @@ another object along with the currently selected one, click on the `Clone and de
 
 The content of a context panel is generated based on the type of a current object, as well as its value. For example,
 if you open a table, you can find applicable actions,
-[predictive models](../learn/predictive-modeling.md), and algorithms. The panel is designed in such a way that related
+[predictive models](../learn/learn.md), and algorithms. The panel is designed in such a way that related
 objects are easy to reach, e.g., having a query in front of their eyes, users can identify the corresponding data
 connection and switch to its properties with one click.
 
@@ -152,7 +152,7 @@ Some visual components, such as viewers, activate the context panel in a special
 viewer, you would click on a gear icon `⚙` in the top right corner of the viewer's header.
 
 What is more, the information provided for a current object can be expanded by means of
-[info panels](../discover/info-panels.md). They work on a number of different things, e.g., files or cells in a grid.
+[info panels](../explore/data-augmentation/info-panels.md). They work on a number of different things, e.g., files or cells in a grid.
 
 ### Toolbox
 
@@ -298,5 +298,5 @@ is provided in the toolbox of the help icon.
 See also:
 
 * [Functions](functions/functions.md)
-* [Info panels](../discover/info-panels.md)
+* [Info panels](../explore/data-augmentation/info-panels.md)
 * [Entities](objects.md)

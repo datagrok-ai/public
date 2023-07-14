@@ -9,7 +9,7 @@ the platform. Such set of instructions can explain key concepts, such as
 [viewers](../../visualize/viewers/viewers.md) and
 [filters](../../visualize/viewers/filters.md), or illustrate certain workflows,
 e.g., how to [access data](../../access/access.md) or train a [predictive
-model](../../learn/predictive-modeling.md). A collection of tutorials on a
+model](../../learn/learn.md). A collection of tutorials on a
 specific topic is called a *track*.
 
 ## Writing a tutorial

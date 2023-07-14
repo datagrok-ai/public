@@ -79,7 +79,7 @@ test('Skipped', async () => {
 
 ## Testing functions
 
-Every package utilizes the concept of [functions](../../datagrok/functions/functions.md).
+Every package utilizes the concept of [functions](../../datagrok/concepts/functions/functions.md).
 Tests cases can be added directly to a function's annotation. Afterwards, the metadata
 is used to test package functions automatically. Use the `test` parameter to add
 test cases. A test is essentially any [grok script](../../datagrok/grok-script.md)

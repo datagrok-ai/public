@@ -73,8 +73,8 @@ becomes unwieldy, and users get lost in the hundreds of different menus and thou
 
 We had to come up with a solution that is not only highly extensible but also has a built-in mechanism for restricting
 the feature creep and keeping the UI clean. We addressed these seemingly self-contradictory requirements by designing a
-solution that combines first-class support for [functions](../../datagrok/functions/functions.md)
-with the [data augmentation](../../discover/data-augmentation.md) mechanism.
+solution that combines first-class support for [functions](../../datagrok/concepts/functions/functions.md)
+with the [data augmentation](../../explore/data-augmentation/data-augmentation.md) mechanism.
 
 In the end, we came up with a solution that not only satisfied the initial requirements, but provides a solid foundation
 for evolving the ecosystem on a global scale:
@@ -85,7 +85,7 @@ for evolving the ecosystem on a global scale:
 * Everything is a function (db queries, web services, predictive models, etc)
 * Flexible way for [packaging](../../develop/develop.md#packages), deploying, and targeting functions
 * Dynamic, asynchronous loading of functions
-* Applicable actions are [suggested based on the current context](../../discover/data-augmentation.md). Out of thousands
+* Applicable actions are [suggested based on the current context](../../explore/data-augmentation/data-augmentation.md). Out of thousands
   of functions available in the repository, only a handful of relevant ones are being suggested to the user.
 
 See also:

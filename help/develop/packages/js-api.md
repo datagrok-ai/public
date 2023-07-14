@@ -122,7 +122,7 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 
 ## Registering functions
 
-Pretty much anything in Datagrok is a [function](../datagrok/functions/functions.md), it is a concept that connects
+Pretty much anything in Datagrok is a [function](../datagrok/concepts/functions/functions.md), it is a concept that connects
 together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical functions,
 query transformations, data flows, and many other features.
 

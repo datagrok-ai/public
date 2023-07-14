@@ -5,7 +5,7 @@ sidebar_position: 0
 
 The Datagrok platform has a plugin designed for natural language processing. This feature
 can be applied to comfortably work with [files](../../../../access/files/files.mdx) with text content.
-To try it out, import your text files according to the [instructions](../../../../access/files/files.mdx)
+To try it out, import your text files according to the [instructions](../../../../access/files/files.mdx#importing-text)
 or use the provided [demo files](https://public.datagrok.ai/files/demo.testjobs.files.demofiles/nlp).
 The rest of the article is dedicated to the main applications of this domain integrated into the platform.
 
@@ -64,4 +64,4 @@ See also:
 
 * [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
 * [Scripting](../../../../compute/scripting.md)
-* [Info panels](../../../../discover/info-panels.md)
+* [Info panels](../../../../explore/data-augmentation/info-panels.md)
