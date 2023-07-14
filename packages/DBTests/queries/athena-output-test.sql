@@ -1,4 +1,4 @@
---name: AthenaArrayIntTypeAthenaOutput
+--name: AthenaArrayIntType
 --connection: AthenaDBTests
 --test: Dbtests:expectTable(AthenaArrayIntType(), OpenFile('System:AppData/Dbtests/athena/athena_output_array_int.d42')) //skip:GROK-12423, cat: Athena
 SELECT * FROM array_type_int;
