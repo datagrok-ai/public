@@ -48,7 +48,7 @@ do it on demand whenever the current record changes), and visualize the results 
 ## Info panels
 
 [Info panels](info-panels.md) provide additional information about the current context (which can be a table, a column,
-or any other [object](../concepts/objects.md)). Info panels are meant to be easily developed by the users of the
+or any other [object](../datagrok/concepts/objects.md)). Info panels are meant to be easily developed by the users of the
 platform, and shared with other users. You can use all features of the Datagrok platform, such as scripting, data
 querying and transformation pipeline, user-defined functions, markup, viewers, predictive models.
 

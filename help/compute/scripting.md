@@ -100,7 +100,7 @@ and [suggestions](#parameter-suggestions). Validators, choices, and suggestions 
 [functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways (db query, script,
 etc), and reused.
 
-Registered scripts can be called via [JavaScript API](../develop/js-api.md) in the following manner:
+Registered scripts can be called via [JavaScript API](../develop/packages/js-api.md) in the following manner:
 
 ```javascript
 grok.functions.call(`${packageName}:${scriptName}`, { params });
@@ -591,6 +591,6 @@ See also:
 * [Julia](https://julialang.org)
 * [JavaScript](https://www.javascript.com)
 * [Packages](../develop/develop.md#packages)
-* [JavaScript API](../develop/js-api.md)
+* [JavaScript API](../develop/packages/js-api.md)
 * [Functions](../datagrok/concepts/functions/functions.md)
 * [Function call](../datagrok/functions/function-call.md)

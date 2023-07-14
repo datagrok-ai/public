@@ -19,7 +19,7 @@
 | .h5        | Hierarchical Data Format                         | Core   |
 | .nc        | NetCDF                                           | Core   |
 | .mat       | MATLAB MAT                                       | Core   |
-| .d42       | Datagrok [project](../../collaborate/project.md)    | Core   |
+| .d42       | Datagrok [project](../../datagrok/project.md)    | Core   |
 | .zip       | ZIP archive (for supported types)                | Core   |
 | .gz, .gzip | gzip                                             | Core   |
 | .tar       | Tape archive                                     | Core   |
@@ -76,7 +76,7 @@ Note: The platform detector will also be able to recognize the semantic type of 
 
 See also:
 
-[Chem] <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
+[Chem]: <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
 [BiostructureViewer]: <https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme>
 [NGL]: ../../visualize/viewers/ngl.md
 [Biostructure]: ../../visualize/viewers/biostructure.md

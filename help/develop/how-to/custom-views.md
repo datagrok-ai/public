@@ -9,7 +9,7 @@ that's what we will discuss in a while. When a view is registered on the platfor
 * Open and pass parameters to the view from the URL
 * Save the view as part of a project
 * Add the view to the navigation bar
-* Link the view with [entities](../../concepts/objects.md) (custom or the default ones)
+* Link the view with [entities](../../datagrok/concepts/objects.md) (custom or the default ones)
 
 Let's start with the simplest example:
 

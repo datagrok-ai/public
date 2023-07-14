@@ -7,7 +7,7 @@ projects. In the latter case, entity owner will get notified that someone asked 
 
 Use [Markdown](../datagrok/markdown.md) for rich formatting.
 
-To reference an [object](../concepts/objects.md) (such as a user, project, table) in a message, drag-and-drop into the
+To reference an [object](../datagrok/concepts/objects.md) (such as a user, project, table) in a message, drag-and-drop into the
 message area.
 
 See also:

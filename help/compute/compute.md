@@ -125,7 +125,7 @@ See also: [auto-generating UI for dynamic data retrieval](#data-access)
 
 On the other side of the spectrum, if necessary the UI could be developed from scratch without any limitations, using
 either vanilla JavaScript, a framework of your choice such as React, or
-[Datagrok UI toolkit](../develop/js-api.md#ui). No matter what you choose,
+[Datagrok UI toolkit](../develop/packages/js-api.md#ui). No matter what you choose,
 Datagrok [JS API](https://datagrok.ai/help/develop/develop) could always be used. For convenience, a repository of
 commonly used UI templates is provided.
 
@@ -326,7 +326,7 @@ on the right. Both JavaScript and Curl samples are provided.
 ### JS API
 
 JavaScript-based apps have access to the whole Datagrok platform via the
-[JS API](../develop/js-api.md).
+[JS API](../develop/packages/js-api.md).
 
 ### Embedding as iframe
 

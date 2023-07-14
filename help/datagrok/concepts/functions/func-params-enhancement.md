@@ -58,7 +58,7 @@ Here is the modified script:
 #input: double saltiness {validators: ["jsSaltinessRange"]}
 ```
 
-Next step is registering functions. To do that, we are going to use [JS API](../../../develop/js-api.md).
+Next step is registering functions. To do that, we are going to use [JS API](../../../develop/packages/js-api.md).
 
 Let's open JS editor:
 

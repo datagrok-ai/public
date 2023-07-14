@@ -334,7 +334,7 @@ fetches back the result to the browser.
 
 *Prerequisites:* basic Python and TypeScript/JavaScript knowledge.
 
-*You will learn*: how to invoke functions via [JS API](../../../develop/js-api.md), find functions by their metadata, and compose
+*You will learn*: how to invoke functions via [JS API](../../../develop/packages/js-api.md), find functions by their metadata, and compose
 functions.
 
 1. Create a folder called `scripts` under your package root. Find the script `CountSubsequencePython` created for the

@@ -125,7 +125,7 @@ startup, tweak your user's [general settings](https://public.datagrok.ai/setting
 
 This panel describes the properties of a current object. Typically, whenever the user clicks on most objects within the
 platform, such as a table, data connection, application, command, or any other
-[supported object type](../concepts/objects.md), this object becomes a current object. So, to focus on one, simply click
+[supported object type](../datagrok/concepts/objects.md), this object becomes a current object. So, to focus on one, simply click
 on it. After that, you will see the corresponding context panel as well as the
 [context help](#context-help).
 
@@ -300,4 +300,4 @@ See also:
 
 * [Functions](../concepts/functions/functions.md)
 * [Info panes](../../explore/data-augmentation/info-panels.md)
-* [Entities](../concepts/objects.md)
+* [Entities](../datagrok/concepts/objects.md)
