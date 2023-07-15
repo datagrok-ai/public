@@ -19,7 +19,7 @@ inside.
 
 ### Dynamic data
 
-Whenever a table is created by executing a [function](../datagrok/key-concepts/functions/functions.md)
+Whenever a table is created by executing a [function](../datagrok/concepts/functions/functions.md)
 (such as a [database query](../access/access.md#data-query)), this information gets stored with the table as a "generation
 script". This serves multiple purposes:
 
@@ -35,7 +35,7 @@ case, the function will be re-executed whenever the project is opened.
 
 ## Project types
 
-Projects are organized in a tree structure. Rights on particular [entities](../datagrok/key-concepts/objects.md) are inherited based on this
+Projects are organized in a tree structure. Rights on particular [entities](../datagrok/concepts/objects.md) are inherited based on this
 hierarchy. There are two main types of projects: _root_ and _regular_. Root projects can contain one or more non-root
 projects, for example, the link `Demo:CoffeeCompany`
 indicates that the `CoffeeCompany` project is part of the root project `Demo`. Any link to an entity on the platform
@@ -84,4 +84,4 @@ See also:
 * [Create project](create-project.md)
 * [Data connection](../access/access.md#data-connection)
 * [Data query](../access/access.md#data-query)
-* [Function call](functions/function-call.md)
+* [Function call](../datagrok/concepts/functions/function-call.md)
