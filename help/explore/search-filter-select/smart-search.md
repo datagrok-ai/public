@@ -5,7 +5,7 @@ title: "Smart search"
 Use the free-text input that lets define complex queries. Smart search supports AND and OR operators and parenthesis, so
 you can combine filters. If you type single string - search engine will treat it as filter by name. Tags filtering is
 supported: #demo will show entities, tagged by #demo tag, also you can combine tags conditions using AND or OR
-operators. Every entity has properties, that could be used for filtering. [See more](../datagrok/concepts/objects.md).
+operators. Every entity has properties, that could be used for filtering. [See more](../../datagrok/concepts/objects.md).
 
 ## Examples
 
@@ -48,4 +48,4 @@ author.joined > -5d
 
 See also:
 
-* [Find and replace](../transform/find-and-replace.md)
+* [Find and replace](../../transform/find-and-replace.md)

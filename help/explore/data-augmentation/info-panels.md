@@ -1,38 +1,38 @@
 ---
-title: "Info panels"
+title: "Info panes"
 ---
 
-Info panels provide additional information about the current context (which can be a table, a column, or pretty much any
-other [object](../datagrok/concepts/objects.md)). Info panels are meant to be easily developed by the users of the platform, and
+Info panes provide additional information about the current context (which can be a table, a column, or pretty much any
+other [object](../../datagrok/concepts/objects.md)). Info panes are meant to be easily developed by the users of the platform, and
 shared with other users. You can use all features of the Datagrok platform, such as scripting, data querying and
 transformation pipeline, user-defined functions, markup, viewers, predictive models.
 
-Info panels could be developed in any language supported by the platform.
+Info panes could be developed in any language supported by the platform.
 
-![Info Panel](cell-imaging-segmentation.png "Cell Imaging Segmentation")
-*Cell Imaging Segmentation Info Panel*
+![Info Pane](cell-imaging-segmentation.png "Cell Imaging Segmentation")
+*Cell Imaging Segmentation Info Pane*
 
 ## What gets shown and when?
 
-There are thousands (OK slight exaggeration :) of info panels currently available in the Datagrok platform, and
+There are thousands (OK slight exaggeration :) of info panes currently available in the Datagrok platform, and
 certainly we do not want to overwhelm users by showing all of them to everyone. To solve this issue, we designed a
-powerful, easy-to-use mechanism that allows us to show panels exactly to the people that need it, when they need it. In
-order for the panel to be shown, the following conditions have to be satisfied:
+powerful, easy-to-use mechanism that allows us to show panes exactly to the people that need it, when they need it. In
+order for the pane to be shown, the following conditions have to be satisfied:
 
 * user condition
 * dataset condition
 * context condition
 * user preferences
 
-Whenever the current object changes, conditions of all registered info panels are evaluated against the current user,
+Whenever the current object changes, conditions of all registered info panes are evaluated against the current user,
 dataset, context, and user preferences. Condition is a GrokScript, and therefore any functions and operators can be used
 there.
 
 ### User condition
 
-It is possible to restrict access to the particular class of info panels based on the [user](../govern/user.md)
+It is possible to restrict access to the particular class of info panes based on the [user](../../govern/user.md)
 attributes, including user's roles, groups he belongs to, or other attributes. This condition can be either specified
-right in the script, or set externally in the [global permissions](../govern/global-permissions.md)
+right in the script, or set externally in the [global permissions](../../govern/global-permissions.md).
 
 To specify the condition in the script, use the 'user' variable in the following way:
 
@@ -44,7 +44,7 @@ To specify the condition in the script, use the 'user' variable in the following
 
 ### Dataset condition
 
-Certain info panels only make sense when applied to data that was retrieved from a particular data source.
+Certain info panes only make sense when applied to data that was retrieved from a particular data source.
 
 To specify the condition in the script, use the 'table' variable in the following way:
 
@@ -54,8 +54,8 @@ To specify the condition in the script, use the 'table' variable in the followin
 
 ### Context condition
 
-Info panels always accept strictly one parameter. It can be a column, a table, a table cell, or any
-other [object](../datagrok/concepts/objects.md). A condition might perform checks against that object by using the parameter
+Info panes always accept strictly one parameter. It can be a column, a table, a table cell, or any
+other [object](../../datagrok/concepts/objects.md). A condition might perform checks against that object by using the parameter
 name ("x" in the example below):
 
 ```
@@ -65,9 +65,9 @@ name ("x" in the example below):
 
 ### User preferences
 
-Finally, a user has the ability to turn a particular panel off and not show it anymore. To do that, click on the '
-settings' icon on the panel header, and select "Do not show anymore". To manage suppressed panels, open Tools | Settings
-| Info Panels.
+Finally, a user has the ability to turn a particular pane off and not show it anymore. To do that, click on the '
+settings' icon on the pane header, and select "Do not show anymore". To manage suppressed panes, open Tools | Settings
+| Info Panes.
 
 ## Examples
 
@@ -83,8 +83,8 @@ feature would require coding - but this can be done in a minute using the Datagr
 Oftentimes, it is beneficial to show users an interactive plot, pre-customized based on the structure of the table that
 is currently open.
 
-See the following info panel (viewer-scatter.grok) in action by opening (project:demog). It creates
-a [Scatter Plot](../visualize/viewers/scatter-plot.md), sets the axes to the predefined columns, and adds a regression
+See the following info pane (viewer-scatter.grok) in action by opening (project:demog). It creates
+a [Scatter Plot](../../visualize/viewers/scatter-plot.md), sets the axes to the predefined columns, and adds a regression
 line.
 
 ```
@@ -110,12 +110,12 @@ spectrogram or scalogram). Typically, when such a need arises, the scientist wou
 then either write a script or use Matlab's DSP toolbox (along the way, they would need to enter metadata that is often
 not included in the dataset, such as sampling rate).
 
-Within the Datagrok platform, a simple info panel can be developed that would understand when the data is a digital
+Within the Datagrok platform, a simple info pane can be developed that would understand when the data is a digital
 signal, perform all of the above-mentioned operations in the background (utilizing the metadata stored within the
-dataset), and push the results to the user. The result of the script below is a "Spectrogram" panel that would get shown
-in the context panel on the right when user clicks on a column with the digital signal.
+dataset), and push the results to the user. The result of the script below is a "Spectrogram" pane that would get shown
+in the **Context Panel** on the right when user clicks on a column with the digital signal.
 
-See the following info panel (spectrogram-panel.grok) in action by opening (project:eeg)
+See the following info pane (spectrogram-panel.grok) in action by opening (project:eeg)
 
 ```
 #name: Spectrogram info panel
@@ -149,7 +149,7 @@ actions = "#{button("Flag as suspicious", "http.Post(myserver, row.transactionId
 
 ### Predicting molecule solubility
 
-The following panel calculates different molecular properties of a given chemical structure. It appears whenever user
+The following pane calculates different molecular properties of a given chemical structure. It appears whenever user
 clicks on a structure.
 
 `#{x.ChemScripts:SolubilityPrediction}`
@@ -172,7 +172,7 @@ predictions = ExtractColumns(table, ["outcome"])
 
 ### Example: predicting yearly sales of a franchise store
 
-Info panel scripts can use all features of the Datagrok platform, including predictive modeling capabilities. The
+Info pane scripts can use all features of the Datagrok platform, including predictive modeling capabilities. The
 following script would do the following behind the scenes when user clicks on a row that contains store address:
 
 * convert address to to demographic statistics (~50 features such as median income, age, etc)
@@ -196,5 +196,5 @@ predictedSales = PredictSalesByStatistics(statistics)
 See also:
 
 * [Data augmentation](data-augmentation.md)
-* [Scripting](../compute/scripting.md)
-* [Semantic types](semantic-types.md)
+* [Scripting](../../compute/scripting.md)
+* [Semantic types](../../catalog/semantic-types.md)
