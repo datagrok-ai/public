@@ -32,7 +32,7 @@ make it available to the whole community! To do that, right-click on script's na
 panel and select `Share...`, then type in `All Users` and confirm. (You may want to uncheck the `Send notifications`
 box).
 
-Use [Console](../datagrok/navigation.md#console) to execute it. Simply type
+Use [Console](../datagrok/navigation/navigation.md#console) to execute it. Simply type
 `<YOUR_USER_NAME>:RSquare(3)`:
 
 ```
@@ -41,7 +41,7 @@ Use [Console](../datagrok/navigation.md#console) to execute it. Simply type
 ```
 
 The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can call Grok
-Functions. See [Grok Scripting](../datagrok/grok-script.md) for more details.
+Functions. See [Grok Scripting](../develop/under-the-hood//grok-script.md) for more details.
 
 ### Output values validation
 
@@ -53,7 +53,7 @@ happen, the two things will follow:
 1. The unset output values would still be returned, but valued as `null`-s.
 
 2. A warning `Output value ${output.param.name} was not set` will be print to
-   [Datagrok Console](../datagrok/navigation.md#console) (open it with `Ctrl-~`).
+   [Datagrok Console](../datagrok/navigation/navigation.md#console) (open it with `Ctrl-~`).
 
 In this script the value `c3` is missed to be set:
 
@@ -86,7 +86,7 @@ Other ways involve saving the script as a part of a [package](../develop/develop
 registered in the platform as a
 [function](../datagrok/concepts/functions/functions.md), and can be invoked in different ways:
 
-* From the [console](../datagrok/navigation.md#console)
+* From the [console](../datagrok/navigation/navigation.md#console)
 * From the data job
 * From the [transformations editor](../transform/recipe-editor.md)
 * From the [function browser](https://public.datagrok.ai/functions)
@@ -169,7 +169,7 @@ In this case, the environment `Chemprop` should be specified in a file
 
 Datagrok identifies and resolves environments by their names. If an environment referred in a script wasn't previously
 used, it will first be created on the
-[Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components). This may take up to several minutes.
+[Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components). This may take up to several minutes.
 If it was used at least once, a previously created environment will be re-used with no delay to run the script.
 
 #### Specify environment in-place
@@ -205,7 +205,7 @@ result = glom(target, 'a.b.c')  # returns 'd'
 ```
 
 When the script runs first time, the environment will be created on
-the [Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components), which may take some time, up to
+the [Compute Virtual Machine](../develop/under-the-hood/infrastructure.md#compute-components), which may take some time, up to
 several minutes. However, on the second run and onwards this environment will simply be reused. If the environment
 string is changed in this script to some other environment which was previously created in same way even in some other
 script, this environment will also be picked up and reused. These environments are handeled by Datagrok using MD5 hashes
@@ -564,13 +564,13 @@ WHERE lastName in (SELECT unnest(@employee))
 
 ## Filtering
 
-You can use these fields to filter scripts with [smart search](../datagrok/smart-search.md):
+You can use these fields to filter scripts with [smart search](../explore/search-filter-select/smart-search.md):
 
 | Field       | Description                                                       |
 |-------------|-------------------------------------------------------------------|
 | ID          |                                                                   |
 | name        |                                                                   |
-| runs        | list of [FuncCall](../datagrok/functions/function-call.md) object |
+| runs        | list of [FuncCall](../datagrok/concepts/functions/function-call.md) object |
 | createdOn   |                                                                   |
 | updatedOn   |                                                                   |
 | author      | [User](../govern/user.md) object                                  |
@@ -584,7 +584,7 @@ You can use these fields to filter scripts with [smart search](../datagrok/smart
 
 See also:
 
-* [Grok scripting](../datagrok/grok-script.md)
+* [Grok scripting](../develop/under-the-hood/grok-script.md)
 * [R](https://www.r-project.org/about.html)
 * [Python](https://www.python.org)
 * [Octave](https://octave.org/)
@@ -593,4 +593,4 @@ See also:
 * [Packages](../develop/develop.md#packages)
 * [JavaScript API](../develop/packages/js-api.md)
 * [Functions](../datagrok/concepts/functions/functions.md)
-* [Function call](../datagrok/functions/function-call.md)
+* [Function call](../datagrok/concepts/functions/function-call.md)
