@@ -191,5 +191,5 @@ Everyone else will get a notification when trying to edit this column.
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/table-view.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)

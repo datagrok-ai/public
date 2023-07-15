@@ -3,7 +3,7 @@ title: "View layout"
 ---
 
 View Layout contains relative positions of [viewers](../visualize/viewers/viewers.md) in
-a [table view](../datagrok/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, we now can save current layout (**View | Layout | Save to Gallery**)
 and later apply it to a different dataset
 (**View | Layout | Open Gallery**).
@@ -49,5 +49,5 @@ column, which are evaluated in the following order:
 
 See also:
 
-* [Table view](../datagrok/table-view.md)
+* [Table view](../datagrok/navigation/table-view.md)
 * [Self-learning platform](../learn/self-learning-platform.md)

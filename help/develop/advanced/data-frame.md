@@ -648,7 +648,7 @@ property setter).
 
 [106]: #access-and-modify-column-values "Accessing and modifying column values"
 
-[107]: ../../datagrok/table-view.md "Table Views"
+[107]: ../../datagrok/navigation/table-view.md "Table Views"
 
 [108]: ../../catalog/tags.md#format "Values of a format tag"
 
