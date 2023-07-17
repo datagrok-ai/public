@@ -21,6 +21,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs = this.viewer.subs;
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.viewer.clearFilters();
+      this.viewer.tree.children.map((group) => {
+        this.viewer.setNotBitOperation(group as DG.TreeViewGroup, false);
+      });
     }));
   }
 
