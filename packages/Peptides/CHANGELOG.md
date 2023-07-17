@@ -9,3 +9,7 @@ This release focuses on improving analysis stability and usability.
 ### Features
 
 * Improved activity distribution plots to show selected vs. all
+
+### Bug Fixes
+
+* Fixed bug when filter couldn't be applied to the original table after analysis start
