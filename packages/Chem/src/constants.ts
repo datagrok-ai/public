@@ -24,3 +24,4 @@ export const SMARTS_MOLECULE_MESSAGE = 'Not applicable for smarts or moleculer f
 export const MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT = 1000000000;
 export const MAX_MCS_ROW_COUNT = 50000;
 export const MESSAGE_MALFORMED = 'MALFORMED_INPUT_VALUE';
+export const TERMINATE_CURRENT_SEARCH = 'terminate-current-search';

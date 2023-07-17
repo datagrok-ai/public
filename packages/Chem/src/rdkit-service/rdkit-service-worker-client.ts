@@ -32,4 +32,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}, molecules?: string[]) =>
     this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, molecules]);
+
+  postTerminationFlag = async (flag: boolean) =>
+    this.call(WORKER_CALL.POST_TERMINATION_FLAG, [flag]);
 }

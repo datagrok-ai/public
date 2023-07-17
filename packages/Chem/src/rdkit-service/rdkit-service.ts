@@ -4,6 +4,8 @@ import { RuleId } from '../panels/structural-alerts';
 import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { IFpResult } from './rdkit-service-worker-similarity';
+import * as grok from 'datagrok-api/grok';
+import { TERMINATE_CURRENT_SEARCH } from '../constants';
 
 export class RdKitService {
   workerCount: number;
@@ -14,10 +16,11 @@ export class RdKitService {
   moleculesSegmentsLengths: Uint32Array;
   segmentLengthPatternFp: number = 0;
   moleculesSegmentsLengthsPatternFp: Uint32Array;
+  terminateFlag: boolean = false;
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
-    this.workerCount = Math.max(1, cpuLogicalCores - 2);
+    this.workerCount = 1//Math.max(1, cpuLogicalCores - 2);
     this.moleculesSegmentsLengths = new Uint32Array(this.workerCount);
     this.moleculesSegmentsLengthsPatternFp = new Uint32Array(this.workerCount);
   }
@@ -110,6 +113,11 @@ export class RdKitService {
   async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], 
     useSubstructLib?: boolean): Promise<BitArray> {
     const t = this;
+
+    grok.events.onCustomEvent(TERMINATE_CURRENT_SEARCH).subscribe(() => {
+      this.parallelWorkers.forEach(worker => worker.postTerminationFlag(true));
+    });
+
     if (molecules) { //need to recalculate segments lengths since when using pattern fp number of molecules to search can be less that totla molecules in column
       this.segmentLengthPatternFp = Math.floor(molecules.length / this.workerCount);
       for (let j = 0; j < this.workerCount; j++) {

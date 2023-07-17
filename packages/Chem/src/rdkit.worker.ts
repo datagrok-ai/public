@@ -24,7 +24,7 @@ ctx.addEventListener('message', async (e: any) => {
     } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {
       result = _rdKitServiceWorker!.initMoleculesStructures(args[0], args[1]);
     } else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE) {
-      result = _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2], args[3]);
+      result = await _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2], args[3]);
     } else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
       _rdKitServiceWorker!.freeMoleculesStructures();
       _rdKitServiceWorker = null;
@@ -34,6 +34,8 @@ ctx.addEventListener('message', async (e: any) => {
       result = _rdKitServiceWorker!.convertMolNotation(args[0]);
     } else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
       result = _rdKitServiceWorker!.getStructuralAlerts(args[0], args[1]);
+    } else if (op === WORKER_CALL.POST_TERMINATION_FLAG) {
+      result = _rdKitServiceWorker!.postTerminationFlag(args[0]);
     }
     port.postMessage({op: op, retval: result});
   } catch (e) {

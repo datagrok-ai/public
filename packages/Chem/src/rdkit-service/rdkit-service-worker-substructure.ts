@@ -64,8 +64,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return numMalformed;
   }
 
-  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
-    useSubstructLib?: boolean): Uint32Array {
+  postTerminationFlag(flag: boolean) {
+    this._terminateFlag = flag;
+  }
+
+  async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
+    useSubstructLib?: boolean): Promise<Uint32Array> {
     if (this._rdKitMols === null && !useSubstructLib && !molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
@@ -73,7 +77,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     
     if (queryMol !== null) {
       const matches = useSubstructLib ? this.searchWithSubstructLib(queryMol) :
-        molecules ? this.searchWithPatternFps(queryMol, molecules) : this.searchWithoutPatternFps(queryMol);
+        molecules ? await this.searchWithPatternFps(queryMol, molecules) : this.searchWithoutPatternFps(queryMol);
       queryMol.delete();
       return matches;
     } else
@@ -98,24 +102,44 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return matches.buffer;
   } 
 
-  searchWithPatternFps(queryMol: RDMol, molecules: string[]): Uint32Array {
+  async searchWithPatternFps(queryMol: RDMol, molecules: string[], startIdx: number = 0): Promise<Uint32Array> {
+    console.log('**************in searchWithPatternFps')
     const matches = new BitArray(molecules.length);
-    let mol: RDMol | null = null;
-    const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
-    for (let i = 0; i < molecules.length; ++i) {
-          try{
-            mol = this._rdKitModule.get_mol(molecules[i], details);
-            if (mol) {
-              if (mol.get_substruct_match(queryMol) !== '{}')
-                matches.setFast(i, true);
-            }
-          } catch {
-            continue;
-          } finally {
-            mol?.delete();
+    const calc = (start: number): Promise<void> => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          if (start < molecules.length && !this._terminateFlag) {
+            this.searchWithPatternFpsBatch(queryMol, 
+              molecules.slice(start, Math.min(start + 10, molecules.length)), matches, start);
+              calc(Math.min(start + 10, molecules.length));
           }
+          if (this._terminateFlag) {
+            this._terminateFlag = false;
+          }
+          resolve();
+        }, 0);
+      })
     }
+    await calc(0);
     return matches.buffer;
+  }
+
+  searchWithPatternFpsBatch(queryMol: RDMol, molecules: string[], matches: BitArray, startIdx: number) {
+    let mol: RDMol | null = null;
+    const details = JSON.stringify({ sanitize: false, removeHs: false, assignStereo: false });
+    for (let i = 0; i < molecules.length; ++i) {
+      try {
+        mol = this._rdKitModule.get_mol(molecules[i], details);
+        if (mol) {
+          if (mol.get_substruct_match(queryMol) !== '{}')
+            matches.setFast(i + startIdx, true);
+        }
+      } catch {
+        continue;
+      } finally {
+        mol?.delete();
+      }
+    }
   }
 
   searchWithoutPatternFps(queryMol: RDMol): Uint32Array {

@@ -16,7 +16,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT} from '../constants';
+import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, TERMINATE_CURRENT_SEARCH} from '../constants';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
@@ -43,6 +43,7 @@ export class SubstructureFilter extends DG.Filter {
   errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`,
     'chem-substructure-limit');
   sketcherType = DG.chem.currentSketcherType;
+  searchRunning = false;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -214,6 +215,7 @@ export class SubstructureFilter extends DG.Filter {
           molblock: this.sketcher.getMolFile(), colName: this.columnName,
           filterId: this.filterId, tableName: this.tableName});
         this.dataFrame?.rows.requestFilter();
+        this.searchRunning = false;
       } finally {
         this.calculating = false;
       }
@@ -221,6 +223,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   async getFilterBitset(): Promise<DG.BitSet | null> {
+    this.searchRunning ? grok.events.fireCustomEvent(TERMINATE_CURRENT_SEARCH, {}) : this.searchRunning = true;
     const smarts = await this.sketcher.getSmarts();
     if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
       return null;
