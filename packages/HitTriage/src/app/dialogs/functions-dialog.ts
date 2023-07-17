@@ -1,11 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {IComputeDialogResult, IDescriptorTree} from '../types';
+import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree, ITemplate} from '../types';
 import '../../../css/hit-triage.css';
 
 export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
-  functions: {packageName: string, name: string}[], useDescriptors: boolean = true) {
+  template: ITemplate, dialog?: boolean,
+): Promise<IChemFunctionsDialogResult> {
+  const functions = template?.compute?.functions ?? [];
+  const useDescriptors = !!template?.compute?.descriptors?.enabled;
+
   // tree groups
   const descriptorsTree = (await grok.chem.descriptorsTree()) as IDescriptorTree;
   const descriptorsGroup = ui.tree();
@@ -21,13 +25,14 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
 
   // const descriptorsGroup = createTreeGroup('Descriptors', tree);
   const keys = Object.keys(descriptorsTree);
+  const preselectedDescriptors: string[] = template?.compute?.descriptors?.args ?? [];
   for (const groupName of keys) {
     const group = createTreeGroup(groupName, descriptorsGroup);
 
     for (const descriptor of descriptorsTree[groupName].descriptors) {
       const item = group.item(descriptor.name, descriptor);
       descriptorItems.push(item);
-      item.enableCheckBox(false);
+      item.enableCheckBox(preselectedDescriptors.includes(descriptor.name));
     }
   };
 
@@ -38,18 +43,26 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
   const funcInputsMap: {[funcName: string]: DG.FuncCall} = {};
   const calculatedFunctions: {[key: string]: boolean} = {[descriptorsName]: true};
   for (const func of functions) {
-    const f = DG.Func.find({package: func.packageName, name: func.name})[0];
-    const funcCall = f.prepare();
-    const keyName = `${func.packageName}:${func.name}`;
+    const f = DG.Func.find({package: func.package, name: func.name})[0];
+    const funcCall = f.prepare(func.args);
+    const keyName = `${func.package}:${func.name}`;
     funcInputsMap[keyName] = funcCall;
-    const editor = await funcCall.getEditor();
+    const editor = ui.div();
+    const inputs = await funcCall.buildEditor(editor, {condensed: false});
     editor.classList.add('oy-scroll');
+    editor.style.marginLeft = '15px';
     tabControlArgs[f.friendlyName ?? f.name] = editor;
     funcNamesMap[f.friendlyName ?? f.name] = keyName;
     calculatedFunctions[keyName] = true;
     (editor.children[0] as HTMLElement).style.display = 'none'; // table input
     (editor.children[1] as HTMLElement).style.display = 'none'; // column input
+    inputs.forEach((input) => {
+      if (input.property?.name && Object.keys(func.args).includes(input.property?.name))
+        input.value = func.args[input.property.name];
+      input.fireChanged();
+    });
   }
+
   const tc = ui.tabControl(tabControlArgs, true);
   host.appendChild(tc.root);
   // add checkboxes to each hader
@@ -58,6 +71,7 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
       calculatedFunctions[funcNamesMap[pane.name]] = !!functionCheck.value;
     });
     functionCheck.setTooltip('Toggle calculation of this function');
+    functionCheck.root.style.marginLeft = '5px';
     pane.header.appendChild(functionCheck.root);
     pane.header.classList.add('hit-triage-compute-dialog-pane-header');
   });
@@ -76,9 +90,16 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
     onOk(res);
   }
 
-  ui.dialog('Compute')
-    .add(host)
-    .onOK(() => onOkProxy())
-    .onCancel(onCancel)
-    .show();
+  if (dialog) {
+    ui.dialog('Compute')
+      .add(host)
+      .onOK(() => onOkProxy())
+      .onCancel(onCancel)
+      .show();
+  }
+
+  return {
+    root: host,
+    okProxy: onOkProxy,
+  };
 };

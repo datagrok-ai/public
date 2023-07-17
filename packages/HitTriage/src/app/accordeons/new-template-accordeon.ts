@@ -2,9 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../../package';
-import {CampaignFieldTypes, ICampaignField, ICampaignFieldType, ITemplate, IngestType} from '../types';
+import {CampaignFieldTypes, ICampaignField, ICampaignFieldType,
+  IComputeDialogResult, ITemplate, IngestType} from '../types';
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
+import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 
 type INewTemplateResult = {
     template: Promise<ITemplate>,
@@ -64,10 +66,21 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
   functions.forEach((func) => {
     functionsMap[func.friendlyName ?? func.name] = `${func.package.name}:${func.name}`;
   });
-  const functionsInput = ui.multiChoiceInput('Select functions', [],
-    Object.keys(functionsMap), () => {});
-  functionsInput.setTooltip('Select functions to be applied to the data');
-  functionsInput.root.classList.add('hit-triage-new-template-functions-input');
+
+  let funcDialogRes: IComputeDialogResult | null = null;
+  // used just for functions editor
+  const dummyTemplate = {
+    compute: {
+      descriptors: {
+        enabled: true,
+        args: [],
+      },
+      functions: functions.map((f) => ({name: f.name, package: f.package.name, args: []})),
+    },
+  } as unknown as ITemplate;
+  const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
+    dummyTemplate, false);
+  funcInput.root.classList.add('hit-triage-new-template-functions-input');
 
   const ingestTypeInput = ui.choiceInput<IngestType>('Ingest using', 'Query', ['Query', 'File']);
 
@@ -79,7 +92,8 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
   accordeon.root.classList.add('hit-triage-new-template-accordeon');
   accordeon.addPane('Details', () => detailsDiv, true);
   accordeon.addPane('Ingest', () => ingestTypeInput.root, true);
-  accordeon.addPane('Compute', () => functionsInput.root, true);
+  // accordeon.addPane('Compute', () => functionsInput.root, true);
+  accordeon.addPane('Compute', () => funcInput.root, true);
   accordeon.addPane('Submit', () => submitFunctionInput.root, true);
 
   const content = ui.div(accordeon.root);
@@ -87,6 +101,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
   content.appendChild(buttonsDiv);
   const promise = new Promise<ITemplate>((resolve) => {
     async function onOkProxy() {
+      funcInput.okProxy();
       if (errorDiv.style.opacity === '100%') {
         grok.shell.error('Template name is empty or already exists');
         return;
@@ -99,16 +114,17 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult> {
         dataSourceType: ingestTypeInput.value ?? 'Query',
         compute: {
           descriptors: {
-            enabled: functionsInput.value!.includes('Descriptors'),
+            enabled: !!funcDialogRes?.descriptors?.length,
+            args: funcDialogRes?.descriptors ?? [],
           },
-          functions: functionsInput.value!.filter((f) => f !== 'Descriptors')
-            .map((f) => {
-              const funcInfo = functionsMap[f].split(':');
-              return {
-                package: funcInfo[0],
-                name: funcInfo[1],
-              };
-            }),
+          functions: Object.entries(funcDialogRes?.externals ?? {}).map(([funcName, args]) => {
+            const splitFunc = funcName.split(':');
+            return ({
+              name: splitFunc[1],
+              package: splitFunc[0],
+              args: args,
+            });
+          }),
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
       };

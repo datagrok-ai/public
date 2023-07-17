@@ -12,12 +12,6 @@ export async function hitTriageApp() {
   new HitTriageApp();
 }
 
-//name: demosmth
-//tags: HitTriageFunction
-export async function demosmth() {
-  return 1;
-};
-
 //name: Demo Molecules 100
 //tags: HitTriageDataSource
 //output: dataframe result

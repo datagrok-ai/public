@@ -33,8 +33,6 @@ export class ComputeView extends HitTriageBaseView {
   }
 
   async process(): Promise<void> {
-    const functions: {packageName: string, name: string}[] =
-      this.app.template!.compute.functions.map((func) =>({packageName: func.package, name: func.name}));
     return new Promise<void>(async (resolve) => {
       chemFunctionsDialog(async (resultMap) => {
         const promises: Promise<any>[] = [];
@@ -52,7 +50,7 @@ export class ComputeView extends HitTriageBaseView {
         });
         await Promise.all(promises);
         resolve();
-      }, resolve, functions, this.app.template?.compute.descriptors.enabled);
+      }, resolve, this.app.template!, true);
     });
   }
 }

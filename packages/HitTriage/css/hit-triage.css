@@ -67,8 +67,13 @@ table.hit-triage-table tr td:not(:last-child) {
  }
 
  .hit-triage-new-template-functions-input {
-    max-height: 150px;
+    max-height: 200px;
+    max-width: unset !important;
     overflow-y: scroll;
+ }
+
+ .hit-triage-new-template-functions-input > .d4-tab-host {
+    width: 100% !important;
  }
 
  .hit-triage-compute-dialog-host {

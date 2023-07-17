@@ -5,16 +5,23 @@
   "dataSourceType": "File",
   "compute": {
     "descriptors": {
-      "enabled": false
+      "enabled": false,
+      "args": []
     },
     "functions": [
       {
         "package": "Chem",
-        "name": "structuralAlertsTopMenu"
+        "name": "structuralAlertsTopMenu",
+        "args": {
+          "bms": true
+        }
       },
       {
         "package": "Chem",
-        "name": "addChemPropertiesColumns"
+        "name": "addChemPropertiesColumns",
+        "args": {
+          "PSA": true
+        }
       }
     ]
   },

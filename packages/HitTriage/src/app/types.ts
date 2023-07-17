@@ -18,7 +18,7 @@ export type IFunctionArgs = {
 export type ITemplateFunction = {
     package: string,
     name: string,
-    // args: IFunctionArgs,
+    args: IFunctionArgs,
 }
 
 export type IComputeDialogResult = {
@@ -59,6 +59,7 @@ export type ITemplateIngest = {
 export type ITemplateCompute = {
     descriptors: {
         enabled: boolean,
+        args: string[],
     }
     functions: ITemplateFunction[],
 };
@@ -78,4 +79,9 @@ export type ICampaign = {
     campaignFields: {[key: string]: any},
     filters: {[key: string]: any}[],
     ingest: ITemplateIngest,
+};
+
+export type IChemFunctionsDialogResult = {
+    okProxy: () => void,
+    root: HTMLElement,
 };

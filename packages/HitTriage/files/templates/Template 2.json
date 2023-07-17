@@ -5,12 +5,16 @@
   "dataSourceType": "Query",
   "compute": {
     "descriptors": {
-      "enabled": true
+      "enabled": true,
+      "args": ["qed"]
     },
     "functions": [
       {
         "package": "Chem",
-        "name": "structuralAlertsTopMenu"
+        "name": "structuralAlertsTopMenu",
+        "args": {
+          "glaxo": true
+        }
       }
     ]
   },

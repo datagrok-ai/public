@@ -14,6 +14,7 @@ import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
 
 export class InfoView extends HitTriageBaseView {
+  newItemHeader: HTMLElement = ui.h1('Create New Campaign');
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
@@ -30,6 +31,7 @@ export class InfoView extends HitTriageBaseView {
 
   async init() {
     $(this.root).empty();
+    this.newItemHeader.style.display = 'none';
     const wikiLink = ui.link('wiki', _package.webRoot + 'README.md');
     const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
 
@@ -57,6 +59,7 @@ export class InfoView extends HitTriageBaseView {
       ui.info([textLink]),
       campaignsTable,
       startNewCampaignButton,
+      this.newItemHeader,
       templatesDiv,
       campaignAccordionDiv,
     ]));
@@ -66,6 +69,8 @@ export class InfoView extends HitTriageBaseView {
     containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[],
     presetTemplate?: ITemplate) {
     hideComponents(toRemove);
+    this.newItemHeader.style.display = 'block';
+    this.newItemHeader.innerText = 'Create New Campaign';
     const templates = (await _package.files.list('templates')).map((file) => file.name.slice(0, -5));
     // if the template is just created and saved, it may not be in the list of templates
     if (presetTemplate && !templates.includes(presetTemplate.name))
@@ -145,6 +150,7 @@ export class InfoView extends HitTriageBaseView {
       this.app._fileInputType = camp.type;
       this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
+      this.newItemHeader.style.display = 'none';
     });
 
     cancelPromise.then(() => {
@@ -156,6 +162,8 @@ export class InfoView extends HitTriageBaseView {
   private async createNewTemplate(
     containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[]) {
     hideComponents(toRemove);
+    this.newItemHeader.style.display = 'block';
+    this.newItemHeader.innerText = 'Create New Template';
     const newTemplateAccordeon = await createTemplateAccordeon();
     $(containerDiv).empty();
     $(templateInputDiv).empty();
