@@ -9,6 +9,7 @@ This release focuses on improving analysis stability and usability.
 ### Features
 
 * Improved activity distribution plots to show selected vs. all
+* Added position number in main table view column headers
 
 ### Bug Fixes
 
