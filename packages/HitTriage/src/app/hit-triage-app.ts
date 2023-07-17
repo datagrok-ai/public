@@ -6,7 +6,7 @@ import {InfoView} from './views/info-view';
 import {HitTriageBaseView} from './views/base-view';
 import {ComputeView} from './views/compute-view';
 import {SubmitView} from './views/submit-view';
-import {CampaignIdKey} from './consts';
+import {CampaignIdKey, HitSelectionColName} from './consts';
 import {modifyUrl} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
@@ -91,9 +91,13 @@ export class HitTriageApp {
    * @return {DG.TableView}
    * */
   getFilterView(): DG.TableView {
+    if (!this.dataFrame!.col(HitSelectionColName))
+      this.dataFrame!.columns.addNewBool(HitSelectionColName).init(false);
+
     const view = DG.TableView.create(this.dataFrame!, false);
     view.name = this._filterViewName;
     setTimeout(async () => {
+      console.log(view.getRibbonPanels());
       view._onAdded();
       // we need to wait for chem package to be initialized first to be able to use chem filters
       // const someChemFunction = DG.Func.find({package: 'Chem', name: 'substructureFilter'})[0];
