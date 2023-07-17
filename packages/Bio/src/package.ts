@@ -264,7 +264,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 
 //top-menu: Bio | Analyze | Activity Cliffs...
 //name: Sequence Activity Cliffs
-//description: detect activity cliffs
+//description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table [Input data table]
 //input: column molecules {semType: Macromolecule}
 //input: column activities
@@ -358,6 +358,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 
 //top-menu: Bio | Analyze | Sequence Space...
 //name: Sequence Space
+//description: Creates 2D sequence space with projected sequences by pairwise distance
 //input: dataframe table
 //input: column molecules { semType: Macromolecule }
 //input: string methodName { choices:["UMAP", "t-SNE"] }
@@ -456,7 +457,7 @@ export async function sequenceSpaceTopMenu(
 
 //top-menu: Bio | Convert | To Atomic Level...
 //name: To Atomic Level
-//description: returns molfiles for each monomer from HELM library
+//description: Converts sequences to molblocks
 //input: dataframe df [Input data table]
 //input: column macroMolecule {semType: Macromolecule}
 export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
@@ -479,6 +480,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 
 //top-menu: Bio | Analyze | MSA...
 //name: MSA
+//description: Performs multiple sequence alignment
 //tags: bio, panel
 export function multipleSequenceAlignmentDialog(): void {
   multipleSequenceAlignmentUI();
@@ -497,6 +499,7 @@ export async function alignSequences(sequenceCol: DG.Column<string> | null = nul
 
 //top-menu: Bio | Analyze | Composition
 //name: Composition Analysis
+//description: Visualizes sequence composition on a WebLogo plot
 //meta.icon: files/icons/composition-analysis.svg
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
@@ -704,7 +707,7 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
 
 //top-menu: Bio | Search | Similarity
 //name: similaritySearch
-//description: finds the most similar sequence
+//description: Finds similar sequences
 //output: viewer result
 export function similaritySearchTopMenu(): void {
   const view = (grok.shell.v as DG.TableView);
@@ -722,7 +725,7 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
 
 //top-menu: Bio | Search | Diversity
 //name: diversitySearch
-//description: finds the most diverse molecules
+//description: Finds the most diverse sequences
 //output: viewer result
 export function diversitySearchTopMenu() {
   const view = (grok.shell.v as DG.TableView);
@@ -732,6 +735,7 @@ export function diversitySearchTopMenu() {
 
 //top-menu: Bio | Search | Substructure...
 //name: bioSubstructureSearch
+//description: Finds sequence with the given subsequence
 export function bioSubstructureSearch(): void {
   const col = getMacromoleculeColumn();
   substructureSearchDialog(col);
