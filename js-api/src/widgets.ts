@@ -1147,6 +1147,20 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
   set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
+
+export class ChoiceInput<T> extends InputBase<T> {
+  dart: any;
+
+  constructor(dart: any, onChanged: any = null) {
+    super(dart, onChanged);
+  }
+
+  get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
+  set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
+
+}
+
+
 export class ProgressIndicator {
   dart: any;
 

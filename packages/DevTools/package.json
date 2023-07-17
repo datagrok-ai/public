@@ -44,7 +44,7 @@
     "debug-dev-tools-public": "grok publish public",
     "release-dev-tools-public": "grok publish public --release",
     "debug-dev-tools-local": "grok publish local",
-    "release-dev-tools-local": "grok publish local --release",
+    "release-dev-tools-local": "webpack && grok publish localhost --release",
     "release-local": "grok publish local --release",
     "debug-local": "grok publish local",
     "test": "grok test",

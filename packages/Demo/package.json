@@ -39,7 +39,7 @@
     "release-demo-dev": "grok publish dev --release",
     "debug-demo-public": "grok publish public",
     "release-demo-public": "grok publish public --release",
-    "debug-demo-local": "grok publish local",
+    "debug-demo-local": "grok publish localhost",
     "release-demo-local": "grok publish local --release",
     "test": "grok test"
   },

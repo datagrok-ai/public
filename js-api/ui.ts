@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput
+  TagsInput, ChoiceInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -708,7 +708,7 @@ export function sliderInput(name: string, value: number | null, min: number, max
 }
 
 export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
-  return new InputBase(api.grok_ChoiceInput(name, selected, items), onValueChanged);
+  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {

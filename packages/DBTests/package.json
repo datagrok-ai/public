@@ -34,7 +34,7 @@
     "debug-dbtests-local": "webpack && grok publish local",
     "release-dbtests-local": "webpack && grok publish local --release",
     "debug-dbtests-localhost": "webpack && grok publish localhost",
-    "release-dbtests-localhost": "webpack && grok publish localhost --release",
+    "release-dbtests-localhost": "webpack && grok publish public --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "test": "grok test"

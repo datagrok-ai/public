@@ -88,6 +88,8 @@ export class Tags {
 
   static CustomFilterType = '.custom-filter-type';
 
+  static UseAsFilter = '.use-as-filter';
+
   static Charts = '.charts';
 
   /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
@@ -198,6 +200,9 @@ export class Tags {
   /// Boolean flag that Specifies whether the column is exported as part of the binary file. Defaults to true.
   static IncludeInBinaryExport = '.includeInBinaryExport';
 
+  /// Specifies the behavior of link click (open in new tab, open in context panel, custom)
+  static LinkClickBehavior = '.linkClickBehavior';
+
 }
 export class FuncParamOptions {
   static SemType = 'semType';
@@ -235,5 +240,7 @@ export class FuncParamOptions {
   static Editor = 'editor';
 
   static Nullable = 'nullable';
+
+  static Separators = 'separators';
 
 }

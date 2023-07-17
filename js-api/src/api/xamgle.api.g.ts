@@ -134,5 +134,7 @@ export interface SettingsInterface {
   /// Help base URL.
   helpBaseUrl: string;
 
+  clientFuncCacheEnabled: boolean;
+
 
 }
