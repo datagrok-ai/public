@@ -19,13 +19,12 @@ import { _package } from './package';
 import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
 
 const enum FING_COL_TAGS {
-  invalidatedForVersion = '.invalideted.for.version',
   molsCreatedForVersion = '.mols.created.for.version',
   substrLibCreatedForVersion = 'substr.lib.created.for.version',
 }
 
 let lastColumnInvalidated: string = '';
-const canonicalSmilesColName = 'canonical_smiles';
+const canonicalSmilesColName = 'canonicalSmiles';
 
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray | null)[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
@@ -91,35 +90,30 @@ function invalidatedColumnKey(col: DG.Column): string {
   return col.dataFrame?.name + '.' + col.name;
 }
 
-function colInvalidated(col: DG.Column, createMols: boolean, useSubstructLib?: boolean): Boolean {
+function colInvalidated(col: DG.Column, useSubstructLib?: boolean): Boolean {
   return (lastColumnInvalidated == invalidatedColumnKey(col) &&
-    col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version) &&
-    (!createMols || useSubstructLib ?
+    (useSubstructLib ?
       col.getTag(FING_COL_TAGS.substrLibCreatedForVersion) == String(col.version) :
       col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version)));
 }
 
-async function _invalidate(molCol: DG.Column, createMols: boolean, useSubstructLib?: boolean) {
-  if (!colInvalidated(molCol, createMols, useSubstructLib)) {
-    if (createMols) {
-      await (await getRdKitService()).initMoleculesStructures(molCol.toList(), useSubstructLib);
-      useSubstructLib ? molCol.setTag(FING_COL_TAGS.substrLibCreatedForVersion, String(molCol.version + 2)) :
-        molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 2));
-    }
+async function _invalidate(molCol: DG.Column, useSubstructLib?: boolean) {
+  if (!colInvalidated(molCol, useSubstructLib)) {
+    await (await getRdKitService()).initMoleculesStructures(molCol.toList(), useSubstructLib);
+    useSubstructLib ? molCol.setTag(FING_COL_TAGS.substrLibCreatedForVersion, String(molCol.version + 1)) :
+      molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 1));
     lastColumnInvalidated = invalidatedColumnKey(molCol);
-    molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
 }
 
 
 function checkForSavedColumn(col: DG.Column, colTag: Fingerprint | string): DG.Column<any> | null{
-  const colNameTag = '.' + colTag + '.Column';
+  const savedColName = '~' + col.name + '.' + colTag;
   const colVerTag = '.' + colTag + '.Version';
 
-  if (col.getTag(colNameTag) &&
-      col.getTag(colVerTag) == String(col.version) &&
-      col.dataFrame) {
-    const savedCol = col.dataFrame.columns.byName(col.getTag(colNameTag));
+  if (col.dataFrame && col.dataFrame?.col(savedColName) &&
+      col.getTag(colVerTag) == String(col.version)) {
+    const savedCol = col.dataFrame.columns.byName(savedColName);
     return savedCol;
   }
   return null;
@@ -131,12 +125,11 @@ function saveColumns(col: DG.Column, data: ((Uint8Array | null)[] | (string | nu
   for (let i = 0; i < data.length; i++)
     saveColumn(col, data[i], tags[i], colTypes[i]);
 
-  const colVersion = createdMols ? col.version + data.length + 2 : col.version + data.length + 1;
+  const colVersion = createdMols ? col.version + data.length + 1 : col.version + data.length;
   if (createdMols)
     col.setTag(FING_COL_TAGS.molsCreatedForVersion, String(colVersion));
   for (let i = 0; i < data.length; i++)
     col.setTag('.' + tags[i] + '.Version', String(colVersion));
-  col.setTag(FING_COL_TAGS.invalidatedForVersion, String(colVersion));
 }
 
 
@@ -145,22 +138,16 @@ function saveColumn(col: DG.Column, data: (Uint8Array | null)[] | (string | null
   if (!col.dataFrame)
     throw new Error('Column has no parent dataframe');
 
-  const colNameTag = '.' + tagName + '.Column';
-
-  const savedColumnName = col.getTag(colNameTag) ??
-    '~' + col.name + '.' + tagName;
-  const df = col.dataFrame;
-  const newCol: DG.Column<Uint8Array> = df.columns.getOrCreate(
-    savedColumnName, colType, data.length);
+  const savedColumnName = '~' + col.name + '.' + tagName;
+  const newCol: DG.Column<Uint8Array> = col.dataFrame.columns.getOrCreate(savedColumnName, colType, data.length);
 
   newCol.init((i) => data[i]);
-
-  col.setTag(colNameTag, savedColumnName);
 }
 
 async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fingerprint,
   createMols: boolean, returnSmiles?: boolean): Promise<IFpResult> {
-  await _invalidate(molCol, createMols);
+  if (createMols)
+    await _invalidate(molCol);
   const molecules = createMols ? undefined : molCol.toList();
   const fpRes = await (await getRdKitService()).getFingerprints(fingerprintsType, molecules, returnSmiles);
   returnSmiles ?
@@ -179,7 +166,7 @@ async function getUint8ArrayFingerprints(
   try {
     const fgsCheck = checkForSavedColumn(molCol, fingerprintsType);
     if (returnSmiles) {
-      const smilesCheck = checkForSavedColumn(molCol, 'canonical_smiles');
+      const smilesCheck = checkForSavedColumn(molCol, canonicalSmilesColName);
       if (fgsCheck && smilesCheck)
         return {fps: fgsCheck.toList(), smiles: smilesCheck.toList()};
       else {
@@ -215,7 +202,7 @@ function substructureSearchPatternsMatch(molString: string, querySmarts: string,
             if ((fgs[i]![j] & fpRdKit[j]) != fpRdKit[j])
               continue checkEl;
           }
-          result.setBit(i, true, false);
+          result.setFast(i, true);
         }
       }
       return result;
@@ -283,7 +270,7 @@ export async function chemSubstructureSearchLibrary(
         const searchResults: BitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
         matchesBitArray = restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults);
       } else {
-        await _invalidate(molStringsColumn, true, useSubstructLib);
+        await _invalidate(molStringsColumn, useSubstructLib);
         matchesBitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, undefined, useSubstructLib);
       }
     }
@@ -299,7 +286,7 @@ export async function chemSubstructureSearchLibrary(
 function getMoleculesFilteredByPatternFp(molStrings: (string | null)[], filteredMolsIdxs: BitArray): string[] {
   const filteredMolecules = Array<string>(filteredMolsIdxs.trueCount());
   let counter = 0;
-  for (let i = filteredMolsIdxs.getBit(0) ? 0 : filteredMolsIdxs.findNext(0); i !== -1; i = filteredMolsIdxs.findNext(i)) {
+  for (let i = -1; (i = filteredMolsIdxs.findNext(i)) !== -1;) {
       filteredMolecules[counter] = molStrings[i]!;
       counter++;
   }
@@ -309,9 +296,9 @@ function getMoleculesFilteredByPatternFp(molStrings: (string | null)[], filtered
 function restoreMatchesByFilteredIdxs(filteredMolsIdxs: BitArray, matchesBitArray: BitArray): BitArray {
   const matches = new BitArray(filteredMolsIdxs.length);
   let matchesCounter = 0;
-  for (let i = filteredMolsIdxs.getBit(0) ? 0 : filteredMolsIdxs.findNext(0); i !== -1; i = filteredMolsIdxs.findNext(i)) {
+  for (let i = -1; (i = filteredMolsIdxs.findNext(i)) != -1;) {
     if (matchesBitArray.getBit(matchesCounter))
-        matches.setBit(i, true, false);
+        matches.setFast(i, true);
     matchesCounter++;
   }
   return matches;

@@ -46,7 +46,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           mol.is_qmol = molSafe.isQMol;
           if (useSubstructLib) {
             if (mol.is_qmol) {
-              this._malformedIdxs!.setBit(i, true, false);
+              this._malformedIdxs!.setFast(i, true);
               numMalformed++;
             }
             else
@@ -56,7 +56,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             this._rdKitMols![i] = mol;
         } else {
           if (useSubstructLib)
-            this._malformedIdxs!.setBit(i, true, false);
+            this._malformedIdxs!.setFast(i, true);
           numMalformed++;
         }
       }
@@ -87,10 +87,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     // re-calculate matches idxs considering malformed data
     let nonMalformedCounter = 0;
     let matchesCounter = 0;
-    for (let i = !this._malformedIdxs!.getBit(0) ? 0 : this._malformedIdxs!.findNext(0, false); i !== -1; i = this._malformedIdxs!.findNext(i, false)) {
+
+    for (let i = -1; (i = this._malformedIdxs!.findNext(i, false)) !== -1;) {
       if (nonMalformedCounter === matchesIdxs[matchesCounter]) {
         matchesCounter++;
-        matches.setBit(i, true, false);
+        matches.setFast(i, true);
       }
       nonMalformedCounter++;
     }
@@ -106,7 +107,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             mol = this._rdKitModule.get_mol(molecules[i], details);
             if (mol) {
               if (mol.get_substruct_match(queryMol) !== '{}')
-                matches.setBit(i, true);
+                matches.setFast(i, true);
             }
           } catch {
             continue;
@@ -122,7 +123,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     for (let i = 0; i < this._rdKitMols!.length; ++i) {
       try {
         if (this._rdKitMols![i] && this._rdKitMols![i]!.get_substruct_match(queryMol) !== '{}')
-          matches.setBit(i, true);
+          matches.setFast(i, true);
       } catch {
         continue;
       }
