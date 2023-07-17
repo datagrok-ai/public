@@ -159,7 +159,8 @@ export function getCampaignFieldEditors() {
     ], {classes: 'hit-triage-campaign-field-div'});
     return fieldDiv;
   }
-  const fieldsContainer = ui.divV([getFieldDiv(fields[0])]);
+  const fieldsContainer = ui.divV([ui.divText('Additional Fields', {classes: 'hit-triage-additional-fields-title'}),
+    getFieldDiv(fields[0])]);
   const addFieldButton = ui.bigButton('+', () => {
     if (!fields.length || fields[fields.length - 1].changed) {
       const newField = getNewFieldEditor();

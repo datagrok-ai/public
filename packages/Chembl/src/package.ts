@@ -113,7 +113,7 @@ export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
 //input: string organism = "Shigella" [Organism name]
 //output: dataframe compounds
 export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number, organism: string): Promise<DG.DataFrame> {
-  const df = await grok.data.query('Chembl:_cbOfStructuresByOrganism', {maxNumberOfMolecules: maxNumberOfMolecules, organism: organism});
+  const df = await grok.data.query('Chembl:StructuresByOrganism', {maxNumberOfMolecules: maxNumberOfMolecules, organism: organism});
   return df;
 }
 
@@ -122,7 +122,7 @@ export async function getChemblCompoundsByOrganism(maxNumberOfMolecules: number,
 //input: int maxNumberOfMolecules = 1000 [Maximum number of rows to return]
 //output: dataframe compounds
 export async function getChemblCompounds(maxNumberOfMolecules: number): Promise<DG.DataFrame> {
-  const df = await grok.data.query('Chembl:_cbAllChemblNumberOfStructures', {maxNumberOfMolecules: maxNumberOfMolecules});
+  const df = await grok.data.query('Chembl:ChemblNumberOfStructures', {maxNumberOfMolecules: maxNumberOfMolecules});
   return df;
 }
 

@@ -42,8 +42,8 @@ table.hit-triage-table tr td:not(:last-child) {
     border-bottom: 1px solid gray;
 }
 
-.hit-triage-new-campaign-accordeon .d4-accordion-pane, .hit-triage-new-template-accordeon .d4-accordion-pane {
-    border-bottom: 1px solid gray;
+.hit-triage-new-campaign-accordeon .d4-accordion-pane-header, .hit-triage-new-template-accordeon .d4-accordion-pane-header {
+    font-weight: bold;
 }
 
 .hit-triage-accordeon-cancel-button {
@@ -82,6 +82,11 @@ table.hit-triage-table tr td:not(:last-child) {
 
  .hit-triage-campaign-field-div {
     align-items: center;
+    border-top: 1px solid gray;
+    width: fit-content;
+ }
+ .hit-triage-campaign-field-div:last-child {
+    border-bottom: 1px solid gray;
  }
 
  .oy-scroll {
@@ -92,8 +97,13 @@ table.hit-triage-table tr td:not(:last-child) {
     align-self: start;
  }
 
- .hit-triage-templates-input-div {
+.hit-triage-templates-input-div {
     align-items: center;
     padding-bottom: 10px;
     border-bottom: 1px solid gray;
   }
+
+.hit-triage-additional-fields-title{
+    margin-bottom: 8px;
+    font-weight: bold;
+}

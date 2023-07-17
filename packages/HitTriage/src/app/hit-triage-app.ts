@@ -98,8 +98,6 @@ export class HitTriageApp {
       // we need to wait for chem package to be initialized first to be able to use chem filters
       // const someChemFunction = DG.Func.find({package: 'Chem', name: 'substructureFilter'})[0];
       // await someChemFunction.package.init();
-      // console.log(someChemFunction);
-      // grok.chem.svgMol('CC');
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
 
       view.dataFrame.onFilterChanged
