@@ -111,36 +111,9 @@ export async function addPredictions(viewTable: DG.DataFrame): Promise<void> {
 }
 
 async function addColumnsAndProcessInBatches(viewTable: DG.DataFrame, selected: any[], smilesCol: DG.Column, queryParams: string): Promise<void> {
-  for (let i = 0; i < selected.length; ++i) {
-    let name = viewTable.columns.getUnusedName(selected[i]);
-    viewTable.columns.addNewFloat(name);
-    selected[i] = name;
-  }
-
-  await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, []);
-}
-
-export function addResultColumnsBatch(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[], startIndex: number = 0, models?: any[], batchSize?: number): void {
-  const columnCount = table.columns.length;
-  const endIndex = startIndex + (batchSize || 0) + malformedIndexes!.length;
-
-  if (malformedIndexes!.length > 0) {
-    malformedIndexes!.forEach((index) => table.rows.insertAt(index));
-  }
-
-  for (let i = 0; i < columnCount; i++) {
-    const column: DG.Column = table.columns.byIndex(i);
-    const modelName = models && models[i];
-
-    for (let j = startIndex; j < endIndex; j++) {
-      const rowIndex = j - startIndex;
-      const value = column.get(rowIndex);
-
-      viewTable.columns.byName(modelName).set(j, value);
-    }
-  }
-  addTooltip();
-  addColorCoding(models!);
+  const malformedIndexes = await grok.functions.call('Chem:_getMolSafe', {molecules: smilesCol});
+  const smilesColFiltered = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
+  await processColumnInBatches(smilesColFiltered, viewTable, 100, queryParams, selected, malformedIndexes);
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
@@ -154,6 +127,8 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malforme
       column = column.convertTo("double");
       viewTable.columns.add(column);
     }
+    addColorCoding(modelNames);
+    addTooltip();
   }
 }
 
@@ -314,16 +289,9 @@ async function openModelsDialog(selected: any, onOK: any): Promise<void> {
     //@ts-ignore
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && col.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES} as ColumnInputOptions);
   molInput.root.style.marginLeft = '-70px';
-  const choiceInput = ui.choiceInput('Type', '', ['', 'Form'], (item: string) => {
-    if (item === 'Form') {
-      checkAll(true);
-    }
-  });
-  choiceInput.root.style.marginLeft = '-70px';
   let dlg = ui.dialog('ADME/Tox');
   dlg
     .add(molInput)
-    .add(choiceInput)
     .add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
@@ -346,12 +314,19 @@ function removeChildren(node: any): void {
     node.removeChild(node.firstChild);
 }
 
+let resultDf: DG.DataFrame;
+let entered: boolean = false;
 async function processBatch(batch: any, queryParams: string, viewTable: DG.DataFrame, startIndex: number, batchSize: number, modelNames: any[], malformedIndexes: any[]) {
   const [csvString] = await Promise.all([
     accessServer(DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', batch)]).toCsv(), queryParams),
     new Promise((resolve) => setTimeout(resolve, 1000))]);
-  const table = processCsv(csvString);
-  addResultColumnsBatch(table, viewTable, malformedIndexes, startIndex, modelNames, batchSize);
+  if (!entered) {
+    resultDf = processCsv(csvString);
+    entered = true;
+  } else {
+    const table = processCsv(csvString);
+    resultDf.append(table, true);
+  }
 }
 
 class Semaphore {
@@ -386,7 +361,10 @@ class Semaphore {
 }
 
 async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]) {
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
+  //@ts-ignore
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...', {cancelable: true});
+  //@ts-ignore
+  progressIndicator.onCanceled.subscribe(() => {});
   const semaphore = new Semaphore(10);
 
   const totalBatches = Math.ceil(column.length / batchSize);
@@ -416,5 +394,6 @@ async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame
     await delay(100);
   }
 
+  addResultColumns(resultDf, viewTable, malformedIndexes);
   progressIndicator.close();
 }

@@ -131,8 +131,9 @@ export async function initChemAutostart(): Promise<void> { }
 
 //name: _getMolSafe
 //input: column molecules { semType: Molecule }
-export async function _getMolSafe(molecules: DG.Column) {
-  const indices = [];
+//output: list indices
+export async function _getMolSafe(molecules: DG.Column): Promise<number[]> {
+  const indices: number[] = [];
   const data = await ((await chemCommonRdKit.getRdKitService()).getMolSafe(Array.from(molecules.values()), {}, true, true));
   for (let i = 0; i < data.length; i++) {
     if (data[i].kekulize === false)

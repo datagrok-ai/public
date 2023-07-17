@@ -27,7 +27,7 @@ export async function admetoxCalculators() {
 }
 
 //top-menu: Chem | ADME/Tox | Full Profile
-//meta.action: Calculates all properties and visualizes on the form
+//description: Calculates all properties and visualizes on the form
 export async function addFormViewer() {
   const df = grok.shell.tv.dataFrame;
   const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE);

@@ -217,35 +217,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
   getMolSafe(molecules: string[], details: object = {}, warnOff: boolean = true, checkIfSmarts: boolean = true): IMolContext[] {
-    let isQMol = false;
-    const kekulizeProp = (details as any).kekulize;
-    let kekulize: boolean = typeof kekulizeProp === 'boolean' ? kekulizeProp : true;
-    let useMolBlockWedging: boolean = false;
-    let mol: RDMol | null = null;
     const mols: IMolContext[] = [];
-    for (let i = 0; i < molecules.length; ++i) {
-      try {
-        const _isSmarts = checkIfSmarts && isSmarts(molecules[i]);
-        mol = _isSmarts ? this._rdKitModule.get_qmol(molecules[i]) : this._rdKitModule.get_mol(molecules[i], JSON.stringify(details));
-        isQMol = _isSmarts;
-      } catch (e) {}
-      if (!mol && kekulize) {
-        kekulize = false; //Pyrrole cycles
-        try {
-          mol = this._rdKitModule.get_mol(molecules[i], JSON.stringify({...details, kekulize}));
-        } catch (e) {}
-      }
-      if (!mol) {
-        try {
-          mol = this._rdKitModule.get_qmol(molecules[i]);
-        } catch (e) {}
-      }
-      if (mol)
-        useMolBlockWedging = (mol.has_coords() === 2);
-      else if (!warnOff)
-        console.error('Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molecules[i] + '`');
-      mols[i] = {mol, kekulize, isQMol, useMolBlockWedging};
-    }
+    for (let i = 0; i < molecules.length; ++i)
+      mols[i] = getMolSafe(molecules[i], details, this._rdKitModule, warnOff, checkIfSmarts);
     return mols;
   }
 }
