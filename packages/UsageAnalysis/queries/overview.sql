@@ -3,7 +3,7 @@
 --input: list groups
 --input: list packages
 --meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -23,7 +23,7 @@ left join event_parameter_values epv inner join event_parameters ep on epv.param
 on epv.event_id = e.id
 left join published_packages pp1 on pp1.id::text = epv.value
 left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id::text = epv1.value
+inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value::uuid
 inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
 on epv1.event_id = e.id
 inner join users_sessions s on e.session_id = s.id
@@ -56,7 +56,7 @@ group by date
 --input: list groups
 --input: list packages
 --meta.cache: true
---meta.invalidate: 0 0 0 * *
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -82,7 +82,7 @@ left join event_parameter_values epv inner join event_parameters ep on epv.param
 on epv.event_id = e.id
 left join published_packages pp1 on pp1.id::text = epv.value
 left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id::text = epv1.value
+inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value::uuid
 inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
 on epv1.event_id = e.id
 inner join users_sessions s on e.session_id = s.id

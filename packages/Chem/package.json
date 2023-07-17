@@ -87,7 +87,7 @@
     "build-chem-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "build": "webpack",
     "debug-local": "tsc && webpack && grok publish local",
-    "release-local": "grok publish localhost --release",
+    "release-local": "grok publish local --release",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "test": "grok test",

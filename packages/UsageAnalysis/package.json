@@ -24,9 +24,6 @@
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
-    "link-api": "npm link datagrok-api",
-    "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
     "lint-fix": "eslint src --ext .ts --fix",
     "debug-usageanalysis": "webpack && grok publish",
     "build": "webpack",

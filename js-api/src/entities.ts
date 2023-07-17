@@ -892,14 +892,14 @@ export class LogEventParameterValue extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package extends Entity {
-  _webRoot: string | undefined;
+  public webRoot: string = '';
   public _version: string = '';
 
   constructor(dart: any | undefined = undefined) {
     super(dart);
 
     if (typeof dart === 'string') {
-      this._webRoot = dart;
+      this.webRoot = dart;
       this.dart = null;
     }
   }
@@ -910,17 +910,6 @@ export class Package extends Entity {
   init(): Promise<null> { return Promise.resolve(null); }
 
   private _name: string = '';
-
-  get webRoot(): string {
-    if (this._webRoot === undefined)
-      return api.grok_Package_Get_WebRoot(this.dart);
-    else
-      return this._webRoot;
-  }
-
-  set webRoot(x) {
-    this._webRoot = x;
-  }
 
   get version(): string {
     if (this.dart != null)

@@ -54,8 +54,8 @@
     "release-js-api-tests-public": "grok publish public --release",
     "debug-js-api-tests-local": "grok publish local",
     "release-js-api-tests-local": "grok publish local --release",
-    "debug-js-api-tests-localhost": "webpack && grok publish localhost --release",
-    "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish dev --release"
+    "debug-js-api-tests-localhost": "grok publish localhost",
+    "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release"
   },
   "canEdit": [
     "Developers"
