@@ -19,7 +19,7 @@ import * as uuid from 'uuid';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary} from './utils/misc';
+import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram} from './utils/misc';
 import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
@@ -891,7 +891,7 @@ export class PeptidesModel {
     const distributionTable = DG.DataFrame.fromColumns(
       [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
     const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
-    const hist = getActivityDistribution(distributionTable, true);
+    const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
     const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask, fractionDigits: 2});
 
