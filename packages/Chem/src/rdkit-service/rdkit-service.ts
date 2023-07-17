@@ -20,7 +20,7 @@ export class RdKitService {
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
-    this.workerCount = 1//Math.max(1, cpuLogicalCores - 2);
+    this.workerCount = Math.max(1, cpuLogicalCores - 2);
     this.moleculesSegmentsLengths = new Uint32Array(this.workerCount);
     this.moleculesSegmentsLengthsPatternFp = new Uint32Array(this.workerCount);
   }
@@ -115,8 +115,11 @@ export class RdKitService {
     const t = this;
 
     grok.events.onCustomEvent(TERMINATE_CURRENT_SEARCH).subscribe(() => {
-      this.parallelWorkers.forEach(worker => worker.postTerminationFlag(true));
+      this.parallelWorkers.forEach((worker) => worker.postTerminationFlag(true));
     });
+    window.addEventListener('keydown', () => {
+      this.parallelWorkers.forEach((worker) => worker.postTerminationFlag(true));
+    }); // DONT FORGET TO REMOVE THIS, THIS IS FOR DEMO PURPOSES ONLY. CLICK anything on keyboard to terminate search
 
     if (molecules) { //need to recalculate segments lengths since when using pattern fp number of molecules to search can be less that totla molecules in column
       this.segmentLengthPatternFp = Math.floor(molecules.length / this.workerCount);
