@@ -8,24 +8,45 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
+import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
+import {FuncCallInput} from '../../shared-components/src/FuncCallInput';
+import {FileInput} from '../../shared-components/src/file-input';
 
 const FILE_INPUT_TYPE = 'file';
 
+export type InputVariants = DG.InputBase | FuncCallInput;
+
+function isInputBase(input: FuncCallInput): input is DG.InputBase {
+  const inputAny = input as any;
+  return input instanceof FileInput ||
+    (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
+}
+
 export interface AfterInputRenderPayload {
   prop: DG.Property;
-  input: DG.InputBase | FileInput;
+  input: InputVariants;
 }
 
 export interface AfterOutputRenderPayload {
   prop: DG.Property;
   output: DG.Viewer;
 }
+
+enum SYNC_FIELD {
+  INPUTS = 'inputs',
+  OUTPUTS = 'outputs'
+}
+
+type SyncFields = SYNC_FIELD.INPUTS | SYNC_FIELD.OUTPUTS;
+const syncParams = {
+  [SYNC_FIELD.INPUTS]: 'inputParams',
+  [SYNC_FIELD.OUTPUTS]: 'outputParams',
+} as const;
 
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
@@ -36,9 +57,8 @@ export class RichFunctionView extends FunctionView {
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
-
-  private controllsDiv?: HTMLElement;
-  private customObjectInput?: HTMLElement;
+  private inputsOverride: Record<string, FuncCallInput> = {};
+  private inputsMap: Record<string, FuncCallInput> = {};
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -57,6 +77,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   protected async onFuncCallReady() {
+    await this.loadInputsOverrides();
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
@@ -76,32 +97,12 @@ export class RichFunctionView extends FunctionView {
   }
 
   // scripting api events
+  // regular and experimental inputs
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
-  public beforeRenderControlls = new Subject<true>();
-  public afterRenderControlls = new Subject<true>();
   public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
+  // output scalars table
   public afterOutputSacalarTableRender = new Subject<HTMLElement>();
-
-  /*
-   * Will work only if called synchronously inside
-   * beforeRenderControlls subscriber.
-   */
-  public replaceControlls(div: HTMLElement) {
-    this.controllsDiv = div;
-  }
-
-  get controlsDiv() {
-    return this.controllsDiv;
-  }
-
-  /*
-   * Will work only if called synchronously inside
-   * beforeInputPropertyRender subscriber.
-   */
-  public addCustomObjectInput(div: HTMLElement) {
-    this.customObjectInput = div;
-  }
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
@@ -110,11 +111,80 @@ export class RichFunctionView extends FunctionView {
       runButton.disabled = !isValid;
     });
     this.subs.push(disabilitySub);
+
     return runButton;
   }
 
+  public async loadInputsOverrides() {
+    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    await Promise.all(inputParams.map(async (param) => {
+      if (param.property.options.input) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.input);
+        const call = func.prepare({params: JSON.parse(param.property.options.inputOptions || '{}')});
+        await call.call();
+        this.inputsOverride[param.name] = call.outputs.input;
+      }
+    }));
+  }
+
+  private getSaveButton(name = 'Save') {
+    const saveButton = ui.bigButton(name, async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+
+    this.isUploadMode.subscribe((newValue) => {
+      this.buildRibbonPanels();
+      if (this.runningOnInput) return;
+
+      if (newValue)
+        $(saveButton).show();
+      else
+        $(saveButton).hide();
+    });
+    if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
+
+    return saveButton;
+  }
+
+  private getStandardButtons(): HTMLElement[] {
+    const runButton = this.getRunButton();
+    const runButtonWrapper = ui.div([runButton]);
+    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    const saveButton = this.getSaveButton();
+
+    if (this.runningOnInput) $(runButtonWrapper).hide();
+
+    return [saveButton, runButtonWrapper];
+  }
+
   /**
-   * RichFunctionView has adavanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
+   * Override to change additional buttons placed between navigation and run buttons.
+   */
+  protected additionalBtns = ui.divH([]) as HTMLElement;
+  /**
+   * Changes additional buttons to provided ones.
+   * @param additionalBtns Array of HTML elements to place instead of the existing additional buttons.
+   */
+  public setAdditionalButtons(additionalBtns: HTMLElement[]) {
+    const additionalBtnsContainer = ui.divH(additionalBtns);
+    this.additionalBtns.replaceWith(additionalBtnsContainer);
+    this.additionalBtns = additionalBtnsContainer;
+  }
+
+  /**
+   * Override to change navigation buttons placed next to the additional buttons.
+   */
+  protected navBtns = ui.divH([]) as HTMLElement;
+  /**
+   * Changes navigation buttons to provided ones.
+   * @param navBtns Array of HTML elements to place instead of the existing navigation buttons.
+   */
+  public setNavigationButtons(navBtns: HTMLElement[]) {
+    const navBtnsContainer = ui.divH(navBtns);
+    this.navBtns.replaceWith(navBtnsContainer);
+    this.navBtns = navBtnsContainer;
+  }
+
+  /**
+   * RichFunctionView has advanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
    * This view is updated automatically when {@link this.funcCallReplaced} is emitted or any of input/output param changes.
    * @returns HTMLElement attached to the root of the view
    */
@@ -159,56 +229,40 @@ export class RichFunctionView extends FunctionView {
   public buildInputBlock() {
     const inputFormDiv = this.renderInputForm();
     const outputFormDiv = this.renderOutputForm();
+    const standardButtons = this.getStandardButtons();
 
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const runButtonWrapper = ui.div([runButton]);
-      const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
-      $(saveButton).hide();
+    const controllsDiv = ui.buttonsInput([
+      this.navBtns as any,
+      ui.divH([
+        this.additionalBtns,
+        ...standardButtons,
+      ], {style: {'gap': '5px'}}),
+    ]);
+    $(controllsDiv).addClass('rfv-buttons');
 
-      this.isUploadMode.subscribe((newValue) => {
-        if (newValue)
-          $(saveButton).show();
-        else
-          $(saveButton).hide();
+    const controlsForm = ui.div(controllsDiv, 'ui-form ui-form-wide');
+    $(controlsForm).css({
+      'padding-left': '0px',
+      'padding-bottom': '0px',
+      'max-width': '100%',
+      'min-height': '50px',
+    });
 
-        if (this.runningOnInput) $(runButton).hide();
-
-        this.buildRibbonPanels();
-      });
-
-      ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([
-        saveButton,
-        runButtonWrapper as any,
-      ]);
-
-      $(this.controllsDiv).css({
-        'margin-top': '0px',
-        'position': 'sticky',
-      });
-      $(this.controllsDiv.lastChild).css({
-        'justify-content': 'space-between',
-      });
-      $(this.controllsDiv.firstChild).css({
-        'margin-right': '0px',
-      });
-      this.afterRenderControlls.next(true);
-    }
-
-    const controlsWrapper = ui.div(this.controllsDiv, 'ui-form ui-form-wide');
-    $(controlsWrapper).css('padding', '0px');
+    const experimentalDataSwitch = ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v));
+    this.isUploadMode.subscribe((newValue) => {
+      experimentalDataSwitch.notify = false;
+      experimentalDataSwitch.value = newValue,
+      experimentalDataSwitch.notify = true;
+    });
 
     const form = ui.divV([
       inputFormDiv,
       ...this.hasUploadMode ? [
-        ui.divH([ui.h2('Experimental data'), ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v)).root], {style: {'flex-grow': '0'}}),
+        ui.divH([ui.h2('Experimental data'), experimentalDataSwitch.root], {style: {'flex-grow': '0'}}),
         outputFormDiv,
       ]: [],
-      controlsWrapper,
-    ], 'ui-box');
+      controlsForm,
+    ], 'ui-box rfv-form');
 
     this.isUploadMode.subscribe((newValue) => {
       if (newValue)
@@ -221,7 +275,7 @@ export class RichFunctionView extends FunctionView {
       inputBlock: form,
       inputForm: inputFormDiv,
       outputForm: outputFormDiv,
-      controlsWrapper,
+      controlsWrapper: controlsForm,
     };
   }
 
@@ -263,7 +317,7 @@ export class RichFunctionView extends FunctionView {
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
-        ...(this.hasUploadMode && this.isUploadMode.value) ? [save] : [],
+        ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
       ],
     ];
@@ -504,7 +558,7 @@ export class RichFunctionView extends FunctionView {
     return map;
   }
 
-  private async doRun(): Promise<void> {
+  public async doRun(): Promise<void> {
     this.isRunning = true;
     this.checkDisability.next();
     try {
@@ -518,156 +572,70 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  public getInput(name: string) {
+    return this.inputsMap[name];
+  }
+
+  // TODO: implement warn if really needed
+  public setInput(name: string, value: any, state: 'default' | 'disabled' | 'warn' = 'disabled') {
+    const input = this.getInput(name);
+    if (!input)
+      throw new Error(`No input named ${name}`);
+
+    // input value will not be synced, since doesn't trigger on
+    // onInput for inputBase
+    this.funcCall.inputs[name] = value;
+    this.setInputState(input, state);
+    if (state !== 'default') {
+      const param: DG.FuncCallParam = this.funcCall.inputParams[name];
+      param.aux.editState = state;
+    }
+  }
+
+  private setInputState(input: FuncCallInput, state?: string) {
+    if (state === 'disabled')
+      input.enabled = false;
+
+    if (state === 'default' || !state)
+      input.enabled = true;
+  }
+
   private renderOutputForm(): HTMLElement {
-    const outputs = ui.divV([], 'ui-form ui-form-wide');
-    $(outputs).css({
-      'flex-wrap': 'wrap',
-      'flex-grow': '0',
-    });
-    let prevCategory = 'Misc';
-    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[])
-      .filter((val) => !!val)
-      .forEach((val) => {
-        const prop = val.property;
-
-        if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
-          const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
-            this.funcCall.outputs[prop.name] = file;
-          }, null);
-          if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          outputs.append(t.root);
-        } else {
-          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
-            ui.input.forProperty(prop);
-
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-          t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-          if (prop.options['units']) t.addPostfix(prop.options['units']);
-
-          // Should be onInput. DEALING WITH BUG:
-          t.onChanged(() => {
-            this.funcCall.outputs[val.name] = t.value;
-            if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
-          });
-
-          if (prop.category !== prevCategory)
-            outputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          outputs.append(t.root);
-        }
-        prevCategory = prop.category;
-      });
-
-    outputs.classList.remove('ui-panel');
-    outputs.style.paddingTop = '0px';
-    outputs.style.paddingLeft = '0px';
-    outputs.style.maxWidth = '100%';
-
-    return outputs;
+    return this.renderIOForm(SYNC_FIELD.OUTPUTS);
   }
 
   private renderInputForm(): HTMLElement {
+    return this.renderIOForm(SYNC_FIELD.INPUTS);
+  }
+
+  private renderIOForm(field: SyncFields) {
     const inputs = ui.divH([], 'ui-form ui-form-wide');
     $(inputs).css({
       'flex-wrap': 'wrap',
       'flex-grow': '0',
     });
+
     let prevCategory = 'Misc';
-    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[])
+    const params = this.funcCall[syncParams[field]].values() as DG.FuncCallParam[];
+    wu(params as DG.FuncCallParam[])
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;
         this.beforeInputPropertyRender.next(prop);
-        if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
-          const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
-            this.funcCall.inputs[prop.name] = file;
-            this.checkDisability.next();
-          }, null);
-
-          if (this.runningOnInput) {
-            const sub = t.onFileUploaded.subscribe(async () => await this.doRun());
-            this.subs.push(sub);
-          }
-
-          if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-          inputs.append(t.root);
-          this.afterInputPropertyRender.next({prop, input: t});
-        } else if (prop.propertyType.toString() === DG.TYPE.OBJECT) {
-          if (this.customObjectInput) {
-            inputs.append(this.customObjectInput);
-            this.customObjectInput === null;
-          }
-        } else {
-          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
-            ui.input.forProperty(prop);
-
-          t.input.onkeydown = async (ev) => {
-            if (ev.key == 'Enter')
-              await this.doRun();
-          };
-
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-          t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-          if (prop.options['units']) t.addPostfix(prop.options['units']);
-
-          this.syncFuncCallReplaced(t, val);
-          this.syncOnInput(t, val);
-          this.syncValOnChanged(t, val);
-
-          if (this.runningOnInput) {
-            if (prop.propertyType === DG.TYPE.DATA_FRAME)
-              this.runOnDgInput(t, val);
-            else
-              this.runOnInput(t, val);
-          }
-
-          if (prop.category !== prevCategory)
-            inputs.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-
-          $(t.root).css({
-            'width': `${prop.options['block'] ?? '100'}%`,
-            'box-sizing': 'border-box',
-            'padding-right': '5px',
-          });
-
-          inputs.append(t.root);
-          this.afterInputPropertyRender.next({prop, input: t});
+        const input = this.getInputForVal(val);
+        if (!input) {
+          prevCategory = prop.category;
+          return;
         }
+        this.inputsMap[val.property.name] = input;
+        this.syncInput(val, input, field);
+        if (field === SYNC_FIELD.INPUTS)
+          this.bindInputRun(val, input);
+
+        this.renderInput(inputs, val, input, prevCategory);
+        this.afterInputPropertyRender.next({prop, input: input});
         prevCategory = prop.category;
       });
-    this.controllsDiv = undefined;
-    this.beforeRenderControlls.next(true);
-    if (!this.controllsDiv) {
-      const runButton = this.getRunButton();
-      const buttonWrapper = ui.div([runButton]);
-      ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-      this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
-    };
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
@@ -678,51 +646,121 @@ export class RichFunctionView extends FunctionView {
     return inputs;
   }
 
-  private syncFuncCallReplaced(t: DG.InputBase<any>, val: DG.FuncCallParam) {
+  private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
     const prop = val.property;
-    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      const newValue = this.funcCall.inputs[val.name] ?? prop.defaultValue ?? null;
+    if (this.inputsOverride[val.property.name])
+      return this.inputsOverride[val.property.name];
 
+    switch (prop.propertyType as any) {
+    case DG.TYPE.DATA_FRAME:
+      return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
+    case FILE_INPUT_TYPE:
+      return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
+    default:
+      return ui.input.forProperty(prop);
+    }
+  }
+
+  private bindInputRun(val: DG.FuncCallParam, t: InputVariants) {
+    const prop = val.property;
+    if (this.runningOnInput) {
+      if (prop.propertyType === DG.TYPE.DATA_FRAME)
+        this.runOnDgInput(t as DG.InputBase<DG.DataFrame>, val);
+      else
+        this.runOnInput(t);
+    }
+    if (isInputBase(t)) {
+      t.input.onkeydown = async (ev) => {
+        if (ev.key == 'Enter')
+          await this.doRun();
+      };
+    }
+  }
+
+  private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants, prevCategory: string) {
+    const prop = val.property;
+
+    if (prop.category !== prevCategory)
+      inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+
+    if (isInputBase(t))
+      this.inputBaseAdditionalRenderHandler(val, t);
+
+    inputsDiv.append(t.root);
+  }
+
+  private inputBaseAdditionalRenderHandler(val: DG.FuncCallParam, t: DG.InputBase) {
+    const prop = val.property;
+
+    $(t.root).css({
+      'width': `${prop.options['block'] ?? '100'}%`,
+      'box-sizing': 'border-box',
+      'padding-right': '5px',
+    });
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
+    t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
+    if (prop.options['units']) t.addPostfix(prop.options['units']);
+  }
+
+  private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
+    this.syncFuncCallReplaced(t, val, fields);
+    this.syncOnInput(t, val, fields);
+  }
+
+  private syncFuncCallReplaced(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
+    const prop = val.property;
+    const name = val.name;
+    // don't use val directly, get a fresh one, since it will be replaced with fc
+    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
+      const newValue = this.funcCall[field][name] ?? prop.defaultValue ?? null;
       t.value = newValue;
-      this.funcCall.inputs[val.name] = newValue;
+      this.funcCall[field][name] = newValue;
+      const newParam = this.funcCall[syncParams[field]][name];
+      this.syncValOnChanged(t, newParam, field);
+      this.setInputState(t, newParam.aux.editState);
     });
     this.subs.push(sub);
   }
 
-  private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const syncSub = () => {
-      const newValue = this.funcCall.inputs[val.name];
-
+  private syncValOnChanged(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
+    const sub = val.onChanged.subscribe(() => {
+      const newValue = this.funcCall[field][val.name];
       // there is no notify for DG.FuncCallParam, so we need to
       // check if the value is not the same for floats, otherwise we
       // will overwrite a user input with a lower precicsion decimal
       // representation
       if (
         ((val.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
-        val.property.propertyType !== DG.TYPE.FLOAT
+          val.property.propertyType !== DG.TYPE.FLOAT
       ) {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
       }
-      this.hideOutdatedOutput();
-      this.checkDisability.next();
+      if (field === SYNC_FIELD.INPUTS) {
+        this.hideOutdatedOutput();
+        this.checkDisability.next();
 
-      if (this.runningOnInput && this.isRunnable())
-        this.doRun();
-    };
-
-    const sub = val.onChanged.subscribe(syncSub);
+        if (this.runningOnInput && this.isRunnable())
+          this.doRun();
+      }
+    });
     this.subs.push(sub);
+  }
 
-    this.subs.push(
-      this.funcCallReplaced.subscribe(() => {
-        const newParam = this.funcCall.inputParams[val.property.name];
-
-        const sub = newParam.onChanged.subscribe(syncSub);
-        this.subs.push(sub);
-      }),
-    );
+  private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
+    t.onInput(() => {
+      this.funcCall[field][val.name] = t.value;
+      if (isInputBase(t)) {
+        if (t.value === null)
+          setTimeout(() => t.input.classList.add('d4-invalid'), 100);
+        else
+          t.input.classList.remove('d4-invalid');
+      }
+      this.checkDisability.next();
+      this.hideOutdatedOutput();
+    });
   }
 
   private isRunnable() {
@@ -742,17 +780,7 @@ export class RichFunctionView extends FunctionView {
     await this.saveRun(expFuncCall);
   }
 
-  private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    t.onInput(() => {
-      this.funcCall.inputs[val.name] = t.value;
-      if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
-      this.checkDisability.next();
-
-      this.hideOutdatedOutput();
-    });
-  }
-
-  private runOnInput(t: DG.InputBase, val: DG.FuncCallParam) {
+  private runOnInput(t: InputVariants) {
     t.onInput(async () => {
       if (this.isRunnable())
         await this.doRun();
@@ -834,9 +862,6 @@ export class RichFunctionView extends FunctionView {
     const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
     const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
     const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
-
-    const inputParams = [...lastCall.inputParams.values()];
-    const outputParams = [...lastCall.outputParams.values()];
 
     dfInputs.forEach((dfInput) => {
       const visibleTitle = dfInput.options.caption || dfInput.name;
