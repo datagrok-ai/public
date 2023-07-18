@@ -109,7 +109,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         setTimeout(async () => {
           this._terminateFlag && console.log(this._terminateFlag);
           if (start < molecules.length && !this._terminateFlag) {
-            await this.searchWithPatternFpsBatch(queryMol,
+            this.searchWithPatternFpsBatch(queryMol,
               molecules.slice(start, Math.min(start + 10, molecules.length)), matches, start);
             await calc(Math.min(start + 10, molecules.length));
           }
@@ -125,7 +125,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return matches.buffer;
   }
 
-  async searchWithPatternFpsBatch(queryMol: RDMol, molecules: string[], matches: BitArray, startIdx: number) {
+  searchWithPatternFpsBatch(queryMol: RDMol, molecules: string[], matches: BitArray, startIdx: number) {
     let mol: RDMol | null = null;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
