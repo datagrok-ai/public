@@ -9,14 +9,15 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
-import {Subscription} from 'rxjs';
+import {Observable, Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT} from '../constants';
+import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, TERMINATE_SEARCH} from '../constants';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
@@ -43,6 +44,8 @@ export class SubstructureFilter extends DG.Filter {
   errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`,
     'chem-substructure-limit');
   sketcherType = DG.chem.currentSketcherType;
+  currentSearches = 0;
+
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -95,6 +98,21 @@ export class SubstructureFilter extends DG.Filter {
             this.sketcher.sketcherType = DG.chem.currentSketcherType;
           }
         }
+      }
+    }));
+this.subs.push(
+    grok.events.onCustomEvent('searchFinished').subscribe(() => {
+      this.batchResultObservable?.unsubscribe();
+      this.currentSearches--;
+      if (this.currentSearches === 0) {
+      this.calculating = false;
+      }
+    }));
+    this.subs.push(grok.events.onCustomEvent(TERMINATE_SEARCH).subscribe(() => {
+      this.batchResultObservable?.unsubscribe();
+      this.currentSearches--;
+      if (this.currentSearches === 0) {
+      this.calculating = false;
       }
     }));
   }
@@ -184,6 +202,7 @@ export class SubstructureFilter extends DG.Filter {
       setTimeout(function() {that._onSketchChanged();}, 1000);
   }
 
+  batchResultObservable: Subscription | null = null;
   /**
    * Performs the actual filtering
    * When the results are ready, triggers `rows.requestFilter`, which in turn triggers `applyFilter`
@@ -193,34 +212,45 @@ export class SubstructureFilter extends DG.Filter {
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
-      this.bitset = !this.active ? await this.getFilterBitset() : null;
+      this.bitset = !this.active ? DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null;//TODO
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName,
         molblock: this.sketcher.getMolFile(), filterId: this.filterId, tableName: this.tableName});
       this.dataFrame?.rows.requestFilter();
-    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
+   // } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
-      return;
+     // return;
     } else {
       this.calculating = true;
       try {
-        const bitset = await this.getFilterBitset();
-        if (!bitset)
+        const bitArray = await this.getFilterBitset();
+        if (!bitArray)
           return;
-        this.bitset = bitset;
         this.calculating = false;
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-          molblock: this.sketcher.getMolFile(), colName: this.columnName,
-          filterId: this.filterId, tableName: this.tableName});
+        this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+        this.batchResultObservable?.unsubscribe();
+        this.batchResultObservable = grok.events.onCustomEvent('shtota').subscribe(() => {
+          this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+          console.log(this.bitset?.trueCount);
+          grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
+            molblock: this.sketcher.getMolFile(), colName: this.columnName,
+            filterId: this.filterId, tableName: this.tableName});
         this.dataFrame?.rows.requestFilter();
-      } finally {
-        this.calculating = false;
+      })
+      } catch {
+        this.currentSearches--;
+        if (this.currentSearches === 0) {
+          this.calculating = false;
+        }
       }
     }
   }
 
-  async getFilterBitset(): Promise<DG.BitSet | null> {
+  async getFilterBitset(): Promise<BitArray | null> {
+    this.currentSearches++;
+    if (this.currentSearches > 1) 
+      grok.events.fireCustomEvent(TERMINATE_SEARCH, null);
     const smarts = await this.sketcher.getSmarts();
     if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
       return null;

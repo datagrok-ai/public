@@ -17,6 +17,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
 import { _package } from './package';
 import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
+import { TERMINATE_SEARCH } from './constants';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
@@ -258,10 +259,10 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, usePatternFingerprints = false,
   columnIsCanonicalSmiles = false, useSubstructLib?: boolean)
-  : Promise<DG.BitSet> {
+  : Promise<BitArray> {
   await chemBeginCriticalSection();
   try {
-    let matchesBitArray = new BitArray(molStringsColumn.length);
+    const matchesBitArray = new BitArray(molStringsColumn.length);
     if (molString.length != 0) {
       if (usePatternFingerprints) {
         const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false, !columnIsCanonicalSmiles);
@@ -269,14 +270,38 @@ export async function chemSubstructureSearchLibrary(
         const smiles = columnIsCanonicalSmiles ? molStringsColumn.toList() : fgsResult.smiles;
         const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fps);
         const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(smiles!, filteredMolsIdxs);
-        const searchResults: BitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
-        matchesBitArray = restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults);
+        const searchResults: BitArray = new BitArray(filteredMolecules.length);
+        const subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, searchResults, filteredMolecules, false);
+        
+        grok.events.onCustomEvent(TERMINATE_SEARCH).subscribe(() => {
+          console.log(`*********************`)
+          subFuncs?.setTerminateFlag();
+          clearInterval(intervalNum);
+        })
+       // setInterval(() => {console.log(subFuncs?.getProgress())}, 10);
+        const intervalNum = setInterval(() => {
+          const prog = subFuncs?.getProgress() ?? 0;
+          console.log(matchesBitArray.trueCount(), prog)
+          restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
+         // molStringsColumn.dataFrame.filter.copyFrom(DG.BitSet.fromBytes(matchesBitArray.buffer.buffer, molStringsColumn.length));
+          //molStringsColumn.dataFrame?.rows.requestFilter();
+          grok.events.fireCustomEvent('shtota', null);
+        }, 100);
+
+        subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
+          restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
+          grok.events.fireCustomEvent('shtota', null);
+          grok.events.fireCustomEvent('searchFinished', null);
+            clearInterval(intervalNum);
+        }))
+
+        // const searchResults: BitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
       } else {
-        await _invalidate(molStringsColumn, useSubstructLib);
-        matchesBitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, undefined, useSubstructLib);
+        // await _invalidate(molStringsColumn, useSubstructLib);
+        // matchesBitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, undefined, useSubstructLib);
       }
     }
-    return DG.BitSet.fromBytes(matchesBitArray.buffer.buffer, molStringsColumn.length);
+    return matchesBitArray;
   } catch (e: any) {
     grok.shell.error(e.message);
     throw e;
@@ -295,15 +320,13 @@ function getMoleculesFilteredByPatternFp(molStrings: (string | null)[], filtered
   return filteredMolecules;
 }
 
-function restoreMatchesByFilteredIdxs(filteredMolsIdxs: BitArray, matchesBitArray: BitArray): BitArray {
-  const matches = new BitArray(filteredMolsIdxs.length);
+function restoreMatchesByFilteredIdxs(filteredMolsIdxs: BitArray, matchesBitArray: BitArray, res: BitArray) {
   let matchesCounter = 0;
   for (let i = -1; (i = filteredMolsIdxs.findNext(i)) != -1;) {
     if (matchesBitArray.getBit(matchesCounter))
-        matches.setFast(i, true);
+      res.setBit(i, true);
     matchesCounter++;
   }
-  return matches;
 }
 
 export function chemGetFingerprint(molString: string, fingerprint: Fingerprint): BitArray {

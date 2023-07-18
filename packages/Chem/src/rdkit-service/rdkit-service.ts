@@ -57,6 +57,37 @@ export class RdKitService {
   }
 
 
+  async _doParallelBatches<TData, TRes, BatchRes>(
+    data: TData[],
+    res: TRes,
+    updateRes: (batchRes: BatchRes, res: TRes, length: number, index: number) => void,
+    map: (batch: TData[], workerIdx: number, workerCount: number) => Promise<BatchRes>) {
+      let terminateFlag = false;
+
+      const setTerminateFlag = () => {terminateFlag = true}
+      const t = this;
+      const dataLength = data.length;
+      let index = 0;
+      let increment = 10;
+      const promises = t.parallelWorkers.map((_, idx) => {
+          const post = async () => {
+              if (index >= dataLength || terminateFlag) {
+                  return;
+              }
+              const end = Math.min(index + increment, dataLength);
+              const part = data.slice(index, end);
+              const batchResult = await map(part, idx, t.parallelWorkers.length);
+              updateRes(batchResult, res, part.length, index);
+              index = end;
+              await post();
+          }      
+          return post();    
+  })
+  const getProgress = () => index / dataLength;
+  return {getProgress, setTerminateFlag, promises};      
+}
+
+
    /**
    * Calls _doParallel with pre-defined map function which splits data by number of workers
    * @async
@@ -107,7 +138,7 @@ export class RdKitService {
    * predefined RDMols nor SubstructLibrary are used) 
    * @param {boolean} useSubstructLib - optional parameter, if set to true SubstructLibrary is used for search
    * */
-  async searchSubstructure(query: string, queryMolBlockFailover: string, molecules?: string[], 
+  async searchSubstructure1(query: string, queryMolBlockFailover: string, molecules?: string[], 
     useSubstructLib?: boolean): Promise<BitArray> {
     const t = this;
     if (molecules) { //need to recalculate segments lengths since when using pattern fp number of molecules to search can be less that totla molecules in column
@@ -137,6 +168,24 @@ export class RdKitService {
         }
         return bitset;
       });
+  }
+
+
+  async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray, molecules?: string[], 
+    useSubstructLib?: boolean) {
+    const t = this;
+    if (molecules && !useSubstructLib) {
+      const updateRes = (batchRes: Uint32Array, res: BitArray, length: number, index: number) => {
+        let bit;
+          for (let j = 0; j < length; j++) {
+            bit = !!(batchRes[Math.floor(j / 32)] >> j % 32 & 1);
+            res.setBit(index + j, bit)
+          }
+        }
+      return this._doParallelBatches(molecules, result, updateRes, async (batch, idx, _workerCount) => {
+        return t.parallelWorkers[idx].searchSubstructure(query, queryMolBlockFailover, batch);
+      })
+    }
   }
 
    /**

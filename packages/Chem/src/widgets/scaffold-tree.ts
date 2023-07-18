@@ -228,7 +228,7 @@ async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes 
 
 async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
   const molStr = molColumn.length === 0 ? '' : molColumn.get(molColumn.length -1);
-  return await chemSubstructureSearchLibrary(molColumn, molStr, '');
+  return DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, molStr, '')).buffer.buffer, molColumn.length);
 }
 
 let offscreen : OffscreenCanvas | null = null;
@@ -308,7 +308,7 @@ function isNotBitOperation(group: TreeViewGroup) : boolean {
 async function handleMalformedStructures(molColumn: DG.Column, smiles: string): Promise<DG.BitSet> {
   let bitset;
   try {
-    bitset = await chemSubstructureSearchLibrary(molColumn, smiles, '');
+    bitset = DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, smiles, '')).buffer.buffer, molColumn.length);
   } catch (e) {
     console.log(e);
     bitset = DG.BitSet.create(molColumn.length).setAll(false);
