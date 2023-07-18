@@ -1,15 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ICampaign, ITemplate, ITemplateIngest, IngestType} from './types';
+import {ICampaign, IComputeDialogResult, IFunctionArgs, ITemplate, ITemplateIngest, IngestType} from './types';
 import {InfoView} from './views/info-view';
 import {HitTriageBaseView} from './views/base-view';
-import {ComputeView} from './views/compute-view';
 import {SubmitView} from './views/submit-view';
 import {CampaignIdKey, HitSelectionColName} from './consts';
 import {modifyUrl} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
+import {chemFunctionsDialog} from './dialogs/functions-dialog';
 
 export class HitTriageApp {
   template?: ITemplate;
@@ -17,7 +17,6 @@ export class HitTriageApp {
   multiView: DG.MultiView;
 
   private _infoView: InfoView;
-  private _computeView?: ComputeView;
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
 
@@ -63,10 +62,20 @@ export class HitTriageApp {
     this._campaignId = campaignId;
     this.template = template;
     this._campaignFilters = presetFilters;
-    await this.dataFrame.meta.detectSemanticTypes();
-    this._computeView ??= new ComputeView(this);
-    this.multiView.addView(this._computeView.name, () => this._computeView!, !presetFilters);
-    this.multiView.addView(this._filterViewName, () => this.pickView, !!presetFilters);
+
+    if (!presetFilters) {
+      const funcs: {[_: string]: IFunctionArgs} = {};
+      template.compute.functions.forEach((func) => {
+        const fName = `${func.package}:${func.name}`;
+        funcs[fName] = func.args;
+      } );
+      await this.calculateColumns({
+        descriptors: template.compute.descriptors.enabled ? template.compute.descriptors.args : [],
+        externals: funcs,
+      });
+    };
+
+    this.multiView.addView(this._filterViewName, () => this.pickView, true);
     this._submitView ??= new SubmitView(this);
     this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
@@ -78,32 +87,82 @@ export class HitTriageApp {
 
   get pickView(): DG.TableView {return this._pickView ??= this.getFilterView();}
 
-  get molColName(): string | undefined {return this._molColName;}
+  get molColName() {return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;}
 
   get fileInputType(): IngestType | undefined {return this._fileInputType;}
 
   get campaign(): ICampaign | undefined {return this._campaign;}
 
   set campaign(campaign: ICampaign | undefined) {this._campaign = campaign;}
+
+  private getFilterType(colName: string): DG.FILTER_TYPE {
+    const col = this.dataFrame!.col(colName);
+    if (col?.semType === DG.SEMTYPE.MOLECULE)
+      return DG.FILTER_TYPE.SUBSTRUCTURE;
+    if (col?.type === DG.COLUMN_TYPE.BOOL)
+      return DG.FILTER_TYPE.BOOL_COLUMNS;
+    if (col?.type === DG.COLUMN_TYPE.STRING)
+      return DG.FILTER_TYPE.CATEGORICAL;
+    return DG.FILTER_TYPE.HISTOGRAM;
+  }
+
+
+  public async calculateColumns(resultMap: IComputeDialogResult, view?: DG.TableView) {
+    const promises: Promise<any>[] = [];
+    const previousColumns = this.dataFrame!.columns.names();
+    if (resultMap.descriptors && resultMap.descriptors.length > 0) {
+      promises.push(
+        grok.chem.descriptors(this.dataFrame!, this.molColName!, resultMap.descriptors,
+        ));
+    }
+    Object.keys(resultMap.externals).forEach((funcName) => {
+      const props = resultMap.externals[funcName];
+      props['table'] = this.dataFrame!;
+      props['molecules'] = this.molColName!;
+      if (props)
+        promises.push(grok.functions.call(funcName, props));
+    });
+    await Promise.all(promises);
+    if (view) {
+      const filterGroup = view.getFiltersGroup();
+    this.dataFrame!.columns.names().filter((colName) => !previousColumns.includes(colName))
+      .forEach((colName) => {filterGroup.add({type: this.getFilterType(colName), column: colName});});
+    }
+  }
+
   /**
    * A view that lets you filter the molecules using either molecules, or
    * their properties derived at the enrichment step.
    * @return {DG.TableView}
    * */
   getFilterView(): DG.TableView {
+    const getComputeDialog = async () => {
+      chemFunctionsDialog(async (resultMap) => {
+        this.calculateColumns(resultMap, view);
+      }, () => null, this.template!, true);
+    };
     if (!this.dataFrame!.col(HitSelectionColName))
       this.dataFrame!.columns.addNewBool(HitSelectionColName).init(false);
 
     const view = DG.TableView.create(this.dataFrame!, false);
+    const ribbons = view.getRibbonPanels();
+    const calculateRibbon = ui.icons.add(getComputeDialog, 'Calculate additional properties');
+    ribbons.push([calculateRibbon]);
+    view.setRibbonPanels(ribbons);
     view.name = this._filterViewName;
+
     setTimeout(async () => {
-      console.log(view.getRibbonPanels());
+      // const ribbons = view.getRibbonPanels();
+      // ribbons[0].push(ui.div(ui.icons.add(() => null), {classes: 'd4-ribbon-item'}));
+      // console.log(ribbons);
       view._onAdded();
       // we need to wait for chem package to be initialized first to be able to use chem filters
       // const someChemFunction = DG.Func.find({package: 'Chem', name: 'substructureFilter'})[0];
       // await someChemFunction.package.init();
+
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
 
+      // const group = view.getFiltersGroup();
       view.dataFrame.onFilterChanged
         .subscribe((_) => {
           this._filterDescriptions = Array.from(view.dataFrame.rows.filters);

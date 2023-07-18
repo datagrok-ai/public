@@ -20,8 +20,7 @@ export class InfoView extends HitTriageBaseView {
     this.name = 'Hit Triage';
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp(_package.webRoot + 'README.md');
-    this.init();
-    this.checkCampaign().then((c) => this.app.campaign = c);
+    this.checkCampaign().then((c) => {this.app.campaign = c; this.init();});
   }
 
   onActivated(): void {
@@ -99,6 +98,7 @@ export class InfoView extends HitTriageBaseView {
     templateInputDiv.appendChild(templatesInput.root);
     templateInputDiv.appendChild(createNewtemplateButton);
   }
+
   private async checkCampaign(campId?: string) {
     const url = location.search;
     const urlParams = new URLSearchParams(url);

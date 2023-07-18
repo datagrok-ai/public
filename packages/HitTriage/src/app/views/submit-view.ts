@@ -61,7 +61,8 @@ export class SubmitView extends HitTriageBaseView {
     const campaign: ICampaign = {
       name: campaignName,
       templateName,
-      filters: filters.slice(1), // TODO: because the first filter is chem substructure which does not work
+      filters: filters.filter((f) => f['column'] !== this.app.molColName),
+      // TODO: one filter is chem substructure which does not work
       ingest: {
         type: 'File',
         query: `${campaignPrefix}${CampaignTableName}`,
