@@ -78,7 +78,7 @@ export class Viewport {
 
   yToScreen(world: number): number {
     return this.screen.top + this.yt.worldToScreen(world, this.screen.height,
-      this.world.minY, this.world.maxY, this.inverseY);
+      this.world.minY, this.world.maxY, !this.inverseY);
   }
 
   xToWorld(screen: number): number {
@@ -88,7 +88,7 @@ export class Viewport {
 
   yToWorld(screen: number): number {
     return this.yt.screenToWorld(screen - this.screen.top, this.screen.height,
-      this.world.minY, this.world.maxY, this.inverseY);
+      this.world.minY, this.world.maxY, !this.inverseY);
   }
 
   toScreen(world: DG.Point): DG.Point { return new DG.Point(this.xToScreen(world.x), this.yToScreen(world.y)); }

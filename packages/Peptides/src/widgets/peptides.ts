@@ -202,7 +202,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
 
-    model = PeptidesModel.getInstance(currentDf.filter.anyFalse ? newDf.clone(currentDf.filter) : newDf);
+    // Cloning dataframe with applied filter. If filter is not applied, cloning is
+    // needed anyway to allow filtering on the original dataframe
+    model = PeptidesModel.getInstance(newDf.clone(currentDf.filter));
     if (clustersColumn) await model.addLogoSummaryTable();
     await model.addMonomerPosition();
     await model.addMostPotentResidues();

@@ -10,7 +10,7 @@ import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-li
 import {getAggregatedValue, getStats, Stats} from '../utils/statistics';
 import wu from 'wu';
 import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
-import {getStatsSummary} from '../utils/misc';
+import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
@@ -67,7 +67,10 @@ export class LogoSummaryTable extends DG.JsViewer {
     }, 'Show Logo Summary Table in full screen');
     $(expand).addClass('pep-help-icon');
     this.viewerGrid.root.style.width = 'auto';
-    this.root.appendChild(ui.divV([ui.divH([this._titleHost, expand], {style: {alignSelf: 'center', lineHeight: 'normal'}}), this.viewerGrid.root]));
+    this.root.appendChild(ui.divV([
+      ui.divH([this._titleHost, expand], {style: {alignSelf: 'center', lineHeight: 'normal'}}),
+      this.viewerGrid.root,
+    ]));
     this.viewerGrid.invalidate();
   }
 
@@ -223,7 +226,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       const currentRowIdx = gridCell.tableRowIndex;
       if (!gridCell.isTableCell || currentRowIdx === null || currentRowIdx === -1)
         return;
-      
+
       const canvasContext = gridCellArgs.g;
       const bound = gridCellArgs.bounds;
       canvasContext.save();
@@ -454,9 +457,8 @@ export class LogoSummaryTable extends DG.JsViewer {
     return newDf;
   }
 
-  createDistributionDf(activityCol: DG.Column<number>, splitCol: DG.Column<boolean> | DG.BitSet): DG.DataFrame {
-    if (splitCol instanceof DG.BitSet)
-      splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitCol);
-    return DG.DataFrame.fromColumns([activityCol, splitCol]);
+  createDistributionDf(activityCol: DG.Column<number>, splitMask: DG.BitSet): DG.DataFrame {
+    const table = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitMask)]);
+    return prepareTableForHistogram(table);
   }
 }
