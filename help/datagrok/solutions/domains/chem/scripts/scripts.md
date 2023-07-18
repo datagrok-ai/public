@@ -28,7 +28,6 @@ title: "Chemical scripts"
 
 The following table gives an indicative data for the performance of certain chemical functions:
 
-
 | Function                              | Molecules | Execution time, s |
 |---------------------------------------|-----------|-------------------|
 | ChemSubstructureSearch                | 1M        | 70                |
