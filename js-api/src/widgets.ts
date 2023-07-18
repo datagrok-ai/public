@@ -1183,12 +1183,16 @@ export class ProgressIndicator {
   get onLogUpdated(): Observable<any> {
     return observeStream(api.grok_Progress_Log_Updated(this.dart));
   }
+
+  get onCanceled(): Observable<any> {
+    return observeStream(api.grok_Progress_Canceled(this.dart));
+  }
 }
 
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
-  static create(name?: string): TaskBarProgressIndicator {
-    return toJs(api.grok_TaskBarProgressIndicator_Create(name));
+  static create(name?: string, options?: { cancelable?: boolean, pausable?: boolean, spinned?: boolean }): TaskBarProgressIndicator {
+    return toJs(api.grok_TaskBarProgressIndicator_Create(name, options?.cancelable ?? false, options?.pausable ?? false, options?.spinned ?? false));
   }
 
   close(): any {

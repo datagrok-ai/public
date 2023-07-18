@@ -27,11 +27,10 @@ export enum FitErrorModel {
   Proportional
 }
 
-// export type FitParam = {
-//   value: number;
-//   minBound?: number;
-//   maxBound?: number;
-// };
+export type FitParamBounds = {
+  minBound?: number;
+  maxBound?: number;
+};
 
 export interface IFitFunctionDescription {
   name: string;
@@ -162,6 +161,7 @@ export interface IFitSeriesOptions {
   name?: string;
   fitFunction?: string | IFitFunctionDescription;
   parameters?: number[];         // auto-fitting when not defined
+  parameterBounds?: FitParamBounds[];
   markerType?: FitMarkerType;
   pointColor?: string;
   fitLineColor?: string;
@@ -362,9 +362,7 @@ function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
 }
 
 function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (params: number[], x: number) => number,
-  of: ObjectiveFunction): Optimizable {
-  const fixed: number[] = [];
-
+  of: ObjectiveFunction, fixed: number[]): Optimizable {
   return {
     getValue: (parameters: number[]) => {
       return of(curveFunction, data, parameters).value;
@@ -398,36 +396,38 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   return fitFunctions[seriesFitFunc.name];
 }
 
-export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel):
-  FitCurve {
+export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel,
+  parameterBounds?: FitParamBounds[]): FitCurve {
   const curveFunction = fitFunction.y;
   const paramValues = fitFunction.getInitialParameters(data.x, data.y);
 
   const of = createObjectiveFunction(errorModel);
-  const optimizable = createOptimizable(data, curveFunction, of);
-
-  // const fixed: number[] = [];
+  const fixed: number[] = [];
   let overLimits = true;
 
   while (overLimits) {
+    const optimizable = createOptimizable(data, curveFunction, of, fixed);
     limitedMemoryBFGS(optimizable, paramValues);
     limitedMemoryBFGS(optimizable, paramValues);
 
     overLimits = false;
-    // for (let i = 0; i < paramValues.length; i++) {
-    //   if (params[i]?.maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
-    //     overLimits = true;
-    //     fixed.push(i);
-    //     paramValues[i] = params[i].maxBound!;
-    //     break;
-    //   }
-    //   if (params[i]?.minBound !== undefined && paramValues[i] < params[i].minBound!) {
-    //     overLimits = true;
-    //     fixed.push(i);
-    //     paramValues[i] = params[i].minBound!;
-    //     break;
-    //   }
-    // }
+    if (!parameterBounds)
+      break;
+
+    for (let i = 0; i < parameterBounds.length; i++) {
+      if (parameterBounds[i]?.maxBound !== undefined && paramValues[i] > parameterBounds[i].maxBound!) {
+        overLimits = true;
+        fixed.push(i);
+        paramValues[i] = parameterBounds[i].maxBound!;
+        break;
+      }
+      if (parameterBounds[i]?.minBound !== undefined && paramValues[i] < parameterBounds[i].minBound!) {
+        overLimits = true;
+        fixed.push(i);
+        paramValues[i] = parameterBounds[i].minBound!;
+        break;
+      }
+    }
   }
 
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
@@ -454,22 +454,22 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
     of(curveFunction, data, paramValues).mult :
     of(curveFunction, data, paramValues).const;
 
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
+  const quantile = jStat.normal.inv(1 - confidenceLevel/2, 0, 1);
 
   const top = (x: number) =>{
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value + studentQ * error / Math.sqrt(data.x.length);
+      return value + quantile * error;
     else
-      return value + studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value + quantile * Math.abs(value) * error;
   };
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value - studentQ * error / Math.sqrt(data.x.length);
+      return value - quantile * error;
     else
-      return value - studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value - quantile * Math.abs(value) * error;
   };
 
   return {confidenceTop: top, confidenceBottom: bottom};

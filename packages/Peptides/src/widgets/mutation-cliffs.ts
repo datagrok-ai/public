@@ -39,9 +39,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
           continue;
 
         const forbiddentIndexes = seenIndexes.get(referenceIdx) ?? [];
-        // const baseSequence = alignedSeqCol.get(referenceIdx);
         const baseSequence = alignedSeqColCategories[alignedSeqColData[referenceIdx]];
-        // const baseActivity = activityScaledCol.get(referenceIdx);
         const baseActivity = activityScaledColData[referenceIdx];
 
         for (const subIdx of indexArray) {
@@ -65,10 +63,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     return new DG.Widget(ui.label('No mutations table generated'));
 
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
-  substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
-  substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
-  substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
-  substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
   const toColName = '~to';
   const hiddenSubstToAarCol = DG.Column.fromStrings(toColName, substitutedToArray);
   const substTable =
@@ -87,5 +81,9 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const gridRoot = grid.root;
   gridRoot.style.width = 'auto';
   gridRoot.style.height = '150px';
+  substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+  substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
+  substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
+  substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
   return new DG.Widget(ui.divV([aminoToInput.root, gridRoot]));
 }

@@ -105,7 +105,7 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 }
 
 
-export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats,
+export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats, position: string,
   sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
   drawOptions: types.DrawOptions = {}): { [monomer: string]: DG.Rect } {
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
@@ -113,10 +113,12 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   drawOptions.upperLetterAscent ??= 0.25;
   drawOptions.marginVertical ??= 5;
   drawOptions.marginHorizontal ??= 5;
+  drawOptions.colHeaderFontHeight ??= 13;
+  drawOptions.colHeaderStyle ??= `bold ${drawOptions.colHeaderFontHeight}px Roboto, Roboto Local, sans-serif`;
 
   const pr = window.devicePixelRatio;
   const totalSpaceBetweenLetters = (sortedOrder.length - 1) * drawOptions.upperLetterAscent;
-  const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters) * pr;
+  const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters - 1.25 * drawOptions.colHeaderFontHeight) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
   const barWidth = (bounds.width - leftShift * 2) * pr;
   const xStart = (bounds.x + leftShift) * pr;
@@ -152,6 +154,14 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
     }
     currentY += monomerHeight + drawOptions.upperLetterAscent * pr;
   }
+
+  // Drawing column header
+  ctx.resetTransform();
+  ctx.fillStyle = DG.Color.toHtml(DG.Color.black);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = drawOptions.colHeaderStyle;
+  ctx.fillText(position, bounds.x + bounds.width / 2, bounds.y + bounds.height - drawOptions.colHeaderFontHeight);
 
   return monomerBounds;
 }

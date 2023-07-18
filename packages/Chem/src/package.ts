@@ -388,7 +388,6 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
 
 //top-menu: Chem | Search | Similarity Search...
 //name: Similarity Search
-//description: finds the most similar molecule
 export function similaritySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('Chem Similarity Search');
 }
@@ -403,7 +402,6 @@ export function diversitySearchViewer(): ChemDiversityViewer {
 
 //top-menu: Chem | Search | Diversity Search...
 //name: Diversity Search
-//description: finds the most diverse molecules
 export function diversitySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('Chem Diversity Search');
 }
@@ -438,7 +436,6 @@ export function searchSubstructureEditor(call: DG.FuncCall) {
 
 //top-menu: Chem | Search | Substructure Search...
 //name: Diversity Search
-//description: filters dataset by substructure
 //input: column molecules { semType: Molecule }
 //editor: Chem:SearchSubstructureEditor
 export function SubstructureSearchTopMenu(molecules: DG.Column): void {
@@ -479,6 +476,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) {
 
 //top-menu: Chem | Analyze | Chemical Space...
 //name: Chem Space
+//description: Maps the dataset to 2D plot based on similarity
 //input: dataframe table
 //input: column molecules { semType: Molecule }
 //input: string methodName { choices:["UMAP", "t-SNE"] }
@@ -563,7 +561,6 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
 
 //top-menu: Chem | Analyze | Elemental Analysis...
 //name: Elemental Analysis
-//description: function that implements elemental analysis
 //input: dataframe table
 //input: column molecules { semType: Molecule }
 //input: bool radarViewer = false { description: Add a standalone radar viewer }
@@ -624,7 +621,6 @@ export function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, rad
 
 //name: R-Groups Analysis
 //top-menu: Chem | Analyze | R-Groups Analysis...
-
 export function rGroupsAnalysisMenu(): void {
   const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (col === null) {
@@ -653,7 +649,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 
 //top-menu: Chem | Analyze | Activity Cliffs...
 //name: Activity Cliffs
-//description: detect activity cliffs
+//description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
 //input: column activities {type:numerical}
@@ -719,6 +715,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 
 //top-menu: Chem | Analyze | Structural Alerts...
 //name: Structural Alerts
+//description: Highlights the fragments that could lead to potential chemical hazards
 //input: dataframe table [Input data table] {caption: Table}
 //input: column molecules {caption: Molecules; type: categorical; semType: Molecule}
 //input: bool pains {caption: PAINS; default: true; description: "Pan Assay Interference Compounds filters"}
@@ -1213,6 +1210,7 @@ export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Col
 
 //top-menu: Chem | Analyze | Scaffold Tree
 //name: addScaffoldTree
+//description: Generates a hierarchical tree based on the scaffolds presented in dataset
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }

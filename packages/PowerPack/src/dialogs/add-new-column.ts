@@ -294,7 +294,6 @@ export class AddNewColumnDialog {
     let type = this.getSelectedType()[0];
     // Making the Preview Grid:
     let call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!, name: colName, expression: this.inputExpression!.value, type: type});
-    console.log(call);
     await call.call(false, undefined, {processed: true, report: false});
 /*    await this.previwDf!.columns.addNewCalculated(
         colName,
