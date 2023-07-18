@@ -13,7 +13,7 @@ import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
 let attached = false;
 
-enum BitwiseOp {
+export enum BitwiseOp {
   AND = 'AND',
   OR = 'OR'
 }
