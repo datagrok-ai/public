@@ -1,19 +1,18 @@
 ---
 
 title: Contribute docs
+pagination_prev: null
 ---
 
 ## Markdown and GitActions
 
-The source code and READMEs are in our [public repository on GitHub](https://github.com/datagrok-ai/public/tree/master). We have implemented a GitHub Actions workflow that is triggered by any commit made to the help directory. To set up the environment and learn about our GitHub policy, read the [GitHub workflow page](github-workflow.mdx). 
-
-We write our technical documentation using [GitHub-flavored Markdown](https://github.github.com/gfm/) syntax. For our wiki, we use [Docusaurus](https://docusaurus.io/), which converts [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) into HTML. For basic information about writing in Docusaurus Markdown, see our [Markdown writing guide](markdown.md).
+We write our technical documentation using [GitHub-flavored Markdown](https://github.github.com/gfm/) syntax. The source code and READMEs are in our [public repository on GitHub](https://github.com/datagrok-ai/public/tree/master). For our wiki, we use [Docusaurus](https://docusaurus.io/), which converts [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) into HTML. For basic information about writing in Docusaurus Markdown, see our [Markdown writing guide](markdown.md). To set up the environment and learn about our GitHub policy, see the [GitHub workflow page](github-workflow.mdx).
 
 ## How we think about documentation
 
 Good documentation is clear, simple, and complete. To help you write clearly and concisely, we've created a [writing style guide](writing-style.md). We also follow these principles:
 
-* Every page is page one. This means users can fully understand a topic and achieve their objectives by reading a single page. To follow this principle, you should provide comprehensive information, clear explanations, and relevant examples within each page. To avoid creating lengthy, overwhelming documents, we leverage [plain language](writing-guide.md) and [Docusaurus Markdown features](markdown.md#content). 
+* Every page is page one. This means users can fully understand a topic and achieve their objectives by reading a single page. To follow this principle, you should provide comprehensive information, clear explanations, and relevant examples within each page. To avoid creating lengthy, overwhelming documents, we leverage [plain language](writing-style.md) and [Docusaurus Markdown features](markdown.md#content). 
 * How-To pages are reserved for complex multi-step processes that require long, detailed explanations. For simpler tasks, such as launching a tool from the **Top Menu**, we use the [details feauture](markdown.md/#content) or write them out in a single sentence. This ensures that users can quickly grasp and execute the task without needing to switch between different pages.
 * Rather than creating separate tutorial documents, we incorporate tutorials directly into the Datagrok platform by coding them. We then link to these tutorials within our documents as needed. For example, [here's a cheminformatics tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening). The same approach applies to code samples like scripts and functions.
 * Reference pages primarily serve as lookup resources and often present information in table format. [Supported file formats](../../access/files/supported-formats.md) is a good example.  

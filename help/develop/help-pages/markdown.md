@@ -18,35 +18,38 @@ import TabItem from '@theme/TabItem';
 
 ```
 
-This guide has basic information on how to write Datagrok Wiki using the MDX-compatible Markdown syntax. It is not intended to be exhaustive. Read the [Docusaurus Markdown features](https://docusaurus.io/docs/next/markdown-features), [Basic Markdown Syntax](https://www.markdownguide.org/basic-syntax), and [Extended Syntax](https://www.markdownguide.org/extended-syntax/) for more details and examples.
+This guide has basic information on how to write in MDX-compatible Markdown syntax. It is not intended to be exhaustive. Read the [Docusaurus Markdown features](https://docusaurus.io/docs/next/markdown-features), [Basic Markdown Syntax](https://www.markdownguide.org/basic-syntax), and [Extended Syntax](https://www.markdownguide.org/extended-syntax/) for more details and examples.
 
-## Creating new docs
-
-### File format and naming convention
+## File format and naming convention
 
 When creating new files, keep the filename short. Don't use capital letters or spaces. A Markdown file can have either an `.md` or `.mdx` extension but you can override the MD format with the [front matter](#metadata-front-matter) `format: mdx`.
 
 When choosing between the MD and MDX formats, use the MDX format only if you are using [JSX](https://docusaurus.io/docs/markdown-features/react). The MDX format is strict, and you may get compilation errors. 
 
-### Sidebar position
-
-You can specify the order of documents and folders displayed on the left sidebar:
-
-* For documents, use the 'sidebar_position' [front matter](#metadata-front-matter). If you specify the sidebar position for at least one document within a folder, you need to specify the sidebar position for all other documents within the same folder.
-* For folders, add a `_category_.yml` within the folder and use the `position:` front matter. You can also customize the sidebar label using the `label:` front matter:
-
-  ```
-  position:  # float position is supported
-  label: 'Sidebar label'
-  ```
-
 :::note
 
-When the filename of a Markdown file matches the name of a folder exactly, clicking on that folder in the sidebar displays the contents of the Markdown file. 
+When the filename of a Markdown file matches the name of a folder exactly, clicking the folder displays the contents of the Markdown file. 
 
 :::
 
-### Metadata (front matter)
+## Sidebar position and label
+
+By default, documents and folders displayed on the left sidebar are sorted alphabetically. You can specify custom labels and order:
+
+* For documents, use the `sidebar_position` and `sidebar_label` [front matter](#metadata-front-matter):
+
+  ```
+  sidebar_position: 1
+  sidebar_label: 'Custom document title'
+  ```
+* For folders, create a `_category_.yml` file within a folder and specify the `position` and `label` front matter in that file:
+
+  ```
+  position: 1 # float position is supported
+  label: 'Custom folder title'
+  ```
+
+## Metadata (front matter)
 
 Markdown documents have metadata at the top called _front matter_. At the very top of each wiki page, include the following:
 
@@ -54,30 +57,29 @@ Markdown documents have metadata at the top called _front matter_. At the very t
 |:--|:--|
 | `title` (string) |**Required.** The `title` is automatically rendered using the H1 style at the top of the page and is used in navigation if a  `sidebar_label` is not included. Keep it short (1-3 words).|
 | `sidebar_label`  (string) |**Optional.** Use a different title for the left sidebar navigation.|
-| `sidebar_position` (number) |**Optional.** Overrides default position of a doc inside the sidebar directory. If you include it for at least one document in the sidebar directory, make sure to include it in all other documents and folders in that directory. See [Create a new doc](#create-a-new-doc).
+| `sidebar_position` (number) |**Optional.** Overrides default position of a doc inside the sidebar directory.
 | `description` (string) |**Optional.** This is what appears when the page is referenced in a Google search result.|
 | `keywords` (string[ ]) |**Optional.** A list of terms that help categorize the page for SEO purposes.|
-| `unlisted` (boolean) |**Optional.** A hidden document, which is not indexed and can only be accessed via a direct link. See workflow[LINK].|
+| `unlisted` (boolean) |**Optional.** A hidden document, which is not indexed and can only be accessed via a direct link.|
 
 To see the full list of available options, [visit the Docusaurus website](https://docusaurus.io/docs/next/api/plugins/@docusaurus/plugin-content-docs#markdown-front-matter).
 
-### Introduction
+## Introduction
 
-The first paragraph of the document should provide an overview of the topic and/or set the user's expectation for what they will find on this page.
+In the first paragraph of the document, provide an overview of the topic and/or set the user's expectation for what they will find on this page.
 
-## Markdown
-
-### Table of contents. Headers
+## Table of contents. Headers
 
 * For titles and headers, use `Sentence case like this`. This means only capitalizing the first word and any proper nouns.
 * Don't end headers with a period.
-* Don't include your own table of contents (TOC). Both GitHub and Docusaurus provide an autogenerated TOC based on the headers in the document. As an exception to this rule, you may use H4 headers to provide inline TOCs for larger sections of the document:
-  * **H1 headers:** Never use in a document. The _title_ front matter is automatically generated as an H1.
-  * **H2 headers:** These headers are shown in the page's TOC. Make sure the title succinctly represents what a reader will find on the page in that section.
-  * **H3 headers:** These headers are also shown in the TOC. Make sure the title represents something a user might want to directly navigate to.
-  * **H4 headers:** These headers emphasize things within a subsection of the page. They can be longer than the other headers because they aren't shown in the TOC.
+* Don't include your own table of contents (TOC). Both GitHub and Docusaurus automatically generate TOC based on the document's headers.
 
-### Content
+* **H1 headers:** Never use in a document. The _title_ front matter is automatically generated as an H1.
+* **H2 headers:** These headers are shown in the page's TOC. Ensure they concisely reflect the content of each section. Keep it short (1-3 words).
+* **H3 headers:** These headers are also shown in the TOC. Ensure the headers represent the content that users may want to access directly. Keep it short (1-3 words).
+* **H4 headers:** These headers emphasize things within a subsection of the page. They can be longer than the other headers because they aren't shown in the TOC.
+
+## Content
 
 <Tabs
   defaultValue="tabs"
@@ -97,7 +99,7 @@ The first paragraph of the document should provide an overview of the topic and/
 
 <TabItem value="tabs">
 
-[Tabs](https://docusaurus.io/docs/next/markdown-features/tabs) are a great option for providing context-driven information. For example, you can use tabs to show code example in different languages or provide instructions for different operating systems. 
+[Tabs](https://docusaurus.io/docs/next/markdown-features/tabs) are a great option for providing context-driven information. For example, you can use tabs to show code examples in different languages or instructions for different operating systems. 
 
 To use tabs, add these lines right below the [front matter](#metadata-front-matter):
 
@@ -118,7 +120,7 @@ For each set of tabs, use this code:
      <TabItem value="beta">Text for beta.</TabItem>
      </Tabs>
      
-You can sync the same kind of tabs with each other by giving the same `groupId` parameter to all related tabs. Doing so persists the choice in all tab instances with the same `groupId`.
+To synchronize tabs of the same kind, assign a `groupId` parameter to all related tabs. This ensures that the chosen selection persists across all instances of tabs with the same `groupId`.
 
 <details>
 <summary>Example</summary>
@@ -168,8 +170,6 @@ To display lines of code, use code blocks. Specify which language you are using 
 ```java title="Custom Title"
 RemoteWebDriver driver = new RemoteWebDriver(url, capabilities);
 ```
-
-
 
 ```mdx-code-block
 </TabItem>
@@ -357,21 +357,21 @@ Use:
 </TabItem>
 <TabItem value="ui">
 
-All user interface elements should be shown in **bold** text. When referring to specific UI text (such as a menu item), use the same capitalization that’s displayed in the user interface.
+Capitalize the names and emphasize all user interface elements in **bold** text. When referring to specific UI text (such as a menu item), use the same capitalization that’s displayed in the user interface.
 
 <details>
 <summary>UI naming conventions</summary>
 
-* Context panel
-* Info pane
+* Context Panel
+* Info Pane
 * Sidebar
 * Top Menu
 * Table View
 * Workspace
 * Toolbox
-* Status ribbon
+* Status Ribbon
 
-[PNG PLACEHOLDER]
+<!--[PNG PLACEHOLDER]-->
 
 See the [word list](word-list.md) to write consistently about _dialogs_, _dropdowns_, _clearing checkboxes_, and more.
 
@@ -442,8 +442,8 @@ If a list starts with an introductory word or phrase, do the following:
 
 Use inline links within your document. Avoid titling links as "here" or "this page". Instead, write the sentence naturally, then wrap the most appropriate phrase with the link:
 
-* For more information, see [Data Access](link).
-* Visualize molecules using [chemically-aware viewers](link). 
+* For more information, see [Data Access](../../access/access.md).
+* Visualize molecules using [chemically-aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md). 
 
 For documents within the Datagrok help repository, all links should be relative to your Markdown file:
 

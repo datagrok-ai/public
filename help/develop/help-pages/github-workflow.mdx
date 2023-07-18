@@ -23,13 +23,13 @@ import TabItem from '@theme/TabItem';
 
 If any error occurs during checks, the deployment to the server will be canceled. Check for errors in the GitHub Actions log or in GitHub Actions run summary.
 
-More information about flow can be found on Docusaurus Help tab in [public repository CI/CD flows](../admin/releases/ci-flow.mdx#public-repository-cicd-flows)
+More information about flow can be found on Docusaurus Help tab in [public repository CI/CD flows](../../deploy/releases/ci-flow.mdx#public-repository-cicd-flows).
 
 ### Trigger GitHub Actions manually
 
 If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
 
-1. Use [Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml)
+1. Use [Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml).
 2. Press `run workflow`. Choose the target branch. Then `Run workflow`. Note that deployment to the server is executed for the master branch only.
 3. Check that the GitHub Actions workflow finished successfully.
 
