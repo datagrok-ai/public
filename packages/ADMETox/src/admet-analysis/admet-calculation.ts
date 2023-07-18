@@ -62,7 +62,7 @@ export function addColorCoding(columnNames: string[]) {
     //@ts-ignore
     tv.grid.col(columnName)!.isTextColorCoded = true;
     tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
-    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<=0.5":"#FFE87C79",">0.5":"#FF43B579"}`;
+    tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<=0.5":"#e87c79",">0.5":"#43b579"}`;
   }  
 }
 
@@ -77,43 +77,55 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
   addResultColumns(table, viewTable);
 }
 
-export async function addPredictions(viewTable: DG.DataFrame): Promise<void> {
+async function getPredictions(viewTable: DG.DataFrame, column?: DG.Column): Promise<DG.DataFrame> {
   const selected = await getSelected();
-  openModelsDialog(selected, async (selected: any) => {
-    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-    if (selected.length === 0) {
-      grok.shell.warning('No models have been selected!');
-      return;
-    }
-    const queryParams = selected.join(',');
 
-    const colName = await grok.dapi.userDataStorage.getValue(_COLUMN_NAME_STORAGE, _KEY);
-    const smilesCol = viewTable.columns.byName(colName);
+  return new Promise<DG.DataFrame>((resolve, reject) => {
+    openModelsDialog(selected, async (selected: any) => {
+      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
+      if (selected.length === 0) {
+        grok.shell.warning('No models have been selected!');
+        reject('No models selected');
+        return;
+      }
+      const queryParams = selected.join(',');
 
-    if (smilesCol.length > 10000) {
-      const dialog = ui.dialog({ title: 'Proceed with computations' });
-      dialog
-        .add(ui.divText(`Performing computations could potentially consume
-         a significant amount of time.
-         Do you want to continue?`))
-        .onCancel(() => {
-          return;
-        })
-        .addButton('YES', async () => {
-          dialog.close();
-          await addColumnsAndProcessInBatches(viewTable, selected, smilesCol, queryParams);
-        })
-        .show();
-    } else {
-      await addColumnsAndProcessInBatches(viewTable, selected, smilesCol, queryParams);
-    }
+      const colName = await grok.dapi.userDataStorage.getValue(_COLUMN_NAME_STORAGE, _KEY);
+      const smilesCol = viewTable.columns.byName(colName);
+      const malformedIndexes = await grok.functions.call('Chem:_getMolSafe', {molecules: smilesCol});
+      const smilesColFiltered = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
+
+      if (smilesCol.length > 10000) {
+        const dialog = ui.dialog({ title: 'Proceed with computations' });
+        dialog
+          .add(
+            ui.divText(
+              `Performing computations could potentially consume a significant amount of time.
+               Do you want to continue?`
+            )
+          )
+          .addButton('YES', async () => {
+            dialog.close();
+            const result = await addColumnsAndProcessInBatches(viewTable, selected, smilesColFiltered, queryParams, malformedIndexes);
+            resolve(result);
+          })
+          .show();
+      } else {
+        const result = await addColumnsAndProcessInBatches(viewTable, selected, smilesColFiltered, queryParams, malformedIndexes);
+        resolve(result);
+      }
+    });
   });
 }
 
-async function addColumnsAndProcessInBatches(viewTable: DG.DataFrame, selected: any[], smilesCol: DG.Column, queryParams: string): Promise<void> {
-  const malformedIndexes = await grok.functions.call('Chem:_getMolSafe', {molecules: smilesCol});
-  const smilesColFiltered = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
-  await processColumnInBatches(smilesColFiltered, viewTable, 100, queryParams, selected, malformedIndexes);
+export async function addPredictions(viewTable: DG.DataFrame) {
+  const df = await getPredictions(viewTable);
+  addResultColumns(df, viewTable);
+}
+
+
+async function addColumnsAndProcessInBatches(viewTable: DG.DataFrame, selected: any[], smilesCol: DG.Column, queryParams: string, malformedIndexes: number[]): Promise<DG.DataFrame> {
+  return await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, malformedIndexes);
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
@@ -360,11 +372,13 @@ class Semaphore {
   }
 }
 
-async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]) {
+async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]): Promise<DG.DataFrame> {
   //@ts-ignore
   const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...', {cancelable: true});
   //@ts-ignore
-  progressIndicator.onCanceled.subscribe(() => {});
+  progressIndicator.onCanceled.subscribe(() => {
+    progressIndicator.close();
+  });
   const semaphore = new Semaphore(10);
 
   const totalBatches = Math.ceil(column.length / batchSize);
@@ -394,6 +408,6 @@ async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame
     await delay(100);
   }
 
-  addResultColumns(resultDf, viewTable, malformedIndexes);
   progressIndicator.close();
+  return resultDf;
 }
