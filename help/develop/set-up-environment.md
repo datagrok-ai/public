@@ -19,12 +19,16 @@ enter the root password if prompted.
 3. Install [webpack](https://webpack.js.org/guides/installation/)
 4. Install [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 
+_NOTE_: The `Node.js` version from [Snap](https://snapcraft.io/)
+can produce issues with the datagrok tools installation.
+We recommend to avoid using Snap and follow installation instructions provided above.
+
 ## Configuration
 
 1. Retrieve your developer key by opening your user profile, clicking on `Developer key` and copying it to the clipboard
 2. Configure your environment with the following command:
 
-   ```
+   ```bash
    grok config
    ```
 
