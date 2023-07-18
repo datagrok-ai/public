@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {fromEvent, Unsubscribable} from 'rxjs';
+import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -16,6 +16,7 @@ import {
 import {
   FilterSources,
   HorizontalAlignments,
+  IWebLogoViewer,
   PositionHeight,
   PositionMarginStates,
   positionSeparator,
@@ -25,6 +26,7 @@ import {
   WebLogoPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
 
 import {_package} from '../package';
 
@@ -67,6 +69,9 @@ export class PositionInfo {
   /** Position name from column tag*/
   public readonly name: string;
 
+  private readonly _label: string | undefined;
+  public get label(): string { return !!this._label ? this._label : this.name; }
+
   private readonly _freqs: { [m: string]: PositionMonomerInfo };
 
   rowCount: number;
@@ -79,28 +84,31 @@ export class PositionInfo {
    * @param {number} rowCount Count of elements in column
    * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
    */
-  constructor(pos: number, name: string,
-    freqs: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0,
+  constructor(pos: number, name: string, freqs?: { [m: string]: PositionMonomerInfo },
+    options?: { rowCount?: number, sumForHeightCalc?: number, label?: string }
   ) {
     this.pos = pos;
     this.name = name;
-    this._freqs = freqs;
-    this.rowCount = rowCount;
-    this.sumForHeightCalc = sumForHeightCalc;
+    this._freqs = freqs ?? {};
+
+    if (options?.rowCount) this.rowCount = options.rowCount;
+    if (options?.sumForHeightCalc) this.sumForHeightCalc = options.sumForHeightCalc;
+    if (options?.label) this._label = options.label;
   }
 
   public getMonomers(): string[] {
     return Object.keys(this._freqs);
   }
 
+  public hasMonomer(m: string): boolean {
+    return m in this._freqs;
+  }
+
+  /** Creates empty PositionMonomerInfo for {@link m} key if missed in {@link _freqs}. */
   public getFreq(m: string): PositionMonomerInfo {
     let res: PositionMonomerInfo = this._freqs[m];
     if (!res) res = this._freqs[m] = new PositionMonomerInfo();
     return res;
-  }
-
-  public setFreq(m: string, value: PositionMonomerInfo): void {
-
   }
 
   getMonomerAt(calculatedX: number, y: number): string | undefined {
@@ -148,6 +156,7 @@ export class PositionInfo {
     jPos: number, absoluteMaxHeight: number, heightMode: PositionHeight, alphabetSizeLog: number,
     positionWidthWithMargin: number, positionWidth: number, r: number, axisHeight: number
   ): void {
+    const dpr = window.devicePixelRatio;
     // const rowCount = this.positions[jPos].rowCount;
     // const alphabetSize = this.getAlphabetSize();
     // if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
@@ -200,7 +209,7 @@ export class PositionInfo {
       // const m: string = entry[0];
       const h: number = maxHeight * pmInfo.count / this.rowCount;
 
-      pmInfo.bounds = new DG.Rect(jPos * positionWidthWithMargin, y, positionWidth, h);
+      pmInfo.bounds = new DG.Rect(jPos * dpr * positionWidthWithMargin, y, positionWidth * dpr, h);
       y += h;
     }
   }
@@ -277,7 +286,7 @@ enum RecalcLevel {
   Freqs = 2,
 }
 
-export class WebLogoViewer extends DG.JsViewer {
+export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public static residuesSet = 'nucleotides';
   private static viewerCount: number = -1;
 
@@ -319,13 +328,13 @@ export class WebLogoViewer extends DG.JsViewer {
   public minHeight: number;
   public backgroundColor: number = 0xFFFFFFFF;
   public maxHeight: number;
-  public positionMarginState: string;
+  public positionMarginState: PositionMarginStates;
   public positionMargin: number = 0;
   public startPositionName: string | null;
   public endPositionName: string | null;
   public fixWidth: boolean;
-  public verticalAlignment: string | null;
-  public horizontalAlignment: string | null;
+  public verticalAlignment: VerticalAlignments;
+  public horizontalAlignment: HorizontalAlignments;
   public fitArea: boolean;
   public shrinkEmptyTail: boolean;
   public positionHeight: string;
@@ -334,6 +343,7 @@ export class WebLogoViewer extends DG.JsViewer {
   public filterSource: FilterSources;
 
   private positionNames: string[] = [];
+  private positionLabels: string[] | undefined = undefined;
   private startPosition: number = -1;
   private endPosition: number = -1;
 
@@ -353,7 +363,7 @@ export class WebLogoViewer extends DG.JsViewer {
   }
 
   /** For startPosition equals to endPosition Length is 1 */
-  private get Length(): number {
+  public get Length(): number {
     if (this.skipEmptyPositions)
       return this.positions.length;
 
@@ -366,12 +376,12 @@ export class WebLogoViewer extends DG.JsViewer {
   }
 
   private get positionMarginValue() {
-    if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true))
-      return this.positionMargin;
+    if (this.positionMarginState === PositionMarginStates.AUTO &&
+      this.unitsHandler?.getAlphabetIsMultichar() === true
+    ) return this.positionMargin;
 
-    if (this.positionMarginState === 'enable')
+    if (this.positionMarginState === PositionMarginStates.ON)
       return this.positionMargin;
-
 
     return 0;
   }
@@ -431,9 +441,9 @@ export class WebLogoViewer extends DG.JsViewer {
 
     // -- Layout --
     this.verticalAlignment = this.string(PROPS.verticalAlignment, defaults.verticalAlignment,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(VerticalAlignments)});
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(VerticalAlignments)}) as VerticalAlignments;
     this.horizontalAlignment = this.string(PROPS.horizontalAlignment, defaults.horizontalAlignment,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(HorizontalAlignments)});
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(HorizontalAlignments)}) as HorizontalAlignments;
     this.fixWidth = this.bool(PROPS.fixWidth, defaults.fixWidth,
       {category: PROPS_CATS.LAYOUT});
     this.fitArea = this.bool(PROPS.fitArea, defaults.fitArea,
@@ -443,7 +453,7 @@ export class WebLogoViewer extends DG.JsViewer {
     this.maxHeight = this.float(PROPS.maxHeight, defaults.maxHeight,
       {category: PROPS_CATS.LAYOUT/*, editor: 'slider', min: 25, max: 500, postfix: 'px'*/});
     this.positionMarginState = this.string(PROPS.positionMarginState, defaults.positionMarginState,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(PositionMarginStates)});
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(PositionMarginStates)}) as PositionMarginStates;
     let defaultValueForPositionMargin = 0;
     if (this.positionMarginState === 'auto') defaultValueForPositionMargin = 4;
     this.positionMargin = this.int(PROPS.positionMargin, defaultValueForPositionMargin,
@@ -584,6 +594,7 @@ export class WebLogoViewer extends DG.JsViewer {
         if (!this.seqCol) {
           this.unitsHandler = null;
           this.positionNames = [];
+          this.positionLabels = [];
           this.startPosition = -1;
           this.endPosition = -1;
           this.cp = null;
@@ -598,14 +609,19 @@ export class WebLogoViewer extends DG.JsViewer {
     if (!this.seqCol)
       return;
 
-    const maxLength = wu(this.unitsHandler!.splitted).map((mList) => mList ? mList.length : 0)
-      .reduce((max, l) => Math.max(max, l), 0);
+    const dfFilter = this.filterSource === FilterSources.Filtered ? this.dataFrame.filter :
+      this.dataFrame.selection;
+    const maxLength = wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
+      return dfFilter.get(rowI) && !!mList ? mList.length : 0;
+    }).reduce((max, l) => Math.max(max, l), 0);
 
-    // Get position names from data column tag 'positionNames'
+    /** positionNames and positionLabel can be set up through the column's tags only */
     const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
-    // Fallback if 'positionNames' tag is not provided
-    this.positionNames = positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((n) => n.trim()) :
-      [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`);
+    const positionLabelsTxt = this.seqCol.getTag(wlTAGS.positionLabels);
+    this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
+      [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
+    this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :
+      undefined;
 
     this.startPosition = (this.startPositionName && this.positionNames &&
       this.positionNames.includes(this.startPositionName)) ?
@@ -735,11 +751,15 @@ export class WebLogoViewer extends DG.JsViewer {
     }
   }
 
+  private _onSizeChanged: Subject<void> = new Subject<void>();
+
+  public get onSizeChanged(): Observable<void> { return this._onSizeChanged; }
+
   // -- Routines --
 
-  getMonomer(p: DG.Point): [number, string | null, PositionMonomerInfo | null] {
-    const calculatedX = p.x + this.firstVisibleIndex * this.positionWidthWithMargin;
-    const jPos = Math.floor(p.x / this.positionWidthWithMargin + this.firstVisibleIndex);
+  getMonomer(p: DG.Point, dpr: number): [number, string | null, PositionMonomerInfo | null] {
+    const calculatedX = p.x + this.firstVisibleIndex * this.positionWidthWithMargin * dpr;
+    const jPos = Math.floor(p.x / (this.positionWidthWithMargin * dpr) + this.firstVisibleIndex);
     const position: PositionInfo = this.positions[jPos];
 
     if (position === undefined)
@@ -763,25 +783,12 @@ export class WebLogoViewer extends DG.JsViewer {
     return '';
   }
 
-  /** Helper function for remove empty positions */
-  // TODO: use this function in from core
-  protected removeWhere<T>(array: Array<T>, predicate: (item: T) => boolean): Array<any> {
-    const length = array.length;
-    let updateIterator = 0;
-    for (let deleteIterator = 0; deleteIterator < length; deleteIterator++) {
-      if (!predicate(array[deleteIterator])) {
-        array[updateIterator] = array[deleteIterator];
-        updateIterator++;
-      }
-    }
-    array.length = updateIterator;
-    return array;
-  }
-
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
-    if (this.skipEmptyPositions)
-      this.removeWhere(this.positions, (item) => item?.getFreq('-')?.count === item?.rowCount);
+    if (this.skipEmptyPositions) {
+      this.positions = wu(this.positions)
+        .filter((pi) => !pi.hasMonomer('-') || pi.getFreq('-').count !== pi.rowCount).toArray();
+    }
   }
 
   private renderRequested: boolean = false;
@@ -804,18 +811,24 @@ export class WebLogoViewer extends DG.JsViewer {
       this.positions = new Array(posCount);
       for (let jPos = 0; jPos < length; jPos++) {
         const posName: string = this.positionNames[this.startPosition + jPos];
-        this.positions[jPos] = new PositionInfo(this.startPosition + jPos, posName);
+        const posLabel: string | undefined = this.positionLabels ?
+          this.positionLabels[this.startPosition + jPos] : undefined;
+        this.positions[jPos] = new PositionInfo(this.startPosition + jPos, posName, {}, {label: posLabel});
       }
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
-      const selRowIndices = this.filter.getSelectedIndexes();
-
-      for (const rowI of selRowIndices) {
-        const seqMList: string[] = this.unitsHandler.splitted[rowI];
-        for (let jPos = 0; jPos < length; ++jPos) {
-          const m: string = seqMList[this.startPosition + jPos] || '-';
-          const pmInfo = this.positions[jPos].getFreq(m);
-          pmInfo.count++;
+      const dfFilter =
+        this.filterSource === FilterSources.Filtered ? this.dataFrame.filter : this.dataFrame.selection;
+      const dfRowCount = this.dataFrame.rowCount;
+      const splitted = this.unitsHandler.splitted;
+      for (let rowI = 0; rowI < dfRowCount; ++rowI) {
+        if (dfFilter.get(rowI)) {
+          const seqMList: string[] = splitted[rowI];
+          for (let jPos = 0; jPos < length; ++jPos) {
+            const m: string = seqMList[this.startPosition + jPos] || '-';
+            const pmInfo = this.positions[jPos].getFreq(m);
+            pmInfo.count++;
+          }
         }
       }
 
@@ -876,7 +889,7 @@ export class WebLogoViewer extends DG.JsViewer {
 
       const length: number = this.Length;
       g.resetTransform();
-      g.fillStyle = DG.Color.toHtml(this.backgroundColor);
+      g.fillStyle = intToHtmlA(this.backgroundColor);
       g.fillRect(0, 0, this.canvas.width, this.canvas.height);
       g.textBaseline = this.textBaseline;
 
@@ -891,16 +904,17 @@ export class WebLogoViewer extends DG.JsViewer {
       g.textAlign = 'center';
       g.font = `${positionFontSize.toFixed(1)}px Roboto, Roboto Local, sans-serif`;
       const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
-      const hScale = posNameMaxWidth < (this._positionWidth - 2) ? 1 : (this._positionWidth - 2) / posNameMaxWidth;
+      const hScale = posNameMaxWidth < (this._positionWidth * dpr - 2) ? 1 :
+        (this._positionWidth * dpr - 2) / posNameMaxWidth;
 
       for (let jPos = this.firstVisibleIndex; jPos < lastVisibleIndex; jPos++) {
         const pos: PositionInfo = this.positions[jPos];
         g.resetTransform();
         g.setTransform(
           hScale, 0, 0, 1,
-          jPos * this.positionWidthWithMargin + this._positionWidth / 2 -
+          jPos * this.positionWidthWithMargin * dpr + this._positionWidth * dpr / 2 -
           this.positionWidthWithMargin * firstVisibleIndex, 0);
-        g.fillText(pos.name, 0, 0);
+        g.fillText(pos.label, 0, 0);
       }
       //#endregion Plot positionNames
       const fontStyle = '16px Roboto, Roboto Local, sans-serif';
@@ -940,6 +954,9 @@ export class WebLogoViewer extends DG.JsViewer {
       }
     }
   }
+
+  private _lastWidth: number;
+  private _lastHeight: number;
 
   /** Calculate canvas size an positionWidth and updates properties */
   private calcSize() {
@@ -1021,6 +1038,12 @@ export class WebLogoViewer extends DG.JsViewer {
         this.host.style.setProperty('overflow-y', 'hidden', 'important');
       }
     }
+
+    if (this._lastWidth !== this.root.clientWidth && this._lastHeight !== this.root.clientHeight) {
+      this._lastWidth = this.root.clientWidth;
+      this._lastHeight = this.root.clientHeight;
+      this._onSizeChanged.next();
+    }
   }
 
   public getAlphabetSize(): number {
@@ -1077,12 +1100,12 @@ export class WebLogoViewer extends DG.JsViewer {
   }
 
   private canvasOnMouseMove(e: MouseEvent) {
+    const dpr = window.devicePixelRatio;
     try {
       const args = e as MouseEvent;
 
-      const dpr: number = window.devicePixelRatio;
       const cursorP: DG.Point = this.canvas.getCursorPosition(args, dpr);
-      const [jPos, monomer] = this.getMonomer(cursorP);
+      const [jPos, monomer] = this.getMonomer(cursorP, dpr);
       // if (jPos != undefined && monomer == undefined) {
       //   const preEl = ui.element('pre');
       //   preEl.innerHTML = jPos < this.positions.length ?
@@ -1113,8 +1136,8 @@ export class WebLogoViewer extends DG.JsViewer {
   private canvasOnMouseDown(e: MouseEvent): void {
     try {
       const args = e as MouseEvent;
-      const r: number = window.devicePixelRatio;
-      const [jPos, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, r));
+      const dpr: number = window.devicePixelRatio;
+      const [jPos, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, dpr), dpr);
 
       // prevents deselect all rows if we miss monomer bounds
       if (this.dataFrame && this.seqCol && this.unitsHandler && monomer) {

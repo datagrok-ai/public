@@ -9,12 +9,12 @@ export interface RDModule {
   get_mol_copy(other: RDMol): RDMol;
   get_qmol(molString: string): RDMol;
   get_rxn(reactionString: string, options?: string): RDReaction;
-  get_mcs_as_mol(mols: RDMolIterator, details?: string): RDMol;
-  get_mcs_as_smarts(mols: RDMolIterator, details?: string): string;
+  get_mcs_as_mol(mols: MolList, details?: string): RDMol;
+  get_mcs_as_smarts(mols: MolList, details?: string): string;
   _malloc(size: number): any;
   _free(buf: any): any;
   writeArrayToMemory(arr: any, buff:any): any;
-  MolIterator: RDMolIteratorConstructor;
+  MolList: MolListConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
   }
 
@@ -49,7 +49,7 @@ export interface RDMol {
   get_atom_pair_fp_as_uint8array(details?: string): Uint8Array;
   get_maccs_fp_as_uint8array(): Uint8Array;
   get_frags(details?: string): {
-    molIterator: RDMolIterator,
+    molIterator: MolList,
     mappings: {
       frags: Array<number>,
       fragsMolAtomMapping: Array<Array<number>>,
@@ -70,9 +70,9 @@ export interface RDMol {
 
   get_stereo_tags(): string;
   get_aromatic_form(): string;
-  set_aromatic_form(): void;
+  convert_to_aromatic_form(): void;
   get_kekule_form(): string;
-  set_kekule_form(): void;
+  convert_to_kekule_form(): void;
   get_new_coords(useCoordGen?: boolean): string;
   set_new_coords(useCoordGen?: boolean): boolean;
   has_prop(key: string): boolean;
@@ -99,7 +99,7 @@ export interface RDMol {
   delete(): void;
 }
 
-export interface RDMolIterator {
+export interface MolList {
   append(mol: RDMol): number;
   insert(i: number, mol: RDMol): number;
   at(i: number): RDMol;
@@ -111,8 +111,8 @@ export interface RDMolIterator {
   delete(): void;
 }
 
-interface RDMolIteratorConstructor {
-  new(): RDMolIterator;
+interface MolListConstructor {
+  new(): MolList;
 }
 
 export interface RDReaction {

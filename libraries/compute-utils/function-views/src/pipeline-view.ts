@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
-import {Subject, BehaviorSubject, combineLatest} from 'rxjs';
-import {filter, first} from 'rxjs/operators';
+import {Subject, BehaviorSubject, combineLatest, merge} from 'rxjs';
+import {debounceTime, filter, first, mapTo, startWith, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {FunctionView} from './function-view';
@@ -23,7 +23,7 @@ type StepState = {
   idx: number,
   visibility: BehaviorSubject<VISIBILITY_STATE>,
   ability: BehaviorSubject<ABILITY_STATE>,
-  options?: {friendlyName?: string}
+  options?: {friendlyName?: string, helpUrl?: string | HTMLElement}
 }
 
 const getVisibleStepName = (step: StepState) => {
@@ -34,12 +34,16 @@ export class PipelineView extends ComputationView {
   public steps = {} as {[scriptNqName: string]: StepState};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
-  private stepTabs: DG.TabControl | null = null;
+  private stepTabs!: DG.TabControl;
 
   // Sets current step of pipeline
   public set currentTabName(name: string) {
-    if (this.stepTabs?.getPane(name))
-      this.stepTabs!.currentPane = this.stepTabs?.getPane(name);
+    if (this.stepTabs.getPane(name))
+      this.stepTabs.currentPane = this.stepTabs.getPane(name);
+  }
+
+  public getStepView<T extends FunctionView>(name: string) {
+    return this.steps[name]?.view as T;
   }
 
   // PipelineView unites several export files into single ZIP file
@@ -101,7 +105,7 @@ export class PipelineView extends ComputationView {
           .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
       ) {
         const temp = new ExcelJS.Workbook();
-        this.stepTabs!.currentPane = this.stepTabs!.getPane(getVisibleStepName(step));
+        this.stepTabs.currentPane = this.stepTabs.getPane(getVisibleStepName(step));
 
         await new Promise((r) => setTimeout(r, 100));
         await temp.xlsx.load(await (await step.view.exportConfig!.export('Excel')).arrayBuffer());
@@ -138,6 +142,7 @@ export class PipelineView extends ComputationView {
       funcName: string,
       friendlyName?: string,
       hiddenOnInit?: VISIBILITY_STATE,
+      helpUrl?: string | HTMLElement,
     }[],
   ) {
     super(
@@ -159,7 +164,7 @@ export class PipelineView extends ComputationView {
         ability: new BehaviorSubject<ABILITY_STATE>(
           this.isHistorical ? ABILITY_STATE.ENABLED: (idx === 0) ? ABILITY_STATE.ENABLED : ABILITY_STATE.DISABLED,
         ),
-        options: {friendlyName: stepConfig.friendlyName},
+        options: {friendlyName: stepConfig.friendlyName, helpUrl: stepConfig.helpUrl},
       };
     });
 
@@ -214,97 +219,24 @@ export class PipelineView extends ComputationView {
     await Promise.all(editorsLoading);
 
     const viewsLoading = loadedScripts.map(async (loadedScript) => {
+      const currentStep = this.steps[loadedScript.nqName];
       const scriptCall: DG.FuncCall = loadedScript.prepare();
-      const editorFunc = editorFuncs[this.steps[loadedScript.nqName].editor];
+      const editorFunc = editorFuncs[currentStep.editor];
 
       await this.onBeforeStepFuncCallApply(loadedScript.nqName, scriptCall, editorFunc);
       const view = await editorFunc.apply({'call': scriptCall}) as RichFunctionView;
 
-      view.afterRenderControlls.subscribe(() => {
-        const currentStep = this.steps[loadedScript.nqName];
+      const backBtn = ui.button('Back', () => {}, 'Go to the previous step');
+      $(backBtn).addClass('ui-btn-nav');
 
-        const backBtn = ui.button('Back', () => {}, 'Go to the previous step');
-        $(backBtn).addClass('ui-btn-nav');
+      const nextBtn = ui.button('Next', () => {}, 'Go to the next step');
+      $(nextBtn).addClass('ui-btn-nav');
 
-        const updatePrevBtn = () => {
-          const prevVisibleStep = Object.values(this.steps)
-            .slice().reverse()
-            .find((step) =>
-              step.idx < currentStep.idx &&
-              step.visibility.value === VISIBILITY_STATE.VISIBLE,
-            );
+      this.syncNavButtons(currentStep, backBtn, nextBtn);
 
-          if (prevVisibleStep) {
-            $(backBtn).show();
-
-            combineLatest([
-              currentStep.ability,
-              currentStep.visibility,
-              prevVisibleStep.visibility,
-              prevVisibleStep.ability,
-            ])
-              .pipe(first())
-              .subscribe(([_, _1, _2, newState]) =>{
-                backBtn.addEventListener('click', () => {
-                  this.currentTabName = getVisibleStepName(prevVisibleStep);
-                });
-
-                if (newState === ABILITY_STATE.DISABLED)
-                  $(backBtn).addClass('d4-disabled');
-                if (newState === ABILITY_STATE.ENABLED)
-                  $(backBtn).removeClass('d4-disabled');
-
-                setTimeout(() => updatePrevBtn());
-              });
-          } else
-            $(backBtn).hide();
-        };
-
-        updatePrevBtn();
-
-        const nextBtn = ui.button('Next', () => {}, 'Go to the next step');
-        $(nextBtn).addClass('ui-btn-nav');
-
-        const updateNextBtn = () => {
-          const nextVisibleStep = Object.values(this.steps)
-            .find((step) =>
-              step.idx > currentStep.idx &&
-              step.visibility.value === VISIBILITY_STATE.VISIBLE,
-            );
-
-          if (nextVisibleStep) {
-            $(nextBtn).show();
-
-            combineLatest([
-              currentStep.ability,
-              currentStep.visibility,
-              nextVisibleStep.visibility,
-              nextVisibleStep.ability,
-            ]).pipe(first()).subscribe(([_, _1, _2, newState]) => {
-              nextBtn.addEventListener('click', () => {
-                this.currentTabName = getVisibleStepName(nextVisibleStep);
-              });
-
-              if (newState === ABILITY_STATE.DISABLED)
-                $(nextBtn).addClass('d4-disabled');
-              if (newState === ABILITY_STATE.ENABLED)
-                $(nextBtn).removeClass('d4-disabled');
-
-              setTimeout(() => updateNextBtn());
-            });
-          } else
-            $(nextBtn).hide();
-        };
-
-        updateNextBtn();
-
-        const navButtons = ui.divH([
-          backBtn, nextBtn,
-        ], {style: {'gap': '5px'}});
-
-        $(view.controlsDiv?.firstChild).css({'margin-right': '0px'});
-        view.controlsDiv?.lastChild?.insertBefore(navButtons, view.controlsDiv?.lastChild.firstChild);
-      });
+      view.setNavigationButtons([
+        backBtn, nextBtn,
+      ]);
 
       this.steps[loadedScript.nqName].view = view;
 
@@ -313,7 +245,7 @@ export class PipelineView extends ComputationView {
       const subscribeOnDisableEnable = () => {
         const outerSub = step.view.funcCallReplaced.subscribe(() => {
           const subscribeForTabsDisabling = () => {
-            wu(step.view.funcCall.inputParams.values()).forEach(
+            wu(step.view.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach(
               (param) => {
                 const disableFollowingTabs = () => {
                   Object.values(this.steps).forEach((iteratedStep) => {
@@ -382,6 +314,63 @@ export class PipelineView extends ComputationView {
     await this.onFuncCallReady();
   }
 
+  private syncNavButtons(currentStep: StepState, backBtn: HTMLButtonElement, nextBtn: HTMLButtonElement) {
+    let nextStep: StepState | undefined;
+    let prevStep: StepState | undefined;
+    nextBtn.addEventListener('click', () => {
+      if (nextStep)
+        this.currentTabName = getVisibleStepName(nextStep);
+    });
+    backBtn.addEventListener('click', () => {
+      if (prevStep)
+        this.currentTabName = getVisibleStepName(prevStep);
+    });
+    const sub = this.getPipelineStateChanges().pipe(startWith(true), debounceTime(0)).subscribe(() => {
+      nextStep = this.getNextStep(currentStep);
+      prevStep = this.getPreviousStep(currentStep);
+      if (nextStep) {
+        $(nextBtn).show();
+        if (nextStep.ability.value === ABILITY_STATE.DISABLED)
+          $(nextBtn).addClass('d4-disabled');
+        if (nextStep.ability.value === ABILITY_STATE.ENABLED)
+          $(nextBtn).removeClass('d4-disabled');
+      } else
+        $(nextBtn).hide();
+
+      if (prevStep) {
+        $(backBtn).show();
+        if (prevStep.ability.value === ABILITY_STATE.DISABLED)
+          $(backBtn).addClass('d4-disabled');
+        if (prevStep.ability.value === ABILITY_STATE.ENABLED)
+          $(backBtn).removeClass('d4-disabled');
+      } else
+        $(backBtn).hide();
+    });
+    this.subs.push(sub);
+  }
+
+  private getPreviousStep(currentStep: StepState) {
+    return Object.values(this.steps)
+      .slice().reverse()
+      .find((step) =>
+        step.idx < currentStep.idx &&
+        step.visibility.value === VISIBILITY_STATE.VISIBLE,
+      );
+  }
+
+  private getNextStep(currentStep: StepState) {
+    return Object.values(this.steps)
+      .find((step) =>
+        step.idx > currentStep.idx &&
+        step.visibility.value === VISIBILITY_STATE.VISIBLE,
+      );
+  }
+
+  private getPipelineStateChanges() {
+    const observables = Object.values(this.steps).flatMap((step) => [step.ability, step.visibility]);
+    return merge(...observables).pipe(mapTo(true));
+  }
+
   public override async onAfterSaveRun() {
     Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
   }
@@ -448,10 +437,10 @@ export class PipelineView extends ComputationView {
       this.subs.push(
         this.steps[stepConfig.funcName].visibility.subscribe((newValue) => {
           if (newValue === VISIBILITY_STATE.VISIBLE)
-            $(this.stepTabs?.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).show();
+            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).show();
 
           if (newValue === VISIBILITY_STATE.HIDDEN)
-            $(this.stepTabs?.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();
+            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();
         }),
       );
     });
@@ -460,12 +449,29 @@ export class PipelineView extends ComputationView {
       this.subs.push(
         step.ability.subscribe((newState) => {
           if (newState === ABILITY_STATE.ENABLED)
-            $(this.stepTabs?.getPane(getVisibleStepName(step)).header).removeClass('d4-disabled');
+            $(this.stepTabs.getPane(getVisibleStepName(step)).header).removeClass('d4-disabled');
           if (newState === ABILITY_STATE.DISABLED)
-            $(this.stepTabs?.getPane(getVisibleStepName(step)).header).addClass('d4-disabled');
+            $(this.stepTabs.getPane(getVisibleStepName(step)).header).addClass('d4-disabled');
         }),
       );
     });
+
+    const updateHelpPanel = async () => {
+      const newHelpUrl = Object.values(this.steps)
+        .find((step) => getVisibleStepName(step) === this.stepTabs.currentPane.name)
+        ?.options?.helpUrl;
+
+
+      if (newHelpUrl) {
+        const path = `System:AppData/${this.func.package.name}/${newHelpUrl}`;
+        const file = await grok.dapi.files.readAsText(path);
+        grok.shell.windows.help.showHelp(ui.markdown(file));
+      }
+    };
+
+    this.stepTabs.onTabChanged.subscribe(async () => updateHelpPanel());
+    grok.shell.windows.help.visible = true;
+    updateHelpPanel();
 
     this.hideSteps(
       ...this.initialConfig
@@ -519,9 +525,9 @@ export class PipelineView extends ComputationView {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
-    const idxBeforeLoad = this.stepTabs!.panes
+    const idxBeforeLoad = this.stepTabs.panes
       .filter((tab) => ($(tab.header).css('display') !== 'none'))
-      .findIndex((tab) => tab.name === this.stepTabs!.currentPane.name);
+      .findIndex((tab) => tab.name === this.stepTabs.currentPane.name);
 
     await this.onBeforeLoadRun();
 
@@ -544,7 +550,7 @@ export class PipelineView extends ComputationView {
 
     this.lastCall = pulledParentRun;
 
-    this.stepTabs!.currentPane = this.stepTabs!.panes
+    this.stepTabs.currentPane = this.stepTabs.panes
       .filter((tab) => ($(tab.header).css('display') !== 'none'))[idxBeforeLoad];
 
     await this.onAfterLoadRun(pulledParentRun);

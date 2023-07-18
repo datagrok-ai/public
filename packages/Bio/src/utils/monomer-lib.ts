@@ -1,14 +1,16 @@
-// import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
 import {Observable, Subject} from 'rxjs';
+
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
   createJsonMonomerLibFromSdf,
   IMonomerLibHelper,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+
 import {_package} from '../package';
 
 const _HELM_REQUIRED_FIELDS_ARRAY = [
@@ -37,18 +39,64 @@ export async function getLibFileNameList(): Promise<string[]> {
   return res;
 }
 
+let userLibSettingsPromise: Promise<void> = Promise.resolve();
+
 export async function getUserLibSettings(): Promise<LibSettings> {
-  const resStr: string = await grok.dapi.userDataStorage.getValue(LIB_STORAGE_NAME, 'Settings', true);
-  const res: LibSettings = resStr ? JSON.parse(resStr) : {exclude: []};
+  let res: LibSettings;
+  userLibSettingsPromise = userLibSettingsPromise.then(async () => {
+    const resStr: string = await grok.dapi.userDataStorage.getValue(LIB_STORAGE_NAME, 'Settings', true);
+    res = resStr ? JSON.parse(resStr) : {exclude: []};
 
-  // Fix empty object returned in case there is no settings stored for user
-  res.exclude = res.exclude instanceof Array ? res.exclude : [];
-
-  return res;
+    // Fix empty object returned in case there is no settings stored for user
+    res.exclude = res.exclude instanceof Array ? res.exclude : [];
+    console.debug(`Bio: getUserLibSettings()\n${JSON.stringify(res, undefined, 2)}`);
+  });
+  await userLibSettingsPromise;
+  return res!;
 }
 
 export async function setUserLibSetting(value: LibSettings): Promise<void> {
-  await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
+  userLibSettingsPromise = userLibSettingsPromise.then(async () => {
+    console.debug(`Bio: setUserLibSettings()\n${JSON.stringify(value, undefined, 2)}`);
+    await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
+  });
+  await userLibSettingsPromise;
+}
+
+export async function manageFiles() {
+  const a = ui.dialog({title: 'Manage files'})
+    //@ts-ignore
+    .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
+    .addButton('OK', () => a.close())
+    .show();
+}
+
+export async function getLibraryPanelUI(): Promise<DG.Widget> {
+  //@ts-ignore
+  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  const inputsForm: HTMLDivElement = ui.inputs([]);
+  const libFileNameList: string[] = await getLibFileNameList();
+
+  const settings = await getUserLibSettings();
+
+  for (const libFileName of libFileNameList) {
+    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
+      () => {
+        if (libInput.value == true) {
+          // Checked library remove from excluded list
+          settings.exclude = settings.exclude.filter((l) => l != libFileName);
+        } else {
+          // Unchecked library add to excluded list
+          if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
+        }
+        setUserLibSetting(settings).then(async () => {
+          await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+          grok.shell.info('Monomer library user settings saved.');
+        });
+      });
+    inputsForm.append(libInput.root);
+  }
+  return new DG.Widget(ui.divV([inputsForm, ui.div(filesButton)]));
 }
 
 export class MonomerLib implements IMonomerLib {
@@ -76,7 +124,7 @@ export class MonomerLib implements IMonomerLib {
   getMonomerMolsByPolymerType(polymerType: string): { [monomerSymbol: string]: string } {
     const res: { [monomerSymbol: string]: string } = {};
 
-    Object.keys(this._monomers[polymerType]).forEach((monomerSymbol) => {
+    Object.keys(this._monomers[polymerType] ?? {}).forEach((monomerSymbol) => {
       res[monomerSymbol] = this._monomers[polymerType][monomerSymbol].molfile;
     });
 
@@ -154,8 +202,9 @@ export class MonomerLibHelper implements IMonomerLibHelper {
           getLibFileNameList(),
           getUserLibSettings(),
         ]);
-        const libs: IMonomerLib[] = await Promise.all(libFileNameList
-          .filter((libFileName) => !settings.exclude.includes(libFileName))
+        const filteredLibFnList = libFileNameList
+          .filter((libFileName) => !settings.exclude.includes(libFileName));
+        const libs: IMonomerLib[] = await Promise.all(filteredLibFnList
           .map((libFileName) => {
             //TODO handle whether files are in place
             return this.readLibrary(LIB_PATH, libFileName).catch((err: any) => {

@@ -21,19 +21,19 @@ category('detectorsBenchmark', () => {
   // -- fasta --
 
   test('fastaDnaShorts50Few50', async () => {
-      await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
-    },
-    {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
+  },
+  {skipReason: '#1192'});
 
   test('fastaDnaShorts50Many1E6', async () => {
-      await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
-    },
-    {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
+  },
+  {skipReason: '#1192'});
 
   test('fastaDnaLong1e6Few50', async () => {
-      await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
-    },
-    {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
+  },
+  {skipReason: '#1192'});
 
   // -- separator --
 

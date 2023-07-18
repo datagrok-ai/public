@@ -4,42 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {HitTriageApp} from '../hit-triage-app';
 import {chemDescriptorsDialog} from './descriptors-dialog';
-import {ChemFunctionType, ChemPropNames} from './types';
-import {ChemPropertyGroupMap, chemFunctionNameMap} from './consts';
 
 /**
  * Enrichment of the molecular dataset.
  **/
 
-const chemFunctionsMap: {[_ in ChemPropNames]: ChemFunctionType} = {
-  'Descriptors': (t, c, p) => grok.chem.descriptors(t, c, p),
-  'Toxicity Risks': getChemFunction('Toxicity Risks'),
-  'Structural Alerts': getChemFunction('Structural Alerts'),
-  'Chemical Properties': getChemFunction('Chemical Properties'),
-};
-
-function getChemFunction(funcName: Exclude<ChemPropNames, 'Descriptors'>): ChemFunctionType {
-  const func = DG.Func.find({package: 'Chem', name: chemFunctionNameMap[funcName]})[0];
-  return ((t: DG.DataFrame, col: string, props: string[]) => {
-    const args = getChemFunctionArgs(t, col, props, funcName);
-    return func.apply(args);
-  });
-}
-
-function getChemFunctionArgs(
-  t: DG.DataFrame, col: string, props: string[], funcName: ChemPropNames,
-): {table: DG.DataFrame, molecules: string, [key: string]: any} {
-  const args: {[_: string]: boolean} = {};
-  const argNames = Object.values(ChemPropertyGroupMap).find((g) => g.name === funcName)!.values
-    .map((v) => v.propertyName);
-  argNames.forEach((argName) => args[argName] = false);
-  props.forEach((p) => args[p] = true);
-  return {
-    table: t,
-    molecules: col,
-    ...args,
-  };
-}
 export class ComputeView extends HitTriageBaseView {
   grid: DG.Grid;
   selectedDescriptors: {[key: string]: Array<string>} = {};
@@ -64,18 +33,37 @@ export class ComputeView extends HitTriageBaseView {
   }
 
   async process(): Promise<void> {
+    const functions: {packageName: string, name: string}[] = [
+      {packageName: 'Chem', name: 'addChemPropertiesColumns'},
+      {packageName: 'Chem', name: 'addChemRisksColumns'},
+      {packageName: 'Chem', name: 'structuralAlertsTopMenu'},
+    ];
     return new Promise<void>(async (resolve) => {
       this.template.enrichedTable = this.template.hitsTable;
 
-      chemDescriptorsDialog(async (descriptorsMap) => {
-        await Promise.all(
-          Object.keys(descriptorsMap).filter((key) => descriptorsMap[key] && descriptorsMap[key].length > 0)
-            .map((key) => {
-              return chemFunctionsMap[key as ChemPropNames](
-            this.template.hitsTable!, this.template.hitsMolColumn, descriptorsMap[key]);
-            }));
+      chemDescriptorsDialog(async (resultMap) => {
+        // await Promise.all(
+        //   Object.keys(descriptorsMap).filter((key) => descriptorsMap[key] && descriptorsMap[key].length > 0)
+        //     .map((key) => {
+        //       return chemFunctionsMap[key as ChemPropNames](
+        //     this.template.hitsTable!, this.template.hitsMolColumn, descriptorsMap[key]);
+        //     }));
+        const promises: Promise<any>[] = [];
+        if (resultMap.descriptors && resultMap.descriptors.length > 0) {
+          promises.push(
+            grok.chem.descriptors(this.template.hitsTable!, this.template.hitsMolColumn, resultMap.descriptors,
+            ));
+        }
+        Object.keys(resultMap.externals).forEach((funcName) => {
+          const props = resultMap.externals[funcName];
+          props['table'] = this.template.hitsTable!;
+          props['molecules'] = this.template.hitsMolColumn;
+          if (props)
+            promises.push(grok.functions.call(funcName, props));
+        });
+        await Promise.all(promises);
         resolve();
-      }, resolve);
+      }, resolve, this.template.enrichedTable!, functions);
 
       //const descriptors = ['HeavyAtomCount', 'NHOHCount'];
       //await grok.chem.descriptors(this.template.enrichedTable!, this.template.hitsMolColumn, descriptors);

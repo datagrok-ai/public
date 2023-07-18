@@ -21,6 +21,7 @@ export function createIFitChartData(seriesLength: number): IFitChartData {
 	chartData.series![0] = {
 		fitLineColor: color,
 		pointColor: color,
+		markerType: DG.MARKER_TYPE.CIRCLE,
 		showFitLine: true,
 		showPoints: 'points',
 		showCurveConfidenceInterval: true,
@@ -56,7 +57,7 @@ category('creation', () => {
 category('rendering', () => {
 	test('rendering same fitChartData on canvas', async () => {
 		const canvasWidth = 160;
-		const canvasHeight = 100;
+		const canvasHeight = 120;
 		const renderingTimesAmount = 1000;
 
 		const canvas = ui.canvas(canvasWidth, canvasHeight);
@@ -74,7 +75,7 @@ category('rendering', () => {
 
 	test('rendering different fitChartData on canvas', async () => {
 		const canvasWidth = 160;
-		const canvasHeight = 100;
+		const canvasHeight = 120;
 		const renderingTimesAmount = 1000;
 
 		const canvas = ui.canvas(canvasWidth, canvasHeight);

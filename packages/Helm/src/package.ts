@@ -8,7 +8,7 @@ import {HelmWebEditor} from './helm-web-editor';
 import {HelmCellRenderer} from './cell-renderer';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-import {findMonomers} from './utils';
+import {findMonomers, parseHelm} from './utils';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -17,21 +17,24 @@ let monomerLib: IMonomerLib | null = null;
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  return Promise.all([new Promise((resolve, reject) => {
-    // @ts-ignore
-    dojo.ready(function() { resolve(null); });
-  }), grok.functions.call('Bio:getBioLib')])
-    .then(([_, lib]: [void, IMonomerLib]) => {
+  return Promise.all([
+    new Promise((resolve, reject) => {
+      // @ts-ignore
+      dojo.ready(function() { resolve(null); });
+    }),
+    grok.functions.call('Bio:getBioLib'),
+  ])
+    .then(([_, lib]: [unknown, IMonomerLib]) => {
       monomerLib = lib;
       rewriteLibraries(); // initHelm()
       monomerLib.onChanged.subscribe((_) => {
         try {
           rewriteLibraries(); // initHelm()
 
-          const monTypeList: string[] = monomerLib.getPolymerTypes();
+          const monTypeList: string[] = monomerLib!.getPolymerTypes();
           const msgStr: string = 'Monomer lib updated:<br />' + (
             monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
-              return `${monType} ${monomerLib.getMonomerSymbolsByType(monType).length}`;
+              return `${monType} ${monomerLib!.getMonomerSymbolsByType(monType).length}`;
             }).join('<br />'));
 
           grok.shell.info(msgStr);
@@ -51,13 +54,18 @@ export async function initHelm(): Promise<void> {
     });
 }
 
+export function getMonomerLib(): IMonomerLib {
+  return monomerLib!;
+}
+
 function rewriteLibraries() {
+  // @ts-ignore
   org.helm.webeditor.Monomers.clear();
-  monomerLib.getPolymerTypes().forEach((polymerType) => {
-    const monomerSymbols = monomerLib.getMonomerSymbolsByType(polymerType);
+  monomerLib!.getPolymerTypes().forEach((polymerType) => {
+    const monomerSymbols = monomerLib!.getMonomerSymbolsByType(polymerType);
     monomerSymbols.forEach((monomerSymbol) => {
       let isBroken = false;
-      const monomer: Monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
+      const monomer: Monomer = monomerLib!.getMonomer(polymerType, monomerSymbol)!;
       const webEditorMonomer: WebEditorMonomer = {
         id: monomerSymbol,
         m: monomer.molfile,
@@ -71,7 +79,7 @@ function rewriteLibraries() {
 
       if (monomer.rgroups.length > 0) {
         webEditorMonomer.rs = monomer.rgroups.length;
-        const at = {};
+        const at: { [prop: string]: any } = {};
         monomer.rgroups.forEach((it) => {
           at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
         });
@@ -83,8 +91,10 @@ function rewriteLibraries() {
         isBroken = true;
       }
 
-      if (!isBroken)
+      if (!isBroken) {
+        // @ts-ignore
         org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
+      }
     });
   });
 
@@ -103,8 +113,9 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 function checkMonomersAndOpenWebEditor(cell?: DG.Cell, value?: string, units?: string) {
-  const cellValue = typeof units === 'undefined' ? cell.value : value;
-  const monomers = findMonomers(cellValue);
+  const cellValue: string = !!cell && units === undefined ? cell.value : value;
+  const monomerList: string[] = parseHelm(cellValue);
+  const monomers = findMonomers(monomerList);
   if (monomers.size == 0) { webEditor(cell, value, units); } else {
     grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent! <br/>` +
       `Please, upload the monomer library! <br/>` +
@@ -126,7 +137,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string mol { semType: Macromolecule }
 export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
-  const col = df.columns.bySemType('Macromolecule');
+  const col = df.columns.bySemType('Macromolecule')!;
   const colUnits = col.getTag(DG.TAGS.UNITS);
   if (colUnits === NOTATION.HELM)
     checkMonomersAndOpenWebEditor(df.currentCell, undefined, undefined);
@@ -141,7 +152,7 @@ export function openEditor(mol: string): void {
 //output: widget result
 export async function propertiesPanel(helmString: string) {
   const grid = grok.shell.tv.grid;
-  const parent = grid.root.parentElement;
+  const parent = grid.root.parentElement!;
   const host = ui.div([]);
   parent.appendChild(host);
   const editor = new JSDraw2.Editor(host, {viewonly: true});
@@ -151,7 +162,7 @@ export async function propertiesPanel(helmString: string) {
   const formula = editor.getFormula(true);
   const molWeight = Math.round(editor.getMolWeight() * 100) / 100;
   const coef = Math.round(editor.getExtinctionCoefficient(true) * 100) / 100;
-  parent.lastChild.remove();
+  parent.lastChild!.remove();
   return new DG.Widget(
     ui.tableFromMap({
       'formula': formula.replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
@@ -164,8 +175,10 @@ export async function propertiesPanel(helmString: string) {
 function webEditor(cell?: DG.Cell, value?: string, units?: string) {
   const view = ui.div();
   const df = grok.shell.tv.grid.dataFrame;
-  const converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
+  const converter = new NotationConverter(df.columns.bySemType('Macromolecule')!);
+  // @ts-ignore
   org.helm.webeditor.MolViewer.molscale = 0.8;
+  // @ts-ignore
   const app = new scil.helm.App(view, {
     showabout: false,
     mexfontsize: '90%',
@@ -189,7 +202,7 @@ function webEditor(cell?: DG.Cell, value?: string, units?: string) {
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
   setTimeout(() => {
-    if (typeof units === 'undefined')
+    if (!!cell && units === undefined)
       app.canvas.helm.setSequence(cell.value, 'HELM');
     else
       app.canvas.helm.setSequence(value, 'HELM');
@@ -200,31 +213,35 @@ function webEditor(cell?: DG.Cell, value?: string, units?: string) {
     .onOK(() => {
       const helmValue = app.canvas.getHelm(true).replace(/<\/span>/g, '')
         .replace(/<span style='background:#bbf;'>/g, '');
-      if (typeof units === 'undefined') {
-        cell.value = helmValue;
-      } else {
-        const convertedRes = converter.convertHelmToFastaSeparator(helmValue, units);
-        cell.value = convertedRes;
+      if (!!cell) {
+        if (units === undefined) {
+          cell.value = helmValue;
+        } else {
+          const convertedRes = converter.convertHelmToFastaSeparator(helmValue, units!);
+          cell.value = convertedRes;
+        }
       }
     }).show({modal: true, fullScreen: true});
 }
 
 function getRS(smiles: string) {
   const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
-  const res = {};
+  const res: { [name: string]: string } = {};
   let el = '';
   let digit;
-  for (let i = 0; i < newS.length; i++) {
-    if (newS[i] != null) {
-      if (/\d/.test(newS[i])) {
-        digit = newS[i][newS[i].length - 1];
-        newS[i] = newS[i].replace(/[0-9]/g, '');
-        for (let j = 0; j < newS[i].length; j++) {
-          if (newS[i][j] != ':')
-            el += newS[i][j];
+  if (!!newS) {
+    for (let i = 0; i < newS.length; i++) {
+      if (newS[i] != null) {
+        if (/\d/.test(newS[i])) {
+          digit = newS[i][newS[i].length - 1];
+          newS[i] = newS[i].replace(/[0-9]/g, '');
+          for (let j = 0; j < newS[i].length; j++) {
+            if (newS[i][j] != ':')
+              el += newS[i][j];
+          }
+          res['R' + digit] = el;
+          el = '';
         }
-        res['R' + digit] = el;
-        el = '';
       }
     }
   }
@@ -236,7 +253,7 @@ function getRS(smiles: string) {
 //output: column res
 export function getMolfiles(col: DG.Column): DG.Column {
   const grid = grok.shell.tv.grid;
-  const parent = grid.root.parentElement;
+  const parent = grid.root.parentElement!;
   const res = DG.Column.string('mols', col.length);
   const host = ui.div([]);
   parent.appendChild(host);
@@ -248,7 +265,7 @@ export function getMolfiles(col: DG.Column): DG.Column {
     const mol = editor.getMolfile();
     return mol;
   });
-  parent.lastChild.remove();
+  parent.lastChild!.remove();
   return res;
 }
 

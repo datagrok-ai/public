@@ -36,6 +36,8 @@ export type DrawOptions = {
   textBaseline?: CanvasTextBaseline,
   marginVertical?: number,
   marginHorizontal?: number,
+  colHeaderStyle?: string,
+  colHeaderFontHeight?: number,
 };
 
 export type StatsInfo = {

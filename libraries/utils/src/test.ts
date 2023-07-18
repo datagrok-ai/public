@@ -5,7 +5,7 @@ import Timeout = NodeJS.Timeout;
 import {DataFrame} from 'datagrok-api/dg';
 
 const STANDART_TIMEOUT = 30000;
-const BENCHMARK_TIMEOUT = 1200000;
+const BENCHMARK_TIMEOUT = 10800000;
 
 export const tests: {
   [key: string]: {
@@ -76,7 +76,7 @@ export async function testEvent<T>(event: Observable<T>,
   handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
   let sub: Subscription;
   return new Promise((resolve, reject) => {
-    sub = event.subscribe((args) => {
+    sub = event.subscribe((args: any) => {
       try {
         handler(args);
       } catch (e) {
@@ -279,13 +279,13 @@ export async function runTests(options?: {category?: string, test?: string, test
     const res = [];
     if (value.clear) {
       for (let i = 0; i < t.length; i++) {
-        res.push(await execTest(t[i], options?.test, value.timeout));
+        res.push(await execTest(t[i], options?.test, value.timeout, package_.name));
         grok.shell.closeAll();
         DG.Balloon.closeAll();
       }
     } else {
       for (let i = 0; i < t.length; i++)
-        res.push(await execTest(t[i], options?.test, value.timeout));
+        res.push(await execTest(t[i], options?.test, value.timeout, package_.name));
     }
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
@@ -331,7 +331,7 @@ export async function runTests(options?: {category?: string, test?: string, test
   return results;
 }
 
-async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number) {
+async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number, packageName?: string) {
   let r: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean };
   const filter = predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase()));
   const skip = t.options?.skipReason || filter;
@@ -343,10 +343,10 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
     if (skip) {
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
     } else {
-      const timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
+      let timeout_ = t.options?.timeout === STANDART_TIMEOUT &&
         categoryTimeout ? categoryTimeout : t.options?.timeout!;
-      r = {success: true, result: await timeout(t.test,
-        DG.Test.isInBenchmark ? BENCHMARK_TIMEOUT : timeout_) ?? 'OK', ms: 0, skipped: false};
+      timeout_ = DG.Test.isInBenchmark && timeout_ === STANDART_TIMEOUT ? BENCHMARK_TIMEOUT : timeout_;
+      r = {success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false};
     }
   } catch (x: any) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
@@ -354,10 +354,17 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   const stop = new Date();
   // @ts-ignore
   r.ms = stop - start;
+
   if (!skip)
     console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
   r.name = t.name;
+  if (!filter) {
+    grok.log.usage(`${packageName}: ${t.category}: ${t.name}`,
+      {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
+        'type': 'package', packageName, 'category': t.category, 'test': t.name},
+      `test-package ${packageName}: ${t.category}: ${t.name}`);
+  }
   return r;
 }
 
@@ -409,6 +416,29 @@ export function isDialogPresent(dialogTitle: string): boolean {
   return false;
 }
 
+/** Expects an asynchronous {@link action} to throw an exception. Use {@link check} to perform
+ * deeper inspection of the exception if necessary.
+ * @param  {function(): Promise<void>} action
+ * @param  {function(any): boolean} check
+ * @return {Promise<void>}
+ */
+export async function expectExceptionAsync(action: () => Promise<void>,
+  check?: (exception: any) => boolean): Promise<void> {
+  let caught: boolean = false;
+  let checked: boolean = false;
+  try {
+    await action();
+  } catch (e) {
+    caught = true;
+    checked = !check || check(e);
+  } finally {
+    if (!caught)
+      throw new Error('An exception is expected but not thrown');
+    if (!checked)
+      throw new Error('An expected exception is thrown, but it does not satisfy the condition');
+  }
+}
+
 /**
  * Universal test for viewers. It search viewers in DOM by tags: canvas, svg, img, input, h1, a
  * @param  {string} v Viewer name
@@ -433,15 +463,15 @@ export async function testViewer(v: string, df: DG.DataFrame,
     const tag = document.querySelector(selector)?.tagName;
     res.push(Array.from(tv.viewers).length);
     if (!options?.readOnly) {
-      Array.from(df.row(0).cells).forEach((c) => c.value = null);
+      Array.from(df.row(0).cells).forEach((c:any) => c.value = null);
       const num = df.rowCount < 20 ? Math.floor(df.rowCount / 2) : 10;
-      df.rows.select((row) => row.idx >= 0 && row.idx < num);
+      df.rows.select((row: DG.Row) => row.idx >= 0 && row.idx < num);
       await delay(50);
       for (let i = num; i < num * 2; i++) df.filter.set(i, false);
       await delay(50);
       df.currentRowIdx = 1;
       const df1 = df.clone();
-      df.columns.names().slice(0, Math.ceil(df.columns.length / 2)).forEach((c) => df.columns.remove(c));
+      df.columns.names().slice(0, Math.ceil(df.columns.length / 2)).forEach((c: any) => df.columns.remove(c));
       await delay(100);
       tv.dataFrame = df1;
     }
@@ -449,8 +479,8 @@ export async function testViewer(v: string, df: DG.DataFrame,
     const props = viewer.getProperties();
     const newProps: Record<string, string | boolean> = {};
     Object.keys(optns).filter((k) => typeof optns[k] === 'boolean').forEach((k) => newProps[k] = !optns[k]);
-    props.filter((p) => p.choices !== null)
-      .forEach((p) => newProps[p.name] = p.choices.find((c) => c !== optns[p.name])!);
+    props.filter((p: DG.Property) => p.choices !== null)
+      .forEach((p: DG.Property) => newProps[p.name] = p.choices.find((c: any) => c !== optns[p.name])!);
     viewer.setOptions(newProps);
     await delay(300);
     const layout = tv.saveLayout();
@@ -462,7 +492,7 @@ export async function testViewer(v: string, df: DG.DataFrame,
     await awaitCheck(() => document.querySelector(selector) !== null,
       'cannot load viewer from layout', 3000);
     res.push(Array.from(tv.viewers).length);
-    viewer = Array.from(tv.viewers).find((v) => v.type !== 'Grid')!;
+    viewer = Array.from(tv.viewers).find((v: any) => v.type !== 'Grid')!;
     expectArray(res, [2, 1, 2]);
     expect(JSON.stringify(viewer.getOptions().look), JSON.stringify(oldProps));
   } finally {

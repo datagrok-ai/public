@@ -26,7 +26,7 @@ public class DefaultFloatColumnManager implements ColumnManager<Float> {
     }
 
     @Override
-    public Float convert(Object value, String columnLabel) {
+    public Float convert(Object value, ColumnMeta columnMeta) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -56,12 +56,12 @@ public class DefaultFloatColumnManager implements ColumnManager<Float> {
     }
 
     @Override
-    public boolean isApplicable(Object o) {
-        return o instanceof Float || o instanceof Double || o instanceof BigDecimal;
+    public Column getColumn() {
+        return new FloatColumn();
     }
 
     @Override
-    public Column getColumn() {
-        return new FloatColumn();
+    public Column getColumn(int initColumnSize) {
+        return new FloatColumn(initColumnSize);
     }
 }

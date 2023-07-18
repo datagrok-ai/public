@@ -40,13 +40,15 @@ class BiostructureViewerPackageDetectors extends DG.Package {
     this.logger.debug('BsV: detectors.js: autostart()');
 
     grok.events.onContextMenu.subscribe((event) => {
-      if (event.args.item && event.args.item.__proto__.constructor.name == 'FileInfo') {
+      if (event.args.item && event.args.item instanceof DG.FileInfo) {
         const fi = event.args.item;
         if (fi.extension.toLowerCase() == 'pdb') {
           const contextMenu = event.args.menu;
           contextMenu.item('Open table residues', async () => {
             await grok.functions.call('BiostructureViewer:openPdbResidues', {fi: fi});
           });
+          event.preventDefault();
+          return;
         }
       }
     });

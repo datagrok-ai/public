@@ -39,7 +39,7 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
     }
 
     @Override
-    public Integer convert(Object value, String columnLabel) {
+    public Integer convert(Object value, ColumnMeta columnMeta) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -66,12 +66,12 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
     }
 
     @Override
-    public boolean isApplicable(Object o) {
-        return o instanceof Byte || o instanceof Short || o instanceof Integer;
+    public Column getColumn() {
+        return new IntColumn();
     }
 
     @Override
-    public Column getColumn() {
-        return new IntColumn();
+    public Column getColumn(int initColumnSize) {
+        return new IntColumn(initColumnSize);
     }
 }

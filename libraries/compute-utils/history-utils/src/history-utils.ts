@@ -42,8 +42,15 @@ export namespace historyUtils {
   const packagesCache = {} as Record<string, DG.Package>;
   // TODO: add users and groups cache
 
-  async function augmentFuncWithPackage(func: DG.Func) {
-    const id = func.package.id;
+  export async function augmentFuncWithPackage(func: DG.Func) {
+    // Manually created scripts do not have packages
+    try {
+      const _ = func.package.id;
+    } catch (e) {
+      return;
+    }
+    const id = func.package?.id;
+
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13337
     const funcPackage = packagesCache[id] ?? await grok.dapi.packages.allPackageVersions().find(id);
 

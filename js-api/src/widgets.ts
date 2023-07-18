@@ -125,7 +125,7 @@ export class ObjectPropertyBag {
 
   /** Sets the current state of viewer properties as the default configuration used to create new viewer
   * instances of this type. Equivalent to the "Pick Up / Apply | Set as Default" context menu command.
-  * Read more about viewer commands: {@link https://datagrok.ai/help/visualize/viewers/#common-actions}
+  * Read more about viewer commands: https://datagrok.ai/help/visualize/viewers/#common-actions
   * @param data indicates if data settings should be copied.
   * @param style indicates if style (non-data) settings should be copied. */
   setDefault(data: boolean = false, style: boolean = true) {
@@ -1162,13 +1162,11 @@ export class ProgressIndicator {
     return api.grok_ProgressIndicator_Get_Percent(this.dart);
   }
 
-  get description(): string {
-    return api.grok_ProgressIndicator_Get_Description(this.dart);
-  }
+  /** Flag indicating whether the operation was canceled by the user. */
+  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
 
-  set description(s: string) {
-    api.grok_ProgressIndicator_Set_Description(this.dart, s);
-  }
+  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
+  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
 
   update(percent: number, description: string): void {
     api.grok_ProgressIndicator_Update(this.dart, percent, description);
@@ -1185,12 +1183,16 @@ export class ProgressIndicator {
   get onLogUpdated(): Observable<any> {
     return observeStream(api.grok_Progress_Log_Updated(this.dart));
   }
+
+  get onCanceled(): Observable<any> {
+    return observeStream(api.grok_Progress_Canceled(this.dart));
+  }
 }
 
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
-  static create(name?: string): TaskBarProgressIndicator {
-    return toJs(api.grok_TaskBarProgressIndicator_Create(name));
+  static create(name?: string, options?: { cancelable?: boolean, pausable?: boolean, spinner?: boolean }): TaskBarProgressIndicator {
+    return toJs(api.grok_TaskBarProgressIndicator_Create(name, options?.cancelable ?? false, options?.pausable ?? false, options?.spinner ?? false));
   }
 
   close(): any {

@@ -13,7 +13,7 @@ public class DefaultBoolColumnManager implements ColumnManager<Boolean> {
     private static final Converter<Boolean> DEFAULT_CONVERTER = value -> (Boolean) value;
 
     @Override
-    public Boolean convert(Object value, String columnLabel) {
+    public Boolean convert(Object value, ColumnMeta columnMeta) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -34,12 +34,12 @@ public class DefaultBoolColumnManager implements ColumnManager<Boolean> {
     }
 
     @Override
-    public boolean isApplicable(Object o) {
-        return o instanceof Boolean;
+    public Column getColumn() {
+        return new BoolColumn();
     }
 
     @Override
-    public Column getColumn() {
-        return new BoolColumn();
+    public Column getColumn(int initColumnSize) {
+        return new BoolColumn(initColumnSize);
     }
 }

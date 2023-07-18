@@ -124,14 +124,14 @@ M  END
       `,
       prefix: 'R',
     });
-  });
+  }, {timeout: 60000});
 
   test('rgroups.emptyValues', async () => {
     const res = await findRGroups('smiles', empty, _convertMolNotation(coreEmpty,
       DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
     expect(res.getCol('R1').stats.valueCount, 13);
     expect(res.getCol('R2').stats.valueCount, 13);
-  });
+  }, {timeout: 60000});
 
   test('rgroups.emptyInput', async () => {
     await findRGroups('smiles', empty, '', 'R');

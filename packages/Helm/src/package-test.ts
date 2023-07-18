@@ -4,6 +4,7 @@ import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
 import './tests/helm-tests.ts';
 import './tests/findMonomers-tests';
+import './tests/renderers-tests';
 
 export const _package = new DG.Package();
 export {tests};

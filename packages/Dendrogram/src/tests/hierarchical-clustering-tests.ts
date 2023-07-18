@@ -2,14 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectObject, expectArray} from '@datagrok-libraries/utils/src/test';
-import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
-import {_package} from '../package-test';
-import {viewsTests} from './utils/views-tests';
+import $ from 'cash-dom';
+
+import {category, test, expect, expectObject, expectArray, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {DistanceMetric} from '@datagrok-libraries/bio/src/trees';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
+
+import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
+
+import {_package} from '../package-test';
 
 /*
 https://onecompiler.com/python
@@ -48,7 +51,7 @@ sys.stdout.write(str(result))
 */
 
 
-category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vList: DG.ViewBase[] }) => {
+category('hierarchicalClustering', () => {
   // Single dimension for integer distances
   const data1: string = `x
 8
@@ -75,14 +78,18 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
   // const tgt2NewickAverage = '((2:3.00,0:3.00):1.50,1:4.50);';
 
   const tgt1ClusterMat: ClusterMatrix =
-    {mergeRow1: new Int32Array([-2, -1, -4]),
+    {
+      mergeRow1: new Int32Array([-2, -1, -4]),
       mergeRow2: new Int32Array([-3, 1, 2]),
-      heightsResult: new Float32Array([1, 2.5, 5.3333])};
+      heightsResult: new Float32Array([1, 2.5, 5.3333])
+    };
 
   const tgt2ClusterMat: ClusterMatrix =
-    {mergeRow1: new Int32Array([-1, -2]),
+    {
+      mergeRow1: new Int32Array([-1, -2]),
       mergeRow2: new Int32Array([-3, 1]),
-      heightsResult: new Float32Array([3, 4.5])};
+      heightsResult: new Float32Array([3, 4.5])
+    };
 
   const AVERAGE_METHOD_CODE = 2;
 
@@ -92,9 +99,9 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     dataDf.name = 'testDemogShort';
 
     const tv: DG.TableView = grok.shell.addTableView(dataDf);
-
-    ctx.vList.push(tv);
-    ctx.dfList.push(dataDf);
+    await awaitCheck(() => {
+      return $(tv.root).find('.d4-grid canvas').length > 0;
+    }, 'The view grid canvas not found', 100);
 
     await hierarchicalClusteringUI(dataDf, ['HEIGHT'], DistanceMetric.Euclidean, 'average');
   });
@@ -197,4 +204,4 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     );
     expectObject(clusterMatrix, tgtClusterMatrix);
   }
-}));
+});

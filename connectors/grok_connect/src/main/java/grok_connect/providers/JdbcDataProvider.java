@@ -370,9 +370,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         try {
-            EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_COLUMN_FILL;
+            EventType resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
             if (dryRun)
-                resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_COLUMN_FILL;
+                resultSetProcessingEventType = EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL;
             queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
                     "Column filling was started");
             int rowCount = 0;
@@ -421,7 +421,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 return new DataFrame();
             ResultSetManager resultSetManager = getResultSetManager();
             ResultSetMetaData metaData = resultSet.getMetaData();
-            resultSetManager.init(metaData);
+            resultSetManager.init(metaData, 100);
             return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),
                     logger, 1, false);
         } catch (SQLException e) {

@@ -569,8 +569,9 @@ export class GridCell {
   /** Grid cell bounds, relative to the document. Useful for showing hints, tooltips, etc.*/
   get documentBounds(): Rect {
     const r = this.bounds;
-    this.grid.root.offsetLeft
-    return this.bounds;
+    const clientRect = this.grid.root.getBoundingClientRect();
+    const documentBounds = new Rect(window.scrollX + clientRect.x + r.x, window.scrollY + clientRect.y + r.y, r.width, r.height);
+    return documentBounds;
   }
 
   /** Returns grid cell renderer. */
@@ -667,8 +668,8 @@ export class GridColumn {
   set tooltipForm(x: string) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
   /** Tooltip columns. Also requires {@link tooltipType} to be 'Columns'. */
-  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
-  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
+  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipColumns(this.dart); }
+  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipColumns(this.dart, x); }
 
   /** isTextColorCoded. Whether to apply color to the text or background. */
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }

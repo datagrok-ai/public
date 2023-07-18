@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.47",
+  "version": "3.4.77",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -570,6 +570,9 @@
           "datagrok-api": "^1.14.0"
         },
         "1.6.19": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.6.20": {
           "datagrok-api": "^1.14.0"
         }
       },
@@ -1258,6 +1261,12 @@
         },
         "1.7.5": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.7.7": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.7.8": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1497,6 +1506,21 @@
         },
         "1.8.6": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.10.0": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.11.0": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.11.1": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.12.2": {
+          "datagrok-api": "^1.15.4"
+        },
+        "1.12.3": {
+          "datagrok-api": "^1.15.3"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1570,6 +1594,9 @@
           "datagrok-api": "^1.14.1"
         },
         "1.0.28": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.30": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -1779,6 +1806,9 @@
           "datagrok-api": "^1.14.1"
         },
         "1.0.10": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.11": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -2224,6 +2254,27 @@
         },
         "2.4.53": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.4.54": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.5.0": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.6.0": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.6.1": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.7.0": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.7.1": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.7.2": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2493,6 +2544,15 @@
         },
         "1.1.24": {
           "datagrok-api": "^1.13.11"
+        },
+        "1.1.25": {
+          "datagrok-api": "1.15.3"
+        },
+        "1.1.26": {
+          "datagrok-api": "1.15.3"
+        },
+        "1.1.27": {
+          "datagrok-api": "1.15.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2647,6 +2707,18 @@
           "datagrok-api": "^1.10.2"
         },
         "2.1.12": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.13": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.14": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.15": {
+          "datagrok-api": "^1.10.2"
+        },
+        "2.1.16": {
           "datagrok-api": "^1.10.2"
         }
       },
@@ -2832,6 +2904,9 @@
         },
         "1.2.17": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.18": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -2870,6 +2945,12 @@
         },
         "1.0.9": {
           "datagrok-api": "^1.10.2"
+        },
+        "1.0.10": {
+          "datagrok-api": "^1.15.2"
+        },
+        "1.0.11": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
@@ -2919,6 +3000,9 @@
     "usage-analysis": {
       "dependencies": {
         "1.0.0": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.0.1": {
           "datagrok-api": "^1.13.8"
         }
       },
@@ -3031,6 +3115,9 @@
           "datagrok-api": "latest"
         },
         "1.0.1": {
+          "datagrok-api": "latest"
+        },
+        "1.0.2": {
           "datagrok-api": "latest"
         }
       },

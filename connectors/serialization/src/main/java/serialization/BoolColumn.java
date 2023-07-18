@@ -1,14 +1,24 @@
 package serialization;
 
-
-import java.util.Arrays;
-import java.util.Objects;
-
 // Bool column.
 public class BoolColumn extends Column<Boolean> {
     private static final String TYPE = Types.BOOL;
 
     private int[] data;
+
+    public BoolColumn() {
+        data = new int[initColumnSize];
+    }
+
+    public BoolColumn(Boolean[] values) {
+        data = new int[initColumnSize];
+        addAll(values);
+    }
+
+    public BoolColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new int[initColumnSize];
+    }
 
     public String getType() {
         return TYPE;
@@ -16,16 +26,7 @@ public class BoolColumn extends Column<Boolean> {
 
     public void empty() {
         length = 0;
-        data = new int[100];
-    }
-
-    public BoolColumn() {
-        data = new int[100];
-    }
-
-    public BoolColumn(Boolean[] values) {
-        data = new int[100];
-        addAll(values);
+        data = new int[initColumnSize];
     }
 
     public void encode(BufferAccessor buf) {

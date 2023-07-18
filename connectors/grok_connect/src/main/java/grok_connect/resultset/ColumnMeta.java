@@ -6,13 +6,15 @@ public class ColumnMeta {
     private final int precision;
     private final int scale;
     private final String columnLabel;
+    private final int columnSize;
 
-    public ColumnMeta(int type, String typeName, int precision, int scale, String columnLabel) {
+    public ColumnMeta(int type, String typeName, int precision, int scale, String columnLabel, int columnSize) {
         this.type = type;
         this.typeName = typeName;
         this.precision = precision;
         this.scale = scale;
         this.columnLabel = columnLabel;
+        this.columnSize= columnSize;
     }
 
     public int getType() {
@@ -33,5 +35,9 @@ public class ColumnMeta {
 
     public String getColumnLabel() {
         return columnLabel;
+    }
+
+    public int getColumnSize() {
+        return columnSize;
     }
 }

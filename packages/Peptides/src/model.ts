@@ -19,7 +19,7 @@ import * as uuid from 'uuid';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary} from './utils/misc';
+import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram} from './utils/misc';
 import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
@@ -205,7 +205,7 @@ export class PeptidesModel {
       }
     }
 
-    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1')
+    if (this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1' && !this._layoutEventInitialized)
       grok.shell.v = this._analysisView;
 
     this._analysisView.grid.invalidate();
@@ -821,8 +821,8 @@ export class PeptidesModel {
             return 0;
           }).filter((v) => v !== 'general');
 
-          this.webLogoBounds[col.name] = CR.drawLogoInBounds(ctx, bounds, stats, sortedStatsOrder, this.df.rowCount,
-            this.cp, this.headerSelectedMonomers[col.name]);
+          this.webLogoBounds[col.name] = CR.drawLogoInBounds(ctx, bounds, stats, col.name, sortedStatsOrder,
+            this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
           gcArgs.preventDefault();
         }
       } catch (e) {
@@ -891,7 +891,7 @@ export class PeptidesModel {
     const distributionTable = DG.DataFrame.fromColumns(
       [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
     const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
-    const hist = getActivityDistribution(distributionTable, true);
+    const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
     const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask, fractionDigits: 2});
 

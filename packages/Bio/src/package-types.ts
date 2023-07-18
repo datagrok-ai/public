@@ -8,6 +8,7 @@ import {ObjectPropertyBag} from 'datagrok-api/dg';
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
   MaxMonomerLength = 'MaxMonomerLength',
+  TooltipWebLogo = 'TooltipWebLogo',
 }
 
 
@@ -24,6 +25,15 @@ export class BioPackageProperties extends Map<string, any> {
   public set maxMonomerLength(value: number) {
     super.set(BioPackagePropertiesNames.MaxMonomerLength, value as unknown as object);
     this._onPropertyChanged.next(BioPackagePropertiesNames.MaxMonomerLength);
+  }
+
+  public get tooltipWebLogo(): boolean {
+    return super.get(BioPackagePropertiesNames.TooltipWebLogo) as unknown as boolean;
+  }
+
+  public set tooltipWebLogo(value: boolean) {
+    super.set(BioPackagePropertiesNames.TooltipWebLogo, value as unknown as boolean);
+    this._onPropertyChanged.next(BioPackagePropertiesNames.TooltipWebLogo);
   }
 
   constructor(source: any) {
