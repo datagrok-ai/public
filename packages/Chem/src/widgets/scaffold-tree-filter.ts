@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {ScaffoldTreeViewer} from "./scaffold-tree";
+import {ScaffoldTreeViewer, BitwiseOp} from "./scaffold-tree";
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
 
@@ -24,6 +24,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
       this.viewer.tree.children.map((group) => {
         this.viewer.setNotBitOperation(group as DG.TreeViewGroup, false);
       });
+      if (this.viewer._bitOpInput)
+        this.viewer._bitOpInput.value = BitwiseOp.OR;
     }));
   }
 
