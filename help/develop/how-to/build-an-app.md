@@ -3,7 +3,7 @@ title: "Build an application"
 ---
 
 Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a particular
-problem. They are written in JavaScript or TypeScript, and use [JS API](../js-api.md) to control the platform, including
+problem. They are written in JavaScript or TypeScript, and use [JS API](../packages/js-api.md) to control the platform, including
 executing database queries, accessing web services, or running
 [scripts written in R or Python](../../compute/scripting.md). Here are some examples of Datagrok applications:
 
@@ -283,7 +283,7 @@ from scratch and optimized for the purpose of exploratory data analysis, interac
 learning.
 
 Note that Datagrok dataframes live and operate entirely inside the browser, but not on
-our [Compute VM](../admin/infrastructure.md#compute-components). However, it's possible to pass dataframes to scripts (
+our [Compute VM](../under-the-hood/infrastructure.md#compute-components). However, it's possible to pass dataframes to scripts (
 in Python, R and others) which run on the server, and [get dataframes in return](#computations).
 
 You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view, a new
@@ -405,11 +405,11 @@ grok.shell.addTableView(agesByRace);
 We first load the `demog` dataset, filter it, and for a compound grouping by age and sex compute the average for `age`
 and `started`, and also a median for `age`.
 
-The whole set of functions available for `.add` is located [here](../../transform/aggregation-functions.md).
+The whole set of functions available for `.add` is located [here](../../transform/functions/aggregation-functions.md).
 
 *References:*
 
-* [Aggregation functions](../../transform/aggregation-functions.md)
+* [Aggregation functions](../../transform/functions/aggregation-functions.md)
 
 ### Persisting data
 
@@ -507,7 +507,7 @@ When the script is run, here is what happens under the hood:
 * The script execution is fully stateless and isolated
 
 You can even return graphics from the script! Check it
-with [this exercise on Scripting Viewers](../exercises/exercises.md#exercise-6-creating-a-scripting-viewer).
+with [this exercise on Scripting Viewers](../onboarding/exercises.md#exercise-6-creating-a-scripting-viewer).
 
 To add a script (in R, Python, Julia, Octave) to the package, put it into its `scripts` folder as a separate file. When
 it comes to JavaScript scripts, simply any JavaScript function in your package may become one. Just add a preamble to it
@@ -516,7 +516,7 @@ with a name, as we did [here](#the-entry-point), and a typed signature.
 *References:*:
 
 * [Datagrok architecture](../under-the-hood/architecture.md)
-* [Exercises](../exercises/exercises.md)
+* [Exercises](../onboarding/exercises.md)
 * [Scripting](../../compute/scripting.md)
 
 #### Datagrok functions
@@ -682,7 +682,7 @@ in browsers out of the box, such as panes, accordions and dock views.
 With that being said, our customers do use other frameworks, such as React and Bootstrap, in their applications built on
 Datagrok. The final choice is up to the developer building on top of Datagrok.
 
-This [JavaScript API help page](../js-api.md) also gives a good idea of our UI/UX capabilities.
+This [JavaScript API help page](../packages/js-api.md) also gives a good idea of our UI/UX capabilities.
 
 We are currently re-thinking our approach to UI composition with making it even simpler and more aligned to some best
 practices of existing frameworks. For instance, we are going to provide for easy to understand and easy to use controls
@@ -739,11 +739,11 @@ subscribe using rxjs
 
 Not only UI elements provide for events, but also the [dataframe](#dataframes).
 
-Read more about Datagrok events [here](../js-api.md#events).
+Read more about Datagrok events [here](../packages/js-api.md#events).
 
 *References:*
 
-* [Events](../js-api.md#events)
+* [Events](../packages/js-api.md#events)
 * [Global events](https://public.datagrok.ai/js/samples/events/global-events)
 * [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 

@@ -16,7 +16,7 @@ The exercises are based on your knowledge obtained in [exercises](../exercises.m
 
 _You will learn:_ How to employ functions from external packages in your own package.
 
-_Prerequisites:_ ["Cheminformatics"](https://datagrok.ai/help/domains/chem/cheminformatics).
+_Prerequisites:_ ["Cheminformatics"](../../../datagrok/solutions/domains/chem/chem.md).
 
 _Statement of the problem_. Write a function that reads a file containing SMILES, determines the associated maximal
 common substructure (MCS), and computes the mutual similarity scores for molecules and the MCS.
@@ -65,8 +65,8 @@ _Input data_. Files > App Data > Chem > sars\_small.csv
 
 _You will learn:_ How to train a model inside a package and use it to predict the activity of molecules
 
-_Prerequisites:_  ["Molecular fingerprints"](https://datagrok.ai/help/domains/chem/fingerprints),
-["Cheminformatics"](https://datagrok.ai/help/domains/chem/cheminformatics).
+_Prerequisites:_  ["Molecular fingerprints"](../../../datagrok/solutions/domains/chem/fingerprints.md),
+["Cheminformatics"](../../../datagrok/solutions/domains/chem/chem.md).
 
 1. Create a package with the name `<yourFirstName>-cheminformatics`
 2. Add new function

@@ -5,7 +5,7 @@ title: "Develop custom viewers"
 Developers can extend Datagrok with special visual components bound to data, which are called
 [viewers](../../visualize/viewers/viewers.md). There are two ways to develop viewers on Datagrok. The first
 one is JavaScript-based development, which lets you create interactive viewers
-via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
+via [Datagrok JavaScript API](../packages/js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
 [scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less
 interactive. Both options support data filtering and selection.
@@ -113,7 +113,7 @@ the viewer is closed) unsubscribes from them.
 ### Properties
 
 Viewer properties include all the parameters you want users to edit via
-the [context panel](../../datagrok/navigation.md#context-panel). They get persisted with the viewer layout.
+the [context panel](../../datagrok/navigation/navigation.md#context-panel). They get persisted with the viewer layout.
 
 In this case, we want to set a couple of properties for our bar chart:
 
@@ -584,7 +584,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 See also:
 
-* [Datagrok JavaScript API](../js-api.md)
+* [Datagrok JavaScript API](../packages/js-api.md)
 * [JS API Samples: custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 * [JS API Samples: viewers](https://public.datagrok.ai/js/samples/ui/viewers/create-viewers)
 * [JavaScript development](../develop.md)

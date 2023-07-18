@@ -6,11 +6,11 @@ sidebar_position: 0
 ## JavaScript development
 
 JavaScript or TypeScript-based development is the preferred way to develop user-facing applications on top of the
-platform. Use the [JS API](js-api.md) to control pretty much anything within Datagrok,
-including [data manipulation](js-api.md#data-manipulation), adding [views](js-api.md#views)
+platform. Use the [JS API](packages/js-api.md) to control pretty much anything within Datagrok,
+including [data manipulation](packages/js-api.md#data-manipulation), adding [views](packages/js-api.md#views)
 or [viewers](how-to/manipulate-viewers.md),
 [developing custom viewers](how-to/develop-custom-viewer.md),
-[registering functions](js-api.md#registering-functions), training and
+[registering functions](packages/js-api.md#registering-functions), training and
 applying [predictive models](../learn/learn.md), and
 even [building custom apps](../develop/how-to/build-an-app.md).
 
@@ -127,7 +127,7 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](../datagrok/functions/func-params-annotation.md#header-parameters) are registered as Grok
+[headers](../datagrok/concepts/functions/func-params-annotation.md#header-parameters) are registered as Grok
 [functions](../datagrok/concepts/functions/functions.md)
 . By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
@@ -365,7 +365,7 @@ our [public packages](https://github.com/datagrok-ai/public/tree/master/packages
 
 To test a package in CI, you need the following:
 
-1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/deploy/docker-compose.mdx)
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](../deploy/docker-compose.mdx)
 2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
 4. Run tests using [grok test](how-to/test-packages.md#local-testing)
@@ -491,10 +491,10 @@ productive.
 * [Sample browser](https://public.datagrok.ai/js) (`Functions | Scripts | New JavaScript Script`) is an interactive tool
   for browsing, editing, and running JavaScript samples that come with the platform. Samples are grouped by domain, such
   as data manipulation, visualization, or cheminformatics. They are short, clean examples of the working code
-  using [Grok API](js-api.md)
+  using [Grok API](packages/js-api.md)
   that can be copy-and-pasted into the existing solution. The samples are also cross-linked with
   the [help](https://datagrok.ai/help) system.
-* [Grok API](js-api.md) provides complete control over the platform.
+* [Grok API](packages/js-api.md) provides complete control over the platform.
   [JS documentation](https://public.datagrok.ai/js) is available.
 * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
   appropriate, it is hyper-linked to samples and demo projects. In the near future, we plan to turn it into the
@@ -506,7 +506,7 @@ Also, you can connect with fellow developers on either
 
 See also:
 
-* [Grok API](js-api.md)
+* [Grok API](packages/js-api.md)
 * [Scripting](../compute/scripting.md)
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)

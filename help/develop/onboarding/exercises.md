@@ -50,28 +50,28 @@ predictive models, integration with the external utilities, data augmentation, a
 *Useful links:*
 
 * [Datagrok tools](https://www.npmjs.com/package/datagrok-tools)
-* [Naming conventions](../../../develop/develop.md#naming-conventions)
+* [Naming conventions](../../develop/develop.md#naming-conventions)
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
-   [these instructions](../../../develop/set-up-environment.md)
+   [these instructions](../../develop/set-up-environment.md)
 2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE; Use your
    credentials as a name of the branch
 3. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by running `grok
    config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`, copy the `grok`
    command and execute it to add the key to your config
-4. Create a default package in your branch [called](../../../develop/develop.md#naming-conventions) `<yourFirstName>-sequence` using
+4. Create a default package in your branch [called](../../develop/develop.md#naming-conventions) `<yourFirstName>-sequence` using
    datagrok-tools: `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with
    TypeScript configuration (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js
    file should be in JavaScript anyway. Also you can add `--eslint` option to add eslint checker feature to the package
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other options
-   [here](../../../develop/develop.md#publishing-modes))
+   [here](../../develop/develop.md#publishing-modes))
 7. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()` from the
   `Functions` pane in the context panel on the left)
-* via the [console](../../../datagrok/navigation#console): press `~` key anywhere inside Datagrok, the Console will appear
+* via the [console](../../datagrok/navigation#console): press `~` key anywhere inside Datagrok, the Console will appear
   to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will be
   obtained by transformation kebab style of folder name to camel style, or can be specified directly with attribute
   `friendlyName` in `package.json` file.
@@ -82,9 +82,9 @@ As a result of the function execution you should see an info notification with u
 
 *Prerequisites:* basic TypeScript or JavaScript knowledge.
 
-Details: [Parameter annotation](../../../datagrok/functions/func-params-annotation.md),
-[How to define semantic type detectors](../../../develop/how-to/define-semantic-type-detectors.md),
-[How to add an info panel](../../../develop/how-to/add-info-panel.md).
+Details: [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md),
+[How to define semantic type detectors](../how-to/define-semantic-type-detectors.md),
+[How to add an info panel](../how-to/add-info-panel.md).
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.
 
@@ -133,7 +133,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    met, it should return `"dna_nucleotide"` string.
 
    For best performance, don't iterate over all column values, instead iterate
-   [on `column.categories`](../../../develop/advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/classes/dg.Column).
+   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/classes/dg.Column).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev` command. When everything is done correctly, the
    `detectors.js` file will get loaded by the platform automatically, and the `detectNucleotides` function will be
@@ -159,8 +159,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    Alternatively, you can find this information if you click on the column and expand the 'Details' pane in the property
    panel on the right.
 7. Now let’s put the result of the previously created `complement` function into an
-   [info panel](../../../develop/how-to/add-info-panel.md): Create function `complementWidget` and add special comments block to
-   allow Datagrok system recognize it and upload properly (see an example [here](../../../develop/how-to/add-info-panel.md#functions)).
+   [info panel](../how-to/add-info-panel.md): Create function `complementWidget` and add special comments block to
+   allow Datagrok system recognize it and upload properly (see an example [here](../how-to/add-info-panel.md#functions)).
 
    ```javascript
     //name: complementWidget
@@ -183,7 +183,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 *Prerequisites:* basic Python knowledge.
 
-*Details:* [Scripting](../../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
+*Details:* [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
 
 *You will learn:* how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -192,7 +192,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 1. Open Datagrok and navigate to `Functions | Scripts | Actions | New Python Script`.
 2. Observe a default script created for you. All script attributes are specified in the beginning in comments. There we
    have the script name, language, one input value of type `dataframe`, and one output value of type `int`. The script
-   simply computes number of cells in the dataframe. [Dataframe](../../../develop/how-to/build-an-app.md) is a high-performance, easy
+   simply computes number of cells in the dataframe. [Dataframe](../../develop/how-to/build-an-app.md) is a high-performance, easy
    to use tabular structure with strongly-typed columns of different types (supported types are: `string`, `bool`, `int`
    , `bigint`, `double`, `qnum` and `datetime`). In this exercise, we only see a dataframe as is in the default script;
    there is another exercise to learn manipulating dataframes in JavaScript.
@@ -326,7 +326,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
-[compute virtual machine](../../../develop/admin/infrastructure.md#compute-components), whereas the second, `CountSubsequenceJS`, runs
+[compute virtual machine](../under-the-hood/infrastructure.md#compute-components), whereas the second, `CountSubsequenceJS`, runs
 directly in the browser. To run `CountSubsequencePython`, Datagrok passes the script arguments over the network and
 fetches back the result to the browser.
 
@@ -334,7 +334,7 @@ fetches back the result to the browser.
 
 *Prerequisites:* basic Python and TypeScript/JavaScript knowledge.
 
-*You will learn*: how to invoke functions via [JS API](../../../develop/packages/js-api.md), find functions by their metadata, and compose
+*You will learn*: how to invoke functions via [JS API](../packages/js-api.md), find functions by their metadata, and compose
 functions.
 
 1. Create a folder called `scripts` under your package root. Find the script `CountSubsequencePython` created for the
@@ -351,7 +351,7 @@ functions.
    :::
 
    To provide scripts as part of a package, use the `scripts` folder. This is one of special directories reserved for
-   specific package content (learn more about [package structure](../../../develop#package-structure)).
+   specific package content (learn more about [package structure](../../develop#package-structure)).
 
 1. Now let's try calling a script via JS API. Add a new function to `src/package.ts`. It should call your Python script
    with specified arguments and return the result of the following expression:
@@ -383,14 +383,14 @@ functions.
    </div>
    </details>
    :::
-1. Read instructions for [package testing](../../../develop/how-to/add-package-tests.md#testing-functions) and add several tests
+1. Read instructions for [package testing](../../develop/how-to/add-package-tests.md#testing-functions) and add several tests
    to the `CountSubsequencePython` script annotation. Publish you package and check that tests run successfully in
-   the [Test Manager](../../../develop/how-to/test-packages.md#test-manager), or by calling the `test` function of your package.
+   the [Test Manager](../../develop/how-to/test-packages.md#test-manager), or by calling the `test` function of your package.
 
    :::note
    Annotation tests have a limitation on the number of output parameters in the script. To test a script with multiple
    outputs, get it via `DG.Func.find` and use the `getParamValue` method to obtain each output parameter by its name
-   from the function call (refer to the [Scripting](../../../compute/scripting.md#running-a-script) article for details).
+   from the function call (refer to the [Scripting](../../compute/scripting.md#running-a-script) article for details).
    :::
 
 1. We can use API methods to take the `CountSubsequencePythonDataframe` script one step further. First, let's give a
@@ -439,7 +439,7 @@ functions.
 *Prerequisites:* basic SQL knowledge
 
 *Details:* [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
-[How to Access Data](../../../develop/how-to/access-data)
+[How to Access Data](../../develop/how-to/access-data)
 
 *Note:* Editing an existing data query requires the respective access permission. You might need to request one.
 
@@ -478,7 +478,7 @@ from our server.
       command and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
-   as instructed [here](../../../develop/how-to/access-data#creating-queries), create the '.sql' file under the `queries` folder, and
+   as instructed [here](../../develop/how-to/access-data#creating-queries), create the '.sql' file under the `queries` folder, and
    paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
@@ -493,14 +493,14 @@ from our server.
     ```
 
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
-    (see examples in the article [Parameterized Queries](../../../access/databases#parameterized-queries)).
+    (see examples in the article [Parameterized Queries](../../access/databases#parameterized-queries)).
 
 ## Exercise 5: Reading files
 
 *Prerequisites:* basic TypeScript/JavaScript knowledge
 
-*Details:* [How to access data](../../../develop/how-to/access-data),
-[How to work with package files](../../../develop/how-to/work-with-package-files.md)
+*Details:* [How to access data](../../develop/how-to/access-data),
+[How to work with package files](../../develop/how-to/work-with-package-files.md)
 
 *You will learn*: different ways to read files programmatically
 
@@ -516,7 +516,7 @@ from our server.
 
    There are several methods you can use to open a table. For demo files, the simplest way is
    [grok.data.getDemoTable](https://datagrok.ai/js-api/classes/dg.Data#getdemotable). For files outside of the
-   `Demo:Files` [file share](../../../access/files/files.mdx), you can use
+   `Demo:Files` [file share](../../access/files/files.mdx), you can use
    [grok.data.files.openTable](https://datagrok.ai/js-api/classes/dg.Data#opentable), or execute a command
    `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/js-api/classes/dg.Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
@@ -604,7 +604,7 @@ from our server.
 
 *Prerequisites:* basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-*Details:* [Scripting](../../../compute/scripting) , [Scripting Viewer](../../../visualize/viewers/scripting-viewer),
+*Details:* [Scripting](../../compute/scripting) , [Scripting Viewer](../../visualize/viewers/scripting-viewer),
 [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram (a distribution plot)
@@ -719,7 +719,7 @@ Viewers | Python | Scatter Plot`.
    popular conventions, following [this link](https://www.biostars.org/p/171056/).
 3. Add a class to `src/package.ts` for the new cell renderer:
 
-    * Datagrok [grid](../../../visualize/viewers/grid) is rendered through an [HTML5
+    * Datagrok [grid](../../visualize/viewers/grid) is rendered through an [HTML5
       Canvas](https://en.wikipedia.org/wiki/Canvas_element). The grid's canvas is `g.canvas`. Iterate through the
       resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext('2d').fillText`;
       learn more about HTML Canvas if it's new for you
@@ -829,7 +829,7 @@ contained in a currently selected grid cell.
    }
    ```
 
-2. Use [`fetchProxy`](../../../develop/how-to/access-data#rest-endpoints) to get a sequence for the potential corresponding ENA ID in
+2. Use [`fetchProxy`](../../develop/how-to/access-data#rest-endpoints) to get a sequence for the potential corresponding ENA ID in
    fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:
    [`https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425`](https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425) Use
    the following structure for the into panel function in your `src/package.ts`:

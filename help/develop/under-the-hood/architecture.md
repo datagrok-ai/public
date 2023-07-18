@@ -91,6 +91,6 @@ some component, and our load balancer will take care of dispatching computations
 
 ## Useful links
 
-* [Enterprise evaluation FAQ](enterprise-evaluation-faq.md)
+* [Enterprise evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md)
 * [Infrastructure](infrastructure.md) with detailed description of every component
 * [Deployment](deploy/deploy.md) instruction to install and try Datagrok

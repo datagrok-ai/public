@@ -18,7 +18,7 @@ Type a command into the console and press Enter.
 
 ## Functions
 
-Open **Help | Functions** to see a list of available [functions](functions/functions.md).
+Open **Help | Functions** to see a list of available [functions](../../datagrok/concepts/functions/functions.md).
 
 ## Syntax
 
@@ -94,16 +94,16 @@ t.KeepRows(Selected())
 
 Symbols '"', '{' and '}' should be replaced as '^^', '<\[' and ']>'.
 
-You can run any system [action](functions/functions.md) by calling it from [console](navigation.md#console)
+You can run any system [action](../../datagrok/concepts/functions/functions.md) by calling it from [console](../../datagrok/navigation/navigation.md#console)
 
 ## Try it
 
-Open [console](navigation.md#console) by pressing ~ (tilde) or **Tools | Console**. and try to make some actions:
-run [query](../access/access.md#data-query) or job. Every step you take will be recorded, so you can
+Open [console](../../datagrok/navigation/navigation.md#console) by pressing ~ (tilde) or **Tools | Console**. and try to make some actions:
+run [query](../../access/access.md#data-query) or job. Every step you take will be recorded, so you can
 re-run it, or use somewhere.
 
 See also:
 
-* [Console](navigation.md#console)
-* [Functions](functions/functions.md)
-* [Scripting](../compute/scripting.md)
+* [Console](../../datagrok/navigation/navigation.md#console)
+* [Functions](../../datagrok/concepts/functions/functions.md)
+* [Scripting](../../compute/scripting.md)

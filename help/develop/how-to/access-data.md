@@ -138,7 +138,7 @@ select * from protein_classification
 
 </details>
 
-SQL statements are annotated with comments, just like [functions](../../datagrok/functions/func-params-annotation.md),
+SQL statements are annotated with comments, just like [functions](../../datagrok/concepts/functions/func-params-annotation.md),
 since the underlying mechanism is essentially the same (read more on the concept of
 [functions](../../datagrok/concepts/functions/functions.md)). Here we have two header parameters: the query `name` and the
 `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify
@@ -162,7 +162,7 @@ query template into your package, type `grok add query <name>` in the terminal.
 
 :::
 
-For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
+For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
 
 #### Running queries
 
@@ -193,7 +193,7 @@ query. However, the access rights of a query don't inherit the access rights of 
 
 ### Caching results
 
-See [Caching data](../../access/databases/databases.mdx/#caching-data).
+See [Caching data](../../access/databases/databases.mdx#caching-data).
 
 ## Rest endpoints
 

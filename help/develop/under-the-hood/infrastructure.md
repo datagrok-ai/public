@@ -43,7 +43,7 @@ administration tasks could be performed via the web interface as well.
 Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
 internal data, and other features such as integration with the enterprise
 [authentication](../../govern/authentication.md) methods. Regarding Datagrok infrastructure it can be easily done. For
-more information check [Enterprise Evaluation FAQ](enterprise-evaluation-faq.md)
+more information check [Enterprise Evaluation FAQ](../../datagrok/solutions/enterprise/enterprise-evaluation-faq.md)
 page.
 
 Datagrok consist of [Docker containers](https://hub.docker.com/u/datagrok) which can be installed on any platform
@@ -63,7 +63,7 @@ example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://c
 to use scalable and highly reliable solutions for storage and avoid local file system setup to prevent datagrok internal
 information loss, such as projects, settings, etc. User data won't be affected anyhow on Datagrok storage loss.
 
-Check [How to deploy datagrok?](deploy/deploy.md) for details.
+Check [How to deploy datagrok?](../../deploy/deploy.md) for details.
 
 ## Scalability
 
@@ -448,7 +448,7 @@ storages:
 * S3
 * Google Cloud
 
-Storage location is managed through [Datagrok configuration](configuration.md) and can be easily transferred to other
+Storage location is managed through [Datagrok configuration](../../deploy/configuration.md) and can be easily transferred to other
 location.
 
 ## Database
@@ -464,7 +464,7 @@ Aurora or CocroachDB without changing much code.
 Datagrok can use any PostgreSQL instance, including Amazon RDS out-of-the-box. For security reasons, Datagrok supports a
 TLS connection to connect to the database.
 
-Database parameters is managed through [Datagrok configuration](configuration.md).
+Database parameters is managed through [Datagrok configuration](../../deploy/configuration.md).
 
 The schema has the following tables:
 
@@ -520,8 +520,8 @@ The schema has the following tables:
 
 ## Useful links
 
-* [Deployment](deploy/deploy.md)
-* [Configuration](configuration.md)
+* [Deployment](../../deploy/deploy.md)
+* [Configuration](../../deploy/configuration.md)
 * [Continuous integration](continuous-integration.png)
-* [Versioning policy](releases/versioning-policy.md)
-* [Try Datagrok locally](deploy/docker-compose.mdx)
+* [Versioning policy](../../deploy/releases/versioning-policy.md)
+* [Try Datagrok locally](../../deploy/docker-compose.mdx)

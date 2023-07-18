@@ -89,4 +89,4 @@ group level by applying relevant [package settings](../develop.md#package-settin
 See also:
 
 * [Packages](../develop.md#packages)
-* [JavaScript API](../js-api.md)
+* [JavaScript API](../packages/js-api.md)

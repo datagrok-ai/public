@@ -90,11 +90,11 @@ the [Notebooks](https://public.datagrok.ai/notebooks?) browser).
 
 See also:
 
-* [JavaScript API](../js-api.md)
+* [JavaScript API](../packages/js-api.md)
 * [JavaScript API: View](https://datagrok.ai/js-api/classes/dg.View)
 * [JavaScript API: ViewBase](https://datagrok.ai/js-api/classes/dg.ViewBase)
 * [JavaScript API Samples: Custom view](https://public.datagrok.ai/js/samples/ui/views/views)
 * [JavaScript API Samples: Virtual view](https://public.datagrok.ai/js/samples/ui/virtual-view)
 * [Table view](../../datagrok/navigation/table-view.md)
 * [View layout](../../visualize/view-layout.md)
-* [Routing](../../datagrok/routing.md)
+* [Routing](../../datagrok/navigation/routing.md)

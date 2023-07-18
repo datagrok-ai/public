@@ -6,7 +6,7 @@ title: "Add an info panel"
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
 typically appear along with the rest of the information in the [context
-panel](../../datagrok/navigation.md#context-panel) and [visibility
+panel](../../datagrok/navigation/navigation.md#context-panel) and [visibility
 conditions](#visibility-conditions) will be re-evaluated whenever the object
 changes.
 
@@ -55,7 +55,7 @@ check it in the panel condition like this:
 condition: columnName.semType == "Molecule"
 ```
 
-Our [JavaScript API](../js-api.md) provides the means to override the types
+Our [JavaScript API](../packages/js-api.md) provides the means to override the types
 automatically detected by the platform. Refer to this [code
 snippet](https://public.datagrok.ai/js/samples/data-frame/semantic-type-detection)
 as an example.
@@ -89,7 +89,7 @@ hasCats = len(detector.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=3, m
 ```
 
 Regardless of a script's language, conditions are written in [Grok
-script](../../datagrok/grok-script.md) syntax.
+script](../under-the-hood/grok-script.md) syntax.
 
 ### Functions
 
@@ -129,7 +129,7 @@ export function valueWidget(value) {
 See also:
 
 * [Info panels](../../explore/data-augmentation/info-panels.md)
-* [Datagrok JavaScript API](../js-api.md)
+* [Datagrok JavaScript API](../packages/js-api.md)
 * [JavaScript API
   Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [JavaScript development](../develop.md)

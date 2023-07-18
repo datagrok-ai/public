@@ -79,23 +79,23 @@ extensions.
 
 [meetings]: https://www.youtube.com/watch?v=p7_qOU_IzLM
 
-[Release notes]: https://datagrok.ai/help/develop/release-history
+[Release notes]: ../../deploy/releases/release-history.md
 
-[architecture]: under-the-hood/architecture.md
+[architecture]: ../under-the-hood/architecture.md
 
-[Extending and customizing Datagrok]: packages/extensions.md
+[Extending and customizing Datagrok]: ../packages/extensions.md
 
-[Building an application]: how-to/build-an-app.md
+[Building an application]: ../how-to/build-an-app.md
 
-[Building a UI]: advanced/ui.md
+[Building a UI]: ../advanced/ui.md
 
-[Performance]: advanced/performance.md
+[Performance]: ../under-the-hood/performance.md
 
 [Demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 
-[Platform overview]: ../resources/video-contents.md#getting-started
+[Platform overview]: ../../resources/video-contents.md#getting-started
 
-[JS API overview]: ../resources/video-contents.md#javascript-api
+[JS API overview]: ../../resources/video-contents.md#javascript-api
 
 [datagrok-tools overview (part 1)]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=258s
 
@@ -103,9 +103,9 @@ extensions.
 
 [VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
 
-[Data access]: ../resources/video-contents.md#data-access
+[Data access]: ../../resources/video-contents.md#data-access
 
-[Visualization and viewers]: ../resources/video-contents.md#visualizations
+[Visualization and viewers]: ../../resources/video-contents.md#visualizations
 
 [Datagrok demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 
@@ -129,4 +129,4 @@ extensions.
 
 [datagrok-tools README]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 
-[JavaScript exercises]: exercises/exercises.md
+[JavaScript exercises]: exercises.md

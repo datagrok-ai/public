@@ -39,4 +39,4 @@ completion.
 
 See also
 
-* [JavaScript API](../../../../develop/packages/js-api.md)
+* [JavaScript API](../../packages/js-api.md)

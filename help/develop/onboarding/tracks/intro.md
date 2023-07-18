@@ -53,7 +53,7 @@ notion of uncertain chemical structures (e.g. fragments that do not correspond t
 logical expressions are essential, (e.g. carbon or oxygen atom, double or aromatic bond)
 and [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) format provides this option. One may say
 that SMARTS is the same thing as regular expressions in cheminformatics. Datagrok uses SMARTS for
-finding [structural alerts](../../../domains/chem/info-panels/structural-alerts.md)
+finding [structural alerts](../../../datagrok/solutions/domains/chem/info-panels/structural-alerts.md)
 , performing substructure
 search, [R-group analysis](../../../datagrok/solutions/domains/chem/chem.md#r-groups-analysis) (*revision required*).
 
@@ -63,8 +63,8 @@ Though molecular graph is an appropriate form of data for storage it is useless 
 applications especially machine learning procedures. For such applications, molecules are represented as a set of
 molecular [descriptors](https://www.youtube.com/watch?v=0j1Eeexd1ig&ab_channel=ChemAxon) or molecular fingerprints.
 Datagrok provides generation of different sets
-of [descriptors](../../../domains/chem/descriptors.md)
-and [fingerprints](../../../domains/chem/fingerprints.md)
+of [descriptors](../../../datagrok/solutions/domains/chem/descriptors.md)
+and [fingerprints](../../../datagrok/solutions/domains/chem/fingerprints.md)
 . The objective of these representations is to satisfy linear algebra requirements applied in the majority of ML methods
 and provide a vector of values describing the molecule. Vector (linear) spaces based on molecular descriptors are called
 chemical spaces.
