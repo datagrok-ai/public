@@ -173,7 +173,7 @@ export class Events {
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
-  get onLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-link-clicked'); }
+  get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked'); }
 }
 
 /*
@@ -247,6 +247,7 @@ export class EventData<TArgs = any> {
     api.grok_EventData_PreventDefault(this.dart);
   }
 
+  // TODO: make it typed of TArgs, if not - make it any
   /** Event details. */
   get args(): { [index: string]: TArgs } {
     let x = api.grok_EventData_Get_Args(this.dart);
