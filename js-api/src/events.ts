@@ -247,11 +247,10 @@ export class EventData<TArgs = any> {
     api.grok_EventData_PreventDefault(this.dart);
   }
 
-  // TODO: make it typed of TArgs, if not - make it any
   /** Event details. */
-  get args(): { [index: string]: TArgs } {
+  get args(): TArgs {
     let x = api.grok_EventData_Get_Args(this.dart);
-    let result: { [index: string]: any } = {};
+    let result: any = {};
     for (const property in x)
       if (x.hasOwnProperty(property))
         result[property] = toJs(x[property]);
