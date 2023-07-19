@@ -17,7 +17,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
 import { _package } from './package';
 import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
-import { TERMINATE_SEARCH } from './constants';
+import { SUBSTRUCTURE_SEARCH_PROGRESS, TERMINATE_SEARCH } from './constants';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
@@ -265,34 +265,32 @@ export async function chemSubstructureSearchLibrary(
     const matchesBitArray = new BitArray(molStringsColumn.length);
     if (molString.length != 0) {
       if (usePatternFingerprints) {
+        const updateFilterFunc = () => {
+          //console.log(matchesBitArray.trueCount())
+          restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
+          grok.events.fireCustomEvent(SUBSTRUCTURE_SEARCH_PROGRESS, null);
+        };
+
         const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false, !columnIsCanonicalSmiles);
         const fps = fgsResult.fps;
         const smiles = columnIsCanonicalSmiles ? molStringsColumn.toList() : fgsResult.smiles;
         const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fps);
         const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(smiles!, filteredMolsIdxs);
         const searchResults: BitArray = new BitArray(filteredMolecules.length);
-        const subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, searchResults, filteredMolecules, false);
+        const subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, searchResults, updateFilterFunc, filteredMolecules, false);
         
-        grok.events.onCustomEvent(TERMINATE_SEARCH).subscribe(() => {
+        const sub = grok.events.onCustomEvent(TERMINATE_SEARCH).subscribe(() => {
           console.log(`*********************`)
           subFuncs?.setTerminateFlag();
-          clearInterval(intervalNum);
+          sub.unsubscribe();
         })
-       // setInterval(() => {console.log(subFuncs?.getProgress())}, 10);
-        const intervalNum = setInterval(() => {
-          const prog = subFuncs?.getProgress() ?? 0;
-          console.log(matchesBitArray.trueCount(), prog)
-          restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
-         // molStringsColumn.dataFrame.filter.copyFrom(DG.BitSet.fromBytes(matchesBitArray.buffer.buffer, molStringsColumn.length));
-          //molStringsColumn.dataFrame?.rows.requestFilter();
-          grok.events.fireCustomEvent('shtota', null);
-        }, 100);
 
         subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
-          restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
-          grok.events.fireCustomEvent('shtota', null);
-          grok.events.fireCustomEvent('searchFinished', null);
-            clearInterval(intervalNum);
+          if (!subFuncs.getTerminateFlag()) {
+            restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
+            grok.events.fireCustomEvent(SUBSTRUCTURE_SEARCH_PROGRESS, null);
+            grok.events.fireCustomEvent(TERMINATE_SEARCH, null);
+          }
         }))
 
         // const searchResults: BitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);

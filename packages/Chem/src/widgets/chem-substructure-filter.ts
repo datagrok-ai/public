@@ -16,7 +16,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, TERMINATE_SEARCH} from '../constants';
+import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, SUBSTRUCTURE_SEARCH_PROGRESS, TERMINATE_SEARCH} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
@@ -61,7 +61,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isReadyToApplyFilter(): boolean {
-    return !this.calculating && this.bitset != null;
+    return this.bitset != null;
   }
 
   constructor() {
@@ -100,16 +100,8 @@ export class SubstructureFilter extends DG.Filter {
         }
       }
     }));
-this.subs.push(
-    grok.events.onCustomEvent('searchFinished').subscribe(() => {
-      this.batchResultObservable?.unsubscribe();
-      this.currentSearches--;
-      if (this.currentSearches === 0) {
-      this.calculating = false;
-      }
-    }));
+
     this.subs.push(grok.events.onCustomEvent(TERMINATE_SEARCH).subscribe(() => {
-      this.batchResultObservable?.unsubscribe();
       this.currentSearches--;
       if (this.currentSearches === 0) {
       this.calculating = false;
@@ -170,11 +162,12 @@ this.subs.push(
   }
 
   applyFilter(): void {
-    if (this.bitset && !this.isDetached) {
-      this.dataFrame?.filter.and(this.bitset);
-      this.dataFrame?.rows.addFilterState(this.saveState());
-      this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
-      this.active = true;
+   // console.log(`in apply filter ${this.sketcher.getMolFile()}`)
+      if (this.bitset && !this.isDetached) {
+        this.dataFrame?.filter.and(this.bitset);
+        this.dataFrame?.rows.addFilterState(this.saveState());
+        this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
+        this.active = true;
     }
   }
 
@@ -209,6 +202,8 @@ this.subs.push(
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
+    this.currentSearches++;
+    console.log(`%%%%%%%%%%%% _onSketchChanged`)
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
@@ -218,19 +213,20 @@ this.subs.push(
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName,
         molblock: this.sketcher.getMolFile(), filterId: this.filterId, tableName: this.tableName});
       this.dataFrame?.rows.requestFilter();
-   // } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
+      this.currentSearches--;
+    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`) && this.currentSearches === 1) {
       // some other filter is already filtering for the exact same thing
-     // return;
+      this.currentSearches--;
+      return;
     } else {
       this.calculating = true;
       try {
         const bitArray = await this.getFilterBitset();
         if (!bitArray)
           return;
-        this.calculating = false;
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
         this.batchResultObservable?.unsubscribe();
-        this.batchResultObservable = grok.events.onCustomEvent('shtota').subscribe(() => {
+        this.batchResultObservable = grok.events.onCustomEvent(SUBSTRUCTURE_SEARCH_PROGRESS).subscribe(() => {
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
           console.log(this.bitset?.trueCount);
           grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
@@ -248,7 +244,7 @@ this.subs.push(
   }
 
   async getFilterBitset(): Promise<BitArray | null> {
-    this.currentSearches++;
+    console.log(`getFilterBitset currentSearches: ${this.currentSearches}`);
     if (this.currentSearches > 1) 
       grok.events.fireCustomEvent(TERMINATE_SEARCH, null);
     const smarts = await this.sketcher.getSmarts();

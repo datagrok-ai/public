@@ -4,6 +4,7 @@ import { RuleId } from '../panels/structural-alerts';
 import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { IFpResult } from './rdkit-service-worker-similarity';
+import { LockedEntity } from '../utils/locked-entitie';
 
 export class RdKitService {
   workerCount: number;
@@ -61,30 +62,43 @@ export class RdKitService {
     data: TData[],
     res: TRes,
     updateRes: (batchRes: BatchRes, res: TRes, length: number, index: number) => void,
-    map: (batch: TData[], workerIdx: number, workerCount: number) => Promise<BatchRes>) {
+    map: (batch: TData[], workerIdx: number, workerCount: number) => Promise<BatchRes>,
+    pogressFunc: () => void) {
       let terminateFlag = false;
 
       const setTerminateFlag = () => {terminateFlag = true}
+      const getTerminateFlag = () => {return terminateFlag; }
       const t = this;
       const dataLength = data.length;
       let index = 0;
-      let increment = 10;
+      const lockedCounter = new LockedEntity(0);
+      const increment = 10;
+      const moleculesPerProgress = 100;
+      let nextProgressCheck = moleculesPerProgress;
       const promises = t.parallelWorkers.map((_, idx) => {
           const post = async () => {
+            await lockedCounter.unlockPromise();
+              lockedCounter.lock();
+              const index = lockedCounter.value;
+              if (index >= Math.min(nextProgressCheck, dataLength)) {
+                nextProgressCheck += moleculesPerProgress;
+                pogressFunc();
+              }
+              const end = Math.min(index + increment, dataLength);
+              lockedCounter.value = end;
+              lockedCounter.release();
               if (index >= dataLength || terminateFlag) {
                   return;
               }
-              const end = Math.min(index + increment, dataLength);
               const part = data.slice(index, end);
               const batchResult = await map(part, idx, t.parallelWorkers.length);
               updateRes(batchResult, res, part.length, index);
-              index = end;
               await post();
           }      
           return post();    
   })
   const getProgress = () => index / dataLength;
-  return {getProgress, setTerminateFlag, promises};      
+  return {getProgress, setTerminateFlag, getTerminateFlag, promises};      
 }
 
 
@@ -171,8 +185,8 @@ export class RdKitService {
   }
 
 
-  async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray, molecules?: string[], 
-    useSubstructLib?: boolean) {
+  async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray, progressFunc: () => void,
+  molecules?: string[], useSubstructLib?: boolean) {
     const t = this;
     if (molecules && !useSubstructLib) {
       const updateRes = (batchRes: Uint32Array, res: BitArray, length: number, index: number) => {
@@ -184,7 +198,7 @@ export class RdKitService {
         }
       return this._doParallelBatches(molecules, result, updateRes, async (batch, idx, _workerCount) => {
         return t.parallelWorkers[idx].searchSubstructure(query, queryMolBlockFailover, batch);
-      })
+      }, progressFunc)
     }
   }
 
