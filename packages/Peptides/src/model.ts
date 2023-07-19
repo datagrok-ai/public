@@ -945,19 +945,23 @@ export class PeptidesModel {
 
     const changeSelectionBitset = (currentBitset: DG.BitSet, posList: type.RawColumn[], clustColCat: string[],
       clustColData: type.RawData, customClust: {[key: string]: BitArray}): void => {
-      const getBitAt = (i: number): boolean => {
-        for (const posRawCol of posList) {
-          const monomer = posRawCol.cat![posRawCol.rawData[i]];
-          if (this.monomerPositionSelection[posRawCol.name].includes(monomer)) {
-            const monomerPositionMutationCliffs = this.mutationCliffs?.get(monomer)?.get(posRawCol.name) ?? null;
-            if (monomerPositionMutationCliffs === null)
-              continue;
-            for (const mpmcKey of monomerPositionMutationCliffs.keys()) {
-              if (mpmcKey === i || i in monomerPositionMutationCliffs.get(mpmcKey)!)
-                return true;
-            }
+      const indexes = new Set<number>();
+      for (const [position, monomerList] of Object.entries(this.monomerPositionSelection)) {
+        for (const monomer of monomerList) {
+          const substitutions = this.mutationCliffs?.get(monomer)?.get(position) ?? null;
+          if (substitutions === null)
+            continue;
+          for (const [key, value] of substitutions.entries()) {
+            indexes.add(key);
+            for (const v of value)
+              indexes.add(v);
           }
         }
+      }
+
+      const getBitAt = (i: number): boolean => {
+        if (indexes.has(i))
+          return true;
 
         const currentOrigClust = clustColCat[clustColData[i]];
         if (typeof currentOrigClust === undefined)
