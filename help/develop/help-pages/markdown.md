@@ -22,15 +22,9 @@ This guide has basic information on how to write in MDX-compatible Markdown synt
 
 ## File format and naming convention
 
-When creating new files, keep the filename short. Don't use capital letters or spaces. A Markdown file can have either an `.md` or `.mdx` extension but you can override the MD format with the [front matter](#metadata-front-matter) `format: mdx`.
+When creating new files, keep the filename short. Don't use capital letters or spaces. When the filename of a Markdown file matches the name of a folder exactly, clicking the folder displays the contents of the Markdown file.
 
-When choosing between the MD and MDX formats, use the MDX format only if you are using [JSX](https://docusaurus.io/docs/markdown-features/react). The MDX format is strict, and you may get compilation errors. 
-
-:::note
-
-When the filename of a Markdown file matches the name of a folder exactly, clicking the folder displays the contents of the Markdown file. 
-
-:::
+A Markdown file can have either an `.md` or `.mdx` extension but you can override the MD format with the [front matter](#metadata-front-matter) `format: mdx`. When choosing between the MD and MDX formats, use the MDX format only if you are using [JSX](https://docusaurus.io/docs/markdown-features/react). The MDX format is strict, and you may get compilation errors. 
 
 ## Sidebar position and label
 
