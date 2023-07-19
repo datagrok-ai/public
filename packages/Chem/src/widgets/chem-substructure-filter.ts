@@ -9,14 +9,14 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
-import {Observable, Subscription} from 'rxjs';
+import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
-import {chem} from 'datagrok-api/dg';
+import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, SUBSTRUCTURE_SEARCH_PROGRESS, TERMINATE_SEARCH} from '../constants';
+import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, getSearchProgressEventName, getTerminateEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
@@ -45,7 +45,10 @@ export class SubstructureFilter extends DG.Filter {
     'chem-substructure-limit');
   sketcherType = DG.chem.currentSketcherType;
   currentSearches = 0;
-
+  progressBar: TaskBarProgressIndicator | null = null;
+  batchResultObservable: Subscription | null = null;
+  terminateEventName: string = '';
+  progressEventName: string = '';
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -100,13 +103,6 @@ export class SubstructureFilter extends DG.Filter {
         }
       }
     }));
-
-    this.subs.push(grok.events.onCustomEvent(TERMINATE_SEARCH).subscribe(() => {
-      this.currentSearches--;
-      if (this.currentSearches === 0) {
-      this.calculating = false;
-      }
-    }));
   }
 
   get _debounceTime(): number {
@@ -148,6 +144,20 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => {
       this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
     });
+
+    this.terminateEventName = getTerminateEventName(this.tableName, this.columnName!);
+    this.progressEventName = getSearchProgressEventName(this.tableName, this.columnName!);
+    this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe(() => { 
+      console.log(`##########################${this.currentSearches}`);
+      this.currentSearches--;
+      if (this.currentSearches === 0) {
+        this.calculating = false;
+        this.progressBar?.close();
+        this.progressBar = null;
+        this.batchResultObservable?.unsubscribe();
+        console.log('Unsubscribed from batchResultObservable')
+      }
+    }));
   }
 
   refresh() {
@@ -159,6 +169,7 @@ export class SubstructureFilter extends DG.Filter {
     super.detach();
     if (this.column?.temp['chem-scaffold-filter'])
       this.column.temp['chem-scaffold-filter'] = null;
+    this.batchResultObservable?.unsubscribe();
   }
 
   applyFilter(): void {
@@ -194,8 +205,6 @@ export class SubstructureFilter extends DG.Filter {
     if (state.molBlock)
       setTimeout(function() {that._onSketchChanged();}, 1000);
   }
-
-  batchResultObservable: Subscription | null = null;
   /**
    * Performs the actual filtering
    * When the results are ready, triggers `rows.requestFilter`, which in turn triggers `applyFilter`
@@ -213,40 +222,38 @@ export class SubstructureFilter extends DG.Filter {
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName,
         molblock: this.sketcher.getMolFile(), filterId: this.filterId, tableName: this.tableName});
       this.dataFrame?.rows.requestFilter();
-      this.currentSearches--;
+      this.terminatePreviousSearch()
+      this.updateCalculating();
     } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`) && this.currentSearches === 1) {
       // some other filter is already filtering for the exact same thing
       this.currentSearches--;
       return;
     } else {
       this.calculating = true;
+      this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
       try {
         const bitArray = await this.getFilterBitset();
         if (!bitArray)
           return;
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
         this.batchResultObservable?.unsubscribe();
-        this.batchResultObservable = grok.events.onCustomEvent(SUBSTRUCTURE_SEARCH_PROGRESS).subscribe(() => {
+        this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-          console.log(this.bitset?.trueCount);
           grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
             molblock: this.sketcher.getMolFile(), colName: this.columnName,
             filterId: this.filterId, tableName: this.tableName});
-        this.dataFrame?.rows.requestFilter();
+          this.dataFrame?.rows.requestFilter();
+          this.progressBar!.update(progress, `${progress?.toFixed(2)}% of substructure search completed`);
       })
       } catch {
-        this.currentSearches--;
-        if (this.currentSearches === 0) {
-          this.calculating = false;
-        }
+        this.updateCalculating();
       }
     }
   }
 
   async getFilterBitset(): Promise<BitArray | null> {
     console.log(`getFilterBitset currentSearches: ${this.currentSearches}`);
-    if (this.currentSearches > 1) 
-      grok.events.fireCustomEvent(TERMINATE_SEARCH, null);
+    this.terminatePreviousSearch();
     const smarts = await this.sketcher.getSmarts();
     if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
       return null;
@@ -256,5 +263,19 @@ export class SubstructureFilter extends DG.Filter {
   updateExternalSketcher() {
     if (this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL)
       this.sketcher.updateExtSketcherContent(); //updating image in minimized sketcher panel
+  }
+
+  terminatePreviousSearch() {
+    if (this.currentSearches > 1) 
+      grok.events.fireCustomEvent(this.terminateEventName, null);
+  }
+
+  updateCalculating() {
+    this.currentSearches--;
+    if (this.currentSearches === 0) {
+      this.calculating = false;
+      this.progressBar?.close();
+      this.progressBar = null;
+    }
   }
 }

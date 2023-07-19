@@ -17,7 +17,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
 import { _package } from './package';
 import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
-import { SUBSTRUCTURE_SEARCH_PROGRESS, TERMINATE_SEARCH } from './constants';
+import {getSearchProgressEventName, getTerminateEventName} from './constants';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
@@ -265,10 +265,12 @@ export async function chemSubstructureSearchLibrary(
     const matchesBitArray = new BitArray(molStringsColumn.length);
     if (molString.length != 0) {
       if (usePatternFingerprints) {
-        const updateFilterFunc = () => {
+        const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
+        const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
+        const updateFilterFunc = (progress: number) => {
           //console.log(matchesBitArray.trueCount())
           restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
-          grok.events.fireCustomEvent(SUBSTRUCTURE_SEARCH_PROGRESS, null);
+          grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
         };
 
         const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false, !columnIsCanonicalSmiles);
@@ -279,7 +281,7 @@ export async function chemSubstructureSearchLibrary(
         const searchResults: BitArray = new BitArray(filteredMolecules.length);
         const subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, searchResults, updateFilterFunc, filteredMolecules, false);
         
-        const sub = grok.events.onCustomEvent(TERMINATE_SEARCH).subscribe(() => {
+        const sub = grok.events.onCustomEvent(terminateEventName).subscribe(() => {
           console.log(`*********************`)
           subFuncs?.setTerminateFlag();
           sub.unsubscribe();
@@ -288,8 +290,8 @@ export async function chemSubstructureSearchLibrary(
         subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
           if (!subFuncs.getTerminateFlag()) {
             restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
-            grok.events.fireCustomEvent(SUBSTRUCTURE_SEARCH_PROGRESS, null);
-            grok.events.fireCustomEvent(TERMINATE_SEARCH, null);
+            grok.events.fireCustomEvent(searchProgressEventName, null);
+            grok.events.fireCustomEvent(terminateEventName, null);
           }
         }))
 

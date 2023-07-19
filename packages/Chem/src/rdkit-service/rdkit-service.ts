@@ -63,7 +63,7 @@ export class RdKitService {
     res: TRes,
     updateRes: (batchRes: BatchRes, res: TRes, length: number, index: number) => void,
     map: (batch: TData[], workerIdx: number, workerCount: number) => Promise<BatchRes>,
-    pogressFunc: () => void) {
+    pogressFunc: (progress: number) => void) {
       let terminateFlag = false;
 
       const setTerminateFlag = () => {terminateFlag = true}
@@ -72,8 +72,8 @@ export class RdKitService {
       const dataLength = data.length;
       let index = 0;
       const lockedCounter = new LockedEntity(0);
-      const increment = 10;
-      const moleculesPerProgress = 100;
+      const increment = 50;
+      const moleculesPerProgress = Math.max(Math.floor(dataLength / 100), 10);
       let nextProgressCheck = moleculesPerProgress;
       const promises = t.parallelWorkers.map((_, idx) => {
           const post = async () => {
@@ -82,7 +82,7 @@ export class RdKitService {
               const index = lockedCounter.value;
               if (index >= Math.min(nextProgressCheck, dataLength)) {
                 nextProgressCheck += moleculesPerProgress;
-                pogressFunc();
+                pogressFunc(index/dataLength);
               }
               const end = Math.min(index + increment, dataLength);
               lockedCounter.value = end;
@@ -185,8 +185,8 @@ export class RdKitService {
   }
 
 
-  async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray, progressFunc: () => void,
-  molecules?: string[], useSubstructLib?: boolean) {
+  async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray,
+    progressFunc: (progress: number) => void, molecules?: string[], useSubstructLib?: boolean) {
     const t = this;
     if (molecules && !useSubstructLib) {
       const updateRes = (batchRes: Uint32Array, res: BitArray, length: number, index: number) => {
