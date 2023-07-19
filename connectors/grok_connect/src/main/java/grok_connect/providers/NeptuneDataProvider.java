@@ -17,6 +17,7 @@ import software.aws.neptune.opencypher.resultset.OpenCypherResultSet;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -118,6 +119,11 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.COLUMN_LIST, new Neo4jComplexColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+    }
+
+    @Override
+    protected ResultSet executeStatement(PreparedStatement statement) throws SQLException {
+        return statement.executeQuery();
     }
 }
 
