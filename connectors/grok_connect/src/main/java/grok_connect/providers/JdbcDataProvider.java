@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.DataFrame;
 import serialization.Types;
-import software.aws.neptune.opencypher.resultset.OpenCypherResultSet;
 
 public abstract class JdbcDataProvider extends DataProvider {
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
