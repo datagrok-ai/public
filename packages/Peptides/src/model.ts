@@ -919,6 +919,9 @@ export class PeptidesModel {
   }
 
   modifyMonomerPositionSelection(aar: string, position: string, isFilter: boolean): void {
+    if (!isFilter && !(this.mutationCliffs?.get(aar)?.get(position) ?? false))
+      return;
+
     const tempSelection = isFilter ? this.monomerPositionFilter : this.monomerPositionSelection;
     const tempSelectionAt = tempSelection[position];
     const aarIndex = tempSelectionAt.indexOf(aar);
@@ -944,8 +947,16 @@ export class PeptidesModel {
       clustColData: type.RawData, customClust: {[key: string]: BitArray}): void => {
       const getBitAt = (i: number): boolean => {
         for (const posRawCol of posList) {
-          if (this.monomerPositionSelection[posRawCol.name].includes(posRawCol.cat![posRawCol.rawData[i]]))
-            return true;
+          const monomer = posRawCol.cat![posRawCol.rawData[i]];
+          if (this.monomerPositionSelection[posRawCol.name].includes(monomer)) {
+            const monomerPositionMutationCliffs = this.mutationCliffs?.get(monomer)?.get(posRawCol.name) ?? null;
+            if (monomerPositionMutationCliffs === null)
+              continue;
+            for (const mpmcKey of monomerPositionMutationCliffs.keys()) {
+              if (mpmcKey === i || i in monomerPositionMutationCliffs.get(mpmcKey)!)
+                return true;
+            }
+          }
         }
 
         const currentOrigClust = clustColCat[clustColData[i]];
