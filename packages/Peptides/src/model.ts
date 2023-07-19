@@ -457,7 +457,7 @@ export class PeptidesModel {
       });
     }
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
-    acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
+    acc.addPane('Mutation Cliffs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
 
     return acc;
@@ -919,6 +919,9 @@ export class PeptidesModel {
   }
 
   modifyMonomerPositionSelection(aar: string, position: string, isFilter: boolean): void {
+    if (!isFilter && !(this.mutationCliffs?.get(aar)?.get(position) ?? false))
+      return;
+
     const tempSelection = isFilter ? this.monomerPositionFilter : this.monomerPositionSelection;
     const tempSelectionAt = tempSelection[position];
     const aarIndex = tempSelectionAt.indexOf(aar);
@@ -942,11 +945,23 @@ export class PeptidesModel {
 
     const changeSelectionBitset = (currentBitset: DG.BitSet, posList: type.RawColumn[], clustColCat: string[],
       clustColData: type.RawData, customClust: {[key: string]: BitArray}): void => {
-      const getBitAt = (i: number): boolean => {
-        for (const posRawCol of posList) {
-          if (this.monomerPositionSelection[posRawCol.name].includes(posRawCol.cat![posRawCol.rawData[i]]))
-            return true;
+      const indexes = new Set<number>();
+      for (const [position, monomerList] of Object.entries(this.monomerPositionSelection)) {
+        for (const monomer of monomerList) {
+          const substitutions = this.mutationCliffs?.get(monomer)?.get(position) ?? null;
+          if (substitutions === null)
+            continue;
+          for (const [key, value] of substitutions.entries()) {
+            indexes.add(key);
+            for (const v of value)
+              indexes.add(v);
+          }
         }
+      }
+
+      const getBitAt = (i: number): boolean => {
+        if (indexes.has(i))
+          return true;
 
         const currentOrigClust = clustColCat[clustColData[i]];
         if (typeof currentOrigClust === undefined)

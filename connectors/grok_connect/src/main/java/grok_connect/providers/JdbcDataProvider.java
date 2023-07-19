@@ -200,16 +200,18 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private ResultSet executeStatement(PreparedStatement statement, Logger queryLogger,
                                        int timeout, String mainCallId, int fetchSize) throws SQLException {
-        ResultSet resultSet = null;
         queryMonitor.addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
         queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing statement");
         statement.setFetchSize(fetchSize);
-        if(statement.execute())
-            resultSet = statement.getResultSet();
+        ResultSet resultSet = executeStatement(statement);
         queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Statement was executed");
         queryMonitor.removeStatement(mainCallId);
         return resultSet;
+    }
+
+    protected ResultSet executeStatement(PreparedStatement statement) throws SQLException {
+        return statement.execute() ? statement.getResultSet() : null;
     }
 
     private void setQueryTimeOut(Statement statement, int timeout) {
@@ -382,7 +384,6 @@ public abstract class JdbcDataProvider extends DataProvider {
                     Object value = getObjectFromResultSet(resultSet, c);
 
                     if (dryRun) continue;
-
                     resultSetManager.processValue(value, c);
 
                     if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {

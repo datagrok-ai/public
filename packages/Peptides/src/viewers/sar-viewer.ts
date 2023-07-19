@@ -323,16 +323,16 @@ export function showTooltip(cell: DG.GridCell, x: number, y: number, model: Pept
   return true;
 }
 
-function chooseAction(aar: string, position: string, isShiftPressed: boolean, isFilter: boolean,
+function chooseAction(aar: string, position: string, isShiftPressed: boolean, isInvariantMap: boolean,
   model: PeptidesModel): void {
   if (!isShiftPressed) {
-    if (isFilter)
+    if (isInvariantMap)
       model.initMonomerPositionFilter({cleanInit: true, notify: false});
     else
       model.initMonomerPositionSelection({cleanInit: true, notify: false});
   }
 
-  model.modifyMonomerPositionSelection(aar, position, isFilter);
+  model.modifyMonomerPositionSelection(aar, position, isInvariantMap);
 }
 
 function cellChanged(table: DG.DataFrame, model: PeptidesModel): void {
