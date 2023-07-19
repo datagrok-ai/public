@@ -173,7 +173,7 @@ export class Events {
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
-  get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked'); }
+  get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
 }
 
 /*
