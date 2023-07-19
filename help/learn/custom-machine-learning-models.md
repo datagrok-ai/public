@@ -12,7 +12,7 @@ to build/train a model based on provided features and a target variable. The tra
 inside a given directory. Apply function receives previously saved model and applies it to provided feature columns. The
 resulting predictions are returned in a form of a single column in a dataframe.
 
-Custom models utilize [predictive model](predictive-modeling.md) interface alongside other out-of-the-box solutions.
+Custom models utilize [predictive model](learn.md) interface alongside other out-of-the-box solutions.
 Once implemented, custom models can be chosen from the list of model engines.
 
 ## Train

@@ -51,6 +51,6 @@ corresponding sections of the help system:
 
 See also:
 
-- [Scripting](../datagrok/grok-script.md)
-- [Function](../datagrok/functions/functions.md)
+- [Scripting](../under-the-hood/grok-script.md)
+- [Function](../datagrok/concepts/functions/functions.md)
 - [Column selectors](../visualize/viewers/column-selectors.md)
