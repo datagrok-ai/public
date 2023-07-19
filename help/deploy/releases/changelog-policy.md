@@ -18,18 +18,21 @@ As a software developer, it is your responsibility to maintain a clean and clear
    <details>
    <summary>Example</summary>
    
+    ```
     ## 97.89.83 (2023-06-31)
    
     This release focuses on improving data access speed and convenience, 
     new visualization and usability features, and ensuring platform stability.
    
     *Dependency: datagrok-api >= Y.Y.Y*
-    
+    ```
+
     </details>
 3. Group the changes by type, such as Features (all improvements also go here), Bug Fixes, Breaking change. 
    <details>
    <summary>Example</summary>
 
+   ```
    ### Features
 
    * Added [logger for packages](https://datagrok.ai/help/develop/advanced/debugging#logger) to report debug records to the server
@@ -42,6 +45,7 @@ As a software developer, it is your responsibility to maintain a clean and clear
    ### Breaking change
    
    * Removed Grok Connect from Datagrok image. The host in connectors host should be changed to grok_connect instead of localhost.
+   ```
 
    </details>
 
@@ -102,6 +106,7 @@ This release focuses on improving feature stability and usability.
 
 ```
 
+<!--
 <details>
 <summary>Result</summary>
 
@@ -127,3 +132,4 @@ This release focuses on improving feature stability and usability.
 * Retired `copyCoolFeature` method in favor of `duplicateCoolFeature`
 
 </details>
+-->
