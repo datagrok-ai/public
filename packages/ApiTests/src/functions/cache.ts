@@ -1,9 +1,9 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {DataFrame, DataQuery, Qnum} from 'datagrok-api/dg';
-import dayjs from 'dayjs';
+import {DataFrame, Func, Qnum} from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
-import {check} from "./utils";
+import {check} from './utils';
+import {expectTable} from '../package';
 
 const cars = grok.data.demo.demog(10000);
 const cacheName = 'function_results_cache';
@@ -48,16 +48,6 @@ category('Functions: Client-side cache', () => {
   //   await grok.functions.clientCache.start();
   // });
 
-  test('String', async () => {
-    let f = grok.functions.register({
-      signature: 'string getRandomStringDate()',
-      run: () => { return new Date().toISOString(); },
-      options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
-    });
-
-    await expectSameResults(f);
-  });
-
   test('All scalars', async () => {
     await expectSameResults(echo(DG.TYPE.STRING), {x: 'foo'});
     await expectSameResults(echo(DG.TYPE.INT), {x: 1234});
@@ -77,7 +67,7 @@ category('Functions: Client-side cache', () => {
     await expectExceptionAsync(async () => await exc.apply({x: 7}));
     await delay(10);
     await expectExceptionAsync(async () => await exc.apply({x: 7}));
-  })
+  });
 
   test('10K calls no cache', async () => {
     grok.shell.settings.clientSideCache = false;
@@ -105,14 +95,63 @@ category('Functions: Client-side cache', () => {
     await grok.functions.clientCache.cleanup();
     await dup.apply({x: 7});
   });
-});
 
+  test('Client function cache output', async () => {
+    await testOutputCacheFunc('dataframe getNowDf()', () => DataFrame.fromCsv(`id,date
+id1,${Date.now()}`));
+    await testOutputCacheFunc('int getEpochDate()', () => Date.now());
+    await testOutputCacheFunc('double getRandomDouble()', () => Math.random());
+    await testOutputCacheFunc('bool getRandomBool()', () => Math.random() < 0.5);
+    await testOutputCacheFunc('string getRandomStringDate()', () => new Date().toISOString());
+    // await testOutputCacheFunc('List<double> getRandomIntList()', () => {
+    //   const result = [];
+    //   for (let i = 0; i < 5; i++)
+    //     result.push(Math.random());
+    //   return result;
+    // });
+  });
+
+  test('Client function cache primitive argument test', async () => {
+    await testFunctionPrimitiveParam('string strParam(string i)', (i: string) => Date.now() + i,
+      {i: 'hello'}, {i: 'world'});
+    await testFunctionPrimitiveParam('int intParam(int i)', (i: number) => Date.now() * i,
+      {i: 1}, {i: 2});
+    await testFunctionPrimitiveParam('double doubleParam(double i)', (i: number) => Date.now() * i,
+      {i: 3.14}, {i: 22.01});
+    await testFunctionPrimitiveParam('string boolParam(bool i)', (i: boolean) => Date.now() +
+            (Math.random() < 0.5 && i).toString(),
+    {i: true}, {i: false});
+  });
+
+  test('Client function cache performance', async () => {
+    const func = registerFunc('double wait()', async () => {
+      await delay(300);
+      return Math.random();
+    }, true);
+    const firstTime = await getFunctionExecutionTime(func);
+    const secondTime = await getFunctionExecutionTime(func);
+    expect(firstTime > secondTime * 2, true, `The first execution time ${firstTime} ms
+        is no more than twice the second execution time ${secondTime} ms`);
+  });
+
+  test('Client function cache clear test', async () => {
+    const func = registerFunc('int getEpochDateClear()', () => Date.now());
+    const res = await expectSameResults(func);
+    await grok.functions.clientCache.clear();
+    expect(res !== await func.apply(), true);
+  });
+});
 
 async function expectSameResults(f: DG.Func, params?: object): Promise<any> {
   const first = await f.apply(params);
   await delay(100);
   const second = await f.apply(params);
-  expect(first, second);
+  if (first.constructor.name === 'DataFrame')
+    expectTable(first, second);
+  else if (Array.isArray(first))
+    expectArray(first, second);
+  else
+    expect(first, second);
   return second;
 }
 
@@ -136,3 +175,30 @@ async function expectExceptionAsync(action: () => Promise<void>, check?: (except
   }
 }
 
+function registerFunc(signature: string, run: (param: any) => any, isAsync: boolean = false): Func {
+  return grok.functions.register({
+    signature: signature,
+    run: run,
+    options: {'cache': 'true', 'cache.invalidateOn': '0 * * * *'},
+    isAsync: isAsync,
+  });
+}
+
+async function testOutputCacheFunc(signature: string, run: () => any): Promise<any> {
+  const func = registerFunc(signature, run);
+  await expectSameResults(func);
+}
+
+async function getFunctionExecutionTime(f: Func, params: object = {}): Promise<number> {
+  const start = Date.now();
+  await f.apply(params);
+  return Date.now() - start;
+}
+
+async function testFunctionPrimitiveParam(signature: string, run: (param: any) => any, params: object = {},
+  nextParam: object = {}): Promise<any> {
+  const func = registerFunc(signature, run);
+  const res = await expectSameResults(func, params);
+  const resNext = await func.apply(nextParam);
+  expect(res !== resNext, true);
+}
