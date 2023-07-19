@@ -6,7 +6,7 @@ import {PositionStats, MonomerPositionStats} from '../model';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
+export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
   canvasContext.lineWidth = 1;
   canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);

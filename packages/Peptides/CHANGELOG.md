@@ -10,6 +10,7 @@ This release focuses on improving analysis stability and usability.
 
 * Improved activity distribution plots to show selected vs. all
 * Added position number in main table view column headers
+* The Mutation Cliffs panel now shows unique sequences and corresponding values from columns visible in the table view
 
 ### Bug Fixes
 
