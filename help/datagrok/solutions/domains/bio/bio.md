@@ -39,7 +39,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
   * Structure-Activity Relation (SAR) analysis
     * [Activity cliffs](#activity-cliffs)
     * A fit-for-purpose application for [SAR analysis for peptides](#sar-for-peptides)
-  * A comprehensive [ML toolkit](../../../../datagrok/solutions/domains/data-science.md) for
+  * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
   * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.mdx#sharing-query-results).
 * [Macromolecule format conversion](#sequence-translation).
