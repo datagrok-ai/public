@@ -56,19 +56,25 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   canvasContext.fillStyle = coef;
   canvasContext.arc(midX, midY, radius < 3 ? 3 : radius, 0, Math.PI * 2, true);
   canvasContext.closePath();
-
   canvasContext.fill();
-  if (substitutionsInfo !== null && substitutionsInfo.size > 0) {
+
+  const substitutions = substitutionsInfo?.get(currentAAR)?.get(currentPosition)?.entries() ?? null;
+  if (substitutions !== null) {
     canvasContext.textBaseline = 'middle';
     canvasContext.textAlign = 'center';
     canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
     canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
     canvasContext.shadowBlur = 5;
     canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
-    let substValue = 0;
-    substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach((idxs) => substValue += idxs.length);
-    if (substValue && substValue !== 0)
-      canvasContext.fillText(substValue.toString(), midX, midY);
+    const uniqueValues = new Set<number>();
+
+    for (const [key, value] of substitutions) {
+      uniqueValues.add(key);
+      for (const val of value)
+        uniqueValues.add(val);
+    }
+    if (uniqueValues.size !== 0)
+      canvasContext.fillText(uniqueValues.size.toString(), midX, midY);
   }
 
   const aarSelection = mutationCliffsSelection[currentPosition];
