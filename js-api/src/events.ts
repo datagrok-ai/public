@@ -173,7 +173,7 @@ export class Events {
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
-  get onLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-link-clicked'); }
+  get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
 }
 
 /*
@@ -248,9 +248,9 @@ export class EventData<TArgs = any> {
   }
 
   /** Event details. */
-  get args(): { [index: string]: TArgs } {
+  get args(): TArgs {
     let x = api.grok_EventData_Get_Args(this.dart);
-    let result: { [index: string]: any } = {};
+    let result: any = {};
     for (const property in x)
       if (x.hasOwnProperty(property))
         result[property] = toJs(x[property]);
