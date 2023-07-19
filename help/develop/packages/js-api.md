@@ -200,7 +200,7 @@ Log" tab, and perform the action that you want to intercept. In the panel, you w
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
 this particular event, copy-paste it from the context panel into your code if needed.
 
-![inspector-events](./tools/inspector-events.png)
+![inspector-events](../tools/inspector-events.png)
 
 ## User-defined types
 
@@ -267,7 +267,7 @@ Code snippets:
 
 ## Videos
 
-[![JS API](../uploads/youtube/js_api.png "Open on Youtube")](https://www.youtube.com/watch?v=YR17h4_0Mc8&t=536s)
+[![JS API](../../uploads/youtube/js_api.png "Open on Youtube")](https://www.youtube.com/watch?v=YR17h4_0Mc8&t=536s)
 
 See also:
 
