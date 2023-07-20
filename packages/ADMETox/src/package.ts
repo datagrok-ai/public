@@ -29,16 +29,16 @@ export async function admetoxCalculators() {
 
 //top-menu: Chem | ADME/Tox | Full Profile
 //description: Calculates all properties and visualizes on the form
+//name: Full Profile...
 export async function addFormViewer() {
   const df = grok.shell.tv.dataFrame;
   const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (col) {
-    await addForm(col, df); 
-    const layout = await _package.files.readAsText('form-layout.json');
-    const tableName = df.name;
-    const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", col.name);
-    const view = grok.shell.tv;
-    view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
-    addTooltip();
-  }
+  if (col)
+    await addForm(col, df);
+  const layout = await _package.files.readAsText('form-layout.json');
+  const tableName = df.name;
+  const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", col!.name);
+  const view = grok.shell.tv;
+  view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
+  addTooltip();
 }

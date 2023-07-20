@@ -10,6 +10,8 @@ import { DockerContainer, DockerContainersDataSource } from 'datagrok-api/dg';
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 const _COLUMN_NAME_STORAGE = 'column_names';
+let terminated = false;
+let malformedIndexes: number[] = [];
 
 /**
  * Fetches the Admetox Docker container.
@@ -121,9 +123,60 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
     .filter(obj => obj['skip'] !== true)
     .map(obj => obj['name'])
     .join(',');
-  const csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
-  const table = processCsv(csvString);
-  addResultColumns(table, viewTable);
+  const df = await processColumn(smilesCol, queryParams);
+  addResultColumns(df, viewTable, malformedIndexes);
+}
+
+async function openModelsDialogAsync(column: DG.Column): Promise<any[]> {
+  const selected = await getSelected();
+
+  return new Promise<any[]>((resolve, reject) => {
+    openModelsDialog(selected, column, async (selected: any[]) => {
+      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
+      if (selected.length === 0) {
+        grok.shell.warning('No models have been selected!');
+        reject('No models selected');
+      } else {
+        resolve(selected);
+      }
+    });
+  });
+}
+
+async function processColumn(smilesCol: DG.Column, selected: string): Promise<DG.DataFrame> {
+  let confirmed;
+  let result;
+  if (smilesCol.length > 10000)
+    confirmed = showConfirmationDialogAsync();
+
+  if (confirmed || smilesCol.length < 10000) {
+    malformedIndexes = await grok.functions.call('Chem:_getMolSafe', { molecules: smilesCol });
+    const smilesColFiltered = DG.Column.fromStrings(
+      smilesCol.name,
+      Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
+    result = await addColumnsAndProcessInBatches(smilesColFiltered, selected);
+  }
+
+  return result!;
+}
+
+function showConfirmationDialogAsync(): boolean {
+  const dialog = ui.dialog({ title: 'Proceed with computations' });
+  let confirmed: boolean = false;
+  dialog
+    .add(
+      ui.divText(
+        `Performing computations could potentially consume a significant amount of time.
+        Do you want to continue?`
+      )
+    )
+    .addButton('YES', () => {
+      dialog.close();
+      confirmed = true;
+    })
+    .onCancel(() => {confirmed = false})
+    .show();
+  return confirmed;
 }
 
 /**
@@ -133,45 +186,17 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
  * @param {DG.Column} column - The column representing the SMILES strings of the molecules.
  * @returns {Promise<DG.DataFrame>} A promise that resolves to a DataFrame with ADME/Tox predictions.
  */
-async function getPredictions(viewTable: DG.DataFrame, column: DG.Column): Promise<DG.DataFrame> {
-  const selected = await getSelected();
+export async function getPredictions(viewTable: DG.DataFrame, column: DG.Column): Promise<DG.DataFrame> {
+  try {
+    const selected = await openModelsDialogAsync(column);
+    const colName = await grok.dapi.userDataStorage.getValue(_COLUMN_NAME_STORAGE, _KEY);
+    const smilesCol = viewTable.columns.byName(colName);
 
-  return new Promise<DG.DataFrame>((resolve, reject) => {
-    openModelsDialog(selected, column, async (selected: any) => {
-      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-      if (selected.length === 0) {
-        grok.shell.warning('No models have been selected!');
-        reject('No models selected');
-        return;
-      }
-      const queryParams = selected.join(',');
-
-      const colName = await grok.dapi.userDataStorage.getValue(_COLUMN_NAME_STORAGE, _KEY);
-      const smilesCol = viewTable.columns.byName(colName);
-      const malformedIndexes = await grok.functions.call('Chem:_getMolSafe', {molecules: smilesCol});
-      const smilesColFiltered = DG.Column.fromStrings(smilesCol.name, Array.from(smilesCol.values()).filter((_, index) => !malformedIndexes.includes(index)));
-
-      if (smilesCol.length > 10000) {
-        const dialog = ui.dialog({ title: 'Proceed with computations' });
-        dialog
-          .add(
-            ui.divText(
-              `Performing computations could potentially consume a significant amount of time.
-               Do you want to continue?`
-            )
-          )
-          .addButton('YES', async () => {
-            dialog.close();
-            const result = await addColumnsAndProcessInBatches(smilesColFiltered, selected);
-            resolve(result);
-          })
-          .show();
-      } else {
-        const result = await addColumnsAndProcessInBatches(smilesColFiltered, selected);
-        resolve(result);
-      }
-    });
-  });
+    return processColumn(smilesCol, selected.join(','));
+  } catch (error) {
+    console.error('Error in getPredictions:', error);
+    throw error;
+  }
 }
 
 /**
@@ -183,7 +208,7 @@ async function getPredictions(viewTable: DG.DataFrame, column: DG.Column): Promi
  */
 export async function addPredictions(viewTable: DG.DataFrame, column: DG.Column) {
   const df = await getPredictions(viewTable, column);
-  addResultColumns(df, viewTable);
+  addResultColumns(df, viewTable, malformedIndexes);
 }
 
 async function addColumnsAndProcessInBatches(smilesCol: DG.Column, queryParams: string): Promise<DG.DataFrame> {
@@ -194,14 +219,16 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malforme
   if (table.columns.length > 0) {
     if (malformedIndexes)
       malformedIndexes.map((index) => table.rows.insertAt(index));
-    const modelNames: string[] = table.columns.names()
+    const modelNames: string[] = table.columns.names();
+    const updatedModelNames: string[] = [];
     for (let i = 0; i < modelNames.length; ++i) {
       let column: DG.Column = table.columns.byName(modelNames[i]);
       column.name = viewTable.columns.getUnusedName(modelNames[i]);
+      updatedModelNames[i] = column.name;
       column = column.convertTo("double");
       viewTable.columns.add(column);
     }
-    addColorCoding(modelNames);
+    addColorCoding(updatedModelNames);
     addTooltip();
   }
 }
@@ -398,21 +425,20 @@ async function getSelected() : Promise<any> {
   return selected;
 }
 
-let resultDf: DG.DataFrame;
-let entered: boolean = false;
-async function processBatch(batch: any, queryParams: string) {
-  if (terminated) {
-    return;
-  }
-  const [csvString] = await Promise.all([
-    accessServer(DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', batch)]).toCsv(), queryParams),
-    new Promise((resolve) => setTimeout(resolve, 1000))]);
-  if (!entered) {
-    resultDf = processCsv(csvString);
-    entered = true;
-  } else {
-    const table = processCsv(csvString);
-    resultDf.append(table, true);
+/**
+ * Process a batch of molecules using the ADME/Tox server.
+ * @param {any[]} batch - Array containing the molecules to process in the batch.
+ * @param {string} queryParams - Query parameters for ADME/Tox predictions.
+ * @returns {Promise<DG.DataFrame>} - Promise that resolves to the processed DataFrame.
+ * @throws {Error} - If an error occurs during batch processing.
+ */
+export async function processBatch(batch: any[], queryParams: string): Promise<DG.DataFrame> {
+  try {
+    const csvString = await accessServer(DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', batch)]).toCsv(), queryParams);
+    return processCsv(csvString);
+  } catch (error) {
+    console.error('Error processing batch:', error);
+    throw error;
   }
 }
 
@@ -447,8 +473,14 @@ class Semaphore {
   }
 }
 
-let terminated = false;
-
+/**
+ * Processes a DataFrame column in batches and evaluates ADME/Tox predictions for each batch.
+ *
+ * @param {DG.Column} column - The column to be processed in batches.
+ * @param {number} [batchSize=100] - The size of each batch.
+ * @param {string} queryParams - The query parameters for ADME/Tox predictions.
+ * @returns {Promise<DG.DataFrame>} A promise that resolves to a DataFrame with evaluated predictions.
+ */
 async function processColumnInBatches(column: DG.Column, batchSize = 100, queryParams: string): Promise<DG.DataFrame> {
   //@ts-ignore
   const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...', {cancelable: true});
@@ -462,10 +494,13 @@ async function processColumnInBatches(column: DG.Column, batchSize = 100, queryP
 
   const totalBatches = Math.ceil(column.length / batchSize);
   let processedBatches = 0;
+  let resultDf;
+  let entered = false;
 
   for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
     if (terminated) {
-      break; // Stop processing batches if terminated
+      terminated = false;
+      break;
     }
 
     await semaphore.acquire();
@@ -474,26 +509,32 @@ async function processColumnInBatches(column: DG.Column, batchSize = 100, queryP
     const end = start + batchSize;
     const batch = Array.from(column.values()).slice(start, end);
 
-    processBatch(batch, queryParams)
-      .then(() => {
-        processedBatches++;
-        const percent = (processedBatches / totalBatches) * 100;
-        progressIndicator.update(percent, `${percent.toFixed(2)}% is evaluated...`);
-        semaphore.release();
-      })
-      .catch(error => {
-        console.error('Error processing batch:', error);
-        semaphore.release();
-      });
+    try {
+      const processedBatch = await processBatch(batch, queryParams);
+      if (!entered) {
+        resultDf = processedBatch;
+        entered = true;
+      } else {
+        resultDf!.append(processedBatch, true);
+      }
+    } catch (error) {
+      console.error('Error processing batch:', error);
+    } finally {
+      processedBatches++;
+      const percent = (processedBatches / totalBatches) * 100;
+      progressIndicator.update(percent, `${percent.toFixed(2)}% is evaluated...`);
+      semaphore.release();
+    }
   }
 
   while (processedBatches < totalBatches) {
     if (terminated) {
-      break; // Stop waiting for batches if terminated
+      terminated = false;
+      break;
     }
     await delay(100);
   }
 
   progressIndicator.close();
-  return resultDf;
+  return resultDf!;
 }
