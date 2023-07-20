@@ -109,7 +109,7 @@ const config = {
       items: [
         {
           type: 'doc',
-          docId: 'home',
+          docId: 'datagrok/datagrok',
           position: 'left',
           label: 'Help',
         },
@@ -131,7 +131,7 @@ const config = {
       links: [
         {
           label: 'Help',
-          to: '/help/home',
+          to: '/help/datagrok/datagrok',
         },
         {
           label: 'API Docs',
