@@ -8,11 +8,11 @@ category('Admetox', () => {
 	let v: DG.TableView;
 	let molecules: DG.DataFrame;
 	let smilesColumn: DG.Column;
-
-  before(async () => {
+	
+	before(async () => {
 		grok.shell.closeAll();
 		grok.shell.windows.showProperties = true;
-  })
+  });
 	
 	test('Container', async () => {
 		const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetox').first();
@@ -54,20 +54,18 @@ category('Admetox', () => {
 		molecules = grok.data.demo.molecules(10);
 		v = grok.shell.addTableView(molecules);
 		smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
+		const newTableColumn = 'Pgp-Inhibitor';
 		const predictions = addPredictions(molecules, smilesColumn);
 		await delay(1000);
 		const admetoxDialog = document.querySelector('.d4-dialog');
-		console.log(admetoxDialog);
-		console.log((admetoxDialog!.querySelectorAll('input[type="checkbox"]')[0] as HTMLElement));
 		(admetoxDialog!.querySelectorAll('input[type="checkbox"]')[0] as HTMLElement).click();
 		await delay(1000);
 		(admetoxDialog!.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement).click();	
 		await predictions;
-		expect(molecules.columns.names().includes('Pgp-Inhibitor'), true, `Pgp-Inhibitor column has not been added`);
-		expect(molecules.col('Pgp-Inhibitor')!.get(0), 0.44976675510406494, 'Calculated value for Pgp-Inhibitor is incorrect');
-		expect(molecules.col('Pgp-Inhibitor')!.colors.getColor(0), 4293426297, 'Wrong color coding was added');
-		expect(molecules.col('Pgp-Inhibitor')!.colors.getColor(4), 4282627449, 'Wrong color coding was added');
-		//await delay(5000);
+		expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
+		expect(molecules.col(newTableColumn)!.get(0), 0.44976675510406494, `Calculated value for ${newTableColumn} is incorrect`);
+		expect(molecules.col(newTableColumn)!.colors.getColor(0), 4293426297, 'Wrong color coding was added');
+		expect(molecules.col(newTableColumn)!.colors.getColor(4), 4282627449, 'Wrong color coding was added');
 	});
 
 	test('Calculate. For single cell', async () => {
@@ -93,11 +91,10 @@ category('Admetox', () => {
 	test('Calculate.Benchmark', async () => {
 		molecules = DG.Test.isInBenchmark 
 		  ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip")
-			: grok.data.demo.molecules(10000);
-		DG.time('ADME/Tox post request', async () => await accessServer(molecules.toCsv(), 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%)'));
+			: grok.data.demo.molecules();
+		DG.time('ADME/Tox post request', () => accessServer(molecules.toCsv(), 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%)'));
 	})
 });
-
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
   await awaitCheck(() => {
@@ -105,4 +102,3 @@ async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Pro
       .find((el) => el.textContent === name) !== undefined;
   }, `cannot find ${name} property`, ms);
 }
-
