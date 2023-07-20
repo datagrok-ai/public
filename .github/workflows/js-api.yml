@@ -225,7 +225,8 @@ jobs:
         run: |
           sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
         working-directory: libraries/${{ matrix.library }}
-      - run: npm install
+      - name: npm install
+        run: rm -rf package-lock.json && npm install
         working-directory: libraries/${{ matrix.library }}
       - name: Commit package.json
         if: needs.version.outputs.changed_version == 'true'
@@ -303,7 +304,8 @@ jobs:
         run: |
           sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
         working-directory: packages/${{ matrix.package }}
-      - run: npm install
+      - name: npm install
+        run: rm -rf package-lock.json && npm install
         working-directory: packages/${{ matrix.package }}
       - name: Commit package.json
         if: needs.version.outputs.changed_version == 'true'
