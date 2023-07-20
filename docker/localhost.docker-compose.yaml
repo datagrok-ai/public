@@ -146,7 +146,7 @@ services:
       - datagrok_demo_postgres_rdkit:/var/lib/postgresql/data
     command: postgres -c 'max_connections=1000'
     restart: on-failure
-    profiles: ["all", "demo", "postgres_rdkit"]
+    profiles: ["demo", "postgres_rdkit"]
 
   northwind:
     image: datagrok/demo_db_postgres:12-1.1.0
