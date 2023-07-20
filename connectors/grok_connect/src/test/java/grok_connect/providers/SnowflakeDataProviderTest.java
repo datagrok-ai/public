@@ -22,7 +22,6 @@ import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
-@Disabled("Until test instance of Snowflake will be available")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnowflakeDataProviderTest {
     private static final Provider type = Provider.SNOWFLAKE;
