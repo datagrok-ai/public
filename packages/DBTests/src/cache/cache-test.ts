@@ -35,6 +35,15 @@ category('Cache', () => {
     await invalidationCacheTest(dataQuery, 2);
   });
 
+  test('Cached conn DataFrame id diff', async () => {
+    const connection = await grok.dapi.connections.filter(`name="${testConnections[1]}"`).first();
+    const funcCall = await connection.query('test', 'SELECT * FROM MOCK_DATA').prepare().call();
+    const firstId = funcCall.outputs['result'].id;
+    const funcCall1 = await connection.query('test', 'SELECT * FROM MOCK_DATA').prepare().call();
+    const secondId = funcCall1.outputs['result'].id;
+    expect(firstId !== secondId, true, 'Ids are the same');
+  });
+
   after(async () => {
     await cleanCache(testConnections);
   });
