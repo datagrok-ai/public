@@ -13,6 +13,7 @@ df.col('open in new tab').tags[DG.TAGS.LINK_CLICK_BEHAVIOR] = 'Open in new tab';
 df.col('open in context panel').tags[DG.TAGS.LINK_CLICK_BEHAVIOR] = 'Open in context panel';
 df.col('custom').tags[DG.TAGS.LINK_CLICK_BEHAVIOR] = 'Custom';
 
-// Displaying the clicked link
+// Displaying the clicked link - global and local grid events
 
-grok.events.onLinkClicked.subscribe(eventData => grok.shell.info(eventData.args.link));
+grok.events.onGridCellLinkClicked.subscribe(eventData => grok.shell.info(`Global event - ${eventData.args.link}`)); // global
+grok.shell.tv.grid.onGridCellLinkClicked.subscribe(eventData => grok.shell.info(`Local grid event - ${eventData.args.link}`)); // local
