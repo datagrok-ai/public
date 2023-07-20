@@ -44,7 +44,7 @@ export class SubstructureFilter extends DG.Filter {
   errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`,
     'chem-substructure-limit');
   sketcherType = DG.chem.currentSketcherType;
-  currentSearches = 0;
+  currentSearches = new Set<string>();
   progressBar: TaskBarProgressIndicator | null = null;
   batchResultObservable: Subscription | null = null;
   terminateEventName: string = '';
@@ -147,16 +147,19 @@ export class SubstructureFilter extends DG.Filter {
 
     this.terminateEventName = getTerminateEventName(this.tableName, this.columnName!);
     this.progressEventName = getSearchProgressEventName(this.tableName, this.columnName!);
-    this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe(() => { 
-      console.log(`##########################${this.currentSearches}`);
-      this.currentSearches--;
-      if (this.currentSearches === 0) {
-        this.calculating = false;
-        this.progressBar?.close();
-        this.progressBar = null;
-        this.batchResultObservable?.unsubscribe();
-        console.log('Unsubscribed from batchResultObservable')
+    this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe((queryMol: string) => {
+      if (this.currentSearches.has(queryMol)) {
+        console.log(`##########################${this.currentSearches}`);
+        this.currentSearches.delete(queryMol);
+        if (this.currentSearches.size === 0) {
+          this.calculating = false;
+          this.progressBar?.close();
+          this.progressBar = null;
+          this.batchResultObservable?.unsubscribe();
+          console.log('Unsubscribed from batchResultObservable')
+        }
       }
+      
     }));
   }
 
@@ -211,7 +214,8 @@ export class SubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
-    this.currentSearches++;
+    const molFile = this.sketcher.getMolFile();
+    this.currentSearches.add(molFile);
     console.log(`%%%%%%%%%%%% _onSketchChanged`)
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
@@ -224,9 +228,9 @@ export class SubstructureFilter extends DG.Filter {
       this.dataFrame?.rows.requestFilter();
       this.terminatePreviousSearch()
       this.updateCalculating();
-    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`) && this.currentSearches === 1) {
+    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`) && this.currentSearches.size === 1) {
       // some other filter is already filtering for the exact same thing
-      this.currentSearches--;
+      this.currentSearches.delete(molFile);
       return;
     } else {
       this.calculating = true;
@@ -266,13 +270,15 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   terminatePreviousSearch() {
-    if (this.currentSearches > 1) 
-      grok.events.fireCustomEvent(this.terminateEventName, null);
+    if (this.currentSearches.size > 1) 
+      grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
   }
 
   updateCalculating() {
-    this.currentSearches--;
-    if (this.currentSearches === 0) {
+    const v = this.currentSearches.values().next().value;
+    if (v)
+      this.currentSearches.delete(v);
+    if (this.currentSearches.size === 0) {
       this.calculating = false;
       this.progressBar?.close();
       this.progressBar = null;

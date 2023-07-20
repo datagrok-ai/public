@@ -281,17 +281,19 @@ export async function chemSubstructureSearchLibrary(
         const searchResults: BitArray = new BitArray(filteredMolecules.length);
         const subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, searchResults, updateFilterFunc, filteredMolecules, false);
         
-        const sub = grok.events.onCustomEvent(terminateEventName).subscribe(() => {
-          console.log(`*********************`)
-          subFuncs?.setTerminateFlag();
-          sub.unsubscribe();
+        const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
+          if (mol === molString) {
+            console.log(`*********************`)
+            subFuncs?.setTerminateFlag();
+            sub.unsubscribe();
+          }
         })
 
         subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
           if (!subFuncs.getTerminateFlag()) {
             restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
-            grok.events.fireCustomEvent(searchProgressEventName, null);
-            grok.events.fireCustomEvent(terminateEventName, null);
+            grok.events.fireCustomEvent(searchProgressEventName, 100);
+            grok.events.fireCustomEvent(terminateEventName, molString);
           }
         }))
 
