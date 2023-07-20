@@ -5,14 +5,41 @@ import { _package } from '../package-test';
 import { models, properties } from './const';
 import { delay } from '@datagrok-libraries/utils/src/test';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+import { DockerContainer, DockerContainersDataSource } from 'datagrok-api/dg';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 const _COLUMN_NAME_STORAGE = 'column_names';
 
-export async function accessServer(csvString: string, queryParams: string) {
-  //@ts-ignore
-  const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetox').first();
+/**
+ * Fetches the Admetox Docker container.
+ * @returns {Promise<DockerContainer | undefined>} A promise that returns Admetox Docker container or undefined if not found.
+ */
+async function getAdmetoxContainer(): Promise<DockerContainer | undefined> {
+  try {
+    const dockerContainers: DockerContainersDataSource = await grok.dapi.docker.dockerContainers;
+    return dockerContainers.filter('admetox').first();
+  } catch (error) {
+    console.error('Failed to get the Admetox container:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Sends a POST request to the Admetox server with CSV data and specific query parameters.
+ *
+ * @param {string} csvString - The CSV data to be sent to the server (structures).
+ * @param {string} queryParams - The query parameters to be included in the request URL (model names).
+ * @returns {Promise<string | null | undefined>} A promise that resolves to the server response or undefined if an error occurs.
+ */
+export async function accessServer(csvString: string, queryParams: string): Promise<string | null | undefined> {
+  const admetDockerfile = await getAdmetoxContainer();
+
+  if (!admetDockerfile) {
+    console.error('Admetox container is not available.');
+    return;
+  }
+
   const params: RequestInit = {
     method: 'POST',
     headers: {
@@ -21,11 +48,21 @@ export async function accessServer(csvString: string, queryParams: string) {
     },
     body: csvString
   };
+
   const path = `/smiles/df_upload/?models=${queryParams}`;
-  let response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
-  return response;
+  try {
+    const response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
+    return response;
+  } catch (error) {
+    console.error('Failed to access the server:', error);
+    return;
+  }
 }
 
+/**
+ * Attaches a tooltip handler to the DataGrid cells in the current TableView to show
+ * additional information based on the cell's content and column.
+ */
 export function addTooltip() {
   const tableView = grok.shell.tv;
 
@@ -56,32 +93,51 @@ export function addTooltip() {
   });
 }
 
+/**
+ * Applies color coding to the specified columns in the current TableView.
+ * The color coding is based on a conditional rule.
+ *
+ * @param {string[]} columnNames - An array of column names to which color coding will be applied.
+ */
 export function addColorCoding(columnNames: string[]) {
   const tv = grok.shell.tv;
   for (const columnName of columnNames) {
-    //@ts-ignore
     tv.grid.col(columnName)!.isTextColorCoded = true;
     tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
     tv.grid.col(columnName)!.column!.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"<=0.5":"#e87c79",">0.5":"#43b579"}`;
   }  
 }
 
+/**
+ * Adds form-based results from the Admetox server to the specified DataFrame view.
+ * The form properties and corresponding models are fetched from the 'properties' object.
+ *
+ * @param {DG.Column} smilesCol - The column containing SMILES data to be sent to the server.
+ * @param {DG.DataFrame} viewTable - The DataFrame view to which the results will be added.
+ */
 export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
   const queryParams = Object.keys(properties)
     .flatMap(property => properties[property]['models'])
     .filter(obj => obj['skip'] !== true)
     .map(obj => obj['name'])
     .join(',');
-  let csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
+  const csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
   const table = processCsv(csvString);
   addResultColumns(table, viewTable);
 }
 
-async function getPredictions(viewTable: DG.DataFrame, column?: DG.Column): Promise<DG.DataFrame> {
+/**
+ * Retrieves the selected models and performs predictions for ADME/Tox properties on a DataFrame column.
+ *
+ * @param {DG.DataFrame} viewTable - The DataFrame containing the molecules.
+ * @param {DG.Column} column - The column representing the SMILES strings of the molecules.
+ * @returns {Promise<DG.DataFrame>} A promise that resolves to a DataFrame with ADME/Tox predictions.
+ */
+async function getPredictions(viewTable: DG.DataFrame, column: DG.Column): Promise<DG.DataFrame> {
   const selected = await getSelected();
 
   return new Promise<DG.DataFrame>((resolve, reject) => {
-    openModelsDialog(selected, async (selected: any) => {
+    openModelsDialog(selected, column, async (selected: any) => {
       await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
       if (selected.length === 0) {
         grok.shell.warning('No models have been selected!');
@@ -106,26 +162,32 @@ async function getPredictions(viewTable: DG.DataFrame, column?: DG.Column): Prom
           )
           .addButton('YES', async () => {
             dialog.close();
-            const result = await addColumnsAndProcessInBatches(viewTable, selected, smilesColFiltered, queryParams, malformedIndexes);
+            const result = await addColumnsAndProcessInBatches(smilesColFiltered, selected);
             resolve(result);
           })
           .show();
       } else {
-        const result = await addColumnsAndProcessInBatches(viewTable, selected, smilesColFiltered, queryParams, malformedIndexes);
+        const result = await addColumnsAndProcessInBatches(smilesColFiltered, selected);
         resolve(result);
       }
     });
   });
 }
 
-export async function addPredictions(viewTable: DG.DataFrame) {
-  const df = await getPredictions(viewTable);
+/**
+ * Fetches ADME/Tox predictions for the specified DataFrame column and adds the result columns to the DataFrame.
+ *
+ * @param {DG.DataFrame} viewTable - The DataFrame containing the molecules.
+ * @param {DG.Column} column - The column representing the SMILES strings of the molecules.
+ * @returns {Promise<void>} A promise that resolves when the predictions are added to the DataFrame.
+ */
+export async function addPredictions(viewTable: DG.DataFrame, column: DG.Column) {
+  const df = await getPredictions(viewTable, column);
   addResultColumns(df, viewTable);
 }
 
-
-async function addColumnsAndProcessInBatches(viewTable: DG.DataFrame, selected: any[], smilesCol: DG.Column, queryParams: string, malformedIndexes: number[]): Promise<DG.DataFrame> {
-  return await processColumnInBatches(smilesCol, viewTable, 100, queryParams, selected, malformedIndexes);
+async function addColumnsAndProcessInBatches(smilesCol: DG.Column, queryParams: string): Promise<DG.DataFrame> {
+  return await processColumnInBatches(smilesCol, 100, queryParams);
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame, malformedIndexes?: any[]): void {
@@ -164,6 +226,12 @@ function processCsv(csvString: string | null | undefined): DG.DataFrame {
   return table;
 }
 
+/**
+ * Creates and returns an accordion with results for ADME/Tox models for a single molecule.
+ *
+ * @param {DG.SemanticValue<string>} smiles - The SMILES representation of the molecule.
+ * @returns {DG.Accordion} An accordion control containing results for ADME/Tox models.
+ */
 export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion {
   const acc = ui.accordion('ADME/Tox');
   const accPanes = document.getElementsByClassName('d4-accordion-pane-header');
@@ -182,10 +250,10 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
         ${smiles.value}`,
         queryParams.toString()
       ).catch((e: any) => {
+        result.appendChild(ui.divText('Couldn\'t analyse properties'));
         console.log(e);
-        //grok.shell.warning(e.toString());
       }).then((csvString: any) => {
-        removeChildren(result);
+        ui.empty(result);
         const table = processCsv(csvString);
         const map: { [_: string]: any } = {};
         for (const model of queryParams)
@@ -195,7 +263,6 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
       }); 
     }
   };
-
 
   for (const property of Object.keys(properties)) {
     const result = ui.div();
@@ -208,7 +275,15 @@ export function getModelsSingle(smiles: DG.SemanticValue<string>): DG.Accordion 
   return acc;
 }
 
-async function openModelsDialog(selected: any, onOK: any): Promise<void> {
+/**
+ * Opens a dialog for selecting models to apply on the specified SMILES column in the DataFrame view.
+ *
+ * @param {any} selected - An array containing the names of the initially selected models.
+ * @param {DG.Column} smilesColumn - The column containing SMILES data.
+ * @param {any} onOK - A function to be called when the 'OK' button is clicked, with the selected model names as an argument.
+ * @returns {Promise<void>} A promise that resolves when the dialog is closed.
+ */
+async function openModelsDialog(selected: any, smilesColumn: DG.Column, onOK: any): Promise<void> {
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
   tree.root.style.width = '200px';
@@ -292,16 +367,14 @@ async function openModelsDialog(selected: any, onOK: any): Promise<void> {
   }
   
   const df = grok.shell.tv.dataFrame;
-  let column = DG.Utils.firstOrNull(df.columns.byTags({'units': 'smiles'}));
-  await grok.dapi.userDataStorage.postValue(_COLUMN_NAME_STORAGE, _KEY, column!.name);
-  const molInput = ui.columnInput('Molecules', df, column, 
-  async (col: DG.Column) => {
-    column = col;
-    await grok.dapi.userDataStorage.postValue(_COLUMN_NAME_STORAGE, _KEY, column.name);
+  await grok.dapi.userDataStorage.postValue(_COLUMN_NAME_STORAGE, _KEY, smilesColumn.name);
+  const molInput = ui.columnInput('Molecules', df, smilesColumn, async (col: DG.Column) => {
+    smilesColumn = col;
+    await grok.dapi.userDataStorage.postValue(_COLUMN_NAME_STORAGE, _KEY, smilesColumn.name);
     //@ts-ignore
   }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && col.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES} as ColumnInputOptions);
   molInput.root.style.marginLeft = '-70px';
-  let dlg = ui.dialog('ADME/Tox');
+  const dlg = ui.dialog('ADME/Tox');
   dlg
     .add(molInput)
     .add(ui.divH([selectAll, selectNone, countLabel]))
@@ -314,21 +387,23 @@ async function openModelsDialog(selected: any, onOK: any): Promise<void> {
     );
 }
 
+/**
+ * Retrieves the selected models from the user data storage.
+ *
+ * @returns {Promise<any>} A promise that resolves to an array containing the selected models.
+ */
 async function getSelected() : Promise<any> {
   const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   return selected;
 }
 
-//description: Removes all children from node
-function removeChildren(node: any): void {
-  while (node.firstChild)
-    node.removeChild(node.firstChild);
-}
-
 let resultDf: DG.DataFrame;
 let entered: boolean = false;
-async function processBatch(batch: any, queryParams: string, viewTable: DG.DataFrame, startIndex: number, batchSize: number, modelNames: any[], malformedIndexes: any[]) {
+async function processBatch(batch: any, queryParams: string) {
+  if (terminated) {
+    return;
+  }
   const [csvString] = await Promise.all([
     accessServer(DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', batch)]).toCsv(), queryParams),
     new Promise((resolve) => setTimeout(resolve, 1000))]);
@@ -372,26 +447,34 @@ class Semaphore {
   }
 }
 
-async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame, batchSize = 100, queryParams: string, modelNames: any[], malformedIndexes: any[]): Promise<DG.DataFrame> {
+let terminated = false;
+
+async function processColumnInBatches(column: DG.Column, batchSize = 100, queryParams: string): Promise<DG.DataFrame> {
   //@ts-ignore
   const progressIndicator = DG.TaskBarProgressIndicator.create('Evaluating predictions...', {cancelable: true});
   //@ts-ignore
   progressIndicator.onCanceled.subscribe(() => {
     progressIndicator.close();
+    terminated = true;
   });
+
   const semaphore = new Semaphore(10);
 
   const totalBatches = Math.ceil(column.length / batchSize);
   let processedBatches = 0;
 
   for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+    if (terminated) {
+      break; // Stop processing batches if terminated
+    }
+
     await semaphore.acquire();
 
     const start = batchIndex * batchSize;
     const end = start + batchSize;
     const batch = Array.from(column.values()).slice(start, end);
 
-    processBatch(batch, queryParams, viewTable, start, batchSize, modelNames, malformedIndexes)
+    processBatch(batch, queryParams)
       .then(() => {
         processedBatches++;
         const percent = (processedBatches / totalBatches) * 100;
@@ -405,6 +488,9 @@ async function processColumnInBatches(column: DG.Column, viewTable: DG.DataFrame
   }
 
   while (processedBatches < totalBatches) {
+    if (terminated) {
+      break; // Stop waiting for batches if terminated
+    }
     await delay(100);
   }
 

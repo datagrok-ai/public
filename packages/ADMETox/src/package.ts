@@ -23,7 +23,8 @@ export function admetWidget(smiles: DG.SemanticValue): DG.Widget<any> {
 //name: ADME/Tox...
 export async function admetoxCalculators() {
   const table = grok.shell.tv.dataFrame;
-  addPredictions(table);
+  const col = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  addPredictions(table, col!);
 }
 
 //top-menu: Chem | ADME/Tox | Full Profile
@@ -31,12 +32,13 @@ export async function admetoxCalculators() {
 export async function addFormViewer() {
   const df = grok.shell.tv.dataFrame;
   const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (col)
-    await addForm(col, df);
-  const layout = await _package.files.readAsText('form-layout.json');
-  const tableName = df.name;
-  const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", col!.name);
-  let view = grok.shell.tv;
-  view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
-  addTooltip();
+  if (col) {
+    await addForm(col, df); 
+    const layout = await _package.files.readAsText('form-layout.json');
+    const tableName = df.name;
+    const modifiedLayout = layout.replaceAll("tableName", tableName).replaceAll("smilesColumn", col.name);
+    const view = grok.shell.tv;
+    view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
+    addTooltip();
+  }
 }
