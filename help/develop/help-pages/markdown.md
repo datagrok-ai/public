@@ -54,7 +54,7 @@ Markdown documents have metadata at the top called _front matter_. At the very t
 | `sidebar_position` (number) |**Optional.** Overrides default position of a doc inside the sidebar directory.
 | `description` (string) |**Optional.** This is what appears when the page is referenced in a Google search result.|
 | `keywords` (string[ ]) |**Optional.** A list of terms that help categorize the page for SEO purposes.|
-| `unlisted` (boolean) |**Optional.** A hidden document, which is not indexed and can only be accessed via a direct link.|
+<!--| `unlisted` (boolean) |**Optional.** A hidden document, which is not indexed and can only be accessed via a direct link.|-->
 
 To see the full list of available options, [visit the Docusaurus website](https://docusaurus.io/docs/next/api/plugins/@docusaurus/plugin-content-docs#markdown-front-matter).
 
