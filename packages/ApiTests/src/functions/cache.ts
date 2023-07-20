@@ -140,6 +140,12 @@ id1,${Date.now()}`));
     await grok.functions.clientCache.clear();
     expect(res !== await func.apply(), true);
   });
+
+  test('Cached DataFrame id diff', async () => {
+    const df1 = await demog.apply({x: 1});
+    const df2 = await demog.apply({x: 1});
+    expect(df1.id !== df2.id, true);
+  });
 });
 
 async function expectSameResults(f: DG.Func, params?: object): Promise<any> {
