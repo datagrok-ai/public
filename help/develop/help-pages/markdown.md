@@ -508,5 +508,24 @@ Any videos must be from the Datagrok's YouTube account. To embed a YouTube video
 </TabItem>
 </Tabs>
 
+## Troubleshooting
 
+A common issue with Docusaurus is the sensitivity of MDX to the placement of code blocks and other text. If you've included a code block or text using common markdown syntax, and things aren't rendering as expected, try the following:
+
+* Add an empty line after above and below each code block or text.
+* When dealing with tabs, either indent the code by five spaces or wrap the MDX tags in an `mdx-code-block`:
+  
+  ```  
+       ```mdx-code-block
+       <Tabs>
+       <TabItem value="tab" label="Tab">
+       ```
+    
+       Tab contents.
+  
+       ```mdx-code-block
+       </TabItem>
+       </Tabs>
+       ```
+  ```
 
