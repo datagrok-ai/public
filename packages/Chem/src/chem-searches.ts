@@ -18,6 +18,7 @@ import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
 import { _package } from './package';
 import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
 import {getSearchProgressEventName, getTerminateEventName} from './constants';
+import { IParallelBatchesRes } from './rdkit-service/rdkit-service';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
@@ -263,45 +264,54 @@ export async function chemSubstructureSearchLibrary(
   await chemBeginCriticalSection();
   try {
     const matchesBitArray = new BitArray(molStringsColumn.length);
+    let patternFpSearchResults: BitArray | null = null;
+    let patternFileteredMolIdxs: BitArray | null = null;
+    let subFuncs: IParallelBatchesRes | undefined= undefined;
+    const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
+    const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
+    const updateFilterFunc = (progress: number) => {
+      if (usePatternFingerprints)
+        restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
+      grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
+    };
+
     if (molString.length != 0) {
       if (usePatternFingerprints) {
-        const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
-        const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
-        const updateFilterFunc = (progress: number) => {
-          //console.log(matchesBitArray.trueCount())
-          restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
-          grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
-        };
-
         const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, false, !columnIsCanonicalSmiles);
         const fps = fgsResult.fps;
         const smiles = columnIsCanonicalSmiles ? molStringsColumn.toList() : fgsResult.smiles;
-        const filteredMolsIdxs: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fps);
-        const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(smiles!, filteredMolsIdxs);
-        const searchResults: BitArray = new BitArray(filteredMolecules.length);
-        const subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, searchResults, updateFilterFunc, filteredMolecules, false);
-        
+        patternFileteredMolIdxs = substructureSearchPatternsMatch(molString, molBlockFailover, fps);
+        const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(smiles!, patternFileteredMolIdxs);
+        patternFpSearchResults = new BitArray(filteredMolecules.length);
+        subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, patternFpSearchResults, updateFilterFunc, filteredMolecules, false);
+      } else {
+        await _invalidate(molStringsColumn, useSubstructLib);
+        subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, matchesBitArray, updateFilterFunc, undefined, useSubstructLib);
+      }
+
+      const fireFinishEvents = () => {
+        grok.events.fireCustomEvent(searchProgressEventName, 100);
+        grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
+      }
+
+      if (usePatternFingerprints) {
         const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
-          if (mol === molString) {
-            console.log(`*********************`)
-            subFuncs?.setTerminateFlag();
+          if (mol === molBlockFailover) {
+            subFuncs!.setTerminateFlag();
             sub.unsubscribe();
           }
         })
 
         subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
-          if (!subFuncs.getTerminateFlag()) {
-            restoreMatchesByFilteredIdxs(filteredMolsIdxs, searchResults, matchesBitArray);
-            grok.events.fireCustomEvent(searchProgressEventName, 100);
-            grok.events.fireCustomEvent(terminateEventName, molString);
+          if (!subFuncs!.getTerminateFlag()) {
+            restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
+            fireFinishEvents();
           }
         }))
-
-        // const searchResults: BitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, filteredMolecules, false);
-      } else {
-        // await _invalidate(molStringsColumn, useSubstructLib);
-        // matchesBitArray = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, undefined, useSubstructLib);
-      }
+      } else 
+        setTimeout(() => {
+          fireFinishEvents();
+        }, 10)
     }
     return matchesBitArray;
   } catch (e: any) {

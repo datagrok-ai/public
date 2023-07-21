@@ -49,12 +49,13 @@ export class SubstructureFilter extends DG.Filter {
   batchResultObservable: Subscription | null = null;
   terminateEventName: string = '';
   progressEventName: string = '';
+  currentMolfile: string = '';
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   get filterSummary(): string {
-    return _convertMolNotation(this.sketcher.getMolFile(), DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
+    return _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
       getRdKitModule());
   }
 
@@ -85,6 +86,8 @@ export class SubstructureFilter extends DG.Filter {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         /* setting syncEvent to true only if base sketcher is initialized.
         If base sketcher is initialized, it will fire onChange event */
+        if (this.currentSearches.size > 0) 
+            grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
         if (this.sketcher.sketcher?.isInitialized)
           this.syncEvent = true;
         this.bitset = state.bitset!;
@@ -147,19 +150,9 @@ export class SubstructureFilter extends DG.Filter {
 
     this.terminateEventName = getTerminateEventName(this.tableName, this.columnName!);
     this.progressEventName = getSearchProgressEventName(this.tableName, this.columnName!);
+
     this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe((queryMol: string) => {
-      if (this.currentSearches.has(queryMol)) {
-        console.log(`##########################${this.currentSearches}`);
-        this.currentSearches.delete(queryMol);
-        if (this.currentSearches.size === 0) {
-          this.calculating = false;
-          this.progressBar?.close();
-          this.progressBar = null;
-          this.batchResultObservable?.unsubscribe();
-          console.log('Unsubscribed from batchResultObservable')
-        }
-      }
-      
+      this.finishSearch(queryMol);
     }));
   }
 
@@ -180,7 +173,7 @@ export class SubstructureFilter extends DG.Filter {
       if (this.bitset && !this.isDetached) {
         this.dataFrame?.filter.and(this.bitset);
         this.dataFrame?.rows.addFilterState(this.saveState());
-        this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
+        this.column!.temp['chem-scaffold-filter'] = this.currentMolfile;
         this.active = true;
     }
   }
@@ -189,7 +182,7 @@ export class SubstructureFilter extends DG.Filter {
   saveState(): any {
     const state = super.saveState();
     state.type = 'Chem:substructureFilter';
-    state.molBlock = this.sketcher.getMolFile();
+    state.molBlock = this.currentMolfile;
     return state;
   }
 
@@ -214,54 +207,54 @@ export class SubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
-    const molFile = this.sketcher.getMolFile();
-    this.currentSearches.add(molFile);
-    console.log(`%%%%%%%%%%%% _onSketchChanged`)
+    const newMolFile = this.sketcher.getMolFile();
+    const newSmarts = await this.sketcher.getSmarts();
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
+      this.currentMolfile = newMolFile; 
       this.bitset = !this.active ? DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null;//TODO
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName,
-        molblock: this.sketcher.getMolFile(), filterId: this.filterId, tableName: this.tableName});
       this.dataFrame?.rows.requestFilter();
-      this.terminatePreviousSearch()
-      this.updateCalculating();
-    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`) && this.currentSearches.size === 1) {
+      this.terminatePreviousSearch();
+      this.finishSearch(newSmarts ?? '');
+    } else if (wu(this.dataFrame!.rows.filters)
+        .has(`${this.columnName}: ${_convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
+      getRdKitModule())}`)) {
       // some other filter is already filtering for the exact same thing
-      this.currentSearches.delete(molFile);
       return;
     } else {
-      this.calculating = true;
-      this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
-      try {
-        const bitArray = await this.getFilterBitset();
-        if (!bitArray)
-          return;
-        this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-        this.batchResultObservable?.unsubscribe();
-        this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
-          this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+        this.terminatePreviousSearch();
+        this.currentMolfile = newMolFile; 
+        this.currentSearches.add(newSmarts ?? '');
+        this.calculating = true;
+        this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
+        try {
           grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-            molblock: this.sketcher.getMolFile(), colName: this.columnName,
-            filterId: this.filterId, tableName: this.tableName});
-          this.dataFrame?.rows.requestFilter();
-          this.progressBar!.update(progress, `${progress?.toFixed(2)}% of substructure search completed`);
-      })
-      } catch {
-        this.updateCalculating();
-      }
+            molblock: this.currentMolfile, colName: this.columnName,
+            filterId: this.filterId, tableName: this.tableName});  
+
+          const bitArray = await this.getFilterBitset();
+          this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+          this.batchResultObservable?.unsubscribe();
+          this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
+
+            this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+            this.dataFrame?.rows.requestFilter();
+            this.progressBar!.update(progress, `${progress?.toFixed(2)}% of substructure search completed`);
+            
+        })
+        } catch {
+          this.finishSearch(newSmarts ?? '');
+        }
     }
   }
 
-  async getFilterBitset(): Promise<BitArray | null> {
+  async getFilterBitset(): Promise<BitArray> {
     console.log(`getFilterBitset currentSearches: ${this.currentSearches}`);
-    this.terminatePreviousSearch();
     const smarts = await this.sketcher.getSmarts();
-    if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
-      return null;
-    return await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts!, true, false);
+    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, true, false);
   }
 
   updateExternalSketcher() {
@@ -270,18 +263,33 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   terminatePreviousSearch() {
-    if (this.currentSearches.size > 1) 
+    if (this.currentSearches.size > 0) 
       grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
   }
 
-  updateCalculating() {
-    const v = this.currentSearches.values().next().value;
-    if (v)
-      this.currentSearches.delete(v);
-    if (this.currentSearches.size === 0) {
-      this.calculating = false;
-      this.progressBar?.close();
-      this.progressBar = null;
+  finishSearch(queryMol: string) {
+    const finish = () => {
+      if (this.currentSearches.size === 0) {
+        this.calculating = false;
+        this.progressBar?.close();
+        this.progressBar = null;
+        this.batchResultObservable?.unsubscribe();
+        console.log(`Unsubscribed from batchResultObservable  Filter ${this.filterId}`);
+      }
     }
+    if (this.currentSearches.has(queryMol)) {
+      this.currentSearches.delete(queryMol);
+      finish();
+    }
+    if (queryMol == null && this.currentSearches.size === 1) {
+      const v = this.currentSearches.values().next().value;
+      if (v != null)
+        this.currentSearches.delete(v);
+      finish();
+    }
+    grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
+      molblock: this.currentMolfile, colName: this.columnName,
+      filterId: this.filterId, tableName: this.tableName});  
   }
+
 }

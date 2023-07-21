@@ -6,6 +6,13 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { IFpResult } from './rdkit-service-worker-similarity';
 import { LockedEntity } from '../utils/locked-entitie';
 
+export interface IParallelBatchesRes {
+  getProgress: () => number,
+  setTerminateFlag: () => void,
+  getTerminateFlag: () => boolean,
+  promises: Promise<void>[]
+}
+
 export class RdKitService {
   workerCount: number;
   _initWaiters?: Promise<any>[];
@@ -63,11 +70,11 @@ export class RdKitService {
     res: TRes,
     updateRes: (batchRes: BatchRes, res: TRes, length: number, index: number) => void,
     map: (batch: TData[], workerIdx: number, workerCount: number) => Promise<BatchRes>,
-    pogressFunc: (progress: number) => void) {
+    pogressFunc: (progress: number) => void): Promise<IParallelBatchesRes> {
       let terminateFlag = false;
 
-      const setTerminateFlag = () => {terminateFlag = true}
-      const getTerminateFlag = () => {return terminateFlag; }
+      const setTerminateFlag = () => { terminateFlag = true; }
+      const getTerminateFlag = () => { return terminateFlag; }
       const t = this;
       const dataLength = data.length;
       let index = 0;
@@ -152,53 +159,42 @@ export class RdKitService {
    * predefined RDMols nor SubstructLibrary are used) 
    * @param {boolean} useSubstructLib - optional parameter, if set to true SubstructLibrary is used for search
    * */
-  async searchSubstructure1(query: string, queryMolBlockFailover: string, molecules?: string[], 
-    useSubstructLib?: boolean): Promise<BitArray> {
-    const t = this;
-    if (molecules) { //need to recalculate segments lengths since when using pattern fp number of molecules to search can be less that totla molecules in column
-      this.segmentLengthPatternFp = Math.floor(molecules.length / this.workerCount);
-      for (let j = 0; j < this.workerCount; j++) {
-        this.moleculesSegmentsLengthsPatternFp[j] = j < (this.workerCount - 1) ? this.segmentLengthPatternFp :
-          molecules.length - this.segmentLengthPatternFp * j;
-      }
-    }
-    return this._doParallel(
-      (i: number, nWorkers: number) => {
-        return molecules ?
-          t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, i < (nWorkers - 1) ?
-            molecules.slice(i * this.segmentLengthPatternFp, (i + 1) * this.segmentLengthPatternFp) :
-            molecules.slice(i * this.segmentLengthPatternFp, molecules.length)) :
-          t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, undefined, useSubstructLib);
-      },
-      (data: Array<Uint32Array>) => {
-        const segmentsLengths = molecules ? t.moleculesSegmentsLengthsPatternFp : t.moleculesSegmentsLengths;
-        const totalLength = segmentsLengths.reduce((acc, cur) => acc + cur, 0);
-        const bitset = new BitArray(totalLength);
-        let counter = 0;
-        for (let i = 0; i < segmentsLengths.length; i++) {
-          for (let j = 0; j < segmentsLengths[i]; j++) {
-            bitset.setBit(counter++, !!(data[i][Math.floor(j / 32)] >> j % 32 & 1));
-          }
-        }
-        return bitset;
-      });
-  }
-
-
   async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray,
-    progressFunc: (progress: number) => void, molecules?: string[], useSubstructLib?: boolean) {
+    progressFunc: (progress: number) => void, molecules?: string[], useSubstructLib?: boolean): Promise<IParallelBatchesRes> {
     const t = this;
+    let updateRes;
     if (molecules && !useSubstructLib) {
-      const updateRes = (batchRes: Uint32Array, res: BitArray, length: number, index: number) => {
+      updateRes = (batchRes: Uint32Array, res: BitArray, length: number, index: number) => {
         let bit;
           for (let j = 0; j < length; j++) {
             bit = !!(batchRes[Math.floor(j / 32)] >> j % 32 & 1);
             res.setBit(index + j, bit)
           }
         }
-      return this._doParallelBatches(molecules, result, updateRes, async (batch, idx, _workerCount) => {
-        return t.parallelWorkers[idx].searchSubstructure(query, queryMolBlockFailover, batch);
-      }, progressFunc)
+        return this._doParallelBatches(molecules, result, updateRes, async (batch, idx, _workerCount) => {
+          return t.parallelWorkers[idx].searchSubstructure(query, queryMolBlockFailover, batch);
+        }, progressFunc)
+    } else {
+      const res = await this._doParallel(
+        (i: number, nWorkers: number) => {
+          return t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, undefined, useSubstructLib);
+        },
+        (data: Array<Uint32Array>) => {
+          const segmentsLengths = t.moleculesSegmentsLengths;
+          const totalLength = segmentsLengths.reduce((acc, cur) => acc + cur, 0);
+          let counter = 0;
+          for (let i = 0; i < segmentsLengths.length; i++) {
+            for (let j = 0; j < segmentsLengths[i]; j++) {
+              result.setBit(counter++, !!(data[i][Math.floor(j / 32)] >> j % 32 & 1));
+            }
+          }
+        });
+        return {
+          getProgress: () => 1,
+          setTerminateFlag: () => {},
+          getTerminateFlag: () => false,
+          promises: []
+        }
     }
   }
 
