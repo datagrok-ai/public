@@ -482,4 +482,34 @@ class BioPackageDetectors extends DG.Package {
 
     return wu(idxSet).map((idx) => col.get(idx));
   }
+
+  // -- autostart --
+
+  //name: autostart
+  //tags: autostart
+  //description: Bio bootstrap
+  autostart() {
+    this.logger.debug('Bio: detectors.js: autostart()');
+
+    this.autostartContextMenu();
+  }
+
+  autostartContextMenu() {
+    grok.events.onContextMenu.subscribe((event) => {
+      if (event.args.item && event.args.item instanceof DG.GridCell &&
+        event.args.item.tableColumn && event.args.item.tableColumn.semType === DG.SEMTYPE.MACROMOLECULE
+      ) {
+        const contextMenu = event.args.menu;
+        const cell = event.args.item.cell; // DG.Cell
+
+        grok.functions.call('Bio:addCopyMenu', {cell: cell, menu: contextMenu})
+          .catch((err) => {
+            grok.shell.error(err.toString());
+          });
+
+        event.preventDefault();
+        return true;
+      }
+    });
+  }
 }

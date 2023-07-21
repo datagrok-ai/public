@@ -64,6 +64,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
+import {addCopyMenuUI} from './utils/context-menu';
 
 export const _package = new BioPackage();
 
@@ -772,6 +773,14 @@ export async function webLogoLargeApp(): Promise<void> {
   }
 }
 
+// -- Handle context menu --
+
+///name: addCopyMenu
+//input: object cell
+//input: object menu
+export function addCopyMenu(cell: DG.Cell, menu: DG.Menu): void {
+  addCopyMenuUI(cell, menu);
+}
 
 // -- Demo --
 

@@ -316,7 +316,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     this.filterSourceInput.root.style.position = 'absolute';
     this.filterSourceInput.root.style.left = '10px';
     this.filterSourceInput.root.style.top = '-3px';
-    ui.tooltip.bind(this.filterSourceInput.root, 'Check to filter sequences for selected VRs');
+    //this.filterSourceInput.setTooltip('Check to filter sequences for selected VRs'); // TODO: GROK-13614
+    ui.tooltip.bind(this.filterSourceInput.input, 'Check to filter sequences for selected VRs');
 
     const _color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
     this.host = ui.div([this.mainLayout, this.filterSourceInput!.root],
