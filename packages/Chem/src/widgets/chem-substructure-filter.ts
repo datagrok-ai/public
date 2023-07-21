@@ -219,6 +219,9 @@ export class SubstructureFilter extends DG.Filter {
       this.dataFrame?.rows.requestFilter();
       this.terminatePreviousSearch();
       this.finishSearch(newSmarts ?? '');
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
+        molblock: this.currentMolfile, colName: this.columnName,
+        filterId: this.filterId, tableName: this.tableName}); 
     } else if (wu(this.dataFrame!.rows.filters)
         .has(`${this.columnName}: ${_convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
       getRdKitModule())}`)) {
@@ -287,9 +290,6 @@ export class SubstructureFilter extends DG.Filter {
         this.currentSearches.delete(v);
       finish();
     }
-    grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-      molblock: this.currentMolfile, colName: this.columnName,
-      filterId: this.filterId, tableName: this.tableName});  
   }
 
 }
