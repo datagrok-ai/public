@@ -4,7 +4,7 @@
   "friendlyName": "Northwind",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 21521,
+    "port": 1521,
     "db": "XEPDB1"
   },
   "credentials": {
