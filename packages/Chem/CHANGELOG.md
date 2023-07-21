@@ -1,4 +1,4 @@
-# Cheminformatics changelog
+# Chem changelog
 
 ## 1.6.20 (2023-07-21)
 

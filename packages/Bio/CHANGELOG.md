@@ -1,4 +1,4 @@
-# Bioinformatics changelog
+# Bio changelog
 
 ## 2.7.2 (2023-07-21)
 
