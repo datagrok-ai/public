@@ -385,7 +385,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
     const fitFunctionParts = seriesFitFunc.function.split('=>').map((elem) => elem.trim());
     const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map((elem) => elem.trim());
     const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1),
-      `return ${fitFunctionParts[1]}`);
+      `${fitFunctionParts[1].includes(';') ? '' : 'return '}${fitFunctionParts[1]}`);
     const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1),
       `return ${getInitParamsParts[1]}`);
     const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
