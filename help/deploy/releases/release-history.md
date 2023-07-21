@@ -529,6 +529,7 @@ Now, when you click on a cell with a 3D molecule, we utilize the Biostructure vi
   * Moved hierarchical clustering script to the client side.
   * Allowed to switch distance calculation method for macromolecules (Hamming or Levenstein) in case of MSA.
   * Enabled Dendrogram to work with semType macromolecules.
+  
 #### [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides#readme)
 
 * Fixed: 
@@ -541,6 +542,7 @@ Now, when you click on a cell with a 3D molecule, we utilize the Biostructure vi
 Added new tutorials on [grid customization](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization) and how to [add a calculated column](https://public.datagrok.ai/apps/tutorials/Tutorials/Datatransformation/CalculatedColumns).
 
 #### [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid#readme)
+
 Added structure editing support for pinned columns.
 
 ### Improvements for developers
