@@ -31,7 +31,7 @@
     "@datagrok-libraries/bio": "^5.33.2",
     "@datagrok-libraries/chem-meta": "^1.0.1",
     "@datagrok-libraries/ml": "^6.3.39",
-    "@datagrok-libraries/tutorials": "^1.3.2",
+    "@datagrok-libraries/tutorials": "^1.3.6",
     "@datagrok-libraries/utils": "^4.0.17",
     "cash-dom": "^8.0.0",
     "css-loader": "^6.7.3",
