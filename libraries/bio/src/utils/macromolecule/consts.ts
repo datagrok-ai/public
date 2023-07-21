@@ -6,7 +6,7 @@ import {UnitsHandler} from '../units-handler';
 import {CandidateType} from './types';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
-export const enum NOTATION {
+export enum NOTATION {
   FASTA = 'fasta',
   SEPARATOR = 'separator',
   HELM = 'helm',
