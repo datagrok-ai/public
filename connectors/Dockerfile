@@ -47,7 +47,7 @@ RUN groupadd --gid 2001 grok ; \
     useradd --system --create-home --home ${HOME_DIR} --gid grok --uid 1001 grok
 
 COPY --chown=grok:grok --from=grok_connect_builder ${GROK_CONNECT_DIR} ${GROK_CONNECT_DIR}
-COPY $GROK_CONNECT_SOURCE_DIR/grok_connect/northwind ${HOME_DIR}/nortwind
+COPY $GROK_CONNECT_SOURCE_DIR/grok_connect/northwind ${HOME_DIR}/northwind
 
 USER grok:grok
 WORKDIR ${GROK_CONNECT_DIR}
