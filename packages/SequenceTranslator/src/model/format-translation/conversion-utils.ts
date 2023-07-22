@@ -1,6 +1,7 @@
-import {DEFAULT_FORMATS} from '../const';
+import {DEFAULT_FORMATS, NUCLEOTIDES} from '../const';
 import {FormatConverter} from './format-converter';
 import {codesToHelmDictionary} from '../data-loading-utils/json-loader';
+import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 
 export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar: number, sourceFormat: string): {[key: string]: string} {
   const supportedFormats = Object.keys(codesToHelmDictionary).concat([DEFAULT_FORMATS.HELM]) as string[];
@@ -25,5 +26,22 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
       return [format, translation];
     }).filter(([format, translation]) => translation)
   )
+  const nucleotides = getNucleotidesSequence(result[DEFAULT_FORMATS.HELM], MonomerLibWrapper.getInstance());
+  if (nucleotides)
+    result['Nucleotides'] = nucleotides;
   return result;
+}
+
+function getNucleotidesSequence(helmString: string, monomerLib: MonomerLibWrapper): string | null {
+  const re = new RegExp('\\([^()]*\\)', 'g');
+  const branches = helmString.match(re);
+  if (!branches)
+    return null;
+  const nucleotides = branches!.map((branch) => {
+    const stripped = branch.replace(/[\[\]()]/g, '');
+    if (NUCLEOTIDES.includes(stripped))
+      return stripped;
+    return monomerLib.getNaturalAnalogBySymbol(stripped);
+  }).join('');
+  return nucleotides;
 }

@@ -11,18 +11,6 @@ import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagro
 import {META_FIELDS as MET} from './const';
 import {codesToSymbolsDictionary} from '../../model/data-loading-utils/json-loader';
 
-type TechnologiesObject = {
-  [technology: string]: string[]
-}
-
-type Codes = {
-  [synthesizer: string]: TechnologiesObject | string[]
-}
-
-type Meta = {
-  [key: string]: string | Codes,
-}
-
 export class MonomerLibWrapper {
   private constructor() {
     const lib = _package.monomerLib;
@@ -74,6 +62,14 @@ export class MonomerLibWrapper {
   getMolfileBySymbol(monomerSymbol: string): string {
     const monomer = this.getMonomer(monomerSymbol);
     return monomer.molfile;
+  }
+
+  getNaturalAnalogBySymbol(monomerSymbol: string): string {
+    const monomer = this.getMonomer(monomerSymbol);
+    const naturalAnalog = monomer.naturalAnalog;
+    if (!naturalAnalog)
+      throw new Error(`ST: no natural analog for ${monomerSymbol}`);
+    return naturalAnalog!;
   }
 
   // todo: a better criterion
