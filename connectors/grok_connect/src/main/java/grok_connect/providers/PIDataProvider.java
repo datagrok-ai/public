@@ -28,7 +28,7 @@ public class PIDataProvider extends JdbcDataProvider {
     private static final int CATALOG_NAME_INDEX = 1;
     private static final int TABLE_NAME_INDEX = 3;
     private static final int COLUMN_NAME_INDEX = 4;
-    private static final int DATA_TYPE_NAME_INDEX = 5;
+    private static final int DATA_TYPE_NAME_INDEX = 6;
 
     public PIDataProvider() {
         driverClassName = "com.osisoft.jdbc.Driver";
