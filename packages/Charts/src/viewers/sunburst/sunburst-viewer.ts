@@ -93,7 +93,8 @@ export class SunburstViewer extends EChartViewer {
 
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
-
+    
+    this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()});
     super.onTableAttached();
   }
 

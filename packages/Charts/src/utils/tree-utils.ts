@@ -118,6 +118,12 @@ export class TreeUtils {
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
+        const colorCodingType = columns[colIdx].getTag(DG.TAGS.COLOR_CODING_TYPE);
+        if (colorCodingType !== 'Off' && colorCodingType !== null) {
+          node.itemStyle = {
+            color: DG.Color.toHtml(columns[colIdx].colors.getColor(i)),
+          };
+        }
         const isSmiles = await grok.functions.call('Chem:isSmiles', {s: name});
         if (isSmiles) {
           const imageContainer = await grok.functions.call('Chem:drawMolecule', {
