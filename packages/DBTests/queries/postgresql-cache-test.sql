@@ -20,11 +20,13 @@ SELECT * FROM Test_Normal;
 --output: string first_name
 --output: datetime date
 --meta.cache: true
+--meta.batchMode: true
+SELECT pg_sleep(3);
+--batch
 SELECT max(some_number) as max_value,
        (SELECT count(*) FROM MOCK_DATA) as count,
        (SELECT first_name FROM MOCK_DATA WHERE id = 10) as first_name,
-        (SELECT date FROM MOCK_DATA WHERE id = 10) as date,
-       pg_sleep(3) FROM MOCK_DATA;
+        (SELECT date FROM MOCK_DATA WHERE id = 10) as date FROM MOCK_DATA;
 --end
 
 --name: PostgresqlCachedConnTest
@@ -50,11 +52,13 @@ SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --output: datetime date
 --meta.cache: true
 --meta.invalidate: 0 1 * * *
+--meta.batchMode: true
+SELECT pg_sleep(3);
+--batch
 SELECT max(some_number) as max_value,
        (SELECT count(*) FROM MOCK_DATA) as count,
        (SELECT first_name FROM MOCK_DATA WHERE id = 10) as first_name,
-        (SELECT date FROM MOCK_DATA WHERE id = 10) as date,
-       pg_sleep(3) FROM MOCK_DATA;
+        (SELECT date FROM MOCK_DATA WHERE id = 10) as date FROM MOCK_DATA;
 --end
 
 --name: PostgresqlGetNow
