@@ -39,7 +39,7 @@ SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --friendlyName: PostgresqlCacheInvalidateQueryTest
 --connection: PostgreSQLDBTests
 --meta.cache: true
---meta.invalidate: 0 1 * * *
+--meta.cache.invalidateOn: 0 1 * * *
 SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --end
 
@@ -51,7 +51,7 @@ SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --output: string first_name
 --output: datetime date
 --meta.cache: true
---meta.invalidate: 0 1 * * *
+--meta.cache.invalidateOn: 0 1 * * *
 --meta.batchMode: true
 SELECT pg_sleep(3);
 --batch

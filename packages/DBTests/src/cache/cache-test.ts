@@ -9,6 +9,7 @@ category('Cache', () => {
 
   before(async () => {
     await cleanCache(testConnections);
+    await grok.functions.clientCache.clear();
   });
 
   test('Scalars cache test', async () => await basicCacheTest('PostgresqlScalarCacheTest'));
@@ -46,6 +47,7 @@ category('Cache', () => {
 
   after(async () => {
     await cleanCache(testConnections);
+    await grok.functions.clientCache.clear();
   });
 });
 
@@ -53,8 +55,10 @@ async function invalidationCacheTest(dataQuery: DataQuery, days: number): Promis
   const start = Date.now();
   const funcCall1 = await dataQuery.prepare().call();
   const firstExecutionTime = Date.now() - start;
+  await delay(100);
   funcCall1.started = dayjs().subtract(days, 'day');
   await grok.dapi.functions.calls.save(funcCall1);
+  await grok.functions.clientCache.clear();
   await delay(300);
   const secondExecutionTime = await getCallTime(dataQuery.prepare());
   const isEqual: boolean = (secondExecutionTime <= firstExecutionTime + firstExecutionTime * 0.5) &&
