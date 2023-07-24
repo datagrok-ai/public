@@ -10,34 +10,34 @@ const cacheName = 'function_results_cache';
 
 const dup = grok.functions.register({
   signature: 'int test_dup(int x)',
-  run: (x: number) => { return 2 * x; },
-  options: { cache: 'true'}
+  run: (x: number) => {return 2 * x;},
+  options: {cache: 'true'},
 });
 
 const demog = grok.functions.register({
   signature: 'dataframe test_demog(int x)',
-  run: (x: number) => { return cars; },
-  options: { cache: 'true'}
+  run: (x: number) => {return cars;},
+  options: {cache: 'true'},
 });
 
 const exc = grok.functions.register({
   signature: 'int test_exc(int x)',
-  run: (x: number) => { throw 'My exception'; },
-  options: { cache: 'true'}
+  run: (x: number) => {throw 'My exception';},
+  options: {cache: 'true'},
 });
 
 const allInputTypes = grok.functions.register({
   signature: 'int test_allInputTypes(int i, double d, string s)',
-  run: (i: number, d: number, s: string) => { `${i}-${d}-${s}`; },
-  options: { cache: 'true'}
+  run: (i: number, d: number, s: string) => {`${i}-${d}-${s}`;},
+  options: {cache: 'true'},
 });
 
 /** Creates a function that returns the parameter */
 function echo(type: string) {
   return grok.functions.register({
     signature: `${type} test_return_${type}(${type} x)`,
-    run: (x: any) => { return x; },
-    options: { cache: 'true'}
+    run: (x: any) => {return x;},
+    options: {cache: 'true'},
   });
 }
 
@@ -72,20 +72,20 @@ category('Functions: Client-side cache', () => {
   test('10K calls no cache', async () => {
     grok.shell.settings.clientSideCache = false;
     for (let i = 0; i < 10000; i++)
-      await dup.apply({x : i});
+      await dup.apply({x: i});
     grok.shell.settings.clientSideCache = true;
   });
 
   test('10K calls with cache', async () => {
     grok.shell.settings.clientSideCache = true;
     for (let i = 0; i < 10000; i++)
-      await dup.apply({x : i});
+      await dup.apply({x: i});
   });
 
   test('1K demog10K', async () => {
     grok.shell.settings.clientSideCache = true;
     for (let i = 0; i < 1000; i++)
-      await demog.apply({x : i});
+      await demog.apply({x: i});
   });
 
   test('Expiration', async () => {
@@ -168,12 +168,10 @@ async function expectExceptionAsync(action: () => Promise<void>, check?: (except
   let checked: boolean = false;
   try {
     await action();
-  }
-  catch (e) {
+  } catch (e) {
     caught = true;
     checked = !check || check(e);
-  }
-  finally {
+  } finally {
     if (!caught)
       throw 'An exception is expected but not thrown';
     if (!checked)
