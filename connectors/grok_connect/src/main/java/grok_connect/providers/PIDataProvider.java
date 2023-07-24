@@ -51,6 +51,7 @@ public class PIDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
         descriptor.canBrowseSchema = true;
+        descriptor.limitAtEnd = false;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("#float.*", Types.FLOAT);
             put("wstring", Types.STRING);
@@ -134,5 +135,10 @@ public class PIDataProvider extends JdbcDataProvider {
             result.addRow(columns.getString(CATALOG_NAME_INDEX), columns.getString(TABLE_NAME_INDEX),
                     columns.getString(COLUMN_NAME_INDEX), columns.getString(DATA_TYPE_NAME_INDEX));
         return result;
+    }
+
+    @Override
+    public String limitToSql(String query, Integer limit) {
+        return query + "top " + limit.toString() + " ";
     }
 }
