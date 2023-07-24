@@ -354,7 +354,8 @@ export async function searchSubstructure(
 
   try {
     const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
-    return DG.Column.fromList('object', 'bitset', [result]); // TODO: should return a bitset itself
+    const resBitset = DG.BitSet.fromBytes(result.buffer.buffer, molStringsColumn.length);
+    return DG.Column.fromList('object', 'bitset', [resBitset]); // TODO: should return a bitset itself
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());
     throw e;

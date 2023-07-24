@@ -37,11 +37,9 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]): Promise<void> {
   const col = df.columns.byName(colName);
-  const terminateName = getTerminateEventName(df.name, col.name);
-  grok.events.onCustomEvent(terminateName).subscribe(() => console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
-  let bitArray: BitArray = (await searchSubstructure(col, pattern, '')).get(0);
-    expect(bitArray !== null, true);
-  const bitsetString = DG.BitSet.fromBytes(bitArray!.buffer.buffer, df.rowCount).toBinaryString();
+  let bitSet: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
+    expect(bitSet !== null, true);
+  const bitsetString = bitSet.toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
     expect(bitsetArray[trueIndices[k]] === '1', true);
@@ -57,9 +55,9 @@ export async function _testSearchSubstructureSARSmall(): Promise<void> {
 
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
-  const bitset: BitArray = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)c2ccccc2N1', '')).get(0);
+  const bitset: DG.BitSet = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)c2ccccc2N1', '')).get(0);
   const countDataframe = col.length;
-  const countResult = bitset.trueCount();
+  const countResult = bitset.trueCount;
   expect(countDataframe, 200);
   expect(countResult, 90);
 }

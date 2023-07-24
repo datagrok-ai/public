@@ -259,7 +259,7 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, usePatternFingerprints = false,
-  columnIsCanonicalSmiles = false, useSubstructLib?: boolean)
+  columnIsCanonicalSmiles = false, useSubstructLib: boolean = false, awaitAll = true)
   : Promise<BitArray> {
   await chemBeginCriticalSection();
   try {
@@ -289,29 +289,36 @@ export async function chemSubstructureSearchLibrary(
         subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, matchesBitArray, updateFilterFunc, undefined, useSubstructLib);
       }
 
-      const fireFinishEvents = () => {
-        grok.events.fireCustomEvent(searchProgressEventName, 100);
-        grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
-      }
-
-      if (usePatternFingerprints) {
-        const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
-          if (mol === molBlockFailover) {
-            subFuncs!.setTerminateFlag();
-            sub.unsubscribe();
-          }
-        })
-
-        subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
-          if (!subFuncs!.getTerminateFlag()) {
-            restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
+      if(awaitAll) {
+        if (usePatternFingerprints) {
+          await Promise.all(subFuncs.promises);
+          restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
+        }
+      } else {
+        const fireFinishEvents = () => {
+          grok.events.fireCustomEvent(searchProgressEventName, 100);
+          grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
+        }
+  
+        if (usePatternFingerprints) {
+          const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
+            if (mol === molBlockFailover) {
+              subFuncs!.setTerminateFlag();
+              sub.unsubscribe();
+            }
+          })
+  
+          subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
+            if (!subFuncs!.getTerminateFlag()) {
+              restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
+              fireFinishEvents();
+            }
+          }))
+        } else 
+          setTimeout(() => {
             fireFinishEvents();
-          }
-        }))
-      } else 
-        setTimeout(() => {
-          fireFinishEvents();
-        }, 10)
+          }, 10)
+      }
     }
     return matchesBitArray;
   } catch (e: any) {

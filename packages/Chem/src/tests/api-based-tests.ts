@@ -42,11 +42,10 @@ category('chem exported', () => {
     await _testGetSimilarities(grok.chem.getSimilarities, grok.data.demo.molecules(100));
   });
 
-  test('substructureSearch', async () => {
+  test('substructureSearch_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const trueIndices = [0, 2];
-    const bitArray: BitArray = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure) as unknown as BitArray;
-    const bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, df.rowCount);
+    const bitset: DG.BitSet = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure);
     const bitsetString = bitset.toBinaryString();
     const bitsetArray = [...bitsetString];
     for (let k = 0; k < trueIndices.length; k++) {

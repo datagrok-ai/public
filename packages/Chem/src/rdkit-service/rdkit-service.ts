@@ -181,7 +181,6 @@ export class RdKitService {
         },
         (data: Array<Uint32Array>) => {
           const segmentsLengths = t.moleculesSegmentsLengths;
-          const totalLength = segmentsLengths.reduce((acc, cur) => acc + cur, 0);
           let counter = 0;
           for (let i = 0; i < segmentsLengths.length; i++) {
             for (let j = 0; j < segmentsLengths[i]; j++) {

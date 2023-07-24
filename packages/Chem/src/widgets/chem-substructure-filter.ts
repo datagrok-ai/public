@@ -260,7 +260,7 @@ export class SubstructureFilter extends DG.Filter {
   async getFilterBitset(): Promise<BitArray> {
     console.log(`getFilterBitset currentSearches: ${this.currentSearches}`);
     const smarts = await this.sketcher.getSmarts();
-    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, true, false);
+    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, true, false, false, false);
   }
 
   updateExternalSketcher() {
