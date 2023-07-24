@@ -1,8 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {expect, testEvent} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchSubstructure} from '../package';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { getTerminateEventName } from '../constants';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -35,8 +37,11 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]): Promise<void> {
   const col = df.columns.byName(colName);
-  const bitset: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
-  const bitsetString = bitset.toBinaryString();
+  const terminateName = getTerminateEventName(df.name, col.name);
+  grok.events.onCustomEvent(terminateName).subscribe(() => console.log('aaaaaaaaaaaaaaaaaaaaaaaaaaaaa'));
+  let bitArray: BitArray = (await searchSubstructure(col, pattern, '')).get(0);
+    expect(bitArray !== null, true);
+  const bitsetString = DG.BitSet.fromBytes(bitArray!.buffer.buffer, df.rowCount).toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
     expect(bitsetArray[trueIndices[k]] === '1', true);
@@ -44,6 +49,7 @@ export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   }
   for (let i = 0; i < bitsetArray.length; ++i)
     expect(bitsetArray[i] === '0', true);
+
 }
 
 export async function _testSearchSubstructureSARSmall(): Promise<void> {
@@ -51,9 +57,9 @@ export async function _testSearchSubstructureSARSmall(): Promise<void> {
 
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
-  const bitset: DG.BitSet = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)c2ccccc2N1', '')).get(0);
+  const bitset: BitArray = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)c2ccccc2N1', '')).get(0);
   const countDataframe = col.length;
-  const countResult = bitset.trueCount;
+  const countResult = bitset.trueCount();
   expect(countDataframe, 200);
   expect(countResult, 90);
 }

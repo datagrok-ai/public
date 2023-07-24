@@ -1,4 +1,4 @@
-import {category, test, expect, before, testEvent} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, before, testEvent, delay} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -22,10 +22,12 @@ category('substructure filters', async () => {
 
     async function createFilter(colName: string): Promise<SubstructureFilter> {
       const filter = new SubstructureFilter();
-      sketcherDialogs.push(ui.dialog().add(filter.sketcher).show());
       filter.attach(df);
+      filter.applyState({columnName: colName})
+      sketcherDialogs.push(ui.dialog().add(filter.sketcher).show());
       filter.column = df.col(colName);
       filter.columnName = colName;
+      filter.tableName = df.name;
       return filter;
     }
 
@@ -62,8 +64,11 @@ M  END`;
   1  5  1  0  0  0  0
 M  END
 `;
-    await testEvent(df.onFilterChanged, (_) => {}, () => {filter1.sketcher.setMolFile(molfile1);}, 7000);
-    await testEvent(df.onFilterChanged, (_) => {
+
+const terminateFlag1 = 'terminate_substructure_search-tests/smiles_2_columns-smiles1';
+const terminateFlag2 = 'terminate_substructure_search-tests/smiles_2_columns-smiles2';
+    await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => {}, () => {filter1.sketcher.setMolFile(molfile1);}, 7000);
+    await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => {
       expect(df.filter.trueCount, 2);
       expect(df.filter.get(4), true);
       expect(df.filter.get(5), true);

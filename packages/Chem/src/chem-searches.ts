@@ -267,8 +267,8 @@ export async function chemSubstructureSearchLibrary(
     let patternFpSearchResults: BitArray | null = null;
     let patternFileteredMolIdxs: BitArray | null = null;
     let subFuncs: IParallelBatchesRes | undefined= undefined;
-    const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
-    const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame.name, molStringsColumn.name);
+    const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
+    const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const updateFilterFunc = (progress: number) => {
       if (usePatternFingerprints)
         restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);

@@ -50,6 +50,7 @@ export class SubstructureFilter extends DG.Filter {
   terminateEventName: string = '';
   progressEventName: string = '';
   currentMolfile: string = '';
+  initListeners = false;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -129,7 +130,7 @@ export class SubstructureFilter extends DG.Filter {
       });
     }
     super.attach(dataFrame);
-    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.column ??=dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name;
     this.tableName = dataFrame.name;
     this.onSketcherChangedSubs?.unsubscribe();
@@ -147,13 +148,6 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => {
       this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
     });
-
-    this.terminateEventName = getTerminateEventName(this.tableName, this.columnName!);
-    this.progressEventName = getSearchProgressEventName(this.tableName, this.columnName!);
-
-    this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe((queryMol: string) => {
-      this.finishSearch(queryMol);
-    }));
   }
 
   refresh() {
@@ -189,6 +183,15 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to load filter state. */
   applyState(state: any): void {
     super.applyState(state);
+    if (!this.initListeners) {
+      this.initListeners = true;
+      this.terminateEventName = getTerminateEventName(this.tableName, this.columnName!);
+      this.progressEventName = getSearchProgressEventName(this.tableName, this.columnName!);
+
+      this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe((queryMol: string) => {
+        this.finishSearch(queryMol);
+    }));
+    }
     this.active = state.active ?? true;
     if (this.column?.temp['chem-scaffold-filter'])
       state.molBlock = this.column?.temp['chem-scaffold-filter'];

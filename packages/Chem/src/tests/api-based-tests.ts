@@ -6,6 +6,7 @@ import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
 import {isColumnPresent} from './gui-utils';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 
 category('server features', () => {
@@ -44,7 +45,8 @@ category('chem exported', () => {
   test('substructureSearch', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const trueIndices = [0, 2];
-    const bitset: DG.BitSet = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure);
+    const bitArray: BitArray = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure) as unknown as BitArray;
+    const bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, df.rowCount);
     const bitsetString = bitset.toBinaryString();
     const bitsetArray = [...bitsetString];
     for (let k = 0; k < trueIndices.length; k++) {
