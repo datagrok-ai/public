@@ -1,7 +1,7 @@
 import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
-import {__obs, _sub, EventData, StreamSubscription} from './events';
+import {__obs, _sub, EventData, StreamSubscription, GridCellArgs} from './events';
 import {_identityInt32, _toIterable} from './utils';
 import {Observable} from 'rxjs';
 import {RangeSlider} from './widgets';
@@ -1011,6 +1011,8 @@ export class Grid extends Viewer<IGridLookSettings> {
   get onAfterDrawOverlay(): Observable<EventData> { return __obs('d4-grid-after-draw-overlay', this.dart); }
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
+
+  get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
 
   /** Returns currently visible cells */
   getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {

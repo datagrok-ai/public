@@ -1191,8 +1191,8 @@ export class ProgressIndicator {
 
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
-  static create(name?: string, options?: { cancelable?: boolean, pausable?: boolean, spinned?: boolean }): TaskBarProgressIndicator {
-    return toJs(api.grok_TaskBarProgressIndicator_Create(name, options?.cancelable ?? false, options?.pausable ?? false, options?.spinned ?? false));
+  static create(name?: string, options?: { cancelable?: boolean, pausable?: boolean, spinner?: boolean }): TaskBarProgressIndicator {
+    return toJs(api.grok_TaskBarProgressIndicator_Create(name, options?.cancelable ?? false, options?.pausable ?? false, options?.spinner ?? false));
   }
 
   close(): any {

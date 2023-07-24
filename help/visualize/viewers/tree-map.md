@@ -58,5 +58,5 @@ example, you can:
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/table-view.md)
+* [Table view](../../datagrok/navigation/table-view.md)
 * [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)

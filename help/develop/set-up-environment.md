@@ -1,5 +1,6 @@
 ---
-title: "Setting up development environment"
+title: "Environment setup"
+sidebar_position: 2
 ---
 
 This article explains how to set up development environment for developing Datagrok [packages](develop.md#packages).

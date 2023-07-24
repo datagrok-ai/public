@@ -362,12 +362,6 @@ export async function searchSubstructure(
   }
 }
 
-//name: Molecular Descriptors
-//tags: app
-export function descriptorsApp(): void {
-  getDescriptorsApp();
-}
-
 //name: saveAsSdf
 //description: As SDF
 //tags: fileExporter

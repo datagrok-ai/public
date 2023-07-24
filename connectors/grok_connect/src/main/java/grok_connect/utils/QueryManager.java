@@ -129,12 +129,11 @@ public class QueryManager {
     }
 
     private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
-        if (supportTransactions && df.rowCount != 0) {
-            currentFetchSize = getFetchSize(df);
-            logger.debug(EventType.MISC.getMarker(dfNumber), "Calculated fetch size: {}", currentFetchSize);
-            if (!provider.descriptor.type.equals("Virtuoso")) {
-                resultSet.setFetchSize(currentFetchSize);
-            }
+        currentFetchSize = getFetchSize(df);
+        logger.debug(EventType.MISC.getMarker(dfNumber), "Calculated fetch size: {}", currentFetchSize);
+        if (supportTransactions && df.rowCount != 0 && !provider.descriptor.type.equals("Virtuoso")) {
+            resultSet.setFetchSize(currentFetchSize);
+            logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size was changed: {}", currentFetchSize);
         }
     }
 

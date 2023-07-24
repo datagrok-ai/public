@@ -3,7 +3,7 @@ title: "View layout"
 ---
 
 View Layout contains relative positions of [viewers](../visualize/viewers/viewers.md) in
-a [table view](../datagrok/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../datagrok/navigation/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, we now can save current layout (**View | Layout | Save to Gallery**)
 and later apply it to a different dataset
 (**View | Layout | Open Gallery**).
@@ -44,10 +44,10 @@ columns could be mapped to the table columns. There are few different ways a lay
 column, which are evaluated in the following order:
 
 1. Column names AND column types match
-2. Both columns have the same [layout-id](../discover/tags.md#layout-id)
-3. Both columns have the same [semantic type](../discover/tags.md#quality)
+2. Both columns have the same [layout-id](../catalog/tags.md#layout-id)
+3. Both columns have the same [semantic type](../catalog/tags.md#quality)
 
 See also:
 
-* [Table view](../datagrok/table-view.md)
+* [Table view](../datagrok/navigation/table-view.md)
 * [Self-learning platform](../learn/self-learning-platform.md)

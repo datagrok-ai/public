@@ -1,5 +1,6 @@
 ---
 title: "Cluster data"
+sidebar_position: 5
 ---
 
 Clustering is the task of grouping a set of objects in such a way that objects in the same group
