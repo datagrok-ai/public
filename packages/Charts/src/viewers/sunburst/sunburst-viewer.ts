@@ -62,7 +62,7 @@ export class SunburstViewer extends EChartViewer {
       const { hierarchyColumnNames, dataFrame } = this;
       for (const columnName of hierarchyColumnNames) {
         const column = dataFrame.columns.byName(columnName);
-        const idx = Array.from(column.values()).indexOf(params.name);
+        const idx = Array.from(column.values()).map((item) => String(item)).indexOf(params.name);
         if (idx !== -1) {
           for (let j = 0; j < dataFrame.columns.length; ++j) {
             const columnAtIndex = dataFrame.columns.byIndex(j);
@@ -109,7 +109,6 @@ export class SunburstViewer extends EChartViewer {
       if (seriesData) {
         this.option.series[0].data = seriesData;
         this.chart.setOption(this.option);
-        console.log(JSON.stringify(this.option));
       }
     }).catch((error) => {
       console.error(error);

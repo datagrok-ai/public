@@ -125,7 +125,7 @@ export class TreeUtils {
           });
           const image = imageContainer.querySelector(".chem-canvas");
           await delay(5);
-          var img = new Image();
+          const img = new Image();
           img.src = image.toDataURL('image/png');
           node.label = {
             show: true,
