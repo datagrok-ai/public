@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.10.1 (Bleeding-edge)
+## 1.10.1 (2023-07-24)
 
 This release focuses on improving analysis stability and usability.
 
@@ -14,6 +14,7 @@ This release focuses on improving analysis stability and usability.
 ### Bug Fixes
 
 * Fixed mutation pair selection resulted in wrong unique sequences in Mutation Cliffs bug.
+* Fixed position column labels not showing if the page was scaled.
 
 ## 1.10.0 (2023-07-19)
 
