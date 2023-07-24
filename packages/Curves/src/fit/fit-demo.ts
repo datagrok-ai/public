@@ -67,7 +67,11 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
       const chartData: IFitChartData = {
         //chartOptions: { minX: -10, minY: -2, maxX: 10, maxY: 2},
         series: [],
-        chartOptions: charts === 1 ? {showStatistics: ['auc']} : undefined
+        chartOptions: {
+          showStatistics: charts === 1 ? ['auc'] : [],
+          xAxisName: 'Conc.',
+          yAxisName: 'Activity',
+        }
       };
 
       for (let j = 0; j < charts; j++) {

@@ -34,6 +34,11 @@ import {convertXMLToIFitChartData} from './fit-parser';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
 
+export type LogOptions = {
+  logX: boolean | undefined,
+  logY: boolean | undefined
+};
+
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
 const MIN_CELL_RENDERER_PX_WIDTH = 20;
@@ -45,6 +50,8 @@ const POINT_PX_SIZE = 4;
 const OUTLIER_HITBOX_RADIUS = 2;
 const MIN_AXES_CELL_PX_WIDTH = 70;
 const MIN_AXES_CELL_PX_HEIGHT = 55;
+const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 150;
+const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 100;
 const AXES_LEFT_PX_MARGIN = 30;
 const AXES_TOP_PX_MARGIN = 5;
 const AXES_BOTTOM_PX_MARGIN = 15;
@@ -117,7 +124,7 @@ function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: B
 
 /** Performs points drawing */
 function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
-  transform: Viewport, ratio: number): void {
+  transform: Viewport, ratio: number, logOptions: LogOptions): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
     const color = p.outlier ? DG.Color.red :
@@ -125,7 +132,9 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
       DG.Color.scatterPlotMarker;
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
-      transform.xToScreen(p.x), transform.yToScreen(p.y), color, (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
+      logOptions.logX ? transform.xToScreen(Math.pow(10, p.x)) : transform.xToScreen(p.x),
+      logOptions.logY ? transform.yToScreen(Math.pow(10, p.y)) : transform.yToScreen(p.y),
+      color, (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
   }
 }
 
@@ -278,10 +287,20 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
+    const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
 
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
     for (const series of data.series!) {
+      if (data.chartOptions?.logX || data.chartOptions?.logY) {
+        for (let i = 0; i < series.points.length; i++) {
+          if (data.chartOptions?.logX)
+            series.points[i].x = Math.log10(series.points[i].x);
+          if (data.chartOptions?.logY)
+            series.points[i].y = Math.log10(series.points[i].y);
+        }
+      }
+
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
         series.showPoints = '';
         if (data.chartOptions)
@@ -291,8 +310,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
       let curve: (x: number) => number;
-      if (series.parameters)
+      if (series.parameters) {
+        if (data.chartOptions?.logX)
+          series.parameters[2] = Math.log10(series.parameters[2]);
         curve = getCurve(series, fitFunc);
+      }
       else {
         const fitResult = fitSeries(series, fitFunc);
         curve = fitResult.fittedCurve;
@@ -303,7 +325,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (series.showPoints ?? 'points') {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
         if (series.showPoints === 'points')
-          drawPoints(g, series, viewport, ratio);
+          drawPoints(g, series, viewport, ratio, chartLogOptions);
         else if (['candlesticks', 'both'].includes(series.showPoints!))
           drawCandles(g, series, viewport, ratio);
       }
@@ -315,7 +337,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.beginPath();
         for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
           const x = screenBounds.x + i;
-          const y = viewport.yToScreen(curve(viewport.xToWorld(x)));
+          const y = data.chartOptions?.logX ? viewport.yToScreen(Math.pow(10, curve(Math.log10(viewport.xToWorld(x))))) :
+            viewport.yToScreen(curve(viewport.xToWorld(x)));
           if (i === AXES_LEFT_PX_MARGIN)
             g.moveTo(x, y);
           else
@@ -324,7 +347,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.stroke();
       }
 
-      if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? true)) {
+      if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? false)) {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
