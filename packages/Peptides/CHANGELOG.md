@@ -1,5 +1,15 @@
 # Peptides changelog
 
+## 1.10.2 (2023-07-24)
+
+This release focuses on improving the Mutation Cliffs pairs panel.
+
+*Dependency: datgarok-api >= 1.15.4*
+
+### Bug Fixes
+
+* Made invisible Mutation Cliffs pairs columns, containing sequence indexes in the original table view.
+
 ## 1.10.1 (2023-07-24)
 
 This release focuses on improving analysis stability and usability.
@@ -13,7 +23,7 @@ This release focuses on improving analysis stability and usability.
 
 ### Bug Fixes
 
-* Fixed mutation pair selection resulted in wrong unique sequences in Mutation Cliffs bug.
+* Fixed mutation pair selection resulted in wrong unique sequences in the Mutation Cliffs bug.
 * Fixed position column labels not showing if the page was scaled.
 
 ## 1.10.0 (2023-07-19)
@@ -32,4 +42,4 @@ This release focuses on improving analysis stability and usability.
 
 ### Bug Fixes
 
-* Fixed bug when filter couldn't be applied to the original table after analysis start.
+* Fixed bug when filter couldn't be applied to the original table after analysis started.

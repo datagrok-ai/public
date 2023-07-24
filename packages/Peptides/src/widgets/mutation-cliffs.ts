@@ -70,8 +70,8 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
   const activityDeltaCol = DG.Column.fromList('double', 'Delta', deltaArray);
   const hiddenSubstToAarCol = DG.Column.fromStrings('~to', substitutedToArray);
-  const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'toIdx', toIdxArray);
-  const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'fromIdx', fromIdxArray);
+  const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~toIdx', toIdxArray);
+  const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~fromIdx', fromIdxArray);
   const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
 
   const aminoToInput = ui.stringInput('Mutated to:', '', () => {
