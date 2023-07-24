@@ -2,7 +2,7 @@
 
 ## 0.0.2 (2023-06-13)
 
-This release focuses on improving the stability.
+This release focuses on improving stability.
 
 *Dependency: datagarok-api >= 1.15.2*
 
