@@ -80,4 +80,4 @@ category('UI: Forms from props', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});

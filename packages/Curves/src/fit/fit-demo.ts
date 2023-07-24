@@ -12,7 +12,7 @@ function rnd(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
-function createSigmoidPoints(length: number, step: number, pointsPerX: number = 1):
+export function createSigmoidPoints(length: number, step: number, pointsPerX: number = 1):
     { x: Float32Array, y: Float32Array, params: number[] } {
   const x = new Float32Array(length * pointsPerX);
   const y = new Float32Array(length * pointsPerX);
@@ -67,7 +67,11 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
       const chartData: IFitChartData = {
         //chartOptions: { minX: -10, minY: -2, maxX: 10, maxY: 2},
         series: [],
-        chartOptions: charts === 1 ? {showStatistics: ['auc']} : undefined
+        chartOptions: {
+          showStatistics: charts === 1 ? ['auc'] : [],
+          xAxisName: 'Conc.',
+          yAxisName: 'Activity',
+        }
       };
 
       for (let j = 0; j < charts; j++) {
@@ -75,7 +79,7 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
         let color = DG.Color.toHtml(DG.Color.getCategoricalColor(colIdx * chartsPerCell + j));
         chartData.series?.push({
           parameters: undefined,
-          // TODO: make better parameter generating 
+          // TODO: make better parameter generating
           // parameters: j % 2 === 0 ? points.params : undefined,
           fitLineColor: color,
           pointColor: color,
@@ -93,7 +97,8 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
 }
 
 export async function curveDemo(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
   const df = createDemoDataFrame(30, 5, 2);
   const tableView = grok.shell.addTableView(df);
-  tableView.addViewer('MultiCurveViewer');
+  // tableView.addViewer('MultiCurveViewer');
 }

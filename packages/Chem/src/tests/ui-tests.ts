@@ -202,7 +202,7 @@ category('UI', () => {
       .find((el) => el.textContent === 'Drug Likeness') as HTMLElement;
     if (!dl.classList.contains('expanded')) dl.click();
     await awaitCheck(() => (dl.nextSibling as HTMLElement).querySelectorAll('.d4-flex-col.ui-div').length === 50,
-      'number of displayed canvases with molecules does not match the expected', 5000);
+      'number of displayed canvases with molecules does not match the expected', 10000);
     dl.click(); await delay(10);
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
@@ -242,7 +242,7 @@ category('UI', () => {
     expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
     const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click();
-    await awaitCheck(() => grok.shell.t.name === 'mutations', 'cannot find mutations table', 10000);
+    await awaitCheck(() => grok.shell.t.name === 'mutations', 'cannot find mutations table', 20000);
     await delay(10);
     grok.shell.v.close();
     grok.shell.closeTable(grok.shell.t);

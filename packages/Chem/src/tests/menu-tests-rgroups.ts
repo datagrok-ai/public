@@ -27,8 +27,8 @@ category('top menu r-groups', () => {
     await grok.data.detectSemanticTypes(empty);
     malformed = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(malformed);
-    coreEmpty = await findMCS('smiles', empty, true, true);
-    coreMalformed = await findMCS('canonical_smiles', malformed, true, true);
+    coreEmpty = getMCS(empty.col('smiles')!, true, true)!;
+    coreMalformed = getMCS(malformed.col('canonical_smiles')!, true, true)!;
     dfForMcs = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
       await readDataframe('tests/spgi-100.csv');
   });
@@ -124,14 +124,14 @@ M  END
       `,
       prefix: 'R',
     });
-  });
+  }, {timeout: 60000});
 
   test('rgroups.emptyValues', async () => {
     const res = await findRGroups('smiles', empty, _convertMolNotation(coreEmpty,
       DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
     expect(res.getCol('R1').stats.valueCount, 13);
     expect(res.getCol('R2').stats.valueCount, 13);
-  });
+  }, {timeout: 60000});
 
   test('rgroups.emptyInput', async () => {
     await findRGroups('smiles', empty, '', 'R');

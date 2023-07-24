@@ -129,7 +129,7 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$`,
     return df;
   }
 
-  function converter(tgtNotation: NOTATION, tgtSeparator: string | null = null): ConverterFunc {
+  function converter(tgtNotation: NOTATION, tgtSeparator?: string): ConverterFunc {
     if (tgtNotation === NOTATION.SEPARATOR && !tgtSeparator)
       throw new Error(`Argument 'separator' is mandatory for target notation '${tgtNotation.toString()}'.`);
 
@@ -141,12 +141,12 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$`,
     };
   }
 
-  async function _testConvert(srcKey: Samples, converter: ConverterFunc, tgtKey: Samples) {
+  async function _testConvert(srcKey: Samples, colConverter: ConverterFunc, tgtKey: Samples) {
     const srcDf: DG.DataFrame = await readCsv(srcKey);
     const srcCol: DG.Column = srcDf.getCol('seq');
 
     // conversion results
-    const resCol: DG.Column = converter(srcCol);
+    const resCol: DG.Column = colConverter(srcCol);
 
     // The correct reference data to compare conversion results with.
     const tgtDf: DG.DataFrame = await readCsv(tgtKey);

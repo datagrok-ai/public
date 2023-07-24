@@ -6,9 +6,9 @@
     "email": "aparamonov@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/utils": "^4.0.17",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.12.0",
+    "datagrok-api": "^1.15.4",
     "dayjs": "latest",
     "rxjs": "^6.6.7",
     "wu": "latest"
@@ -17,7 +17,6 @@
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
-    "datagrok-tools": "^4.7.2",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "root-require": "latest",

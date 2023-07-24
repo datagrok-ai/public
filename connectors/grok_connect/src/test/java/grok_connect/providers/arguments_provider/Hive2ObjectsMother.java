@@ -37,7 +37,6 @@ public class Hive2ObjectsMother {
         String secondColumnName = "table_name";
         String thirdColumnName = "column_name";
         String fourthColumnName = "data_type";
-        String fifthColumnName = "is_view";
         String schema = "datagrok";
         String table = "mock_data";
         DataFrame expected = DataFrameBuilder.getBuilder()
@@ -48,13 +47,12 @@ public class Hive2ObjectsMother {
                 .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
                         table, table, table, table,
                         table, table, table, table})
-                .setColumn(new StringColumn(), thirdColumnName, new String[] {"bool", "country", "dat",
-                        "email", "first_name", "gender", "id",
-                         "ip_address",  "last_name", "some_number"})
-                .setColumn(new StringColumn(), fourthColumnName, new String[] {"boolean", "varchar(50)",
-                        "date", "varchar(50)", "varchar(50)", "varchar(50)",
-                        "bigint", "varchar(50)", "varchar(50)", "float"})
-                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+                .setColumn(new StringColumn(), thirdColumnName, new String[] {"id", "first_name", "last_name",
+                        "email", "gender", "ip_address", "bool",
+                         "country",  "dat", "some_number"})
+                .setColumn(new StringColumn(), fourthColumnName, new String[] {"BIGINT", "VARCHAR",
+                        "VARCHAR", "VARCHAR", "VARCHAR", "VARCHAR",
+                        "BOOLEAN", "VARCHAR", "DATE", "FLOAT"})
                 .build();
         return Stream.of(Arguments.of(expected));
     }
@@ -631,7 +629,7 @@ public class Hive2ObjectsMother {
                 .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
-                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                dayOfYear == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
@@ -663,7 +661,6 @@ public class Hive2ObjectsMother {
                 .build();
         // --input: string date = "last year" {pattern: datetime}
         DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 yesterday.getYear() < now.getYear() ? yesterday.toString() : null,
                                 dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
@@ -723,7 +720,8 @@ public class Hive2ObjectsMother {
         DataFrame expected9 = DataFrameBuilder.getBuilder()
                 .setRowCount(4)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())),
+                                yesterday.toString(), lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString())),
                         "dat")
                 .build();
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()

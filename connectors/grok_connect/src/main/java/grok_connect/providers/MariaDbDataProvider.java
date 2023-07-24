@@ -2,13 +2,12 @@ package grok_connect.providers;
 
 import java.util.Properties;
 import grok_connect.connectors_info.DataConnection;
-import grok_connect.utils.ProviderManager;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 
 public class MariaDbDataProvider extends MySqlDataProvider {
-    public MariaDbDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public MariaDbDataProvider() {
         driverClassName = "org.mariadb.jdbc.Driver";
-
         descriptor.type = "MariaDB";
         descriptor.description = "Query MariaDB database";
     }
@@ -30,5 +29,10 @@ public class MariaDbDataProvider extends MySqlDataProvider {
     public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:mariadb://" + conn.getServer() + port + "/" + conn.getDb();
+    }
+
+    @Override
+    public ResultSetManager getResultSetManager() {
+        return DefaultResultSetManager.getDefaultManager();
     }
 }

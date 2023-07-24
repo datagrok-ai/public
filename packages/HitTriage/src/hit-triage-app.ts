@@ -114,7 +114,7 @@ export class HitTriageTemplate {
     session.project = 'Demo project';
     session.hitsQuery = 'System:AppData/HitTriage/campaigns/chembl-101/hits.csv';
     session.hitsTargetsQuery = 'System:AppData/HitTriage/campaigns/chembl-101/hits-targets.csv';
-    session.hitsTable = grok.data.demo.molecules(20000);
+    session.hitsTable = grok.data.demo.molecules(200);
     session.hitsMolColumn = 'smiles';
     session.hitsTable.meta.detectSemanticTypes().then((_) => {});
     session.sourceType = 'file';

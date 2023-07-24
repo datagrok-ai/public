@@ -1,11 +1,16 @@
-.ui-input-root > input.ui-input-editor.disabled:focus {
-    outline: none;
-    border-bottom: 1px solid var(--grey-2)!important;
+.rfv-buttons {
+    margin-top: 0px;
+    position: sticky;
 }
 
-.ui-btn-nav {
-    background-color: rgb(80 169 197 / 25%);
-    color: #50A9C5;
-    float: left;
-    margin-right: 5px;
+.ui-form-condensed .rfv-buttons > .ui-label {
+    margin-right: 0px!important;
+}
+
+.ui-form .rfv-buttons > .ui-input-editor {
+    justify-content: space-between
+}
+
+div.ui-box > div.ui-box.rfv-form > div.ui-div {
+    overflow: visible!important;
 }

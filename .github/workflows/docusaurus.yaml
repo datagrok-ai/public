@@ -100,6 +100,7 @@ jobs:
           hyperlink --check-anchors build/ --sources ../help/ > ../help/_anchor-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
+        continue-on-error: true
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
           if [[ "${{ steps.anchors.outputs.result }}" == "success" ]]; then

@@ -4,8 +4,10 @@ import * as grok from 'datagrok-api/grok';
 
 import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {expect} from '@datagrok-libraries/utils/src/test';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -95,7 +97,7 @@ export function convert(col?: DG.Column): void {
       ]))
       .onOK(async () => {
         const targetNotation = targetNotationInput.value as NOTATION;
-        const separator: string | null = separatorInput.value;
+        const separator: string | undefined = separatorInput.value ?? undefined;
 
         await convertDo(tgtCol, targetNotation, separator);
       })
@@ -114,9 +116,7 @@ export function convert(col?: DG.Column): void {
  * @param {NOTATION} targetNotation Target notation
  * @param {string | null} separator Separator for SEPARATOR notation
  */
-export async function convertDo(
-  srcCol: DG.Column, targetNotation: NOTATION, separator: string | null,
-): Promise<DG.Column> {
+export async function convertDo(srcCol: DG.Column, targetNotation: NOTATION, separator?: string): Promise<DG.Column> {
   const converter = new NotationConverter(srcCol);
   const newColumn = converter.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);

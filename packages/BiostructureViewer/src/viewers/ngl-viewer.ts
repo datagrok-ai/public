@@ -261,7 +261,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
     //highlights in NGL
     /* eslint-disable camelcase, prefer-const */
-    let scheme_buffer: string[][] = [];
+    let scheme_buffer: [string, string][] = [];
 
     //TODO: remove - demo purpose only
     scheme_buffer.push(['#0069a7', `* and :A`]);

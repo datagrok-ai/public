@@ -4,6 +4,7 @@ import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 import {getSeparator} from '../utils/misc';
+import {renderCellSelection} from '../utils/cell-renderer';
 
 export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const filteredIndexes = table.filter.getSelectedIndexes();
@@ -17,6 +18,8 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
   const substitutedToArray: string[] = [];
+  const fromIdxArray: number[] = [];
+  const toIdxArray: number[] = [];
   const alignedSeqCol = table.getCol(model.settings.sequenceColumnName!);
   const alignedSeqColCategories = alignedSeqCol.categories;
   const alignedSeqColData = alignedSeqCol.getRawData();
@@ -39,9 +42,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
           continue;
 
         const forbiddentIndexes = seenIndexes.get(referenceIdx) ?? [];
-        // const baseSequence = alignedSeqCol.get(referenceIdx);
         const baseSequence = alignedSeqColCategories[alignedSeqColData[referenceIdx]];
-        // const baseActivity = activityScaledCol.get(referenceIdx);
         const baseActivity = activityScaledColData[referenceIdx];
 
         for (const subIdx of indexArray) {
@@ -56,6 +57,8 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
           substitutionsArray.push(`${baseSequence}#${subSeq}`);
           deltaArray.push(baseActivity - activityScaledColData[subIdx]);
           substitutedToArray.push(posColCategories[posColData[subIdx]]);
+          fromIdxArray.push(referenceIdx);
+          toIdxArray.push(subIdx);
         }
       }
     }
@@ -65,27 +68,100 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     return new DG.Widget(ui.label('No mutations table generated'));
 
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
-  substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
-  substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
-  substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
-  substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
-  const toColName = '~to';
-  const hiddenSubstToAarCol = DG.Column.fromStrings(toColName, substitutedToArray);
-  const substTable =
-    DG.DataFrame.fromColumns([substCol, DG.Column.fromList('double', 'Delta', deltaArray), hiddenSubstToAarCol]);
+  const activityDeltaCol = DG.Column.fromList('double', 'Delta', deltaArray);
+  const hiddenSubstToAarCol = DG.Column.fromStrings('~to', substitutedToArray);
+  const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~toIdx', toIdxArray);
+  const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~fromIdx', fromIdxArray);
+  const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
 
   const aminoToInput = ui.stringInput('Mutated to:', '', () => {
     const substitutedToAar = aminoToInput.stringValue;
     if (substitutedToAar !== '')
-      substTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
+      pairsTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else
-      substTable.filter.setAll(true);
+      pairsTable.filter.setAll(true);
   });
 
-  const grid = substTable.plot.grid();
-  grid.props.allowEdit = false;
-  const gridRoot = grid.root;
-  gridRoot.style.width = 'auto';
-  gridRoot.style.height = '150px';
-  return new DG.Widget(ui.divV([aminoToInput.root, gridRoot]));
+  const pairsGrid = pairsTable.plot.grid();
+  pairsGrid.props.allowEdit = false;
+  pairsGrid.props.allowRowSelection = false;
+  pairsGrid.props.allowBlockSelection = false;
+  pairsGrid.props.allowColSelection = false;
+  pairsGrid.root.style.width = 'auto';
+  pairsGrid.root.style.height = '150px';
+  substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+  substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
+  substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
+  substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
+
+  const pairsSelectedIndexes: number[] = [];
+  pairsGrid.root.addEventListener('click', (event) => {
+    const gridCell = pairsGrid.hitTest(event.offsetX, event.offsetY);
+    if (gridCell === null || gridCell.tableRowIndex === null)
+      return;
+
+    const rowIdx = gridCell.tableRowIndex;
+    if (!event.shiftKey) {
+      pairsSelectedIndexes.length = 0;
+      pairsSelectedIndexes.push(rowIdx);
+    } else {
+      const rowIdxIdx = pairsSelectedIndexes.indexOf(rowIdx);
+      if (rowIdxIdx === -1)
+        pairsSelectedIndexes.push(rowIdx);
+      else
+        pairsSelectedIndexes.splice(rowIdxIdx, 1);
+    }
+    uniqueSequencesTable.filter.fireChanged();
+    gridCell.cell.dataFrame.currentRowIdx = -1;
+    pairsGrid.invalidate();
+  });
+  pairsGrid.onCellRender.subscribe((gcArgs) => {
+    if (gcArgs.cell.tableColumn?.name !== substCol.name || !pairsSelectedIndexes.includes(gcArgs.cell.tableRowIndex!))
+      return;
+
+    renderCellSelection(gcArgs.g, gcArgs.bounds);
+  });
+
+  const gridCols = model.analysisView.grid.columns;
+  const originalGridColCount = gridCols.length;
+  const positionColumns = model.splitSeqDf.columns;
+  const columnNames: string[] = [];
+  for (let colIdx = 1; colIdx < originalGridColCount; colIdx++) {
+    const gridCol = gridCols.byIndex(colIdx);
+    if (gridCol?.name === model.settings.sequenceColumnName || (gridCol?.visible === true && !positionColumns.contains(gridCol.name)))
+      columnNames.push(gridCol!.name);
+  }
+
+  const pairIdxToUniqueIdxMap = new Map<number, number>();
+  let idx = 0;
+  const bitset = DG.BitSet.create(table.rowCount);
+  for (const [key, values] of seenIndexes.entries()) {
+    bitset.set(key, true);
+    pairIdxToUniqueIdxMap.set(key, idx++);
+    for (const value of values) {
+      bitset.set(value, true);
+      pairIdxToUniqueIdxMap.set(value, idx++);
+    }
+  }
+
+  const uniqueSequencesTable = table.clone(bitset, columnNames);
+  const uniqueSequencesGrid = uniqueSequencesTable.plot.grid();
+  uniqueSequencesGrid.props.allowEdit = false;
+  uniqueSequencesGrid.props.allowRowSelection = false;
+  uniqueSequencesGrid.props.allowBlockSelection = false;
+  uniqueSequencesGrid.props.allowColSelection = false;
+  uniqueSequencesGrid.props.rowHeight = 20;
+  uniqueSequencesGrid.root.style.width = 'auto';
+  uniqueSequencesGrid.root.style.height = '150px';
+  uniqueSequencesTable.filter.onChanged.subscribe(() => {
+    const uniqueSelectedIndexes: number[] = [];
+    for (const idx of pairsSelectedIndexes) {
+      uniqueSelectedIndexes.push(pairIdxToUniqueIdxMap.get(fromIdxCol.get(idx))!);
+      uniqueSelectedIndexes.push(pairIdxToUniqueIdxMap.get(toIdxCol.get(idx))!);
+    }
+    uniqueSequencesTable.filter.init(
+      (idx) => pairsSelectedIndexes.length === 0 || uniqueSelectedIndexes.includes(idx), false);
+  });
+
+  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root]));
 }

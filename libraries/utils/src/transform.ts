@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
 
+const minLogFloat = 1e-30;
+
 /** Represents 1D transformation between screen and world coordinates */
 interface ITransform {
   screenToWorld(screen: number, length: number, min: number, max: number, inverse?: boolean): number;
@@ -26,7 +28,7 @@ class _LinearTransform implements ITransform {
 /** Log transformation */
 class _LogTransform implements ITransform {
   screenToWorld(screen: number, length: number, min: number, max: number, inverse?: boolean): number {
-    min = (min < 0.00000001 ? 0.00000001 : min);
+    min = (min < minLogFloat ? minLogFloat : min);
 
     const maxLog = Math.log(max);
     const minLog = Math.log(min);
@@ -37,11 +39,11 @@ class _LogTransform implements ITransform {
     if (world <= 0) return NaN;
 
     //eliminates problems with rounding
-    if (world === min) return inverse ? length : 0.0;
-    if (world === max) return inverse ? 0.0 : length;
+    if (Math.abs(world - min) < minLogFloat) return inverse ? length : 0.0;
+    if (Math.abs(world - max) < minLogFloat) return inverse ? 0.0 : length;
 
-    min = (min < 0.00000001 ? 0.00000001 : min);
-    world = (world < 0.00000001 ? 0.00000001 : world);
+    min = (min < minLogFloat ? minLogFloat : min);
+    world = (world < minLogFloat ? minLogFloat : world);
 
     const res = (length * Math.log(world / min) / Math.log(max / min));
     return inverse ? length - res : res;
@@ -59,7 +61,7 @@ export class Viewport {
   logX: boolean = false;
   logY: boolean = false;
   inverseX: boolean = false;
-  inverseY: boolean = true;
+  inverseY: boolean = false;
 
   get xt(): ITransform { return this.logX ? logTransform : linearTransform; }
   get yt(): ITransform { return this.logY ? logTransform : linearTransform; }
@@ -78,7 +80,7 @@ export class Viewport {
 
   yToScreen(world: number): number {
     return this.screen.top + this.yt.worldToScreen(world, this.screen.height,
-      this.world.minY, this.world.maxY, this.inverseY);
+      this.world.minY, this.world.maxY, !this.inverseY);
   }
 
   xToWorld(screen: number): number {
@@ -88,7 +90,7 @@ export class Viewport {
 
   yToWorld(screen: number): number {
     return this.yt.screenToWorld(screen - this.screen.top, this.screen.height,
-      this.world.minY, this.world.maxY, this.inverseY);
+      this.world.minY, this.world.maxY, !this.inverseY);
   }
 
   toScreen(world: DG.Point): DG.Point { return new DG.Point(this.xToScreen(world.x), this.yToScreen(world.y)); }

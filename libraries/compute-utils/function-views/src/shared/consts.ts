@@ -47,3 +47,8 @@ export enum VISIBILITY_STATE {
   HIDDEN = 'hidden',
   VISIBLE = 'visible',
 }
+
+export enum ABILITY_STATE {
+  ENABLED = 'enabled',
+  DISABLED = 'disabled',
+}

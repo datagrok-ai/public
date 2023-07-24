@@ -3,10 +3,10 @@ name: "IaaC script Security Scan"
 on:
   push:
     paths:
-      - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
+      - 'help/deploy/cloudformation/cloudformation.jsonlop/'
   pull_request:
     paths:
-      - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
+      - 'help/deploy/cloudformation/cloudformation.json'
 
 jobs:
   common-check:
@@ -30,7 +30,7 @@ jobs:
         with:
           args: --severity-threshold=high
           sarif: true
-          file: 'help/develop/admin/deploy/cloudformation/cloudformation.json'
+          file: 'help/deploy/cloudformation/cloudformation.json'
       - uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: snyk.sarif
