@@ -114,15 +114,15 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats, position: string,
   sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
   drawOptions: types.DrawOptions = {}): { [monomer: string]: DG.Rect } {
+  const pr = window.devicePixelRatio;
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
   drawOptions.marginVertical ??= 5;
   drawOptions.marginHorizontal ??= 5;
   drawOptions.colHeaderFontHeight ??= 13;
-  drawOptions.colHeaderStyle ??= `bold ${drawOptions.colHeaderFontHeight}px Roboto, Roboto Local, sans-serif`;
+  drawOptions.colHeaderStyle ??= `bold ${drawOptions.colHeaderFontHeight * pr}px Roboto, Roboto Local, sans-serif`;
 
-  const pr = window.devicePixelRatio;
   const totalSpaceBetweenLetters = (sortedOrder.length - 1) * drawOptions.upperLetterAscent;
   const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters - 1.25 * drawOptions.colHeaderFontHeight) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
@@ -167,7 +167,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.font = drawOptions.colHeaderStyle;
-  ctx.fillText(position, bounds.x + bounds.width / 2, bounds.y + bounds.height - drawOptions.colHeaderFontHeight);
+  ctx.fillText(position, (bounds.x + bounds.width / 2) * pr, (bounds.y + bounds.height - drawOptions.colHeaderFontHeight) * pr);
 
   return monomerBounds;
 }
