@@ -292,10 +292,10 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
 
     const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
     CR.renderInvaraintMapCell(
-      canvasContext, currentMonomer, currentPosition, model.monomerPositionFilter, value, bound, color);
+      canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.monomerPositionSelection, model.mutationCliffs, model.settings.isBidirectional);
+      model.mutationCliffsSelection, model.mutationCliffs, model.settings.isBidirectional);
   }
   args.preventDefault();
   canvasContext.restore();
@@ -327,9 +327,9 @@ function chooseAction(aar: string, position: string, isShiftPressed: boolean, is
   model: PeptidesModel): void {
   if (!isShiftPressed) {
     if (isInvariantMap)
-      model.initMonomerPositionFilter({cleanInit: true, notify: false});
+      model.initInvariantMapSelection({cleanInit: true, notify: false});
     else
-      model.initMonomerPositionSelection({cleanInit: true, notify: false});
+      model.initMutationCliffsSelection({cleanInit: true, notify: false});
   }
 
   model.modifyMonomerPositionSelection(aar, position, isInvariantMap);

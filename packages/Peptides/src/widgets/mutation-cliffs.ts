@@ -9,7 +9,7 @@ import {renderCellSelection} from '../utils/cell-renderer';
 export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const filteredIndexes = table.filter.getSelectedIndexes();
   const substInfo = model.mutationCliffs;
-  const currentCell = model.monomerPositionSelection;
+  const currentCell = model.mutationCliffsSelection;
   const positions = Object.keys(currentCell);
 
   if (!positions.length || substInfo === null)

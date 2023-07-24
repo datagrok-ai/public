@@ -8,12 +8,12 @@ This release focuses on improving analysis stability and usability.
 
 ### Features
 
+* Invariant Map is now selecting sequences instead of filtering.
 * Minor UI/UX adjustments.
 
 ### Bug Fixes
 
 * Fixed mutation pair selection resulted in wrong unique sequences in Mutation Cliffs bug.
-
 
 ## 1.10.0 (2023-07-19)
 

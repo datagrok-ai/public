@@ -39,7 +39,7 @@ category('Core', () => {
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true);
 
-    model!.monomerPositionSelection = {'11': ['D']};
+    model!.mutationCliffsSelection = {'11': ['D']};
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
@@ -62,7 +62,7 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true);
 
     if (model !== null)
-      model.monomerPositionSelection = {'13': ['-']};
+      model.mutationCliffsSelection = {'13': ['-']};
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
