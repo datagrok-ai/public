@@ -2,16 +2,17 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import * as utils from './utils';
-
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export class TreeUtils {
-  static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
+  static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: treeDataType) => void) | null = null, aggregations:
-      aggregationInfo[] = [], linkSelection: boolean = true): treeDataType {
+      aggregationInfo[] = [], linkSelection: boolean = true): Promise<treeDataType> {
     const data: treeDataType = {
       name: 'All',
       value: 0,
       path: null,
+      label: {},
       children: [],
     };
 
@@ -117,6 +118,26 @@ export class TreeUtils {
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
+        const isSmiles = await grok.functions.call('Chem:isSmiles', {s: name});
+        if (isSmiles) {
+          const imageContainer = await grok.functions.call('Chem:drawMolecule', {
+            'molStr': name, 'w': 70, 'h': 80, 'popupMenu': false
+          });
+          const image = imageContainer.querySelector(".chem-canvas");
+          await delay(5);
+          var img = new Image();
+          img.src = image.toDataURL('image/png');
+          node.label = {
+            show: true,
+              formatter: '{b}',
+              color: 'rgba(0,0,0,0)',
+              height: '80',
+              width: '70',
+              backgroundColor: {
+                image: img.src,
+              },
+          }
+        }
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);
 
@@ -142,8 +163,8 @@ export class TreeUtils {
     return data;
   }
 
-  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet) {
-    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 10);
+  static async toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet) {
+    const tree = await TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 10);
     return tree.children;
   }
 
@@ -177,6 +198,6 @@ export class TreeUtils {
   }
 }
 
-export type treeDataType = { name: string, value: number, path: null | string, children?: treeDataType[],
+export type treeDataType = { name: string, value: number, path?: null | string, label?: {}, children?: treeDataType[],
   itemStyle?: { color?: string }, [prop: string]: any };
 export type aggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };

@@ -97,16 +97,23 @@ export class SunburstViewer extends EChartViewer {
     super.onTableAttached();
   }
 
-  getSeriesData(): treeDataType[] | undefined {
+  getSeriesData(): Promise<treeDataType[] | undefined> {
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter);
   }
 
   render(): void {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
-
-    this.option.series[0].data = this.getSeriesData();
-
-    this.chart.setOption(this.option);
+  
+    this.getSeriesData().then((seriesData: treeDataType[] | undefined) => {
+      if (seriesData) {
+        this.option.series[0].data = seriesData;
+        this.chart.setOption(this.option);
+        console.log(JSON.stringify(this.option));
+      }
+    }).catch((error) => {
+      console.error(error);
+    });
   }
+  
 }
