@@ -1,8 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 
 import {EChartViewer} from '../echart/echart-viewer';
 import {TreeUtils, treeDataType} from '../../utils/tree-utils';
+import { StringUtils } from '@datagrok-libraries/utils/src/string-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
@@ -12,6 +14,7 @@ import {TreeUtils, treeDataType} from '../../utils/tree-utils';
   description: 'Creates a sunburst viewer',
   icon: 'icons/sunburst-viewer.svg',
 })
+
 export class SunburstViewer extends EChartViewer {
   hierarchyColumnNames: string[];
   hierarchyLevel: number;
@@ -25,6 +28,7 @@ export class SunburstViewer extends EChartViewer {
     this.hierarchyLevel = 3;
 
     this.option = {
+      animation: false,
       series: [
         {
           type: 'sunburst',
@@ -53,6 +57,24 @@ export class SunburstViewer extends EChartViewer {
         }, params.event.event);
       }
     });
+    this.chart.on('mouseover', (params: any) => {
+      const divs: HTMLElement[] = [];
+      const { hierarchyColumnNames, dataFrame } = this;
+      for (const columnName of hierarchyColumnNames) {
+        const column = dataFrame.columns.byName(columnName);
+        const idx = Array.from(column.values()).indexOf(params.name);
+        if (idx !== -1) {
+          for (let j = 0; j < dataFrame.columns.length; ++j) {
+            const columnAtIndex = dataFrame.columns.byIndex(j);
+            const value = columnAtIndex.get(idx);
+            const formattedValue = typeof value === 'string' ? value : StringUtils.formatNumber(value);
+            divs[j] = ui.divText(`${columnAtIndex.name} : ${formattedValue}`);
+          }
+        }
+      }
+      ui.tooltip.show(ui.div(divs), params.event.event.x, params.event.event.y);
+    });      
+    this.chart.on('mouseout', () => ui.tooltip.hide());
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
