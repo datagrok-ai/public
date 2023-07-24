@@ -26,16 +26,16 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 * Improved data streaming, leading to major performance improvements for small queries.
 * Client-side caching of function results, allowing to save time and server capacity when executing immutable functions and queries.
-* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../../access/databases/databases.mdx#debug-query).
+* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../access/databases/databases.mdx#debug-query).
 * Simplified and updated Datagrok local installation, now available with a [one-click script](https://datagrok.ai/help/develop/admin/docker-compose).
 * Self-adjustable viewer layouts that keep viewers usable even in a small window.
-* [Fuzzy text filter](../../../visualize/viewers/filters.md#text-filter), which enables users to create keyword categories and search or filter text using them.
+* [Fuzzy text filter](../../visualize/viewers/filters.md#text-filter), which enables users to create keyword categories and search or filter text using them.
 * URLs are now automatically interpreted as hyperlinks in text. For details, see [visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521/36).
 
 
 ### Visualization and usability improvements
 
-* [#1972](https://github.com/datagrok-ai/public/issues/1972): Implemented [fuzzy text filter](../../../visualize/viewers/filters.md#text-filter).
+* [#1972](https://github.com/datagrok-ai/public/issues/1972): Implemented [fuzzy text filter](../../visualize/viewers/filters.md#text-filter).
 * [#2056](https://github.com/datagrok-ai/public/issues/2056): Added [URLs rendering](https://community.datagrok.ai/t/visualization-related-updates/521/36) as hyperlinks in text.
 * Enhanced [multiline text rendering](https://community.datagrok.ai/t/visualization-related-updates/521/34)
 * Enhanced composed cell renderer layout:
@@ -50,17 +50,17 @@ Datagrok 1.16 release focuses on performance and usability improvements:
   * [#1983](https://github.com/datagrok-ai/public/issues/1983): Categorical coloring: colors cannot be changed.
   * [#1986](https://github.com/datagrok-ai/public/issues/1986): Dragging a column to filter panel moves it to the beginning of the table.
   * [#1208](https://github.com/datagrok-ai/public/issues/1208): Default tooltip is unexpectedly reset on duplicating a view
-* For [Filter Panel](../../../visualize/viewers/filters.md) fixed:
+* For [Filter Panel](../../visualize/viewers/filters.md) fixed:
   * [#1230](https://github.com/datagrok-ai/public/issues/1230): Filters: custom filters not synced.
   * [#1609](https://github.com/datagrok-ai/public/issues/1609): FilterGroup.add issue, which caused error message when called through `grok.events.onContextMenu` context.
   * [#1984](https://github.com/datagrok-ai/public/issues/1984): Filter's missing values settings are not properly synced between different tabs/views.
   * [#1987](https://github.com/datagrok-ai/public/issues/1987): Tooltip from the wrong column is shown in filters in some cases.
-* [Scatter plot](../../../visualize/viewers/scatter-plot.md):
+* [Scatter plot](../../visualize/viewers/scatter-plot.md):
   
   * [#2089](https://github.com/datagrok-ai/public/issues/2089): Added an option to change Scatter plot and Trellis plot's mouse drag action from panning to selection. For trellis plot with an inner scatter plot viewer, the default value is `selection`.
   *  [#2108](https://github.com/datagrok-ai/public/issues/2108): Improved behavior of 'Dot' marker type on Scatter plot.
   *  [#2055](https://github.com/datagrok-ai/public/issues/2055): Implemented indicating zoom state for categorical axes.
-* [Trellis plot](../../../visualize/viewers/trellis-plot.md):
+* [Trellis plot](../../visualize/viewers/trellis-plot.md):
   *  For trellis plots with an inner PC plot, hidden labels and limited the default number of columns to four.
   * Categorical axes now show a tooltip for small structures, providing clear rendering on the axis. 
   * [#1952](https://github.com/datagrok-ai/public/issues/1952): Improved Trellis plot behavior to exclude displaying empty categories.
@@ -70,13 +70,13 @@ Datagrok 1.16 release focuses on performance and usability improvements:
     * [#1957](https://github.com/datagrok-ai/public/issues/1957): Trellis plot: cannot be added in specific case, error on setting structure column as X axis.
     * [#2053](https://github.com/datagrok-ai/public/issues/2053): Trellis plot: tooltip in inner viewer cannot be changed.
     * [#2116](https://github.com/datagrok-ai/public/issues/2116): Column settings are connected on two Trellis plots after settings are picked up/applied.
-* [Line Chart](../../../visualize/viewers/line-chart.md)
+* [Line Chart](../../visualize/viewers/line-chart.md)
   * [#2049](https://github.com/datagrok-ai/public/issues/2049): Added the  min/max properties.
   * Fixed [#2163](https://github.com/datagrok-ai/public/issues/2163): Line chart lines are displayed incorrectly in some cases (drop below the X axis).
-* [Box Plot](../../../visualize/viewers/box-plot.md)
+* [Box Plot](../../visualize/viewers/box-plot.md)
   * [#2057](https://github.com/datagrok-ai/public/issues/2057): Added structures rendering on the X axis.
   * Fixed [#1985](https://github.com/datagrok-ai/public/issues/1985): Box plot: Y axis zoom slider behaviour is inverted.
-* For [correlation plot](../../../visualize/viewers/correlation-plot.md), fixed [#2009](https://github.com/datagrok-ai/public/issues/2009): Correlation Plot shows wrong axes.
+* For [correlation plot](../../visualize/viewers/correlation-plot.md), fixed [#2009](https://github.com/datagrok-ai/public/issues/2009): Correlation Plot shows wrong axes.
 
 ### Data Access
 
@@ -97,7 +97,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 *  For Inspector, added the  ability to inspect widgets.
 *  Moved adHoc property to FuncCall.
 
-#### [JS API](../../../develop/js-api.md)
+#### [JS API](../../develop/packages/js-api.md)
 
 *  [#2118](https://github.com/datagrok-ai/public/issues/2118): Added the API configuration to define layout import settings.
 *  [#1592](https://github.com/datagrok-ai/public/issues/1592): For packages, introduced decorators for functions with special roles (viewers, importers, etc.).
