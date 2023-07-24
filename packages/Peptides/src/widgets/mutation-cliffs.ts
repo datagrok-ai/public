@@ -70,8 +70,8 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
   const activityDeltaCol = DG.Column.fromList('double', 'Delta', deltaArray);
   const hiddenSubstToAarCol = DG.Column.fromStrings('~to', substitutedToArray);
-  const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~toIdx', toIdxArray);
-  const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~fromIdx', fromIdxArray);
+  const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'toIdx', toIdxArray);
+  const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'fromIdx', fromIdxArray);
   const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
 
   const aminoToInput = ui.stringInput('Mutated to:', '', () => {
@@ -136,11 +136,16 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   let idx = 0;
   const bitset = DG.BitSet.create(table.rowCount);
   for (const [key, values] of seenIndexes.entries()) {
-    bitset.set(key, true);
-    pairIdxToUniqueIdxMap.set(key, idx++);
+    // Need to process exactly in this order, as this is how the seenIndexes is filled
     for (const value of values) {
+      if (pairIdxToUniqueIdxMap.has(value))
+        continue;
       bitset.set(value, true);
       pairIdxToUniqueIdxMap.set(value, idx++);
+    }
+    if (!pairIdxToUniqueIdxMap.has(key)) {
+      bitset.set(key, true);
+      pairIdxToUniqueIdxMap.set(key, idx++);
     }
   }
 
@@ -152,7 +157,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   uniqueSequencesGrid.props.allowColSelection = false;
   uniqueSequencesGrid.props.rowHeight = 20;
   uniqueSequencesGrid.root.style.width = 'auto';
-  uniqueSequencesGrid.root.style.height = '150px';
+  uniqueSequencesGrid.root.style.height = '250px';
   uniqueSequencesTable.filter.onChanged.subscribe(() => {
     const uniqueSelectedIndexes: number[] = [];
     for (const idx of pairsSelectedIndexes) {
