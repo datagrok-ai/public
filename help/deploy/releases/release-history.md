@@ -22,14 +22,15 @@ See also:
 
 ## 2023-07-20 1.16.0
 
-We've launched a new version of the Datagrok platform (1.16.0). The main focus of this release is to enhance the performance and user experience of the platform. Here are some of the key improvements:
+Datagrok 1.16 release focuses on performance and usability improvements:
 
-* Client-side caching of function results, leading to a 10x decrease in platform overhead for executing functions. As a result, small queries are now significantly faster.
- * Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../../access/databases/databases.mdx#debug-query).
-* Enhanced **Namespace View** and new namespace routing. When activating an item in the tree, the address displays the path to that element with relevant parameters, ensuring it launches the same entity with matching parameters when applicable.
+* Improved data streaming, leading to major performance improvements for small queries.
+* Client-side caching of function results, allowing to save time and server capacity when executing immutable functions and queries.
+* Improved logging system for queries, featuring a debug mode that helps understand time allocation and optimize performance. Additionally, we provide new tools for tuning specific queries. For details, see [debugging query](../../../access/databases/databases.mdx#debug-query).
 * Simplified and updated Datagrok local installation, now available with a [one-click script](https://datagrok.ai/help/develop/admin/docker-compose).
-* Auto layouts, ensuring informative and usable visualizations for minimized viewers.
-* Check out the [fuzzy text filter](../../../visualize/viewers/filters.md#text-filter) and [URLs interpreted as hyperlinks in text](https://community.datagrok.ai/t/visualization-related-updates/521/36).
+* Self-adjustable viewer layouts that keep viewers usable even in a small window.
+* [Fuzzy text filter](../../../visualize/viewers/filters.md#text-filter), which enables users to create keyword categories and search or filter text using them.
+* URLs are now automatically interpreted as hyperlinks in text. For details, see [visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521/36).
 
 
 ### Visualization and usability improvements
@@ -105,27 +106,22 @@ We've launched a new version of the Datagrok platform (1.16.0). The main focus o
 
 ### Enhancements in packages
 
-* [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/CHANGELOG.md)
-* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
-* [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md)
-* [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md)
-* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md)
-* [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md)
-* [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/CHANGELOG.md)
-* [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md)
-* [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md)
-* [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md)
+* [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/CHANGELOG.md): added separator support for **Sequence Space** and **Activity Cliffs** and made Helm monomer type usable for MSA, among other enhancements. 
+* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md): improved Timelines and Sunburst plot, fixed Radar chart.
+* [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md): implemented the RDKit rendering for various databases (Chembl, ChemblAPI, PubChem, and DrugBank) when OCL is used, integrated the Scaffold Tree into the Filters Panel, and introduced several other improvements.
+* [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md): improved rendering for curves and confidence intervals, added user-defined Javascript function support for running curves with caching, enhanced rendering in small cells, and more. 
+* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md): Added [Bioreactors](https://public.datagrok.ai/apps/Tutorials/Demo/Bioreactors), [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) and [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) demos.
+* [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md): implemented the ability to select leaves from specific nodes, added a separate loader view, and allowed switching distance calculation methods for macromolecules, while also supporting the semType macromolecules.
+* [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/CHANGELOG.md): adressed issues.
+* [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md): enhanced the **Invariant Map** feature to select sequences instead of filtering.
+* [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md): added structure editing support for pinned columns.
+* [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): added new tutorials.
 
   
-<!--#### Enhancements in libraries
+#### Enhancements in libraries
 
-[utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils#readme): 
-*  GROK-13460: Libraries: Utils | Transform: Remove y inversion
-*  GROK-13148: Add utils functions for text wrapping:Add a function to gridext library that intelligently would wrap a long text into several lines of a predefined length
-
-[math](https://github.com/datagrok-ai/public/tree/master/libraries/math#readme): Library math. Intented to be used for high efficiency (mostly wasm) calculations. Currently only includes wasm algorythm for hierarchical clustering, which is used by [dendrogram]() package
-
-* GROK-13220: Move DistanceMatrix class from bio to ml lib.-->
+* Added a new [math](https://github.com/datagrok-ai/public/tree/master/libraries/math/CHANGELOG.md) library intended to be used for high efficiency (mostly wasm) calculations.
+* See other updates for [utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils/CHANGELOG.md), [ml](https://github.com/datagrok-ai/public/tree/master/libraries/ml/CHANGELOG.md) and [bio](https://github.com/datagrok-ai/public/tree/master/libraries/bio/CHANGELOG.md).
 
 ## 2023-06-29 1.15.4
 
@@ -695,7 +691,6 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 * Wrong docker status when making a request.
 * Databases: error in the **Sharing** tab of the **Context Pane** after deleting the shared query.
 
-
 ## 2023-05-16 1.13.15
 
 ### Addressed Issues
@@ -705,13 +700,11 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 * [#1671](https://github.com/datagrok-ai/public/issues/1671): Line chart: connects the first and last values when resizing the window
 * [#1852](https://github.com/datagrok-ai/public/issues/1852): Line chart with splitting with specific data is making Datagrok slow (row selection, interaction with line chart) 
 
-
 ## 2023-04-18 1.13.13
 
 ### Addressed Issues
 
 * (Bug) [#1808](https://github.com/datagrok-ai/public/issues/1808) Line chart with logarithmic Y axis is rendering data points incorrectly
-
 
 ## 2023-04-12 1.13.12
 
@@ -726,13 +719,11 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 * (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1758): Filtering is slow if there are multiple bar charts on several views
 * Filters: return select filters dialog
 
-
 ## 2023-03-29 1.13.10
 
 ### Addressed Issues
 
 * (Bug) GROK-12646: for_entity method is very slow
-
 
 ## 2023-03-28 1.13.9
 
@@ -815,20 +806,17 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 * (Bug) [#1637](https://github.com/datagrok-ai/public/issues/1637): Filters re-ordering dialog is not opened if a custom filter was added to filters panel
 * (Bug) [#1724](https://github.com/datagrok-ai/public/issues/1724): Table is not rendered properly after switching dataframe if it was sorted
 
-
 ## 2023-03-14 1.13.7
 
 ### Addressed Issues
 
 * fixes #1609 FilterGroup.add issue
 
-
 ## 2023-02-22 1.13.3
 
 ### Addressed Issues
 
 * (Bug) Connecting to local file storage results in error (WIP)
-
 
 ## 2023-02-21 1.13.2
 
