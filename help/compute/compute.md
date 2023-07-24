@@ -448,6 +448,7 @@ Study what happens to a function when varying its inputs. Datagrok provides inve
 To run analysis, click on the icon "Run sensitivity analysis", choose a method, specify inputs & outputs, and press "RUN".
 
 Available types of analysis:
+
 * Grid
 * Monte Carlo
 * Sobol method
