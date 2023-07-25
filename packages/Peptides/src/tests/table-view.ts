@@ -18,8 +18,8 @@ category('Table view', () => {
   let scaledActivityCol: DG.Column<number>;
   const scaling = 'none' as SCALING_METHODS;
 
-  const firstMonomerPair = {monomer: 'N', position: '4', count: 7};
-  const secondMonomerPair = {monomer: 'meI', position: '1', count: 10};
+  const firstMonomerPair = {monomer: 'Aze', position: '10', mcCount: 3, imCount: 1};
+  const secondMonomerPair = {monomer: 'meI', position: '1', mcCount: 2, imCount: 10};
   const firstCluster = {name: '0', count: 3};
   const secondCluster = {name: '1', count: 3};
 
@@ -54,7 +54,8 @@ category('Table view', () => {
     }
   });
 
-  test('Selection', async () => {
+  //TODO: split into separate tests for Mutation Cliffs and Logo Summary Table
+  test('Mutation Cliffs selection', async () => {
     const selection = model.df.selection;
 
     for (const [position, selectedMonomers] of Object.entries(model.mutationCliffsSelection))
@@ -64,22 +65,22 @@ category('Table view', () => {
     model.modifyMonomerPositionSelection(firstMonomerPair.monomer, firstMonomerPair.position, false);
     expect(model.mutationCliffsSelection[firstMonomerPair.position].includes(firstMonomerPair.monomer), true,
       `Monomer ${firstMonomerPair.monomer} is not selected at position ${firstMonomerPair.position}`);
-    expect(selection.trueCount, firstMonomerPair.count, `Selection count is not equal to ${firstMonomerPair.count} ` +
+    expect(selection.trueCount, firstMonomerPair.mcCount, `Selection count is not equal to ${firstMonomerPair.mcCount} ` +
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Select second monomer-position pair
     model.modifyMonomerPositionSelection(secondMonomerPair.monomer, secondMonomerPair.position, false);
     expect(model.mutationCliffsSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), true,
       `Monomer ${secondMonomerPair.monomer} is not selected at position ${secondMonomerPair.position}`);
-    expect(selection.trueCount, secondMonomerPair.count, `Selection count is not equal to ${secondMonomerPair.count} ` +
-      `for monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
+    expect(selection.trueCount, secondMonomerPair.mcCount + firstMonomerPair.mcCount, `Selection count is not equal ` +
+      `to ${secondMonomerPair.mcCount + firstMonomerPair.mcCount} for monomer ${secondMonomerPair.monomer} at ` +
+      `position ${secondMonomerPair.position}`);
 
     // Deselect second monomer-position pair
     model.modifyMonomerPositionSelection(secondMonomerPair.monomer, secondMonomerPair.position, false);
     expect(model.mutationCliffsSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), false,
-      `Monomer ${secondMonomerPair.monomer} is still selected at position ${secondMonomerPair.position} after ` +
-      `deselection`);
-    expect(selection.trueCount, firstMonomerPair.count, `Selection count is not equal to ${firstMonomerPair.count} ` +
+      `Monomer ${secondMonomerPair.monomer} is still selected at position ${secondMonomerPair.position} after deselection`);
+    expect(selection.trueCount, firstMonomerPair.mcCount, `Selection count is not equal to ${firstMonomerPair.mcCount} ` +
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Clear monomer-position selection
@@ -117,24 +118,24 @@ category('Table view', () => {
     expect(selection.trueCount, 0, `Selection count is not equal to 0 after clearing cluster selection`);
   });
 
-  test('Filtering', async () => {
-    const filter = model.df.filter;
+  test('Invariant Map selection', async () => {
+    const selection = model.df.selection;
 
     for (const [position, filteredMonomers] of Object.entries(model.invariantMapSelection))
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after initialization`);
 
-    // Filter by second monomer-position pair
+    // Select by second monomer-position pair
     model.modifyMonomerPositionSelection(secondMonomerPair.monomer, secondMonomerPair.position, true);
     expect(model.invariantMapSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), true,
       `Monomer ${secondMonomerPair.monomer} is not filtered at position ${secondMonomerPair.position}`);
-    expect(filter.trueCount, secondMonomerPair.count, `Filter count is not equal to ${secondMonomerPair.count} ` +
+    expect(selection.trueCount, secondMonomerPair.imCount, `Filter count is not equal to ${secondMonomerPair.imCount} ` +
       `for monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
 
-    // Filter by first monomer-position pair
+    // Select by first monomer-position pair
     model.modifyMonomerPositionSelection(firstMonomerPair.monomer, firstMonomerPair.position, true);
     expect(model.invariantMapSelection[firstMonomerPair.position].includes(firstMonomerPair.monomer), true,
       `Monomer ${firstMonomerPair.monomer} is not filtered at position ${firstMonomerPair.position}`);
-    expect(filter.trueCount, firstMonomerPair.count, `Filter count is not equal to ${firstMonomerPair.count} ` +
+    expect(selection.trueCount, secondMonomerPair.imCount, `Filter count is not equal to ${secondMonomerPair.imCount} ` +
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Deselect filter for second monomer-position pair
@@ -142,14 +143,13 @@ category('Table view', () => {
     expect(model.invariantMapSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), false,
       `Monomer ${secondMonomerPair.monomer} is still filtered at position ${secondMonomerPair.position} after ` +
       `deselection`);
-    expect(filter.trueCount, firstMonomerPair.count, `Filter count is not equal to ${firstMonomerPair.count} ` +
+    expect(selection.trueCount, firstMonomerPair.imCount, `Filter count is not equal to ${firstMonomerPair.imCount} ` +
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position} after deselection of ` +
       `monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
 
     // Clear selection
     model.initInvariantMapSelection({cleanInit: true});
-    expect(filter.trueCount, df.rowCount, `Filter count is not equal to ${df.rowCount} after clearing ` +
-      `monomer-position filter`);
+    expect(selection.trueCount, 0, `Filter count is not equal to ${0} after clearing monomer-position filter`);
 
     for (const [position, filteredMonomers] of Object.entries(model.invariantMapSelection)) {
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after clearing ` +

@@ -1,5 +1,15 @@
 # Peptides changelog
 
+## 1.10.3 (Bleeding-edge)
+
+This release focuses on improving package stability and usability.
+
+*Dependency: datgarok-api >= 1.15.4*
+
+### Bug Fixes
+
+* Fixed number of sequences had wrong value sometimes.
+
 ## 1.10.2 (2023-07-24)
 
 This release focuses on improving the Mutation Cliffs pairs panel.

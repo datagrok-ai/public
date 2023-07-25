@@ -16,7 +16,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
 
   let selectedIndex = 0;
   let restIndex = 0;
-  for (let i = 0; i < data.length; ++i) {
+  for (let i = 0; i < bitArray.length; ++i) {
     if (bitArray.getBit(i))
       selected[selectedIndex++] = data[i];
     else
@@ -29,7 +29,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
     count: selected.length,
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'] || 0,
     meanDifference: currentMeanDiff || 0,
-    ratio: selected.length / data.length,
+    ratio: selected.length / (bitArray.length),
   };
 }
 
