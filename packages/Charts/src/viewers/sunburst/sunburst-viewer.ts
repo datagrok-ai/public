@@ -47,19 +47,35 @@ export class SunburstViewer extends EChartViewer {
     return pixel[3] === 0;
   }
 
+  handleDataframeSelection(path: string[], event: any) {
+    this.dataFrame.selection.handleClick((i) => {
+      if (!this.dataFrame.filter.get(i))
+        return false;
+      for (let j = 0; j < path.length; j++) {
+        if (this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(i).toString() !== path[j])
+          return false;
+      }
+      return true;
+    }, event);
+  }
+
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
-      if (params.event.event.ctrlKey) {
-        const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
-        this.dataFrame.selection.handleClick((i) => {
-          if (!this.dataFrame.filter.get(i))
-            return false;
-          for (let j = 0; j < path.length; j++) {
-            if (this.dataFrame.getCol(this.hierarchyColumnNames[j]).get(i).toString() !== path[j])
-              return false;
-          }
-          return true;
-        }, params.event.event);
+      const selectedSectors: string[] = [];
+      const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
+      const pathString: string = path.join('|');
+      const isSectorSelected = selectedSectors.includes(pathString);
+      if (params.event.event.shiftKey) {
+        if (!isSectorSelected) {
+          selectedSectors.push(pathString);
+          this.handleDataframeSelection(path, params.event.event);
+        }
+      } else if (params.event.event.shiftKey && params.event.event.ctrlClick) {
+        if (isSectorSelected) {
+          const index = selectedSectors.indexOf(pathString);
+          selectedSectors.splice(index, 1);
+          this.handleDataframeSelection(path, params.event.event);
+        }
       }
     });
     this.chart.on('mouseover', (params: any) => {
