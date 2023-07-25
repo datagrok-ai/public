@@ -57,34 +57,34 @@ category('Table view', () => {
   test('Selection', async () => {
     const selection = model.df.selection;
 
-    for (const [position, selectedMonomers] of Object.entries(model.monomerPositionSelection))
+    for (const [position, selectedMonomers] of Object.entries(model.mutationCliffsSelection))
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after initialization`);
 
     // Select first monomer-position pair
     model.modifyMonomerPositionSelection(firstMonomerPair.monomer, firstMonomerPair.position, false);
-    expect(model.monomerPositionSelection[firstMonomerPair.position].includes(firstMonomerPair.monomer), true,
+    expect(model.mutationCliffsSelection[firstMonomerPair.position].includes(firstMonomerPair.monomer), true,
       `Monomer ${firstMonomerPair.monomer} is not selected at position ${firstMonomerPair.position}`);
     expect(selection.trueCount, firstMonomerPair.count, `Selection count is not equal to ${firstMonomerPair.count} ` +
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Select second monomer-position pair
     model.modifyMonomerPositionSelection(secondMonomerPair.monomer, secondMonomerPair.position, false);
-    expect(model.monomerPositionSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), true,
+    expect(model.mutationCliffsSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), true,
       `Monomer ${secondMonomerPair.monomer} is not selected at position ${secondMonomerPair.position}`);
     expect(selection.trueCount, secondMonomerPair.count, `Selection count is not equal to ${secondMonomerPair.count} ` +
       `for monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
 
     // Deselect second monomer-position pair
     model.modifyMonomerPositionSelection(secondMonomerPair.monomer, secondMonomerPair.position, false);
-    expect(model.monomerPositionSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), false,
+    expect(model.mutationCliffsSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), false,
       `Monomer ${secondMonomerPair.monomer} is still selected at position ${secondMonomerPair.position} after ` +
       `deselection`);
     expect(selection.trueCount, firstMonomerPair.count, `Selection count is not equal to ${firstMonomerPair.count} ` +
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Clear monomer-position selection
-    model.initMonomerPositionSelection({cleanInit: true});
-    for (const [position, selectedMonomers] of Object.entries(model.monomerPositionSelection)) {
+    model.initMutationCliffsSelection({cleanInit: true});
+    for (const [position, selectedMonomers] of Object.entries(model.mutationCliffsSelection)) {
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after clearing ` +
         `monomer-position selection`);
     }
@@ -120,26 +120,26 @@ category('Table view', () => {
   test('Filtering', async () => {
     const filter = model.df.filter;
 
-    for (const [position, filteredMonomers] of Object.entries(model.monomerPositionFilter))
+    for (const [position, filteredMonomers] of Object.entries(model.invariantMapSelection))
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after initialization`);
 
     // Filter by second monomer-position pair
     model.modifyMonomerPositionSelection(secondMonomerPair.monomer, secondMonomerPair.position, true);
-    expect(model.monomerPositionFilter[secondMonomerPair.position].includes(secondMonomerPair.monomer), true,
+    expect(model.invariantMapSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), true,
       `Monomer ${secondMonomerPair.monomer} is not filtered at position ${secondMonomerPair.position}`);
     expect(filter.trueCount, secondMonomerPair.count, `Filter count is not equal to ${secondMonomerPair.count} ` +
       `for monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
 
     // Filter by first monomer-position pair
     model.modifyMonomerPositionSelection(firstMonomerPair.monomer, firstMonomerPair.position, true);
-    expect(model.monomerPositionFilter[firstMonomerPair.position].includes(firstMonomerPair.monomer), true,
+    expect(model.invariantMapSelection[firstMonomerPair.position].includes(firstMonomerPair.monomer), true,
       `Monomer ${firstMonomerPair.monomer} is not filtered at position ${firstMonomerPair.position}`);
     expect(filter.trueCount, firstMonomerPair.count, `Filter count is not equal to ${firstMonomerPair.count} ` +
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Deselect filter for second monomer-position pair
     model.modifyMonomerPositionSelection(secondMonomerPair.monomer, secondMonomerPair.position, true);
-    expect(model.monomerPositionFilter[secondMonomerPair.position].includes(secondMonomerPair.monomer), false,
+    expect(model.invariantMapSelection[secondMonomerPair.position].includes(secondMonomerPair.monomer), false,
       `Monomer ${secondMonomerPair.monomer} is still filtered at position ${secondMonomerPair.position} after ` +
       `deselection`);
     expect(filter.trueCount, firstMonomerPair.count, `Filter count is not equal to ${firstMonomerPair.count} ` +
@@ -147,13 +147,13 @@ category('Table view', () => {
       `monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
 
     // Clear selection
-    model.initMonomerPositionFilter({cleanInit: true});
+    model.initInvariantMapSelection({cleanInit: true});
     expect(filter.trueCount, df.rowCount, `Filter count is not equal to ${df.rowCount} after clearing ` +
       `monomer-position filter`);
 
-    for (const [position, filteredMonomers] of Object.entries(model.monomerPositionFilter)) {
+    for (const [position, filteredMonomers] of Object.entries(model.invariantMapSelection)) {
       expect(filteredMonomers.length, 0, `Filter is not empty for position ${position} after clearing ` +
         `monomer-position filter`);
     }
   });
-}, false);
+}, {clear: false});

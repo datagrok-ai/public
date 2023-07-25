@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {ScaffoldTreeViewer} from "./scaffold-tree";
+import {ScaffoldTreeViewer, BitwiseOp} from "./scaffold-tree";
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
 
@@ -19,6 +19,14 @@ export class ScaffoldTreeFilter extends DG.Filter {
     super();
     this.root = ui.divV([]);
     this.subs = this.viewer.subs;
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
+      this.viewer.clearFilters();
+      this.viewer.tree.children.map((group) => {
+        this.viewer.setNotBitOperation(group as DG.TreeViewGroup, false);
+      });
+      if (this.viewer._bitOpInput)
+        this.viewer._bitOpInput.value = BitwiseOp.OR;
+    }));
   }
 
   get isFiltering(): boolean {
@@ -58,7 +66,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     grok.events.fireCustomEvent(COLUMN_NAME_CHANGED, {
       colName: state.columnName,
     });
-    this.viewer.loadTreeStr(state.savedTree);
+    if (state.savedTree) this.viewer.loadTreeStr(state.savedTree);
   }
 
   applyFilter(): void {

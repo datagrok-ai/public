@@ -51,7 +51,6 @@ type EnamineMolProperties =
   {'ID': string, 'Formula': string, 'MW': number, 'Availability': number, 'Delivery': string};
 
 enum CATALOG_TYPE {
-  EMPTY = '',
   SCR = 'SCR',
   REAL = 'REAL',
   BB = 'BB',
@@ -69,7 +68,7 @@ export function enamineStoreApp(): void {
   const currency = ui.choiceInput('Currency', CURRENCY.USD, Object.values(CURRENCY)) as DG.InputBase<string>;
   const similarity = ui.choiceInput('Similarity', '0.8', ['0.2', '0.4', '0.6', '0.8']) as DG.InputBase<string>;
   const catalog =
-    ui.choiceInput('Catalog', CATALOG_TYPE.EMPTY, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
+    ui.choiceInput('Catalog', CATALOG_TYPE.BB, Object.values(CATALOG_TYPE)) as DG.InputBase<CATALOG_TYPE>;
   const filterForm = ui.form([molecule, searchMode, currency, similarity, catalog]);
   const filtersHost = ui.div([filterForm], 'enamine-store-controls,pure-form');
 
@@ -155,19 +154,18 @@ export function enamineStorePanel(smiles: string): DG.Widget {
 }
 
 //description: Creates search panel
-function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.EMPTY,
+function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CATALOG_TYPE = CATALOG_TYPE.BB,
 ): HTMLDivElement {
   const currency = CURRENCY.USD;
   const headerHost = ui.divH([/*ui.h2(searchMode)*/], 'enamine-store-panel-header');
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost], 'enamine-store-panel');
   const options: {[key: string]: any} = {
     'code': `search_${smiles}_${searchModeToCommandMap[searchMode]}`,
     'currency': currency,
   };
-  if (catalog !== CATALOG_TYPE.EMPTY)
-    options['mode'] = catalog;
-  grok.data.callQuery('EnamineStore:Search', options, true, 100).then((fc) => {
+  options['mode'] = catalog;
+  grok.data.callQuery('EnamineStore:Search', options, true, 100).then(async (fc) => {
     compsHost.firstChild?.remove();
     const data = JSON.parse(fc.getParamValue('stringResult'))['data'] as EnamineStoreSearchResult[];
     if (data === null) {
@@ -175,12 +173,29 @@ function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, catalog: CAT
       return;
     }
 
+    let similarityResult: DG.DataFrame | null = null;
+    if (searchMode === SEARCH_MODE.SIMILAR) {
+      const df = DG.DataFrame.create(data.length);
+      const smCol = df.columns.addNewString('smiles').init((i) => data[i]['smile']);
+      similarityResult = await grok.chem.findSimilar(smCol, smiles, {limit: 20, cutoff: 0.8});
+    }
 
-    for (const comp of data) {
-      const smiles = comp['smile'];
-      const molHost = ui.div();
-      grok.functions.call('Chem:drawMolecule', {'molStr': smiles, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-        .then((res: HTMLElement) => molHost.append(res));
+    if (similarityResult?.rowCount === 0) {
+      compsHost.appendChild(ui.divText('No matches'));
+      return;
+    }
+
+    for (let i = 0; i < Math.min(similarityResult?.rowCount ?? data.length, 20); i++) {
+      const idx = searchMode === SEARCH_MODE.SIMILAR ? similarityResult?.get('index', i) : i;
+      const comp = data[idx];
+      const currentSmiles = comp['smile'];
+      const molHost = ui.divV([]);
+      grok.functions.call('Chem:drawMolecule', {'molStr': currentSmiles, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
+        .then((res: HTMLElement) => {
+          molHost.append(res);
+          if (searchMode === SEARCH_MODE.SIMILAR)
+            molHost.appendChild(ui.divText(`Score: ${similarityResult?.get('score', i).toFixed(2)}`));
+        });
 
       const id = comp['Id'];
       const props: EnamineMolProperties = {

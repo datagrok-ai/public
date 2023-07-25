@@ -27,11 +27,10 @@ export enum FitErrorModel {
   Proportional
 }
 
-// export type FitParam = {
-//   value: number;
-//   minBound?: number;
-//   maxBound?: number;
-// };
+export type FitParamBounds = {
+  minBound?: number;
+  maxBound?: number;
+};
 
 export interface IFitFunctionDescription {
   name: string;
@@ -92,7 +91,7 @@ export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
 export const TAG_FIT = '.fit';
 
-export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.7)';
+export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.4)';
 export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
 
 export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
@@ -100,7 +99,8 @@ export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
   BOTTOM: 'bottom',
 };
 
-export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
+export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
+  'triangle left' | 'triangle right' | 'triangle top';
 
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
@@ -119,6 +119,12 @@ export interface IFitSeries extends IFitSeriesOptions {
   points: IFitPoint[];
 }
 
+export interface IFitChartLabelOptions {
+  visible: boolean;
+  color: string;
+  name: string;
+}
+
 /** Chart options. For fitted curves, this object is stored in the grid column tags and is used by the renderer. */
 export interface IFitChartOptions {
   minX?: number;
@@ -133,6 +139,7 @@ export interface IFitChartOptions {
   logY?: boolean;
 
   showStatistics?: string[];
+  labelOptions?: IFitChartLabelOptions[];
 }
 
 /** Data for the fit chart. */
@@ -154,17 +161,21 @@ export interface IFitSeriesOptions {
   name?: string;
   fitFunction?: string | IFitFunctionDescription;
   parameters?: number[];         // auto-fitting when not defined
+  parameterBounds?: FitParamBounds[];
+  markerType?: FitMarkerType;
   pointColor?: string;
   fitLineColor?: string;
   confidenceIntervalColor?: string;
   showFitLine?: boolean;
-  showPoints?: boolean;
+  showPoints?: string;
   showCurveConfidenceInterval?: boolean;   // show ribbon
   showIntercept?: boolean;
   showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
   showConfidenceForX?: number;
   clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
+  labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions
 }
+// TODO: show labels in property panel if present, color by default from series
 
 
 /** Properties that describe {@link FitStatistics}. Useful for editing, initialization, transformations, etc. */
@@ -212,10 +223,14 @@ export const fitSeriesProperties: Property[] = [
     {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
   Property.js('showFitLine', TYPE.BOOL,
     {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
-  Property.js('showPoints', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether points should be rendered', defaultValue: true}),
-  Property.js('showBoxPlot', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
+  Property.js('showPoints', TYPE.STRING,
+    {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
+    defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+  // Property.js('showBoxPlot', TYPE.BOOL,
+  //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
@@ -225,6 +240,7 @@ export const FIT_STATS_RSQUARED = 'rSquared';
 export const FIT_STATS_AUC = 'auc';
 
 
+// TODO?: add method to return parameters - get parameters from fit function
 export abstract class FitFunction {
   abstract get name(): string;
   abstract get parameterNames(): string[];
@@ -346,9 +362,7 @@ function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
 }
 
 function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (params: number[], x: number) => number,
-  of: ObjectiveFunction): Optimizable {
-  const fixed: number[] = [];
-
+  of: ObjectiveFunction, fixed: number[]): Optimizable {
   return {
     getValue: (parameters: number[]) => {
       return of(curveFunction, data, parameters).value;
@@ -371,7 +385,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
     const fitFunctionParts = seriesFitFunc.function.split('=>').map((elem) => elem.trim());
     const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map((elem) => elem.trim());
     const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1),
-      `return ${fitFunctionParts[1]}`);
+      `${fitFunctionParts[1].includes(';') ? '' : 'return '}${fitFunctionParts[1]}`);
     const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1),
       `return ${getInitParamsParts[1]}`);
     const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
@@ -382,36 +396,38 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   return fitFunctions[seriesFitFunc.name];
 }
 
-export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel):
-  FitCurve {
+export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel,
+  parameterBounds?: FitParamBounds[]): FitCurve {
   const curveFunction = fitFunction.y;
   const paramValues = fitFunction.getInitialParameters(data.x, data.y);
 
   const of = createObjectiveFunction(errorModel);
-  const optimizable = createOptimizable(data, curveFunction, of);
-
-  // const fixed: number[] = [];
+  const fixed: number[] = [];
   let overLimits = true;
 
   while (overLimits) {
+    const optimizable = createOptimizable(data, curveFunction, of, fixed);
     limitedMemoryBFGS(optimizable, paramValues);
     limitedMemoryBFGS(optimizable, paramValues);
 
     overLimits = false;
-    // for (let i = 0; i < paramValues.length; i++) {
-    //   if (params[i]?.maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
-    //     overLimits = true;
-    //     fixed.push(i);
-    //     paramValues[i] = params[i].maxBound!;
-    //     break;
-    //   }
-    //   if (params[i]?.minBound !== undefined && paramValues[i] < params[i].minBound!) {
-    //     overLimits = true;
-    //     fixed.push(i);
-    //     paramValues[i] = params[i].minBound!;
-    //     break;
-    //   }
-    // }
+    if (!parameterBounds)
+      break;
+
+    for (let i = 0; i < parameterBounds.length; i++) {
+      if (parameterBounds[i]?.maxBound !== undefined && paramValues[i] > parameterBounds[i].maxBound!) {
+        overLimits = true;
+        fixed.push(i);
+        paramValues[i] = parameterBounds[i].maxBound!;
+        break;
+      }
+      if (parameterBounds[i]?.minBound !== undefined && paramValues[i] < parameterBounds[i].minBound!) {
+        overLimits = true;
+        fixed.push(i);
+        paramValues[i] = parameterBounds[i].minBound!;
+        break;
+      }
+    }
   }
 
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
@@ -438,22 +454,22 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
     of(curveFunction, data, paramValues).mult :
     of(curveFunction, data, paramValues).const;
 
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
+  const quantile = jStat.normal.inv(1 - confidenceLevel/2, 0, 1);
 
   const top = (x: number) =>{
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value + studentQ * error / Math.sqrt(data.x.length);
+      return value + quantile * error;
     else
-      return value + studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value + quantile * Math.abs(value) * error;
   };
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value - studentQ * error / Math.sqrt(data.x.length);
+      return value - quantile * error;
     else
-      return value - studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value - quantile * Math.abs(value) * error;
   };
 
   return {confidenceTop: top, confidenceBottom: bottom};

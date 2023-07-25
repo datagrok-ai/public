@@ -1,5 +1,5 @@
 /* eslint-disable no-tabs */
-type BoxPlotStatistics = {
+export type BoxPlotStatistics = {
   q1: number,
 	q2: number,
 	q3: number,

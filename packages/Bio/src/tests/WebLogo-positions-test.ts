@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {ALPHABET, NOTATION, SplitterFunc, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {category, expect, expectArray, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   countForMonomerAtPosition,
   PositionInfo as PI,
@@ -19,14 +19,6 @@ ATC-G-TTGC--
 -TC-GCTTGC--
 -TC-GCTTGC--`;
 
-
-  before(async () => {
-  });
-
-  after(async () => {
-    // Closing opened views causes the error 'Cannot read properties of null (reading 'f')'
-  });
-
   test('allPositions', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
@@ -40,6 +32,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -61,10 +54,10 @@ ATC-G-TTGC--
 
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
-      for (const key in positions[i].freq)
-        expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
+      for (const m of positions[i].getMonomers())
+        expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
     }
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('positions with shrinkEmptyTail option true (filtered)', async () => {
     const csvDf2 = `seq
@@ -91,6 +84,7 @@ ATC-G-TTGC--
       {'shrinkEmptyTail': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -109,10 +103,10 @@ ATC-G-TTGC--
 
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
-      for (const key in positions[i].freq)
-        expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
+      for (const m of positions[i].getMonomers())
+        expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
     }
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('positions with skipEmptyPositions option', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
@@ -128,6 +122,7 @@ ATC-G-TTGC--
       {'skipEmptyPositions': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero');
     const resPosList: PI[] = wlViewer['positions'];
 
     const tgtPosList: PI[] = [
@@ -148,7 +143,7 @@ ATC-G-TTGC--
       const tgtPos = tgtPosList[posI];
       expectPositionInfo(resPos, tgtPos);
     }
-  }, {skipReason: 'GROK-13300'});
+  });
 
   test('count sequences for monomer at position', async () => {
     const df: DG.DataFrame = buildDfWithSeqCol(csvDf1, NOTATION.FASTA, ALPHABET.DNA, 'SEQ.MSA');
@@ -163,6 +158,7 @@ ATC-G-TTGC--
     })) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
+    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
     const resPosList: PI[] = wlViewer['positions'];
     const tgtPosList: PI[] = [
       new PI(2, '3', {'C': new PMI(5)}),
@@ -182,15 +178,15 @@ ATC-G-TTGC--
     const uh = UnitsHandler.getOrCreate(seqCol);
     const countAt1 = countForMonomerAtPosition(df, uh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
-  }, {skipReason: 'GROK-13300'});
+  });
 });
 
 function expectPositionInfo(actualPos: PI, expectedPos: PI): void {
   expect(actualPos.name, expectedPos.name);
-  expectArray(Object.keys(actualPos.freq), Object.keys(expectedPos.freq));
-  for (const key in actualPos.freq) {
+  expectArray(actualPos.getMonomers(), expectedPos.getMonomers());
+  for (const key of actualPos.getMonomers()) {
     //
-    expect(actualPos.freq[key].count, expectedPos.freq[key].count);
+    expect(actualPos.getFreq(key).count, expectedPos.getFreq(key).count);
   }
 }
 

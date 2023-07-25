@@ -6,11 +6,11 @@ import $ from 'cash-dom';
 import {ClusterType, CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {HorizontalAlignments, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {getAggregatedValue, getStats, Stats} from '../utils/statistics';
 import wu from 'wu';
 import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
-import {getStatsSummary} from '../utils/misc';
+import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
@@ -63,10 +63,14 @@ export class LogoSummaryTable extends DG.JsViewer {
       dialog.add(this.viewerGrid.root);
       dialog.onCancel(() => this.render());
       dialog.showModal(true);
+      this.viewerGrid.invalidate();
     }, 'Show Logo Summary Table in full screen');
     $(expand).addClass('pep-help-icon');
     this.viewerGrid.root.style.width = 'auto';
-    this.root.appendChild(ui.divV([ui.divH([this._titleHost, expand], {style: {alignSelf: 'center', lineHeight: 'normal'}}), this.viewerGrid.root]));
+    this.root.appendChild(ui.divV([
+      ui.divH([this._titleHost, expand], {style: {alignSelf: 'center', lineHeight: 'normal'}}),
+      this.viewerGrid.root,
+    ]));
     this.viewerGrid.invalidate();
   }
 
@@ -210,54 +214,84 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.viewerGrid.columns.rowHeader!.visible = false;
     this.viewerGrid.props.rowHeight = 55;
 
-    const webLogoCache = new DG.LruCache<number, HTMLElement>();
-    const distCache = new DG.LruCache<number, HTMLElement>();
-    this.viewerGrid.onCellPrepare((cell) => {
-      const currentRowIdx = cell.tableRowIndex;
-      if (!cell.isTableCell || currentRowIdx === null || currentRowIdx === -1)
+    const webLogoCache = new DG.LruCache<number, DG.Viewer & IWebLogoViewer>();
+    const distCache = new DG.LruCache<number, DG.Viewer<DG.IHistogramLookSettings>>();
+    const maxSequenceLen = this.model.splitSeqDf.columns.length;
+    const webLogoGridCol = this.viewerGrid.columns.byName(C.LST_COLUMN_NAMES.WEB_LOGO)!;
+    webLogoGridCol.cellType = 'html';
+    webLogoGridCol.width = 350;
+
+    this.viewerGrid.onCellRender.subscribe(async (gridCellArgs) => {
+      const gridCell = gridCellArgs.cell;
+      const currentRowIdx = gridCell.tableRowIndex;
+      if (!gridCell.isTableCell || currentRowIdx === null || currentRowIdx === -1)
         return;
 
-      const height = cell.bounds.height;
-      const clusterBitSet = this.bitsets[currentRowIdx];
+      const canvasContext = gridCellArgs.g;
+      const bound = gridCellArgs.bounds;
+      canvasContext.save();
+      canvasContext.beginPath();
+      canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
+      canvasContext.clip();
 
-      if (cell.tableColumn?.name === C.LST_COLUMN_NAMES.WEB_LOGO) {
-        if (webLogoCache.has(currentRowIdx)) {
-          cell.element = webLogoCache.get(currentRowIdx)!;
-          return;
-        }
-        const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
-        const maxSequenceLength = this.model.splitSeqDf.columns.length;
-        const positionWidth = Math.floor((cell.bounds.width - 2 - (4 * (maxSequenceLength - 1))) / maxSequenceLength);
-        webLogoTable.plot
-          .fromType('WebLogo', {positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
-            maxHeight: 1000, minHeight: height - 2, positionWidth: positionWidth})
-          .then((viewer) => {
-            cell.element = viewer.root;
-            webLogoCache.set(currentRowIdx, viewer.root);
-          });
-      } else if (cell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {
-        if (distCache.has(currentRowIdx)) {
-          cell.element = distCache.get(currentRowIdx)!;
-          return;
-        }
-        const distributionDf = this.createDistributionDf(activityCol, clusterBitSet);
-        const viewerRoot = distributionDf.plot.histogram({
-          filteringEnabled: false,
-          valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
-          splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
-          legendVisibility: 'Never',
-          showXAxis: false,
-          showColumnSelector: false,
-          showRangeSlider: false,
-          showBinSelector: false,
-          backColor: DG.Color.toHtml(DG.Color.white),
-          xAxisHeight: 1,
-        }).root;
+      try {
+        const height = Math.max(gridCell.bounds.height - 2, 0);
+        const clusterBitSet = this.bitsets[currentRowIdx];
 
-        viewerRoot.style.width = 'auto';
-        viewerRoot.style.height = `${height-2}px`;
-        cell.element = viewerRoot;
-        distCache.set(currentRowIdx, viewerRoot);
+        if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.CLUSTER) {
+          CR.renderLogoSummaryCell(canvasContext, gridCell.cell.value, this.model.clusterSelection, bound);
+          gridCellArgs.preventDefault();
+        } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.WEB_LOGO) {
+          const positionWidth = Math.floor((gridCell.bounds.width - 2 - (4 * (maxSequenceLen - 1))) / maxSequenceLen);
+
+          let viewer = webLogoCache.get(currentRowIdx);
+          if (viewer !== undefined) {
+            const viewerProps = viewer.getProperties();
+
+            for (const prop of viewerProps) {
+              if (prop.name === 'positionHeight' && prop.get(viewer) !== this.webLogoMode)
+                prop.set(viewer, this.webLogoMode);
+              else if (prop.name === 'positionWidth' && prop.get(viewer) !== positionWidth)
+                prop.set(viewer, positionWidth);
+              else if (prop.name === 'minHeight' && prop.get(viewer) !== height)
+                prop.set(viewer, height);
+            }
+            const viewerRoot = $(viewer.root).css('height', `${height}px`);//;
+            viewerRoot.children().first().css('overflow-y', 'hidden !important');
+          } else {
+            const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
+            viewer = await webLogoTable.plot
+              .fromType('WebLogo', {positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
+                maxHeight: 1000, minHeight: height, positionWidth: positionWidth});
+            webLogoCache.set(currentRowIdx, viewer);
+          }
+          gridCell.element = viewer.root;
+          gridCellArgs.preventDefault();
+        } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {
+          let viewer = distCache.get(currentRowIdx);
+          if (viewer === undefined) {
+            const distributionDf = this.createDistributionDf(activityCol, clusterBitSet);
+            viewer = distributionDf.plot.histogram({
+              filteringEnabled: false,
+              valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
+              splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
+              legendVisibility: 'Never',
+              showXAxis: false,
+              showColumnSelector: false,
+              showRangeSlider: false,
+              showBinSelector: false,
+              backColor: DG.Color.toHtml(DG.Color.white),
+              xAxisHeight: 1,
+            });
+            viewer.root.style.width = 'auto';
+            distCache.set(currentRowIdx, viewer);
+          }
+          viewer.root.style.height = `${height}px`;
+          gridCell.element = viewer.root;
+          gridCellArgs.preventDefault();
+        }
+      } finally {
+        canvasContext.restore();
       }
     });
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -272,20 +306,6 @@ export class LogoSummaryTable extends DG.JsViewer {
       this.model.modifyClusterSelection(cell.cell.value);
       this.viewerGrid.invalidate();
     });
-    this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
-      const gc = gridCellArgs.cell;
-      if (gc.tableColumn?.name !== clustersColName || gc.isColHeader)
-        return;
-      const canvasContext = gridCellArgs.g;
-      const bound = gridCellArgs.bounds;
-      canvasContext.save();
-      canvasContext.beginPath();
-      canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
-      canvasContext.clip();
-      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, this.model.clusterSelection, bound);
-      gridCellArgs.preventDefault();
-      canvasContext.restore();
-    });
     this.viewerGrid.onCellTooltip((cell, x, y) => {
       if (!cell.isColHeader && cell.tableColumn?.name === clustersColName) {
         const clustName = cell.cell.value;
@@ -295,9 +315,6 @@ export class LogoSummaryTable extends DG.JsViewer {
       }
       return true;
     });
-    const webLogoGridCol = this.viewerGrid.columns.byName('WebLogo')!;
-    webLogoGridCol.cellType = 'html';
-    webLogoGridCol.width = 350;
 
     const gridProps = this.viewerGrid.props;
     gridProps.allowEdit = false;
@@ -440,9 +457,8 @@ export class LogoSummaryTable extends DG.JsViewer {
     return newDf;
   }
 
-  createDistributionDf(activityCol: DG.Column<number>, splitCol: DG.Column<boolean> | DG.BitSet): DG.DataFrame {
-    if (splitCol instanceof DG.BitSet)
-      splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitCol);
-    return DG.DataFrame.fromColumns([activityCol, splitCol]);
+  createDistributionDf(activityCol: DG.Column<number>, splitMask: DG.BitSet): DG.DataFrame {
+    const table = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, splitMask)]);
+    return prepareTableForHistogram(table);
   }
 }

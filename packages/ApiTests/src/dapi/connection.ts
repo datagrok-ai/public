@@ -1,13 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test, expectArray, after} from '@datagrok-libraries/utils/src/test';
 
 const GDC = grok.dapi.connections;
 
 category('Dapi: connection', () => {
   const dcParams = {
     dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
+  let query: DG.DataQuery;
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
@@ -18,6 +19,28 @@ category('Dapi: connection', () => {
     expect((await GDC.find(dc.id)).id, dc.id);
     await GDC.delete(dc);
     expect(await GDC.find(dc.id) == undefined);
+  });
+
+  test('JS postprocess', async () => {
+    const script = `
+    //language: javascript
+    //input: dataframe result
+    //output: int rowCount
+    //output: int columns
+    rowCount = result.rowCount;
+    columns = result.columns.length;
+    console.log(rowCount, columns);
+    `;
+    const dc = (await grok.dapi.connections.filter('NorthwindTest').list())[0];
+    const q = dc.query('JS postprocess query test', 'select * from orders');
+    query = await grok.dapi.queries.save(q);
+    await query.setProperties({jsScript: script});
+    expect((await query.getProperties()).jsScript, script);
+    await query.executeTable();
+  });
+
+  after(async () => {
+    await grok.dapi.queries.delete(query);
   });
 });
 
@@ -50,6 +73,10 @@ category('Dapi: TableQuery', () => {
       login: 'datagrok', password: 'datagrok'};
     dc = DG.DataConnection.create('test', dcParams);
     dc = await grok.dapi.connections.save(dc);
+  });
+
+  after(async () => {
+    await grok.dapi.connections.delete(dc);
   });
 
   test('Create', async () => {
@@ -103,7 +130,7 @@ category('Dapi: TableQuery', () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
   }, {skipReason: 'GROK-11670'});
-}, false);
+});
 
 /*
 category('Dapi: TableQueryBuilder', () => {

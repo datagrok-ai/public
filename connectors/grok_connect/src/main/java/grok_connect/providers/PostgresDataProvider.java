@@ -10,12 +10,10 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import serialization.Types;
 
 public class PostgresDataProvider extends JdbcDataProvider {
-    public PostgresDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public PostgresDataProvider() {
         driverClassName = "org.postgresql.Driver";
 
         descriptor = new DataSource();
@@ -95,24 +93,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        if (isPostgresNumeric(typeName)) return false;
-        return super.isInteger(type, typeName, precision, scale);
-    }
-
-    @Override
-    protected boolean isFloat(int type, String typeName, int precision, int scale) {
-        return super.isFloat(type, typeName, precision, scale) || isPostgresNumeric(typeName);
-    }
-
-    @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("%s ~ '%s'", columnName, regexExpression);
-    }
-
-    private boolean isPostgresNumeric(String typeName) {
-        // We need next condition because be default Postgres sets precision and scale to null for numeric type.
-        // And ResultSetMetaData.getScale() returns 0 if scale is null.
-        return typeName.equalsIgnoreCase("numeric");
     }
 }

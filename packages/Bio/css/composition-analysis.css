@@ -1,0 +1,16 @@
+.macromolecule-cell-comp-analysis-host{
+    max-height: 250px;
+    overflow-y: scroll;
+}
+
+.macromolecule-cell-comp-analysis-bar{
+    height: inherit;
+    display: block;
+    margin-top: 1.5px;
+    margin-bottom: 1.5px;
+    margin-right: 3px;
+}
+
+.macromolecule-cell-comp-analysis-value{
+    display: flex;
+}

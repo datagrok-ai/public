@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {getRdKitModule, getRdKitService} from './utils/chem-common-rdkit';
 import {
   chemBeginCriticalSection,
@@ -35,22 +36,24 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
     if (a2 > a1) return +1;
     return 0;
   });
-  const sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', limit);
-  const sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', limit);
-  sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
-  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', limit);
+  const sortedMolStringsArr: string[] = [];
+  const sortedMolIndArr: number[] = [];
+  const sortedScoresArr: number[] = [];
   for (let n = 0; n < limit; n++) {
     const idx = sortedIndices[n];
     const score = distances[idx];
     if (score < minScore) {
-      sortedMolStrings.dataFrame.rows.removeAt(n, limit - n);
-      sortedScores.dataFrame.rows.removeAt(n, limit - n);
       break;
     }
-    sortedMolStrings.set(n, molStringsColumn.get(idx));
-    sortedScores.set(n, score);
-    sortedMolInd.set(n, idx);
+    sortedMolStringsArr.push(molStringsColumn.get(idx));
+    sortedScoresArr.push(score);
+    sortedMolIndArr.push(idx);
   }
+  const length = sortedMolStringsArr.length;
+  const sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', length).init((i) => sortedMolStringsArr[i]);
+  const sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', length).init((i) => sortedMolIndArr[i]);
+  sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
+  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', length).init((i) => sortedScoresArr[i]);;
   return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
 }
 
@@ -81,8 +84,12 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   return diversities;
 }
 
+function invalidatedColumnKey(col: DG.Column): string {
+  return col.dataFrame?.name + '.' + col.name;
+}
+
 function colInvalidated(col: DG.Column, createMols: boolean): Boolean {
-  return (lastColumnInvalidated == col.name &&
+  return (lastColumnInvalidated == invalidatedColumnKey(col) &&
     col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version) &&
     (!createMols || col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version)));
 }
@@ -93,7 +100,7 @@ async function _invalidate(molCol: DG.Column, createMols: boolean) {
       await (await getRdKitService()).initMoleculesStructures(molCol.toList());
       molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 2));
     }
-    lastColumnInvalidated = molCol.name;
+    lastColumnInvalidated = invalidatedColumnKey(molCol);
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
 }
@@ -242,6 +249,9 @@ export async function chemSubstructureSearchLibrary(
         result.set(match, true, false);
     }
     return result;
+  } catch (e: any) {
+    grok.shell.error(e.message);
+    throw e;
   } finally {
     chemEndCriticalSection();
   }

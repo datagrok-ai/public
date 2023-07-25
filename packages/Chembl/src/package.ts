@@ -43,7 +43,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.div([]);
-  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
   const panel = ui.divV([headerHost, compsHost]);
   const searchFunc = substructure ? async () => chemblSubstructureSearch(mol) : async () => chemblSimilaritySearch(mol);
 
@@ -56,11 +56,15 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     const moleculeCol = table.getCol('smiles');
     const molregnoCol = table.getCol('molregno');
     const molCount = Math.min(table.rowCount, 20);
-  
+
     for (let i = 0; i < molCount; i++) {
-      const molHost = ui.div();
+      const molHost = ui.divV([]);
       grok.functions.call('Chem:drawMolecule', {'molStr': moleculeCol.get(i), 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-        .then((res: HTMLElement) => molHost.append(res));
+        .then((res: HTMLElement) => {
+          molHost.append(res);
+          if (!substructure)
+            molHost.append(ui.divText(`Score: ${table.getCol('similarity').get(i).toFixed(2)}`));
+        });
 
       ui.tooltip.bind(molHost,
         () => ui.divText(`ChEMBL ID: ${molregnoCol.get(i)}\nClick to open in ChEMBL Database`));
@@ -103,8 +107,9 @@ export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
   return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Chembl Browser
-//tags: app
+/*
+//name_: Chembl Browser
+//tags_: app
 export async function Browser() {
   // Filter inputs
   const molecule = ui.moleculeInput('Substructure', 'C1CCCCC1');
@@ -394,3 +399,4 @@ export async function Browser() {
     },
   };
 }
+*/

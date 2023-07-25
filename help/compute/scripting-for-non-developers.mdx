@@ -126,6 +126,17 @@ Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are 
 
 ### Python
 
+Here is a script header that is prepended to your script:
+
+```
+import os
+import io
+import json
+import pandas as pd
+import requests
+from datetime import datetime, timedelta
+```
+
 See [Conda environments](scripting.md#conda-environments) for details.
 
 ### R
@@ -134,8 +145,8 @@ See [Renv environments](scripting.md#renv-environments) for details.
 
 ## How to enhance a script view
 
-Datagrok automatically creates a graphical user interface for your scripts. It uses [script header](../datagrok/functions/func-params-annotation.md) to create an input form and properly show the outputs.
-You may specify different [options](../datagrok/functions/func-params-annotation.md#options) in header.
+Datagrok automatically creates a graphical user interface for your scripts. It uses [script header](../datagrok/concepts/functions/func-params-annotation.md) to create an input form and properly show the outputs.
+You may specify different [options](../datagrok/concepts/functions/func-params-annotation.md#options) in header.
 
 You may customize script view using additional GUI-related options. These options are, basically, hints to create more user-friendly interface for your scripts.
 Options should be listed in curly braces in corresponding header lines. The order of the hints makes no difference. All options are optional.
@@ -688,7 +699,7 @@ Both JavaScript and Curl samples are provided.
 
 ### JS API
 
-JavaScript-based apps have access to the whole Datagrok platform via the [JS API](../develop/js-api.md).
+JavaScript-based apps have access to the whole Datagrok platform via the [JS API](../develop/packages/js-api.md).
 
 ### Embedding as iframe
 

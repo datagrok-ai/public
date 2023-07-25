@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: jupyter-notebook
+  name: jupyter-notebook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: jupyter-notebook
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: jupyter-notebook
+        network: "datagrok"
+    spec:
+      containers:
+        - image: datagrok/jupyter_notebook:latest
+          imagePullPolicy: Always
+          name: jn
+          ports:
+            - containerPort: 8889
+            - containerPort: 5005
+      restartPolicy: Always

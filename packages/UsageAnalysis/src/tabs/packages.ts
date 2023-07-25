@@ -161,9 +161,11 @@ export class PackagesView extends UaView {
         (await grok.dapi.users.find(filter.users[0])).friendlyName : `${filter.users.length} users`;
       uaToolbox.packagesDD.value = packageNames.length === 1 ?
         packageNames[0] : `${packageNames.length} packages`;
-      ViewHandler.getView('Functions').getScatterPlot()
-        .reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`,
-          groups: filter.groups, packages: packageNames});
+      const fv = ViewHandler.getView('Functions');
+      fv.viewers[0].reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`,
+        groups: filter.groups, packages: packageNames});
+      if (!fv.viewers[0].activated)
+        fv.viewers[0].activated = true;
       ViewHandler.changeTab('Functions');
       uaToolbox.drilldown = ViewHandler.getCurrentView();
     });
@@ -210,11 +212,13 @@ export class PackagesView extends UaView {
       // uaToolbox.packagesDD.value = packageNames.length === 1 ?
       //   packageNames[0] : `${packageNames.length} packages`;
       uaToolbox.packagesDD.value = '';
-      ViewHandler.getView('Events').viewers[0]
-        .reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`});
-      ViewHandler.getView('Events').viewers[1]
-        .reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`,
-          groups: filter.groups});
+      const ev = ViewHandler.getView('Events');
+      ev.viewers[0].reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`});
+      ev.viewers[1].reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`, groups: filter.groups});
+      if (!ev.viewers[0].activated) {
+        ev.viewers[0].activated = true;
+        ev.viewers[1].activated = true;
+      }
       ViewHandler.changeTab('Events');
       uaToolbox.drilldown = ViewHandler.getCurrentView();
     });

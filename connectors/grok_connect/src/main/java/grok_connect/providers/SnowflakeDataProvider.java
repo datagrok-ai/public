@@ -1,22 +1,25 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.*;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.SnowflakeBigIntColumnManager;
+import grok_connect.managers.integer_column.OracleSnowflakeIntColumnManager;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import serialization.Types;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
-public class SnowflakeDataProvider extends JdbcDataProvider{
+public class SnowflakeDataProvider extends JdbcDataProvider {
     private static final boolean CAN_BROWSE_SCHEMA = true;
     private static final String DEFAULT_SCHEMA = "PUBLIC";
     private static final String URL_PREFIX = "jdbc:snowflake://";
@@ -28,8 +31,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final List<String> AVAILABLE_CLOUDS =
             Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp"));
 
-    public SnowflakeDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public SnowflakeDataProvider() {
         init();
     }
 
@@ -74,21 +76,6 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     }
 
     @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return typeName.equals("NUMBER") && precision < 10 && scale == 0;
-    }
-
-    @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return typeName.equals("NUMBER") && precision >= 10 && scale == 0;
-    }
-
-    @Override
-    protected boolean isFloat(int type, String typeName, int precision, int scale) {
-        return typeName.equals("DOUBLE") || type == java.sql.Types.DOUBLE;
-    }
-
-    @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("%s REGEXP '%s'", columnName, regexExpression);
     }
@@ -115,6 +102,14 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         String values = String.join(",", list);
         statement.setObject(n, values);
         return 0;
+    }
+
+    @Override
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
+        defaultManagersMap.put(Types.BIG_INT, new SnowflakeBigIntColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 
     private void init() {

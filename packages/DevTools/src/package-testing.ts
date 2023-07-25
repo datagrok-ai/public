@@ -379,12 +379,14 @@ export class TestManager extends DG.ViewBase {
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    const res = await grok.functions.call(
+    const res: DG.DataFrame = await grok.functions.call(
       `${t.packageName}:test`, {
         'category': t.test.category,
         'test': t.test.name,
         'testContext': new TestContext(false),
       });
+    if (res.getCol('result').type !== 'string')
+      res.changeColumnType('result', 'string');
     const testSucceeded = res.get('success', 0);
     if (runSkipped) t.test.options.skipReason = skipReason;
     if (!this.testsResultsDf) {
@@ -518,6 +520,13 @@ export class TestManager extends DG.ViewBase {
     const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
     acc.addPane('Results', () => ui.div(grid), true);
+    if (tests.test !== undefined) {
+      acc.addPane('History', () => ui.waitBox(async () => {
+        const history = await grok.data.query('DevTools:TestHistory',
+          {packageName: tests.packageName, category: tests.test.category, test: tests.test.name});
+        return (await history.plot.grid()).root;
+      }), true);
+    }
     return acc.root;
   };
 

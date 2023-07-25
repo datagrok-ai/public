@@ -1,10 +1,12 @@
+import * as DG from 'datagrok-api/dg';
+
 import {
   IFitChartData,
   IFitChartOptions,
   IFitSeriesOptions,
   IFitSeries,
   IFitPoint,
-  FIT_FUNCTION_SIGMOID
+  FIT_FUNCTION_SIGMOID,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 
@@ -36,8 +38,8 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
 */
 function getSeriesOptions(series: Element): IFitSeriesOptions {
   const params = (series.getElementsByTagName('params')[0].childNodes[0].nodeValue)?.split(',')!.map(Number)!;
-  // params there are: [IC50, min, max, tan] (also log IC50) - so we place them correctly: [max, tan, IC50, min]
-  const newParams = [params[2], params[3], Math.log10(params[0]), params[1]];
+  // params there are: [IC50, tan, max, min] - so we place them correctly: [max, tan, IC50, min]
+  const newParams = [params[2], params[1], params[0], params[3]];
   let funcType = series.getElementsByTagName('function')[0].getAttribute('type')!;
   funcType = funcType === 'sigif' ? FIT_FUNCTION_SIGMOID: funcType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;
@@ -46,12 +48,16 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
   const seriesName = series.getAttribute('name')!;
 
   return {
-    parameters: newParams,
+    name: seriesName,
     fitFunction: funcType,
+    parameters: newParams,
+    markerType: DG.MARKER_TYPE.CIRCLE,
     pointColor: markerColor,
     fitLineColor: lineColor,
     showFitLine: drawLine,
-    name: seriesName,
+    showPoints: 'points',
+    showCurveConfidenceInterval: false,
+    clickToToggle: false,
   };
 }
 
@@ -62,14 +68,14 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
 function getPoints(series: Element): IFitPoint[] {
   const xCoords = (series.getElementsByTagName('x')[0].childNodes[0].nodeValue)?.split(',')!;
   const yCoords = (series.getElementsByTagName('y')[0].childNodes[0].nodeValue)?.split(',')!;
-  // const mask = (series.getElementsByTagName('mask')[0].childNodes[0].nodeValue)?.split('')!;
+  const mask = (series.getElementsByTagName('mask')[0].childNodes[0].nodeValue)?.split('')!;
 
   const points: IFitPoint[] = [];
   for (let j = 0; j < xCoords.length; j++) {
     points[j] = {
       x: +xCoords[j],
       y: +yCoords[j],
-      // outlier: !!mask[j],
+      outlier: !Boolean(mask[j]),
     };
   }
 
@@ -87,7 +93,7 @@ function getSeries(series: Element): IFitSeries {
   const returnSeries: IFitSeries = {
     points: points,
   };
-  Object.assign(series, currentFitSeriesOptions);
+  Object.assign(returnSeries, currentFitSeriesOptions);
 
   return returnSeries;
 }

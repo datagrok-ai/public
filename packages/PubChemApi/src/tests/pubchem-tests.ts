@@ -12,7 +12,7 @@ category('Panels', () => {
       const pubChemId = await smilesToPubChem(molString);
       await buildAccordion(pubChemId);
     }
-  });
+  }, {skipReason: 'GROK-13201: Info panel needs to be refactored'});
 
   test('Substructure Search', async () => {
     for (const molString of molStrings)

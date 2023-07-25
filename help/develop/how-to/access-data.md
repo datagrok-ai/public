@@ -122,7 +122,7 @@ Datagrok has a [built-in credentials management system](../../govern/security.md
 Once the connection is established, you can extract data by sending a [query](../../access/access.md#data-query) to the data source. In a package, queries are typically placed in the `queries` folder.
 
 Similar to [scripts](../../compute/scripting.md), you can annotate SQL statements with comments as the underlying
-mechanism is fundamentally the same ([learn more about functions](../../datagrok/functions/functions.md)). To use an existing connection in a query, provide its name along with the namespace in the `connection` parameter.
+mechanism is fundamentally the same ([learn more about functions](../../datagrok/concepts/functions/functions.md)). To use an existing connection in a query, provide its name along with the namespace in the `connection` parameter.
 
 Here's an example for your `queries.sql` file:
 
@@ -138,9 +138,9 @@ select * from protein_classification
 
 </details>
 
-SQL statements are annotated with comments, just like [functions](../../datagrok/functions/func-params-annotation.md),
+SQL statements are annotated with comments, just like [functions](../../datagrok/concepts/functions/func-params-annotation.md),
 since the underlying mechanism is essentially the same (read more on the concept of
-[functions](../../datagrok/functions/functions.md)). Here we have two header parameters: the query `name` and the
+[functions](../../datagrok/concepts/functions/functions.md)). Here we have two header parameters: the query `name` and the
 `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify
 `connection` if the package only has one. Similarly, the tag `end` is not required if there is only one query per file:
 the parser needs it to understand where the current query ends and the next one begins. So safely omit the name of
@@ -162,7 +162,7 @@ query template into your package, type `grok add query <name>` in the terminal.
 
 :::
 
-For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
+For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases/databases.mdx#parameterized-queries) and [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
 
 #### Running queries
 
@@ -186,14 +186,14 @@ To see how this method works, refer to [this example](https://public.datagrok.ai
 
 ### Sharing connections
 
-Data connections can be shared as part of a [project](../../datagrok/project.md)
+Data connections can be shared as part of a [project](../../collaborate/project.md)
 , [package](../develop.md#packages) (and [repository](../../access/databases/connectors/git.md) containing this package), or as a
-standalone [entity](../../datagrok/objects.md). The access rights of a database connection are inherited from the access rights of a
+standalone [entity](../../datagrok/concepts/objects.md). The access rights of a database connection are inherited from the access rights of a
 query. However, the access rights of a query don't inherit the access rights of the database connection. Consequently, when sharing a query, the associated database connection will be shared automatically. However, sharing a connection does not automatically share your queries. In the case of web queries, they are shared automatically when the corresponding connection is shared.
 
 ### Caching results
 
-See [Caching data](../../access/databases/databases.mdx/#caching-data).
+See [Caching data](../../access/databases/databases.mdx#caching-data).
 
 ## Rest endpoints
 
@@ -301,4 +301,4 @@ You can also use one of the following options to open files using JavaScript:
 See also:
 
 * [JavaScript Development](../develop.md)
-* [Functions](../../datagrok/functions/functions.md)
+* [Functions](../../datagrok/concepts/functions/functions.md)

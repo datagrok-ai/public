@@ -30,6 +30,6 @@ See also:
 
 * [Data connection](../access/access.md#data-connection)
 * [Data query](../access/access.md#data-query)
-* [Function call](../datagrok/functions/function-call.md)
+* [Function call](../datagrok/concepts/functions/function-call.md)
 * [Aggregate rows](aggregate-rows.md)
 * [Recipe Editor](recipe-editor.md)

@@ -2,13 +2,14 @@
 --connection: System:Datagrok
 select
 t.id::text as id,
-t.friendly_name as test,
+v5.value as type,
+v7.value as test,
+v8.value as category,
 e.description as name,
 e.event_time as date,
 case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status,
 v2.value as result,
 v3.value::int as ms,
-v5.value as type,
 v6.value as package
 from events e
 inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-%'
@@ -17,7 +18,9 @@ left join event_parameter_values v2 inner join event_parameters p2 on p2.id = v2
 left join event_parameter_values v3 inner join event_parameters p3 on p3.id = v3.parameter_id and p3.name = 'ms' on v3.event_id = e.id
 left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
 inner join event_parameter_values v5 inner join event_parameters p5 on p5.id = v5.parameter_id and p5.name = 'type' on v5.event_id = e.id
-left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'package' on v6.event_id = e.id
+left join event_parameter_values v6 inner join event_parameters p6 on p6.id = v6.parameter_id and p6.name = 'packageName' on v6.event_id = e.id
+left join event_parameter_values v7 inner join event_parameters p7 on p7.id = v7.parameter_id and p7.name = 'test' on v7.event_id = e.id
+left join event_parameter_values v8 inner join event_parameters p8 on p8.id = v8.parameter_id and p8.name = 'category' on v8.event_id = e.id
 where
 e.event_time = (select max(_e.event_time) from events _e where _e.event_type_id = e.event_type_id)
 --end

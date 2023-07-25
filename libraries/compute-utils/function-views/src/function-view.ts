@@ -42,6 +42,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   protected async onFuncCallReady() {
     this.changeViewName(this.funcCall.func.friendlyName);
+    await historyUtils.augmentFuncWithPackage(this.func);
 
     this.build();
     const runId = this.getStartId();
@@ -446,13 +447,19 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
     this.funcCall.newId();
-    await this.funcCall.call(); // CAUTION: mutates the funcCall field
-    pi.close();
-    await this.onAfterRun(this.funcCall);
+    try {
+      await this.funcCall.call(); // CAUTION: mutates the funcCall field
 
-    // If a view is incapuslated into a tab (e.g. in PipelineView),
-    // there is no need to save run till an entire pipeline is over.
-    this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+      await this.onAfterRun(this.funcCall);
+
+      // If a view is incapuslated into a tab (e.g. in PipelineView),
+      // there is no need to save run till an entire pipeline is over.
+      this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+    } catch (err: any) {
+      grok.shell.error(err.toString());
+    } finally {
+      pi.close();
+    }
   }
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
@@ -70,7 +70,7 @@ category('Viewers: Monomer-Position', () => {
     expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
       `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
   });
-}, false);
+}, {clear: false});
 
 category('Viewers: Most Potent Residues', () => {
   let df: DG.DataFrame;
@@ -102,6 +102,7 @@ category('Viewers: Most Potent Residues', () => {
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     expect(showTooltip(gc, 0, 0, model), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   });
 });
 
@@ -152,4 +153,4 @@ category('Viewers: Logo Summary Table', () => {
     const tooltipElement = lstViewer.showTooltip(cluster, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
-}, false);
+}, {clear: false});

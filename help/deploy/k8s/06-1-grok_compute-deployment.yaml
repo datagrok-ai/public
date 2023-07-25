@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: grok-compute
+  name: grok-compute
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      service: grok-compute
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: grok-compute
+        network: "datagrok"
+    spec:
+      containers:
+        - image: datagrok/grok_compute:latest
+          imagePullPolicy: Always
+          name: grok-compute
+          ports:
+            - containerPort: 5005
+      restartPolicy: Always

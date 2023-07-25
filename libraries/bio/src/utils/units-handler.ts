@@ -2,15 +2,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {ALIGNMENT, ALPHABET, candidateAlphabets, NOTATION, TAGS} from './macromolecule/consts';
 import {SeqColStats, SplitterFunc} from './macromolecule/types';
+import {detectAlphabet, getSplitterForColumn, getSplitterWithSeparator} from './macromolecule/utils';
 import {
-  detectAlphabet,
-  getSplitterForColumn,
-  getSplitterWithSeparator,
-  splitterAsFasta,
-  splitterAsHelm
-} from './macromolecule/utils';
-import {mmDistanceFunctions, MmDistanceFunctionsNames}
-  from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+  mmDistanceFunctions,
+  MmDistanceFunctionsNames
+} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
 import {HELM_POLYMER_TYPE} from './const';
@@ -20,17 +16,18 @@ export const Tags = new class {
   uhTemp = `units-handler.${DG.SEMTYPE.MACROMOLECULE}`;
 }();
 
+export const GapSymbols: { [units: string]: string } = {
+  [NOTATION.FASTA]: '-',
+  [NOTATION.SEPARATOR]: '',
+  [NOTATION.HELM]: '*',
+};
+
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
   protected readonly _column: DG.Column; // the column to be converted
   protected _units: string; // units, of the form fasta, separator
   protected _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected _defaultGapSymbol: string;
-  protected static readonly _defaultGapSymbolsDict = {
-    HELM: '*',
-    SEPARATOR: '',
-    FASTA: '-',
-  };
 
   public static setUnitsToFastaColumn(uh: UnitsHandler) {
     if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
@@ -83,9 +80,9 @@ export class UnitsHandler {
     }
   }
 
-  public get units(): string { return this._units; }
-
   protected get column(): DG.Column { return this._column; }
+
+  public get units(): string { return this._units; }
 
   public get notation(): NOTATION { return this._notation; }
 
@@ -218,6 +215,11 @@ export class UnitsHandler {
 
   public isHelmCompatible(): boolean { return this.helmCompatible === 'true'; }
 
+  public isGap(m: string): boolean {
+    return !m || (this.units === NOTATION.FASTA && m === GapSymbols.FASTA) ||
+      (this.units === NOTATION.HELM && m === GapSymbols.HELM);
+  }
+
   /** Associate notation types with the corresponding units */
   /**
    * @return {NOTATION}     Notation associated with the units type
@@ -233,24 +235,42 @@ export class UnitsHandler {
       throw new Error(`Column '${this.column.name}' has unexpected notation '${this.units}'.`);
   }
 
+
+  /**
+   * Get the wrapper strings for HELM, depending on the type of the
+   * macromolecule (peptide, DNA, RNA)
+   *
+   * @return {string[]} Array of wrappers
+   */
+  public getHelmWrappers(): string[] {
+    const prefix = (this.isDna()) ? 'DNA1{' :
+      (this.isRna() || this.isHelmCompatible()) ? 'RNA1{' : 'PEPTIDE1{';
+
+    const postfix = '}$$$$';
+    const leftWrapper = (this.isDna()) ? 'D(' :
+      (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
+    const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
+    return [prefix, leftWrapper, rightWrapper, postfix];
+  }
+
   /**
    * Create a new empty column of the specified notation type and the same
    * length as column
    *
-   * @param {NOTATION} targetNotation
+   * @param {NOTATION} tgtNotation
    * @return {DG.Column}
    */
-  protected getNewColumn(targetNotation: NOTATION, separator?: string): DG.Column {
+  protected getNewColumn(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column {
     const col = this.column;
     const len = col.length;
-    const name = targetNotation.toLowerCase() + '(' + col.name + ')';
+    const name = tgtNotation.toLowerCase() + '(' + col.name + ')';
     const newColName = col.dataFrame.columns.getUnusedName(name);
     const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, targetNotation);
-    if (targetNotation === NOTATION.SEPARATOR) {
-      if (!separator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
-      newColumn.setTag(TAGS.separator, separator);
+    newColumn.setTag(DG.TAGS.UNITS, tgtNotation);
+    if (tgtNotation === NOTATION.SEPARATOR) {
+      if (!tgtSeparator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
+      newColumn.setTag(TAGS.separator, tgtSeparator);
     }
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule'); // cell.renderer
 
@@ -270,7 +290,7 @@ export class UnitsHandler {
     if (srcAlphabetIsMultichar !== undefined)
       newColumn.setTag(TAGS.alphabetIsMultichar, srcAlphabetIsMultichar);
 
-    if (targetNotation == NOTATION.HELM) {
+    if (tgtNotation == NOTATION.HELM) {
       srcAlphabetSize = this.getAlphabetSize().toString();
       newColumn.setTag(TAGS.alphabetSize, srcAlphabetSize);
     }
@@ -392,6 +412,8 @@ export class UnitsHandler {
   }
 
   protected constructor(col: DG.Column<string>) {
+    if (col.type != DG.TYPE.STRING)
+      throw new Error(`Unexpected column type '${col.type}', must be '${DG.TYPE.STRING}'.`);
     this._column = col;
     const units = this._column.getTag(DG.TAGS.UNITS);
     if (units !== null && units !== undefined)
@@ -399,9 +421,9 @@ export class UnitsHandler {
     else
       throw new Error('Units are not specified in column');
     this._notation = this.getNotation();
-    this._defaultGapSymbol = (this.isFasta()) ? UnitsHandler._defaultGapSymbolsDict.FASTA :
-      (this.isHelm()) ? UnitsHandler._defaultGapSymbolsDict.HELM :
-        UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
+    this._defaultGapSymbol = (this.isFasta()) ? GapSymbols[NOTATION.FASTA] :
+      (this.isHelm()) ? GapSymbols[NOTATION.HELM] :
+        GapSymbols[NOTATION.SEPARATOR];
 
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
       (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
