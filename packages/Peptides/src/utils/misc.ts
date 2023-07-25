@@ -80,16 +80,17 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
   const activityCol: DG.Column<number> = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const splitCol: DG.Column<boolean> = table.getCol(C.COLUMNS_NAMES.SPLIT_COL);
 
+  const rowCount = activityCol.length;
   const activityColData = activityCol.getRawData();
-  const expandedData: number[] = new Array(activityColData.length + splitCol.stats.sum);
+  const expandedData: number[] = new Array(rowCount + splitCol.stats.sum);
   const expandedMasks: boolean[] = new Array(expandedData.length);
-  for (let i = 0, j = 0; i < activityColData.length; ++i) {
+  for (let i = 0, j = 0; i < rowCount; ++i) {
     const isSplit = splitCol.get(i)!;
     expandedData[i] = activityColData[i];
     expandedMasks[i] = isSplit;
     if (isSplit) {
-      expandedData[activityColData.length + j] = activityColData[i];
-      expandedMasks[activityColData.length + j] = false;
+      expandedData[rowCount + j] = activityColData[i];
+      expandedMasks[rowCount + j] = false;
       ++j;
     }
   }

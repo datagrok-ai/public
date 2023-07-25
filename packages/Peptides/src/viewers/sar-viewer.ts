@@ -283,7 +283,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
 
     const colorColData = colorCol!.getRawData();
     const colorDataList: number[] = [];
-    for (let i = 0; i < positionColData.length; ++i) {
+    for (let i = 0; i < positionCol.length; ++i) {
       if (positionColCategories[positionColData[i]] === currentMonomer)
         colorDataList.push(colorColData[i]);
     }

@@ -565,9 +565,9 @@ export class PeptidesModel {
 
   calculateMonomerPositionStatistics(): MonomerPositionStats {
     const positionColumns = this.splitSeqDf.columns.toList();
+    const sourceDfLen = this.df.rowCount;
     const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
     const activityColData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
-    const sourceDfLen = activityColData.length;
 
     for (const posCol of positionColumns) {
       const posColData = posCol.getRawData();
@@ -956,6 +956,7 @@ export class PeptidesModel {
       }
 
       const positionList = Object.keys(this.invariantMapSelection);
+      const rowCount = this.df.rowCount;
       for (const position of positionList) {
         const positionCol: DG.Column<string> = this.df.getCol(position);
         const positionColData = positionCol.getRawData();
@@ -965,7 +966,7 @@ export class PeptidesModel {
           const aarIndex = positionColCat.indexOf(aar);
           if (aarIndex === -1)
             continue;
-          for (let i = 0; i < positionColData.length; ++i) {
+          for (let i = 0; i < rowCount; ++i) {
             if (positionColData[i] === aarIndex)
               indexes.add(i);
           }
