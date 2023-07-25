@@ -42,6 +42,11 @@ export class SunburstViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
+  isCanvasEmpty(ctx: any, x: any, y: any) {
+    const pixel = ctx.getImageData(x, y, 1, 1).data;
+    return pixel[3] === 0;
+  }
+
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
       if (params.event.event.ctrlKey) {
@@ -75,6 +80,17 @@ export class SunburstViewer extends EChartViewer {
       ui.tooltip.show(ui.div(divs), params.event.event.x, params.event.event.y);
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
+    this.chart.getDom().ondblclick = (event: MouseEvent) => {
+      const canvas = this.chart.getDom().querySelector('canvas');
+      const rect = canvas!.getBoundingClientRect();
+      const scaleX = canvas!.width / rect.width;
+      const scaleY = canvas!.height / rect.height;
+      const clickX = (event.clientX - rect.left) * scaleX;
+      const clickY = (event.clientY - rect.top) * scaleY;
+      if (this.isCanvasEmpty(canvas!.getContext('2d'), clickX, clickY)) {
+        this.render();
+      }
+    };
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
