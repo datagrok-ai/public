@@ -116,7 +116,7 @@ export class SunburstViewer extends EChartViewer {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
     
-    this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()});
+    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()}));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     super.onTableAttached();
   }
@@ -137,6 +137,12 @@ export class SunburstViewer extends EChartViewer {
     }).catch((error) => {
       console.error(error);
     });
+  }
+
+  detach() {
+    for (const sub of this.subs)
+      sub.unsubscribe();
+    super.detach();
   }
   
 }
