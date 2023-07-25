@@ -93,6 +93,12 @@ export class SunburstViewer extends EChartViewer {
     };
   }
 
+  onContextMenuHandler(menu: DG.Menu): void {
+    menu.item('Reset View', () => {
+      this.render();
+    });
+  }
+
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
     if (p?.name === 'hierarchyColumnNames')
       this.render();
@@ -111,6 +117,7 @@ export class SunburstViewer extends EChartViewer {
       this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
     
     this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()});
+    this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     super.onTableAttached();
   }
 
