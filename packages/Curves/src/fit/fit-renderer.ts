@@ -28,16 +28,12 @@ import {
   getSeriesStatistics,
   getCurve,
   getColumnChartOptions,
+  LogOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
-
-export type LogOptions = {
-  logX: boolean | undefined,
-  logY: boolean | undefined
-};
 
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 export const TAG_FIT_CHART_FORMAT_3DX = '3dx';
@@ -132,9 +128,8 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
       DG.Color.scatterPlotMarker;
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
-      logOptions.logX ? transform.xToScreen(Math.pow(10, p.x)) : transform.xToScreen(p.x),
-      logOptions.logY ? transform.yToScreen(Math.pow(10, p.y)) : transform.yToScreen(p.y),
-      color, (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
+      transform.xToScreen(p.x), transform.yToScreen(p.y), color,
+      (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
   }
 }
 
@@ -292,15 +287,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
     for (const series of data.series!) {
-      if (data.chartOptions?.logX || data.chartOptions?.logY) {
-        for (let i = 0; i < series.points.length; i++) {
-          if (data.chartOptions?.logX)
-            series.points[i].x = Math.log10(series.points[i].x);
-          if (data.chartOptions?.logY)
-            series.points[i].y = Math.log10(series.points[i].y);
-        }
-      }
-
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
         series.showPoints = '';
         if (data.chartOptions)
@@ -316,7 +302,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         curve = getCurve(series, fitFunc);
       }
       else {
-        const fitResult = fitSeries(series, fitFunc);
+        const fitResult = fitSeries(series, fitFunc, chartLogOptions);
         curve = fitResult.fittedCurve;
         series.parameters = fitResult.parameters;
         userParamsFlag = false;
