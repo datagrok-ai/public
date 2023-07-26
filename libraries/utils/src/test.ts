@@ -220,11 +220,6 @@ export async function initAutoTests(packageId: string, module?: any) {
   }
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
-  const inits = packFunctions.filter((f) => f.hasTag('initTests'));
-  if (inits.length) {
-    for (const f of inits)
-      await f.apply();
-  }
   const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)/g);
   for (const f of packFunctions) {
     const tests = f.options['test'];

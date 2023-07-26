@@ -18,7 +18,7 @@ export async function test(category: string, test: string, testContext: TestCont
   return DG.DataFrame.fromObjects(data)!;
 }
 
-//tags: initTests
+//tags: init
 export async function initTests() {
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (let script of scripts) {
