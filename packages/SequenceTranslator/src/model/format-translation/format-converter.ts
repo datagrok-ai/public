@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {DEFAULT_FORMATS} from '../const';
-import {GROUP_TYPE, PHOSPHATE_SYMBOL} from './const';
+import {GROUP_TYPE, PHOSPHATE_SYMBOL, UNKNOWN_SYMBOL} from './const';
 import {CodesInfo} from '../data-loading-utils/types';
 import {codesToHelmDictionary} from '../data-loading-utils/json-loader';
 
@@ -75,7 +75,7 @@ function helmToFormat(helmSequence: string, targetFormat: string): string {
   result = result.replace(helmRegExp, (match) => {
     return helmCodes.includes(match) ? dict[match] :
       (match === 'p' || match === '.') ? match : '?';
-  }).replace(/\?+/g, '<?>').replace(/p\.|\./g, '');
+  }).replace(/\?+/g, UNKNOWN_SYMBOL).replace(/p\.|\./g, '');
   // remove double slash in LCMS codes
   result = result.replace(/\/\//g, '/');
   return result;
@@ -98,7 +98,7 @@ function formatToHelm(sequence: string, sourceFormat: string): string {
     const result = formatCodes.includes(match) ?  dict[match] + '.' : '?';
     return result;
   });
-  helm = helm.replace(/\?+/g, '<?>.');
+  helm = helm.replace(/\?+/g, `${UNKNOWN_SYMBOL}.`);
   helm = helm.slice(0, -1); // strip last dot
   if (helm[helm.length - 1] === PHOSPHATE_SYMBOL)
     helm = helm.slice(0, -1);

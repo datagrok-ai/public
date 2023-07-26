@@ -1,4 +1,5 @@
 import {DEFAULT_FORMATS, NUCLEOTIDES} from '../const';
+import {UNKNOWN_SYMBOL} from './const';
 import {FormatConverter} from './format-converter';
 import {codesToHelmDictionary} from '../data-loading-utils/json-loader';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
@@ -42,6 +43,6 @@ function getNucleotidesSequence(helmString: string, monomerLib: MonomerLibWrappe
     if (NUCLEOTIDES.includes(stripped))
       return stripped;
     return monomerLib.getNaturalAnalogBySymbol(stripped);
-  }).join('');
+  }).map((el) => el ? el : UNKNOWN_SYMBOL).join('');
   return nucleotides;
 }

@@ -4,3 +4,5 @@ export const GROUP_TYPE = {
 } as const;
 
 export const PHOSPHATE_SYMBOL = 'p';
+
+export const UNKNOWN_SYMBOL = '<?>';
