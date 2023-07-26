@@ -1,5 +1,5 @@
 export const LIB_PATH = 'System:AppData/SequenceTranslator';
-export const DEFAULT_LIB_FILENAME = 'helmLib.json';
+export const DEFAULT_LIB_FILENAME = 'monomer-lib.json';
 
 export const APP_PATH = 'System:AppData/SequenceTranslator';
 export const AXOLABS_STYLE_FILENAME = 'axolabs-style.json';

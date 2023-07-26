@@ -49,8 +49,7 @@ export async function sequenceTranslatorApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
 
   try {
-    await getJsonData();
-    await _package.initMonomerLib();
+    await initSequenceTranslatorLibData();
     const v = new SequenceTranslatorUI();
     await v.createLayout();
   } catch (err: any) {
@@ -62,13 +61,22 @@ export async function sequenceTranslatorApp(): Promise<void> {
   }
 }
 
-//name: getCodeToNameMap
-export function getCodeToNameMap(): Map<string, number> {
-  return MonomerLibWrapper.getInstance().getCodesToWeightsMap();
+//name: initSequenceTranslatorLibData
+export async function initSequenceTranslatorLibData(): Promise<void> {
+  await getJsonData();
+  await _package.initMonomerLib();
+}
+
+//name: getCodeToWeightsMap
+//output: object result
+export function getCodeToWeightsMap(): {[key: string]: number} {
+  const map = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
+  return Object.fromEntries(map);
 }
 
 //name: validateSequence
 //input: string sequence
+//output: bool result
 export function validateSequence(sequence: string): boolean {
   const validator = new SequenceValidator(sequence);
   const format = (new FormatDetector(sequence).getFormat());
@@ -78,6 +86,7 @@ export function validateSequence(sequence: string): boolean {
 //name: validateSequence
 //input: string sequence
 //input: bool invert
+//output: string result
 export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): string {
   return (new SequenceToMolfileConverter(sequence, invert, 'GCRS')).convert();
 }
@@ -85,6 +94,7 @@ export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): s
 //name: linkStrands
 //input: object strands
 //input: bool invert
+//output: string result
 export function linkStrands(strands: { senseStrands: string[], antiStrands: string[] }): string {
   return linkStrandsV3000(strands, true);
 }
