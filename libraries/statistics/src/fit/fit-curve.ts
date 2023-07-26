@@ -99,6 +99,8 @@ export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
   BOTTOM: 'bottom',
 };
 
+export const DROPLINES = ['IC50'];
+
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
 
@@ -174,6 +176,7 @@ export interface IFitSeriesOptions {
   showConfidenceForX?: number;
   clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions
+  droplines?: string[];
 }
 // TODO: show labels in property panel if present, color by default from series
 
@@ -229,6 +232,7 @@ export const fitSeriesProperties: Property[] = [
   Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
     defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+  Property.js('droplines', TYPE.STRING_LIST, {choices: DROPLINES, inputType: 'MultiChoice'}),
   // Property.js('showBoxPlot', TYPE.BOOL,
   //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
@@ -456,7 +460,7 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 
   const quantile = jStat.normal.inv(1 - confidenceLevel/2, 0, 1);
 
-  const top = (x: number) =>{
+  const top = (x: number) => {
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
       return value + quantile * error;
