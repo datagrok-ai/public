@@ -20,6 +20,11 @@ import {
   TAG_FIT,
 } from './fit-curve';
 
+export type LogOptions = {
+  logX: boolean | undefined,
+  logY: boolean | undefined
+};
+
 
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: DG.Property[]): any {
@@ -85,9 +90,9 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
 }
 
 /** Fits the series data according to the series fitting settings */
-export function fitSeries(series: IFitSeries, fitFunc: FitFunction): FitCurve {
-  const data = {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
-    y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+export function fitSeries(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitCurve {
+  const data = {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+    y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   return fitData(data, fitFunc, FitErrorModel.Constant, series.parameterBounds);
 }
 
