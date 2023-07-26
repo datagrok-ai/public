@@ -35,6 +35,10 @@ export class SunburstViewer extends EChartViewer {
           label: {
             rotate: 'radial',
           },
+          labelLayout: {
+            hideOverlap: 'true',
+            align: 'center',
+          }
         },
       ],
     };
