@@ -211,6 +211,14 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   g.fill();
 }
 
+/** Performs a dropline drawing */
+function drawDropline(g: CanvasRenderingContext2D, transform: Viewport, xValue: number, dataBounds: DG.Rect,
+  curve: (x: number) => number): void {
+  g.moveTo(transform.xToScreen(dataBounds.minX), transform.yToScreen(curve(xValue)));
+  g.lineTo(transform.xToScreen(xValue), transform.yToScreen(curve(xValue)));
+  g.lineTo(transform.xToScreen(xValue), transform.yToScreen(dataBounds.minY));
+}
+
 export class FitChartCellRenderer extends DG.GridCellRenderer {
   get name() { return FIT_CELL_TYPE; }
 
@@ -343,6 +351,20 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport);
       }
 
+      if (series.droplines) {
+        g.save();
+        g.strokeStyle = 'blue';
+        g.lineWidth = ratio;
+        g.beginPath();
+        g.setLineDash([5, 5]);
+        for (let i = 0; i < series.droplines.length; i++) {
+          const droplineName = series.droplines[i];
+          if (droplineName === 'IC50')
+            drawDropline(g, viewport, series.parameters[2], dataBounds, curve);
+        }
+        g.stroke();
+        g.restore();
+      }
 
       if (data.chartOptions?.showStatistics) {
         const statistics = getSeriesStatistics(series, fitFunc);
