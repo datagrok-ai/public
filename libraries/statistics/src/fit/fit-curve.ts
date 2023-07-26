@@ -229,6 +229,8 @@ export const fitSeriesProperties: Property[] = [
   Property.js('showPoints', TYPE.STRING,
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  Property.js('showCurveConfidenceInterval', TYPE.BOOL,
+    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false}),
   Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
     defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
