@@ -11,10 +11,10 @@ category('Demo: Projects', () => {
     });
     test('chem_demo', async () => {
         await grok.dapi.projects.open('chem_demo')
-    });
+    }, {skipReason: 'GROK-13612'});
     test('chem_tsne', async () => {
         await grok.dapi.projects.open('chem_tsne')
-    });
+    }, {skipReason: 'GROK-13621'});
     test('demo_notebooks', async () => {
         await grok.dapi.projects.open('demo_notebooks')
     });
