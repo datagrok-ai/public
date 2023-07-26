@@ -106,16 +106,16 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 
 ### Enhancements in packages
 
-* [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/CHANGELOG.md): added separator support for **Sequence Space** and **Activity Cliffs** and made Helm monomer type usable for **MSA**, among other enhancements. 
-* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md): improved Timelines and Sunburst plot, fixed Radar chart.
-* [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md): implemented the RDKit rendering for various databases (Chembl, ChemblAPI, PubChem, and DrugBank) when OCL is used, integrated the **Scaffold Tree** into the **Filters Panel**, and introduced several other improvements.
-* [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md): improved rendering for curves and confidence intervals, added user-defined Javascript function support for running curves with caching, enhanced rendering in small cells, and more. 
-* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md): Added [Bioreactors](https://public.datagrok.ai/apps/Tutorials/Demo/Bioreactors), [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) and [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) demos.
-* [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md): implemented the ability to select leaves from specific nodes, added a separate loader view, and allowed switching distance calculation methods for macromolecules, while also supporting the semType `macromolecules`.
+* [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/CHANGELOG.md): separator support for **Sequence Space** and **Activity Cliffs**, Helm monomer type is usable for **MSA**, and other enhancements. 
+* [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md): improvements for Timelines and Sunburst plot, Radar chart fixes.
+* [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md): RDKit rendering for various databases (Chembl, ChemblAPI, PubChem, and DrugBank) when OCL is used, **Scaffold Tree** integration into the **Filters Panel**, and other improvements.
+* [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md): rendering for curves and confidence intervals, user-defined Javascript function support for running curves with caching, enhanced rendering in small cells, and more. 
+* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md): new [Bioreactors](https://public.datagrok.ai/apps/Tutorials/Demo/Bioreactors), [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) and [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) demos.
+* [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md): ability to select leaves from specific nodes, separate loader view, and ability to switch distance calculation methods for macromolecules, while also supporting the semType `macromolecules`.
 * [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/CHANGELOG.md): adressed issues.
-* [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md): enhanced the **Invariant Map** feature to select sequences instead of filtering.
-* [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md): added structure editing support for pinned columns.
-* [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): added new tutorials.
+* [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md):  **Invariant Map** now selects sequences instead of filtering.
+* [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md): structure editing support for pinned columns.
+* [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): new tutorials.
 
   
 #### Enhancements in libraries
