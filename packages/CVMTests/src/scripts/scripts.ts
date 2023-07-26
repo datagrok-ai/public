@@ -1,9 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 
+category(`Scripts`, () => {
+  test('Outputs conversion', async () => {
+    const out = await grok.functions.call('CVMTests:DummyPython');
+    expect(out.df1 instanceof DG.DataFrame, true); // works with DG.toJs(out.df1)
+    expect(out.df2 instanceof DG.DataFrame, true); // works with DG.toJs(out.df2)
+  });
+});
 
 const langs = ['Python', 'R', 'Octave', 'Grok', 'Julia', 'JavaScript']; // NodeJS, Julia
 

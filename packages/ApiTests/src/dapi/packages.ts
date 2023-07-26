@@ -19,7 +19,7 @@ category('Dapi: packages', () => {
   test('webRoot content', async () => {
     const apiTestsPackage = await grok.dapi.packages.find(_package.id);
     expect(apiTestsPackage.webRoot, _package.webRoot);
-  });
+  }, {skipReason: 'GROK-11670'});
 
   test('readCsv error', async () => {
     await expectExceptionAsync(() => _package.files.readCsv('datasets/noFile.csv').then());

@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import {after, before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import {DataFrame, Func, Qnum} from 'datagrok-api/dg';

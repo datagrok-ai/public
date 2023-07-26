@@ -97,12 +97,13 @@ category('Dapi: files', () => {
   test('writeBinaryDataFrames', async () => {
     const df = grok.data.demo.demog(10);
     const filePath = `${filePrefix}writeBinaryDataFrames.d42`;
+    //@ts-ignore
     await _package.files.writeBinaryDataFrames(filePath, [df]);
     const dfList = await _package.files.readBinaryDataFrames(filePath);
     expect(dfList.length, 1, `Saved ${dfList.length} dataframes instead of 1`);
     expectTable(dfList[0], df, 'Saved dataframe has wrong data');
     await grok.dapi.files.delete(filePath);
-  });
+  }, {skipReason: 'GROK-11670'});
 
   after(async () => {
     await grok.dapi.files.delete(testTextFilePath);

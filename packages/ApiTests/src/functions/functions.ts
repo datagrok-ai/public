@@ -39,10 +39,4 @@ category('Functions: General', () => {
     expect((await grok.data.query('ApiTests:dummyPackageQuery', {X: 0.5})).get('res', 0), 0.5, '{X: 0.5}');
     await expectExceptionAsync(() => grok.data.query('ApiTests:qqqqqq'));
   });
-
-  test('Outputs conversion', async () => {
-    const out = await grok.functions.call('ApiTests:DummyPython');
-    expect(out.df1 instanceof DG.DataFrame, true); // works with DG.toJs(out.df1)
-    expect(out.df2 instanceof DG.DataFrame, true); // works with DG.toJs(out.df2)
-  });
 });
