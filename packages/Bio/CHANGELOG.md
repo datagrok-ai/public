@@ -27,7 +27,7 @@ This release focuses on improving feature stability and usability.
 
 ## 2.7.2 (2023-07-21)
 
-This release focuses on improving analysis stability and usability.
+This release focuses on improvements and bug fixes.
 
 *Dependency: datagarok-api >= 1.13.3*
 
@@ -37,9 +37,9 @@ This release focuses on improving analysis stability and usability.
 * Detected Helm monomer type for separator data and made it usable for MSA.
 * Added alignment options to **Kalign**.
 * Added separator support for **Sequence Space** and **Activity Cliffs**.
-* Implemented showing monomer atomic structure in tooltips for macromolecules.
+* Tooltip: shows monomer atomic structure for macromolecules.
 * For macromolecule cells, added the ability to show composition ratios in the property panel.
-* We have structured the top menu by organizing the items into groups: SAR, Structure, Atomic level, and Search. 
+* **Top menu**: organized the items into groups **SAR**, **Structure**, **Atomic level**, and **Search**. 
 
 ### Bug Fixes
 
