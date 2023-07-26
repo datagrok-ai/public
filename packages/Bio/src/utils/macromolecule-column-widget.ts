@@ -24,7 +24,7 @@ export class MacromoleculeColumnWidget extends DG.Widget {
 
   async init(): Promise<void> {
     const uh = UnitsHandler.getOrCreate(this.seqCol);
-    const pkgTooltipWebLogo = _package.properties.tooltipWebLogo;
+    const pkgTooltipWebLogo = _package.properties.TooltipWebLogo;
     const colTooltipWebLogo = this.seqCol.getTag(wlTAGS.tooltipWebLogo);
 
     if (pkgTooltipWebLogo !== false && !['false', 'off', 'disable', 'disabled'].includes(colTooltipWebLogo)) {

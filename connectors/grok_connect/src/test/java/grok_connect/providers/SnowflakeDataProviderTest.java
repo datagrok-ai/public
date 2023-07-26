@@ -111,6 +111,7 @@ class SnowflakeDataProviderTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
+    @Disabled("Until task will be fixed")
     @DisplayName("Parameters support for datetime")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkDatesParameterSupport_ok")

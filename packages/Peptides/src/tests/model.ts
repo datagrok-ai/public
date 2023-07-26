@@ -40,8 +40,7 @@ category('Model: Settings', () => {
     const getError = (row: number, method: SCALING_METHODS): string =>
       `Activity mismatch at row ${row} for scaling method '${method}'`;
     const tolerance = 0.0001;
-    const origActivityData =
-      model.df.getCol(model.settings.activityColumnName!).getRawData();
+    const origActivityData = model.df.getCol(model.settings.activityColumnName!).getRawData();
     const scaledActivity = model.df.getCol(COLUMNS_NAMES.ACTIVITY_SCALED);
     const dfLen = model.df.rowCount;
 

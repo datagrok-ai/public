@@ -1,8 +1,8 @@
-# Cheminformatics changelog
+# Chem changelog
 
 ## 1.6.20 (2023-07-21)
 
-This release focuses on improving analysis stability and usability.
+This release focuses on improvements and bug fixes.
 
 *Dependency: datagarok-api >= 1.14.0*
 
@@ -11,16 +11,16 @@ This release focuses on improving analysis stability and usability.
 * Set default values in all dialogs where appropriate.
 * Unified the layout of the search panel results.
 * Work with DBs APIs: Added links to sources, similarity search viewer style, reproduce for ChemicalSpace, Enamine.
-* Performed **Elemental Analysis** refinement. Now the resulting column name includes the name of the column for which Elemental Analysis is performed.
-* Added the ability to choose whether to search for MCS exact atoms or MCS exact bonds when performing R-Groups Analysis.
-* Added the ability to avoid recalculating the similarity search when the current row is changed. To achieve this, we introduced the **Follow Current Row** checkbox in the settings of the similarity search viewer. 
+* **Elemental Analysis**: the resulting column name now includes the specific column for which calculations were conducted.
+* **R-Groups Analysis**: a new option to choose between searching for MCS exact atoms or MCS exact bonds.
+* **Similarity Search**: a new **Follow Current Row** setting prevent recalculation when the current row is changed. 
 * For proper handling of properties and rendering, we now check for smarts and molecular fragments separately.
-* Provided the ability to copy data from the **Descriptors** and **Properties** tabs on the **Context Pane**.
+* Ability to copy data from the **Descriptors** and **Properties** tabs on the **Context Pane**.
 * Moved **Descriptors** and **Fingerprints** from the  **Context Pane**  to the **Top Menu** ( **Chem** > **Calculate**).
 * Added **Substructure Search** to the **Top Menu** ( **Chem** > **Search**)
 * Modified the tooltip for dialog and drag-n-drop to prevent it from overlapping with the data.
 * Implemented RDKit rendering for Chembl, ChemblAPI, PubChem, and DrugBank databases if OCL is used currently.
-* Performed UI polishing. We’ve adjusted input field names, repositioned elements in certain dialogs, added tooltips, and organized the top menu items into groups: Calculate, ADME/Tox, Search, Analyze, and Transform.
+* UI polishing: harmonized input field names, repositioned elements in dialogs, added tooltips, and organized the top menu items into groups: Calculate, ADME/Tox, Search, Analyze, and Transform.
 * Scaffold Tree improvements:
   * [#1730](https://github.com/datagrok-ai/public/issues/1730): Implemented Scaffold Tree integration to the **Filters Panel**.
   * [#1998](https://github.com/datagrok-ai/public/issues/1998): Now a scaffold tree shows a confirmation dialog before dropping all trees on the **Clear** icon click.

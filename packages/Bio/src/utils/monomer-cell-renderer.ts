@@ -63,7 +63,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
 
   get defaultHeight(): number { return 15; }
 
-  get defaultWidth(): number { return 30; }
+  get defaultWidth(): number { return 40; }
 
   /**
    * Cell renderer function.
@@ -95,6 +95,6 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     const color = palette.get(s);
 
     g.fillStyle = color;
-    g.fillText(monomerToShort(s, 3), x + (w / 2), y + (h / 2), w);
+    g.fillText(monomerToShort(s, 6), x + (w / 2), y + (h / 2), w);
   }
 }
