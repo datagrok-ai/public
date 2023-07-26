@@ -237,8 +237,9 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Transform').find('Mutate...').click();
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 1000);
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 500);
     const dialog = DG.Dialog.getOpenDialogs()[0];
+    await awaitCheck(() => dialog.inputs.length === 4, 'cannot load Mutate dialog', 1000);
     expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
     const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click();
