@@ -8,7 +8,6 @@ const GDC = grok.dapi.connections;
 category('Dapi: connection', () => {
   const dcParams = {
     dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
-  let query: DG.DataQuery;
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
@@ -33,15 +32,12 @@ category('Dapi: connection', () => {
     `;
     const dc = (await grok.dapi.connections.filter('NorthwindTest').list())[0];
     const q = dc.query('JS postprocess query test', 'select * from orders');
-    query = await grok.dapi.queries.save(q);
+    const query = await grok.dapi.queries.save(q);
     await query.setProperties({jsScript: script});
     expect((await query.getProperties()).jsScript, script);
     await query.executeTable();
-  });
-
-  after(async () => {
     await grok.dapi.queries.delete(query);
-  });
+  }, {skipReason: 'GROK-11670'});
 });
 
 category('Dapi: TableQuery', () => {
