@@ -1,17 +1,28 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import {Fingerprint} from '../utils/chem-common';
-import { RuleId } from '../panels/structural-alerts';
+import {RuleId} from '../panels/structural-alerts';
 import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { IFpResult } from './rdkit-service-worker-similarity';
-import { LockedEntity } from '../utils/locked-entitie';
-
+import {IFpResult} from './rdkit-service-worker-similarity';
+import {LockedEntity} from '../utils/locked-entitie';
+import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {getRdKitModule} from '../package';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
   getTerminateFlag: () => boolean,
   promises: Promise<void>[]
 }
+
+export type SubstructureSearchWithFpResult = {
+  bitArray: BitArray,
+  fpsRes?: IFpResult,
+};
+
+export type SubstructureSearchBatchResult = {
+  matches: Uint32Array;
+  fpRes: IFpResult | null;
+};
 
 export class RdKitService {
   workerCount: number;
@@ -69,7 +80,7 @@ export class RdKitService {
     data: TData[],
     res: TRes,
     updateRes: (batchRes: BatchRes, res: TRes, length: number, index: number) => void,
-    map: (batch: TData[], workerIdx: number, workerCount: number) => Promise<BatchRes>,
+    map: (batch: TData[], workerIdx: number, workerCount: number, batchStartIdx: number) => Promise<BatchRes>,
     pogressFunc: (progress: number) => void): Promise<IParallelBatchesRes> {
       let terminateFlag = false;
 
@@ -77,34 +88,42 @@ export class RdKitService {
       const getTerminateFlag = () => { return terminateFlag; }
       const t = this;
       const dataLength = data.length;
-      let index = 0;
+      const workingIndexes = new Array<{start: number, end: number}>(this.workerCount).fill({start: 0, end: 0});
+      const sizePerWorker = Math.floor(dataLength / this.workerCount);
+      // distribute data between workers, makes sure that same molecules always end up in the same worker, important for caching
+      for (let i = 0; i < this.workerCount; i++) {
+        workingIndexes[i] = {start: i * sizePerWorker, end: i === this.workerCount - 1 ? dataLength : (i + 1) * sizePerWorker};
+      }
       const lockedCounter = new LockedEntity(0);
-      const increment = 50;
-      const moleculesPerProgress = Math.max(Math.floor(dataLength / 100), 10);
+      const increment = 300;
+      let processedMolecules = 0;
+      let moleculesPerProgress = Math.min(Math.max(Math.floor(dataLength / 100), 10), 1000);
       let nextProgressCheck = moleculesPerProgress;
       const promises = t.parallelWorkers.map((_, idx) => {
           const post = async () => {
             await lockedCounter.unlockPromise();
               lockedCounter.lock();
-              const index = lockedCounter.value;
-              if (index >= Math.min(nextProgressCheck, dataLength)) {
+              processedMolecules = lockedCounter.value;
+              if (processedMolecules >= Math.min(nextProgressCheck, dataLength)) {
                 nextProgressCheck += moleculesPerProgress;
-                pogressFunc(index/dataLength);
+                moleculesPerProgress *= 1.5;
+                pogressFunc(processedMolecules/dataLength);
               }
-              const end = Math.min(index + increment, dataLength);
+              const end = Math.min(processedMolecules + increment, dataLength);
               lockedCounter.value = end;
               lockedCounter.release();
-              if (index >= dataLength || terminateFlag) {
+              if (workingIndexes[idx].start >= workingIndexes[idx].end || terminateFlag) {
                   return;
               }
-              const part = data.slice(index, end);
-              const batchResult = await map(part, idx, t.parallelWorkers.length);
-              updateRes(batchResult, res, part.length, index);
+              const part = data.slice(workingIndexes[idx].start, Math.min(workingIndexes[idx].end, workingIndexes[idx].start + increment));
+              const batchResult = await map(part, idx, t.parallelWorkers.length, workingIndexes[idx].start);
+              updateRes(batchResult, res, part.length, workingIndexes[idx].start);
+              workingIndexes[idx].start += part.length;
               await post();
           }      
           return post();    
   })
-  const getProgress = () => index / dataLength;
+  const getProgress = () => processedMolecules / dataLength;
   return {getProgress, setTerminateFlag, getTerminateFlag, promises};      
 }
 
@@ -170,6 +189,98 @@ export class RdKitService {
           return t.parallelWorkers[idx].searchSubstructure(query, queryMolBlockFailover, batch);
         }, progressFunc);
   }
+
+  async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
+    progressFunc: (progress: number) => void, molecules: string[], createSmiles = false) {
+      const queryMol = getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
+      if (!queryMol)
+        throw new Error(`Chem | Invalid search pattern: ${query}`);
+      let fpRdKit: Uint8Array;
+      try {
+        fpRdKit = queryMol.get_pattern_fp_as_uint8array();
+      } catch (e: any) {
+        throw new Error(`Chem | Substructure Search failed with error: ${e.toString()}`);
+      }
+      
+
+      const updateRes = (batchRes: SubstructureSearchBatchResult, res: SubstructureSearchWithFpResult, length: number, index: number) => {
+        let bit;
+        if (!res.fpsRes) {
+          res.fpsRes = {
+          fps: new Array<Uint8Array | null>(molecules.length).fill(null),
+          smiles: createSmiles ? new Array<string | null>(molecules.length).fill(null) : null
+        };
+        }
+
+          for (let j = 0; j < length; j++) {
+            bit = !!(batchRes!.matches[Math.floor(j / 32)] >> j % 32 & 1);
+            res.bitArray.setBit(index + j, bit);
+            res.fpsRes.fps[index + j] = batchRes.fpRes!.fps[j];
+            if (createSmiles) {
+              res.fpsRes.smiles![index + j] = batchRes.fpRes!.smiles![j];
+            }
+          }
+        }
+
+        return this._doParallelBatches(molecules, result, updateRes, async (batch, workerIdx, _workerCount, batchStartIdx) => {
+          let fpResult: IFpResult;
+          if (!result.fpsRes || !result.fpsRes.fps[batchStartIdx])
+            fpResult = await this.parallelWorkers[workerIdx].getFingerprints(Fingerprint.Pattern, batch, createSmiles);
+          else {
+            fpResult = {
+              fps: result.fpsRes.fps.slice(batchStartIdx, batchStartIdx + batch.length),
+              smiles: createSmiles ? result.fpsRes.smiles!.slice(batchStartIdx, batchStartIdx + batch.length) : batch
+            }
+          }
+          // *********** FILTERING using fingerprints
+          const patternFpUint8Length = 256;
+          const patternFpFilterBitArray = new BitArray(batch.length, false);
+            try {
+              
+              checkEl:
+              for (let i = 0; i < batch.length; ++i) {
+                if (fpResult.fps[i]) {
+                  for (let j = 0; j < patternFpUint8Length; ++j) {
+                    if ((fpResult.fps[i]![j] & fpRdKit[j]) != fpRdKit[j])
+                      continue checkEl;
+                  }
+                  patternFpFilterBitArray.setFast(i, true);
+                }
+              }
+            } catch (e: any) { 
+             throw new Error(`Chem | Substructure Search failed with error: ${e.toString()}`);
+            }
+
+            const filteredMolecules = Array<string>(patternFpFilterBitArray.trueCount());
+            let counter = 0;
+            for (let i = -1; (i = patternFpFilterBitArray.findNext(i)) !== -1;) {
+              filteredMolecules[counter] = createSmiles ? fpResult.smiles![i]! : batch[i];
+              counter++;
+            }
+
+          // *********** DONE FILTERING using fingerprints
+          // filter using substruct search on already prefiltered dataset
+          const substructRes: Uint32Array = await this.parallelWorkers[workerIdx]
+            .searchSubstructure(query, queryMolBlockFailover, filteredMolecules);
+          
+          const matchesBitArray = BitArray.fromUint32Array(filteredMolecules.length, substructRes);
+          // restore the indexes of prefiltered molecules on the whole dataset
+          const restoredBitArray = new BitArray(batch.length, false);
+          let matchesCounter = 0;
+          for (let i = -1; (i = patternFpFilterBitArray.findNext(i)) != -1;) {
+            if (matchesBitArray.getBit(matchesCounter))
+            restoredBitArray.setBit(i, true);
+            matchesCounter++;
+          }
+          return {
+            matches: restoredBitArray.buffer,
+            fpRes: fpResult
+          }
+        }, progressFunc)
+    }
+
+
+
 
    /**
    * Returns fingerprints for provied molecules

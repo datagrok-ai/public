@@ -18,7 +18,7 @@ import { getMolSafe, getQueryMolSafe } from './utils/mol-creation_rdkit';
 import { _package } from './package';
 import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
 import {getSearchProgressEventName, getTerminateEventName} from './constants';
-import { IParallelBatchesRes } from './rdkit-service/rdkit-service';
+import {IParallelBatchesRes, SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
@@ -300,6 +300,67 @@ export async function chemSubstructureSearchLibrary(molStringsColumn: DG.Column,
       }
     }
     return matchesBitArray;
+  } catch (e: any) {
+    grok.shell.error(e.message);
+    throw e;
+  } finally {
+    chemEndCriticalSection();
+  }
+}
+
+export async function chemSubstructSearchWithFps(
+  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false, awaitAll = false
+) {
+  await chemBeginCriticalSection();
+  try {
+    const matchesBitArray = new BitArray(molStringsColumn.length);
+    const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
+    const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
+    const updateFilterFunc = (progress: number) => {
+      grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
+    };
+
+    const canonicalSmilesList = checkForSavedColumn(molStringsColumn, canonicalSmilesColName)?.toList() ?? new Array<string | null>(molStringsColumn.length).fill(null);
+    const fgsList = checkForSavedColumn(molStringsColumn, Fingerprint.Pattern)?.toList() ?? new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
+
+    const result: SubstructureSearchWithFpResult = {
+      bitArray: matchesBitArray,
+      fpsRes: {
+        fps: fgsList,
+        smiles: !columnIsCanonicalSmiles ? canonicalSmilesList : null
+      }
+
+    }
+    const subFuncs = await (await getRdKitService()).
+      searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc, molStringsColumn.toList(), !columnIsCanonicalSmiles);
+    
+    const fireFinishEvents = () => {
+        grok.events.fireCustomEvent(searchProgressEventName, 100);
+        grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
+        !columnIsCanonicalSmiles ?
+          saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!], [Fingerprint.Pattern, canonicalSmilesColName],
+            [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
+          saveColumns(molStringsColumn, [result.fpsRes!.fps], [Fingerprint.Pattern], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+    }
+    if(awaitAll) {
+      await Promise.all(subFuncs.promises);
+      fireFinishEvents();
+    }
+    else {
+      const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
+        if (mol === molBlockFailover) {
+          subFuncs!.setTerminateFlag();
+          sub.unsubscribe();
+        }
+      });
+
+      subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
+        if (!subFuncs!.getTerminateFlag()) {
+          fireFinishEvents();
+        }
+      }));
+    }
+    return result.bitArray;
   } catch (e: any) {
     grok.shell.error(e.message);
     throw e;

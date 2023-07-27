@@ -69,10 +69,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
           let mol: RDMol | null = null;
+          let isCached = false;
           try{
             const cachedMol = this._molsCache?.get(molecules[i]);
-            if(cachedMol)
+            if(cachedMol) {
               console.log(`Mol extracted from cache`)
+              isCached = true;
+            }
             else
               console.log(`Mol for ${molecules[i]} not extracted from cache`)
             mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
@@ -83,7 +86,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           } catch {
             continue;
           } finally {
-            mol?.delete();
+            !isCached && mol?.delete();
           }
     }
     return matches.buffer;
