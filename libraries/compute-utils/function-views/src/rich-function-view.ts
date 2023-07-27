@@ -344,7 +344,7 @@ export class RichFunctionView extends FunctionView {
       const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
         this.dfToViewerMapping[dfProp.name] = [];
 
-        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}) => {
+        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, viewerIdx) => {
           const initialValue: DG.DataFrame = this.funcCall.outputs[dfProp.name]?.value ?? this.funcCall.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
 
           const viewerType = viewerDesc['type'] as string;
@@ -352,6 +352,8 @@ export class RichFunctionView extends FunctionView {
           viewer.setOptions(viewerDesc);
 
           this.dfToViewerMapping[dfProp.name].push(viewer);
+          const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+          currentParam.aux['viewers'] = {...currentParam.aux['viewers'], [viewerIdx]: viewer};
 
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
@@ -362,7 +364,7 @@ export class RichFunctionView extends FunctionView {
           const subscribeOnFcChanges = () => {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
-            const paramSub = currentParam.onChanged.subscribe(async () => {
+            const updateViewerSource = async () => {
               $(this.outputsTabsElem.root).show();
               $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
@@ -376,25 +378,16 @@ export class RichFunctionView extends FunctionView {
                 loadedViewer.root.replaceWith(newViewer.root);
                 loadedViewer = newViewer;
               }
+              currentParam.aux['viewers'][viewerIdx] = loadedViewer;
               this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
+            };
+
+            const paramSub = currentParam.onChanged.subscribe(async () => {
+              await updateViewerSource();
             });
 
             this.funcCallReplaced.subscribe(async () => {
-              const currentParamValue = this.funcCall.outputs[dfProp.name] ?? this.funcCall.inputs[dfProp.name];
-
-              $(this.outputsTabsElem.root).show();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
-
-              if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
-                loadedViewer.dataFrame = currentParamValue;
-                loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-              } else {
-                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
-                const newViewer = await currentParamValue.plot.fromType(loadedViewer.type) as DG.Viewer;
-                newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-                loadedViewer.root.replaceWith(newViewer.root);
-                loadedViewer = newViewer;
-              }
+              await updateViewerSource();
             });
 
             this.subs.push(paramSub);
