@@ -78,7 +78,7 @@ export type FitInvertedFunctions = {
  * - Deep integration with the Datagrok grid
  *   - Either fitting on the fly, or using the supplied function + parameters
  *   - Multiple series in one cell
- *   - Confidence intervals drawing
+ *   - Candlesticks, confidence intervals, and droplines drawing
  *   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
  *     on the column level, with the ability to override it on a grid cell or point level
  *   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
@@ -222,8 +222,6 @@ export const fitSeriesProperties: Property[] = [
       inputType: 'Color'}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
-  Property.js('autoFit', TYPE.BOOL,
-    {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
   Property.js('showFitLine', TYPE.BOOL,
     {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
   Property.js('showPoints', TYPE.STRING,
@@ -235,8 +233,6 @@ export const fitSeriesProperties: Property[] = [
     defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
   Property.js('droplines', TYPE.STRING_LIST, {choices: DROPLINES, inputType: 'MultiChoice'}),
-  // Property.js('showBoxPlot', TYPE.BOOL,
-  //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';

@@ -13,7 +13,7 @@ including in-grid rendering, storing charts in cells, interactivity, and automat
 - Deep integration with the Datagrok grid
   - Either fitting on the fly or using the supplied function + parameters
   - Multiple series in one cell
-  - Confidence intervals drawing
+  - Candlesticks, confidence intervals, and droplines drawing
   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
       on the column level, with the ability to override it on a grid cell or point level
   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
@@ -29,47 +29,61 @@ To render a fitted curve based on series points, you need to write it in the fol
 {
   "series": [
     {
-      "fitLineColor": "#2ca02c",
+      "name": "Test series",
       "pointColor": "#2ca02c",
+      "fitLineColor": "#2ca02c",
+      "confidenceIntervalColor": "#fbec5d",
+      "markerType": "circle",
+      "showFitLine": true,
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
       "parameters": [1.7391934768969721, -0.9451759934029763, 4.846020678949615, 0.15841886339211816],
+      "parameterBounds": [1.73919347689, -0.9451759934029, 4.846020678949, 0.15841886339],
+      "showPoints": "points",
+      "clickToToggle": true,
+      "droplines": ["IC50"],
       "points": [
         { "x": 0.10000000149011612, "y": 0.04152340441942215 },
-        { "x": 0.6000000238418579, "y": 0.11901605129241943 },
-        { "x": 1.100000023841858, "y": 0.11143334954977036 },
-        { "x": 1.600000023841858, "y": 0.0444009006023407 },
-        { "x": 2.0999999046325684, "y": 0.22933608293533325 },
-        { "x": 2.5999999046325684, "y": 0.3057132065296173 },
-        { "x": 3.0999999046325684, "y": 0.28693410754203796 },
-        { "x": 3.5999999046325684, "y": 0.3156140148639679 },
-        { "x": 4.099999904632568, "y": 0.4246906042098999 },
-        { "x": 4.599999904632568, "y": 0.6663704514503479 },
-        { "x": 5.099999904632568, "y": 1.2085251808166504 },
-        { "x": 5.599999904632568, "y": 1.4426130056381226 },
-        { "x": 6.099999904632568, "y": 1.7591952085494995 },
-        { "x": 6.599999904632568, "y": 1.702673077583313 },
-        { "x": 7.099999904632568, "y": 1.6438066959381104 }
+        { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true },
+        { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false },
+        ...
       ]
     }
   ],
-  "chartOptions": { "showStatistics": ["auc"] }
+  "chartOptions": {
+    "showStatistics": ["auc", "rSquared"],
+    "minX": 0.10000000149011612,
+    "minY": 0.04152340441942215,
+    "maxX": 7.099999904632568,
+    "maxY": 1.7591952085494995,
+    "xAxisName": "Concentration",
+    "yAxisName": "Activity",
+    "logX": true,
+    "logY": false,
+  }
 }
 ```
 
-Each series has its own `fit line color` and `point color` assigned. Additionally, each series has a boolean field
-indicating whether or not to display the curve confidence intervals. The `fit function` for each series can be
-either a sigmoid function or a [custom-defined function](/README.md#creating-custom-fit-function). Furthermore,
-the `parameters` for the fit function can be explicitly set or left unset. If the parameters are set explicitly,
-the fitting process won't be executed, and vice versa. The `data points` for each series are represented as
-arrays of objects, with each object containing x and y coordinates.
+Each series has its own `name`, `point color`, `fit line color`, `confidence interval color`, and `marker type`
+(could be either circle, asterisk, square, triangle, etc.) assigned. Additionally, each series has a few boolean
+fields indicating whether or not to display the fit line and the curve confidence intervals. The `fit function`
+for each series can be either a sigmoid function or a [custom-defined function](/README.md#creating-custom-fit-function).
+Furthermore, the `parameters` for the fit function can be explicitly set or left unset as well as the `parameter bounds`,
+which can control the parameters bounds during the fit respectively. If the parameters are set explicitly, the
+fitting process won't be executed, and vice versa. Moreover, the user can choose whether the points, candlesticks,
+both or nothing can be shown using the `show points` parameter. Also, there is a `click to toggle` boolean field which
+indicates if clicking on the point toggles its outlier status and causes curve refitting or not. The `droplines`
+property allows the user to choose the droplines he wants to see on the plot. The `data points` for each series
+are represented as arrays of objects, with each object containing x and y coordinates and also a boolean outlier value.
 
-Moreover, the user has the option to obtain various statistics, such as the area under the curve (`auc`) or the
-coefficient of determination (`rSquared`).
+Moreover, there is a `chart options` parameter that allows setting the plot parameters. The user has the option to
+obtain various statistics, such as the area under the curve (`auc`) or the coefficient of determination (`rSquared`).
+Also, the user can set the minimum and maximum x and y of the plot, as well as the axes names which will be rendered if
+the plot size is big enough. Additionally, there are boolean fields that allow to logarithmize the data by x or by y.
 
 ![curves](./img/curves.gif)
 
-## Creating custom fit function
+## Creating a custom fit function
 
 To render a custom fit function, you need to write in the following JSON format:
 
@@ -87,7 +101,7 @@ efficient retrieval and reuse. Additionally, the fit function has `parameter nam
 an array of strings.
 
 Also, there are two functions: `getInitialParameters`, which takes arrays of x and y and returns determined
-initial parameters values, and `function`, which takes the array of parameters and given x coordinate and
+initial parameter values, and `function`, which takes the array of parameters and given x coordinate and
 returns the result of the fit function. These functions are written as JavaScript arrow function expressions.
 
 ![custom-fit-function](./img/custom-fit-function.gif)
