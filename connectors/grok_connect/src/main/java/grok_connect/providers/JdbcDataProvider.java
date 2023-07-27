@@ -12,10 +12,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import grok_connect.connectors_info.DataConnection;
@@ -224,6 +221,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
         try {
             statement.setTimestamp(parameterIndex, ts);
