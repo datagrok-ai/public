@@ -352,9 +352,6 @@ export class RichFunctionView extends FunctionView {
           viewer.setOptions(viewerDesc);
 
           this.dfToViewerMapping[dfProp.name].push(viewer);
-          const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
-          currentParam.aux['viewers'] = {...currentParam.aux['viewers'], [viewerIdx]: viewer};
-
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
           return viewer;
@@ -365,6 +362,8 @@ export class RichFunctionView extends FunctionView {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
             const updateViewerSource = async () => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+
               $(this.outputsTabsElem.root).show();
               $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
@@ -378,7 +377,6 @@ export class RichFunctionView extends FunctionView {
                 loadedViewer.root.replaceWith(newViewer.root);
                 loadedViewer = newViewer;
               }
-              currentParam.aux['viewers'][viewerIdx] = loadedViewer;
               this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
             };
 
