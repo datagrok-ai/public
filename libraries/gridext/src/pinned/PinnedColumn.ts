@@ -218,6 +218,7 @@ export class PinnedColumn {
     eCanvasThis.style.top = grid.canvas.offsetTop + "px";
     eCanvasThis.style.width = nW + "px";
     eCanvasThis.style.height = Math.round(nHeight/window.devicePixelRatio) + "px";
+    eCanvasThis.style.zIndex = "1";
 
     //console.log("h " + grid.canvas.height + " offset " + grid.canvas.offsetHeight);
 
