@@ -19,6 +19,18 @@ See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose.mdx)
 
+## 2023-07-27 1.16.1
+
+### Addressed Issues
+
+* Improvements:
+  * Columns pane: column preview in the grid on mouse-over 
+  * Columns pane: ability to filter by semantic type 
+* Fixes:
+  * GROK-13559: Credentials manager for WebServices is not always working 
+  * GROK-13609: Incorrect value for scalar parameters in DB 
+  * GROK-13617: FuncCall not serialized properly 
+
 
 ## 2023-07-20 1.16.0
 
