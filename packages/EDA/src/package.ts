@@ -42,7 +42,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 
 //top-menu: Tools | Data Science | Multivariate Analysis (PLS)...
 //name: Multivariate Analysis (PLS)
-//description: Partial least square regression (PLS).
+//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //input: dataframe table
 //input: column names
 //input: column_list features
