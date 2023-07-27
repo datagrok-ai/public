@@ -137,16 +137,14 @@ export class RdKitService {
   }
 
    /**
-   * Fills array of mols or SubstructLibrary object in each worker
+   * Fills array of mols in each worker
    * @async
    * @param {string[]} molecules - list of molecules to save in each worker
-   * @param {boolean} useSubstructLib - optional parameter, if set to true SubstructLibrary object if filled with mols,
-   * otherwise array of mols is used
    * */
-  async initMoleculesStructures<TReduce>(molecules: string[], useSubstructLib?: boolean)
+  async initMoleculesStructures<TReduce>(molecules: string[])
     : Promise<TReduce | void> {
     return this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-      this.parallelWorkers[i].initMoleculesStructures(segment, useSubstructLib),
+      this.parallelWorkers[i].initMoleculesStructures(segment),
     () => {});
   }
 
@@ -155,15 +153,12 @@ export class RdKitService {
    * @async
    * @param {string} query - smiles/molblock to filter by
    * @param {string} queryMolBlockFailover - smart to filter by (is used if creation of RDMol object from query parameter failed)
-   * @param {boolean} molecules - optional parameter, if passed RDMols objects are created on the fly (neither array of
-   * predefined RDMols nor SubstructLibrary are used) 
-   * @param {boolean} useSubstructLib - optional parameter, if set to true SubstructLibrary is used for search
+   * @param {boolean} molecules - list of molecules to search
    * */
   async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray,
-    progressFunc: (progress: number) => void, molecules?: string[], useSubstructLib?: boolean): Promise<IParallelBatchesRes> {
+    progressFunc: (progress: number) => void, molecules: string[]): Promise<IParallelBatchesRes> {
     const t = this;
     let updateRes;
-    if (molecules && !useSubstructLib) {
       updateRes = (batchRes: Uint32Array, res: BitArray, length: number, index: number) => {
         let bit;
           for (let j = 0; j < length; j++) {
@@ -173,28 +168,7 @@ export class RdKitService {
         }
         return this._doParallelBatches(molecules, result, updateRes, async (batch, idx, _workerCount) => {
           return t.parallelWorkers[idx].searchSubstructure(query, queryMolBlockFailover, batch);
-        }, progressFunc)
-    } else {
-      const res = await this._doParallel(
-        (i: number, nWorkers: number) => {
-          return t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, undefined, useSubstructLib);
-        },
-        (data: Array<Uint32Array>) => {
-          const segmentsLengths = t.moleculesSegmentsLengths;
-          let counter = 0;
-          for (let i = 0; i < segmentsLengths.length; i++) {
-            for (let j = 0; j < segmentsLengths[i]; j++) {
-              result.setBit(counter++, !!(data[i][Math.floor(j / 32)] >> j % 32 & 1));
-            }
-          }
-        });
-        return {
-          getProgress: () => 1,
-          setTerminateFlag: () => {},
-          getTerminateFlag: () => false,
-          promises: []
-        }
-    }
+        }, progressFunc);
   }
 
    /**

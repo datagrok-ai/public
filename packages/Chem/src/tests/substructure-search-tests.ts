@@ -254,9 +254,9 @@ M  END
   async function performanceTestWithConsoleLog(molCol: DG.Column, query: string,
     usePattern: boolean, useSubstructLib: boolean) {
     const startTime = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false, useSubstructLib);
+    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false);
     const midTime1 = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false, useSubstructLib);
+    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false);
     const midTime2 = performance.now();
 
     console.log(`Use patten fp: ${usePattern}, use SubstructLibrary: ${useSubstructLib}`);

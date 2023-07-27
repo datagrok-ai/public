@@ -22,9 +22,9 @@ ctx.addEventListener('message', async (e: any) => {
       console.log('RDKit (worker) initialized');
       _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
     } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {
-      result = _rdKitServiceWorker!.initMoleculesStructures(args[0], args[1]);
+      result = _rdKitServiceWorker!.initMoleculesStructures(args[0]);
     } else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE) {
-      result = _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2], args[3]);
+      result = _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2]);
     } else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
       _rdKitServiceWorker!.freeMoleculesStructures();
       _rdKitServiceWorker = null;

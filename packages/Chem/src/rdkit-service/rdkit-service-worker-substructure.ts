@@ -28,14 +28,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     super(module, webRoot);
   }
 
-  initMoleculesStructures(molecules: string[], useSubstructLib?: boolean): number {
+  initMoleculesStructures(molecules: string[]): number {
     console.log(`initMoleculesStructures`);
     this.freeMoleculesStructures();
-    if (useSubstructLib) {
-      this._substructLibrary = new this._rdKitModule.SubstructLibrary();
-      this._malformedIdxs = new BitArray(molecules.length);
-    } else
-      this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);     
+    this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);     
     let numMalformed = 0;
     for (let i = 0; i < molecules.length; ++i) {
       const item = molecules[i];
@@ -43,68 +39,43 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
         const mol = molSafe.mol;
         if (mol) {
-          mol.is_qmol = molSafe.isQMol;
-          if (useSubstructLib) {
-            if (mol.is_qmol) {
-              this._malformedIdxs!.setFast(i, true);
-              numMalformed++;
-            }
-            else
-              this._substructLibrary?.add_trusted_smiles(mol.get_smiles());
-            mol.delete();
-          } else
             this._rdKitMols![i] = mol;
-        } else {
-          if (useSubstructLib)
-            this._malformedIdxs!.setFast(i, true);
+        } else 
           numMalformed++;
-        }
       }
     }
     return numMalformed;
   }
 
-  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
-    useSubstructLib?: boolean): Uint32Array {
-    if (this._rdKitMols === null && !useSubstructLib && !molecules)
+  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Uint32Array {
+      console.log(`******************in search`);
+    if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
     let queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
     
     if (queryMol !== null) {
-      const matches = useSubstructLib ? this.searchWithSubstructLib(queryMol) :
-        molecules ? this.searchWithPatternFps(queryMol, molecules) : this.searchWithoutPatternFps(queryMol);
+      const matches = this.searchWithPatternFps(queryMol, molecules)
       queryMol.delete();
       return matches;
     } else
       throw new Error('Chem | Search pattern cannot be set');
   }
 
-  searchWithSubstructLib(queryMol: RDMol): Uint32Array {
-    const matches = new BitArray(this._substructLibrary!.size() + this._malformedIdxs!.trueCount());
-    const str = this._substructLibrary!.get_matches(queryMol, undefined, undefined, this._substructLibrary!.size());
-    const matchesIdxs = JSON.parse(str);
-    // re-calculate matches idxs considering malformed data
-    let nonMalformedCounter = 0;
-    let matchesCounter = 0;
-
-    for (let i = -1; (i = this._malformedIdxs!.findNext(i, false)) !== -1;) {
-      if (nonMalformedCounter === matchesIdxs[matchesCounter]) {
-        matchesCounter++;
-        matches.setFast(i, true);
-      }
-      nonMalformedCounter++;
-    }
-    return matches.buffer;
-  } 
 
   searchWithPatternFps(queryMol: RDMol, molecules: string[]): Uint32Array {
     const matches = new BitArray(molecules.length);
     let mol: RDMol | null = null;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
+          let mol: RDMol | null = null;
           try{
-            mol = this._rdKitModule.get_mol(molecules[i], details);
+            const cachedMol = this._molsCache?.get(molecules[i]);
+            if(cachedMol)
+              console.log(`Mol extracted from cache`)
+            else
+              console.log(`Mol for ${molecules[i]} not extracted from cache`)
+            mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
             if (mol) {
               if (mol.get_substruct_match(queryMol) !== '{}')
                 matches.setFast(i, true);
@@ -118,26 +89,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return matches.buffer;
   }
 
-  searchWithoutPatternFps(queryMol: RDMol): Uint32Array {
-    const matches = new BitArray(this._rdKitMols!.length);
-    for (let i = 0; i < this._rdKitMols!.length; ++i) {
-      try {
-        if (this._rdKitMols![i] && this._rdKitMols![i]!.get_substruct_match(queryMol) !== '{}')
-          matches.setFast(i, true);
-      } catch {
-        continue;
-      }
-    }
-    return matches.buffer;
-  }
-
 
   freeMoleculesStructures(): void {
-    if (this._substructLibrary){
-      this._substructLibrary.delete();
-      this._substructLibrary = null;
-      this._malformedIdxs = null;
-    }
     if (this._rdKitMols !== null) {
       for (const mol of this._rdKitMols!)
         mol?.delete();

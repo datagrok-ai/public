@@ -87,14 +87,13 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
             this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
             this.fingerprint as Fingerprint);
-          if (df) {
-            this.molCol = df.getCol('smiles');
-            this.idxs = df.getCol('indexes');
-            this.scores = df.getCol('score');
-          } else {
+          if (!df) {
             this.closeWithError('Malformed', progressBar);
             return;
           }
+          this.molCol = df.getCol('smiles');
+          this.idxs = df.getCol('indexes');
+          this.scores = df.getCol('score'); 
         } catch (e: any) {
           grok.shell.error(e.message);
           return;

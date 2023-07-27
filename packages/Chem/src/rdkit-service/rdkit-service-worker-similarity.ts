@@ -1,4 +1,4 @@
-import {RdKitServiceWorkerBase} from './rdkit-service-worker-base';
+import {MAX_MOL_CACHE_SIZE, RdKitServiceWorkerBase} from './rdkit-service-worker-base';
 import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint} from '../utils/chem-common';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, IMolContext} from '../utils/mol-creation_rdkit';
@@ -28,55 +28,61 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
    */
 
   getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): IFpResult {
-    if (this._rdKitMols === null && !molecules)
+    if (!molecules)
       return {fps: [], smiles: null};
-
-    const fpLength = molecules ? molecules.length : this._rdKitMols!.length;
+    const fpLength = molecules.length;
     const fps = new Array<Uint8Array | null>(fpLength).fill(null);
     const morganFpParams = fingerprintType === Fingerprint.Morgan ?
       JSON.stringify({radius: this._fpRadius, nBits: this._fpLength}) : null;
-    const canonicalSmiles = getCanonicalSmiles ? new Array<string | null>(fpLength).fill(null) : null;
+    const canonicalSmilesArr = getCanonicalSmiles ? new Array<string | null>(fpLength).fill(null) : null;
+    let addedToCacheCounter = 0;
     for (let i = 0; i < fpLength; ++i) {
-      let mol: IMolContext | null = null;
-      if (molecules) {
-        const item = molecules[i];
-        if (item && item !== '')
-          mol = getMolSafe(item, {}, this._rdKitModule);
+      const item = molecules[i];
+      if (!item && item === '')
+        continue;
+      let rdMol = this._molsCache?.get(molecules[i]);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
       }
-      const rdMol = molecules ? mol?.mol : this._rdKitMols![i];
-      const isQMol = molecules ? mol?.isQMol : this._rdKitMols![i]?.is_qmol;
-      try {
-        if (canonicalSmiles && rdMol)
-          canonicalSmiles[i] = rdMol.get_smiles();
-        switch (fingerprintType) {
-        case Fingerprint.Pattern:
-          try {
-            if (rdMol)
+      if (rdMol) {
+        try {
+          if (canonicalSmilesArr)
+            canonicalSmilesArr[i] = rdMol.get_smiles();
+          switch (fingerprintType) {
+          case Fingerprint.Pattern:
+            try {
               fps[i] = rdMol.get_pattern_fp_as_uint8array();
-          } catch {
-            //do nothing, fp is already null
+            } catch {
+              //do nothing, fp is already null
+            }
+            break;
+          case Fingerprint.Morgan:
+            try {
+              if (!rdMol.is_qmol)
+                fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
+            } catch (error) {
+              //do nothing, fp is already null
+            }
+            break;
+          default:
+            rdMol?.delete();
+            throw Error('Unknown fingerprint type: ' + fingerprintType);
           }
-          break;
-        case Fingerprint.Morgan:
-          try {
-            if (rdMol && !isQMol)
-              fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
-          } catch (error) {
-            //do nothing, fp is already null
+          if (addedToCacheCounter < MAX_MOL_CACHE_SIZE) {
+              this._molsCache?.set(rdMol.get_smiles(), rdMol!);
+            addedToCacheCounter++; //need this additional counter (instead of i) not to consider empty molecules
           }
-          break;
-        default:
-          if (molecules)
-            mol?.mol?.delete();
-          throw Error('Unknown fingerprint type: ' + fingerprintType);
+        } catch {
+          // nothing to do, fp is already null
+        } finally {
+          if (addedToCacheCounter >= MAX_MOL_CACHE_SIZE) //do not delete mol in case it is in cache
+            rdMol?.delete();
         }
-      } catch {
-        // nothing to do, fp is already null
-      } finally {
-      if (molecules)
-        mol?.mol?.delete();
       }
     }
-    return {fps: fps, smiles: canonicalSmiles};
+    return {fps: fps, smiles: canonicalSmilesArr};
   }
 }

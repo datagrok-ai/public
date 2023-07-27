@@ -15,11 +15,11 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   /** Creates RDMols for the specified {@link molecules}.
    * They will be used for subsequent substructure search, or calculation of fingerprints.
    * Returns a number of malformed molecules. */
-  initMoleculesStructures = async (molecules: string[], useSubstructLib?: boolean): Promise<number> =>
-    this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [molecules, useSubstructLib]);
+  initMoleculesStructures = async (molecules: string[]): Promise<number> =>
+    this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [molecules]);
 
-  searchSubstructure = async (query: string, queryMolBlockFailover: string, molecules?: string[], useSubstructLib?: boolean) =>
-    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules, useSubstructLib]);
+  searchSubstructure = async (query: string, queryMolBlockFailover: string, molecules: string[]) =>
+    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, queryMolBlockFailover, molecules]);
     
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
