@@ -73,11 +73,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           try{
             const cachedMol = this._molsCache?.get(molecules[i]);
             if(cachedMol) {
-              console.log(`Mol extracted from cache`)
+              // console.log(`Mol extracted from cache`)
               isCached = true;
             }
-            else
-              console.log(`Mol for ${molecules[i]} not extracted from cache`)
+            // else
+            //   console.log(`Mol for ${molecules[i]} not extracted from cache`)
             mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
             if (mol) {
               if (mol.get_substruct_match(queryMol) !== '{}')
