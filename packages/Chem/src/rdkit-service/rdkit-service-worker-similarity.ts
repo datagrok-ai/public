@@ -11,7 +11,7 @@ export interface IFpResult{
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   readonly _fpLength: number = defaultMorganFpLength;
   readonly _fpRadius: number = defaultMorganFpRadius;
-
+  private addedCahceCounter = 0;
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
@@ -35,7 +35,6 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     const morganFpParams = fingerprintType === Fingerprint.Morgan ?
       JSON.stringify({radius: this._fpRadius, nBits: this._fpLength}) : null;
     const canonicalSmilesArr = getCanonicalSmiles ? new Array<string | null>(fpLength).fill(null) : null;
-    let addedToCacheCounter = 0;
     for (let i = 0; i < fpLength; ++i) {
       const item = molecules[i];
       if (!item && item === '')
@@ -71,15 +70,16 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
             rdMol?.delete();
             throw Error('Unknown fingerprint type: ' + fingerprintType);
           }
-          if (addedToCacheCounter < MAX_MOL_CACHE_SIZE) {
+          if (this.addedCahceCounter < MAX_MOL_CACHE_SIZE) {
               this._molsCache?.set(rdMol.get_smiles(), rdMol!);
-            addedToCacheCounter++; //need this additional counter (instead of i) not to consider empty molecules
+              this.addedCahceCounter++; //need this additional counter (instead of i) not to consider empty molecules
           }
         } catch {
           // nothing to do, fp is already null
         } finally {
-          if (addedToCacheCounter >= MAX_MOL_CACHE_SIZE) //do not delete mol in case it is in cache
+          if (this.addedCahceCounter >= MAX_MOL_CACHE_SIZE){ //do not delete mol in case it is in cache
             rdMol?.delete();
+          }
         }
       }
     }

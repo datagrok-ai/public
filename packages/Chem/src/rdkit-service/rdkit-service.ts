@@ -16,11 +16,11 @@ export interface IParallelBatchesRes {
 
 export type SubstructureSearchWithFpResult = {
   bitArray: BitArray,
-  fpsRes?: IFpResult,
+  fpsRes: IFpResult | null,
 };
 
 export type SubstructureSearchBatchResult = {
-  matches: Uint32Array;
+  matches: BitArray;
   fpRes: IFpResult | null;
 };
 
@@ -204,7 +204,6 @@ export class RdKitService {
       
 
       const updateRes = (batchRes: SubstructureSearchBatchResult, res: SubstructureSearchWithFpResult, length: number, index: number) => {
-        let bit;
         if (!res.fpsRes) {
           res.fpsRes = {
           fps: new Array<Uint8Array | null>(molecules.length).fill(null),
@@ -213,13 +212,16 @@ export class RdKitService {
         }
 
           for (let j = 0; j < length; j++) {
-            bit = !!(batchRes!.matches[Math.floor(j / 32)] >> j % 32 & 1);
-            res.bitArray.setBit(index + j, bit);
+            //bit = !!(batchRes!.matches[Math.floor(j / 32)] >> j % 32 & 1);
+            res.bitArray.setBit(index + j, batchRes.matches.getBit(j));
             res.fpsRes.fps[index + j] = batchRes.fpRes!.fps[j];
             if (createSmiles) {
               res.fpsRes.smiles![index + j] = batchRes.fpRes!.smiles![j];
+              batchRes.fpRes!.smiles![j] = null;
             }
+            batchRes.fpRes!.fps[j] = null;
           }
+          batchRes.fpRes = null;
         }
 
         return this._doParallelBatches(molecules, result, updateRes, async (batch, workerIdx, _workerCount, batchStartIdx) => {
@@ -273,7 +275,7 @@ export class RdKitService {
             matchesCounter++;
           }
           return {
-            matches: restoredBitArray.buffer,
+            matches: restoredBitArray,
             fpRes: fpResult
           }
         }, progressFunc)
