@@ -385,11 +385,13 @@ export class RichFunctionView extends FunctionView {
               $(this.outputsTabsElem.root).show();
               $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
-              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParamValue;
-              else {
+                loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
+              } else {
                 // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                 const newViewer = await currentParamValue.plot.fromType(loadedViewer.type) as DG.Viewer;
+                newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
                 loadedViewer.root.replaceWith(newViewer.root);
                 loadedViewer = newViewer;
               }
