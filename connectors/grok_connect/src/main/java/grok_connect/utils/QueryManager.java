@@ -129,18 +129,20 @@ public class QueryManager {
     }
 
     private void changeFetchSize(DataFrame df, int dfNumber) throws SQLException {
-        if (supportTransactions && df.rowCount != 0) {
-            currentFetchSize = getFetchSize(df);
-            logger.debug(EventType.MISC.getMarker(dfNumber), "Calculated fetch size: {}", currentFetchSize);
-            if (!provider.descriptor.type.equals("Virtuoso")) {
-                resultSet.setFetchSize(currentFetchSize);
-            }
+        currentFetchSize = getFetchSize(df);
+        logger.debug(EventType.MISC.getMarker(dfNumber), "Calculated fetch size: {}", currentFetchSize);
+        if (supportTransactions && !provider.descriptor.type.equals("Virtuoso")) {
+            resultSet.setFetchSize(currentFetchSize);
+            logger.debug(EventType.MISC.getMarker(dfNumber), "Fetch size was changed: {}", currentFetchSize);
         }
     }
 
     private int getFetchSize(DataFrame df) {
-        int maxChunkSize = chunkSize != -1 ? chunkSize : MAX_CHUNK_SIZE_BYTES;
-        int fetchSize = Math.round(maxChunkSize / (float) (df.memoryInBytes() / df.rowCount));
+        int fetchSize = 0;
+        if (df.rowCount != 0) {
+            int maxChunkSize = chunkSize != -1 ? chunkSize : MAX_CHUNK_SIZE_BYTES;
+            fetchSize = Math.round(maxChunkSize / (float) (df.memoryInBytes() / df.rowCount));
+        }
         return Math.min(Math.max(MIN_FETCH_SIZE, fetchSize), MAX_FETCH_SIZE);
     }
 

@@ -1,25 +1,48 @@
 # Curves changelog
 
-## 1.1.0 (2023-07-21)
+## 1.2.0 (2023-07-21)
 
-This release focuses on improving analysis stability and usability.
+This release focuses on adding new functionality and improving the existing one.
 
 *Dependency: datagarok-api >= 1.16.0*
 
 ### Features
 
-* Improved curve fitting and confidence intervals:
-  * Added a semantic type detector for "fit" to render fitted curves.
-  * Fixed performance issues during fitting.
-  * Automated data sorting during fitting.
-* Implemented interactive parameter recalculating.
+* Added outliers switching in grid cells.
+* Added different modes of rendering: candlesticks (with box plot statistics) and both (with candlesticks outliers).
+* Improved fit detector.
+* Improved curves and confidence intervals rendering for better smooth.
+* Added the capability to run curves by user-defined Javascript function with caching.
+* Improved rendering in the small cells.
 * Added different marker types.
 * Improved axes cell rendering.
-* Added the possibility to run curves by user-defined Javascript function.
-* [#2100](https://github.com/datagrok-ai/public/issues/2100): Made cell renderer edit mode a resizeable window.
-* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering: 
-  * Don't render curves before the axes start.
-  * Changed margins in grid cell for axes
-  * Added the capability to control parameter bounds.
-  * Fixed curves rendering by inverting the y while converting the coordinates.
+* Implemented interactive parameter recalculation.
 * [#2105](https://github.com/datagrok-ai/public/issues/2105): Outliers are now shown in red color and with a much bigger size.
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Curves now don't render before the axes start.
+  * Changed margins in grid cell for axes.
+  * Added the capability to control parameter bounds.
+* [#2100](https://github.com/datagrok-ai/public/issues/2100): Made cell renderer edit mode a resizeable window.
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed points rendering in logarithmic data.
+  * Fixed curves rendering by inverting the y while converting the coordinates.
+
+## 1.1.0 (2023-05-19)
+
+This release focuses on improving the analysis stability and usability.
+
+*Dependency: datagarok-api >= 1.15.0*
+
+### Features
+
+* Added support for log transform and axis inverse.
+* Improved curve fitting and confidence intervals:
+  * Added a semantic type detector for "fit" to render fitted curves.
+  * Automated data sorting during fitting.
+
+### Bug Fixes
+
+* Fixed performance issues during fitting.

@@ -9,7 +9,7 @@ import {renderCellSelection} from '../utils/cell-renderer';
 export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const filteredIndexes = table.filter.getSelectedIndexes();
   const substInfo = model.mutationCliffs;
-  const currentCell = model.monomerPositionSelection;
+  const currentCell = model.mutationCliffsSelection;
   const positions = Object.keys(currentCell);
 
   if (!positions.length || substInfo === null)
@@ -136,11 +136,16 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   let idx = 0;
   const bitset = DG.BitSet.create(table.rowCount);
   for (const [key, values] of seenIndexes.entries()) {
-    bitset.set(key, true);
-    pairIdxToUniqueIdxMap.set(key, idx++);
+    // Need to process exactly in this order, as this is how the seenIndexes is filled
     for (const value of values) {
+      if (pairIdxToUniqueIdxMap.has(value))
+        continue;
       bitset.set(value, true);
       pairIdxToUniqueIdxMap.set(value, idx++);
+    }
+    if (!pairIdxToUniqueIdxMap.has(key)) {
+      bitset.set(key, true);
+      pairIdxToUniqueIdxMap.set(key, idx++);
     }
   }
 
@@ -152,7 +157,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   uniqueSequencesGrid.props.allowColSelection = false;
   uniqueSequencesGrid.props.rowHeight = 20;
   uniqueSequencesGrid.root.style.width = 'auto';
-  uniqueSequencesGrid.root.style.height = '150px';
+  uniqueSequencesGrid.root.style.height = '250px';
   uniqueSequencesTable.filter.onChanged.subscribe(() => {
     const uniqueSelectedIndexes: number[] = [];
     for (const idx of pairsSelectedIndexes) {

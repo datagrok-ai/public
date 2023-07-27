@@ -1,13 +1,21 @@
 # Demo changelog
 
-## 1.3.4 (2023-07-21)
-
-This release focuses on showcasing more demonstration examples, usage samples, and interactive scenarios to illustrate the platform's capabilities and functionality in practical situations.
+## 1.3.5 (2023-07-27)
 
 *Dependency: datagarok-api >= 1.13.0*
 
-### Features
+### Bug Fixes
 
-* Added [Bioreactors demo](https://public.datagrok.ai/apps/Tutorials/Demo/Bioreactors).
-* Added demo for [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) with dendrogram.
-* Added demo for [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics).
+* Fixed minor issues with packages and notebooks
+
+## 1.3.4 (2023-07-21)
+
+This release focuses on adding new educational materials and tutorials.
+
+*Dependency: datagarok-api >= 1.13.0*
+
+### New tutorials
+
+* [Data aggregation](https://dev.datagrok.ai/apps/tutorials/Tutorials/Datatransformation/DataAggregation)
+* [Grid customization](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization)
+* How to [add a calculated column](https://public.datagrok.ai/apps/tutorials/Tutorials/Datatransformation/CalculatedColumns)

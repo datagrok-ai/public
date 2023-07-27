@@ -2,6 +2,7 @@ package grok_connect;
 
 import static spark.Spark.*;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -21,6 +22,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.core.MediaType;
@@ -37,6 +39,7 @@ public class GrokConnect {
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
+    private static final String LOG_LEVEL_PREFIX = "LogLevel";
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;
     public static Properties properties;
@@ -44,9 +47,12 @@ public class GrokConnect {
     public static void main(String[] args) {
         try {
             properties = getInfo();
+            setGlobalLogLevel();
             PARENT_LOGGER.info(String.format("%s - version: %s", properties.get(NAME), properties.get(VERSION)));
             PARENT_LOGGER.info("Grok Connect initializing");
             PARENT_LOGGER.info(getStringLogMemory());
+            PARENT_LOGGER.trace("HELLO FROM TRACE");
+
             providerManager = new ProviderManager();
             port(DEFAULT_PORT);
             connectorsModule();
@@ -304,6 +310,16 @@ public class GrokConnect {
             return properties;
         } catch (IOException e) {
             throw new RuntimeException("Something went wrong when getting info", e);
+        }
+    }
+
+    private static void setGlobalLogLevel() {
+        Optional<String> level = System.getProperties().stringPropertyNames().stream()
+                .filter(name -> name.startsWith(LOG_LEVEL_PREFIX))
+                .findFirst();
+        if (level.isPresent()) {
+            String property = System.getProperty(level.get());
+            PARENT_LOGGER.setLevel(Level.toLevel(property));
         }
     }
 }
