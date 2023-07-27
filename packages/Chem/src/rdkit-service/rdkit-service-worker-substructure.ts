@@ -48,7 +48,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
   searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Uint32Array {
-      console.log(`******************in search`);
+      //console.log(`******************in search`);
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
