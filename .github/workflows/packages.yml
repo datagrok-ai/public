@@ -361,7 +361,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
 
       - name: grok check
-        if: !(contains(matrix.package, 'Tests') || contains(matrix.package, 'Meta') || matrix.beta == 'true')
+        if: !contains(matrix.package, 'Tests') || !contains(matrix.package, 'Meta') || matrix.beta != 'true'
         run: |
           grok_check=$(grok check)
           if grep -q OK <<<$grok_check; then
