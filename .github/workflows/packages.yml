@@ -373,7 +373,9 @@ jobs:
       - name: Cleanup datagrok-tools
         if: steps.datagrok-tools.outcome == 'success'
         timeout-minutes: 15
-        run: npm uninstall -g datagrok-tools@latest
+        run: |
+          echo ${{ steps.check.outcome }}
+          npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
         run: npm publish --access public
