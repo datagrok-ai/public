@@ -1,5 +1,6 @@
 ---
 title: "Release history"
+slug: develop/admin/releases/release-history
 ---
 
 ## Latest version
