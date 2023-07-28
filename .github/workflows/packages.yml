@@ -361,7 +361,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
 
       - name: grok check
-        continue-on-error: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'Meta') || matrix.beta == 'true' }}
+        if: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'Meta') || matrix.beta == 'true' }}
         run: |
           grok_check=$(grok check)
           if grep -q OK <<<$grok_check; then
@@ -387,7 +387,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_check.outcome == 'success' && (steps.check.outcome == 'success' || contains(matrix.package, 'Tests') || contains(matrix.package, 'Meta')) && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_check.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
