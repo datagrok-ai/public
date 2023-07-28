@@ -334,13 +334,17 @@ export async function chemSubstructSearchWithFps(
     const subFuncs = await (await getRdKitService()).
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc, molStringsColumn.toList(), !columnIsCanonicalSmiles);
     
+
+    const saveProcessedColumns = () => {
+      !columnIsCanonicalSmiles ?
+      saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!], [Fingerprint.Pattern, canonicalSmilesColName],
+        [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
+      saveColumns(molStringsColumn, [result.fpsRes!.fps], [Fingerprint.Pattern], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+    };
     const fireFinishEvents = () => {
         grok.events.fireCustomEvent(searchProgressEventName, 100);
         grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
-        !columnIsCanonicalSmiles ?
-          saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!], [Fingerprint.Pattern, canonicalSmilesColName],
-            [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-          saveColumns(molStringsColumn, [result.fpsRes!.fps], [Fingerprint.Pattern], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+        saveProcessedColumns();
     }
     if(awaitAll) {
       await Promise.all(subFuncs.promises);
@@ -350,6 +354,7 @@ export async function chemSubstructSearchWithFps(
       const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
         if (mol === molBlockFailover) {
           subFuncs!.setTerminateFlag();
+          saveProcessedColumns();
           sub.unsubscribe();
         }
       });

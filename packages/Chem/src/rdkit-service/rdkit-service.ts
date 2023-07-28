@@ -95,23 +95,12 @@ export class RdKitService {
         workingIndexes[i] = {start: i * sizePerWorker, end: i === this.workerCount - 1 ? dataLength : (i + 1) * sizePerWorker};
       }
       const lockedCounter = new LockedEntity(0);
-      const increment = 300;
+      let increment = 50;
       let processedMolecules = 0;
-      let moleculesPerProgress = Math.min(Math.max(Math.floor(dataLength / 100), 10), 1000);
+      let moleculesPerProgress = Math.min(Math.max(Math.floor(dataLength / 100), 10), 100);
       let nextProgressCheck = moleculesPerProgress;
       const promises = t.parallelWorkers.map((_, idx) => {
           const post = async () => {
-            await lockedCounter.unlockPromise();
-              lockedCounter.lock();
-              processedMolecules = lockedCounter.value;
-              if (processedMolecules >= Math.min(nextProgressCheck, dataLength)) {
-                nextProgressCheck += moleculesPerProgress;
-                moleculesPerProgress *= 1.5;
-                pogressFunc(processedMolecules/dataLength);
-              }
-              const end = Math.min(processedMolecules + increment, dataLength);
-              lockedCounter.value = end;
-              lockedCounter.release();
               if (workingIndexes[idx].start >= workingIndexes[idx].end || terminateFlag) {
                   return;
               }
@@ -119,6 +108,20 @@ export class RdKitService {
               const batchResult = await map(part, idx, t.parallelWorkers.length, workingIndexes[idx].start);
               updateRes(batchResult, res, part.length, workingIndexes[idx].start);
               workingIndexes[idx].start += part.length;
+
+              await lockedCounter.unlockPromise();
+              lockedCounter.lock();
+              processedMolecules = lockedCounter.value;
+              const end = Math.min(processedMolecules + increment, dataLength);
+              if (processedMolecules >= nextProgressCheck) {
+                nextProgressCheck += moleculesPerProgress;
+                moleculesPerProgress *= 1.5;
+                increment *= 1.2;
+                console.log(processedMolecules);
+                pogressFunc(processedMolecules/dataLength);
+              }
+              lockedCounter.value = end;
+              lockedCounter.release();
               await post();
           }      
           return post();    
