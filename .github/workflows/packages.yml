@@ -209,10 +209,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         id: datagrok-tools
-        if: ${{ matrix.test == 'true' }}
-        run: |
-          df -h
-          npm install -g datagrok-tools@latest
+        run: npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
@@ -306,11 +303,6 @@ jobs:
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
           docker system prune -af --volumes
 
-      - name: Cleanup datagrok-tools
-        if: steps.datagrok-tools.outcome == 'success'
-        timeout-minutes: 15
-        run: npm uninstall -g datagrok-tools@latest
-
       - name: Check dockerfiles directory existence
         id: check_directory
         uses: andstor/file-existence-action@v2
@@ -377,6 +369,11 @@ jobs:
           fi
         id: check
         working-directory: packages/${{ matrix.package }}
+
+      - name: Cleanup datagrok-tools
+        if: steps.datagrok-tools.outcome == 'success'
+        timeout-minutes: 15
+        run: npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
         run: npm publish --access public
