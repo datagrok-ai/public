@@ -81,7 +81,7 @@ export class RichFunctionView extends FunctionView {
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
-    if (this.runningOnStart) await this.doRun();
+    if (this.runningOnStart && this.isRunnable()) await this.doRun();
   }
 
   /**
