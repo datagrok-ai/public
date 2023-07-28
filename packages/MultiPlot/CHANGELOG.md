@@ -1,3 +1,3 @@
 # MultiPlot changelog
 
-## 0.0.4 (2023-07-24) (WIP)
+## 0.0.4 (WIP)

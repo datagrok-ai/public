@@ -1,6 +1,6 @@
 # DevTools changelog
 
-## 1.3.39 (2023-07-27) (WIP)
+## 1.3.39 (WIP)
 
 This release focuses on improvements and bug fixes.
 
