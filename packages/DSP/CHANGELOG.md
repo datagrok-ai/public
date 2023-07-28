@@ -1,6 +1,6 @@
 # DSP changelog
 
-## 0.0.6 (2023-07-24) (WIP)
+## 0.0.6 (WIP)
 
 Beta version of DSP package
 

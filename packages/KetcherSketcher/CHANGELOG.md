@@ -1,6 +1,6 @@
 # KetcherSketcher changelog
 
-## 2.1.3 (2023-07-24) (WIP)
+## 2.1.3 (WIP)
 
 ### Features
 
