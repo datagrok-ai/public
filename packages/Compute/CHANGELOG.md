@@ -1,5 +1,13 @@
 # Compute changelog
 
+## 1.13.2 (2023-07-28)
+
+Dependency: datgarok-api >= 1.15.3
+
+This release includes following features:
+
+- RichComputationViewEditor now choiceInputs for string properties
+
 ## 1.13.0 (2023-07-28)
 
 Dependency: datgarok-api >= 1.15.3
