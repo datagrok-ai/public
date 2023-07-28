@@ -1,10 +1,12 @@
 # PowerGrid changelog
 
+## 1.2.0 (WIP)
+
+### Features
+
+Smart forms (WIP)
+
 ## 1.1.27 (2023-07-21)
-
-This release focuses on improving analysis stability and usability.
-
-*Dependency: datagarok-api >= 1.15.3*
 
 ### Features
 
