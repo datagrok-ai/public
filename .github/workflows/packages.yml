@@ -378,18 +378,6 @@ jobs:
         if: steps.datagrok-tools.outcome == 'success'
         timeout-minutes: 15
         run: |
-          echo ${{ steps.check.outcome }}
-          echo ${{ github.ref == 'refs/heads/master' }} 
-          echo ${{ matrix.publish }}
-          echo ${{ steps.build.outcome }}
-          echo ${{ steps.build.outcome == 'success' || steps.build.outcome == 'skipped' }}
-          echo ${{ steps.gen_check.outcome == 'success' }}
-          echo ${{ steps.check.outcome }}
-          echo ${{ (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') }} 
-          echo ${{ steps.install.outcome == 'success' }}
-          echo ${{ steps.test-package.outcome }}
-          echo ${{ (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank') }}
-
           npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
@@ -398,7 +386,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_check.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
