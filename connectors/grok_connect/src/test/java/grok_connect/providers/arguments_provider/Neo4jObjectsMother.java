@@ -749,9 +749,9 @@ public class Neo4jObjectsMother {
                         parser.parseDateToDouble("HH:mm:ss.SSS", "00:00:00.000"),
                 }), "localtime")
                 .setColumn(new DateTimeColumn(new Double[]{
-                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSSX", "1970-01-01T10:02:32.192+0200"),
-                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSSX", "1970-01-01T05:01:59.102+0200"),
-                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSSX", "1970-01-01T00:00:00.000+0200"),
+                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSS", "1970-01-01T10:02:32.192"),
+                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSS", "1970-01-01T05:01:59.102"),
+                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSS", "1970-01-01T00:00:00.000"),
                 }), "time")
                 .setColumn(new FloatColumn(new Float[]{Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 0.0f}), "float")
                 .setColumn(new BigIntColumn(new String[]{"99999999999999", "-132442423112", "-3453463646"}),

@@ -224,7 +224,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
         Timestamp ts = new Timestamp(calendar.getTime().getTime());
         try {
-            statement.setTimestamp(parameterIndex, ts);
+            statement.setTimestamp(parameterIndex, ts, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
             return ts.toString();
         } catch (SQLException e) {
             throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
