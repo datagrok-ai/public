@@ -6,7 +6,13 @@
 
 Smart forms (WIP)
 
-## 1.1.27 (2023-07-21)
+## 1.1.28 (2023-07-28)
+
+### Bug Fixes
+
+* Fixed undefined is not iterable problem
+
+## 1.1.27 (2023-07-17)
 
 ### Features
 

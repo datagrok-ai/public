@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/power-grid",
   "friendlyName": "PowerGrid",
-  "version": "1.1.27",
+  "version": "1.1.28",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/PowerGrid"
   },
   "dependencies": {
-    "@datagrok-libraries/gridext": "^1.3.61",
+    "@datagrok-libraries/gridext": "^1.3.63",
     "@types/wu": "latest",
     "cash-dom": "latest",
     "datagrok-api": "1.15.3",
