@@ -835,123 +835,85 @@ export class RichFunctionView extends FunctionView {
    * @param format format needed to export. See {@link this.defaultSupportedExportFormats} for available formats.
    * @returns Promise<Blob> with data ready for download
    */
-  protected defaultExport = async (format: string) => {
-    const lastCall = this.lastCall;
+  protected richFunctionExport = async (format: string) => {
+    if (format === 'Excel') {
+      const lastCall = this.lastCall;
 
-    if (!lastCall) throw new Error(`Function was not called`);
+      if (!lastCall) throw new Error(`Function was not called`);
 
-    if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
+      if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
 
-    if (!this.func) throw new Error('The correspoding function is not specified');
+      if (!this.func) throw new Error('The correspoding function is not specified');
 
-    const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-    const exportWorkbook = new ExcelJS.Workbook();
+      const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+      const exportWorkbook = new ExcelJS.Workbook();
 
-    const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
+      const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
 
-    const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
+      const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
 
-    const dfInputs = this.func.inputs.filter((input) => isDataFrame(input.propertyType));
-    const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
-    const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
-    const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
+      const dfInputs = this.func.inputs.filter((input) => isDataFrame(input.propertyType));
+      const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
+      const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
+      const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
 
-    dfInputs.forEach((dfInput) => {
-      const visibleTitle = dfInput.options.caption || dfInput.name;
-      const currentDfSheet =
+      dfInputs.forEach((dfInput) => {
+        const visibleTitle = dfInput.options.caption || dfInput.name;
+        const currentDfSheet =
         exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
         exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
 
-      const currentDf = lastCall.inputs[dfInput.name];
-      dfToSheet(currentDfSheet, currentDf);
-    });
+        const currentDf = lastCall.inputs[dfInput.name];
+        dfToSheet(currentDfSheet, currentDf);
+      });
 
-    if (scalarInputs.length) {
-      const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
-      scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
-        caption: scalarInput.options['caption'] || scalarInput.name,
-        value: lastCall.inputs[scalarInput.name],
-        units: scalarInput.options['units'] || '',
-      })));
-    }
+      if (scalarInputs.length) {
+        const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+        scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
+          caption: scalarInput.options['caption'] || scalarInput.name,
+          value: lastCall.inputs[scalarInput.name],
+          units: scalarInput.options['units'] || '',
+        })));
+      }
 
-    dfOutputs.forEach((dfOutput) => {
-      const visibleTitle = dfOutput.options.caption || dfOutput.name;
-      const currentDfSheet =
+      dfOutputs.forEach((dfOutput) => {
+        const visibleTitle = dfOutput.options.caption || dfOutput.name;
+        const currentDfSheet =
         exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
         exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
 
-      const currentDf = lastCall.outputs[dfOutput.name];
-      dfToSheet(currentDfSheet, currentDf);
-    });
+        const currentDf = lastCall.outputs[dfOutput.name];
+        dfToSheet(currentDfSheet, currentDf);
+      });
 
 
-    if (scalarOutputs.length) {
-      const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
-      scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
-        caption: scalarOutput.options['caption'] || scalarOutput.name,
-        value: lastCall.outputs[scalarOutput.name],
-        units: scalarOutput.options['units'] || '',
-      })));
-    }
+      if (scalarOutputs.length) {
+        const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
+        scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
+          caption: scalarOutput.options['caption'] || scalarOutput.name,
+          value: lastCall.outputs[scalarOutput.name],
+          units: scalarOutput.options['units'] || '',
+        })));
+      }
 
-    const tabControl = this.outputsTabsElem;
-    for (const tabLabel of this.tabsLabels) {
-      if (!tabControl.getPane(tabLabel)) continue;
+      const tabControl = this.outputsTabsElem;
+      for (const tabLabel of this.tabsLabels) {
+        if (!tabControl.getPane(tabLabel)) continue;
 
-      tabControl.currentPane = tabControl.getPane(tabLabel);
-      await new Promise((r) => setTimeout(r, 100));
-      if (Object.keys(this.categoryToParamMap.inputs).includes(tabLabel)) {
-        for (const inputProp of this.categoryToParamMap.inputs[tabLabel]
-          .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
-          const nonGridViewers = this.dfToViewerMapping[inputProp.name]
-            .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
-            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+        tabControl.currentPane = tabControl.getPane(tabLabel);
+        await new Promise((r) => setTimeout(r, 100));
+        if (Object.keys(this.categoryToParamMap.inputs).includes(tabLabel)) {
+          for (const inputProp of this.categoryToParamMap.inputs[tabLabel]
+            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
+            const nonGridViewers = this.dfToViewerMapping[inputProp.name]
+              .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
+              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-          const dfInput = dfInputs.find((input) => input.name === inputProp.name)!;
-          const visibleTitle: string = dfInput!.options.caption || inputProp.name;
-          const currentDf = lastCall.inputs[dfInput.name];
+            const dfInput = dfInputs.find((input) => input.name === inputProp.name)!;
+            const visibleTitle: string = dfInput!.options.caption || inputProp.name;
+            const currentDf = lastCall.inputs[dfInput.name];
 
-          for (const [index, viewer] of nonGridViewers.entries()) {
-            await plotToSheet(
-              exportWorkbook,
-              exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
-              viewer.root,
-              currentDf.columns.length + 2,
-              (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
-            );
-          };
-        }
-      } else {
-        for (const outputProp of this.categoryToParamMap.outputs[tabLabel]
-          .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
-          const nonGridViewers = this.dfToViewerMapping[outputProp.name]
-            .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
-            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
-
-          const dfOutput = dfOutputs.find((output) => output.name === outputProp.name)!;
-          const visibleTitle = dfOutput.options.caption || outputProp.name;
-          const currentDf = lastCall.outputs[dfOutput.name];
-
-          for (const [index, viewer] of nonGridViewers.entries()) {
-            if (viewer.type === DG.VIEWER.STATISTICS) {
-              const length = currentDf.columns.length;
-              const stats = DG.DataFrame.fromColumns([
-                DG.Column.string('Name', length).init((i: number) => currentDf.columns.byIndex(i).name),
-                DG.Column.int('Values', length).init((i: number) => currentDf.columns.byIndex(i).stats.valueCount),
-                DG.Column.int('Nulls', length).init((i: number) => currentDf.columns.byIndex(i).stats.missingValueCount),
-                DG.Column.float('Min', length).init((i: number) => currentDf.columns.byIndex(i).stats.min),
-                DG.Column.float('Max', length).init((i: number) => currentDf.columns.byIndex(i).stats.max),
-                DG.Column.float('Avg', length).init((i: number) => currentDf.columns.byIndex(i).stats.avg),
-                DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
-              ]);
-              dfToSheet(
-                exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
-                stats,
-                currentDf.columns.length + 2,
-                (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
-              );
-            } else {
+            for (const [index, viewer] of nonGridViewers.entries()) {
               await plotToSheet(
                 exportWorkbook,
                 exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
@@ -959,20 +921,124 @@ export class RichFunctionView extends FunctionView {
                 currentDf.columns.length + 2,
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
               );
+            };
+          }
+        } else {
+          for (const outputProp of this.categoryToParamMap.outputs[tabLabel]
+            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
+            const nonGridViewers = this.dfToViewerMapping[outputProp.name]
+              .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
+              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+            const dfOutput = dfOutputs.find((output) => output.name === outputProp.name)!;
+            const visibleTitle = dfOutput.options.caption || outputProp.name;
+            const currentDf = lastCall.outputs[dfOutput.name];
+
+            for (const [index, viewer] of nonGridViewers.entries()) {
+              if (viewer.type === DG.VIEWER.STATISTICS) {
+                const length = currentDf.columns.length;
+                const stats = DG.DataFrame.fromColumns([
+                  DG.Column.string('Name', length).init((i: number) => currentDf.columns.byIndex(i).name),
+                  DG.Column.int('Values', length).init((i: number) => currentDf.columns.byIndex(i).stats.valueCount),
+                  DG.Column.int('Nulls', length).init((i: number) => currentDf.columns.byIndex(i).stats.missingValueCount),
+                  DG.Column.float('Min', length).init((i: number) => currentDf.columns.byIndex(i).stats.min),
+                  DG.Column.float('Max', length).init((i: number) => currentDf.columns.byIndex(i).stats.max),
+                  DG.Column.float('Avg', length).init((i: number) => currentDf.columns.byIndex(i).stats.avg),
+                  DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
+                ]);
+                dfToSheet(
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                  stats,
+                  currentDf.columns.length + 2,
+                  (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+                );
+              } else {
+                await plotToSheet(
+                  exportWorkbook,
+                  exportWorkbook.getWorksheet(this.getSheetName(visibleTitle, exportWorkbook)),
+                  viewer.root,
+                  currentDf.columns.length + 2,
+                  (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0,
+                );
+              }
+            }
+          };
+        }
+      };
+      const buffer = await exportWorkbook.xlsx.writeBuffer();
+
+      return new Blob([buffer], {type: BLOB_TYPE});
+    }
+
+    if (format === 'DataUrl images') {
+      const jsonText = {} as Record<string, Record<number, {dataUrl: string, width: number, height: number}>>;
+
+      const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
+      const dfInputs = this.func.inputs.filter((input) => isDataFrame(input.propertyType));
+      const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
+
+      const tabControl = this.outputsTabsElem;
+      for (const tabLabel of this.tabsLabels) {
+        if (!tabControl.getPane(tabLabel)) continue;
+
+        tabControl.currentPane = tabControl.getPane(tabLabel);
+        await new Promise((r) => setTimeout(r, 100));
+        if (Object.keys(this.categoryToParamMap.inputs).includes(tabLabel)) {
+          for (const inputProp of this.categoryToParamMap.inputs[tabLabel]
+            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
+            const nonGridViewers = this.dfToViewerMapping[inputProp.name]
+              .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
+              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+            const dfInput = dfInputs.find((input) => input.name === inputProp.name)!;
+
+            for (const [i, viewer] of nonGridViewers.entries()) {
+              const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+
+              if (!jsonText[dfInput.name]) jsonText[dfInput.name] = {};
+
+              jsonText[dfInput.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
             }
           }
-        };
-      }
-    };
-    const buffer = await exportWorkbook.xlsx.writeBuffer();
+        } else {
+          for (const outputProp of this.categoryToParamMap.outputs[tabLabel]
+            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
+            const nonGridViewers = this.dfToViewerMapping[outputProp.name]
+              .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
+              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-    return new Blob([buffer], {type: BLOB_TYPE});
+            const dfOutput = dfOutputs.find((output) => output.name === outputProp.name)!;
+            for (const [i, viewer] of nonGridViewers.entries()) {
+              const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+
+              if (!jsonText[dfOutput.name]) jsonText[dfOutput.name] = {};
+
+              jsonText[dfOutput.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
+            }
+          };
+        }
+      };
+      return new Blob([JSON.stringify(jsonText)], {type: 'text/plain'});
+    }
+
+    throw new Error('Format is not supported');
   };
 
+  richFunctionViewSupportedFormats() {
+    return ['Excel', 'DataUrl images'];
+  }
+
+  richFunctionViewExportExtensions() {
+    return {
+      'Excel': 'xlsx',
+      'DataUrl images': 'txt',
+    };
+  }
+
   exportConfig = {
-    supportedExtensions: this.defaultSupportedExportExtensions(),
-    supportedFormats: this.defaultSupportedExportFormats(),
-    export: this.defaultExport,
+    supportedExtensions: this.richFunctionViewExportExtensions(),
+    supportedFormats: this.richFunctionViewSupportedFormats(),
+    export: this.richFunctionExport,
     filename: this.defaultExportFilename,
   };
 }
