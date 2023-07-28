@@ -379,6 +379,17 @@ jobs:
         timeout-minutes: 15
         run: |
           echo ${{ steps.check.outcome }}
+          echo ${{ github.ref == 'refs/heads/master' }} 
+          echo ${{ matrix.publish }}
+          echo ${{ steps.build.outcome }}
+          echo ${{ steps.build.outcome == 'success' || steps.build.outcome == 'skipped' }}
+          echo ${{ steps.gen_check.outcome == 'success' }}
+          echo ${{ steps.check.outcome }}
+          echo ${{ (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') }} 
+          echo ${{ steps.install.outcome == 'success' }}
+          echo ${{ steps.test-package.outcome }}
+          echo ${{ (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank') }}
+
           npm uninstall -g datagrok-tools@latest
 
       - name: Publish to npm
