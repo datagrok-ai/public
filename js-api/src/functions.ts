@@ -229,12 +229,9 @@ export class Context {
   }
 }
 
-class FuncCallParams {
+type FuncCallParams = {
   [name: string]: FuncCallParam;
-
-  //@ts-ignore
-  public values(): FuncCallParam[];
-}
+} & { values(): FuncCallParam[]; }
 
 /** Represents a function call
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
