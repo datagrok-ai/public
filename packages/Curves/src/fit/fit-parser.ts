@@ -37,28 +37,31 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
  * @return {IFitSeriesOptions} IFitSeriesOptions for the fitted curve
 */
 function getSeriesOptions(series: Element): IFitSeriesOptions {
-  const params = (series.getElementsByTagName('params')[0].childNodes[0].nodeValue)?.split(',')!.map(Number)!;
-  // params there are: [IC50, tan, max, min] - so we place them correctly: [max, tan, IC50, min]
-  const newParams = [params[2], params[1], params[0], params[3]];
-  let funcType = series.getElementsByTagName('function')[0].getAttribute('type')!;
-  funcType = funcType === 'sigif' ? FIT_FUNCTION_SIGMOID: funcType;
+  const params = (series.getElementsByTagName('params')[0]?.childNodes[0].nodeValue)?.split(',')!.map(Number)!;
+  let funcType = series.getElementsByTagName('function')[0]?.getAttribute('type')!;
+  funcType = !funcType || funcType === 'sigif' ? FIT_FUNCTION_SIGMOID : funcType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;
   const lineColor = series.getElementsByTagName('settings')[0].getAttribute('color')!;
   const drawLine = !!series.getElementsByTagName('settings')[0].getAttribute('drawLine')!;
   const seriesName = series.getAttribute('name')!;
 
-  return {
+  const seriesOptions: IFitSeriesOptions = {
     name: seriesName,
     fitFunction: funcType,
-    parameters: newParams,
     markerType: DG.MARKER_TYPE.CIRCLE,
     pointColor: markerColor,
     fitLineColor: lineColor,
     showFitLine: drawLine,
     showPoints: 'points',
     showCurveConfidenceInterval: false,
-    clickToToggle: false,
+    clickToToggle: false
   };
+
+  // params there are: [IC50, tan, max, min] - so we place them correctly: [max, tan, IC50, min]
+  if (params)
+    seriesOptions.parameters = [params[2], params[1], params[0], params[3]];
+
+  return seriesOptions;
 }
 
 /** Constructs {@link IFitPoint} array from the grid series tag.
