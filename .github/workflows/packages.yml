@@ -347,8 +347,7 @@ jobs:
           load: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
 
-      - name: grok check
-        continue-on-error: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'Meta') || matrix.beta == 'true' }}
+      - name: General checks
         run: |
           if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok/"* ]]; then
             echo "::error title=${{ matrix.package }}: failed properties check::Package should be in '@datagrok' scope. Change package name to '@datagrok/<name>' in ${{ matrix.package }}/package.json"
@@ -358,7 +357,12 @@ jobs:
             echo "::error title=${{ matrix.package }}: failed properties check::Remove beta property in ${{ matrix.package }}/package.json. It is deprecated."
             exit 1
           fi
+        id: gen_checks
+        working-directory: packages/${{ matrix.package }}
 
+      - name: grok check
+        continue-on-error: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'Meta') || matrix.beta == 'true' }}
+        run: |
           grok_check=$(grok check)
           if grep -q OK <<<$grok_check; then
             echo "${{ matrix.package }} passes grok check"
@@ -383,7 +387,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_check.outcome == 'success' && (steps.check.outcome == 'success' || contains(matrix.package, 'Tests') || contains(matrix.package, 'Meta')) && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
