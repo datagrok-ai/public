@@ -623,7 +623,7 @@ export class RichFunctionView extends FunctionView {
         this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
         if (field === SYNC_FIELD.INPUTS)
-          this.bindInputRun(val, input);
+          this.bindOnHotkey(val, input);
 
         this.renderInput(inputs, val, input, prevCategory);
         this.afterInputPropertyRender.next({prop, input: input});
@@ -657,18 +657,10 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
-  private bindInputRun(val: DG.FuncCallParam, t: InputVariants) {
-    const prop = val.property;
-    if (this.runningOnInput) {
-      if (prop.propertyType === DG.TYPE.DATA_FRAME)
-        this.runOnDgInput(t as DG.InputBase<DG.DataFrame>, val);
-      else
-        this.runOnInput(t);
-    }
+  private bindOnHotkey(val: DG.FuncCallParam, t: InputVariants) {
     if (isInputBase(t)) {
       t.input.onkeydown = async (ev) => {
-        if (ev.key == 'Enter')
-          await this.doRun();
+        if (ev.key == 'Enter' && this.isRunnable()) this.doRun();
       };
     }
   }
@@ -738,11 +730,27 @@ export class RichFunctionView extends FunctionView {
         this.hideOutdatedOutput();
         this.checkDisability.next();
 
-        if (this.runningOnInput && this.isRunnable())
-          this.doRun();
+        if (this.runningOnInput && this.isRunnable()) this.doRun();
       }
     });
+
     this.subs.push(sub);
+
+    if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
+      const subscribeForInteriorMut = () => {
+        if (!val.value) return;
+        const sub = val.value.onDataChanged.subscribe(async () => {
+          if (this.runningOnInput && this.isRunnable()) this.doRun();
+        });
+        this.subs.push(sub);
+      };
+
+      val.onChanged.subscribe(() => {
+        subscribeForInteriorMut();
+      });
+
+      subscribeForInteriorMut();
+    }
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
@@ -774,30 +782,6 @@ export class RichFunctionView extends FunctionView {
     expFuncCall.newId();
 
     await this.saveRun(expFuncCall);
-  }
-
-  private runOnInput(t: InputVariants) {
-    t.onInput(async () => {
-      if (this.isRunnable())
-        await this.doRun();
-    });
-  }
-
-  private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
-    t.onInput(async () => {
-      if (this.isRunnable()) await this.doRun();
-    });
-
-    // DataFrame inputs have internal mutability, so we need check for it
-    val.onChanged.subscribe(() => {
-      if (!val.value) return;
-
-      const sub = val.value.onDataChanged.subscribe(async () => {
-        if (this.isRunnable())
-          await this.doRun();
-      });
-      this.subs.push(sub);
-    });
   }
 
   private hideOutdatedOutput() {
