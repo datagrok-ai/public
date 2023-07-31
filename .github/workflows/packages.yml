@@ -77,6 +77,7 @@ jobs:
                     MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
                   fi
                 else
+                  MATRIX_PUBLISH_JSON+=", \"beta\": \"true\""
                   echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0 and is not going to be published"
                 fi
               fi
@@ -121,22 +122,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           token: ${{ secrets.WRITE_TOKEN }}
-      - name: Check package properties
-        id: check
-        working-directory: packages/${{ matrix.package }}
-        run: |
-          if [ -z "$(jq '. | select( has("repository") == true ).repository' package.json)" ]; then
-            echo "::error title=${{ matrix.package }}: failed properties check::Add repository property to ${{ matrix.package }}/package.json"
-            exit 1
-          fi
-          if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok/"* ]]; then
-            echo "::error title=${{ matrix.package }}: failed properties check::Package should be in '@datagrok' scope. Change package name to '@datagrok/<name>' in ${{ matrix.package }}/package.json"
-            exit 1
-          fi
-          if [ ! -z "$(jq '. | select( has("beta") == true ).beta' package.json)" ]; then
-            echo "::error title=${{ matrix.package }}: failed properties check::Remove beta property in ${{ matrix.package }}/package.json. It is deprecated."
-            exit 1
-          fi
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'true' }}
@@ -224,10 +209,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         id: datagrok-tools
-        if: ${{ matrix.test == 'true' }}
-        run: |
-          df -h
-          npm install -g datagrok-tools@latest
+        run: npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
@@ -321,11 +303,6 @@ jobs:
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
           docker system prune -af --volumes
 
-      - name: Cleanup datagrok-tools
-        if: steps.datagrok-tools.outcome == 'success'
-        timeout-minutes: 15
-        run: npm uninstall -g datagrok-tools@latest
-
       - name: Check dockerfiles directory existence
         id: check_directory
         uses: andstor/file-existence-action@v2
@@ -370,13 +347,46 @@ jobs:
           load: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
 
+      - name: General checks
+        run: |
+          if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok/"* ]]; then
+            echo "::error title=${{ matrix.package }}: failed properties check::Package should be in '@datagrok' scope. Change package name to '@datagrok/<name>' in ${{ matrix.package }}/package.json"
+            exit 1
+          fi
+          if [ ! -z "$(jq '. | select( has("beta") == true ).beta' package.json)" ]; then
+            echo "::error title=${{ matrix.package }}: failed properties check::Remove beta property in ${{ matrix.package }}/package.json. It is deprecated."
+            exit 1
+          fi
+        id: gen_checks
+        working-directory: packages/${{ matrix.package }}
+
+      - name: grok check
+        if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
+        run: |
+          grok_check=$(grok check)
+          if grep -q OK <<<$grok_check; then
+            echo "${{ matrix.package }} passes grok check"
+          else
+            echo ${grok_check}
+            echo "::error title=${{ matrix.package }}: failed grok check::${grok_check}"
+            exit 1
+          fi
+        id: check
+        working-directory: packages/${{ matrix.package }}
+
+      - name: Cleanup datagrok-tools
+        if: steps.datagrok-tools.outcome == 'success'
+        timeout-minutes: 15
+        run: |
+          npm uninstall -g datagrok-tools@latest
+
       - name: Publish to npm
         run: npm publish --access public
         id: publish
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')

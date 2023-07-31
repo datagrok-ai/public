@@ -25,7 +25,7 @@
     "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "datagrok-tools": "latest",
+    "datagrok-tools": "^4.12.9",
     "webpack": "latest",
     "webpack-cli": "latest"
   },

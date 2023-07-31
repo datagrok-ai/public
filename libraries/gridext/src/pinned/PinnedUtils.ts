@@ -302,6 +302,8 @@ export function registerPinnedColumns() {
       return;
     }
 
+    if (!view.viewers)
+      return;
     const itViewers = view.viewers;
     const arViewers = Array.from(itViewers);
     let viewer = null;
@@ -326,6 +328,8 @@ export function registerPinnedColumns() {
       return;
     }
 
+    if (!view.viewers)
+      return;
     const itViewers = view.viewers;
     const arViewers = Array.from(itViewers);
     let viewer = null;

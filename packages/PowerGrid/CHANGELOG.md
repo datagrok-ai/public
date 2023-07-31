@@ -1,10 +1,18 @@
 # PowerGrid changelog
 
-## 1.1.27 (2023-07-21)
+## 1.2.0 (WIP)
 
-This release focuses on improving analysis stability and usability.
+### Features
 
-*Dependency: datagarok-api >= 1.15.3*
+Smart forms (WIP)
+
+## 1.1.28 (2023-07-28)
+
+### Bug Fixes
+
+* Fixed undefined is not iterable problem
+
+## 1.1.27 (2023-07-17)
 
 ### Features
 

@@ -38,7 +38,12 @@ To render a fitted curve based on series points, you need to write it in the fol
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
       "parameters": [1.7391934768969721, -0.9451759934029763, 4.846020678949615, 0.15841886339211816],
-      "parameterBounds": [1.73919347689, -0.9451759934029, 4.846020678949, 0.15841886339],
+      "parameterBounds": [
+        {"minBound": 1.739193476892, "maxBound": 1.739193476898},
+        {"maxBound": -0.9451759934029},
+        {},
+        {"minBound": 0.158418863392114}
+      ],
       "showPoints": "points",
       "clickToToggle": true,
       "droplines": ["IC50"],
@@ -64,22 +69,31 @@ To render a fitted curve based on series points, you need to write it in the fol
 }
 ```
 
-Each series has its own `name`, `point color`, `fit line color`, `confidence interval color`, and `marker type`
-(could be either circle, asterisk, square, triangle, etc.) assigned. Additionally, each series has a few boolean
-fields indicating whether or not to display the fit line and the curve confidence intervals. The `fit function`
-for each series can be either a sigmoid function or a [custom-defined function](/README.md#creating-custom-fit-function).
-Furthermore, the `parameters` for the fit function can be explicitly set or left unset as well as the `parameter bounds`,
-which can control the parameters bounds during the fit respectively. If the parameters are set explicitly, the
-fitting process won't be executed, and vice versa. Moreover, the user can choose whether the points, candlesticks,
-both or nothing can be shown using the `show points` parameter. Also, there is a `click to toggle` boolean field which
-indicates if clicking on the point toggles its outlier status and causes curve refitting or not. The `droplines`
-property allows the user to choose the droplines he wants to see on the plot. The `data points` for each series
-are represented as arrays of objects, with each object containing x and y coordinates and also a boolean outlier value.
+Each series has its own parameters, such as:
 
-Moreover, there is a `chart options` parameter that allows setting the plot parameters. The user has the option to
-obtain various statistics, such as the area under the curve (`auc`) or the coefficient of determination (`rSquared`).
-Also, the user can set the minimum and maximum x and y of the plot, as well as the axes names which will be rendered if
-the plot size is big enough. Additionally, there are boolean fields that allow to logarithmize the data by x or by y.
+- `name` - controls the series name
+- `pointColor` - overrides the standardized series point color
+- `fitLineColor` - overrides the standardized series fit line color
+- `confidenceIntervalColor` - overrides the standardized series confidence interval color
+- `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
+- `showFitLine` - defines whether to show the fit line or not
+- `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
+- `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
+[custom-defined function](/README.md#creating-custom-fit-function).
+- `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed
+- `parameterBounds` - defines the series parameter bounds during the fit
+- `showPoints` - defines the data display mode, which could be either `points`, `candlesticks`, `both`, or none
+- `clickToToggle` - defines whether clicking on the point toggles its outlier status and causes curve refitting or not
+- `droplines` - defines the droplines that would be shown on the plot (for instance, IC50)
+- `points` - an array of objects with each object containing x and y coordinates and a boolean outlier value
+
+Each chart has its own parameters as well, such as:
+
+- `minX`, `minY`, `maxX`, `maxY` - controls the minimum x and y values of the plot
+- `xAxisName`, `yAxisName` - defines the x and y axis names. If the plot size is enough, will render it
+- `logX`, `logY` - defines whether the x and y data should be logarithmic or not
+- `showStatistics` - defines the statistics that would be shown on the plot (such as the area under the curve
+(`auc`) or the coefficient of determination (`rSquared`))
 
 ![curves](./img/curves.gif)
 
@@ -96,12 +110,11 @@ To render a custom fit function, you need to write in the following JSON format:
 }
 ```
 
-Each fitting function has its own `name`. This name is used to cache the created custom function, enabling
-efficient retrieval and reuse. Additionally, the fit function has `parameter names`, which are stored as
-an array of strings.
+Each fitting function has its own `name`, which is used to cache the created custom function, enabling
+efficient retrieval and reuse, and `parameterNames`, which are stored as an array of strings.
 
 Also, there are two functions: `getInitialParameters`, which takes arrays of x and y and returns determined
-initial parameter values, and `function`, which takes the array of parameters and given x coordinate and
+initial parameter values, and `function`, which takes the array of parameters and the given x coordinate and
 returns the result of the fit function. These functions are written as JavaScript arrow function expressions.
 
 ![custom-fit-function](./img/custom-fit-function.gif)

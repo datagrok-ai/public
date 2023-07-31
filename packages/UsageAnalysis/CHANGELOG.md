@@ -1,6 +1,6 @@
 # Usage Analysis changelog
 
-## 1.0.1 (2023-07-27) (WIP)
+## 1.0.1 (WIP)
 
 This release focuses on improvements and bug fixes.
 

@@ -229,6 +229,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
     grok.shell.o = gridCell;
 
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
@@ -272,6 +275,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
     ui.dialog({title: 'Edit chart'})
       .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
       .show({resizable: true});
@@ -389,6 +395,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (w < MIN_CELL_RENDERER_PX_WIDTH || h < MIN_CELL_RENDERER_PX_HEIGHT)
       return;
 
+    if (!gridCell.cell.value)
+      return;
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
@@ -397,6 +405,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
     if (gridCell.bounds.width < 50) {
       const canvas = ui.canvas(300, 200);
       this.render(canvas.getContext('2d')!, 0, 0, 300, 200, gridCell, null as any);
