@@ -71,10 +71,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           let isCached = false;
           try{
             const cachedMol = this._molsCache?.get(molecules[i]);
-            if(cachedMol) {
-              isCached = true;
-            }
             mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
+            if (cachedMol || this.addToCache(mol))
+              isCached = true;
             if (mol) {
               if (mol.get_substruct_match(queryMol) !== '{}')
                 matches.setFast(i, true);
@@ -186,5 +185,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._rdKitMols = null;
 
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
+  }
+
+  invalidateCache() {
+    this._cacheCounter = 0;
+    if (this._molsCache) {
+      this._molsCache.forEach((it) => it?.delete());
+      this._molsCache.clear();
+    }
   }
 }

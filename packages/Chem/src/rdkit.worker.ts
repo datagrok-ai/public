@@ -34,6 +34,8 @@ ctx.addEventListener('message', async (e: any) => {
       result = _rdKitServiceWorker!.convertMolNotation(args[0]);
     } else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
       result = _rdKitServiceWorker!.getStructuralAlerts(args[0], args[1]);
+    } else if (op === WORKER_CALL.INVALIDATE_CACHE) {
+      _rdKitServiceWorker!.invalidateCache();
     }
     port.postMessage({op: op, retval: result});
   } catch (e) {

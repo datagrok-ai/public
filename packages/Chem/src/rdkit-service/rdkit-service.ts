@@ -338,4 +338,15 @@ export class RdKitService {
         t.parallelWorkers[i].getStructuralAlerts(alerts, segment), fooGather) :
       this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
+
+  async invalidateCache(): Promise<void> {
+    const t = this;
+    this._doParallel(
+      (i: number) => {
+        return t.parallelWorkers[i].invalidateCache();
+      },
+      (_: any) => {
+        return;
+      });
+  }
 }

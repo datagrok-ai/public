@@ -183,34 +183,6 @@ async function getUint8ArrayFingerprints(
   }
 }
 
-function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: (Uint8Array | null)[]): BitArray {
-  const patternFpUint8Length = 256;
-  const result = new BitArray(fgs.length, false);
-  const queryMol = getQueryMolSafe(molString, querySmarts, getRdKitModule());
-
-  if (queryMol) {
-    try {
-      const fpRdKit = queryMol.get_pattern_fp_as_uint8array();
-      checkEl:
-      for (let i = 0; i < fgs.length; ++i) {
-        if (fgs[i]) {
-          for (let j = 0; j < patternFpUint8Length; ++j) {
-            if ((fgs[i]![j] & fpRdKit[j]) != fpRdKit[j])
-              continue checkEl;
-          }
-          result.setFast(i, true);
-        }
-      }
-      return result;
-    } catch (e: any) { 
-     throw new Error(`Chem | Substructure Search failed with error: ${e.toString()}`);
-    } finally {
-      queryMol?.delete();
-    }
-  } else
-    throw new Error(`Chem | Invalid search pattern: ${molString}`);
-}
-
 export async function chemGetFingerprints(...args: [DG.Column, Fingerprint?, boolean?, boolean?]):
   Promise<(BitArray | null)[]> {
   return (await getUint8ArrayFingerprints(...args)).fps.map((el) => el ? rdKitFingerprintToBitArray(el) : null);
@@ -254,6 +226,14 @@ export async function chemSubstructureSearchLibrary(
 ) {
   await chemBeginCriticalSection();
   try {
+    let invalidateCacheFlag = false;
+    const rdKitService = await getRdKitService();
+    const currentCol = invalidatedColumnKey(molStringsColumn);
+    if (lastColumnInvalidated !== currentCol) {
+      invalidateCacheFlag = true;
+      lastColumnInvalidated = currentCol;
+    }
+
     const matchesBitArray = new BitArray(molStringsColumn.length);
     if (molString.length === 0) {
       chemEndCriticalSection();
@@ -266,8 +246,18 @@ export async function chemSubstructureSearchLibrary(
       grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
     };
 
-    const canonicalSmilesList = checkForSavedColumn(molStringsColumn, canonicalSmilesColName)?.toList() ?? new Array<string | null>(molStringsColumn.length).fill(null);
-    const fgsList = checkForSavedColumn(molStringsColumn, Fingerprint.Pattern)?.toList() ?? new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
+    const getSavedCol = (colName: string) => {
+      let savedCol = checkForSavedColumn(molStringsColumn, colName);
+      if (!savedCol)
+        invalidateCacheFlag = true;
+      return savedCol;
+    }
+
+    const canonicalSmilesList = getSavedCol(canonicalSmilesColName)?.toList() ?? new Array<string | null>(molStringsColumn.length).fill(null);
+    const fgsList = getSavedCol(Fingerprint.Pattern)?.toList() ?? new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
+
+    if (invalidateCacheFlag) //invalidating cache in case column has been changed
+      await rdKitService.invalidateCache();
 
     const result: SubstructureSearchWithFpResult = {
       bitArray: matchesBitArray,
@@ -277,7 +267,7 @@ export async function chemSubstructureSearchLibrary(
       }
 
     }
-    const subFuncs = await (await getRdKitService()).
+    const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc, molStringsColumn.toList(), !columnIsCanonicalSmiles);
     
 
