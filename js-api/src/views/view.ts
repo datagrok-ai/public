@@ -675,7 +675,17 @@ export class TableView extends View {
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
 
+  saveState(): string {
+    return api.grok_TableView_SaveState(this.dart);
+  }
 
+  loadState(x: string, options?: IViewStateApplicationOptions): void {
+    api.grok_TableView_LoadState(this.dart, x, options?.pickupColumnTags);
+  }
+}
+
+export interface IViewStateApplicationOptions {
+  pickupColumnTags?: boolean;
 }
 
 /** Script view */

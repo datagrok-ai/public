@@ -32,7 +32,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   );
 
   const maxMonomerLength: DG.InputBase = ui.intInput('Max monomer length',
-    col.temp[mmcrTemps.maxMonomerLength] ?? _package.properties.maxMonomerLength,
+    col.temp[mmcrTemps.maxMonomerLength] ?? _package.properties.MaxMonomerLength,
     (value: number) => {
       col.temp[mmcrTemps.maxMonomerLength] = value;
       col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);

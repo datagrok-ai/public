@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import {getStats, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
-import {getStatsSummary} from '../utils/misc';
+import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const allConst = 'All';
@@ -17,7 +17,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const activityColData = activityCol.getRawData();
   const rowCount = activityCol.length;
-  const selectionObject = model.monomerPositionSelection;
+  const selectionObject = model.mutationCliffsSelection;
   const clustersColName = model.settings.clustersColumnName;
   let clustersProcessedObject: string[] = [];
   if (clustersColName)
@@ -49,7 +49,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           const mask = DG.BitSet.create(rowCount, (i) => posColData[i] === aarCategoryIndex);
           const distributionTable = DG.DataFrame.fromColumns(
             [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
-          const hist = getActivityDistribution(distributionTable);
+          const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
 
           const stats = model.monomerPositionStats[position][aar];
           const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
@@ -83,7 +83,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
 
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-        const hist = getActivityDistribution(distributionTable);
+        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const stats = getStats(activityColData, bitArray);
@@ -127,7 +127,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-        const hist = getActivityDistribution(distributionTable);
+        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const stats = getStats(activityColData, bitArray);
@@ -160,7 +160,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const labels = getDistributionLegend(aarStr, otherStr);
 
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-        const hist = getActivityDistribution(distributionTable);
+
+        const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const mask = DG.BitSet.create(rowCount, (i) => bitArray.getBit(i));

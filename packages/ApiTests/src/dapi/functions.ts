@@ -63,9 +63,33 @@ category('Dapi: functions calls', async () => {
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await GDF.calls.save(funcCall);
-
+   
     // expect no-throw
     await GDF.calls.find(funcCall.id);
+  });
+
+  test('load script call inputs & outputs', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    const loadedCall = await GDF.calls.find(funcCall.id);
+    expect(loadedCall.inputs['a'], 1);
+    expect(loadedCall.inputs['b'], 2);
+    expect(loadedCall.outputs['c'], 3);
+  });
+
+  test('load package function call inputs & outputs', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    const loadedCall = await GDF.calls.find(funcCall.id);
+    expect(loadedCall.inputs['a'], 1);
+    expect(loadedCall.inputs['b'], 2);
+    expect(loadedCall.outputs['c'], 3);
   });
 
   test('load package funccall with func\'s valid nqName', async () => {

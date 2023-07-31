@@ -135,7 +135,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidth];
     const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
     if (monomerWidth === 'short')
-      maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties.maxMonomerLength;
+      maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties.MaxMonomerLength;
 
 
     let seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];

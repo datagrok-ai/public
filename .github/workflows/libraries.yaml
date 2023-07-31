@@ -105,7 +105,7 @@ jobs:
 
   publish:
     name: Build and publish to npm
-    needs: [metadata, common-check]
+    needs: [ metadata, common-check ]
     if: needs.metadata.outputs.continue == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-20.04
     strategy:
@@ -151,6 +151,22 @@ jobs:
       - run: npm run build
         working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
+      - name: Install datagrok tools
+        id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - name: grok check
+        continue-on-error: true
+        run: |
+          grok_check=$(grok check)
+          if grep -q OK <<<$grok_check; then
+            echo "${{ matrix.package }} passes grok check"
+          else
+            echo ${grok_check}
+            echo "::error title=${{ matrix.package }}: failed grok check::${grok_check}"
+            exit 1
+          fi
+        id: grok_check
+        working-directory: packages/${{ matrix.package }}
       - name: npm publish
         run: npm publish --access public
         if: matrix.changed_version == 'true' && github.ref == 'refs/heads/master'
@@ -195,6 +211,8 @@ jobs:
         id: commit
         run: |
           crnt=$(pwd)
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git pull
           changed=""
           for package in ${{ matrix.packages }}; do

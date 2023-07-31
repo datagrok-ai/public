@@ -78,7 +78,7 @@ export type FitInvertedFunctions = {
  * - Deep integration with the Datagrok grid
  *   - Either fitting on the fly, or using the supplied function + parameters
  *   - Multiple series in one cell
- *   - Confidence intervals drawing
+ *   - Candlesticks, confidence intervals, and droplines drawing
  *   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
  *     on the column level, with the ability to override it on a grid cell or point level
  *   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
@@ -98,6 +98,8 @@ export const CURVE_CONFIDENCE_INTERVAL_BOUNDS = {
   TOP: 'top',
   BOTTOM: 'bottom',
 };
+
+export const DROPLINES = ['IC50'];
 
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
@@ -174,6 +176,7 @@ export interface IFitSeriesOptions {
   showConfidenceForX?: number;
   clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions
+  droplines?: string[];
 }
 // TODO: show labels in property panel if present, color by default from series
 
@@ -219,18 +222,17 @@ export const fitSeriesProperties: Property[] = [
       inputType: 'Color'}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
-  Property.js('autoFit', TYPE.BOOL,
-    {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
   Property.js('showFitLine', TYPE.BOOL,
     {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
   Property.js('showPoints', TYPE.STRING,
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  Property.js('showCurveConfidenceInterval', TYPE.BOOL,
+    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false}),
   Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
     defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
-  // Property.js('showBoxPlot', TYPE.BOOL,
-  //   {category: 'Fitting', description: 'Whether candlesticks should be rendered', defaultValue: true}),
+  Property.js('droplines', TYPE.STRING_LIST, {choices: DROPLINES, inputType: 'MultiChoice'}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
@@ -362,9 +364,7 @@ function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
 }
 
 function createOptimizable(data: {x: number[], y: number[]}, curveFunction: (params: number[], x: number) => number,
-  of: ObjectiveFunction): Optimizable {
-  const fixed: number[] = [];
-
+  of: ObjectiveFunction, fixed: number[]): Optimizable {
   return {
     getValue: (parameters: number[]) => {
       return of(curveFunction, data, parameters).value;
@@ -387,7 +387,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
     const fitFunctionParts = seriesFitFunc.function.split('=>').map((elem) => elem.trim());
     const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map((elem) => elem.trim());
     const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1),
-      `return ${fitFunctionParts[1]}`);
+      `${fitFunctionParts[1].includes(';') ? '' : 'return '}${fitFunctionParts[1]}`);
     const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1),
       `return ${getInitParamsParts[1]}`);
     const fitFunc = new JsFunction(name, (fitFunction as (params: number[], x: number) => number),
@@ -404,12 +404,11 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
   const paramValues = fitFunction.getInitialParameters(data.x, data.y);
 
   const of = createObjectiveFunction(errorModel);
-  const optimizable = createOptimizable(data, curveFunction, of);
-
   const fixed: number[] = [];
   let overLimits = true;
 
   while (overLimits) {
+    const optimizable = createOptimizable(data, curveFunction, of, fixed);
     limitedMemoryBFGS(optimizable, paramValues);
     limitedMemoryBFGS(optimizable, paramValues);
 
@@ -457,22 +456,22 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
     of(curveFunction, data, paramValues).mult :
     of(curveFunction, data, paramValues).const;
 
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
+  const quantile = jStat.normal.inv(1 - confidenceLevel/2, 0, 1);
 
-  const top = (x: number) =>{
+  const top = (x: number) => {
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value + studentQ * error / Math.sqrt(data.x.length);
+      return value + quantile * error;
     else
-      return value + studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value + quantile * Math.abs(value) * error;
   };
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
     if (errorModel === FitErrorModel.Constant)
-      return value - studentQ * error / Math.sqrt(data.x.length);
+      return value - quantile * error;
     else
-      return value - studentQ * (Math.abs(value) * error / Math.sqrt(data.x.length));
+      return value - quantile * Math.abs(value) * error;
   };
 
   return {confidenceTop: top, confidenceBottom: bottom};

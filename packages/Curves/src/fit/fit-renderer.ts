@@ -28,6 +28,7 @@ import {
   getSeriesStatistics,
   getCurve,
   getColumnChartOptions,
+  LogOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -45,6 +46,8 @@ const POINT_PX_SIZE = 4;
 const OUTLIER_HITBOX_RADIUS = 2;
 const MIN_AXES_CELL_PX_WIDTH = 70;
 const MIN_AXES_CELL_PX_HEIGHT = 55;
+const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 150;
+const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 100;
 const AXES_LEFT_PX_MARGIN = 30;
 const AXES_TOP_PX_MARGIN = 5;
 const AXES_BOTTOM_PX_MARGIN = 15;
@@ -117,7 +120,7 @@ function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: B
 
 /** Performs points drawing */
 function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
-  transform: Viewport, ratio: number): void {
+  transform: Viewport, ratio: number, logOptions: LogOptions): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
     const color = p.outlier ? DG.Color.red :
@@ -125,7 +128,8 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
       DG.Color.scatterPlotMarker;
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
-      transform.xToScreen(p.x), transform.yToScreen(p.y), color, (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
+      transform.xToScreen(p.x), transform.yToScreen(p.y), color,
+      (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
   }
 }
 
@@ -207,6 +211,14 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   g.fill();
 }
 
+/** Performs a dropline drawing */
+function drawDropline(g: CanvasRenderingContext2D, transform: Viewport, xValue: number, dataBounds: DG.Rect,
+  curve: (x: number) => number): void {
+  g.moveTo(transform.xToScreen(dataBounds.minX), transform.yToScreen(curve(xValue)));
+  g.lineTo(transform.xToScreen(xValue), transform.yToScreen(curve(xValue)));
+  g.lineTo(transform.xToScreen(xValue), transform.yToScreen(dataBounds.minY));
+}
+
 export class FitChartCellRenderer extends DG.GridCellRenderer {
   get name() { return FIT_CELL_TYPE; }
 
@@ -217,6 +229,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
     grok.shell.o = gridCell;
 
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
@@ -260,6 +275,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
     ui.dialog({title: 'Edit chart'})
       .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
       .show({resizable: true});
@@ -278,6 +296,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
+    const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
 
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
@@ -291,10 +310,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
       let curve: (x: number) => number;
-      if (series.parameters)
+      if (series.parameters) {
+        if (data.chartOptions?.logX)
+          series.parameters[2] = Math.log10(series.parameters[2]);
         curve = getCurve(series, fitFunc);
+      }
       else {
-        const fitResult = fitSeries(series, fitFunc);
+        const fitResult = fitSeries(series, fitFunc, chartLogOptions);
         curve = fitResult.fittedCurve;
         series.parameters = fitResult.parameters;
         userParamsFlag = false;
@@ -303,7 +325,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (series.showPoints ?? 'points') {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';
         if (series.showPoints === 'points')
-          drawPoints(g, series, viewport, ratio);
+          drawPoints(g, series, viewport, ratio, chartLogOptions);
         else if (['candlesticks', 'both'].includes(series.showPoints!))
           drawCandles(g, series, viewport, ratio);
       }
@@ -315,7 +337,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.beginPath();
         for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
           const x = screenBounds.x + i;
-          const y = viewport.yToScreen(curve(viewport.xToWorld(x)));
+          const y = data.chartOptions?.logX ? viewport.yToScreen(Math.pow(10, curve(Math.log10(viewport.xToWorld(x))))) :
+            viewport.yToScreen(curve(viewport.xToWorld(x)));
           if (i === AXES_LEFT_PX_MARGIN)
             g.moveTo(x, y);
           else
@@ -324,7 +347,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.stroke();
       }
 
-      if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? true)) {
+      if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? false)) {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
@@ -334,6 +357,20 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport);
       }
 
+      if (series.droplines) {
+        g.save();
+        g.strokeStyle = 'blue';
+        g.lineWidth = ratio;
+        g.beginPath();
+        g.setLineDash([5, 5]);
+        for (let i = 0; i < series.droplines.length; i++) {
+          const droplineName = series.droplines[i];
+          if (droplineName === 'IC50')
+            drawDropline(g, viewport, series.parameters[2], dataBounds, curve);
+        }
+        g.stroke();
+        g.restore();
+      }
 
       if (data.chartOptions?.showStatistics) {
         const statistics = getSeriesStatistics(series, fitFunc);
@@ -358,6 +395,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (w < MIN_CELL_RENDERER_PX_WIDTH || h < MIN_CELL_RENDERER_PX_HEIGHT)
       return;
 
+    if (!gridCell.cell.value)
+      return;
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
@@ -366,6 +405,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
     if (gridCell.bounds.width < 50) {
       const canvas = ui.canvas(300, 200);
       this.render(canvas.getContext('2d')!, 0, 0, 300, 200, gridCell, null as any);

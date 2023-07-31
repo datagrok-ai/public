@@ -8,7 +8,6 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
-import grok_connect.utils.CustomDriverManager;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import serialization.Types;
@@ -16,9 +15,7 @@ import shadow.org.neo4j.driver.internal.value.NodeValue;
 import software.aws.neptune.opencypher.resultset.OpenCypherResultSet;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
@@ -72,7 +69,7 @@ public class NeptuneDataProvider extends JdbcDataProvider {
     @Override
     public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         prepareProvider();
-        return CustomDriverManager.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+        return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
 
     @Override
@@ -118,6 +115,11 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.COLUMN_LIST, new Neo4jComplexColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+    }
+
+    @Override
+    protected ResultSet executeStatement(PreparedStatement statement) throws SQLException {
+        return statement.executeQuery();
     }
 }
 

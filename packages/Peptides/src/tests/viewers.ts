@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';

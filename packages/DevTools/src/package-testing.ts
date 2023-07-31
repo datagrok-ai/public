@@ -88,8 +88,15 @@ export class TestManager extends DG.ViewBase {
   }
 
   async init(): Promise<void> {
+    let TMStateB = false;
     let pathSegments = window.location.pathname.split('/');
     pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
+    const TMState = localStorage.getItem('TMState');
+    if (pathSegments.length <= 4 && TMState) {
+      pathSegments = TMState.split('/');
+      pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
+      TMStateB = true;
+    }
     this.testFunctions = await this.collectPackages();
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
@@ -104,7 +111,8 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.append(testUIElements.testsTree.root);
     if (this.dockLeft)
       grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.25);
-    this.runTestsForSelectedNode();
+    if (!TMStateB)
+      this.runTestsForSelectedNode();
   }
 
   async collectPackages(packageName?: string): Promise<any[]> {
@@ -444,6 +452,7 @@ export class TestManager extends DG.ViewBase {
       break;
     }
     }
+    localStorage.setItem('TMState', this.testManagerView.path);
     await delay(1000);
     if (grok.shell.lastError.length > 0) {
       grok.shell.error(`Unhandled exception: ${grok.shell.lastError}`);

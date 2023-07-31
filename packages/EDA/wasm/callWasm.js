@@ -397,9 +397,6 @@ let Return = {
 
 // The main tool that combines all together
 export function callWasm(module, funcName, inputs) {
-
-    let start = new Date().getTime();
-
     // get specification of exported C/C++-function
     let funcSpecification = module[funcName];
 
@@ -449,17 +446,11 @@ export function callWasm(module, funcName, inputs) {
     // CALL EXPORTED CPP-FUNCTION
     let callResult = cppFuncWrapper(module, funcName, 'num', cppFuncInput);
 
-    console.log('C++-function call result: ' + callResult);
-
     // store result that is returned by exported cpp-function
     args._callResult = Param.num(callResult);
 
     // create output
     let output = funcSpecification.output;
-
-    let finish = new Date().getTime();
-
-    console.log(`Time for C/C++-function is ${finish - start} ms.`)
 
     // if a single object must be returned
     if(output['type'] != 'objects')

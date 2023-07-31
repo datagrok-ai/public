@@ -283,7 +283,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
 
     const colorColData = colorCol!.getRawData();
     const colorDataList: number[] = [];
-    for (let i = 0; i < positionColData.length; ++i) {
+    for (let i = 0; i < positionCol.length; ++i) {
       if (positionColCategories[positionColData[i]] === currentMonomer)
         colorDataList.push(colorColData[i]);
     }
@@ -292,10 +292,10 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
 
     const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
     CR.renderInvaraintMapCell(
-      canvasContext, currentMonomer, currentPosition, model.monomerPositionFilter, value, bound, color);
+      canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.monomerPositionSelection, model.mutationCliffs, model.settings.isBidirectional);
+      model.mutationCliffsSelection, model.mutationCliffs, model.settings.isBidirectional);
   }
   args.preventDefault();
   canvasContext.restore();
@@ -323,16 +323,16 @@ export function showTooltip(cell: DG.GridCell, x: number, y: number, model: Pept
   return true;
 }
 
-function chooseAction(aar: string, position: string, isShiftPressed: boolean, isFilter: boolean,
+function chooseAction(aar: string, position: string, isShiftPressed: boolean, isInvariantMap: boolean,
   model: PeptidesModel): void {
   if (!isShiftPressed) {
-    if (isFilter)
-      model.initMonomerPositionFilter({cleanInit: true, notify: false});
+    if (isInvariantMap)
+      model.initInvariantMapSelection({cleanInit: true, notify: false});
     else
-      model.initMonomerPositionSelection({cleanInit: true, notify: false});
+      model.initMutationCliffsSelection({cleanInit: true, notify: false});
   }
 
-  model.modifyMonomerPositionSelection(aar, position, isFilter);
+  model.modifyMonomerPositionSelection(aar, position, isInvariantMap);
 }
 
 function cellChanged(table: DG.DataFrame, model: PeptidesModel): void {

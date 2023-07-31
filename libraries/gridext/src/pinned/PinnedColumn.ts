@@ -104,7 +104,10 @@ export class PinnedColumn {
   private m_handlerRowsFiltering : rxjs.Subscription | null;
   private m_handlerCurrRow : rxjs.Subscription | null;
   private m_handlerMouseOverRow : rxjs.Subscription | null;
+  private m_handlerMouseOverGroup : rxjs.Subscription | null;
   private m_handlerSel : rxjs.Subscription | null;
+  private m_handlerData : rxjs.Subscription | null;
+  private m_handlerDartProperty : rxjs.Subscription | null;
   //private m_handlerFilter : any;
   private m_handlerRowsResized : rxjs.Subscription | null;
   private m_handlerRowsSorted : rxjs.Subscription | null;
@@ -215,6 +218,7 @@ export class PinnedColumn {
     eCanvasThis.style.top = grid.canvas.offsetTop + "px";
     eCanvasThis.style.width = nW + "px";
     eCanvasThis.style.height = Math.round(nHeight/window.devicePixelRatio) + "px";
+    eCanvasThis.style.zIndex = "1";
 
     //console.log("h " + grid.canvas.height + " offset " + grid.canvas.offsetHeight);
 
@@ -346,6 +350,21 @@ export class PinnedColumn {
       }
     );
 
+    this.m_handlerMouseOverGroup = dframe.onMouseOverRowGroupChanged.subscribe(() =>{
+      const g = eCanvasThis.getContext('2d');
+      headerThis.paint(g, grid);
+    });
+
+    this.m_handlerData = dframe.onDataChanged.subscribe(() => {
+      const g = eCanvasThis.getContext('2d');
+      headerThis.paint(g, grid);
+    });
+
+    this.m_handlerDartProperty = grid.onDartPropertyChanged.subscribe((p: any) => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+    });
+
     this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
           const g = eCanvasThis.getContext('2d');
           headerThis.paint(g, grid);
@@ -470,8 +489,17 @@ export class PinnedColumn {
     this.m_handlerCurrRow?.unsubscribe();
     this.m_handlerCurrRow = null;
 
+    this.m_handlerData?.unsubscribe();
+    this.m_handlerData = null;
+
     this.m_handlerMouseOverRow?.unsubscribe();
     this.m_handlerMouseOverRow = null;
+
+    this.m_handlerMouseOverGroup?.unsubscribe();
+    this.m_handlerMouseOverGroup = null;
+
+    this.m_handlerDartProperty?.unsubscribe();
+    this.m_handlerDartProperty = null;
 
     this.m_handlerPinnedRowsChanged?.unsubscribe();
     this.m_handlerPinnedRowsChanged = null;

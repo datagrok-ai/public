@@ -8,6 +8,38 @@ confirm that new changes haven't affected previous functionality. Each package s
 responsible for either UI or logic underneath. And Datagrok provides various capabilities and tools to conveniently run
 those tests any time during development.
 
+## Test writing & essential utilities
+
+Writing tests is a fundamental aspect of software development, ensuring the reliability and correctness of your code.
+With the Datagrok platform, you can easily create and run tests for any package you develop. By following some best practices and guidelines,
+you can build a robust and effective test suite. To get started with test writing on Datagrok, you can refer to the
+[APITests package](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests). It provides valuable insights and instructions on creating tests,
+setting up assertions, and examples of organizing your test code effectively.
+
+The process of writing and executing tests can be significantly easier with the help of Datagrok [library Utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils),
+which contains a powerful [set of testing utilities](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts).
+From basic assertions to asynchronous handling and viewer testing, these utilities cover a wide range of testing scenarios.
+
+<b>Writing Tests</b>
+
+The Datagrok Library Utils offer a straightforward and efficient way to write tests for your packages. Through the `test` function, you can define individual test cases, each with a name and the corresponding test logic. Tests can be categorized and executed collectively for comprehensive coverage.
+
+<b>Test Assertions</b>
+
+Within the Utils library, you have access to various test assertion functions to validate and compare different types of data. Functions like `expect`, `expectFloat`, `expectTable`, `expectObject`, and `expectArray` enable you to assert equality, floating-point number comparisons, DataFrame comparisons, object comparisons (including nested objects and arrays), and array comparisons, respectively.
+
+<b>Handling Asynchronous Tests</b>
+
+Testing asynchronous code is a common scenario, and the Utils have got you covered. The utility `awaitCheck` allows you to wait until a specified condition is met or a timeout is reached, making it ideal for handling asynchronous test cases with ease. Furthermore, the `delay` function comes in handy when you need to introduce intentional delays during testing, allowing you to test edge cases and ensure your code behaves correctly under various conditions.
+
+<b>Testing Viewers</b>
+
+The `testViewer` utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
+
+<b>Handling Exceptions</b>
+
+Dealing with exceptions is an integral part of testing. The `expectExceptionAsync` function allows you to test that certain actions indeed throw exceptions as expected, and it even offers the flexibility to perform deeper inspections of the exceptions, if needed.
+
 ## Local testing
 
 To test packages locally before release, you can use the [datagrok toolkit](../tools/libraries.md#datagrok-toolkit).
@@ -21,15 +53,12 @@ grok test [--host]
 It will build your package and publish it in the debug mode to a specified host and run the tests. The `host` option
 should correspond to one of the server aliases provided in the configuration file (`.grok/config.yaml`). If not given,
 the default host is used for testing. The building and publishing steps can be skipped with flags `--skip-build` and
-`--skip-publish` correspondingly.
+`--skip-publish` correspondingly. The results are printed to the terminal. If you want to save a test run result,
+add the `--csv` flag (the report will be saved in a CSV file in the package folder). To see tests execution,
+pass the `--gui` flag that disables the headless browser mode. This option can help you debug your tests.
+For more detailed information and additional usage instructions, please refer to the [datagrok-tools page](https://github.com/datagrok-ai/public/tree/master/tools).
 
-The results are printed to the terminal. If you want to save a test run result, add the `--csv` flag (the report will be
-saved in a CSV file in the package folder).
-
-To see tests execution, pass the `--gui` flag that disables the headless browser mode. This option can help you debug
-your tests.
-
-If you do not have any datagrok instance run locally, you can use [docker-compose](../admin/deploy/docker-compose.mdx) to run the stand.
+If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose.mdx) to run the stand.
 
 ## Tests after a change in a public package
 

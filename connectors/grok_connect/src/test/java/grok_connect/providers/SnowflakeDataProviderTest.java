@@ -22,7 +22,6 @@ import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
-@Disabled("Until test instance of Snowflake will be available")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnowflakeDataProviderTest {
     private static final Provider type = Provider.SNOWFLAKE;
@@ -112,6 +111,7 @@ class SnowflakeDataProviderTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
+    @Disabled("Until task will be fixed")
     @DisplayName("Parameters support for datetime")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkDatesParameterSupport_ok")

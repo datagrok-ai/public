@@ -73,7 +73,7 @@ File indexing is a recurring data job that runs every hour. Datagrok extracts th
 * Filename
 * File size, in bytes
 * Number of rows and columns
-* Column-level information such as name, data type, and [semantic type](../../discover/semantic-types.md).
+* Column-level information such as name, data type, and [semantic type](../../catalog/semantic-types.md).
 
 For instance, with indexing, you can browse columns within a CSV file inside a ZIP file:
 
@@ -137,7 +137,7 @@ In this example, a script is executed against the folder content. If the folder 
 
 To add a custom viewers, you have two options:
 
-* Develop in JavaScript using the [Datagrok JavaScript API](../../develop/js-api.md).
+* Develop in JavaScript using the [Datagrok JavaScript API](../../develop/packages/js-api.md).
 * Use the visualizations available for popular programming languages like Python, R, or Julia.
 
 To learn more about each option, see [Develop custom viewer](../../develop/how-to/develop-custom-viewer.md).
@@ -163,7 +163,7 @@ In this example, a [script](../../develop/how-to/custom-cell-renderers.md) is ex
 
 :::
 
-The [Context Panel](../../datagrok/navigation.md#context-panel) provides additional information about a selected file or folder, and the ability to execute conext actions. For example, when you click a CSV file, the **Context Panel** updates to show the file's metadata, available context actions, and other relevant information. If you subsequently click any of the dataframe's columns in the **Preview**, the **Context Panel** will update to display information and actions specific to that column, such as summary statistics for the column under **Stats**, or its data and semantic types under **Details**.
+The [Context Panel](../../datagrok/navigation/navigation.md#context-panel) provides additional information about a selected file or folder, and the ability to execute conext actions. For example, when you click a CSV file, the **Context Panel** updates to show the file's metadata, available context actions, and other relevant information. If you subsequently click any of the dataframe's columns in the **Preview**, the **Context Panel** will update to display information and actions specific to that column, such as summary statistics for the column under **Stats**, or its data and semantic types under **Details**.
 
 ![Details on demand](file-manager-details.gif)
 
@@ -184,11 +184,11 @@ In this example, a [Python script](../../develop/how-to/create-custom-file-viewe
 
 ## File sharing and access control
 
-You can share files in two ways: by sharing the actual file (or folder), or by sharing an URL that points to it. To share an URL, open the file in Datagrok and copy the URL from the address bar. To access the file from the link provided, users must have permissions to open it. Once the file is open, users can download the file and then upload it to their **Home** directory, or [save the file as a project](../../datagrok/create-project.md). The URL links never expire and can't be revoked.
+You can share files in two ways: by sharing the actual file (or folder), or by sharing an URL that points to it. To share an URL, open the file in Datagrok and copy the URL from the address bar. To access the file from the link provided, users must have permissions to open it. Once the file is open, users can download the file and then upload it to their **Home** directory, or [save the file as a project](../../collaborate/create-project.md). The URL links never expire and can't be revoked.
 
 :::tip
 
-For tabular formats, you can create dynamic dashboards and share them with others via URL or reference them on external websites. To learn more about dynamic data updates, see [Dynamic data](../../datagrok/project.md/#dynamic-data).
+For tabular formats, you can create dynamic dashboards and share them with others via URL or reference them on external websites. To learn more about dynamic data updates, see [Dynamic data](../../collaborate/project.md/#dynamic-data).
 
 :::
 

@@ -6,6 +6,7 @@ import {_package} from '../package';
 export class PackageSettingsEditorWidget extends DG.Widget {
   maxMonomerLengthProp: DG.Property;
   tooltipWebLogo: DG.Property;
+  defaultSeparator: DG.Property;
 
   constructor(propList: DG.Property[]) {
     super(ui.div([], {}));
@@ -15,24 +16,33 @@ export class PackageSettingsEditorWidget extends DG.Widget {
 
     this.maxMonomerLengthProp = props['MaxMonomerLength'];
     this.tooltipWebLogo = props['TooltipWebLogo'];
+    this.defaultSeparator = props['DefaultSeparator'];
   }
 
   async init(): Promise<void> {
     const maxMonomerLengthInput = ui.intInput('Max monomer length',
-      _package.properties.maxMonomerLength,
+      _package.properties.MaxMonomerLength,
       (value: number) => {
         // Handle user changed value
-        _package.properties.maxMonomerLength = value;
+        _package.properties.MaxMonomerLength = value;
       });
 
-    const tooltipWebLogo = ui.boolInput('Tooltip WebLogo',
-      _package.properties.tooltipWebLogo,
+    const tooltipWebLogoInput = ui.boolInput('Tooltip WebLogo',
+      _package.properties.TooltipWebLogo,
       (value: boolean) => {
-        _package.properties.tooltipWebLogo = value;
+        _package.properties.TooltipWebLogo = value;
+      });
+
+    const defaultSeparatorInput = ui.choiceInput('Default Separator',
+      _package.properties.DefaultSeparator, ['.', '/', '-'],
+      (value: string) => {
+        _package.properties.DefaultSeparator = value;
       });
 
     this.root.appendChild(ui.form([
       maxMonomerLengthInput,
-      tooltipWebLogo]));
+      tooltipWebLogoInput,
+      defaultSeparatorInput,
+    ]));
   }
 }

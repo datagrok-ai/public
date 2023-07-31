@@ -59,7 +59,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
 
     @Override
     public String testConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        boolean exists = Files.exists(Paths.get(String.format("%s", conn.getDb())));
+        boolean exists = Files.exists(Paths.get(conn.getDb()));
         return exists ? DataProvider.CONN_AVAILABLE : "Connection is not available";
     }
 

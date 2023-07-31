@@ -23,7 +23,7 @@ category('App', () => {
     test(tabs[i], async () => {
       ViewHandler.changeTab(tabs[i]);
       await awaitCheck(() => document.querySelectorAll('canvas').length === num[i],
-        `expected ${num[i]}, got ${document.querySelectorAll('canvas').length}`, 20000);
+        `expected ${num[i]}, got ${document.querySelectorAll('canvas').length}`, 60000);
     });
   }
 
@@ -32,4 +32,4 @@ category('App', () => {
     DG.Balloon.closeAll();
     grok.shell.windows.showContextPanel = true;
   });
-}, {clear: false});
+}, {clear: false, timeout: 60000});

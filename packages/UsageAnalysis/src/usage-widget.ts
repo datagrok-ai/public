@@ -58,6 +58,7 @@ const uniqueUsersChartStyle = {
   'showSplitSelector': false,
   'showYAxis': false,
   'showMarkers': 'Never',
+  'autoLayout': false,
 };
 
 const userEventsChartStyle = {
@@ -78,6 +79,7 @@ const userEventsChartStyle = {
   'showYAxis': false,
   'legendVisibility': 'Never',
   'showMarkers': 'Never',
+  'autoLayout': false,
 };
 
 
@@ -99,4 +101,5 @@ const userErrorsChartStyle = {
   'showYAxis': false,
   'legendVisibility': 'Never',
   'showMarkers': 'Never',
+  'autoLayout': false,
 };

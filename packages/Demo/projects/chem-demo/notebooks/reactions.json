@@ -59,7 +59,7 @@
           "from datagrok.api import *\n",
           "grok_host = 'http://localhost:8082'\n",
           "grok_init(grok_host)\n",
-          "data = grok_read('7b910ee0-3260-11e9-a4cd-29d579a2f389')"
+          "data = grok_read('7b910ee0-3260-11e9-a4cd-29d579b2f389')"
         ]
       },
       {
