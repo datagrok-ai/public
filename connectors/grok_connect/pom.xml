@@ -213,6 +213,15 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/PIJDBCDriver.jar</systemPath>
         </dependency>
+
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>2.7.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/hsqldb-2.7.2-jdk8.jar</systemPath>
+        </dependency>
+
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
@@ -397,11 +406,7 @@
             <version>1.2.3</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <version>2.3.1</version>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-thrift</artifactId>
