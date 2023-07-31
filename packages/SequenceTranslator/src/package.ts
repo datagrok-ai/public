@@ -94,7 +94,6 @@ export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): s
 
 //name: linkStrands
 //input: object strands
-//input: bool invert
 //output: string result
 export function linkStrands(strands: { senseStrands: string[], antiStrands: string[] }): string {
   return linkStrandsV3000(strands, true);
