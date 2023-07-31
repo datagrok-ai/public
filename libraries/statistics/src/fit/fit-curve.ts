@@ -165,14 +165,14 @@ export class FitChartData implements IFitChartData {
 export interface IFitSeriesOptions {
   name?: string;                        // controls the series name
   fitFunction?: string | IFitFunctionDescription; // controls the series fit function
-  parameters?: number[];                // auto-fitting when not defined
-  parameterBounds?: FitParamBounds[];   // defines the series parameter bounds
+  parameters?: number[];                // controls the series parameters, auto-fitting when not defined
+  parameterBounds?: FitParamBounds[];   // defines the series parameter bounds during the fit
   markerType?: FitMarkerType;           // defines the series marker type
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
   showFitLine?: boolean;                // defines whether to show the fit line or not
-  showPoints?: string;                  // defines the display mode of the data
+  showPoints?: string;                  // defines the data display mode
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
