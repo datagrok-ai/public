@@ -8,6 +8,7 @@ import {download} from '../helpers';
 import {SequenceToMolfileConverter} from './sequence-to-molfile';
 import {linkStrandsV3000} from './mol-transformations';
 import {DEFAULT_FORMATS} from '../const';
+import {FormatDetector} from '../parsing-validation/format-detector';
 
 export type StrandData = {
   strand: string,
@@ -18,7 +19,9 @@ export type StrandData = {
 export function getMolfileForStrand(strand: string, invert: boolean): string {
   if (strand === '')
     return '';
-  const format = DEFAULT_FORMATS.AXOLABS;
+  const format = (new FormatDetector(strand)).getFormat();
+  if (!format)
+    return '';
   let molfile = '';
   try {
     molfile = (new SequenceToMolfileConverter(strand, invert, format)).convert();
