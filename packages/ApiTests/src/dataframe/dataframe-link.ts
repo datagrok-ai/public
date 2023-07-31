@@ -27,12 +27,12 @@ category('DataFrame: Link', () => {
   test('row to row', async () => {
     const df1 = DF1.clone();
     const df2 = DF2.clone();
-    grok.data.linkTables(df1, df2, ['sex', 'race'], ['sex', 'race'], [DG.SYNC_TYPE.CURRENT_ROW_TO_ROW]);
+    grok.data.linkTables(df1, df2, ['subj'], ['subj'], [DG.SYNC_TYPE.CURRENT_ROW_TO_ROW]);
     for (let i = 0; i < 10; i++) {
       df1.currentRowIdx = i;
       expect(df2.currentRowIdx, i, 'row ' + (i + 1));
     }
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('row to selection', async () => {
     const df1 = DF1.clone();
