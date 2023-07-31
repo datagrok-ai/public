@@ -283,6 +283,7 @@ export async function chemSubstructureSearchLibrary(
       saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!], [Fingerprint.Pattern, canonicalSmilesColName],
         [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
       saveColumns(molStringsColumn, [result.fpsRes!.fps], [Fingerprint.Pattern], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+      chemEndCriticalSection();
     };
     const fireFinishEvents = () => {
         grok.events.fireCustomEvent(searchProgressEventName, 100);
@@ -311,9 +312,8 @@ export async function chemSubstructureSearchLibrary(
     return result.bitArray;
   } catch (e: any) {
     grok.shell.error(e.message);
-    throw e;
-  } finally {
     chemEndCriticalSection();
+    throw e;
   }
 }
 
