@@ -6,7 +6,7 @@ import {handleError} from './handle-error';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
-import {SequenceTranslatorUI} from '../view/view';
+import {UnifiedUI} from '../view/view';
 import {_package} from '../package';
 
 export async function demoTranslateSequenceUI() {
@@ -63,7 +63,7 @@ async function openSequenceTranslatorOnPane(paneNumber: number): Promise<void> {
   let panes: DG.TabPane[];
   await getJsonData();
   await _package.initMonomerLib();
-  const v = new SequenceTranslatorUI();
+  const v = new UnifiedUI();
   await v.createLayout();
   tabControl = (await v.tabs.getControl());
   panes = tabControl.panes;

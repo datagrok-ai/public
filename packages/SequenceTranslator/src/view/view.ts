@@ -9,7 +9,7 @@ import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
 import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
 
-export class SequenceTranslatorUI {
+export class UnifiedUI {
   constructor() {
     this.view = DG.View.create();
     this.urlRouter = new URLRouter(this.view);
@@ -52,6 +52,93 @@ export class SequenceTranslatorUI {
     grok.shell.addView(this.view);
   }
 };
+
+export class TranslateSequenceUI {
+  constructor() {
+    this.view = DG.View.create();
+    this.view.box = true;
+    this.view.name = 'Translate Sequence';
+
+    const windows = grok.shell.windows;
+    windows.showProperties = false;
+    windows.showToolbox = false;
+    windows.showHelp = false;
+
+    const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
+    this.topPanel = [
+      viewMonomerLibIcon,
+    ];
+    this.view.setRibbonPanels([this.topPanel]);
+    this.ui = new MainTabUI();
+  }
+
+  private readonly view: DG.View;
+  private readonly topPanel: HTMLElement[];
+  private readonly ui: MainTabUI;
+
+  /** Create master layout of the app  */
+  public async createLayout(): Promise<void> {
+    this.view.append(await this.ui.getHtmlElement());
+
+    grok.shell.addView(this.view);
+
+    grok.shell.addView(this.view);
+  }
+}
+
+export class AxolabsUI {
+  constructor() {
+    this.view = DG.View.create();
+    this.view.box = true;
+    this.view.name = 'Translate Sequence';
+
+    const windows = grok.shell.windows;
+    windows.showProperties = false;
+    windows.showToolbox = false;
+    windows.showHelp = false;
+
+    this.ui = new AxolabsTabUI();
+  }
+
+  private readonly view: DG.View;
+  private readonly ui: AxolabsTabUI;
+
+  /** Create master layout of the app  */
+  public async createLayout(): Promise<void> {
+    this.view.append(this.ui.htmlDivElement);
+
+    grok.shell.addView(this.view);
+
+    grok.shell.addView(this.view);
+  }
+}
+
+export class DuplexUI {
+  constructor() {
+    this.view = DG.View.create();
+    this.view.box = true;
+    this.view.name = 'Translate Sequence';
+
+    const windows = grok.shell.windows;
+    windows.showProperties = false;
+    windows.showToolbox = false;
+    windows.showHelp = false;
+
+    this.ui = new SdfTabUI();
+  }
+
+  private readonly view: DG.View;
+  private readonly ui: SdfTabUI;
+
+  /** Create master layout of the app  */
+  public async createLayout(): Promise<void> {
+    this.view.append(await this.ui.getHtmlDivElement());
+
+    grok.shell.addView(this.view);
+
+    grok.shell.addView(this.view);
+  }
+}
 
 class TabLayout {
   constructor(
