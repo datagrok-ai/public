@@ -249,71 +249,14 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
     _chemFindSimilar(molStringsColumn, fingerprints, queryMolString, settings) : null;
 }
 
-export async function chemSubstructureSearchLibrary(molStringsColumn: DG.Column, molString: string, molBlockFailover: string,
-  columnIsCanonicalSmiles = false, awaitAll = true)
-  : Promise<BitArray> {
-  await chemBeginCriticalSection();
-  try {
-    const matchesBitArray = new BitArray(molStringsColumn.length);
-    let patternFpSearchResults: BitArray | null = null;
-    let patternFileteredMolIdxs: BitArray | null = null;
-    let subFuncs: IParallelBatchesRes | undefined= undefined;
-    const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
-    const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
-    
-    const updateFilterFunc = (progress: number) => {
-      restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
-      grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
-    };
-
-    if (molString.length != 0) {
-        const fgsResult: IFpResult = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false, !columnIsCanonicalSmiles);
-        const fps = fgsResult.fps;
-        const smiles = columnIsCanonicalSmiles ? molStringsColumn.toList() : fgsResult.smiles;
-        patternFileteredMolIdxs = substructureSearchPatternsMatch(molString, molBlockFailover, fps);
-        const filteredMolecules: string[] = getMoleculesFilteredByPatternFp(smiles!, patternFileteredMolIdxs);
-        patternFpSearchResults = new BitArray(filteredMolecules.length);
-        subFuncs = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, patternFpSearchResults, updateFilterFunc, filteredMolecules);
-
-      if(awaitAll) {
-          await Promise.all(subFuncs.promises);
-          restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
-      } else {
-        const fireFinishEvents = () => {
-          grok.events.fireCustomEvent(searchProgressEventName, 100);
-          grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
-        }
-  
-          const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
-            if (mol === molBlockFailover) {
-              subFuncs!.setTerminateFlag();
-              sub.unsubscribe();
-            }
-          })
-  
-          subFuncs?.promises && (Promise.allSettled(subFuncs?.promises).then(() => {
-            if (!subFuncs!.getTerminateFlag()) {
-              restoreMatchesByFilteredIdxs(patternFileteredMolIdxs!, patternFpSearchResults!, matchesBitArray);
-              fireFinishEvents();
-            }
-          }))
-      }
-    }
-    return matchesBitArray;
-  } catch (e: any) {
-    grok.shell.error(e.message);
-    throw e;
-  } finally {
-    chemEndCriticalSection();
-  }
-}
-
-export async function chemSubstructSearchWithFps(
-  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false, awaitAll = false
+export async function chemSubstructureSearchLibrary(
+  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false, awaitAll = true
 ) {
   await chemBeginCriticalSection();
   try {
     const matchesBitArray = new BitArray(molStringsColumn.length);
+    if (molString.length === 0)
+      return matchesBitArray;
     const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const updateFilterFunc = (progress: number) => {
@@ -371,25 +314,6 @@ export async function chemSubstructSearchWithFps(
     throw e;
   } finally {
     chemEndCriticalSection();
-  }
-}
-
-function getMoleculesFilteredByPatternFp(molStrings: (string | null)[], filteredMolsIdxs: BitArray): string[] {
-  const filteredMolecules = Array<string>(filteredMolsIdxs.trueCount());
-  let counter = 0;
-  for (let i = -1; (i = filteredMolsIdxs.findNext(i)) !== -1;) {
-      filteredMolecules[counter] = molStrings[i]!;
-      counter++;
-  }
-  return filteredMolecules;
-}
-
-function restoreMatchesByFilteredIdxs(filteredMolsIdxs: BitArray, matchesBitArray: BitArray, res: BitArray) {
-  let matchesCounter = 0;
-  for (let i = -1; (i = filteredMolsIdxs.findNext(i)) != -1;) {
-    if (matchesBitArray.getBit(matchesCounter))
-      res.setBit(i, true);
-    matchesCounter++;
   }
 }
 

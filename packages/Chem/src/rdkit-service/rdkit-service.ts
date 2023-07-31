@@ -175,24 +175,11 @@ export class RdKitService {
    * @async
    * @param {string} query - smiles/molblock to filter by
    * @param {string} queryMolBlockFailover - smart to filter by (is used if creation of RDMol object from query parameter failed)
+   * @param {SubstructureSearchWithFpResult} result - object where to put the results of substructure search and created fp
+   * @param {function (progress: number): void} progressFunc - function which should be run on each progress iteration
    * @param {boolean} molecules - list of molecules to search
+   * @param {boolean} createSmiles - whether canonical smiles should be created besides fp (should be true if molecules are not canonical smiles)
    * */
-  async searchSubstructure(query: string, queryMolBlockFailover: string, result: BitArray,
-    progressFunc: (progress: number) => void, molecules: string[]): Promise<IParallelBatchesRes> {
-    const t = this;
-    let updateRes;
-      updateRes = (batchRes: Uint32Array, res: BitArray, length: number, index: number) => {
-        let bit;
-          for (let j = 0; j < length; j++) {
-            bit = !!(batchRes[Math.floor(j / 32)] >> j % 32 & 1);
-            res.setBit(index + j, bit)
-          }
-        }
-        return this._doParallelBatches(molecules, result, updateRes, async (batch, idx, _workerCount) => {
-          return t.parallelWorkers[idx].searchSubstructure(query, queryMolBlockFailover, batch);
-        }, progressFunc);
-  }
-
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false) {
       const queryMol = getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());

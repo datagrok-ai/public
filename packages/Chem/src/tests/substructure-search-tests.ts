@@ -67,9 +67,9 @@ category('substructure search', () => {
     await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'C1CC1')!;
     const endTime = performance.now();
 
-    console.log(`first Call to WithLibrary took ${midTime1 - startTime} milliseconds`);
-    console.log(`loop Call to WithLibrary took ${midTime2 - midTime1} milliseconds`);
-    console.log(`last Call to WithLibrary took ${endTime - midTime2} milliseconds`);
+    console.log(`first Call to searchSubstructure took ${midTime1 - startTime} milliseconds`);
+    console.log(`loop Call to searchSubstructure took ${midTime2 - midTime1} milliseconds`);
+    console.log(`last Call to searchSubstructure took ${endTime - midTime2} milliseconds`);
   });
 
   test('searchSubstructureAfterChanges_awaitAll', async () => {
@@ -164,102 +164,53 @@ M  END
 `, [2, 3]);
   });
 
-  test('search_withoutSubLib_WithoutFp_benzene_awaitAll', async () => {
+
+  test('search_benzene_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', false, false);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1');
   });
 
-  test('search_withoutSubLib_WithFp_benzene_awaitAll', async () => {
+  test('search_2_benzene_rings_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', true, false);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1');
   });
 
-  test('search_withSubLib_benzene_awaitAll', async () => {
+  test('search_complex_structure_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1', false, true);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1');
   });
 
-  test('search_withoutSubLib_WithoutFp_2_benzene_rings_awaitAll', async () => {
+  test('search_non_ring_structure_awaitAll', async () => {
     const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', false, false);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O');
   });
 
-  test('search_withoutSubLib_WithFp_2_benzene_rings_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', true, false);
-  });
-
-  test('search_withSubLib_2_benzene_rings_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1', false, true);
-  });
-
-  test('search_withoutSubLib_WithoutFp_complex_structure_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1', false, false);
-  });
-
-  test('search_withoutSubLib_WithFp_complex_structure_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1', true, false);
-  });
-
-  test('search_withSubLib_complex_complex_structure_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1', false, true);
-  });
-
-  test('search_withoutSubLib_WithoutFp_non_ring_structure_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O', false, false);
-  });
-
-  test('search_withoutSubLib_WithFp_non_ring_structure_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O', true, false);
-  });
-
-  test('search_withSubLib_non_ring_structure_awaitAll', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
-      grok.data.demo.molecules(500);
-    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O', false, true);
-  });
-
-  test('search_preCalculatedPatternFp_1M_awaitAll', async () => {
+  test('benchmark_searchWithPreCalculatedFp_1M_awaitAll', async () => {
     if (DG.Test.isInBenchmark)
       await performanceTestWithCreatedFp('Demo:Files/chem/smiles_1M_withPatternFp.d42', 'smiles');
   });
 
-  test('search_preCalculatedPatternFp_Chembl_awaitAll', async () => {
+  test('benchmark_searchWithPreCalculatedFp_Chembl_awaitAll', async () => {
     if (DG.Test.isInBenchmark)
       await performanceTestWithCreatedFp('Demo:Files/chem/smiles_Chembl_withPatternFp.d42', 'canonical_smiles');
   });
 
-  test('search_preCalculatedPatternFp_5M_awaitAll', async () => {
+  test('benchmark_searchWithPreCalculatedFp_5M_awaitAll', async () => {
     if (DG.Test.isInBenchmark)
       await performanceTestWithCreatedFp('Demo:Files/chem/smiles_5M_withPatternFp.d42', 'canonical_smiles');
   });
 
-  async function performanceTestWithConsoleLog(molCol: DG.Column, query: string,
-    usePattern: boolean, useSubstructLib: boolean) {
+  async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
     const startTime = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false);
+    await chemSubstructureSearchLibrary(molCol, query, '');
     const midTime1 = performance.now();
-    await chemSubstructureSearchLibrary(molCol, query, '', usePattern, false);
+    await chemSubstructureSearchLibrary(molCol, query, '');
     const midTime2 = performance.now();
 
-    console.log(`Use patten fp: ${usePattern}, use SubstructLibrary: ${useSubstructLib}`);
     console.log(`first Call to substructure search took ${midTime1 - startTime} milliseconds`);
     console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
   }
@@ -273,9 +224,9 @@ M  END
       df.col(colName)!.setTag('.Pattern.Version', `${colVersion + 3}`);
       df.col(colName)!.setTag('.canonical_smiles.Version', `${colVersion + 3}`);
       const startTime = performance.now();
-      const res = await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccccc1', '', true, false);
+      await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccccc1', '');
       const benzeneTime = performance.now();
-      const res1 = await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccc2ccccc2c1', '', true, false);
+      await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccc2ccccc2c1', '');
       const twoBenzeneTime = performance.now();
       console.log(`search for benzene in ${rows} rows took ${benzeneTime - startTime} milliseconds`);
       console.log(`search for two benzene rings in ${rows} rows took ${twoBenzeneTime - benzeneTime} milliseconds`);

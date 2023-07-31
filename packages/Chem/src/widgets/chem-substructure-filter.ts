@@ -7,7 +7,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {chemSubstructSearchWithFps, chemSubstructureSearchLibrary} from '../chem-searches';
+import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
 import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
@@ -140,7 +140,7 @@ export class SubstructureFilter extends DG.Filter {
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_: any) => delete this.column!.temp['chem-scaffold-filter']));
 
-    chemSubstructureSearchLibrary(this.column!, '', '')
+      chemSubstructureSearchLibrary(this.column!, '', '')
       .then((_) => {}); // Nothing, just a warmup
 
     let onChangedEvent: any = this.sketcher.onChanged;
@@ -260,7 +260,7 @@ export class SubstructureFilter extends DG.Filter {
   async getFilterBitset(): Promise<BitArray> {
     console.log(`getFilterBitset currentSearches: ${this.currentSearches}`);
     const smarts = await this.sketcher.getSmarts();
-    return await chemSubstructSearchWithFps(this.column!, this.currentMolfile, smarts!, false, false);
+    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, false, false);
   }
 
   updateExternalSketcher() {

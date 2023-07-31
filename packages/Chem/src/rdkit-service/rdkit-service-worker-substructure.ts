@@ -48,7 +48,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
   searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Uint32Array {
-      //console.log(`******************in search`);
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
@@ -73,11 +72,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           try{
             const cachedMol = this._molsCache?.get(molecules[i]);
             if(cachedMol) {
-              // console.log(`Mol extracted from cache`)
               isCached = true;
             }
-            // else
-            //   console.log(`Mol for ${molecules[i]} not extracted from cache`)
             mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
             if (mol) {
               if (mol.get_substruct_match(queryMol) !== '{}')
