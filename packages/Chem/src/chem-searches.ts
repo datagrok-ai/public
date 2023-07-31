@@ -255,8 +255,11 @@ export async function chemSubstructureSearchLibrary(
   await chemBeginCriticalSection();
   try {
     const matchesBitArray = new BitArray(molStringsColumn.length);
-    if (molString.length === 0)
+    if (molString.length === 0) {
+      chemEndCriticalSection();
       return matchesBitArray;
+    }
+      
     const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const updateFilterFunc = (progress: number) => {
