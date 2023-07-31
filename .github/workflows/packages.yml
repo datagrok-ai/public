@@ -272,15 +272,12 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
-      - name: Set FFMPEG_PATH for Charts
-        if: ${{ matrix.package == 'Charts'}}
-        run: export FFMPEG_PATH=/usr/lib/node_modules/datagrok-tools/node_modules/@ffmpeg-installer/linux-x64
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'DrugBank') }}
         timeout-minutes: 15
         id: test-package
-        run: npm run test -- --skip-build --skip-publish --record --csv
+        run: npm run test -- --skip-build --skip-publish --csv
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
