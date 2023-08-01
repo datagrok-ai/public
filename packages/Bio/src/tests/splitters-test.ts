@@ -79,7 +79,7 @@ category('splitters', async () => {
   test('testHelm3', async () => { await _testHelmSplitter(data.testHelm3[0], data.testHelm3[1]); });
 
   test('splitToMonomers', async () => {
-    const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/sample_MSA.csv');
+    const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/MSA.csv');
 
     const seqCol = df.getCol('MSA');
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});

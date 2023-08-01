@@ -26,10 +26,10 @@ category('renderers: monomerPlacer', () => {
         {src: {row: 1, x: 5}, tgt: {pos: 0}},
         {src: {row: 1, x: 6}, tgt: {pos: 0}},
         {src: {row: 1, x: 26}, tgt: {pos: 1}},
-        {src: {row: 1, x: 170}, tgt: {pos: 6}},
-        {src: {row: 1, x: 208}, tgt: {pos: 7}},
-        {src: {row: 2, x: 170}, tgt: {pos: 5}},
-        {src: {row: 2, x: 175}, tgt: {pos: 5}},
+        {src: {row: 1, x: 160}, tgt: {pos: 6}},
+        {src: {row: 1, x: 185}, tgt: {pos: 7}},
+        {src: {row: 2, x: 140}, tgt: {pos: 5}},
+        {src: {row: 2, x: 145}, tgt: {pos: 5}},
       ]
     },
     splitterMsa: {
@@ -46,9 +46,9 @@ category('renderers: monomerPlacer', () => {
         {src: {row: 1, x: 1}, tgt: {pos: null}},
         {src: {row: 1, x: 26}, tgt: {pos: 0}},
         {src: {row: 1, x: 170}, tgt: {pos: 4}},
-        {src: {row: 1, x: 227}, tgt: {pos: 5}},
-        {src: {row: 2, x: 220}, tgt: {pos: 5}},
-        {src: {row: 2, x: 227}, tgt: {pos: 5}},
+        {src: {row: 1, x: 200}, tgt: {pos: 5}},
+        {src: {row: 2, x: 200}, tgt: {pos: 5}},
+        {src: {row: 2, x: 203}, tgt: {pos: 5}},
       ]
     },
     fastaMsa: {
