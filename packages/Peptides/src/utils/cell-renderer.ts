@@ -22,7 +22,7 @@ export function setAARRenderer(col: DG.Column, alphabet: string): void {
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
   mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs | null = null,
-  twoColorMode: boolean = false): void {
+  twoColorMode: boolean = false, renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal: number = positionStats[currentAAR].pValue;
   const currentMeanDiff = positionStats[currentAAR].meanDifference;
@@ -58,23 +58,25 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   canvasContext.closePath();
   canvasContext.fill();
 
-  const substitutions = substitutionsInfo?.get(currentAAR)?.get(currentPosition)?.entries() ?? null;
-  if (substitutions !== null) {
-    canvasContext.textBaseline = 'middle';
-    canvasContext.textAlign = 'center';
-    canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
-    canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
-    canvasContext.shadowBlur = 5;
-    canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
-    const uniqueValues = new Set<number>();
+  if (renderNums) {
+    const substitutions = substitutionsInfo?.get(currentAAR)?.get(currentPosition)?.entries() ?? null;
+    if (substitutions !== null) {
+      canvasContext.textBaseline = 'middle';
+      canvasContext.textAlign = 'center';
+      canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
+      canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+      canvasContext.shadowBlur = 5;
+      canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
+      const uniqueValues = new Set<number>();
 
-    for (const [key, value] of substitutions) {
-      uniqueValues.add(key);
-      for (const val of value)
-        uniqueValues.add(val);
+      for (const [key, value] of substitutions) {
+        uniqueValues.add(key);
+        for (const val of value)
+          uniqueValues.add(val);
+      }
+      if (uniqueValues.size !== 0)
+        canvasContext.fillText(uniqueValues.size.toString(), midX, midY);
     }
-    if (uniqueValues.size !== 0)
-      canvasContext.fillText(uniqueValues.size.toString(), midX, midY);
   }
 
   const aarSelection = mutationCliffsSelection[currentPosition];
