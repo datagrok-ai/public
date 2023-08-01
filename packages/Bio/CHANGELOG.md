@@ -1,5 +1,16 @@
 # Bio changelog
 
+## 2.8.1 (Bleeding-edge)
+
+This release focuses on improving the monomer cell renderer.
+
+*Dependency: datgarok-api >= 1.13.3*
+
+### Features
+
+* Added sample datasets for natural and synthetic peptide sequences.
+
+
 ## 2.8.1 (2023-07-24)
 
 This release focuses on improving the monomer cell renderer.
