@@ -1,6 +1,6 @@
 # Bio changelog
 
-## 2.8.1 (Bleeding-edge)
+## 2.8.2 (2023-08-01)
 
 This release focuses on improving the monomer cell renderer.
 
