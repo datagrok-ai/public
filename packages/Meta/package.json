@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.99",
+  "version": "3.5.0",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1734,6 +1734,9 @@
         },
         "1.0.24": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.1.0": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
