@@ -167,7 +167,7 @@ export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
 export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
   const widget = new PackageSettingsEditorWidget(propList);
   widget.init().then(); // Ignore promise returned
-  return widget;
+  return widget as DG.Widget;
 }
 
 // -- Cell renderers --
