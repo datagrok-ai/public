@@ -13,7 +13,7 @@
 # input: bool disable_cliffs = False [Disable generation of cliffs]
 # input: double cliff_probability = 0.01 [Probability to make activity cliff of a sequence]
 # input: double cliff_strength = 4.0 [Strength of cliff]
-# input: double fasta_separator = '' [Separator for a FASTA notation]
+# input: string fasta_separator = '' {nullable: true}
 # output: dataframe sequences
 
 """
@@ -54,6 +54,7 @@ alphabets: Dict[str, str] = {
     "PT": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y",
     "DNA": "A,T,G,C",
     "RNA": "A,U,G,C",
+    "PT_HELM": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y,dA,dC,dD,dE,dF,dH,dI,dK,dL,dM,dN,dP,dQ,dR,dS,dT,dV,dW,dY,meA,meD,meS,meT,meV,meY,meE,meG,meI,meK,meM,meN,meQ,meC,meR,meW,meF,meH,meL,Nle,Nva,Orn,Iva,aIle,gGlu,Hcy,Hse,Hyp,D-gGlu,D-Nle,D-hPhe,D-Hyp,D-Nva,D-Orn,Pyr,Phe_3Cl,Phe_4Cl,Phe_4NH2,Phg,Ser_tBu,Tyr_Bn,Tza,1Nal,Cha,Lys_Boc,aThr,D-2Nal,D-2Thi,D-aHyp,D-aIle,D-Phg,D-Ser_tBu,Cya,Lys_Me3,Pen,Phe_4Me,Ser_Bn,Tyr_tBu,2Nal,Thi,aHyp,Ala_tBu,hPhe,D-1Nal,D-aThr,D-Cha,D-Pen,D-Phe_4Cl,D-Ser_Bn,Wil,Oic_3aS-7aS,Pip,3Pal,4Pal,Abu,Apm,Chg,Dab,Dap,D-3Pal,D-aMeAbu,D-Chg,D-Cit,D-Dab,D-Pip,D-Tic,Aca,Tic,Aad,Cit,Aze,Ac5c,Aib,D-2Pal,D-Abu,D-Dap,Asu,D-Thz,D-Trp_For,D-Tyr_Et,Lys_Ac,Asp_OMe,Phe_ab-dehydro,Sta_3xi4xi,Tyr_ab-dehydroMe,App,Cap,Cys_SEt,Dsu,pnC,pnG,Pqa,Pro_4Me3OH,Met_O2,Phe_2Me,Phe_34diCl,Phe_4Br,Phe_4I,Phe_4Sdihydroorotamido,Pyl,Ser_PO3H2,Thr_PO3H2,Thz,Trp_Me,Tyr_26diMe,Tyr_3I,Tyr_3NO2,Tyr_Ph4OH,Tyr_SO3H,Val_3OH,xiIle,NMe2Abz,NMebAla,aMePhe,aMePro,aMeTyr_3OH,Bmt,Bmt_E,Cys_Bn,Gla,hHis,His_1Me,Gly_allyl,Gly_cPr,Asp_Ph2NH2,Azi,2Abz,3Abz,4Abz,Ac3c,Ac6c,bAla,D-Bmt,D-Bmt_E,D-hArg,D-Phe_4F,D-Trp_2Me,D-Tyr_Me,D-xiIle,Lys_iPr,Phe_ab-dehydro_3NO2,Sta_3S4S,Bux,Dpm,pnA,pnT,seC,Met_O,nTyr,Oic_3aR-7aS,Oic_3axi-7axi,Phe_2F,Phe_3F,Phe_4F,Phe_4NO2,Phe_bbdiMe,Trp_5OH,Trp_Ome,Tyr_35diI,Tyr_3OH,Tyr_Me,Tyr_PO3H2,xiHyp,xiThr,NMe4Abz,aMeTyr,Aoda,Bpa,Cys_Me,Dip,hArg,His_1Bn,His_3Me,Hyl_5xi,Bip,Abu_23dehydro,D-Dip,Dha,D-hArg_Et2,D-Met_S-O,D-His_1Bn,D-nTyr,D-Phe_4ureido",
 }
 
 
@@ -392,7 +393,9 @@ if not grok:
     helm_library_file = args.helm_library_file
     helm_connection_mode = args.helm_connection_mode
 
-if helm_library_file is None:
+helm_init = "helm_library_file" in globals() and helm_library_file is not None
+
+if not helm_init:
     alphabet: Alphabet = (
         alphabets[alphabet_key].split(",")
         if alphabet_key in alphabets
@@ -414,7 +417,7 @@ header, data = generate_sequences(
     cliff_probability,
     cliff_strength,
 )
-if helm_library_file is None:
+if not helm_init:
     data_formatted = convert_to_fasta(data, fasta_separator)
 else:
     data_formatted = convert_to_helm(data, helm_connection_mode)
