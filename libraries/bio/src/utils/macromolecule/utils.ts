@@ -135,16 +135,17 @@ export function getSplitterForColumn(col: DG.Column): SplitterFunc {
   return getSplitter(units, separator);
 }
 
-const longMonomerPartRe: RegExp = /(\w+)/g;
+const longMonomerPartRe: RegExp = /([^\W_]+)/g;
 
 /** Convert long monomer names to short ones */
 export function monomerToShort(amino: string, maxLengthOfMonomer: number): string {
   if (amino.length <= maxLengthOfMonomer)
     return amino;
+  //const kebabAmino = amino.replace(/[A-Z]+(?![a-z])|[A-Z]/g, ($, ofs) => (ofs ? '-' : '') + $);
   const shortAminoMatch: RegExpMatchArray | null = amino.match(longMonomerPartRe);
   const needAddDots: boolean = amino.length > maxLengthOfMonomer || (shortAminoMatch?.length ?? 0) > 1;
   const shortAmino = shortAminoMatch?.[0] ?? ' ';
-  return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer) + '…';
+  return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer - 1) + '…';
 }
 
 /** */
