@@ -15,7 +15,6 @@
   "dependencies": {
     "@datagrok-libraries/statistics": "^0.1.7",
     "@datagrok-libraries/utils": "^4.0.7",
-    "@datagrok/chem": "^1.6.20",
     "cash-dom": "^8.1.0",
     "circos": "^2.1.0",
     "d3": "^7.8.1",
@@ -60,6 +59,7 @@
     "css-loader": "^5.2.7",
     "d3-cloud": "^1.2.5",
     "datagrok-tools": "^4.12.9",
+    "@datagrok/chem": "^1.6.20",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",
