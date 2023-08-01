@@ -52,7 +52,7 @@ category('renderers', () => {
   }, {skipReason: 'GROK-11212'});
 
   async function _rendererMacromoleculeFasta() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const seqCol = df.getCol('Sequence');

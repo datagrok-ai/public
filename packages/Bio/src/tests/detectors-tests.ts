@@ -146,9 +146,9 @@ MWRSWY-CKHP`;
   const samples: { [key: string]: string } = {
     [Samples.fastaFasta]: 'System:AppData/Bio/data/sample_FASTA.fasta',
     [Samples.fastaPtCsv]: 'System:AppData/Bio/data/sample_FASTA_PT.csv',
-    [Samples.msaComplex]: 'System:AppData/Bio/samples/sample_MSA.csv',
-    [Samples.fastaCsv]: 'System:AppData/Bio/samples/sample_FASTA.csv',
-    [Samples.helmCsv]: 'System:AppData/Bio/samples/sample_HELM.csv',
+    [Samples.msaComplex]: 'System:AppData/Bio/samples/MSA.csv',
+    [Samples.fastaCsv]: 'System:AppData/Bio/samples/FASTA.csv',
+    [Samples.helmCsv]: 'System:AppData/Bio/samples/HELM.csv',
     [Samples.peptidesComplex]: 'System:AppData/Bio/tests/peptides_complex_msa.csv',
     [Samples.peptidesSimple]: 'System:AppData/Bio/tests/peptides_simple_msa.csv',
     [Samples.testDemogCsv]: 'System:AppData/Bio/tests/testDemog.csv',
