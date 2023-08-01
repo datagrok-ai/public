@@ -88,14 +88,16 @@ export class RdKitService {
       const getTerminateFlag = () => { return terminateFlag; }
       const t = this;
       const dataLength = data.length;
-      const workingIndexes = new Array<{start: number, end: number}>(this.workerCount).fill({start: 0, end: 0});
+      const increment = 50;
+      const workingIndexes = new Array<{start: number, end: number, increment: number}>(this.workerCount).fill({start: 0, end: 0, increment});
       const sizePerWorker = Math.floor(dataLength / this.workerCount);
+      
       // distribute data between workers, makes sure that same molecules always end up in the same worker, important for caching
       for (let i = 0; i < this.workerCount; i++) {
-        workingIndexes[i] = {start: i * sizePerWorker, end: i === this.workerCount - 1 ? dataLength : (i + 1) * sizePerWorker};
+        workingIndexes[i] = {start: i * sizePerWorker, end: i === this.workerCount - 1 ? dataLength : (i + 1) * sizePerWorker, increment};
       }
       const lockedCounter = new LockedEntity(0);
-      let increment = 50;
+      
       let processedMolecules = 0;
       let moleculesPerProgress = Math.min(Math.max(Math.floor(dataLength / 100), 10), 100);
       let nextProgressCheck = moleculesPerProgress;
@@ -104,22 +106,24 @@ export class RdKitService {
               if (workingIndexes[idx].start >= workingIndexes[idx].end || terminateFlag) {
                   return;
               }
-              const part = data.slice(workingIndexes[idx].start, Math.min(workingIndexes[idx].end, workingIndexes[idx].start + increment));
+              const part = data.slice(workingIndexes[idx].start, Math.min(workingIndexes[idx].end, workingIndexes[idx].start + workingIndexes[idx].increment));
               const batchResult = await map(part, idx, t.parallelWorkers.length, workingIndexes[idx].start);
               updateRes(batchResult, res, part.length, workingIndexes[idx].start);
               workingIndexes[idx].start += part.length;
-
+              
               await lockedCounter.unlockPromise();
               lockedCounter.lock();
               processedMolecules = lockedCounter.value;
-              const end = Math.min(processedMolecules + increment, dataLength);
+              const end = Math.min(processedMolecules + workingIndexes[idx].increment, dataLength);
               if (processedMolecules >= nextProgressCheck) {
                 nextProgressCheck += moleculesPerProgress;
                 moleculesPerProgress *= 1.5;
-                increment *= 1.2;
+                // increment *= 1.2;
+                //increment = Math.floor(increment);
                 console.log(processedMolecules);
                 pogressFunc(processedMolecules/dataLength);
               }
+              workingIndexes[idx].increment = Math.floor(workingIndexes[idx].increment * 1.05);
               lockedCounter.value = end;
               lockedCounter.release();
               await post();
@@ -224,6 +228,9 @@ export class RdKitService {
               smiles: createSmiles ? result.fpsRes.smiles!.slice(batchStartIdx, batchStartIdx + batch.length) : batch
             }
           }
+
+          if(query === '')
+            return {matches: new BitArray(batch.length, true), fpRes: fpResult};
           // *********** FILTERING using fingerprints
           const patternFpUint8Length = 256;
           const patternFpFilterBitArray = new BitArray(batch.length, false);

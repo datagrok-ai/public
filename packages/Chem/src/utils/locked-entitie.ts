@@ -1,16 +1,19 @@
 export class LockedEntity<T extends any> {
     private _value: T;
-    private _locked: boolean = false;
+    private _lockPromise: Promise<void> | null = Promise.resolve();
+    private _unlockFunction: () => void = () => { };
     constructor(value: T) {
         this._value = value;
     }
 
     public lock() {
-        this._locked = true;
+        this._lockPromise = new Promise<void>((resolve) => {
+            this._unlockFunction = resolve;
+        });
     }
 
     public release() {
-        this._locked = false;
+        this._unlockFunction();
     }
 
     public get value(): T {
@@ -22,17 +25,6 @@ export class LockedEntity<T extends any> {
     }
 
     public async unlockPromise() {
-        return new Promise<void>((resolve) => {
-            const check = () => {
-                if (!this._locked) {
-                    resolve();
-                } else {
-                    setTimeout(check, 0);
-                }
-            }
-            check();
-        });
+        return this._lockPromise;
     }
-
-
 }

@@ -235,11 +235,11 @@ export async function chemSubstructureSearchLibrary(
     }
 
     const matchesBitArray = new BitArray(molStringsColumn.length);
-    if (molString.length === 0) {
-      chemEndCriticalSection();
-      return matchesBitArray;
-    }
-      
+    // if (molString.length === 0) {
+    //   chemEndCriticalSection();
+    //   return matchesBitArray;
+    // }
+    
     const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const updateFilterFunc = (progress: number) => {
@@ -288,9 +288,10 @@ export async function chemSubstructureSearchLibrary(
       fireFinishEvents();
     }
     else {
-      const sub = grok.events.onCustomEvent(terminateEventName).subscribe((mol: string) => {
+      const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (mol: string) => {
         if (mol === molBlockFailover) {
           subFuncs!.setTerminateFlag();
+          await Promise.allSettled(subFuncs.promises);
           saveProcessedColumns();
           sub.unsubscribe();
         }

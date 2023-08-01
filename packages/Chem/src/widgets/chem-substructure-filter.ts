@@ -110,15 +110,16 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get _debounceTime(): number {
-    if (this.column == null)
-      return 1000;
-    const length = this.column.length;
-    const minLength = 500;
-    const maxLength = 10000;
-    const msecMax = 1000;
-    if (length < minLength) return 0;
-    if (length > maxLength) return msecMax;
-    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
+    return 0;
+    // if (this.column == null)
+    //   return 1000;
+    // const length = this.column.length;
+    // const minLength = 500;
+    // const maxLength = 10000;
+    // const msecMax = 1000;
+    // if (length < minLength) return 0;
+    // if (length > maxLength) return msecMax;
+    // return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
   }
 
   attach(dataFrame: DG.DataFrame): void {
@@ -140,8 +141,9 @@ export class SubstructureFilter extends DG.Filter {
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_: any) => delete this.column!.temp['chem-scaffold-filter']));
 
-      chemSubstructureSearchLibrary(this.column!, '', '')
-      .then((_) => {}); // Nothing, just a warmup
+    this.currentSearches.add('');
+    chemSubstructureSearchLibrary(this.column!, '', '', false, false)
+      .then((_) => {}); // Precalculating fingerprints
 
     let onChangedEvent: any = this.sketcher.onChanged;
     onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
