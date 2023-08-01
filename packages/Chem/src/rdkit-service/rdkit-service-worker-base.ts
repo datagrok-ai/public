@@ -24,6 +24,8 @@ export class RdKitServiceWorkerBase {
   addToCache(rdMol: RDMol): boolean {
     let added = false;
     const key = rdMol.get_smiles();
+    if (this._molsCache?.has(key))
+      return true;
     if (this._cacheCounter < MAX_MOL_CACHE_SIZE && !this._molsCache?.has(key)) {
         this._molsCache?.set(key, rdMol!);
         this._cacheCounter++; //need this additional counter (instead of i) not to consider empty molecules

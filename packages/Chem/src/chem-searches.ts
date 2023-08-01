@@ -27,6 +27,8 @@ const enum FING_COL_TAGS {
 let lastColumnInvalidated: string = '';
 const canonicalSmilesColName = 'canonicalSmiles';
 
+let currentSearchSmiles: {[key: string]: string} = {};
+
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray | null)[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
@@ -224,7 +226,14 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false, awaitAll = true
 ) {
+  const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name??''}`;
+  currentSearchSmiles[searchKey] = molBlockFailover;
   await chemBeginCriticalSection();
+  if (currentSearchSmiles[searchKey] !== molBlockFailover) {
+    chemEndCriticalSection();
+    return new BitArray(molStringsColumn.length);
+  }
+
   try {
     let invalidateCacheFlag = false;
     const rdKitService = await getRdKitService();

@@ -250,7 +250,7 @@ export class SubstructureFilter extends DG.Filter {
 
             this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
             this.dataFrame?.rows.requestFilter();
-            this.progressBar!.update(progress, `${progress?.toFixed(2)}% of substructure search completed`);
+            this.progressBar!.update(progress, `${progress?.toFixed(2)}% of search completed`);
             
         })
         } catch {
