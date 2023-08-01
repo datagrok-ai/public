@@ -230,7 +230,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
       let value = true;
       let message = '';
 
-      if (outputs.length === 1 && outputs[0].type === 'widget') {
+      if (!(outputs.length === 1 && outputs[0].type === 'widget')) {
         value = false;
         message += 'Package settings editors must have one output of type "widget"\n';
       }

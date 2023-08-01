@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
+import {PuppeteerNode} from 'puppeteer';
 const fetch = require('node-fetch');
 
 
@@ -13,6 +14,7 @@ export const defaultLaunchParameters: utils.Indexable = {
   args: [
     '--disable-dev-shm-usage',
     '--disable-features=site-per-process',
+    '--window-size=1920,1080',
   ],
   ignoreHTTPSErrors: true,
   headless: 'new',
@@ -54,8 +56,8 @@ export function getDevKey(hostKey: string): {url: string, key: string} {
   return {url, key};
 }
 
-export async function getBrowserPage(puppeteer: any, params: {} = defaultLaunchParameters): Promise<{browser: any, page: any}> {
-  let url:string = process.env.HOST ?? '';
+export async function getBrowserPage(puppeteer: PuppeteerNode, params: {} = defaultLaunchParameters): Promise<{browser: any, page: any}> {
+  let url: string = process.env.HOST ?? '';
   let cfg = getDevKey(url);
   url = cfg.url;
 
@@ -67,7 +69,11 @@ export async function getBrowserPage(puppeteer: any, params: {} = defaultLaunchP
   let browser = await puppeteer.launch(params);
 
   let page = await browser.newPage();
-  await page.setDefaultNavigationTimeout(0);
+  await page.setViewport({
+    width: 1920,
+    height: 1080,
+  });
+  page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}/oauth/`);
   await page.setCookie({name: 'auth', value: token});
   await page.evaluate((token: string) => {
@@ -116,8 +122,8 @@ export const recorderConfig = {
   fps: 25,
   ffmpeg_Path: null,
   videoFrame: {
-    width: 1024,
-    height: 768,
+    width: 1280,
+    height: 630,
   },
   videoCrf: 18,
   videoCodec: 'libx264',
@@ -126,5 +132,5 @@ export const recorderConfig = {
   autopad: {
     color: 'black',
   },
-  aspectRatio: '4:3',
+  // aspectRatio: '16:9',
 };
