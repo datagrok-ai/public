@@ -915,7 +915,7 @@ export class PeptidesModel {
   }
 
   modifyMonomerPositionSelection(aar: string, position: string, isInvariantMap: boolean): void {
-    if (!isInvariantMap && !(this.mutationCliffs?.get(aar)?.get(position) ?? false))
+    if (this.df.getCol(position).categories.indexOf(aar) === -1)
       return;
 
     const tempSelection = isInvariantMap ? this.invariantMapSelection : this.mutationCliffsSelection;

@@ -1,5 +1,20 @@
 # Peptides changelog
 
+## 1.10.4 (2023-08-01)
+
+This release focuses on improving package stability and usability.
+
+*Dependency: datgarok-api >= 1.15.4*
+
+### Features
+
+* UI/UX improvements
+
+### Bug Fixes
+
+* Fixed Monomer-Position viewer not responding to selection correctly.
+
+
 ## 1.10.3 (2023-07-31)
 
 This release focuses on improving package stability and usability.

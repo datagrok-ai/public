@@ -84,6 +84,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     else
       pairsTable.filter.setAll(true);
   });
+  aminoToInput.setTooltip('Monomer to which the mutation was made');
 
   const pairsGrid = pairsTable.plot.grid();
   pairsGrid.props.allowEdit = false;
