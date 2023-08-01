@@ -74,7 +74,7 @@ v.close();
 
 <b>Testing Viewers</b>
 
-The `testViewer` utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
+The [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L451) utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
 
 <details>
 <summary>Example</summary>
@@ -88,7 +88,7 @@ await testViewer('Chem Similarity Search', smiles, {detectSemanticTypes: true});
 
 <b>Handling Exceptions</b>
 
-Ensure proper exception handling by using the `expectExceptionAsync` function. It allows you to test that specific actions throw the expected exceptions and offers the flexibility to perform deeper inspections of the exceptions when needed.
+Ensure proper exception handling by using the [expectExceptionAsync](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L425) function. It allows you to test that specific actions throw the expected exceptions and offers the flexibility to perform deeper inspections of the exceptions when needed.
 
 <details>
 <summary>Example</summary>
