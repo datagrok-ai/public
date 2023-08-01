@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { DimReductionMethods, IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
 import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
 import { BitArrayMetricsNames } from '../typed-metrics/consts';
+import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
 
 export const SEQ_COL_NAMES = {
     [DG.SEMTYPE.MOLECULE]: 'Molecules',
@@ -37,8 +38,9 @@ export class SequenceSpaceBaseFuncEditor {
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
-  
-      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
+      //TODO: remove when the new version of datagrok-api is available
+      //@ts-ignore
+      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {filter: (col: DG.Column) => col.semType === semtype} as ColumnInputOptions);
       this.molColInputRoot = this.molColInput.root;
       this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
         if(settingsOpened) {

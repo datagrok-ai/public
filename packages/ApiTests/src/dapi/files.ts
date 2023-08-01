@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectTable, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 
 category('Dapi: files', () => {
@@ -94,19 +94,31 @@ category('Dapi: files', () => {
     expect(dfList[0] instanceof DG.DataFrame, true);
   });
 
+  test('writeBinaryDataFrames', async () => {
+    const df = grok.data.demo.demog(10);
+    const filePath = `${filePrefix}writeBinaryDataFrames.d42`;
+    //@ts-ignore
+    await _package.files.writeBinaryDataFrames(filePath, [df]);
+    const dfList = await _package.files.readBinaryDataFrames(filePath);
+    expect(dfList.length, 1, `Saved ${dfList.length} dataframes instead of 1`);
+    expectTable(dfList[0], df, 'Saved dataframe has wrong data');
+    await grok.dapi.files.delete(filePath);
+  }, {skipReason: 'GROK-11670'});
+
   after(async () => {
     await grok.dapi.files.delete(testTextFilePath);
   });
 });
 
 category('Dapi: files: formats', () => {
-  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip']; //kml, kmz
+  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip', 'kmz', 'kml'];
 
   for (const ext of extensions) {
     test(ext, async () => {
-      const df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext);
-      expect(df.rowCount, 10, 'wrong rows number');
-      expect(df.columns.length, 10, 'wrong columns number');
-    });
+      grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext).then((df) => {
+        expect(df.rowCount, 10, 'wrong rows number');
+        expect(df.columns.length, 10, 'wrong columns number');
+      });
+    }, ['kmz', 'kml'].includes(ext) ? {skipReason: 'GROK-13263'} : undefined);
   }
 });

@@ -19,11 +19,12 @@ export {
   splitterAsFasta,
   getSplitterWithSeparator,
   splitterAsHelm,
-  getStats,
   getAlphabet,
   getAlphabetSimilarity,
   monomerToShort,
   pickUpPalette,
   pickUpSeqCol,
   getPaletteByType,
+  MonomerToShortFunc,
+  getSplitterForColumn
 } from './utils';

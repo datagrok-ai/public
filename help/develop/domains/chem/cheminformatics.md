@@ -16,7 +16,7 @@ or come up with your own solution.
 
 ## Datagrok JS API
 
-For convenience, some of the commonly used functions are exposed via the [JS API](../../js-api.md). Use `grok.chem`
+For convenience, some of the commonly used functions are exposed via the [JS API](../packages/js-api.md). Use `grok.chem`
 instance to invoke the methods below. Note that most of them are asynchronous, since behind the scenes they either use a
 server-side assist, or a browser's separate Web Worker to call [RDKit-JS](https://github.com/rdkit/RDKitjs) functions.
 
@@ -38,7 +38,7 @@ modes for these functions in the future, while the API remains as described belo
 
 `searchSubstructure(column, pattern = null, settings = { substructLibrary: true })`
 
-This function performs substructure search using RDKit, and returns a result as a [BitSet](../../js-api.md#bitset),
+This function performs substructure search using RDKit, and returns a result as a [BitSet](../packages/js-api.md#bitset),
 where the i-th bit is set to 1 when the i-th element of the input `column` contains a substructure given by a `pattern`,
 and all other bits there are set to 0.
 
@@ -212,5 +212,5 @@ rendered as SVG using the RDKit library.
 
 See also:
 
-* [Cheminformatics](../../../domains/chem/cheminformatics.md)
+* [Cheminformatics](../../../datagrok/solutions/domains/chem/chem.md)
 * [JavaScript development](../../develop.md)

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, expectFloat, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE, getAggregatedColName} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -40,8 +40,7 @@ category('Model: Settings', () => {
     const getError = (row: number, method: SCALING_METHODS): string =>
       `Activity mismatch at row ${row} for scaling method '${method}'`;
     const tolerance = 0.0001;
-    const origActivityData =
-      model.df.getCol(model.settings.activityColumnName!).getRawData();
+    const origActivityData = model.df.getCol(model.settings.activityColumnName!).getRawData();
     const scaledActivity = model.df.getCol(COLUMNS_NAMES.ACTIVITY_SCALED);
     const dfLen = model.df.rowCount;
 
@@ -133,10 +132,8 @@ category('Model: Settings', () => {
     model.settings = {showDendrogram: true};
     expect(model.settings.showDendrogram, true, 'Dendrogram is disabled after enabling');
 
-    await delay(5000);
-
-    expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) !== null, true,
-      'Dendrogram is not present in the view after 5s delay');
+    await awaitCheck(() => model.findViewer(VIEWER_TYPE.DENDROGRAM) !== null,
+      'Dendrogram is not present in the view after 5s delay', 5000);
 
     // Disable dendrogram
     model.settings = {showDendrogram: false};
@@ -144,4 +141,4 @@ category('Model: Settings', () => {
     expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) === null, true,
       'Dendrogram is present in the view after disabling');
   }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
-});
+}, {clear: false});

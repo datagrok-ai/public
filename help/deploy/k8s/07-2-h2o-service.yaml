@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: h2o
+  name: h2o
+  namespace: datagrok
+spec:
+  ports:
+    - name: "h2o"
+      port: 54321
+      targetPort: 54321
+    - name: "helper"
+      port: 5005
+      targetPort: 5005
+  selector:
+    service: h2o

@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DockingApp} from './apps/docking-app';
 import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
@@ -12,6 +11,7 @@ import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 import {NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
+import {PdbApp} from './apps/pdb-app';
 import {nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
@@ -20,32 +20,16 @@ import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
 import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
-import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
+import {previewBiostructure, previewNgl, viewBiostructure, viewNgl} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {NglGlDocService} from './utils/ngl-gl-doc-service';
 import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with';
 
-class Package extends DG.Package {
-  private _pLogger: DG.PackageLogger;
+import {Package, _getNglGlService, _getPdbHelper} from './package-utils';
 
-  get logger(): DG.PackageLogger {
-    if (!this._pLogger) {
-      this._pLogger = new class extends DG.PackageLogger {
-        private logPrefix: string = 'BsV: ';
-
-        constructor(_package: DG.Package) { super(_package); }
-
-        debug(message: string, params?: object): void { super.debug(this.logPrefix + message, params); }
-      }(this);
-    }
-
-    return this._pLogger;
-  }
-}
-
-export const _package = new Package();
+export const _package: Package = new Package();
 
 //name: init
 //tags: init
@@ -61,19 +45,6 @@ export async function init() {
 //output: grid_cell_renderer result
 export function Molecule3dCellRenderer(): PdbGridCellRenderer {
   return new PdbGridCellRenderer();
-}
-
-//name: Docking
-//tags: app
-export async function dockingApp() {
-  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
-  try {
-    grok.shell.warning('dockingApp demo deprecated');
-    const app = new DockingApp('dockingApp');
-    await app.init();
-  } finally {
-    pi.close();
-  }
 }
 
 //name: viewPdbById
@@ -99,22 +70,10 @@ export async function viewPdbByData(pdbData: string, name: string): Promise<void
   }
 }
 
-
-type BsvWindowType = Window & {
-  $pdbHelper?: IPdbHelper,
-  $nglGlService?: NglGlServiceBase,
-};
-declare const window: BsvWindowType;
-
 //name: getNglGlService
 //output: object result
 export function getNglGlService(): NglGlServiceBase {
-  if (!(window.$nglGlService)) {
-    const svc: NglGlServiceBase = new NglGlDocService();
-    window.$nglGlService = svc;
-  }
-
-  return window.$nglGlService;
+  return _getNglGlService();
 }
 
 // -- File handlers --
@@ -128,7 +87,7 @@ export function getNglGlService(): NglGlServiceBase {
 //output: list tables
 export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
   // Do not build up data frame from PDB file, allows to open various formats
-  // const ph: IPdbHelper = await getPdbHelper();
+  // const ph: IPdbHelper = await _getPdbHelper();
   // const df: DG.DataFrame = await ph.pdbToDf(fileContent, '');
   // const app = new BiostructureApp();
   // await app.init(df);
@@ -149,42 +108,78 @@ export async function importXYZ(fileContent: string): Promise<DG.DataFrame[]> {
   return [];
 }
 
-// -- File (pre)viewers --
-
-// eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd, fileViewer-pdbqt, fileViewer-xyz
-//input: file file
-//output: view v
-export function molecule3dNglView1(file: DG.FileInfo): DG.View {
-  return previewBiostructure(file);
+//name: importWithNgl
+//description: Opens biostructure files supported with NGL
+//tags: file-handler
+//meta.ext: mmtf, cns, top, prmtop, ply, obj, ccp4
+//input: string fileContent
+//output: list tables
+export async function importWithNgl(fileContent: string): Promise<DG.DataFrame[]> {
+  await viewNgl(fileContent);
+  return [];
 }
 
+// -- File (pre)viewers --
+
+/** Structure formats not supported with Molstar are handled with NGL viewer
+ * fileViewer-mtl is from NglViewer package, but NGL can not open it
+ * //TODO: Support preview .mol2 with Molstar (hangs on sp-after.mol2)
+ * //TODO: Fix preview .pqr
+ */
+//tags: fileViewer, fileViewer-mmtf, fileViewer-cns, fileViewer-top, fileViewer-prmtop
+//input: file file
+//output: view result
+export function previewNglStructure(file: any): DG.View {
+  return previewNgl(file);
+}
+
+/** Shape / surface formats not supported with Molstar are handled with NGL viewer
+ * TODO: Support preview .ply with Molstar
+ */
 //tags: fileViewer, fileViewer-ply, fileViewer-obj
 //input: file file
 //output: view v
-export function molecule3dNglView2(file: DG.FileInfo): DG.View {
+export function previewNglSurface(file: any) {
+  return previewNgl(file);
+}
+
+// TODO: Support preview .ccp4 with Molstar
+//eslint-disable-next-line max-len
+//tags: fileViewer, fileViewer-ccp4
+//input: file file
+//output: view v
+export function previewNglDensity(file: any) {
+  return previewNgl(file);
+}
+
+
+// eslint-disable-next-line max-len
+//tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-sd, fileViewer-pdbqt, fileViewer-xyz
+//input: file file
+//output: view v
+export function previewBiostructureStructure(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 
-//tags: fileViewer, fileViewer-prmtop, fileViewer-parm7, fileViewer-psf, fileViewer-top
+//tags: fileViewer, fileViewer-parm7, fileViewer-psf
 //input: file file
 //output: view v
-export function molecule3dNglView3(file: DG.FileInfo): DG.View {
+export function previewBiostructureTopology(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-cns, fileViewer-mrc, fileViewer-map, fileViewer-ccp4
+//tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-mrc, fileViewer-map
 //input: file file
 //output: view v
-export function molecule3dNglView4(file: DG.FileInfo): DG.View {
+export function previewBiostructureDensity(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 
 //name: openPdbResidues
 //input: file fi
 export async function openPdbResidues(fi: DG.FileInfo): Promise<void> {
-  const ph = await getPdbHelper();
+  const ph = await _getPdbHelper();
   const pdbStr: string = await fi.readAsString();
   const pdbDf: PdbResDataFrame = await ph.pdbToDf(pdbStr, fi.fileName);
   const view = grok.shell.addTableView(pdbDf);
@@ -330,11 +325,7 @@ export function saguaroViewer(): DG.Viewer {
 //name: getPdbHelper
 //output: object result
 export async function getPdbHelper(): Promise<IPdbHelper> {
-  if (!(window.$pdbHelper)) {
-    const ph = await PdbHelper.getInstance(); // getPdbHelper
-    window.$pdbHelper = ph;
-  }
-  return window.$pdbHelper;
+  return _getPdbHelper();
 }
 
 export async function nglViewerGen(): Promise<void> {
@@ -369,9 +360,9 @@ export async function inGridDemo() {
 
 // demoBio06
 //name: demoBioDockingConformations
-//meta.demoPath: Cheminformatics | Docking Conformations
+//meta.demoPath: Bioinformatics | Docking Conformations
 //description: Docking ligands along the structure
-//meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20Conformations
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations
 //test: demoBioDockingConformations() //wait: 2000, skip: skip
 export async function demoBioDockingConformations(): Promise<void> {
   // Do not use any script for this demo (askalkin, 2023-05-17)
@@ -381,9 +372,9 @@ export async function demoBioDockingConformations(): Promise<void> {
 
 // demoBio07
 //name: demoBioProteins
-//meta.demoPath: Cheminformatics | Proteins
+//meta.demoPath: Bioinformatics | Proteins
 //description: View structures PDB in grids
-//meta.path: /apps/Tutorials/Demo/Cheminformatics/Proteins
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Proteins
 //test: demoBioProteins() //wait: 3000
 export async function demoBioProteins(): Promise<void> {
   await demoBio07NoScript();

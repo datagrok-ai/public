@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, test, before, after, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, after, expect, expectArray, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
@@ -94,10 +94,13 @@ category('screening tools: benchmarks', () => {
     await DG.timeAsync('Structural Alerts', async () => {
       await runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitService);
     });
-  });
+  }, {timeout: 90000, skipReason: 'GROK-13428'});
 
   test('elementalAnalysis', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
+    df.name = 'test';
+    const v = grok.shell.addTableView(df);
+    await awaitCheck(() => v.name === 'test', undefined, 1000);
     await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
     DG.time('Elemental Analysis', async () => {

@@ -3,9 +3,10 @@
   "friendlyName": "PowerPack",
   "sources": [
     "css/power-pack.css",
-    "css/viewers-gallery.css"
+    "css/viewers-gallery.css",
+    "css/windows-manager.css"
   ],
-  "version": "1.0.7",
+  "version": "1.0.8",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"

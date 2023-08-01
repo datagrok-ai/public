@@ -8,14 +8,15 @@ export interface RDModule {
   get_mol_from_uint8array(pkl: Uint8Array): RDMol;
   get_mol_copy(other: RDMol): RDMol;
   get_qmol(molString: string): RDMol;
-  get_rxn(reactionString: string, options?: string): Reaction;
-  get_mcs(mols: MolIterator, details?: string): RDMol;
+  get_rxn(reactionString: string, options?: string): RDReaction;
+  get_mcs_as_mol(mols: MolList, details?: string): RDMol;
+  get_mcs_as_smarts(mols: MolList, details?: string): string;
   _malloc(size: number): any;
   _free(buf: any): any;
   writeArrayToMemory(arr: any, buff:any): any;
-  MolIterator: MolIteratorConstructor;
-  SubstructLibrary: SubstructLibraryConstructor;
-}
+  MolList: MolListConstructor;
+  SubstructLibrary: RDSubstructLibraryConstructor;
+  }
 
 export interface RDMol {
   is_qmol: boolean;
@@ -48,7 +49,7 @@ export interface RDMol {
   get_atom_pair_fp_as_uint8array(details?: string): Uint8Array;
   get_maccs_fp_as_uint8array(): Uint8Array;
   get_frags(details?: string): {
-    molIterator: MolIterator,
+    molIterator: MolList,
     mappings: {
       frags: Array<number>,
       fragsMolAtomMapping: Array<Array<number>>,
@@ -69,9 +70,9 @@ export interface RDMol {
 
   get_stereo_tags(): string;
   get_aromatic_form(): string;
-  set_aromatic_form(): void;
+  convert_to_aromatic_form(): void;
   get_kekule_form(): string;
-  set_kekule_form(): void;
+  convert_to_kekule_form(): void;
   get_new_coords(useCoordGen?: boolean): string;
   set_new_coords(useCoordGen?: boolean): boolean;
   has_prop(key: string): boolean;
@@ -98,8 +99,7 @@ export interface RDMol {
   delete(): void;
 }
 
-export interface MolIterator {
-  new(): MolIterator;
+export interface MolList {
   append(mol: RDMol): number;
   insert(i: number, mol: RDMol): number;
   at(i: number): RDMol;
@@ -111,11 +111,11 @@ export interface MolIterator {
   delete(): void;
 }
 
-interface MolIteratorConstructor {
-  new(): MolIterator;
+interface MolListConstructor {
+  new(): MolList;
 }
 
-export interface Reaction {
+export interface RDReaction {
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
   draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
@@ -127,8 +127,7 @@ export interface Reaction {
    delete(): void;
 }
 
-export interface SubstructLibrary {
-  new(bits?: number): SubstructLibrary;
+export interface RDSubstructLibrary {
   add_mol(mol: RDMol): number;
   add_smiles(smiles: string): number;
   add_trusted_smiles(smiles: string): number;
@@ -143,6 +142,6 @@ export interface SubstructLibrary {
   delete(): void;
 }
 
-interface SubstructLibraryConstructor {
-  new(): SubstructLibrary;
+interface RDSubstructLibraryConstructor {
+  new(bits?: number): RDSubstructLibrary;
 }

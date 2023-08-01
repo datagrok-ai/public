@@ -3,7 +3,7 @@
 
 # Tests: predictive models
 
-You can train [models](predictive-modeling.md) using different methods and servers
+You can train [models](learn.md) using different methods and servers
 "[H2o](https://h2o.ai)" or "[OpenCPU](https://topepo.github.io/caret/index.html)". Previously created models can be
 applied with data similar in structure to training
 
@@ -63,8 +63,8 @@ applied with data similar in structure to training
 
 See also:
 
-* [Predictive modeling](predictive-modeling.md)
+* [Predictive modeling](learn.md)
 * [Predictive modeling browser test](predictive-modeling-browser-test.md)
-* [Predictive modeling tutorial](../_internal/tutorials/predictive-modeling.md)
+* [Predictive modeling tutorial](../_internal/tutorials/learn.md)
 * [OpenCPU](https://www.opencpu.org/)
 * [H2O](https://h2o.ai/)

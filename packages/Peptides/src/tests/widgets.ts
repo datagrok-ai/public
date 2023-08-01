@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
@@ -53,6 +53,9 @@ category('Widgets: Settings', () => {
       for (const inputName of Object.values(PANES_INPUTS[paneName]))
         expect(paneInputs.includes(inputName), true, `Input ${inputName} is missing from ${paneName}`);
     }
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   });
 });
 
@@ -81,11 +84,10 @@ category('Widgets: Distribution panel', () => {
 
   test('UI', async () => {
     getDistributionWidget(model.df, model);
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   });
-
-  test('Split', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
 });
 
 category('Widgets: Mutation cliffs', () => {
@@ -113,15 +115,10 @@ category('Widgets: Mutation cliffs', () => {
 
   test('UI', async () => {
     mutationCliffsWidget(model.df, model);
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   });
-
-  test('General', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
-
-  test('Filtering', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
 });
 
 category('Widgets: Actions', () => {
@@ -164,7 +161,7 @@ category('Widgets: Actions', () => {
     expect(currentTable.getTag(C.TAGS.UUID), newViewId, 'Current table is expected to have the same UUID as new view');
     expect(currentTable.rowCount, 1, 'Current table is expected to have 1 row');
 
-    await delay(500);
+    await awaitCheck(() => currentTable.currentRowIdx === 0, 'Grid never finished initializing', 2000);
 
     const currentTableModel = currentTable.temp[PeptidesModel.modelName] as PeptidesModel;
     const lstViewer = currentTableModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
@@ -207,4 +204,4 @@ category('Widgets: Actions', () => {
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) === -1, true,
       'Expected to have no custom cluster in the Logo Summary Table');
   });
-});
+}, {clear: false});

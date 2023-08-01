@@ -648,13 +648,13 @@ property setter).
 
 [106]: #access-and-modify-column-values "Accessing and modifying column values"
 
-[107]: ../../datagrok/table-view.md "Table Views"
+[107]: ../../datagrok/navigation/table-view.md "Table Views"
 
-[108]: ../../discover/tags.md#format "Values of a format tag"
+[108]: ../../catalog/tags.md#format "Values of a format tag"
 
-[109]: ../../discover/semantic-types.md "Semantic types"
+[109]: ../../catalog/semantic-types.md "Semantic types"
 
-[110]: ../domains/chem/cheminformatics.md "Cheminformatics overview"
+[110]: ../../datagrok/solutions/domains/chem/chem.md "Cheminformatics overview"
 
 [111]: https://github.com/datagrok-ai/public/blob/1393df83ef2eea80dc2c19b5e6e541cb35d60f91/packages/Chem/detectors.js#L6 "Chem Molecule detector"
 

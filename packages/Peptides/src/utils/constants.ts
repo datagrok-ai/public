@@ -31,6 +31,7 @@ export enum TAGS {
   SELECTION = 'selection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
+  INVARIANT_MAP_SELECTION = 'invariantMapSelection',
   SAR_MODE = 'sarMode',
   CLUSTER_SELECTION = 'clusterSelection',
   VISIBLE = 'visible',

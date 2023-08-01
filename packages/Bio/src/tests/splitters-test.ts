@@ -2,24 +2,27 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {
+  after,
+  before,
+  category,
+  test,
+  expect,
+  expectArray,
+  delay,
+  awaitCheck
+} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {_package, getHelmMonomers} from '../package';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {splitToMonomersUI} from '../utils/split-to-monomers';
 
 
-category('splitters', () => {
-  let tvList: DG.TableView[];
-  let dfList: DG.DataFrame[];
-
+category('splitters', async () => {
   before(async () => {
-    tvList = [];
-    dfList = [];
   });
 
   after(async () => {
-    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
   const _helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
@@ -84,12 +87,15 @@ category('splitters', () => {
       seqCol.semType = semType;
     seqCol.setTag(bioTAGS.aligned, C.MSA);
 
-    const _tv: DG.TableView = grok.shell.addTableView(df);
+    const newDf = await splitToMonomersUI(df, seqCol);
+    expect(newDf.columns.names().includes('17'), true);
     // call to calculate 'cell.renderer' tag
-    await grok.data.detectSemanticTypes(df);
+    await grok.data.detectSemanticTypes(newDf);
 
-    await grok.functions.call('Bio:splitToMonomers');
-    expect(df.columns.names().includes('17'), true);
+    // TODO: Check cell.renderer for columns of monomers
+    const tv: DG.TableView = grok.shell.addTableView(newDf);
+    await awaitCheck(() => { return tv.grid.dataFrame != df; },
+      'View grid has wrong data frame', 100);
   });
 
   test('getHelmMonomers', async () => {
@@ -98,6 +104,7 @@ category('splitters', () => {
 PEPTIDE1{hHis.N.T}$$$,5.30751
 PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 `);
+    await grok.data.detectSemanticTypes(df);
     const expectedMonomerList = ['hHis', 'Aca', 'Cys_SEt', 'N', 'T'];
 
     const helmCol: DG.Column = df.getCol('HELM');

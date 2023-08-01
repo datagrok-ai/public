@@ -2,3 +2,4 @@ upload.keys.json
 node_modules/
 dist/
 test-report.html
+test-console-output.log

@@ -6,7 +6,7 @@ import {getMolSafe} from './mol-creation_rdkit';
 import {MAX_MCS_ROW_COUNT} from '../constants';
 
 
-export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, exactBondSearch: boolean): RDMol|null {
+export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, exactBondSearch: boolean): string|null {
   if (molecules.length > MAX_MCS_ROW_COUNT) {
     grok.shell.warning(`Too many rows, maximum for MCS is ${MAX_MCS_ROW_COUNT}`);
     return null;
@@ -14,7 +14,7 @@ export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, e
   const rdkit = getRdKitModule();
   let mols;
   try {
-    mols = new rdkit.MolIterator();
+    mols = new rdkit.MolList();
 
     for (let i = 0; i < molecules.length; i++) {
       const molString = molecules.get(i);
@@ -30,14 +30,14 @@ export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, e
       }
     }
 
-    let mcsMol: RDMol|null = null;
+    let mcsSmarts: string|null = null;
     if (mols.size() > 1)
-      mcsMol = rdkit.get_mcs(mols, JSON.stringify({
+      mcsSmarts = rdkit.get_mcs_as_smarts(mols, JSON.stringify({
         AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
         BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
       }));
 
-    return mcsMol;
+    return mcsSmarts;
   } finally {
     mols?.delete();
   }

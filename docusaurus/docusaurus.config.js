@@ -10,8 +10,9 @@ const config = {
   tagline: 'Datagrok: Swiss Army Knife for Data',
   url: 'https://datagrok.ai',
   baseUrl: '/',
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'throw',
+  // TODO: Set to throw in the end of wiki reorganization
+  onBrokenLinks: 'warn',
+  onBrokenMarkdownLinks: 'warn',
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
@@ -108,7 +109,7 @@ const config = {
       items: [
         {
           type: 'doc',
-          docId: 'home',
+          docId: 'datagrok/datagrok',
           position: 'left',
           label: 'Help',
         },
@@ -130,7 +131,7 @@ const config = {
       links: [
         {
           label: 'Help',
-          to: '/help/home',
+          to: '/help/datagrok/datagrok',
         },
         {
           label: 'API Docs',

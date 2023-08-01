@@ -117,4 +117,4 @@ category('UI: Users', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});

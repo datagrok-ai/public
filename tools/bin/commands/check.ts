@@ -60,6 +60,7 @@ export function check(args: CheckArgs): boolean {
 
     warnings.push(...checkFuncSignatures(packagePath, funcFiles));
     warnings.push(...checkPackageFile(packagePath, { isWebpack, externals }));
+    warnings.push(...checkChangelog(packagePath));
 
     if (warnings.length) {
       console.log(`Checking package ${path.basename(packagePath)}...`);
@@ -327,6 +328,25 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
     }
   }
 
+  return warnings;
+}
+
+export function checkChangelog(packagePath: string) {
+  const warnings: string[] = [];
+  let clf: string;
+  try {
+    clf = fs.readFileSync(path.join(packagePath, 'CHANGELOG.md'), {encoding: 'utf-8'});
+  } catch (e) {
+    return ['CHANGELOG.md file does not exist'];
+  }
+  let regex = /^##[^#].*$/gm;
+  const h2 = clf.match(regex);
+  if (!h2) return ['No versions found in CHANGELOG.md'];
+  regex = /^## \d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\)$/;
+  for (const h of h2) {
+    if (!regex.test(h))
+      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)`);
+  }
   return warnings;
 }
 

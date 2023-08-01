@@ -1,21 +1,32 @@
 package grok_connect.providers;
 
-import java.sql.Types;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Map;
+import java.util.TimeZone;
+
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.Neo4jBigIntColumnManager;
+import grok_connect.managers.complex_column.Neo4jComplexColumnManager;
+import grok_connect.managers.integer_column.Neo4jIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
+import serialization.Types;
 
 public class Neo4jDataProvider extends JdbcDataProvider {
-    public Neo4jDataProvider(ProviderManager providerManager) {
-        super(providerManager);
-        driverClassName = "org.neo4j.jdbc.Driver";
 
+    public Neo4jDataProvider() {
+        driverClassName = "org.neo4j.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "Neo4j";
         descriptor.description = "Query Neo4j database";
@@ -54,17 +65,6 @@ public class Neo4jDataProvider extends JdbcDataProvider {
             return String.format("(%s %s [%s])", matcher.colName, matcher.op, names);
         }
         return String.format("(NOT %s IN [%s])", matcher.colName, names);
-    }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        // Neo4j only has one integer type, it's 64bit, so map to BigIntColumn
-        return false;
-    }
-
-    @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return typeName.equals("INTEGER") || type == Types.INTEGER;
     }
 
     @Override
@@ -144,5 +144,27 @@ public class Neo4jDataProvider extends JdbcDataProvider {
                 break;
         }
         return result;
+    }
+
+    @Override
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.COLUMN_LIST, new Neo4jComplexColumnManager());
+        defaultManagersMap.put(Types.INT, new Neo4jIntColumnManager());
+        defaultManagersMap.put(Types.BIG_INT, new Neo4jBigIntColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+    }
+
+    @Override
+    public String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+        try {
+            statement.setTimestamp(parameterIndex, ts);
+            return ts.toString();
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
+                    parameterIndex), e);
+        }
     }
 }

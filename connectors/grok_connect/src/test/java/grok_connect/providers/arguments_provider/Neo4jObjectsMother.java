@@ -610,7 +610,7 @@ public class Neo4jObjectsMother {
                 .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
-                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                dayOfYear == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
@@ -749,9 +749,9 @@ public class Neo4jObjectsMother {
                         parser.parseDateToDouble("HH:mm:ss.SSS", "00:00:00.000"),
                 }), "localtime")
                 .setColumn(new DateTimeColumn(new Double[]{
-                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSSX", "1970-01-01T10:02:32.192+0200"),
-                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSSX", "1970-01-01T05:01:59.102+0200"),
-                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSSX", "1970-01-01T00:00:00.000+0200"),
+                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSS", "1970-01-01T10:02:32.192"),
+                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSS", "1970-01-01T05:01:59.102"),
+                        parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ss.SSS", "1970-01-01T00:00:00.000"),
                 }), "time")
                 .setColumn(new FloatColumn(new Float[]{Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, 0.0f}), "float")
                 .setColumn(new BigIntColumn(new String[]{"99999999999999", "-132442423112", "-3453463646"}),
@@ -763,5 +763,31 @@ public class Neo4jObjectsMother {
                         FuncCallBuilder.fromQuery("MATCH(t:PropertyTest) RETURN t.datetime as datetime, "
                                 + "t.localdatetime as localdatetime, t.localtime as localtime, t.time as time, t.float as float, "
                                 + "t.integer as integer, t.point as point")), expected1));
+    }
+
+    public static Stream<Arguments> checkSupportOfMapReturnType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"0"}),
+                        "p._id")
+                .setColumn(new StringColumn(new String[]{"[Person]"}),
+                        "p._labels")
+                .setColumn(new BigIntColumn(new String[]{"1"}),
+                        "p.id")
+                .setColumn(new StringColumn(new String[]{"Burk"}), "p.first_name")
+                .setColumn(new StringColumn(new String[]{"Kemery"}),
+                        "p.last_name")
+                .setColumn(new StringColumn(new String[]{"bkemery0@businesswire.com"}), "p.email")
+                .setColumn(new StringColumn(new String[]{"Male"}), "p.gender")
+                .setColumn(new StringColumn(new String[]{"249.64.22.121/32"}),
+                        "p.ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{true}), "p.bool")
+                .setColumn(new StringColumn(new String[]{"China"}), "p.country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2017-09-20")),
+                        "p.date")
+                .setColumn(new FloatColumn(new Float[]{510.32f}), "p.some_number")
+                .build();
+        return Stream.of(Arguments.of(Named.of("Map return type support",
+                FuncCallBuilder.fromQuery("MATCH(p:Person) RETURN p LIMIT 1")), expected));
     }
 }

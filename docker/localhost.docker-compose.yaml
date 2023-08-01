@@ -1,6 +1,7 @@
 version: "3"
 services:
   datagrok:
+    privileged: true
     image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
     environment:
       GROK_PARAMETERS: |

@@ -4,8 +4,10 @@ import * as grok from 'datagrok-api/grok';
 
 import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {expect} from '@datagrok-libraries/utils/src/test';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -17,13 +19,12 @@ let convertDialogSubs: Subscription[] = [];
  * @param {DG.column} col Column with 'Macromolecule' semantic type
  */
 export function convert(col?: DG.Column): void {
-
   let tgtCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
   if (!tgtCol)
     throw new Error('No column with Macromolecule semantic type found');
   let converter = new NotationConverter(tgtCol);
   let currentNotation: NOTATION = converter.notation;
-  const dialogHeader =  ui.divText(
+  const dialogHeader = ui.divText(
     'Current notation: ' + currentNotation,
     {
       style: {
@@ -48,9 +49,11 @@ export function convert(col?: DG.Column): void {
     tgtCol = newCol;
     converter = new NotationConverter(tgtCol);
     currentNotation = converter.notation;
+    if (currentNotation === NOTATION.HELM)
+      separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
     dialogHeader.textContent = 'Current notation: ' + currentNotation;
     filteredNotations = notations.filter((e) => e !== currentNotation);
-    targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
+    targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations, toggleSeparator);
     toggleSeparator();
     convertDialog?.clear();
     convertDialog?.add(ui.div([
@@ -58,14 +61,13 @@ export function convert(col?: DG.Column): void {
       targetColumnInput.root,
       targetNotationInput.root,
       separatorInput.root
-    ]))
+    ]));
   };
 
   const targetColumnInput = ui.columnInput('Column', grok.shell.t, tgtCol, toggleColumn);
 
   const separatorArray = ['-', '.', '/'];
   let filteredNotations = notations.filter((e) => e !== currentNotation);
-  let targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
 
   const separatorInput = ui.choiceInput('Separator', separatorArray[0], separatorArray);
 
@@ -76,6 +78,7 @@ export function convert(col?: DG.Column): void {
     else
       $(separatorInput.root).show();
   };
+  let targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations, toggleSeparator);
 
   // set correct visibility on init
   toggleSeparator();
@@ -94,7 +97,7 @@ export function convert(col?: DG.Column): void {
       ]))
       .onOK(async () => {
         const targetNotation = targetNotationInput.value as NOTATION;
-        const separator: string | null = separatorInput.value;
+        const separator: string | undefined = separatorInput.value ?? undefined;
 
         await convertDo(tgtCol, targetNotation, separator);
       })
@@ -113,9 +116,7 @@ export function convert(col?: DG.Column): void {
  * @param {NOTATION} targetNotation Target notation
  * @param {string | null} separator Separator for SEPARATOR notation
  */
-export async function convertDo(
-  srcCol: DG.Column, targetNotation: NOTATION, separator: string | null,
-): Promise<DG.Column> {
+export async function convertDo(srcCol: DG.Column, targetNotation: NOTATION, separator?: string): Promise<DG.Column> {
   const converter = new NotationConverter(srcCol);
   const newColumn = converter.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);

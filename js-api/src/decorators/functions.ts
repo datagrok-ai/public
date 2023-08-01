@@ -14,14 +14,14 @@ export namespace decorators {
    * Usage examples:
    * 
    * ```ts
-   * @grokViewer()
+   * @viewer()
    * class TestViewer {
    *   constructor() {
    *     console.log('Viewer constructed');
    *   }
    * }
    * 
-   * @grokViewer({
+   * @viewer({
    *   name: 'Test Viewer',
    *   description: 'Creates a Test Viewer instance',
    *   icon: 'images/icon.png',
@@ -34,7 +34,7 @@ export namespace decorators {
    * }
    * ```
    */
-  export function grokViewer(options?: {
+  export function viewer(options?: {
     name?: string,
     description?: string,
     icon?: string,
@@ -52,7 +52,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/custom-filters}
    */
-  export function grokFilter(options?: {
+  export function filter(options?: {
     name?: string,
     description?: string,
     semType?: string,
@@ -70,7 +70,7 @@ export namespace decorators {
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/custom-cell-renderers}
    */
-  export function grokCellRenderer(options?: {
+  export function cellRenderer(options?: {
     name?: string,
     description?: string,
     cellType: string,

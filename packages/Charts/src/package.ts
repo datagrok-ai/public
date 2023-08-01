@@ -93,8 +93,9 @@ export async function _treeViewerDemo() {
 //meta.demoPath: Visualization | General | Word Cloud
 //test: _wordCloudViewerDemo() //wait: 200
 export async function _wordCloudViewerDemo() {
-  await viewerDemo('WordCloudViewer', {drawOutOfBound: false});
+  await viewerDemo(DG.VIEWER.WORD_CLOUD, {drawOutOfBound: false});
 }
+
 export {_ChordViewer};
 export {_GlobeViewer};
 export {_GroupAnalysisViewer};

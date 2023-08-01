@@ -2,8 +2,8 @@
   "name": "@datagrok/dsp",
   "fullName": "DSP",
   "author": {
-    "name": "Maksym Shvyrlo",
-    "email": "mshvyrlo@datagrok.ai"
+    "name": "Alexander Paramonov",
+    "email": "aparamonov@datagrok.ai"
   },
   "version": "0.0.6",
   "description": "Digital signal processing tools",

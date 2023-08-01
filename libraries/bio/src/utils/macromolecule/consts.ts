@@ -6,7 +6,7 @@ import {UnitsHandler} from '../units-handler';
 import {CandidateType} from './types';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
-export const enum NOTATION {
+export enum NOTATION {
   FASTA = 'fasta',
   SEPARATOR = 'separator',
   HELM = 'helm',
@@ -34,7 +34,7 @@ export const enum TAGS {
   isHelmCompatible = '.isHelmCompatible',
 }
 
-export const monomerRe: RegExp = /\[(\w+)\]|(\w)|(-)/g;
+export const monomerRe: RegExp = /(\[[A-Za-z0-9-_]+\]|.)/g;
 
 export const Alphabets = new class {
   fasta = {

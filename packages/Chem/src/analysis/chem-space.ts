@@ -4,12 +4,13 @@ import {chemGetFingerprints} from '../chem-searches';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {Fingerprint} from '../utils/chem-common';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
-import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {ISequenceSpaceParams, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {malformedDataWarning, setEmptyBitArraysForMalformed} from '../utils/malformed-data-utils';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { DimReductionMethods, ITSNEOptions, IUMAPOptions } from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import { BitArrayMetrics, BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
+import {DimReductionMethods, IReduceDimensionalityResult, ITSNEOptions, IUMAPOptions}
+  from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
@@ -28,7 +29,7 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
   emptyAndMalformedIdxs.forEach((idx: number | null) => {
     setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
     if (chemSpaceResult.distance)
-      setNullForEmptyAndMalformedData(chemSpaceResult.distance, idx!);
+      setNullForEmptyAndMalformedDistanceData(chemSpaceResult.distance, idx!, spaceParams.seqCol.length);
   });
   const cols: DG.Column[] = spaceParams.embedAxesNames.map((name: string, index: number) =>
     DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
@@ -38,6 +39,12 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
 function setNullForEmptyAndMalformedData(matrix: Matrix, idx: number) {
   for (const col of matrix)
     col[idx] = DG.FLOAT_NULL;
+}
+
+function setNullForEmptyAndMalformedDistanceData(matrix: Float32Array, idx: number, length: number) {
+  const linearIdx = dmLinearIndex(length);
+  for (let i = 0; i < length; i++)
+    matrix[linearIdx(idx, i)] = DG.FLOAT_NULL;
 }
 
 export function getEmbeddingColsNames(df: DG.DataFrame) {

@@ -39,7 +39,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         viewer.root.style.setProperty('height', '130px');
         return viewer.root;
       }));
-    });
+      //TODO: add when new version of datagrok-api is available
+    }); //, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions);
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
@@ -95,7 +96,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
       DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
     activityScalingMethod.fireChanged();
   };
-  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState);
+  //TODO: add when new version of datagrok-api is available
+  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState); //, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
   const clustersColumnChoice = ui.columnInput('Clusters', df, null);
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
@@ -199,8 +201,10 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     const dfUuid = uuid.v4();
     newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
-    model = PeptidesModel.getInstance(newDf);
-    // await model.addViewers();
+
+    // Cloning dataframe with applied filter. If filter is not applied, cloning is
+    // needed anyway to allow filtering on the original dataframe
+    model = PeptidesModel.getInstance(newDf.clone(currentDf.filter));
     if (clustersColumn) await model.addLogoSummaryTable();
     await model.addMonomerPosition();
     await model.addMostPotentResidues();

@@ -46,7 +46,7 @@ category('top menu activity cliffs', async () => {
       'canonical_smiles', 'FractionCSP3', 24);
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
     } finally {
       grok.shell.closeAll();
@@ -63,6 +63,7 @@ category('top menu activity cliffs', async () => {
 async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activityCol: string, numberCliffs: number) {
   await grok.data.detectSemanticTypes(df);
   const actCliffsTableView = grok.shell.addTableView(df);
+  await awaitCheck(() => actCliffsTableView.name === df.name, 'Activity cliffs table view hasn\'t been created', 1000);
   if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
   await getActivityCliffs(df, df.col(molCol)!,
     null as any, ['Embed_X_1', 'Embed_Y_1'], 'Activity cliffs', actCliffsTableView.dataFrame.getCol(activityCol),

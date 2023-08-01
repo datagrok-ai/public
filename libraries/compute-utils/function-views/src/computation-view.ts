@@ -46,7 +46,7 @@ export abstract class ComputationView extends FunctionView {
   }
 
   protected override async onFuncCallReady() {
-    super.onFuncCallReady();
+    await super.onFuncCallReady();
     await this.getPackageUrls();
     this.buildRibbonMenu();
     this.changeViewName(this.parentCall!.func.friendlyName);
@@ -157,7 +157,7 @@ export abstract class ComputationView extends FunctionView {
    * @stability Stable
   */
   private async getPackageUrls() {
-    const pack = await grok.dapi.packages.find(this.parentCall!.func.package.id);
+    const pack = this.func.package;
 
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
     if (reportBugUrl && !this.reportBug)

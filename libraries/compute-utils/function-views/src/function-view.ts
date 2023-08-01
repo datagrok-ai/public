@@ -42,10 +42,14 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   protected async onFuncCallReady() {
     this.changeViewName(this.funcCall.func.friendlyName);
-    this.build();
+    await historyUtils.augmentFuncWithPackage(this.func);
 
-    if (this.getStartId()) {
-      await this.loadRun(this.funcCall.id);
+    this.build();
+    const runId = this.getStartId();
+    if (runId && !this.options.isTabbed) {
+      ui.setUpdateIndicator(this.root, true);
+      this.linkFunccall(await this.loadRun(this.funcCall.id));
+      ui.setUpdateIndicator(this.root, false);
       this.setAsLoaded();
     }
   }
@@ -165,7 +169,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this._funcCall = funcCall;
 
     if (!this.options.isTabbed) {
-      if (funcCall.options['isHistorical']) {
+      if (this.isHistorical) {
         if (!isPreviousHistorical)
           this.changeViewName(`${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
         else
@@ -265,7 +269,11 @@ export abstract class FunctionView extends DG.ViewBase {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
     this.subs.push(
-      newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id))),
+      newHistoryBlock.onRunChosen.subscribe(async (id) => {
+        ui.setUpdateIndicator(this.root, true);
+        this.linkFunccall(await this.loadRun(id));
+        ui.setUpdateIndicator(this.root, false);
+      }),
       newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v === this) {
@@ -439,13 +447,19 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
     this.funcCall.newId();
-    await this.funcCall.call(); // CAUTION: mutates the funcCall field
-    pi.close();
-    await this.onAfterRun(this.funcCall);
+    try {
+      await this.funcCall.call(); // CAUTION: mutates the funcCall field
 
-    // If a view is incapuslated into a tab (e.g. in PipelineView),
-    // there is no need to save run till an entire pipeline is over.
-    this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+      await this.onAfterRun(this.funcCall);
+
+      // If a view is incapuslated into a tab (e.g. in PipelineView),
+      // there is no need to save run till an entire pipeline is over.
+      this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+    } catch (err: any) {
+      grok.shell.error(err.toString());
+    } finally {
+      pi.close();
+    }
   }
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
