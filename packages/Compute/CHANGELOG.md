@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.13.3 (2023-08-01)
+
+### Features
+
+ModelCatalog now shows model readme on card click
+
 ## 1.13.2 (2023-07-28)
 
 Dependency: datgarok-api >= 1.15.3
