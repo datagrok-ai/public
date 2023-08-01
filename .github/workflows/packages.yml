@@ -367,8 +367,8 @@ jobs:
           if grep -q OK <<<$grok_check; then
             echo "${{ matrix.package }} passes grok check"
           else
-            echo ${grok_check}
-            echo "::error title=${{ matrix.package }}: failed grok check::${grok_check}"
+            echo -e ${grok_check}
+            echo "::error title=${{ matrix.package }}: failed grok check::$(echo ${grok_check})"
             exit 1
           fi
         id: check
