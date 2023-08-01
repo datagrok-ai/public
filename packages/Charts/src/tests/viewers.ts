@@ -16,10 +16,10 @@ category('Viewers', () => {
     test(v, async () => {
       await testViewer(v, await (async () => {
         if (['Sankey', 'Chord'].includes(v)) return (await grok.data.getDemoTable('energy_uk.csv'));
-        // else if (['Tree', 'Sunburst'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
+        else if (['Tree', 'Sunburst'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
         else if (v === 'Globe') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
-      })(), {detectSemanticTypes: true, readOnly: v === 'Sunburst'});
+      })(), {detectSemanticTypes: true});
     }, v in viewersToSkip ? {skipReason: viewersToSkip[v]} : {});
   }
 });
