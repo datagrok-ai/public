@@ -351,8 +351,10 @@ export class PinnedColumn {
     );
 
     this.m_handlerMouseOverGroup = dframe.onMouseOverRowGroupChanged.subscribe(() =>{
-      const g = eCanvasThis.getContext('2d');
-      headerThis.paint(g, grid);
+      setTimeout(() => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+      }, 20);
     });
 
     this.m_handlerData = dframe.onDataChanged.subscribe(() => {
