@@ -129,3 +129,18 @@ export async function _trainAndAnalyzeLSSVMInWebWorker(gamma, kernel, kernelPara
   });
 }
 
+export function _oneWayAnova(table, columns) {
+  return callWasm(EDA, 'oneWayAnova', [columns]);
+}
+
+export async function _oneWayAnovaInWebWorker(table, columns) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../wasm/workers/oneWayAnovaWorker.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['oneWayAnova'].arguments,[columns]));
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(getResult(EDA['oneWayAnova'], e.data));
+    }
+  });
+}
+
