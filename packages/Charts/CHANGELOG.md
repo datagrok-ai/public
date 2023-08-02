@@ -2,10 +2,6 @@
 
 ## 1.1.1 (2023-08-02)
 
-This release focuses on improving existing fucntionality.
-
-*Dependency: datagarok-api >= 1.16.0*
-
 ### Features
 
 * [#2098](https://github.com/datagrok-ai/public/issues/2098): Sunburst: Added group tooltips using showRowGroup
@@ -13,8 +9,6 @@ This release focuses on improving existing fucntionality.
 ## 1.1.0 (2023-08-01)
 
 This release focuses on adding new functionality and improving the existing one.
-
-*Dependency: datagrok-api >= 1.16.0*
 
 ### Features
 
@@ -47,10 +41,6 @@ This release focuses on adding new functionality and improving the existing one.
   * Fixed wrong behavior when second-level classes were not aggregated
 
 ## 1.0.24 (2023-05-26)
-
-This release focuses on stability.
-
-*Dependency: datagarok-api >= 1.15.0*
 
 ### Bug Fixes
 

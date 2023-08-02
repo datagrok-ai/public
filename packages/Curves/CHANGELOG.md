@@ -2,10 +2,6 @@
 
 ## 1.2.1 (2023-08-02)
 
-This release focuses on adding new functionality and improving stability.
-
-*Dependency: datagrok-api >= 1.16.0*
-
 ### Features
 
 * [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
@@ -17,8 +13,6 @@ This release focuses on adding new functionality and improving stability.
 ## 1.2.0 (2023-07-21)
 
 This release focuses on adding new functionality and improving the existing one.
-
-*Dependency: datagarok-api >= 1.16.0*
 
 ### Features
 
@@ -47,8 +41,6 @@ This release focuses on adding new functionality and improving the existing one.
 ## 1.1.0 (2023-05-19)
 
 This release focuses on improving the analysis stability and usability.
-
-*Dependency: datagarok-api >= 1.15.0*
 
 ### Features
 
