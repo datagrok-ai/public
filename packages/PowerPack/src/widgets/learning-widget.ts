@@ -127,7 +127,7 @@ let playlists = [
 let help = [
   {
     'title': 'Access',
-    'url': 'https://datagrok.ai/help/access/databases.md#database-manager'
+    'url': 'https://datagrok.ai/help/access/databases'
   },
   {
     'title':'Collaborate',
@@ -135,15 +135,15 @@ let help = [
   },
   {
     'title': 'Develop',
-    'url': 'https://datagrok.ai/help/develop/getting-started'
+    'url': 'https://datagrok.ai/help/develop/onboarding/getting-started'
   },
   {
     'title': 'Discover',
-    'url': 'https://datagrok.ai/help/discover/data-augmentation'
+    'url': 'https://datagrok.ai/help/explore/data-augmentation/'
   },
   {
     'title': 'Domains',
-    'url': 'https://datagrok.ai/help/domains/chem/chemically-aware-viewers'
+    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/chem/chemically-aware-viewers'
   },
   {
     'title': 'Explore',
@@ -155,15 +155,15 @@ let help = [
   },
   {
     'title': 'Learn',
-    'url': 'https://datagrok.ai/help/learn/data-science'
+    'url': 'https://datagrok.ai/help/learn/'
   },
   {
     'title': 'Overview',
-    'url': 'https://datagrok.ai/help/datagrok/create-project'
+    'url': 'https://datagrok.ai/help/collaborate/create-project'
   },
   {
     'title': 'Stories',
-    'url': 'https://datagrok.ai/help/solutions/life-sciences'
+    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/use-cases/life-sciences'
   },
   {
     'title': 'Transform',
@@ -175,6 +175,6 @@ let help = [
   },
   {
     'title': 'Acknowledgments',
-    'url': 'https://datagrok.ai/help/acknowledgements'
+    'url': 'https://datagrok.ai/help/resources/acknowledgements'
   }
 ];
