@@ -4,7 +4,7 @@
 
 ### Features
 
-Smart forms (WIP)
+* Smart forms (WIP)
 
 ## 1.1.31 (2023-08-01)
 
@@ -31,7 +31,7 @@ Smart forms (WIP)
 
 ### Features
 
-Added structure editing support for pinned columns.
+* Added structure editing support for pinned columns.
 
 ### Bug Fixes
 
