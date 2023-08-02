@@ -14,6 +14,7 @@ import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 import {TEST_COLUMN_NAMES} from './utils';
 import wu from 'wu';
 import {LogoSummaryTable} from '../viewers/logo-summary';
+import {calculateIdentity, identityWidget} from '../widgets/similarity';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -205,3 +206,41 @@ category('Widgets: Actions', () => {
       'Expected to have no custom cluster in the Logo Summary Table');
   });
 }, {clear: false});
+
+
+category('Widgets: Identity', () => {
+  let df: DG.DataFrame;
+  let model: PeptidesModel;
+  let activityCol: DG.Column<number>;
+  let sequenceCol: DG.Column<string>;
+  let clusterCol: DG.Column<any>;
+  let scaledActivityCol: DG.Column<number>;
+
+  before(async () => {
+    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
+    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
+    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
+    const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
+      C.SCALING_METHODS.NONE);
+    if (tempModel === null)
+      throw new Error('Model is null');
+    model = tempModel;
+  });
+
+  test('Identity', async () => {
+    const widget = identityWidget(model);
+    expect(widget instanceof DG.Widget, true, 'Identity widget is expected to be a DG.Widget');
+
+    const seq = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$';
+
+    const identityCol = await calculateIdentity(seq, model);
+    expect(identityCol.getTag(C.TAGS.IDENTITY_TEMPLATE), seq, `Identity column is expected to have template ${seq}, ` +
+      `got ${identityCol.getTag(C.TAGS.IDENTITY_TEMPLATE)}`);
+    expect(identityCol.get(0), 0, 'Expected 0 identity score when sequence is matching template');
+    expect(identityCol.get(3), 7, 'Expected 7 identity score agains sequence at position 3');
+  });
+});
