@@ -8,7 +8,7 @@
   * Added dropline rendering for IC50
   * Added empty cell value handling
 * [#2106](https://github.com/datagrok-ai/public/issues/2106): Wrote TS docs and extended the documentation
-* Added error handling in JnJ parser
+* Added error handling in the JnJ parser
 
 ## 1.2.0 (2023-07-21)
 
