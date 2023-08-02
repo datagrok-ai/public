@@ -1,6 +1,7 @@
-import * as DG from "datagrok-api/dg";
-import {divText} from "datagrok-api/ui";
-import {HitTriageApp, HitTriageTemplate} from "../hit-triage-app";
+import * as DG from 'datagrok-api/dg';
+import {divText} from 'datagrok-api/ui';
+import {ITemplate} from '../types';
+import {HitTriageApp} from '../hit-triage-app';
 
 export class HitTriageBaseView extends DG.ViewBase {
   app: HitTriageApp;
@@ -12,10 +13,10 @@ export class HitTriageBaseView extends DG.ViewBase {
 
     this.root.classList.add('grok-hit-triage-view');
     this.root.style.display = 'flex';
-    this.statusBarPanels = [divText('Hit Triage')]
+    this.statusBarPanels = [divText('Hit Triage')];
   }
 
-  get template(): HitTriageTemplate { return this.app.template; }
+  get template(): ITemplate {return this.app.template!;}
 
   /** Override to initialize the view based on the session. */
   onActivated(): void {
