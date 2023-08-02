@@ -151,6 +151,9 @@ jobs:
       - run: npm run build
         working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
+      - name: Install datagrok tools
+        id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
       - name: grok check
         continue-on-error: true
         run: |

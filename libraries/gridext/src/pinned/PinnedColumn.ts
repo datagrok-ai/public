@@ -218,6 +218,7 @@ export class PinnedColumn {
     eCanvasThis.style.top = grid.canvas.offsetTop + "px";
     eCanvasThis.style.width = nW + "px";
     eCanvasThis.style.height = Math.round(nHeight/window.devicePixelRatio) + "px";
+    eCanvasThis.style.zIndex = "1";
 
     //console.log("h " + grid.canvas.height + " offset " + grid.canvas.offsetHeight);
 
@@ -350,8 +351,10 @@ export class PinnedColumn {
     );
 
     this.m_handlerMouseOverGroup = dframe.onMouseOverRowGroupChanged.subscribe(() =>{
-      const g = eCanvasThis.getContext('2d');
-      headerThis.paint(g, grid);
+      setTimeout(() => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+      }, 20);
     });
 
     this.m_handlerData = dframe.onDataChanged.subscribe(() => {

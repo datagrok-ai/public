@@ -26,6 +26,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const activityScaledColData = activityScaledCol.getRawData();
   const seenIndexes = new Map<number, number[]>();
+  const uniqueSequencesBitSet = DG.BitSet.create(table.rowCount);
 
   for (const pos of positions) {
     const posCol = table.getCol(pos);
@@ -59,6 +60,8 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
           substitutedToArray.push(posColCategories[posColData[subIdx]]);
           fromIdxArray.push(referenceIdx);
           toIdxArray.push(subIdx);
+          uniqueSequencesBitSet.set(referenceIdx, true);
+          uniqueSequencesBitSet.set(subIdx, true);
         }
       }
     }
@@ -81,6 +84,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     else
       pairsTable.filter.setAll(true);
   });
+  aminoToInput.setTooltip('Monomer to which the mutation was made');
 
   const pairsGrid = pairsTable.plot.grid();
   pairsGrid.props.allowEdit = false;
@@ -132,24 +136,11 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
       columnNames.push(gridCol!.name);
   }
 
-  const pairIdxToUniqueIdxMap = new Map<number, number>();
-  let idx = 0;
-  const bitset = DG.BitSet.create(table.rowCount);
-  for (const [key, values] of seenIndexes.entries()) {
-    // Need to process exactly in this order, as this is how the seenIndexes is filled
-    for (const value of values) {
-      if (pairIdxToUniqueIdxMap.has(value))
-        continue;
-      bitset.set(value, true);
-      pairIdxToUniqueIdxMap.set(value, idx++);
-    }
-    if (!pairIdxToUniqueIdxMap.has(key)) {
-      bitset.set(key, true);
-      pairIdxToUniqueIdxMap.set(key, idx++);
-    }
-  }
-
-  const uniqueSequencesTable = table.clone(bitset, columnNames);
+  const uniqueSequencesTable = table.clone(uniqueSequencesBitSet, columnNames);
+  const seqIdxCol = uniqueSequencesTable.columns.addNewInt('~seqIdx');
+  const seqIdxColData = seqIdxCol.getRawData();
+  const selectedIndexes = uniqueSequencesBitSet.getSelectedIndexes();
+  seqIdxCol.init((idx) => selectedIndexes[idx]);
   const uniqueSequencesGrid = uniqueSequencesTable.plot.grid();
   uniqueSequencesGrid.props.allowEdit = false;
   uniqueSequencesGrid.props.allowRowSelection = false;
@@ -161,11 +152,11 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   uniqueSequencesTable.filter.onChanged.subscribe(() => {
     const uniqueSelectedIndexes: number[] = [];
     for (const idx of pairsSelectedIndexes) {
-      uniqueSelectedIndexes.push(pairIdxToUniqueIdxMap.get(fromIdxCol.get(idx))!);
-      uniqueSelectedIndexes.push(pairIdxToUniqueIdxMap.get(toIdxCol.get(idx))!);
+      uniqueSelectedIndexes.push(fromIdxCol.get(idx)!);
+      uniqueSelectedIndexes.push(toIdxCol.get(idx)!);
     }
     uniqueSequencesTable.filter.init(
-      (idx) => pairsSelectedIndexes.length === 0 || uniqueSelectedIndexes.includes(idx), false);
+      (idx) => pairsSelectedIndexes.length === 0 || uniqueSelectedIndexes.includes(seqIdxColData[idx]), false);
   });
 
   return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root]));

@@ -1,10 +1,25 @@
 # Bio changelog
 
+## 2.8.2 (2023-08-01)
+
+This release focuses on improving the monomer cell renderer.
+
+*Dependency: datagrok-api >= 1.13.3*
+
+### Features
+
+* Added sample datasets for natural and synthetic peptide sequences
+* Added sample dataset for cyclic sequences with HELM notation
+
+### Bug fixes
+
+* GROK-13659: Bio | Tools: Fix MaxMonomerLength for Macromolecule cell renderer
+
 ## 2.8.1 (2023-07-24)
 
 This release focuses on improving the monomer cell renderer.
 
-*Dependency: datgarok-api >= 1.13.3*
+*Dependency: datagrok-api >= 1.13.3*
 
 ### Features
 

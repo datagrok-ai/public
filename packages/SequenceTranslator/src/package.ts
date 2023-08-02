@@ -13,6 +13,7 @@ import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 import {demoDesignPatternUI, demoVisualizeDuplexUI, demoTranslateSequenceUI} from './demo/demo-st-ui';
+import {FormatConverter} from './model/format-translation/format-converter';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
@@ -93,7 +94,6 @@ export function getMolfileFromGcrsSequence(sequence: string, invert: boolean): s
 
 //name: linkStrands
 //input: object strands
-//input: bool invert
 //output: string result
 export function linkStrands(strands: { senseStrands: string[], antiStrands: string[] }): string {
   return linkStrandsV3000(strands, true);
@@ -121,4 +121,14 @@ export async function demoDesignPattern(): Promise<void> {
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
 export async function demoVisualizeDuplex(): Promise<void> {
   await demoVisualizeDuplexUI();
+}
+
+//name: translateOligonucleotideSequence
+//input: string sequence
+//input: string sourceFormat
+//input: string targetFormat
+//output: string result
+export async function translateOligonucleotideSequence(sequence: string, sourceFormat: string, targetFormat: string): Promise<string> {
+  await initSequenceTranslatorLibData();
+  return (new FormatConverter(sequence, sourceFormat)).convertTo(targetFormat);
 }

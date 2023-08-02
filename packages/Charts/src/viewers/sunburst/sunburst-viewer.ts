@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {EChartViewer} from '../echart/echart-viewer';
 import {TreeUtils, treeDataType} from '../../utils/tree-utils';
 import { StringUtils } from '@datagrok-libraries/utils/src/string-utils';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
@@ -85,21 +86,15 @@ export class SunburstViewer extends EChartViewer {
       }
     });
     this.chart.on('mouseover', (params: any) => {
-      const divs: HTMLElement[] = [];
-      const { hierarchyColumnNames, dataFrame } = this;
-      for (const columnName of hierarchyColumnNames) {
-        const column = dataFrame.columns.byName(columnName);
-        const idx = Array.from(column.values()).map((item) => String(item)).indexOf(params.name);
-        if (idx !== -1) {
-          for (let j = 0; j < dataFrame.columns.length; ++j) {
-            const columnAtIndex = dataFrame.columns.byIndex(j);
-            const value = columnAtIndex.get(idx);
-            const formattedValue = typeof value === 'string' ? value : StringUtils.formatNumber(value);
-            divs[j] = ui.divText(`${columnAtIndex.name} : ${formattedValue}`);
+      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
+        const { hierarchyColumnNames, dataFrame } = this;
+        for (let j = 0; j < hierarchyColumnNames.length; ++j) {
+          if (dataFrame.getCol(hierarchyColumnNames[j]).get(i).toString() === params.name) {
+            return true;
           }
         }
-      }
-      ui.tooltip.show(ui.div(divs), params.event.event.x, params.event.event.y);
+        return false;
+      }, params.event.event.x, params.event.event.y);
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = (event: MouseEvent) => {
@@ -143,21 +138,47 @@ export class SunburstViewer extends EChartViewer {
     super.onTableAttached();
   }
 
-  getSeriesData(): Promise<treeDataType[] | undefined> {
+  getSeriesData(): treeDataType[] | undefined {
     return TreeUtils.toForest(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter);
   }
 
-  render(): void {
+  async handleStructures(data: treeDataType[] | undefined) {
+    for (const entry of data!) {
+      const name = entry.name;
+      const isSmiles = await grok.functions.call('Chem:isSmiles', {s: name});
+      if (isSmiles) {
+        const imageContainer = await grok.functions.call('Chem:drawMolecule', {
+          'molStr': name, 'w': 70, 'h': 80, 'popupMenu': false
+        });
+        const image = imageContainer.querySelector(".chem-canvas");
+        await delay(5);
+        const img = new Image();
+        img.src = image.toDataURL('image/png');
+        entry.label = {
+          show: true,
+          formatter: '{b}',
+          color: 'rgba(0,0,0,0)',
+          height: '80',
+          width: '70',
+          backgroundColor: {
+            image: img.src,
+          },
+        }
+      } 
+      if (entry.children) {
+        await this.handleStructures(entry.children);
+      }
+    }
+    return data;
+  }
+
+  render() {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
-  
-    this.getSeriesData().then((seriesData: treeDataType[] | undefined) => {
-      if (seriesData) {
-        this.option.series[0].data = seriesData;
-        this.chart.setOption(this.option);
-      }
-    }).catch((error) => {
-      console.error(error);
+
+    this.handleStructures(this.getSeriesData()).then((data) => {
+      this.option.series[0].data = data;
+      this.chart.setOption(this.option);
     });
   }
 

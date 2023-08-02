@@ -25,7 +25,8 @@ export enum SparklineType {
   BarChart = 'barchart',
   PieChart = 'piechart',
   Radar = 'radar',
-  Sparkline = 'sparkline'
+  Sparkline = 'sparkline',
+  Form = 'smartform'
 }
 
 export const sparklineTypes: string[] = [

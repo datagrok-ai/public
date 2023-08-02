@@ -88,13 +88,14 @@ export class TestManager extends DG.ViewBase {
   }
 
   async init(): Promise<void> {
-    let TMState = false;
+    let TMStateB = false;
     let pathSegments = window.location.pathname.split('/');
     pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
-    if (pathSegments.length <= 4) {
-      pathSegments = localStorage.getItem('TMState').split('/');
+    const TMState = localStorage.getItem('TMState');
+    if (pathSegments.length <= 4 && TMState) {
+      pathSegments = TMState.split('/');
       pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
-      TMState = true;
+      TMStateB = true;
     }
     this.testFunctions = await this.collectPackages();
     this.testManagerView = DG.View.create();
@@ -110,7 +111,7 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.append(testUIElements.testsTree.root);
     if (this.dockLeft)
       grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.25);
-    if (!TMState)
+    if (!TMStateB)
       this.runTestsForSelectedNode();
   }
 

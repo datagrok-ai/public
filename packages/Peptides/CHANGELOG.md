@@ -1,6 +1,21 @@
 # Peptides changelog
 
-## 1.10.3 (Bleeding-edge)
+## 1.10.4 (2023-08-01)
+
+This release focuses on improving package stability and usability.
+
+*Dependency: datgarok-api >= 1.15.4*
+
+### Features
+
+* UI/UX improvements
+
+### Bug Fixes
+
+* Fixed Monomer-Position viewer not responding to selection correctly.
+
+
+## 1.10.3 (2023-07-31)
 
 This release focuses on improving package stability and usability.
 
@@ -8,7 +23,8 @@ This release focuses on improving package stability and usability.
 
 ### Bug Fixes
 
-* Fixed number of sequences had wrong value sometimes.
+* Fixed number of sequences had wrong values sometimes.
+* Fixed Mutation Cliffs pair selection would still result in wrong sequences sometimes.
 
 ## 1.10.2 (2023-07-24)
 

@@ -230,7 +230,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
       let value = true;
       let message = '';
 
-      if (outputs.length === 1 && outputs[0].type === 'widget') {
+      if (!(outputs.length === 1 && outputs[0].type === 'widget')) {
         value = false;
         message += 'Package settings editors must have one output of type "widget"\n';
       }
@@ -342,10 +342,10 @@ export function checkChangelog(packagePath: string) {
   let regex = /^##[^#].*$/gm;
   const h2 = clf.match(regex);
   if (!h2) return ['No versions found in CHANGELOG.md'];
-  regex = /^## \d+\.\d+\.\d+ \(\d{4}-\d{2}-\d{2}\).*$/;
+  regex = /^## \d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\)$/;
   for (const h of h2) {
     if (!regex.test(h))
-      warnings.push(`CHANGELOG: '${h}' does not match the h2 format`);
+      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)`);
   }
   return warnings;
 }

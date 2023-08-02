@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.4.94",
+  "version": "3.5.3",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1539,6 +1539,15 @@
         },
         "1.12.3": {
           "datagrok-api": "^1.15.3"
+        },
+        "1.13.0": {
+          "datagrok-api": "^1.15.3"
+        },
+        "1.13.2": {
+          "datagrok-api": "^1.15.3"
+        },
+        "1.13.3": {
+          "datagrok-api": "^1.15.3"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1728,6 +1737,9 @@
         },
         "1.0.24": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.1.0": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -2305,6 +2317,9 @@
         },
         "2.8.1": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.8.2": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2590,6 +2605,18 @@
         },
         "1.1.27": {
           "datagrok-api": "1.15.3"
+        },
+        "1.1.28": {
+          "datagrok-api": "1.15.3"
+        },
+        "1.1.29": {
+          "datagrok-api": "1.15.3"
+        },
+        "1.1.30": {
+          "datagrok-api": "^1.15.3"
+        },
+        "1.1.31": {
+          "datagrok-api": "^1.15.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",

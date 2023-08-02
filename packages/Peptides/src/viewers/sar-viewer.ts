@@ -97,7 +97,10 @@ export class MonomerPosition extends DG.JsViewer {
       chooseAction(aar, position, ev.shiftKey, this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.model);
       this.viewerGrid.invalidate();
     });
-    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
+    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => {
+      cellChanged(this.model.monomerPositionDf, this.model);
+      this.viewerGrid.invalidate();
+    });
 
     setViewerGridProps(this.viewerGrid, false);
   }
@@ -134,7 +137,7 @@ export class MonomerPosition extends DG.JsViewer {
       }
       const tips: HTMLElement = ui.iconFA('question');
       ui.tooltip.bind(tips,
-        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference')]));
+        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference'), ui.divText('Number - # of unique sequences that form mutation cliffs pairs')]));
 
       $(tips).addClass('pep-help-icon');
 
@@ -197,7 +200,7 @@ export class MostPotentResidues extends DG.JsViewer {
 
     // Setting Monomer column renderer
     CR.setAARRenderer(monomerCol, this.model.alphabet);
-    this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model));
+    this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model, false, undefined, undefined, false));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -211,7 +214,10 @@ export class MostPotentResidues extends DG.JsViewer {
       this.viewerGrid.invalidate();
       // this.model.fireBitsetChanged();
     });
-    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.mostPotentResiduesDf, this.model));
+    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => {
+      cellChanged(this.model.mostPotentResiduesDf, this.model);
+      this.viewerGrid.invalidate();
+    });
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
     setViewerGridProps(this.viewerGrid, true);
@@ -223,7 +229,7 @@ export class MostPotentResidues extends DG.JsViewer {
       const switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
       const tips: HTMLElement = ui.iconFA('question');
       ui.tooltip.bind(tips,
-        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference')]));
+        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference'), ui.divText('Number - # of unique sequences that form mutation cliffs pairs')]));
 
       $(tips).addClass('pep-help-icon');
 
@@ -237,7 +243,7 @@ export class MostPotentResidues extends DG.JsViewer {
 }
 
 function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
-  colorCol?: DG.Column<number>, colorAgg?: DG.AggregationType): void {
+  colorCol?: DG.Column<number>, colorAgg?: DG.AggregationType, renderNums?: boolean): void {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const canvasContext = args.g;
   const bound = args.bounds;
@@ -295,7 +301,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
       canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.mutationCliffsSelection, model.mutationCliffs, model.settings.isBidirectional);
+      model.mutationCliffsSelection, model.mutationCliffs, model.settings.isBidirectional, renderNums);
   }
   args.preventDefault();
   canvasContext.restore();

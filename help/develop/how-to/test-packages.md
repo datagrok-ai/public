@@ -22,23 +22,82 @@ From basic assertions to asynchronous handling and viewer testing, these utiliti
 
 <b>Writing Tests</b>
 
-The Datagrok Library Utils offer a straightforward and efficient way to write tests for your packages. Through the `test` function, you can define individual test cases, each with a name and the corresponding test logic. Tests can be categorized and executed collectively for comprehensive coverage.
+Use the `test` function from Utils library to define individual test cases, assign names, and specify test logic. Tests can be categorized and executed collectively for comprehensive coverage.
+
+<details>
+<summary>Example</summary>
+
+```typescript
+category('myCategory', () => {
+  test('myTest', async () => {
+    //do some checks
+  });
+});
+```
+
+</details>
 
 <b>Test Assertions</b>
 
 Within the Utils library, you have access to various test assertion functions to validate and compare different types of data. Functions like `expect`, `expectFloat`, `expectTable`, `expectObject`, and `expectArray` enable you to assert equality, floating-point number comparisons, DataFrame comparisons, object comparisons (including nested objects and arrays), and array comparisons, respectively.
 
+<details>
+<summary>Example</summary>
+
+```typescript
+expect(1 != null, true);
+expectFloat(0.12345, 0.123, 0.001);
+expectTable(grok.data.demo.demog(10), grok.data.testData('demog', 10));
+expectObject({a: 1, b: 2}, {b: 2, a: 1});
+expectArray([...Array(4).keys()], [0, 1, 2, 3]);
+```
+
+</details>
+
 <b>Handling Asynchronous Tests</b>
 
-Testing asynchronous code is a common scenario, and the Utils have got you covered. The utility `awaitCheck` allows you to wait until a specified condition is met or a timeout is reached, making it ideal for handling asynchronous test cases with ease. Furthermore, the `delay` function comes in handy when you need to introduce intentional delays during testing, allowing you to test edge cases and ensure your code behaves correctly under various conditions.
+Simplify testing asynchronous code with the `awaitCheck` utility. It allows you to wait for a specified condition or timeout, making asynchronous test cases easier to handle. The `delay` function is also available for introducing intentional delays during testing.
+
+<details>
+<summary>Example</summary>
+
+```typescript
+const smiles = grok.data.demo.molecules(20);
+const v = grok.shell.addTableView(smiles);
+await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+grok.shell.info('Table loaded!');
+await delay(1000);
+v.close();
+```
+
+</details>
 
 <b>Testing Viewers</b>
 
-The `testViewer` utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
+The [testViewer](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L451) utility is a valuable tool for testing Datagrok viewers. It facilitates thorough testing of viewer functionality, including dataframe transformation and serialization. By providing a DataFrame as input, testViewer allows you to examine how the viewer responds to various data scenarios, handling dataframe modifications such as row selection, data filtering, and column value changes. Furthermore, the utility validates viewer serialization by saving the viewer into a layout and loading it back, ensuring that viewers can accurately preserve their state.
+
+<details>
+<summary>Example</summary>
+
+```typescript
+const smiles = grok.data.demo.molecules(100);
+await testViewer('Chem Similarity Search', smiles, {detectSemanticTypes: true});
+```
+
+</details>
 
 <b>Handling Exceptions</b>
 
-Dealing with exceptions is an integral part of testing. The `expectExceptionAsync` function allows you to test that certain actions indeed throw exceptions as expected, and it even offers the flexibility to perform deeper inspections of the exceptions, if needed.
+Ensure proper exception handling by using the [expectExceptionAsync](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts#L425) function. It allows you to test that specific actions throw the expected exceptions and offers the flexibility to perform deeper inspections of the exceptions when needed.
+
+<details>
+<summary>Example</summary>
+
+```typescript
+await expectExceptionAsync(() => grok.functions.call('nonExistingFunction'));
+```
+
+</details>
 
 ## Local testing
 
@@ -59,17 +118,6 @@ pass the `--gui` flag that disables the headless browser mode. This option can h
 For more detailed information and additional usage instructions, please refer to the [datagrok-tools page](https://github.com/datagrok-ai/public/tree/master/tools).
 
 If you do not have any datagrok instance run locally, you can use [docker-compose](../../deploy/docker-compose.mdx) to run the stand.
-
-## Tests after a change in a public package
-
-It is always a good practice to test the changes before publishing the package.
-
-All public packages in the [repository](../../collaborate/public-repository.md)
-are tested using GitHub Actions on every commit. For every changed package GitHub creates a new separate instance of
-Datagrok from the latest Datagrok docker image. Then, it publishes a new version of the package to this instance. And
-then, the tests are executed on it.
-
-The results are available in the actions output.
 
 ### Trigger GitHub Actions manually
 
@@ -134,6 +182,17 @@ launch tests for a category, type `PackageName:test(category="category-name")`,
 e.g., `ApiTests:test(category="Layouts")`, or add a specific test as a
 parameter: `PackageName:test(category="category-name", test="test-name")`, e.g.,
 `ApiTests:test(category="Layouts", test="ViewLayout.toJson()")`.
+
+## Testing public package changes
+
+It is always a good practice to test the changes before publishing the package.
+
+All public packages in the [repository](../../collaborate/public-repository.md)
+are tested using GitHub Actions on every commit. For every changed package GitHub creates a new separate instance of
+Datagrok from the latest Datagrok docker image. Then, it publishes a new version of the package to this instance. And
+then, the tests are executed on it.
+
+The results are available in the actions output.
 
 ## More information
 

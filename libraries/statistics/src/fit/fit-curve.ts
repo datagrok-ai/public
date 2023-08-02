@@ -32,6 +32,8 @@ export type FitParamBounds = {
   maxBound?: number;
 };
 
+/** Fit function description. Applies to custom user fit functions.
+ * Requires JS arrow functions for the fit functions and initial parameters. */
 export interface IFitFunctionDescription {
   name: string;
   function: string;
@@ -121,10 +123,11 @@ export interface IFitSeries extends IFitSeriesOptions {
   points: IFitPoint[];
 }
 
+/** Chart labels options. Controls the chart labels. */
 export interface IFitChartLabelOptions {
-  visible: boolean;
-  color: string;
-  name: string;
+  visible: boolean;         // if true, renders the label on the plot
+  color: string;            // defines the label color
+  name: string;             // defines the label name
 }
 
 /** Chart options. For fitted curves, this object is stored in the grid column tags and is used by the renderer. */
@@ -134,14 +137,14 @@ export interface IFitChartOptions {
   maxX?: number;
   maxY?: number;
 
-  xAxisName?: string;
-  yAxisName?: string;
+  xAxisName?: string;        // defines the x axis name. If the plot size is enough, will render it.
+  yAxisName?: string;        // defines the Y axis name. If the plot size is enough, will render it.
 
-  logX?: boolean;
-  logY?: boolean;
+  logX?: boolean;            // defines whether the x data should be logarithmic or not
+  logY?: boolean;            // defines whether the y data should be logarithmic or not
 
-  showStatistics?: string[];
-  labelOptions?: IFitChartLabelOptions[];
+  showStatistics?: string[]; // defines the statistics that would be shown on the plot
+  labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
 }
 
 /** Data for the fit chart. */
@@ -160,23 +163,20 @@ export class FitChartData implements IFitChartData {
 
 /** Series options can be either applied globally on a column level, or partially overridden in particular series */
 export interface IFitSeriesOptions {
-  name?: string;
-  fitFunction?: string | IFitFunctionDescription;
-  parameters?: number[];         // auto-fitting when not defined
-  parameterBounds?: FitParamBounds[];
-  markerType?: FitMarkerType;
-  pointColor?: string;
-  fitLineColor?: string;
-  confidenceIntervalColor?: string;
-  showFitLine?: boolean;
-  showPoints?: string;
-  showCurveConfidenceInterval?: boolean;   // show ribbon
-  showIntercept?: boolean;
-  showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
-  showConfidenceForX?: number;
-  clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
-  labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions
-  droplines?: string[];
+  name?: string;                        // controls the series name
+  fitFunction?: string | IFitFunctionDescription; // controls the series fit function
+  parameters?: number[];                // controls the series parameters, auto-fitting when not defined
+  parameterBounds?: FitParamBounds[];   // defines the series parameter bounds during the fit
+  markerType?: FitMarkerType;           // defines the series marker type
+  pointColor?: string;                  // overrides the standardized series point color
+  fitLineColor?: string;                // overrides the standardized series fit line color
+  confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
+  showFitLine?: boolean;                // defines whether to show the fit line or not
+  showPoints?: string;                  // defines the data display mode
+  showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
+  clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
+  labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
+  droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
 }
 // TODO: show labels in property panel if present, color by default from series
 
@@ -243,6 +243,7 @@ export const FIT_STATS_AUC = 'auc';
 
 
 // TODO?: add method to return parameters - get parameters from fit function
+/** Class for the fit functions */
 export abstract class FitFunction {
   abstract get name(): string;
   abstract get parameterNames(): string[];
@@ -250,6 +251,7 @@ export abstract class FitFunction {
   abstract getInitialParameters(x: number[], y: number[]): number[];
 }
 
+/** Class that implements the linear function */
 export class LinearFunction extends FitFunction {
   get name(): string {
     return FIT_FUNCTION_LINEAR;
@@ -268,6 +270,7 @@ export class LinearFunction extends FitFunction {
   }
 }
 
+/** Class that implements the sigmoid function */
 export class SigmoidFunction extends FitFunction {
   get name(): string {
     return FIT_FUNCTION_SIGMOID;
@@ -301,6 +304,7 @@ export class SigmoidFunction extends FitFunction {
   }
 }
 
+/** Class that implements user JS functions */
 export class JsFunction extends FitFunction {
   private _name: string;
   private _parameterNames: string[];
@@ -333,6 +337,7 @@ export class JsFunction extends FitFunction {
   }
 }
 
+// Object with fit functions
 export const fitFunctions: {[index: string]: FitFunction} = {
   'linear': new LinearFunction(),
   'sigmoid': new SigmoidFunction(),

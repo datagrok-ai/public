@@ -157,6 +157,8 @@ public class ImpalaDataProvider extends JdbcDataProvider {
             if (conn.ssl()) {
                 properties.setProperty("SSL", "1");
             }
+        }
+        if (conn.credentials != null) {
             String login = conn.credentials.getLogin();
             String password = conn.credentials.getPassword();
             if (login != null && !login.isEmpty() && password != null && !password.isEmpty()) {
