@@ -108,21 +108,18 @@ export class HitTriageApp {
 
 
   public async calculateColumns(resultMap: IComputeDialogResult, view?: DG.TableView) {
-    const promises: Promise<any>[] = [];
     const previousColumns = this.dataFrame!.columns.names();
-    if (resultMap.descriptors && resultMap.descriptors.length > 0) {
-      promises.push(
-        grok.chem.descriptors(this.dataFrame!, this.molColName!, resultMap.descriptors,
-        ));
-    }
-    Object.keys(resultMap.externals).forEach((funcName) => {
+    if (resultMap.descriptors && resultMap.descriptors.length > 0)
+      await grok.chem.descriptors(this.dataFrame!, this.molColName!, resultMap.descriptors);
+
+    for (const funcName of Object.keys(resultMap.externals)) {
       const props = resultMap.externals[funcName];
       props['table'] = this.dataFrame!;
       props['molecules'] = this.molColName!;
       if (props)
-        promises.push(grok.functions.call(funcName, props));
-    });
-    await Promise.all(promises);
+        await grok.functions.call(funcName, props);
+    };
+
     if (view) {
       const filterGroup = view.getFiltersGroup();
     this.dataFrame!.columns.names().filter((colName) => !previousColumns.includes(colName))
