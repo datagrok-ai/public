@@ -7,7 +7,9 @@ import {Observable, Subject} from 'rxjs';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
 import {
   createJsonMonomerLibFromSdf,
+  getJsonMonomerLibForEnumerator,
   IMonomerLibHelper,
+  isEnumeratorLib,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
@@ -247,6 +249,8 @@ export class MonomerLibHelper implements IMonomerLibHelper {
     } else {
       const file = await fileSource.readAsText(fileName);
       rawLibData = JSON.parse(file);
+      if (isEnumeratorLib(rawLibData))
+        rawLibData = getJsonMonomerLibForEnumerator(rawLibData);
     }
 
     const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};

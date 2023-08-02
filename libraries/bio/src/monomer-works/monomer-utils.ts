@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
-  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
+  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, helmFieldsToEnumeratorInputFields, rGroupsDummy
 } from '../utils/const';
 import {IMonomerLib} from '../types/index';
 import {TAGS} from '../utils/macromolecule/consts';
@@ -97,6 +97,66 @@ export function createMomomersMolDict(lib: any[]): { [key: string]: string | any
   });
   return dict;
 }
+
+export function isEnumeratorLib(json: any[]): boolean {
+  return json.every((entry) => {
+    return typeof entry === 'object' &&
+      Object.values(helmFieldsToEnumeratorInputFields).every((field) => {
+        return field in entry &&
+          typeof entry.field === 'string';
+      });
+  });
+}
+
+/** Specific to Enumerator for peptides */
+export function getJsonMonomerLibForEnumerator(rawLib: any[]): any {
+  // todo
+  function validateMonomerLibWithSmiles() {
+  }
+
+  function restoreRgroupsInSmiles(rawSmiles: string) {
+    const regex = new RegExp('\\[r\\]', 'g');
+    let i = 0;
+    return rawSmiles.replace(regex, (match) => { ++i; return `[${i}*]`; });
+  }
+
+  function prepareOutputSmilesColValue(smilesWithRestoredRgroups: string): string {
+    const result = smilesWithRestoredRgroups.replace('[1*]', '[H:1]');
+    return result.replace('[2*]', '[OH:2]');
+  }
+
+  function prepareMolblock(rawMolblock: string): string {
+    return rawMolblock.replace('M  ISO', 'M  RGP');
+  }
+
+  const resultLib: any[] = [];
+  validateMonomerLibWithSmiles();
+
+  // for (let i = 0; i < df.rowCount; i++) {
+  rawLib.forEach((monomer) => {
+    Object.keys(jsonSdfMonomerLibDict).forEach((key) => {
+      if (key === HELM_FIELDS.SYMBOL) {
+        const monomerSymbol = monomer[helmFieldsToEnumeratorInputFields[key]];
+        monomer[key] = monomerSymbol;
+      } else if (key === HELM_FIELDS.SMILES) {
+        const rawSmiles = monomer[helmFieldsToEnumeratorInputFields[key]];
+        const smilesWithRestoredRgroups = restoreRgroupsInSmiles(rawSmiles);
+        const smiles = prepareOutputSmilesColValue(smilesWithRestoredRgroups);
+        monomer[key] = smiles;
+      } else if (key === HELM_FIELDS.RGROUPS) {
+        monomer[key] = rGroupsDummy;
+      } else if (key === HELM_FIELDS.MOLFILE) {
+        const rawSmiles = monomer[helmFieldsToEnumeratorInputFields[HELM_FIELDS.SMILES]];
+        const smiles = restoreRgroupsInSmiles(rawSmiles);
+        const rawMolfile = DG.chem.convert(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+        monomer[key] = prepareMolblock(rawMolfile);
+      }
+    });
+    resultLib.push(monomer);
+  });
+  return resultLib;
+}
+
 
 export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   const resultLib = [];
