@@ -244,10 +244,6 @@ export async function chemSubstructureSearchLibrary(
     }
 
     const matchesBitArray = new BitArray(molStringsColumn.length);
-    // if (molString.length === 0) {
-    //   chemEndCriticalSection();
-    //   return matchesBitArray;
-    // }
     
     const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
