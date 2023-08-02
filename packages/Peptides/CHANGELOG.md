@@ -9,6 +9,7 @@ This release introduces sequence identity functionality and some stability and u
 ### Features
 
 * Added sequence identity functionality.
+* UI/UX improvements.
 
 ## 1.10.4 (2023-08-01)
 
