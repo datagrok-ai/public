@@ -427,11 +427,18 @@ var oneWayAnova = {
   arguments: {
     columns: {
       type: 'floatColumns'
+    },
+    res: {
+      type: 'newFloatColumn',
+      numOfRows: {
+        ref: 'columns',
+        value: 'numOfRows'
+      }
     }
   },
   output: {
-    type: 'double',
-    source: '_callResult'
+    type: 'column',
+    source: 'res'
   }
 }; // oneWayAnova
 

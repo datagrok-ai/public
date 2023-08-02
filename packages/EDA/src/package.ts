@@ -6,7 +6,9 @@ import * as DG from 'datagrok-api/dg';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS, computeANOVA} from './EDAtools';
+import {computePCA, computePLS} from './EDAtools';
+import {computeANOVA} from './ANOVA/utils';
+
 import {renamePCAcolumns, addPLSvisualization, regressionCoefficientsBarChart, 
   scoresScatterPlot, predictedVersusReferenceScatterPlot} from './EDAui';
 import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
@@ -59,10 +61,11 @@ export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.Co
 //name: ANOVA
 //description: One-way Analysis of Variance (ANOVA)
 //input: dataframe table
-//input: column_list columns
+//input: column factor
+//input: column dependent {type: numerical}
 //output: double ftest 
-export async function ANOVA(table: DG.DataFrame, columns: DG.ColumnList): Promise<number> {
-  return await computeANOVA(table, columns);
+export async function ANOVA(table: DG.DataFrame, factor: DG.Column, dependent: DG.Column): Promise<number> {
+  return await computeANOVA(table, factor, dependent);
 }
 
 //name: MVA demo
