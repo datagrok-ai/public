@@ -132,8 +132,8 @@ export class SubstructureFilter extends DG.Filter {
     }
     super.attach(dataFrame);
     this.column ??=dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.columnName ??= this.column?.name;
-    this.tableName = dataFrame.name;
+    this.columnName ??= this.column?.name ?? '';
+    this.tableName = dataFrame.name ?? '';
     this.onSketcherChangedSubs?.unsubscribe();
 
     // hide the scaffold when user deactivates the filter
