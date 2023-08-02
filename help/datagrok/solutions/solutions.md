@@ -8,7 +8,7 @@ title: "Who it is for"
 * [Bioinformatics](domains/bio/bio.md)
 * [Data science](domains/data-science.md)
 <!--* Curve fitting-->
-* [NLP](domains/nlp.md)
+* [NLP](domains/nlp/nlp.md)
 
 #### Enterise IT
 
