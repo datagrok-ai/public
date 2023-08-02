@@ -11,6 +11,7 @@ Smart forms (WIP)
 ### Bug Fixes
 
 * [#2117](https://github.com/datagrok-ai/public/issues/2117): Pinned columns are not displayed properly with some row source options for the table
+* Add tests for pinned columns
 
 ## 1.1.30 (2023-08-01)
 
