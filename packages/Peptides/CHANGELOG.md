@@ -10,6 +10,7 @@ This release introduces sequence identity functionality and some stability and u
 
 * Added sequence identity functionality.
 * UI/UX improvements.
+* Added activity column choice in settings.
 
 ## 1.10.4 (2023-08-01)
 
@@ -19,7 +20,7 @@ This release focuses on improving package stability and usability.
 
 ### Features
 
-* UI/UX improvements
+* UI/UX improvements.
 
 ### Bug Fixes
 

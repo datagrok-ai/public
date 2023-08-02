@@ -302,6 +302,7 @@ export class PeptidesModel {
     for (const [key, value] of newSettingsEntries) {
       this._settings[key as keyof type.PeptidesSettings] = value as any;
       switch (key) {
+      case 'activityColumnName':
       case 'scaling':
         updateVars.add('activity');
         updateVars.add('mutationCliffs');
