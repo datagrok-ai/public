@@ -28,7 +28,7 @@ export type PeptidesSettings = {
 };
 
 export type DrawOptions = {
-  fontStyle?: string,
+  symbolStyle?: string,
   upperLetterHeight?: number,
   upperLetterAscent?: number,
   bounds?: DG.Rect,
@@ -36,8 +36,8 @@ export type DrawOptions = {
   textBaseline?: CanvasTextBaseline,
   marginVertical?: number,
   marginHorizontal?: number,
-  colHeaderStyle?: string,
-  colHeaderFontHeight?: number,
+  headerStyle?: string,
+  textHeight?: number,
 };
 
 export type StatsInfo = {
