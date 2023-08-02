@@ -29,6 +29,40 @@ jobs:
       replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
+      - name: Prepare Slack Message
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+      - name: Send test report to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+              "text": "Deployment started (In Progress)",
+              "attachments": [
+                {
+                  "pretext": "Deployment started",
+                  "color": "dbab09",
+                  "fields": [
+                    {
+                      "title": "Status",
+                      "short": true,
+                      "value": "In Progress"
+                    }
+                  ]
+                }
+              ]
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
       - name: Checkout
         uses: actions/checkout@v3
       - name: Check version was changed
@@ -133,6 +167,8 @@ jobs:
     runs-on: ubuntu-20.04
     needs: [version, common-check] 
     if: needs.common-check.outputs.continue == 'true'
+    env:
+      HOST: GitHubAction
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -153,6 +189,100 @@ jobs:
         working-directory: ./js-api
       - run: npm run build-ts
         working-directory: ./js-api
+      - name: Run datagrok stand
+        id: datagrok-stand
+        env:
+          DATAGROK_VERSION: 'bleeding-edge'
+        run: |
+          commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          echo "Find grok dependencies packages"
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
+          profiles='--profile datagrok --profile db --profile grok_connect'
+          echo "Run datagrok stand with profiles ${profiles}"
+          docker system prune -af --volumes
+          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" -f "localhost.js-api.debug.docker-compose.yaml" ${profiles} up -d
+          echo "Set docker_sha"
+          docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
+          echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+          echo "Notify about version used for tests"
+          echo "::notice title=js-api::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
+      - name: Create configuration for grok command-line tool
+        run: |
+          grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
+          cat /home/runner/.grok/config.yaml
+
+      - name: Install ApiTests dependencies
+        run: npm install
+        working-directory: ./packages/ApiTests
+      - name: Run ApiTests
+        continue-on-error: true
+        timeout-minutes: 15
+        id: test-ApiTests
+        run: npm run test -- --record --csv
+        working-directory: packages/ApiTests
+      - name: Upload ApiTests results
+        if: steps.test-ApiTests.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ApiTests.test-results
+          path: |
+            packages/ApiTests/test-record.mp4
+            packages/ApiTests/test-report.csv
+            packages/ApiTests/test-console-output.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Install DBTests dependencies
+        run: npm install
+        working-directory: ./packages/DBTests
+      - name: Run DBTests
+        continue-on-error: true
+        timeout-minutes: 15
+        id: test-DBTests
+        run: npm run test -- --record --csv
+        working-directory: packages/DBTests
+      - name: Upload DBTests results
+        if: steps.test-DBTests.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: DBTests.test-results
+          path: |
+            packages/DBTests/test-record.mp4
+            packages/DBTests/test-report.csv
+            packages/DBTests/test-console-output.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Prepare Slack Message
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+      - name: Send Slack test report
+        if: ${{ steps.test-ApiTests.outcome == 'failure' && steps.test-DBTests.outcome == 'failure' }}
+        run: |
+          SLACK_MESSAGE=$(echo "Workflow failed: ${{ github.event.workflow_run.html_url }}")
+          key="${{ github.actor }}"
+          value=$(echo '${{ secrets.SLACK_ID }}' | jq -r ".${key}")
+          curl -X POST -H 'Content-type: application/json' -H "Authorization: Bearer ${{ secrets.SLACKBOT_TOKEN }}" \
+          --data '{"text":"'"${SLACK_MESSAGE}"'", "channel":"'$value'"}' \
+          https://slack.com/api/chat.postMessage
+
+      - name: Send test report to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          slack-message: "GitHub build ${{ github.workflow }} test results: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
       - name: npm publish
         run: |
           tag=""
