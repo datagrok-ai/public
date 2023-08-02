@@ -86,21 +86,15 @@ export class SunburstViewer extends EChartViewer {
       }
     });
     this.chart.on('mouseover', (params: any) => {
-      const divs: HTMLElement[] = [];
-      const { hierarchyColumnNames, dataFrame } = this;
-      for (const columnName of hierarchyColumnNames) {
-        const column = dataFrame.columns.byName(columnName);
-        const idx = Array.from(column.values()).map((item) => String(item)).indexOf(params.name);
-        if (idx !== -1) {
-          for (let j = 0; j < dataFrame.columns.length; ++j) {
-            const columnAtIndex = dataFrame.columns.byIndex(j);
-            const value = columnAtIndex.get(idx);
-            const formattedValue = typeof value === 'string' ? value : StringUtils.formatNumber(value);
-            divs[j] = ui.divText(`${columnAtIndex.name} : ${formattedValue}`);
+      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
+        const { hierarchyColumnNames, dataFrame } = this;
+        for (let j = 0; j < hierarchyColumnNames.length; ++j) {
+          if (dataFrame.getCol(hierarchyColumnNames[j]).get(i).toString() === params.name) {
+            return true;
           }
         }
-      }
-      ui.tooltip.show(ui.div(divs), params.event.event.x, params.event.event.y);
+        return false;
+      }, params.event.event.x, params.event.event.y);
     });      
     this.chart.on('mouseout', () => ui.tooltip.hide());
     this.chart.getDom().ondblclick = (event: MouseEvent) => {
