@@ -293,7 +293,7 @@ jobs:
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: needs.version.outputs.changed_version == 'true'
+        if: needs.version.outputs.changed_version == 'true' && (github.ref == 'refs/heads/master' || contains(github.ref, 'release/'))
       - name: Commit package-lock.json
         continue-on-error: true
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
