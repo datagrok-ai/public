@@ -1,0 +1,44 @@
+version: "3"
+services:
+  datagrok:
+    privileged: true
+    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "deployDemo": false,
+          "dbServer": "database",
+          "db": "datagrok",
+          "dbAdminLogin": "postgres",
+          "dbAdminPassword": "postgres",
+          "dbLogin": "dg",
+          "dbPassword": "dg",
+          "adminPassword": "admin",
+          "adminDevKey": "admin",
+          "isolatesCount": 2
+        }
+    ports:
+      - "${DATAGROK_PORT:-8080}:8080/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - datagrok
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: false
+    volumes:
+      - datagrok_data:/home/grok/data
+      - datagrok_cfg:/home/grok/cfg
+      - type: bind
+        source: ${FULL_PATH_TO_BUILD_JS_API:-./../js-api/../../xamgle/web/js/api}
+        target: /home/grok/datagrok/html.build/web/js/api
+    restart: unless-stopped
+    profiles: ["all", "datagrok"]
+
+volumes:
+  datagrok_data:
+  datagrok_cfg:
+
+networks:
+  datagrok:
