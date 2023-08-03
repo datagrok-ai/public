@@ -82,5 +82,5 @@ our [community forum](https://community.datagrok.ai/).
 ## See also
 
 * [Datagrok home](https://datagrok.ai/)
-* [JavaScript development](https://datagrok.ai/help/develop/develop)
+* [JavaScript development](https://datagrok.ai/help/develop)
 * [Community forum](https://community.datagrok.ai/)
