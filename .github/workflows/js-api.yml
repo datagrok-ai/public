@@ -74,7 +74,7 @@ jobs:
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
           
-          header="*GitHub <${{ github.event.workflow_run.html_url }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:*"
+          header="*GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:*"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
           context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
@@ -96,6 +96,13 @@ jobs:
                         }
                     },
                     {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
+                        }
+                    },
+                    {
                         "type": "context",
                         "elements": [
                             {
@@ -103,13 +110,6 @@ jobs:
                                 "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
                             }
                         ]
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
-                        }
                     }
                 ]
             }
