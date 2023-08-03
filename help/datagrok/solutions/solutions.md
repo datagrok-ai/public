@@ -17,4 +17,4 @@ title: "Who it is for"
 #### Use cases
 
 * [Exploratory data analysis](domains/use-cases/eda.md)
-* [Peptides SAR](domains/use-cases/eda.md)
+* [Sequence-activity relationship analysis for peptides](domains/use-cases/peptides-sar.md)

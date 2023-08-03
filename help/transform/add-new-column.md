@@ -14,7 +14,7 @@ To add new columns, you can use data from existing columns as follows:
 - To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For
   example you can use this expression in function like that: `Avg($[Width])`.
 
-While editing the formula, press '$' to opens up a column list popup; use arrows and Enter to select it. You can also
+While editing the formula, press '$' to open up a column list popup; use arrows and Enter to select it. You can also
 use the Drag-n-Drop mechanism to drag and drop the desired column directly into the text of the formula. To do this,
 grab the column heading and drag it to the formula window.
 
