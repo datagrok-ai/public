@@ -1,4 +1,4 @@
-name: JS API Package
+name: JS API
 on:
   workflow_dispatch: { }
   push:
@@ -49,7 +49,7 @@ jobs:
       - name: Run DBTests
         continue-on-error: true
         timeout-minutes: 15
-        id: test-ApiTests
+        id: test-DBTests
         run: |
           test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
           if [ -z "$test_result" ]; then
