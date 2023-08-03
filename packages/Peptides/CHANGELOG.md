@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.11.0 (WIP)
+## 1.11.0 (2023-08-03)
 
 This release introduces sequence identity functionality and some stability and usability improvements.
 
