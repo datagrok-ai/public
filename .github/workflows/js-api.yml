@@ -42,9 +42,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo "APITEST_RESULT<<EOF" >> $GITHUB_ENV
-            echo ${test_result} >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo APITEST_RESULT="${test_result}" >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
@@ -119,7 +117,7 @@ jobs:
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": ${{ env.SLACK_MESSAGE_BODY }}
+                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
                         }
                     }
                 ]
@@ -288,9 +286,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo "APITEST_RESULT<<EOF" >> $GITHUB_ENV
-            echo ${test_result} >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo APITEST_RESULT=${test_result} >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
