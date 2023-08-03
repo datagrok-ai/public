@@ -125,6 +125,7 @@ export namespace chem {
 
     molInput: HTMLInputElement = ui.element('input');
     host: HTMLDivElement = ui.box(null, 'grok-sketcher sketcher-host');
+    invalidMoleculeWarningDiv = ui.div('', 'invalid-molecule-warning');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -150,6 +151,7 @@ export namespace chem {
     resized = false;
     _sketcherTypeChanged = false;
     _autoResized = true;
+    _propagateInvalidMolecule = false;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -175,6 +177,10 @@ export namespace chem {
       return this._sketcherTypeChanged;
     }
 
+    set propagateInvalidMolecule(value: boolean) {
+      this._propagateInvalidMolecule = value;
+    }
+
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smiles) :
@@ -182,11 +188,13 @@ export namespace chem {
     }
 
     setSmiles(x: string): void {
-      this._smiles = x;
-      this._molfile = null;
-      this._smarts = null;
-      if (this.sketcher?.isInitialized)
-        this.sketcher!.smiles = x;
+      if (this.validateMolecule(x)) {
+        this._smiles = x;
+        this._molfile = null;
+        this._smarts = null;
+        if (this.sketcher?.isInitialized)
+          this.sketcher!.smiles = x;
+      }
     }
 
     getMolFile(): string {
@@ -202,12 +210,14 @@ export namespace chem {
     }
 
     setMolFile(x: string): void {
-      this.molFileUnits = x && x.includes('V3000') ? Notation.V3KMolBlock : Notation.MolBlock;
-      this._molfile = x;
-      this._smiles = null;
-      this._smarts = null;
-      if (this.sketcher?.isInitialized) {
-        this.molFileUnits === Notation.MolBlock ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
+      if (this.validateMolecule(x)) {
+        this.molFileUnits = x && x.includes('V3000') ? Notation.V3KMolBlock : Notation.MolBlock;
+        this._molfile = x;
+        this._smiles = null;
+        this._smarts = null;
+        if (this.sketcher?.isInitialized) {
+          this.molFileUnits === Notation.MolBlock ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
+        }
       }
     }
 
@@ -218,11 +228,13 @@ export namespace chem {
     }
 
     setSmarts(x: string): void {
-      this._smarts = x;
-      this._molfile = null;
-      this._smiles = null;
-      if (this.sketcher?.isInitialized)
-        this.sketcher!.smarts = x;
+      if (this.validateMolecule(x)) {
+        this._smarts = x;
+        this._molfile = null;
+        this._smiles = null;
+        if (this.sketcher?.isInitialized)
+          this.sketcher!.smarts = x;
+      }
     }
 
     get supportedExportFormats(): string[] {
@@ -261,7 +273,7 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
+      if (extractor != null && !isValidMolecule(x) && !isMolBlock(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
           .then((mol) => this.setMolecule(mol));
@@ -357,6 +369,20 @@ export namespace chem {
       canvas.onmouseenter = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseout = () => {clearButton.style.visibility = 'hidden';};
       return clearButton;
+    }
+
+    validateMolecule(molecule: string) {
+      const valid = isValidMolecule(molecule);
+      this.updateInvalidMoleculeWarning(valid);
+      if (valid || this._propagateInvalidMolecule)
+        return true;
+      return false;
+    }
+
+    updateInvalidMoleculeWarning(valid: boolean) {
+      ui.empty(this.invalidMoleculeWarningDiv);
+      if(!valid)
+        this.invalidMoleculeWarningDiv.append(ui.divText('Malformed molecule has been entered'));
     }
 
     createExternalModeSketcher(): HTMLElement {
@@ -482,7 +508,8 @@ export namespace chem {
 
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
-        this.host], {style: {height: '90%'}});
+        this.host,
+        this.invalidMoleculeWarningDiv], {style: {height: '90%'}});
 
       return this.inplaceSketcherDiv;
     }
@@ -511,13 +538,15 @@ export namespace chem {
         ui.setUpdateIndicator(this.host, false);
         this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
-          this.onChanged.next(null);
-          for (let callback of this.listeners)
-            callback();
-          if (this.syncCurrentObject) {
-            const molFile = this.getMolFile();
-            if (!Sketcher.isEmptyMolfile(molFile))
-              grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+          const molFile = this.getMolFile();
+          if (this.validateMolecule(molFile)) {
+            this.onChanged.next(null);
+            for (let callback of this.listeners)
+              callback();
+            if (this.syncCurrentObject) {
+              if (!Sketcher.isEmptyMolfile(molFile))
+                grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+            }
           }
         });
         if (molecule)
@@ -783,7 +812,7 @@ export namespace chem {
     return resultMolecule;
   }
 
-  export function checkSmiles(s: string): boolean {
+  export function isValidMolecule(s: string): boolean {
     const isSmilesFunc = Func.find({package: 'Chem', name: 'isSmiles'})[0];
     const funcCall: FuncCall = isSmilesFunc.prepare({s});
     funcCall.callSync();
