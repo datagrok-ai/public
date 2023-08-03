@@ -165,7 +165,7 @@ jobs:
           profiles='--profile datagrok --profile db --profile grok_connect'
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
-          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" -f "localhost.js-api.debug.docker-compose.yaml" ${profiles} up -d
+          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" -f "docker/localhost.js-api.debug.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
