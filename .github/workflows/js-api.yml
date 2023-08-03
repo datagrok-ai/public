@@ -92,7 +92,7 @@ jobs:
 
       - name: Send test report to Slack
         id: slack
-        if: ${{ steps.test-ApiTests.outcome == 'failure' && steps.test-DBTests.outcome == 'failure' }}
+        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
