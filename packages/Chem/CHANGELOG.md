@@ -1,5 +1,24 @@
 # Chem changelog
 
+## 1.6.21 (2023-08-02)
+
+*Dependency: datagarok-api >= 1.16.0*
+
+### Features
+
+* Calculate drug likeness, toxicity and alerts for whole table from widgets
+* Color Coding for toxicity
+* Scaffold Tree improvements:
+  * [#2154](https://github.com/datagrok-ai/public/issues/2154): Scaffold Tree: harmonization.
+
+### Bug Fixes
+
+* GROK-13586: _chemFindSimilar fails with 'Cannot read properties of null (reading 'rows')'
+* [#2135](https://github.com/datagrok-ai/public/issues/2135):
+  * The counts and controls are partially hidden
+  * When change the drawing of a scaffold, then selection (checkbox) of all other scaffolds gets reset (to unchecked)
+* [#2139](https://github.com/datagrok-ai/public/issues/2139): Scaffold tree stops working after adding an invalid structure
+
 ## 1.6.20 (2023-07-21)
 
 This release focuses on improvements and bug fixes.
@@ -25,7 +44,7 @@ This release focuses on improvements and bug fixes.
   * [#1730](https://github.com/datagrok-ai/public/issues/1730): Implemented Scaffold Tree integration to the **Filters Panel**.
   * [#1998](https://github.com/datagrok-ai/public/issues/1998): Now a scaffold tree shows a confirmation dialog before dropping all trees on the **Clear** icon click.
   * Added the **Allow Generate** property for the viewer in order to control autogeneration.
-         
+
 ### Bug Fixes
 
 * GROK-13105: Substructure search doesn't work after similarity search.

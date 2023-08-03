@@ -32,6 +32,7 @@ import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './packag
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {calculateIdentity, identityWidget} from './widgets/similarity';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -301,6 +302,7 @@ export class PeptidesModel {
     for (const [key, value] of newSettingsEntries) {
       this._settings[key as keyof type.PeptidesSettings] = value as any;
       switch (key) {
+      case 'activityColumnName':
       case 'scaling':
         updateVars.add('activity');
         updateVars.add('mutationCliffs');
@@ -372,6 +374,14 @@ export class PeptidesModel {
     const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     lstViewer?.createLogoSummaryTableGrid();
     lstViewer?.render();
+  }
+
+  get identityTemplate(): string {
+    return this.df.getTag(C.TAGS.IDENTITY_TEMPLATE) ?? '';
+  }
+
+  set identityTemplate(template: string) {
+    this.df.setTag(C.TAGS.IDENTITY_TEMPLATE, template);
   }
 
   updateMutationCliffs(notify: boolean = true): void {
@@ -455,6 +465,7 @@ export class PeptidesModel {
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
+    acc.addPane('Identity', () => identityWidget(trueModel).root);
 
     return acc;
   }
@@ -1102,7 +1113,33 @@ export class PeptidesModel {
     if (!this.isRibbonSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1') {
       //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
-      this.analysisView.setRibbonPanels([[settingsButton]], false);
+      let sequence = this.identityTemplate;
+      const sequencesCol = this.df.getCol(this.settings.sequenceColumnName!);
+      const calculateIdentityBtn = ui.button('Identity',
+        async () => calculateIdentity(sequence, this), 'Calculate identity');
+      const templateInput = ui.stringInput('Template', sequence, async () => {
+        if (isNaN(parseInt(templateInput.value))) {
+          if (templateInput.value.length === 0) {
+            calculateIdentityBtn.disabled = true;
+            this.identityTemplate = '';
+            return;
+          }
+          sequence = templateInput.value;
+        } else {
+          const rowIndex = parseInt(templateInput.value);
+          if (rowIndex < 0 || rowIndex >= this.df.rowCount) {
+            grok.shell.warning('Invalid row index');
+            calculateIdentityBtn.disabled = true;
+            return;
+          }
+          sequence = sequencesCol.get(rowIndex);
+        }
+        this.identityTemplate = templateInput.value;
+        calculateIdentityBtn.disabled = false;
+      }, {placeholder: 'Sequence or row index...'});
+      templateInput.setTooltip('Template sequence. Can be row index, peptide ID or sequence.');
+      templateInput.fireChanged();
+      this.analysisView.setRibbonPanels([[settingsButton], [templateInput.root, calculateIdentityBtn]], false);
       this.isRibbonSet = true;
       this.updateGrid();
     }

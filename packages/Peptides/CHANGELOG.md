@@ -1,5 +1,17 @@
 # Peptides changelog
 
+## 1.11.0 (2023-08-03)
+
+This release introduces sequence identity functionality and some stability and usability improvements.
+
+*Dependency: datgarok-api >= 1.16.1*
+
+### Features
+
+* Added sequence identity functionality.
+* UI/UX improvements.
+* Added activity column choice in settings.
+
 ## 1.10.4 (2023-08-01)
 
 This release focuses on improving package stability and usability.
@@ -8,12 +20,11 @@ This release focuses on improving package stability and usability.
 
 ### Features
 
-* UI/UX improvements
+* UI/UX improvements.
 
 ### Bug Fixes
 
 * Fixed Monomer-Position viewer not responding to selection correctly.
-
 
 ## 1.10.3 (2023-07-31)
 

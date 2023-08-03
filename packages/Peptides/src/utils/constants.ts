@@ -40,6 +40,7 @@ export enum TAGS {
   UUID = 'pep-uuid',
   MONOMER_POSITION_MODE = 'monomerPositionMode',
   MULTIPLE_VIEWS = 'isMultipleViews',
+  IDENTITY_TEMPLATE = 'identityTemplate',
 }
 
 export enum SEM_TYPES {

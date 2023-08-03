@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export const DELIMITER = ';'; // what is the need for this?
 export const NUCLEOTIDES = ['A', 'G', 'C', 'U', 'T'];
 
 export const TECHNOLOGIES = {

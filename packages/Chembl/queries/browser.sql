@@ -8,7 +8,6 @@ from
 limit 1000
 --end
 
-
 --name: _cbFindByMolregno
 --friendlyName: Misc | Find by Molregno
 --connection: Chembl

@@ -1,10 +1,18 @@
 # statistics changelog
 
+## 1.2.1 (2023-08-02)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added points log in fit
+  * Added droplines calculation for IC50
+  * Don't render confidence intervals by default
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Wrote TS docs for the code
+
 ## 1.2.0 (2023-07-21)
 
 This release focuses on adding new functionality and improving stability.
-
-*Dependency: datagarok-api >= 1.16.0*
 
 ### Features
 
@@ -25,10 +33,6 @@ This release focuses on adding new functionality and improving stability.
 * Fixed fit function creation.
 
 ## 1.1.8 (2023-05-21)
-
-This release focuses on adding new functionality.
-
-*Dependency: datagarok-api >= 1.13.11*
 
 ### Features
 

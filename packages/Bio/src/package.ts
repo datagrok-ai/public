@@ -246,7 +246,7 @@ export function webLogoViewer() {
 //tags: viewer, panel
 //meta.icon: files/icons/vdregions-viewer.svg
 //output: viewer result
-export function vdRegionViewer() {
+export function vdRegionsViewer() {
   return new VdRegionsViewer();
 }
 

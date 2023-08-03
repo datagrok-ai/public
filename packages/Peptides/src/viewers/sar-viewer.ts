@@ -136,8 +136,11 @@ export class MonomerPosition extends DG.JsViewer {
         $(switchHost).css('width', 'auto').css('align-self', 'center');
       }
       const tips: HTMLElement = ui.iconFA('question');
-      ui.tooltip.bind(tips,
-        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference'), ui.divText('Number - # of unique sequences that form mutation cliffs pairs')]));
+      ui.tooltip.bind(tips, () => ui.divV([
+        ui.divText('Color intensity - p-value'),
+        ui.divText('Circle size - Mean difference'),
+        ui.divText('Number - # of unique sequences that form mutation cliffs pairs'),
+      ]));
 
       $(tips).addClass('pep-help-icon');
 
@@ -200,7 +203,8 @@ export class MostPotentResidues extends DG.JsViewer {
 
     // Setting Monomer column renderer
     CR.setAARRenderer(monomerCol, this.model.alphabet);
-    this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model, false, undefined, undefined, false));
+    this.viewerGrid.onCellRender.subscribe(
+      (args: DG.GridCellRenderArgs) => renderCell(args, this.model, false, undefined, undefined, false));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -228,8 +232,11 @@ export class MostPotentResidues extends DG.JsViewer {
       $(this.root).empty();
       const switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
       const tips: HTMLElement = ui.iconFA('question');
-      ui.tooltip.bind(tips,
-        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference'), ui.divText('Number - # of unique sequences that form mutation cliffs pairs')]));
+      ui.tooltip.bind(tips, () => ui.divV([
+        ui.divText('Color intensity - p-value'),
+        ui.divText('Circle size - Mean difference'),
+        ui.divText('Number - # of unique sequences that form mutation cliffs pairs'),
+      ]));
 
       $(tips).addClass('pep-help-icon');
 
