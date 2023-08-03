@@ -202,7 +202,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo -e "SLACK_MESSAGE_BODY=*ApiTests results:*\n${test_result}\n" | sed -e '$ ! s/$/\\n/' -e 's/"/\"/g' | tr -d '\n' >> $GITHUB_ENV
+            echo -e "SLACK_MESSAGE_BODY=*ApiTests results:*\n${test_result}\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
@@ -232,7 +232,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}\n" | sed -e '$ ! s/$/\\n/' -e 's/"/\"/g' | tr -d '\n' >> $GITHUB_ENV
+            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/DBTests
@@ -263,6 +263,8 @@ jobs:
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
           context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+          echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\"/g' | tr -d '\n' >> $GITHUB_ENV
 
       - name: Send test report to Slack
         id: slack
