@@ -29,6 +29,8 @@ jobs:
       replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Run ApiTests
         continue-on-error: true
         timeout-minutes: 15
@@ -125,8 +127,6 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
 
-      - name: Checkout
-        uses: actions/checkout@v3
       - name: Check version was changed
         id: check-version
         working-directory: ./js-api
