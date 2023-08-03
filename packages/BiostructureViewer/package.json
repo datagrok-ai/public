@@ -35,7 +35,7 @@
     "d3-zoom": "^3.0.0",
     "datagrok-api": "^1.15.2",
     "dayjs": "^1.11.4",
-    "molstar": "^3.38.3",
+    "molstar": "^2.4.1",
     "react-select": "3.2.0",
     "rxjs": "^6.5.5",
     "uniqid": "latest",

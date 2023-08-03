@@ -117,16 +117,16 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
   drawOptions: types.DrawOptions = {}): { [monomer: string]: DG.Rect } {
   const pr = window.devicePixelRatio;
-  drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
+  drawOptions.symbolStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
   drawOptions.marginVertical ??= 5;
   drawOptions.marginHorizontal ??= 5;
-  drawOptions.colHeaderFontHeight ??= 13;
-  drawOptions.colHeaderStyle ??= `bold ${drawOptions.colHeaderFontHeight * pr}px Roboto, Roboto Local, sans-serif`;
+  drawOptions.textHeight ??= 13;
+  drawOptions.headerStyle ??= `bold ${drawOptions.textHeight * pr}px Roboto, Roboto Local, sans-serif`;
 
-  const totalSpaceBetweenLetters = (sortedOrder.length - 1) * drawOptions.upperLetterAscent;
-  const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters - 1.25 * drawOptions.colHeaderFontHeight) * pr;
+  const totalSpace = (sortedOrder.length - 1) * drawOptions.upperLetterAscent; // Total space between letters
+  const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpace - 1.25 * drawOptions.textHeight) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
   const barWidth = (bounds.width - leftShift * 2) * pr;
   const xStart = (bounds.x + leftShift) * pr;
@@ -153,7 +153,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
       ctx.fillStyle = cp.get(monomer) ?? cp.get('other');
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.font = drawOptions.fontStyle;
+      ctx.font = drawOptions.symbolStyle;
       // Hacks to scale uppercase characters to target rectangle
       const widthTransform = barWidth / mTm.width;
       const heightTransfrom = monomerHeight / drawOptions.upperLetterHeight;
@@ -168,8 +168,8 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   ctx.fillStyle = DG.Color.toHtml(DG.Color.black);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.font = drawOptions.colHeaderStyle;
-  ctx.fillText(position, (bounds.x + bounds.width / 2) * pr, (bounds.y + bounds.height - drawOptions.colHeaderFontHeight) * pr);
+  ctx.font = drawOptions.headerStyle;
+  ctx.fillText(position, (bounds.x + bounds.width / 2) * pr, (bounds.y + bounds.height - drawOptions.textHeight) * pr);
 
   return monomerBounds;
 }

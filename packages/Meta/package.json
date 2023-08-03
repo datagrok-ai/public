@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.6",
+  "version": "3.5.8",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2326,6 +2326,9 @@
         },
         "2.8.2": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.8.3": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2622,6 +2625,9 @@
           "datagrok-api": "^1.15.3"
         },
         "1.1.31": {
+          "datagrok-api": "^1.15.3"
+        },
+        "1.1.32": {
           "datagrok-api": "^1.15.3"
         }
       },

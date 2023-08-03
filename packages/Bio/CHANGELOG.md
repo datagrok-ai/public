@@ -1,5 +1,13 @@
 # Bio changelog
 
+## 2.9.0 (WIP)
+
+*Dependency: datagrok-api >= 1.13.3*
+
+### Bug fixes 
+
+* Fix vdRegionsViewer viewer package function name consistency 
+
 ## 2.8.2 (2023-08-01)
 
 This release focuses on improving the monomer cell renderer.
