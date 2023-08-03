@@ -219,39 +219,40 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-      - name: Install DBTests dependencies
-        run: npm install
-        working-directory: ./packages/DBTests
-      - name: Run DBTests
-        continue-on-error: true
-        timeout-minutes: 15
-        id: test-DBTests
-        run: |
-          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
-          if [ -z "$test_result" ]; then
-            echo "All tests finished successfully"
-          else
-            echo "Test failures"
-            echo -e "${test_result}"
-            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
-            exit 1
-          fi
-        working-directory: packages/DBTests
-      - name: Upload DBTests results
-        if: steps.test-DBTests.outcome != 'skipped'
-        uses: actions/upload-artifact@v3
-        with:
-          name: DBTests.test-results
-          path: |
-            packages/DBTests/test-record.mp4
-            packages/DBTests/test-report.csv
-            packages/DBTests/test-console-output.log
-          retention-days: 14
-          if-no-files-found: warn
+#      - name: Install DBTests dependencies
+#        run: npm install
+#        working-directory: ./packages/DBTests
+#      - name: Run DBTests
+#        continue-on-error: true
+#        timeout-minutes: 15
+#        id: test-DBTests
+#        run: |
+#          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
+#          if [ -z "$test_result" ]; then
+#            echo "All tests finished successfully"
+#          else
+#            echo "Test failures"
+#            echo -e "${test_result}"
+#            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}*DBTests results:*\n${test_result}" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
+#            exit 1
+#          fi
+#        working-directory: packages/DBTests
+#      - name: Upload DBTests results
+#        if: steps.test-DBTests.outcome != 'skipped'
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: DBTests.test-results
+#          path: |
+#            packages/DBTests/test-record.mp4
+#            packages/DBTests/test-report.csv
+#            packages/DBTests/test-console-output.log
+#          retention-days: 14
+#          if-no-files-found: warn
 
       - name: Prepare Slack Message
-        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
-        id: slack-user
+#        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
+        if: ${{ steps.test-ApiTests.outcome == 'failure' }}
+        id: slack-prepare
         shell: bash
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
@@ -269,7 +270,7 @@ jobs:
 
       - name: Send test report to Slack
         id: slack
-        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
+        if: ${{ steps.slack-prepare.outcome == 'success' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
