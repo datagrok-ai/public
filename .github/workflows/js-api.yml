@@ -29,7 +29,43 @@ jobs:
       replace_pack_dep: ${{ steps.packages.outputs.replace_pack_dep }}
       replace_lib_dep: ${{ steps.libraries.outputs.replace_lib_dep }}
     steps:
+      - name: Run ApiTests
+        continue-on-error: true
+        timeout-minutes: 15
+        id: test-ApiTests
+        run: |
+          test_result=$(echo -e "test1\ntest2\ntest3\ntest4")
+          if [ -z "$test_result" ]; then
+            echo "All tests finished successfully"
+          else
+            echo "Test failures"
+            echo -e "${test_result}"
+            echo "APITEST_RESULT<<EOF" >> $GITHUB_ENV
+            echo ${test_result} >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            exit 1
+          fi
+        working-directory: packages/ApiTests
+      - name: Run DBTests
+        continue-on-error: true
+        timeout-minutes: 15
+        id: test-ApiTests
+        run: |
+          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
+          if [ -z "$test_result" ]; then
+            echo "All tests finished successfully"
+          else
+            echo "Test failures"
+            echo -e "${test_result}"
+            echo "DBTEST_RESULT<<EOF" >> $GITHUB_ENV
+            echo ${test_result} >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            exit 1
+          fi
+        working-directory: packages/ApiTests
+
       - name: Prepare Slack Message
+        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
         id: slack-user
         shell: bash
         env:
@@ -38,28 +74,53 @@ jobs:
           channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+          
+          header="*GitHub <${{ github.event.workflow_run.html_url }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:*"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+          
+          if [[ "${{ steps.test-ApiTests.outcome }}" == "failure" ]]; then
+            echo SLACK_MESSAGE_BODY="$APITEST_RESULT\n" >> $GITHUB_ENV
+          fi
+
+          if [[ "${{ steps.test-DBTests.outcome }}" == "failure" ]]; then
+            echo SLACK_MESSAGE_BODY="$DBTEST_RESULT\n" >> $GITHUB_ENV
+          fi
 
       - name: Send test report to Slack
         id: slack
+        if: ${{ steps.test-ApiTests.outcome == 'failure' && steps.test-DBTests.outcome == 'failure' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
           payload: |
             {
-              "text": "Deployment started (In Progress)",
-              "attachments": [
-                {
-                  "pretext": "Deployment started",
-                  "color": "dbab09",
-                  "fields": [
+                "blocks": [
                     {
-                      "title": "Status",
-                      "short": true,
-                      "value": "In Progress"
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ${{ env.SLACK_MESSAGE_HEADER }}
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ${{ env.SLACK_MESSAGE_BODY }}
+                        }
                     }
-                  ]
-                }
-              ]
+                ]
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
@@ -166,7 +227,7 @@ jobs:
   build:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
-    needs: [version, common-check] 
+    needs: [ version, common-check ]
     if: needs.common-check.outputs.continue == 'true'
     env:
       HOST: GitHubAction
@@ -220,7 +281,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         id: test-ApiTests
-        run: npm run test -- --record --csv
+        run: |
+          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
+          if [ -z "$test_result" ]; then
+            echo "All tests finished successfully"
+          else
+            echo "Test failures"
+            echo -e "${test_result}"
+            echo "APITEST_RESULT<<EOF" >> $GITHUB_ENV
+            echo ${test_result} >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            exit 1
+          fi
         working-directory: packages/ApiTests
       - name: Upload ApiTests results
         if: steps.test-ApiTests.outcome != 'skipped'
@@ -241,7 +313,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         id: test-DBTests
-        run: npm run test -- --record --csv
+        run: |
+          test_result=$(npm run test -- --record --csv | grep 'Test result : ' || true)
+          if [ -z "$test_result" ]; then
+            echo "All tests finished successfully"
+          else
+            echo "Test failures"
+            echo -e "${test_result}"
+            echo "DBTEST_RESULT<<EOF" >> $GITHUB_ENV
+            echo ${test_result} >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            exit 1
+          fi
         working-directory: packages/DBTests
       - name: Upload DBTests results
         if: steps.test-DBTests.outcome != 'skipped'
@@ -256,6 +339,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Prepare Slack Message
+        if: ${{ steps.test-ApiTests.outcome == 'failure' || steps.test-DBTests.outcome == 'failure' }}
         id: slack-user
         shell: bash
         env:
@@ -264,23 +348,54 @@ jobs:
           channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+          
+          header="*GitHub <${{ github.event.workflow_run.html_url }}|${{ github.workflow }} ${{ github.run_number }}> failed tests:*"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+          
+          if [[ "${{ steps.test-ApiTests.outcome }}" == "failure" ]]; then
+            echo SLACK_MESSAGE_BODY="$APITEST_RESULT\n" >> $GITHUB_ENV
+          fi
 
-      - name: Send Slack test report
-        if: ${{ steps.test-ApiTests.outcome == 'failure' && steps.test-DBTests.outcome == 'failure' }}
-        run: |
-          SLACK_MESSAGE=$(echo "Workflow failed: ${{ github.event.workflow_run.html_url }}")
-          key="${{ github.actor }}"
-          value=$(echo '${{ secrets.SLACK_ID }}' | jq -r ".${key}")
-          curl -X POST -H 'Content-type: application/json' -H "Authorization: Bearer ${{ secrets.SLACKBOT_TOKEN }}" \
-          --data '{"text":"'"${SLACK_MESSAGE}"'", "channel":"'$value'"}' \
-          https://slack.com/api/chat.postMessage
+          if [[ "${{ steps.test-DBTests.outcome }}" == "failure" ]]; then
+            echo SLACK_MESSAGE_BODY="$DBTEST_RESULT\n" >> $GITHUB_ENV
+          fi
 
       - name: Send test report to Slack
         id: slack
+        if: ${{ steps.test-ApiTests.outcome == 'failure' && steps.test-DBTests.outcome == 'failure' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
-          slack-message: "GitHub build ${{ github.workflow }} test results: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ${{ env.SLACK_MESSAGE_HEADER }}
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ${{ env.SLACK_MESSAGE_BODY }}
+                        }
+                    }
+                ]
+            }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
 
