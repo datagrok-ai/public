@@ -42,9 +42,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo "APITEST_RESULT<<EOF" >> $GITHUB_ENV
-            echo -e "${test_result}" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo "SLACK_MESSAGE_BODY=$(echo ${test_result} | sed '$ ! s/$/\\n/' | tr -d '\n')\n" >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
@@ -59,9 +57,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo "DBTEST_RESULT<<EOF" >> $GITHUB_ENV
-            echo ${test_result} >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}$(echo ${test_result} | sed '$ ! s/$/\\n/' | tr -d '\n')\n" >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
@@ -81,16 +77,6 @@ jobs:
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
           context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
-          
-          echo "SLACK_MESSAGE_BODY<<EOF" >> $GITHUB_ENV
-          if [[ "${{ steps.test-ApiTests.outcome }}" == "failure" ]]; then
-            echo "${{ env.APITEST_RESULT }}\n" >> $GITHUB_ENV
-          fi
-
-          if [[ "${{ steps.test-DBTests.outcome }}" == "failure" ]]; then
-            echo "${{ env.DBTEST_RESULT }}\n" >> $GITHUB_ENV
-          fi
-            echo "EOF" >> $GITHUB_ENV
 
       - name: Send test report to Slack
         id: slack
