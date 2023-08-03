@@ -21,3 +21,24 @@ jobs:
           curl -X POST -H 'Content-type: application/json' -H "Authorization: Bearer ${{ secrets.SLACKBOT_TOKEN }}" \
           --data '{"text":"'"${SLACK_MESSAGE}"'", "channel":"'$value'"}' \
           https://slack.com/api/chat.postMessage
+
+      - name: Prepare Slack Message
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          header="*GitHub Workflow <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }} ${{ github.event.workflow_run.id }}> failed:*"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+#          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
+#          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Debug
+        run: |
+          echo ${{ env.SLACK_MESSAGE_HEADER }}
+          echo ${{ env.SLACK_MESSAGE_BODY }}
+          echo ${{ env.SLACK_MESSAGE_CONTEXT }}
