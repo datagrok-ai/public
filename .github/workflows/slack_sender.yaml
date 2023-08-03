@@ -14,6 +14,7 @@ jobs:
       - name: Check for failures and send slack notification
         if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' }}
         run: |
+          echo ${{ github.event.workflow_run }}
           SLACK_MESSAGE=$(echo "Workflow failed: ${{ github.event.workflow_run.html_url }}")
           key="${{ github.actor }}"
           value=$(echo '${{ secrets.SLACK_ID }}' | jq -r ".${key}")
