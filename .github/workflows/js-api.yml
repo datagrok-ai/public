@@ -177,12 +177,13 @@ jobs:
       - name: Wait for Datagrok to become available
         timeout-minutes: 5
         run: |
-          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
+          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/info/server" '"Http Server"'
           do
             sleep 1
             docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             echo -e "\nRetrying..."
           done
+          curl -s http://127.0.0.1:8080/api/info/server
           curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
         run: |
