@@ -214,12 +214,13 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
         run: |
-          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
+          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/info/server" '"Http Server"'
           do
             sleep 1
-            docker logs $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             echo -e "\nRetrying..."
           done
+          curl -s http://127.0.0.1:8080/api/info/server
           curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'true' }}
@@ -260,7 +261,7 @@ jobs:
           retries=5
           until grok publish ${HOST}; do
             exit=$?
-            docker logs --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then
@@ -274,7 +275,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
-        continue-on-error: ${{ contains(matrix.package, 'Tests') || contains(matrix.package, 'DrugBank') }}
+        continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
         run: npm run test -- --skip-build --skip-publish --record --csv
@@ -293,7 +294,7 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
-          docker logs $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+          docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
           echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
 
@@ -386,7 +387,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests') || matrix.package == 'DrugBank')
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')

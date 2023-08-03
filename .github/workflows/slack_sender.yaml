@@ -1,5 +1,6 @@
-name: Send slack message about action fail
+name: Report job failure
 on:
+  workflow_dispatch: { }
   workflow_run:
     workflows:
       - '*'
@@ -42,3 +43,40 @@ jobs:
           echo ${{ env.SLACK_MESSAGE_HEADER }}
           echo ${{ env.SLACK_MESSAGE_BODY }}
           echo ${{ env.SLACK_MESSAGE_CONTEXT }}
+
+#      - name: Send to Slack
+#        id: slack
+#        if: ${{ github.event.workflow_run.conclusion == 'failure' && github.actor != 'dependabot[bot]' }}
+#        uses: slackapi/slack-github-action@v1.24.0
+#        with:
+#          channel-id: ${{ env.SLACK_CHANNEL }}
+#          payload: |
+#            {
+#                "blocks": [
+#                    {
+#                        "type": "section",
+#                        "text": {
+#                            "type": "mrkdwn",
+#                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+#                        }
+#                    },
+#                    {
+#                        "type": "section",
+#                        "text": {
+#                            "type": "mrkdwn",
+#                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
+#                        }
+#                    },
+#                    {
+#                        "type": "context",
+#                        "elements": [
+#                            {
+#                                "type": "mrkdwn",
+#                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+#                            }
+#                        ]
+#                    }
+#                ]
+#            }
+#        env:
+#          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
