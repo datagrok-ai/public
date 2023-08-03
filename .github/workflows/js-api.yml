@@ -180,7 +180,7 @@ jobs:
           until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/admin/health" '"status":"Running"'
           do
             sleep 1
-            docker logs $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             echo -e "\nRetrying..."
           done
           curl -s http://127.0.0.1:8080/api/admin/health
