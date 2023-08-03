@@ -42,7 +42,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo "SLACK_MESSAGE_BODY=$(echo -e ${test_result} | sed '$ ! s/$/\\n/' | tr -d '\n')\n" >> $GITHUB_ENV
+            echo -e "SLACK_MESSAGE_BODY=${test_result}\n" | sed '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
@@ -57,7 +57,7 @@ jobs:
           else
             echo "Test failures"
             echo -e "${test_result}"
-            echo "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}$(echo -e ${test_result} | sed '$ ! s/$/\\n/' | tr -d '\n')\n" >> $GITHUB_ENV
+            echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}${test_result}\n" | sed '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
             exit 1
           fi
         working-directory: packages/ApiTests
