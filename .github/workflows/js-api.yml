@@ -1,4 +1,4 @@
-name: JS API
+name: JS API Package
 on:
   workflow_dispatch: { }
   push:
