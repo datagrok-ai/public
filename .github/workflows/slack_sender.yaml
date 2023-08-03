@@ -33,13 +33,13 @@ jobs:
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          echo ${{ github.event.workflow_run.jobs }}
-
-          workflow=$(curl -L \
+          jobs=$(curl -L \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            ${{ github.event.workflow_run.url }})
+            ${{ github.event.workflow_run.jobs_url }})
+
+          echo $jobs
 
           header="*GitHub Workflow <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }} ${{ github.event.workflow_run.run_number }}> failed:*"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
