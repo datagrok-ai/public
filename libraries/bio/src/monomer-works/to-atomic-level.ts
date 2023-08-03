@@ -12,7 +12,7 @@ import {getFormattedMonomerLib,
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, ITypedArray, MolGraph, MonomerMetadata, NumberWrapper, Point} from './types';
 import {monomerWorksConsts as C} from './consts';
-import {errorToConsole} from '@datagrok-libraries/utils';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {SplitterFunc, getSplitter} from '../utils/macromolecule';
 
 // todo: verify that all functions have return types
