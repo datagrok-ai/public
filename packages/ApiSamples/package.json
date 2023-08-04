@@ -5,6 +5,7 @@
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
   },
+  "servicePackage": true,
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.4",
     "cash-dom": "^8.1.1",

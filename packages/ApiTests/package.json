@@ -6,6 +6,7 @@
     "name": "Anna Muzychyna",
     "email": "amuzychyna@datagrok.ai"
   },
+  "servicePackage": true,
   "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
   "repository": {
     "type": "git",
