@@ -13,6 +13,7 @@ export interface PackageFile {
     url?: string,
     directory?: string,
   },
+  servicePackage?: boolean,
   dependencies?: {
     [dependency: string]: string,
   },

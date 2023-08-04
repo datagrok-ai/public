@@ -47,6 +47,8 @@ export function check(args: CheckArgs): boolean {
       'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
     const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
     const warnings: string[] = [];
+    const packageFilePath = path.join(packagePath, 'package.json');
+    const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
 
     const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
     const isWebpack = fs.existsSync(webpackConfigPath);
@@ -59,8 +61,9 @@ export function check(args: CheckArgs): boolean {
     }
 
     warnings.push(...checkFuncSignatures(packagePath, funcFiles));
-    warnings.push(...checkPackageFile(packagePath, { isWebpack, externals }));
-    warnings.push(...checkChangelog(packagePath));
+    warnings.push(...checkPackageFile(packagePath, json, {isWebpack, externals}));
+    if (!json.servicePackage)
+      warnings.push(...checkChangelog(packagePath, json));
 
     if (warnings.length) {
       console.log(`Checking package ${path.basename(packagePath)}...`);
@@ -266,11 +269,9 @@ const sharedLibExternals: {[lib: string]: {}} = {
   'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
 };
 
-export function checkPackageFile(packagePath: string, options?: { externals?:
+export function checkPackageFile(packagePath: string, json: PackageFile, options?: { externals?:
   { [key: string]: string } | null, isWebpack?: boolean }): string[] {
   const warnings: string[] = [];
-  const packageFilePath = path.join(packagePath, 'package.json');
-  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
   const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
     path.basename(path.dirname(path.dirname(packagePath))) === 'public';
 
@@ -293,6 +294,13 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
 
   if (json.author == null && isPublicPackage)
     warnings.push('File "package.json": add the "author" field.');
+
+  if (json.version.includes('beta') && isPublicPackage)
+    warnings.push('File "package.json": public package cannot be beta version.');
+
+  const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
+  if (dt && dt !== 'latest')
+    warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
 
   if (Array.isArray(json.sources) && json.sources.length > 0) {
     for (const source of json.sources) {
@@ -331,7 +339,7 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
   return warnings;
 }
 
-export function checkChangelog(packagePath: string) {
+export function checkChangelog(packagePath: string, json: PackageFile) {
   const warnings: string[] = [];
   let clf: string;
   try {
@@ -347,6 +355,11 @@ export function checkChangelog(packagePath: string) {
     if (!regex.test(h))
       warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)`);
   }
+  regex = /^## (\d+\.\d+\.\d+)/;
+  const v = h2[0].match(regex)?.[1];
+  if (v && v !== json.version)
+    warnings.push(`Latest package version (${json.version}) is not in CHANGELOG`);
+
   return warnings;
 }
 
