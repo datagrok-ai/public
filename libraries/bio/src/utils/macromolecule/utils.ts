@@ -235,7 +235,7 @@ export function getPaletteByType(paletteType: string): SeqPalette {
   }
 }
 
-export function pickUpSeqCol(df: DG.DataFrame): DG.Column | null {
+export function pickUpSeqCol(df: DG.DataFrame): DG.Column<string> | null {
   const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   let resCol: DG.Column | null = semTypeColList.find((col) => {
     const units = col.getTag(DG.TAGS.UNITS);
