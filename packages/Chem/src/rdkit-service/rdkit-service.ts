@@ -120,7 +120,6 @@ export class RdKitService {
                 moleculesPerProgress *= 1.5;
                 // increment *= 1.2;
                 //increment = Math.floor(increment);
-                console.log(processedMolecules);
                 pogressFunc(processedMolecules/dataLength);
               }
               workingIndexes[idx].increment = Math.floor(workingIndexes[idx].increment * 1.05);

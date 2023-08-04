@@ -192,13 +192,11 @@ export async function chemSimilaritySearch(
   fingerprint: Fingerprint,
 ) : Promise<DG.DataFrame | null> {
 
-  let targetFingerprint: BitArray | null = null;
-  try {
-    targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
-  } catch {
-    return null; //returning null in case target molecule is malformed
-  }
-  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, true, false);
+
+  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint, () => { return null; });
+  if (!targetFingerprint)
+    return null;  //returning null in case target molecule is malformed
+  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, false);
   malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];
 

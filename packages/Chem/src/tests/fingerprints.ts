@@ -18,11 +18,11 @@ category('fingerprints', async () => {
   });
 
   test('Pattern', async () => {
-    await chemGetFingerprints(molecules.col('smiles')!, Fingerprint.Pattern, true, false)!;
+    await chemGetFingerprints(molecules.col('smiles')!, Fingerprint.Pattern, false)!;
   });
 
   test('Morgan', async () => {
-    await chemGetFingerprints(molecules.col('smiles')!, Fingerprint.Morgan, true, false)!;
+    await chemGetFingerprints(molecules.col('smiles')!, Fingerprint.Morgan, false)!;
   });
 
 });

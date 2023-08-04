@@ -267,7 +267,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
   assure.notNull(molColumn, 'molColumn');
 
   try {
-    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan, true, false);
+    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan, false);
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ?

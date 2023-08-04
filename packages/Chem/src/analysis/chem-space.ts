@@ -14,7 +14,7 @@ import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, true, false);
+  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, false);
   const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) =>
     !el ? idx : null).filter((it) => it !== null);
   malformedDataWarning(fpColumn, spaceParams.seqCol);
