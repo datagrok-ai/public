@@ -1,5 +1,13 @@
 # bio changelog
 
+## 5.35.0 (WIP)
+
+Add WebLogo property showPositionLabels
+
+### Features
+
+* Add WebLogo property showPositionLabels
+
 ## 5.34.1 (2023-08-01)
 
 Patch release for a small fix for Macromolecule cell renderer
