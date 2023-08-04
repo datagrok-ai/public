@@ -6,6 +6,7 @@
 
 * Fixed table view tooltips.
 * Fixed selection with WebLogo in the column header.
+* Fixed formula for sequence identity score.
 
 ## 1.11.0 (2023-08-03)
 

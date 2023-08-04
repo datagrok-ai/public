@@ -56,15 +56,16 @@ export async function calculateIdentity(sourceSeq: string, model: PeptidesModel)
     categoryIndexesTemplate[posIdx] = posCol.categories.indexOf(template[posIdx] ?? '');
   }
 
-  const identityScoresCol: DG.Column<number> = model.df.columns.addNewInt(model.df.columns.getUnusedName('Identity'));
+  const identityScoresCol: DG.Column<number> = model.df.columns.addNewFloat(model.df.columns.getUnusedName('Identity'));
   const identityScoresData = identityScoresCol.getRawData();
   for (let rowIndex = 0; rowIndex < splitSeqDf.rowCount; ++rowIndex) {
     identityScoresData[rowIndex] = 0;
-    for (let posIdx = 0; posIdx < numPositions; ++posIdx) {
+    for (let posIdx = 0; posIdx < template.length; ++posIdx) {
       const categoryIndex = positionCols[posIdx][rowIndex];
-      if (categoryIndex !== categoryIndexesTemplate[posIdx])
+      if (categoryIndex === categoryIndexesTemplate[posIdx])
         ++identityScoresData[rowIndex];
     }
+    identityScoresData[rowIndex] /= template.length;
   }
   identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, sourceSeq);
   return identityScoresCol;
