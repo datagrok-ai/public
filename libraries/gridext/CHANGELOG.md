@@ -1,5 +1,12 @@
 # gridext changelog
 
+## 1.3.66 (2023-08-04)
+
+### Bug Fixes
+
+* Fixed scroll on pinned columns
+* [#2117](https://github.com/datagrok-ai/public/issues/2117): Pinned columns are not displayed properly with some row source options for the table (MouseOverRow, FilteredSelected, Selected, SelectedOrCurrent)
+
 ## 1.3.65 (2023-08-01)
 
 ### Bug Fixes

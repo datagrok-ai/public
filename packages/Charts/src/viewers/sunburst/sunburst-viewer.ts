@@ -67,6 +67,8 @@ export class SunburstViewer extends EChartViewer {
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
       const selectedSectors: string[] = [];
+      if (!params.data.path)
+        return;
       const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
       const pathString: string = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);

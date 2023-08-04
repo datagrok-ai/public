@@ -279,7 +279,7 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 ### Similarity and diversity search
 
 Datagrok offers two analytical tools to help you analyze a collection of molecules based on molecular similarity: _similarity search_ and _diversity search_ (**Menu Ribbon** > **Chem** > **Search**). Similarity search finds structures similar to the reference molecule, while diversity search shows N molecules of different chemical classes presented in the dataset. Both tools are based on fingerprints, with the customizable distance metric.
-One may also perform a sorting of the dataset by similarity based on the structure of interest (**Right click** > **Current value** > **Sort by similarity**), it will be pinned at the top of the dataset.;
+One may also perform a sorting of the dataset by similarity based on the structure of interest (**Right click** > **Current value** > **Sort by similarity**), it will be pinned at the top of the dataset.
 
 <details>
 <summary> Available distance metrics </summary>
