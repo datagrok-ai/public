@@ -1335,7 +1335,7 @@ export class RowList {
   /** Removes specified rows
    * @param {RowPredicate} rowPredicate */
   removeWhere(rowPredicate: RowPredicate): void {
-    api.grok_RowList_RemoveWhere(this.dart, rowPredicate);
+    api.grok_RowList_RemoveWhereIdx(this.dart, (i) => rowPredicate(this.get(i)));
   }
 
   /** Removes specified rows
