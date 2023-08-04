@@ -29,7 +29,7 @@ export async function init(): Promise<void> {
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table
-//input: column_list features
+//input: column_list features {type: numerical}
 //input: int components = 2
 //input: bool center = true
 //input: bool scale = true
@@ -40,13 +40,13 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return renamePCAcolumns(await computePCA(table, features, components, center, scale));
 }
 
-//top-menu: Tools | Data Science | Multivariate Analysis (PLS)...
+//top-menu: ML | Multivariate Analysis (PLS)...
 //name: Multivariate Analysis (PLS)
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //input: dataframe table
 //input: column names
-//input: column_list features
-//input: column predict
+//input: column_list features {type: numerical}
+//input: column predict {type: numerical}
 //input: int components = 3
 export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList, 
   predict: DG.Column, components: number): Promise<void> 
