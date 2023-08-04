@@ -110,6 +110,7 @@ export class ModelHandler extends DG.ObjectHandler {
       const readmeText = await grok.dapi.files.readAsText(path);
 
       grok.shell.windows.help.showHelp(ui.markdown(readmeText));
+      grok.shell.windows.showHelp = true;
     }
   }
 
