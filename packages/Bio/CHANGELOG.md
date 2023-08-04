@@ -4,6 +4,10 @@
 
 *Dependency: datagrok-api >= 1.13.3*
 
+### Features
+
+* Add WebLogo property showPositionLabels
+
 ### Bug fixes 
 
 * Fix vdRegionsViewer viewer package function name consistency 
