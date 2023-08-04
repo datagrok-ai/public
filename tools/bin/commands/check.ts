@@ -5,74 +5,77 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../utils/interfaces';
 import { PackageFile } from '../utils/interfaces';
+import * as testUtils from '../utils/test-utils';
 
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
   if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
     return false;
-
   const curDir = process.cwd();
 
-  if (args.recursive) {
-    function runChecksRec(dir: string) {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        const filepath = path.join(dir, file);
-        const stats = fs.statSync(filepath);
-        if (stats.isDirectory()) {
-          if (utils.isPackageDir(filepath))
-            runChecks(filepath);
-          else {
-            if (file !== 'node_modules' && !file.startsWith('.'))
-              runChecksRec(path.join(dir, file));
-          }
-        }
-      }
-    }
-    runChecksRec(curDir);
-  } else {
+  if (args.recursive)
+    return runChecksRec(curDir);
+  else {
     if (!utils.isPackageDir(curDir)) {
       color.error('File `package.json` not found. Run the command from the package directory');
       return false;
     }
+    return runChecks(curDir);
+  }
+}
 
-    runChecks(curDir);
+function runChecks(packagePath: string): boolean {
+  const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
+  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
+  const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
+    'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
+  const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  const warnings: string[] = [];
+  const packageFilePath = path.join(packagePath, 'package.json');
+  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
+
+  const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
+  const isWebpack = fs.existsSync(webpackConfigPath);
+  let externals: { [key: string]: string } | null = null;
+  if (isWebpack) {
+    const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
+    externals = extractExternals(content);
+    if (externals)
+      warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
 
-  function runChecks(packagePath: string) {
-    const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
-    const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
-    const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
-      'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
-    const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
-    const warnings: string[] = [];
-    const packageFilePath = path.join(packagePath, 'package.json');
-    const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
+  warnings.push(...checkFuncSignatures(packagePath, funcFiles));
+  warnings.push(...checkPackageFile(packagePath, json, {isWebpack, externals}));
+  if (!json.servicePackage)
+    warnings.push(...checkChangelog(packagePath, json));
 
-    const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
-    const isWebpack = fs.existsSync(webpackConfigPath);
-    let externals: { [key: string]: string } | null = null;
-    if (isWebpack) {
-      const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
-      externals = extractExternals(content);
-      if (externals)
-        warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
-    }
-
-    warnings.push(...checkFuncSignatures(packagePath, funcFiles));
-    warnings.push(...checkPackageFile(packagePath, json, {isWebpack, externals}));
-    if (!json.servicePackage)
-      warnings.push(...checkChangelog(packagePath, json));
-
-    if (warnings.length) {
-      console.log(`Checking package ${path.basename(packagePath)}...`);
-      warn(warnings);
-    } else
-      console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
+  if (warnings.length) {
+    console.log(`Checking package ${path.basename(packagePath)}...`);
+    warn(warnings);
+    if (json.version.startsWith('0') || (warnings.length === 1 && warnings[0].startsWith('Latest package version')))
+      return true
+    testUtils.exitWithCode(1);
   }
-
+  console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
+}
+
+function runChecksRec(dir: string): boolean {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filepath = path.join(dir, file);
+    const stats = fs.statSync(filepath);
+    if (stats.isDirectory()) {
+      if (utils.isPackageDir(filepath))
+        return runChecks(filepath);
+      else {
+        if (file !== 'node_modules' && !file.startsWith('.'))
+          runChecksRec(path.join(dir, file));
+      }
+    }
+  }
+  return false;
 }
 
 export function extractExternals(config: string): {}|null {

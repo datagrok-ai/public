@@ -7,7 +7,7 @@ import os from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
-import { checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile } from './check';
+import { checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile, checkChangelog } from './check';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -76,6 +76,8 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   console.log('Starting package checks...');
   const checkStart = Date.now();
   const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
+  const packageFilePath = path.join(curDir, 'package.json');
+  const json = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
 
   if (isWebpack) {
     const webpackConfigPath = path.join(curDir, 'webpack.config.js');
@@ -90,8 +92,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
   const funcWarnings = checkFuncSignatures(curDir, funcFiles);
   contentValidationLog += funcWarnings.join('\n') + (funcWarnings.length ? '\n' : '');
-  const packageWarnings = checkPackageFile(curDir);
+  const packageWarnings = checkPackageFile(curDir, json);
   contentValidationLog += packageWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
+  const changelogWarnings = checkChangelog(curDir, json);
+  contentValidationLog += changelogWarnings.join('\n') + (packageWarnings.length ? '\n' : '');
   console.log(`Checks finished in ${Date.now() - checkStart} ms`);
 
   files.forEach((file: any) => {
