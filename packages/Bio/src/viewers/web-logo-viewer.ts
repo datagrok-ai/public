@@ -157,36 +157,6 @@ export class PositionInfo {
     positionWidthWithMargin: number, positionWidth: number, r: number, axisHeight: number
   ): void {
     const dpr = window.devicePixelRatio;
-    // const rowCount = this.positions[jPos].rowCount;
-    // const alphabetSize = this.getAlphabetSize();
-    // if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
-    //   grok.shell.error('WebLogo: alphabet is undefined.');
-    //
-    // const alphabetSizeLog = Math.log2(alphabetSize);
-    // const maxHeight = (this.positionHeight == PositionHeight.Entropy) ?
-    //   (absoluteMaxHeight * (alphabetSizeLog - (this.positions[jPos].sumForHeightCalc)) / alphabetSizeLog) :
-    //   absoluteMaxHeight;
-    //
-    // let y: number = this.axisHeight * r + (absoluteMaxHeight - maxHeight - 1);
-    //
-    // const entries = Object.entries(freq).sort((a, b) => {
-    //   if (a[0] !== '-' && b[0] !== '-')
-    //     return b[1].count - a[1].count;
-    //   else if (a[0] === '-' && b[0] === '-')
-    //     return 0;
-    //   else if (a[0] === '-')
-    //     return -1;
-    //   else /* (b[0] === '-') */
-    //     return +1;
-    // });
-    // for (const entry of entries) {
-    //   const pmInfo: PositionMonomerInfo = entry[1];
-    //   // const m: string = entry[0];
-    //   const h: number = maxHeight * pmInfo.count / rowCount;
-    //
-    //   pmInfo.bounds = new DG.Rect(jPos * this.positionWidthWithMargin, y, this._positionWidth, h);
-    //   y += h;
-    // }
 
     const maxHeight = (heightMode == PositionHeight.Entropy) ?
       (absoluteMaxHeight * (alphabetSizeLog - (this.sumForHeightCalc)) / alphabetSizeLog) :
@@ -271,6 +241,7 @@ export enum PROPS {
   fitArea = 'fitArea',
   minHeight = 'minHeight',
   maxHeight = 'maxHeight',
+  showPositionLabels = 'showPositionLabels',
   positionMarginState = 'positionMarginState',
   positionMargin = 'positionMargin',
 
@@ -285,6 +256,8 @@ enum RecalcLevel {
   Layout = 1,
   Freqs = 2,
 }
+
+const POSITION_LABELS_HEIGHT: number = 12;
 
 export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public static residuesSet = 'nucleotides';
@@ -304,8 +277,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private canvas: HTMLCanvasElement;
   private slider: DG.RangeSlider;
   private readonly textBaseline: CanvasTextBaseline;
-
-  private axisHeight: number = 12;
 
   private seqCol: DG.Column<string> | null = null;
   // private maxLength: number = 100;
@@ -328,6 +299,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   public minHeight: number;
   public backgroundColor: number = 0xFFFFFFFF;
   public maxHeight: number;
+  public showPositionLabels: boolean;
   public positionMarginState: PositionMarginStates;
   public positionMargin: number = 0;
   public startPositionName: string | null;
@@ -452,6 +424,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       {category: PROPS_CATS.LAYOUT/*, editor: 'slider', min: 25, max: 250, postfix: 'px'*/});
     this.maxHeight = this.float(PROPS.maxHeight, defaults.maxHeight,
       {category: PROPS_CATS.LAYOUT/*, editor: 'slider', min: 25, max: 500, postfix: 'px'*/});
+    this.showPositionLabels = this.bool(PROPS.showPositionLabels, defaults.showPositionLabels,
+      {category: PROPS_CATS.LAYOUT});
     this.positionMarginState = this.string(PROPS.positionMarginState, defaults.positionMarginState,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(PositionMarginStates)}) as PositionMarginStates;
     let defaultValueForPositionMargin = 0;
@@ -713,6 +687,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       case PROPS.positionMargin:
         this.updateSlider();
         break;
+      case PROPS.showPositionLabels:
       case PROPS.shrinkEmptyTail:
       case PROPS.skipEmptyPositions:
         this.updatePositions();
@@ -722,6 +697,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     switch (property.name) {
       case PROPS.fixWidth:
       case PROPS.fitArea:
+      case PROPS.showPositionLabels:
       case PROPS.positionWidth:
       case PROPS.positionMargin:
         this.render(RecalcLevel.Layout, 'onPropertyChanged');
@@ -842,12 +818,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     };
 
     /** Calculate layout of monomers on screen (canvas) based on freqs, required to handle mouse events */
-    const calculateLayoutInt = (dpr: number): void => {
+    const calculateLayoutInt = (dpr: number, positionLabelsHeight: number): void => {
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), start `);
 
       const length = this.positions.length;
       this.calcSize();
-      const absoluteMaxHeight = this.canvas.height - this.axisHeight * dpr;
+      const absoluteMaxHeight = this.canvas.height - positionLabelsHeight * dpr;
       const alphabetSize = this.getAlphabetSize();
       if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
         grok.shell.error('WebLogo: alphabet is undefined.');
@@ -855,7 +831,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       for (let jPos = 0; jPos < length; jPos++) {
         this.positions[jPos].calcScreen(jPos, absoluteMaxHeight, this.positionHeight as PositionHeight,
-          alphabetSizeLog, this.positionWidthWithMargin, this._positionWidth, dpr, this.axisHeight);
+          alphabetSizeLog, this.positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
       }
     };
 
@@ -884,8 +860,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.slider.root.style.width = `${this.host.clientWidth}px`;
 
       const dpr: number = window.devicePixelRatio;
+      /** 0 is for no position labels */
+      const positionLabelsHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT : 0;
       if (recalcLevel >= RecalcLevel.Freqs) calculateFreqsInt();
-      if (recalcLevel >= RecalcLevel.Layout) calculateLayoutInt(window.devicePixelRatio);
+      if (recalcLevel >= RecalcLevel.Layout) calculateLayoutInt(window.devicePixelRatio, positionLabelsHeight);
 
       const length: number = this.Length;
       g.resetTransform();
@@ -907,14 +885,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const hScale = posNameMaxWidth < (this._positionWidth * dpr - 2) ? 1 :
         (this._positionWidth * dpr - 2) / posNameMaxWidth;
 
-      for (let jPos = this.firstVisibleIndex; jPos < lastVisibleIndex; jPos++) {
-        const pos: PositionInfo = this.positions[jPos];
-        g.resetTransform();
-        g.setTransform(
-          hScale, 0, 0, 1,
-          jPos * this.positionWidthWithMargin * dpr + this._positionWidth * dpr / 2 -
-          this.positionWidthWithMargin * firstVisibleIndex, 0);
-        g.fillText(pos.label, 0, 0);
+      if (positionLabelsHeight > 0) {
+        renderPositionLabels(g, dpr, hScale, this.positionWidthWithMargin, this._positionWidth,
+          this.positions, this.firstVisibleIndex, lastVisibleIndex);
       }
       //#endregion Plot positionNames
       const fontStyle = '16px Roboto, Roboto Local, sans-serif';
@@ -974,7 +947,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this._positionWidth = this.positionWidth * scale;
     }
 
-    width = this.Length * this.positionWidthWithMargin / dpr;
+    width = this.Length * this.positionWidthWithMargin;
 
     this.canvas.width = this.root.clientWidth * dpr;
     this.canvas.style.width = `${this.root.clientWidth}px`;
@@ -1015,13 +988,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // horizontal alignment
       let hostLeftMargin = 0;
       switch (this.horizontalAlignment) {
-        case 'left':
+        case HorizontalAlignments.LEFT:
           hostLeftMargin = 0;
           break;
-        case 'center':
+        case HorizontalAlignments.CENTER:
           hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
           break;
-        case 'right':
+        case HorizontalAlignments.RIGHT:
           hostLeftMargin = Math.max(0, this.root.clientWidth - width);
           break;
       }
@@ -1167,6 +1140,20 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
+  }
+}
+
+function renderPositionLabels(g: CanvasRenderingContext2D,
+  dpr: number, hScale: number, positionWidthWithMargin: number, positionWidth: number,
+  positions: PositionInfo[], firstVisibleIndex: number, lastVisibleIndex: number): void {
+  for (let jPos = firstVisibleIndex; jPos < lastVisibleIndex; jPos++) {
+    const pos: PositionInfo = positions[jPos];
+    g.resetTransform();
+    g.setTransform(
+      hScale, 0, 0, 1,
+      jPos * positionWidthWithMargin * dpr + positionWidth * dpr / 2 -
+      positionWidthWithMargin * firstVisibleIndex, 0);
+    g.fillText(pos.label, 0, 1);
   }
 }
 
