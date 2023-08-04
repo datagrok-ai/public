@@ -129,6 +129,16 @@ If an error occurred for the action triggered by the commit, it is possible to t
 3. Check that the GitHub Actions workflow finished successfully
 4. The results are available in the actions output
 
+### Troubleshooting failed tests in GitHub Actions
+
+When a GitHub Action completes, you can access the "Artifacts" section on its main page ("Summary"), which contains a zip archive with the results of the tests for that specific action. This archive typically includes three important files that can help you diagnose and resolve the problems:
+
+1. `test-console-output.log`: This file contains the console log records generated during   the test execution. The console output often includes valuable information such as error messages, stack traces, and debugging statements. It's a good starting point for understanding what went wrong during the test run.
+
+2. `test-record.mp4`: This file is a video recording of the test execution. The video recording can be immensely helpful in scenarios where tests are failing intermittently or in cases where the issue is related to the user interface or visual components of your application. Watching the test execution can provide insights into the behavior of the application and identify potential areas of concern.
+
+3. `test-report.csv`: This file is a tabular representation of the test results. It contains information about which tests passed, which failed, and also additional details such as test duration or errors. The test report can give you a quick overview of the overall test status and pinpoint specific failing tests.
+
 ## Test manager
 
 'Test manager' is a tool within the Datagrok platform that provides a convenient interface to select and run package
