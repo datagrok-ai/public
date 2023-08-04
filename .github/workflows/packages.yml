@@ -161,7 +161,7 @@ jobs:
           fi
           export DATAGROK_VERSION
           export GROK_COMPUTE_VERSION=1.5.1
-          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet "datagrok/datagrok:$DATAGROK_VERSION")
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
@@ -301,7 +301,7 @@ jobs:
       - name: Cleanup datagrok stand
         if: steps.datagrok-image.outcome == 'success'
         run: |
-          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
+          docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
           docker system prune -af --volumes
 
       - name: Check dockerfiles directory existence
