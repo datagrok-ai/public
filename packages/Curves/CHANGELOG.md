@@ -1,5 +1,12 @@
 # Curves changelog
 
+## 1.2.2 (2023-08-04)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Changed minBound and maxBound to min and max in parameterBounds
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Updated the documentation about parameterBounds
+
 ## 1.2.1 (2023-08-02)
 
 ### Features
