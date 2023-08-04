@@ -76,11 +76,17 @@ jobs:
     permissions:
       pull-requests: read
     steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          fi
       - name: Checkout Code
-        if: github.event_name != 'pull_request'
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2
+          fetch-depth: ${{ env.FETCH_DEPTH }}
       - uses: tj-actions/changed-files@v37
         id: changed-files
         with:
