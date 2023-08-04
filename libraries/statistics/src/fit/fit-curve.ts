@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable no-multi-spaces */
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/src/entities';
@@ -28,8 +29,8 @@ export enum FitErrorModel {
 }
 
 export type FitParamBounds = {
-  minBound?: number;
-  maxBound?: number;
+  min?: number;
+  max?: number;
 };
 
 /** Fit function description. Applies to custom user fit functions.
@@ -166,7 +167,7 @@ export interface IFitSeriesOptions {
   name?: string;                        // controls the series name
   fitFunction?: string | IFitFunctionDescription; // controls the series fit function
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
-  parameterBounds?: FitParamBounds[];   // defines the series parameter bounds during the fit
+  parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
@@ -422,16 +423,16 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
       break;
 
     for (let i = 0; i < parameterBounds.length; i++) {
-      if (parameterBounds[i]?.maxBound !== undefined && paramValues[i] > parameterBounds[i].maxBound!) {
+      if (parameterBounds[i]?.max !== undefined && paramValues[i] > parameterBounds[i].max!) {
         overLimits = true;
         fixed.push(i);
-        paramValues[i] = parameterBounds[i].maxBound!;
+        paramValues[i] = parameterBounds[i].max!;
         break;
       }
-      if (parameterBounds[i]?.minBound !== undefined && paramValues[i] < parameterBounds[i].minBound!) {
+      if (parameterBounds[i]?.min !== undefined && paramValues[i] < parameterBounds[i].min!) {
         overLimits = true;
         fixed.push(i);
-        paramValues[i] = parameterBounds[i].minBound!;
+        paramValues[i] = parameterBounds[i].min!;
         break;
       }
     }
