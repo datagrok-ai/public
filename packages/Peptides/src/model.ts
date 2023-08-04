@@ -20,7 +20,7 @@ import * as uuid from 'uuid';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram} from './utils/misc';
+import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram, getTemplate} from './utils/misc';
 import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
@@ -32,7 +32,7 @@ import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
-import {calculateIdentity, identityWidget} from './widgets/similarity';
+import {calculateIdentity} from './widgets/similarity';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -465,7 +465,6 @@ export class PeptidesModel {
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
-    acc.addPane('Identity', () => identityWidget(trueModel).root);
 
     return acc;
   }
@@ -532,15 +531,15 @@ export class PeptidesModel {
     const cols = this.df.columns;
     const positionColumns = this.splitSeqDf.columns.names();
     for (const colName of positionColumns) {
-      const col = this.df.col(colName);
+      let col = this.df.col(colName);
       const newCol = this.splitSeqDf.getCol(colName);
-      if (col === null)
-        cols.add(newCol);
-      else {
+      if (col !== null)
         cols.remove(colName);
-        cols.add(newCol);
-      }
-      CR.setAARRenderer(newCol, this.alphabet);
+
+      const newColCat = newCol.categories;
+      const newColData = newCol.getRawData();
+      col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
+      CR.setAARRenderer(col, this.alphabet);
     }
     this.df.name = name;
   }
@@ -876,11 +875,11 @@ export class PeptidesModel {
       tooltipElements.push(ui.div(monomerName));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
-    } else if (aar !== '') {
+    } else if (aar !== '')
       tooltipElements.push(ui.div(aar));
-    } else {
+    else
       return true;
-    }
+
 
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
 
@@ -1119,27 +1118,49 @@ export class PeptidesModel {
       //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
       let sequence = this.identityTemplate;
+      let template: string[];
       const sequencesCol = this.df.getCol(this.settings.sequenceColumnName!);
       const calculateIdentityBtn = ui.button('Identity',
-        async () => calculateIdentity(sequence, this), 'Calculate identity');
+        async () => {
+          try {
+            template ??= await getTemplate(sequence);
+          } catch (e) {
+            grok.shell.warning('Couldn\'t recognize sequence format.');
+            grok.log.warning(e as string);
+            calculateIdentityBtn.disabled = true;
+            return;
+          }
+          const identityScoresCol = calculateIdentity(template, this.splitSeqDf);
+          identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, sequence);
+          identityScoresCol.name = this.df.columns.getUnusedName(identityScoresCol.name);
+          this.df.columns.add(identityScoresCol);
+        }, 'Calculate identity');
       const templateInput = ui.stringInput('Template', sequence, async () => {
+        this.identityTemplate = templateInput.value;
         if (isNaN(parseInt(templateInput.value))) {
           if (templateInput.value.length === 0) {
             calculateIdentityBtn.disabled = true;
-            this.identityTemplate = '';
             return;
           }
           sequence = templateInput.value;
         } else {
-          const rowIndex = parseInt(templateInput.value);
-          if (rowIndex < 0 || rowIndex >= this.df.rowCount) {
+          const rowIndex = parseInt(templateInput.value) - 1;
+          const selectedIndexes = this.df.filter.getSelectedIndexes();
+          if (rowIndex < 0 || rowIndex >= selectedIndexes.length) {
             grok.shell.warning('Invalid row index');
             calculateIdentityBtn.disabled = true;
             return;
           }
-          sequence = sequencesCol.get(rowIndex);
+          sequence = sequencesCol.get(selectedIndexes[rowIndex]);
         }
-        this.identityTemplate = templateInput.value;
+        try {
+          template = await getTemplate(sequence);
+        } catch (e) {
+          grok.shell.warning('Couldn\'t recognize sequence format.');
+          grok.log.warning(e as string);
+          calculateIdentityBtn.disabled = true;
+          return;
+        }
         calculateIdentityBtn.disabled = false;
       }, {placeholder: 'Sequence or row index...'});
       templateInput.setTooltip('Template sequence. Can be row index, peptide ID or sequence.');
