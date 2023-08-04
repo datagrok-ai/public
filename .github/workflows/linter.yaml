@@ -14,7 +14,7 @@ jobs:
   super-linter:
     name: Super Lint Code Base
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code
@@ -70,7 +70,7 @@ jobs:
   markdown:
     name: MarkdownLint
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code
@@ -93,7 +93,7 @@ jobs:
   commit:
     name: Lint Commit message
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code

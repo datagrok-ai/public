@@ -22,7 +22,7 @@ jobs:
 
   matrix:
     name: Check changes
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: common-check
     if: needs.common-check.outputs.continue == 'true'
     outputs:
@@ -110,7 +110,7 @@ jobs:
       - matrix
       - common-check
     if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       HOST: GitHubAction
     strategy:

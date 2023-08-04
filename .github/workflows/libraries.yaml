@@ -23,7 +23,7 @@ jobs:
   metadata:
     name: Check changes
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     outputs:
       publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}
@@ -107,7 +107,7 @@ jobs:
     name: Build and publish to npm
     needs: [ metadata, common-check ]
     if: needs.metadata.outputs.continue == 'yes' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
