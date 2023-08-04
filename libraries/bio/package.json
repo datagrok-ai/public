@@ -41,6 +41,6 @@
     "build": "git clean -f -X -d ./src && tsc",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   }
 }
