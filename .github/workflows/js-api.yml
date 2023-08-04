@@ -17,7 +17,7 @@ jobs:
   version:
     name: Check version
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
@@ -130,7 +130,7 @@ jobs:
 
   build:
     name: Build and publish to npm
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [ version, common-check ]
     if: needs.common-check.outputs.continue == 'true'
     env:
@@ -347,7 +347,7 @@ jobs:
 
   libraries:
     name: Check libraries
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.version.outputs.replace_lib_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build
@@ -426,7 +426,7 @@ jobs:
 
   packages:
     name: Check packages
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.version.outputs.replace_pack_dep == 'true' && needs.common-check.outputs.continue == 'true'
     needs:
       - build

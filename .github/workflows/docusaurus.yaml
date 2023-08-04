@@ -24,7 +24,7 @@ jobs:
   lint:
     name: Lint
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
@@ -60,7 +60,7 @@ jobs:
     name: Convert to HTML
     needs: [lint, common-check]
     if: needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -134,7 +134,7 @@ jobs:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
     if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: Help
     steps:
       - name: Download artifact
@@ -183,7 +183,7 @@ jobs:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
     if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3

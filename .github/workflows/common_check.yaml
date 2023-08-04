@@ -14,7 +14,7 @@ on:
 jobs:
   check-merge-commit:
     name: Check merge commit
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       continue: ${{ steps.merge-details.outputs.continue_action }}
     steps:
