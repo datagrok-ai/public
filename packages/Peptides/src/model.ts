@@ -12,6 +12,7 @@ import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 import wu from 'wu';
 import * as rxjs from 'rxjs';
@@ -31,7 +32,6 @@ import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {calculateIdentity, identityWidget} from './widgets/similarity';
 
 export type SummaryStats = {
@@ -787,9 +787,9 @@ export class PeptidesModel {
     const position = barPart.position;
     if (ev.type === 'click') {
       if (!ev.shiftKey)
-        this.initMutationCliffsSelection({cleanInit: true, notify: false});
+        this.initInvariantMapSelection({cleanInit: true, notify: false});
 
-      this.modifyMonomerPositionSelection(monomer, position, false);
+      this.modifyMonomerPositionSelection(monomer, position, true);
     } else {
       const bar = `${position} = ${monomer}`;
       if (this.cachedWebLogoTooltip.bar === bar)
@@ -855,10 +855,12 @@ export class PeptidesModel {
 
   setTooltips(): void {
     this.analysisView.grid.onCellTooltip((cell, x, y) => {
-      const col = cell.tableColumn;
-      const cellValue = cell.cell.value;
-      if (cellValue && col && col.semType === C.SEM_TYPES.MONOMER)
-        this.showMonomerTooltip(cellValue, x, y);
+      if (cell.isColHeader && cell.tableColumn!.semType === C.SEM_TYPES.MONOMER)
+        return true;
+      if (!(cell.isTableCell && cell.tableColumn!.semType === C.SEM_TYPES.MONOMER))
+        return false;
+
+      this.showMonomerTooltip(cell.cell.value, x, y);
       return true;
     });
   }
@@ -874,12 +876,15 @@ export class PeptidesModel {
       tooltipElements.push(ui.div(monomerName));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
-    } else
+    } else if (aar !== '') {
       tooltipElements.push(ui.div(aar));
+    } else {
+      return true;
+    }
 
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
 
-    return mol !== null;
+    return true;
   }
 
   //TODO: move out to viewer code

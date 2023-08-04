@@ -1,10 +1,15 @@
 # Peptides changelog
 
+## 1.11.1 (WIP)
+
+### Bug Fixes
+
+* Fixed table view tooltips.
+* Fixed selection with WebLogo in the column header.
+
 ## 1.11.0 (2023-08-03)
 
 This release introduces sequence identity functionality and some stability and usability improvements.
-
-*Dependency: datgarok-api >= 1.16.1*
 
 ### Features
 
@@ -13,10 +18,6 @@ This release introduces sequence identity functionality and some stability and u
 * Added activity column choice in settings.
 
 ## 1.10.4 (2023-08-01)
-
-This release focuses on improving package stability and usability.
-
-*Dependency: datgarok-api >= 1.15.4*
 
 ### Features
 
@@ -28,10 +29,6 @@ This release focuses on improving package stability and usability.
 
 ## 1.10.3 (2023-07-31)
 
-This release focuses on improving package stability and usability.
-
-*Dependency: datgarok-api >= 1.15.4*
-
 ### Bug Fixes
 
 * Fixed number of sequences had wrong values sometimes.
@@ -39,19 +36,11 @@ This release focuses on improving package stability and usability.
 
 ## 1.10.2 (2023-07-24)
 
-This release focuses on improving the Mutation Cliffs pairs panel.
-
-*Dependency: datgarok-api >= 1.15.4*
-
 ### Bug Fixes
 
 * Made invisible Mutation Cliffs pairs columns, containing sequence indexes in the original table view.
 
 ## 1.10.1 (2023-07-24)
-
-This release focuses on improving analysis stability and usability.
-
-*Dependency: datgarok-api >= 1.15.4*
 
 ### Features
 
@@ -66,8 +55,6 @@ This release focuses on improving analysis stability and usability.
 ## 1.10.0 (2023-07-19)
 
 This release focuses on improving analysis stability and usability.
-
-*Dependency: datgarok-api >= 1.15.4*
 
 ### Features
 
