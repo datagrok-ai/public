@@ -1,6 +1,6 @@
 # Tutorials changelog
 
-## 1.2.9 (2023-08-04)
+## 1.3.9 (2023-08-04)
 
 This release focuses on improvement of usability and stability.
 
