@@ -29,20 +29,28 @@ jobs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
     steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          fi
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 3
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+      - name: Get changed files
+        uses: tj-actions/changed-files@v37
+        id: changed-files
+        with:
+          files: 'packages/**'
+          separator: " "
       - name: Generate matrix
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]]; then
-              commit="$(git log --format="%H" -n 1 --no-merges)"
-            else
-              commit=${{ github.sha }}
-            fi
-            CHANGED_PACKAGES="$(git diff-tree -m --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_PACKAGES="$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
