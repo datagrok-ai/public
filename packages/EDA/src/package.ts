@@ -25,7 +25,7 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: Tools | Data Science | Principal Component Analysis...
+//top-menu: ML | Dimensionality Reduction | Principal Component Analysis...
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table
