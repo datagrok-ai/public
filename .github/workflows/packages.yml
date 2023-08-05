@@ -28,6 +28,8 @@ jobs:
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
+    permissions:
+      pull-requests: read
     steps:
       - name: Set git fetch depth
         run: |
@@ -45,11 +47,13 @@ jobs:
         id: changed-files
         with:
           files: 'packages/**'
+          separator: "\n"
+          dir_names: true
       - name: Generate matrix
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            CHANGED_PACKAGES="$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_PACKAGES="$(echo -e "${{ steps.changed-files.outputs.all_changed_files }}" | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
