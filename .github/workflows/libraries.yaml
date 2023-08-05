@@ -160,15 +160,7 @@ jobs:
         run: npm install -g datagrok-tools@latest
       - name: grok check
         continue-on-error: true
-        run: |
-          grok_check=$(grok check)
-          if grep -q OK <<<$grok_check; then
-            echo "${{ matrix.project }} passes grok check"
-          else
-            echo ${grok_check}
-            echo "::error title=${{ matrix.project }}: failed grok check::${grok_check}"
-            exit 1
-          fi
+        run: grok check
         id: grok_check
         working-directory: packages/${{ matrix.project }}
       - name: npm publish

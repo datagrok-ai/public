@@ -361,15 +361,7 @@ jobs:
 
       - name: grok check
         if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
-        run: |
-          grok_check=$(grok check)
-          if grep -q OK <<<$grok_check; then
-            echo "${{ matrix.package }} passes grok check"
-          else
-            echo -e ${grok_check}
-            echo "::error title=${{ matrix.package }}: failed grok check::$(echo ${grok_check})"
-            exit 1
-          fi
+        run: grok check
         id: check
         working-directory: packages/${{ matrix.package }}
 
