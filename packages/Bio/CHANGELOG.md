@@ -10,7 +10,8 @@
 
 ### Bug fixes 
 
-* Fix vdRegionsViewer viewer package function name consistency 
+* Fix vdRegionsViewer viewer package function name consistency
+* GROK-13310: Bio | Tools: Fix Split to monomers
 
 ## 2.8.2 (2023-08-01)
 

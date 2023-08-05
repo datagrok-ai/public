@@ -1,8 +1,10 @@
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
+import {getSplitterForColumn} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -99,4 +101,11 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
     DG.Column.fromList(DG.TYPE.FLOAT, activityCol.name, expandedData),
     DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
   ]);
+}
+
+export async function getTemplate(sequence: string): Promise<string[]> {
+  const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
+  await grok.data.detectSemanticTypes(tempDf);
+  const splitter = getSplitterForColumn(tempDf.getCol('sequence'));
+  return splitter(sequence);
 }

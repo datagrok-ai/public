@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
-import {scaleActivity} from '../utils/misc';
+import {getTemplate, scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as C from '../utils/constants';
@@ -14,7 +14,7 @@ import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 import {TEST_COLUMN_NAMES} from './utils';
 import wu from 'wu';
 import {LogoSummaryTable} from '../viewers/logo-summary';
-import {calculateIdentity, identityWidget} from '../widgets/similarity';
+import {calculateIdentity} from '../widgets/similarity';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -232,14 +232,9 @@ category('Widgets: Identity', () => {
   });
 
   test('Identity', async () => {
-    const widget = identityWidget(model);
-    expect(widget instanceof DG.Widget, true, 'Identity widget is expected to be a DG.Widget');
-
     const seq = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$';
-
-    const identityCol = await calculateIdentity(seq, model);
-    expect(identityCol.getTag(C.TAGS.IDENTITY_TEMPLATE), seq, `Identity column is expected to have template ${seq}, ` +
-      `got ${identityCol.getTag(C.TAGS.IDENTITY_TEMPLATE)}`);
+    const template = await getTemplate(seq);
+    const identityCol = calculateIdentity(template, model.splitSeqDf);
     expect(identityCol.get(0), 0, 'Expected 0 identity score when sequence is matching template');
     expect(identityCol.get(3), 7, 'Expected 7 identity score agains sequence at position 3');
   });
