@@ -80,7 +80,7 @@ jobs:
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ $npm_version != ${current_version} ]]; then
-                if [[ $unpublished_deps == "" ]]; then
+                if [[ $unpublished_deps == "" ]] && [[ "${{ github.event_name }}" != "pull_request" ]]; then
                   MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                   packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
                   MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""

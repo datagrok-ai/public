@@ -85,7 +85,7 @@ jobs:
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ $npm_version != ${current_version} ]]; then
                 if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
-                  if [[ $unpublished_deps == "" ]]; then
+                  if [[ $unpublished_deps == "" ]] && [[ "${{ github.event_name }}" != "pull_request" ]]; then
                     publish="publish"
                     MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                   fi
