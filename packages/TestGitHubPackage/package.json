@@ -1,0 +1,49 @@
+{
+  "name": "testgithubpackage",
+  "friendlyName": "TestGitHubPackage",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-testgithubpackage": "webpack && grok publish",
+    "release-testgithubpackage": "webpack && grok publish --release",
+    "build-testgithubpackage": "webpack",
+    "build": "webpack",
+    "debug-testgithubpackage-dev": "webpack && grok publish dev",
+    "release-testgithubpackage-dev": "webpack && grok publish dev --release",
+    "debug-testgithubpackage-public": "webpack && grok publish public",
+    "release-testgithubpackage-public": "webpack && grok publish public --release",
+    "debug-testgithubpackage-test": "webpack && grok publish test",
+    "release-testgithubpackage-test": "webpack && grok publish test --release",
+    "debug-testgithubpackage-release": "webpack && grok publish release",
+    "release-testgithubpackage-release": "webpack && grok publish release --release",
+    "debug-testgithubpackage-spodtest-test": "webpack && grok publish spodtest-test",
+    "release-testgithubpackage-spodtest-test": "webpack && grok publish spodtest-test --release",
+    "debug-testgithubpackage-local": "webpack && grok publish local",
+    "release-testgithubpackage-local": "webpack && grok publish local --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/TestGitHubPackage"
+  }
+}
