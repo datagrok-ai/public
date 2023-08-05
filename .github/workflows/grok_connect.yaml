@@ -188,7 +188,7 @@ jobs:
 
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
-          context="*GitHub Workflow:* <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }} ${{ github.event.workflow_run.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }}|$(echo "${{ github.event.workflow_run.head_commit.id }}" | cut -c1-8) $(echo -e "${{ github.event.workflow_run.head_commit.message }}" | head -n1)>"
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.commit }}|$(echo "${{ github.commit }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
           echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
 
       - name: Send to Slack
@@ -204,7 +204,7 @@ jobs:
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "{{ env.SLACK_MESSAGE_HEADER }}"
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
                         }
                     },
                     {
