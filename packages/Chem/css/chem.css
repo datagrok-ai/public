@@ -106,8 +106,9 @@
 }
 
 .d4-scaffold-tree .d4-tree-view-node .d4-tree-view-group-label {
-  border: 1px solid var(--grey-2);
-  margin-left: 8px;
+  border: 0.5px solid var(--grey-2);
+  display: flex;
+  flex-grow: 1;
 }
 
 .d4-scaffold-tree .d4-tree-view-node .d4-tree-view-group-label,
@@ -248,8 +249,14 @@
 .scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info,
 .scaffold-tree-normal .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
   height: 80px;
-  margin: 6px;
-  margin-left: auto;
+  margin: 0px 6px;
+}
+
+.mol-host {
+  margin: 0 6px;
+  flex-grow: 1;
+  overflow: hidden;
+  display: flex;
 }
 
 .scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
@@ -257,7 +264,8 @@
 }
 
 .scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 300px;
+  min-width: 210px;
+  max-width: 300px;
   height: 100px;
 }
 
@@ -267,8 +275,9 @@
 }
 
 .scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 210px;
-  height: 80px;
+  min-width: 210px;
+  max-width: 400px;
+  height: 100px;
 }
 
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info .chem-mol-box-info-buttons {
