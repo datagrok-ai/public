@@ -206,7 +206,10 @@ jobs:
         if: ${{ matrix.packages != '' }}
         id: commit
         run: |
-          name="$(jq -r '.name' "${DIR}/package.json")"
+          name="$(jq -r '.name' "libraries/${{ matrix.project }}/package.json")"
+          echo "name=$name" >> $GITHUB_OUTPUT
+          author="$(jq -r '.author.email' "libraries/${{ matrix.project }}/package.json")"
+          echo "author=$author" >> $GITHUB_OUTPUT
           crnt=$(pwd)
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -254,7 +257,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "Github Actions: Failed update for library ${{ matrix.project }}"
-          to: ${{ matrix.author }}
+          to: ${{ steps.commit.outputs.author }}
           from: monitoring@grok.datagrok.ai
-          body: "Failed to update library ${{ matrix.project }} for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body: "Failed to update library ${{ matrix.project }} (${{ steps.commit.outputs.name }}) for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
