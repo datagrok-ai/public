@@ -63,8 +63,6 @@ jobs:
             DIR="libraries/$LIB"
             if [ -f "${DIR}/package.json" ]; then
               MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\""
-              name="$(jq -r '.name' "${DIR}/package.json")"
-              MATRIX_PUBLISH_JSON+=", \"name\": \"${name}\""
               current_version="$(jq -r '.version' "${DIR}/package.json")"
               MATRIX_PUBLISH_JSON+=", \"version\": \"${current_version}\""
 
