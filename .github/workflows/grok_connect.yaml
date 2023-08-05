@@ -122,6 +122,7 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v3
+        id: build-push
         with:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform }}
@@ -139,6 +140,7 @@ jobs:
 
       - name: Build and push bleeding-edge
         if: github.ref == 'refs/heads/master'
+        id: bleeding-edge
         uses: docker/build-push-action@v3
         with:
           context: ./connectors
@@ -156,8 +158,65 @@ jobs:
 
       - name: Upload Artifact
         if: github.ref != 'refs/heads/master' && startsWith(github.ref,'refs/heads/release/') != true
-        uses: actions/upload-artifact@v2
+        id: docker-artifact
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.param.outputs.tar }}
           path: /tmp/${{ steps.param.outputs.tar }}
           retention-days: 7
+
+      - name: Prepare Slack Message
+        if: steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success'
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          echo "${{steps.build-push.outputs.metadata}}
+
+          if [[ "${{ steps.docker-artifact.outcome == 'skipped' }}" ]]; then
+            echo SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub"
+          fi
+
+          if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" ]]; then
+            echo SLACK_MESSAGE_HEADER="${SLACK_MESSAGE_HEADER}\n*Grok Connect* Docker Image version *bleeding-edhe* is published to Docker Hub"
+          fi
+
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }} ${{ github.event.workflow_run.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.event.workflow_run.head_commit.id }}|$(echo "${{ github.event.workflow_run.head_commit.id }}" | cut -c1-8) $(echo -e "${{ github.event.workflow_run.head_commit.message }}" | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.slack-user.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "{{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
