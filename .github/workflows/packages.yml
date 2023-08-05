@@ -380,7 +380,7 @@ jobs:
         if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
 
       - name: Prepare Slack Message
-        #        if: steps.publish.outcome == 'success'
+        if: steps.publish.outcome == 'success'
         id: slack-user
         shell: bash
         env:
@@ -398,7 +398,7 @@ jobs:
 
       - name: Send to Slack
         id: slack
-        #        if: steps.slack-user.outcome == 'success'
+        if: steps.slack-user.outcome == 'success'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
