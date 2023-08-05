@@ -162,7 +162,7 @@ jobs:
         continue-on-error: true
         run: grok check
         id: grok_check
-        working-directory: packages/${{ matrix.project }}
+        working-directory: libraries/${{ matrix.project }}
       - name: npm publish
         run: npm publish --access public
         if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
