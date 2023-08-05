@@ -57,6 +57,7 @@ def distout():\n\
 \n\
     return distout_output\n' >> /opt/PepSeA-main/alignment/api.py;
 
+# It is important to run docker container as user and not as root
 USER grok:grok
 
 # Command source does not work for Docker, cause it will apply only to one layer
