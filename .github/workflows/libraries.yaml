@@ -62,38 +62,34 @@ jobs:
           for LIB in $(echo ${CHANGED_LIBS} | sort -u); do
             DIR="libraries/$LIB"
             if [ -f "${DIR}/package.json" ]; then
+              MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\""
+              name="$(jq -r '.name' "${DIR}/package.json")"
+              MATRIX_PUBLISH_JSON+=", \"name\": \"${name}\""
+              current_version="$(jq -r '.version' "${DIR}/package.json")"
+              MATRIX_PUBLISH_JSON+=", \"version\": \"${current_version}\""
+
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
 
-              if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                build='false'
-              else
-                build='true'
+              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
               fi
-              if [ -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
-                test='false'
-              else
-                test='true'
+              if [ ! -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
               fi
 
-              name="$(jq -r '.name' "${DIR}/package.json")"
-              current_version="$(jq -r '.version' "${DIR}/package.json")"
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
-              unpublished_deps=${unpublished_deps}
+              MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ $npm_version != ${current_version} ]]; then
                 if [[ $unpublished_deps == "" ]]; then
-                  CHANGED_VERSION='true'
+                  MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                   packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
-                else
-                  CHANGED_VERSION='false'
+                  MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
                 fi
-              else
-                CHANGED_VERSION='false'
-                packages=''
               fi
 
-              MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\", \"name\": \"${name}\", \"version\":\"$current_version\", \"changed_version\": \"${CHANGED_VERSION}\", \"build\": \"${build}\", \"test\": \"${test}\", \"unpublished_deps\": \"${unpublished_deps}\", \"packages\":\"$packages\"}"
+              MATRIX_PUBLISH_JSON+="}"
             fi
           done
 
@@ -157,10 +153,10 @@ jobs:
         working-directory: libraries/${{ matrix.project }}
       - run: npm run test
         working-directory: libraries/${{ matrix.project }}
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
       - run: npm run build
         working-directory: libraries/${{ matrix.project }}
-        if: ${{ matrix.build == 'true' }}
+        if: ${{ matrix.build == 'build' }}
       - name: Install datagrok tools
         id: datagrok-tools
         run: npm install -g datagrok-tools@latest
@@ -169,23 +165,23 @@ jobs:
         run: |
           grok_check=$(grok check)
           if grep -q OK <<<$grok_check; then
-            echo "${{ matrix.package }} passes grok check"
+            echo "${{ matrix.project }} passes grok check"
           else
             echo ${grok_check}
-            echo "::error title=${{ matrix.package }}: failed grok check::${grok_check}"
+            echo "::error title=${{ matrix.project }}: failed grok check::${grok_check}"
             exit 1
           fi
         id: grok_check
-        working-directory: packages/${{ matrix.package }}
+        working-directory: packages/${{ matrix.project }}
       - name: npm publish
         run: npm publish --access public
-        if: matrix.changed_version == 'true' && github.ref == 'refs/heads/master'
+        if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         continue-on-error: true
-        if: ${{ matrix.changed_version == 'true' }}
+        if: ${{ matrix.publish == 'publish' }}
         run: |
           if [ -n "$(git status -s libraries/${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'github-actions[bot]'
@@ -220,6 +216,7 @@ jobs:
         if: ${{ matrix.packages != '' }}
         id: commit
         run: |
+          name="$(jq -r '.name' "${DIR}/package.json")"
           crnt=$(pwd)
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -227,13 +224,13 @@ jobs:
           changed=""
           for package in ${{ matrix.packages }}; do
             cd packages/$package
-            sed -i -e 's#"${{ matrix.name }}": "../../libraries/${{ matrix.project }}"#"${{ matrix.name }}": "^${{ matrix.version }}"#g' package.json
+            sed -i -e 's#"${name}": "../../libraries/${{ matrix.project }}"#"${name}": "^${{ matrix.version }}"#g' package.json
             if [ -n "$(git status -s package.json)" ]; then
               changed+="$package "
               npm install
               git add package.json
               git add package-lock.json
-              git commit -m "GitHub Actions: Update package $package ${{ matrix.name }} dependency
+              git commit -m "GitHub Actions: Update package $package ${name} dependency
 
               Workflow ${{ github.workflow }} ${{ github.run_number }}
               https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -269,5 +266,5 @@ jobs:
           subject: "Github Actions: Failed update for library ${{ matrix.project }}"
           to: ${{ matrix.author }}
           from: monitoring@grok.datagrok.ai
-          body: "Failed to update ${{ matrix.name }} dependency for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body: "Failed to update library ${{ matrix.project }} for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           reply_to: monitoring@datagrok.ai
