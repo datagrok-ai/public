@@ -28,21 +28,32 @@ jobs:
     outputs:
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
+    permissions:
+      pull-requests: read
     steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          fi
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 3
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+      - name: Get changed files
+        uses: tj-actions/changed-files@v37
+        id: changed-files
+        with:
+          files: 'packages/**'
+          separator: "\n"
+          dir_names: true
       - name: Generate matrix
         id: generate-matrix
         run: |
           if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
-            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master'"* ]]; then
-              commit="$(git log --format="%H" -n 1 --no-merges)"
-            else
-              commit=${{ github.sha }}
-            fi
-            CHANGED_PACKAGES="$(git diff-tree -m --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_PACKAGES="$(echo -e "${{ steps.changed-files.outputs.all_changed_files }}" | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
@@ -53,32 +64,42 @@ jobs:
             DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
               MATRIX_PUBLISH_JSON+="{\"package\": \"${PACKAGE}\""
+              current_version="$(jq -r '.version' "${DIR}/package.json")"
+              MATRIX_PUBLISH_JSON+=", \"version\": \"${current_version}\""
 
-              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
-              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
+              scripts="$(jq '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+              dependencies="$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
+
+              if [ ! -z "$(jq -r '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
+              fi
 
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
-                  [[ "$(jq  '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
-                MATRIX_PUBLISH_JSON+=", \"test\": \"true\""
+                  [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
+                MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
               fi
 
-              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                MATRIX_PUBLISH_JSON+=", \"build\": \"true\""
-              fi
-
-              name="$(jq .name "${DIR}/package.json" | sed -E 's/(^"|"$)//g')"
-              current_version="$(jq .version "${DIR}/package.json" | sed -E 's/(^"|"$)//g')"
+              name="$(jq -r .name "${DIR}/package.json")"
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ $npm_version != ${current_version} ]]; then
                 if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
-                  if [[ $unpublished_deps == "" ]]; then
-                    MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
+                  if [[ $unpublished_deps == "" ]] && [[ "${{ github.event_name }}" != "pull_request" ]]; then
+                    publish="publish"
+                    MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                   fi
                 else
-                  MATRIX_PUBLISH_JSON+=", \"beta\": \"true\""
+                  MATRIX_PUBLISH_JSON+=", \"beta\": \"beta\""
                   echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0 and is not going to be published"
+                fi
+              fi
+          
+              if [[ $publish == "publish" ]]; then
+                MATRIX_PUBLISH_JSON+=", \"docker\": \"build_docker\""
+              else
+                if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
+                  MATRIX_PUBLISH_JSON+=", \"docker\": \"build_docker\""
                 fi
               fi
 
@@ -124,7 +145,7 @@ jobs:
           token: ${{ secrets.WRITE_TOKEN }}
       - name: Run datagrok stand
         id: datagrok-image
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
@@ -198,7 +219,7 @@ jobs:
           done
         working-directory: packages/${{ matrix.package }}
       - name: Build package
-        if: ${{ matrix.build == 'true' }}
+        if: ${{ matrix.build == 'build' }}
         id: build
         run: |
           if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
@@ -211,7 +232,7 @@ jobs:
         id: datagrok-tools
         run: npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
         run: |
           until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/info/server" '"Http Server"'
@@ -223,12 +244,12 @@ jobs:
           curl -s http://127.0.0.1:8080/api/info/server
           curl -s http://127.0.0.1:8080/api/admin/health
       - name: Create configuration for grok command-line tool
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
         run: |
           echo 'N' | grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
           cat /home/runner/.grok/config.yaml
       - name: Install Grok Dependencies before package publish to Datagrok
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
         run: |
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
           if [ -n "$grok_deps" ]; then
@@ -255,7 +276,7 @@ jobs:
           fi
         working-directory: packages/${{ matrix.package }}
       - name: Publish package to Datagrok
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
         run: |
           count=0
           retries=5
@@ -274,7 +295,7 @@ jobs:
           done
         working-directory: packages/${{ matrix.package }}
       - name: Test Package
-        if: ${{ matrix.test == 'true' }}
+        if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
@@ -304,43 +325,20 @@ jobs:
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
           docker system prune -af --volumes
 
-      - name: Check dockerfiles directory existence
-        id: check_directory
-        uses: andstor/file-existence-action@v2
-        with:
-          files: "packages/${{ matrix.package }}/dockerfiles"
-
-      - name: Check if dockerfies directory is not empty
-        id: check_empty_dir
-        run: |
-          if [ -z "$(ls -A  packages/${{ matrix.package }}/dockerfiles)" ]; then
-            echo "dir_empty=true" >> $GITHUB_OUTPUT
-          else
-            echo "dir_empty=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check if the dockerfiles directory has changes
-        if: matrix.publish != 'true'
-        id: directory_changes_checker
-        uses: georgeneto/directory-changes-checker@v1
-        with:
-          repo-token: ${{secrets.GITHUB_TOKEN}}
-          directory: "packages/${{ matrix.package }}/dockerfiles"
-
       - name: Get docker image version
-        if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && (matrix.publish == 'true' || steps.directory_changes_checker.output.hasChanges == 'true')
+        if: matrix.docker == 'docker_build'
         id: docker_name_ver
         working-directory: packages/${{ matrix.package }}
         run: |
           image_ver=$(jq -r .version package.json)
-          if [[ "${{ matrix.publish }}" != "true" ]]; then
+          if [[ "${{ matrix.publish }}" != "publish" ]]; then
             image_ver+="-${{ steps.datagrok-image.outputs.commit_sha }}"
           fi
           echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
           echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
 
       - name: Build package Docker image
-        if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && (matrix.publish == 'true' || steps.directory_changes_checker.output.hasChanges == 'true')
+        if: matrix.docker == 'docker_build'
         id: build-docker
         uses: docker/build-push-action@v3
         with:
@@ -363,15 +361,7 @@ jobs:
 
       - name: grok check
         if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
-        run: |
-          grok_check=$(grok check)
-          if grep -q OK <<<$grok_check; then
-            echo "${{ matrix.package }} passes grok check"
-          else
-            echo -e ${grok_check}
-            echo "::error title=${{ matrix.package }}: failed grok check::$(echo ${grok_check})"
-            exit 1
-          fi
+        run: grok check
         id: check
         working-directory: packages/${{ matrix.package }}
 

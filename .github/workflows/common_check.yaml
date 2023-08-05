@@ -21,7 +21,7 @@ jobs:
       - name: Check merge commit
         id: merge-details
         run: |
-          if [[ ${{ inputs.run_trigger }} != 'workflow_dispatch' ]] && { [[ "${{ github.event.head_commit.message }}" == *"Merge branch 'master'"* ]] || [[ "${{ github.event.head_commit.message }}" == *"Merge remote-tracking branch 'origin/master'"* ]]; };  then
+          if [[ ${{ inputs.run_trigger }} != 'workflow_dispatch' ]] && { [[ $(echo ${{ github.event.head_commit.message }} | sed -e 's/"/\\"/g') == *"Merge branch 'master'"* ]] || [[ "$(echo ${{ github.event.head_commit.message }} | sed -e 's/"/\\"/g')" == *"Merge remote-tracking branch 'origin/master'"* ]]; };  then
             echo "continue_action=false" >> $GITHUB_OUTPUT
             echo "The latest commit is a merge commit. GitHub actions wil be skipped"
             echo "::notice title=Merge commit check::Latest commit is a merge from master. No actions will be run."
