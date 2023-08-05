@@ -9,6 +9,8 @@ import { delay } from '@datagrok-libraries/utils/src/test';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
+const MAX_ROW_NUMBER = 10;
+
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
   name: 'Sunburst',
@@ -35,10 +37,6 @@ export class SunburstViewer extends EChartViewer {
           type: 'sunburst',
           label: {
             rotate: 'radial',
-          },
-          labelLayout: {
-            hideOverlap: 'true',
-            align: 'center',
           }
         },
       ],
@@ -91,7 +89,15 @@ export class SunburstViewer extends EChartViewer {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
         const { hierarchyColumnNames, dataFrame } = this;
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
-          if (dataFrame.getCol(hierarchyColumnNames[j]).get(i).toString() === params.name) {
+          const column = dataFrame.getCol(hierarchyColumnNames[j]);
+          const format = column.getTag(DG.TAGS.FORMAT);
+          if (format) {
+            const number = format.indexOf('.');
+            const len = format.length - number - 1;
+            if ((column.get(i)).toFixed(len) === params.name)
+              return true;
+          }
+          if (column.get(i).toString() === params.name) {
             return true;
           }
         }
@@ -177,6 +183,13 @@ export class SunburstViewer extends EChartViewer {
   render() {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
+    
+    if (this.dataFrame.rowCount > MAX_ROW_NUMBER || (this.dataFrame.rowCount < MAX_ROW_NUMBER && this.hierarchyColumnNames.length > 1)) {
+      this.option.series[0].labelLayout = {
+        hideOverlap: 'true',
+        align: 'center',
+      }
+    }
 
     this.handleStructures(this.getSeriesData()).then((data) => {
       this.option.series[0].data = data;
