@@ -14,7 +14,11 @@
   },
   "sources": [
   ],
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
   "category": "Development"
 }
