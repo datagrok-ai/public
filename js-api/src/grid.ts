@@ -1,7 +1,7 @@
 import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
-import {__obs, _sub, EventData, StreamSubscription, GridCellArgs} from './events';
+import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
 import {_identityInt32, _toIterable} from './utils';
 import {Observable} from 'rxjs';
 import {RangeSlider} from './widgets';
@@ -534,7 +534,7 @@ export class GridCell {
 
   /** @returns {GridColumn} Corresponding grid column. */
   get gridColumn(): GridColumn {
-    return new GridColumn(api.grok_GridCell_Get_GridColumn(this.dart));
+    return toJs(api.grok_GridCell_Get_GridColumn(this.dart));
   }
 
   /** Custom text to be shown in a cell . */
@@ -543,12 +543,12 @@ export class GridCell {
 
   /** @returns {Grid} this cell belongs to. */
   get grid(): Grid {
-    return new Grid(api.grok_GridCell_Get_Grid(this.dart));
+    return api.grok_GetWrapper(api.grok_GridCell_Get_Grid(this.dart));
   }
 
   /** @returns {Cell} Corresponding table cell. */
   get cell(): Cell {
-    return new Cell(api.grok_GridCell_Get_Cell(this.dart));
+    return toJs(api.grok_GridCell_Get_Cell(this.dart));
   }
 
   /** @returns {GridCellStyle} Style to use for rendering. */
@@ -570,8 +570,9 @@ export class GridCell {
   get documentBounds(): Rect {
     const r = this.bounds;
     const clientRect = this.grid.root.getBoundingClientRect();
-    const documentBounds = new Rect(window.scrollX + clientRect.x + r.x, window.scrollY + clientRect.y + r.y, r.width, r.height);
-    return documentBounds;
+    return new Rect(
+      window.scrollX + clientRect.x + r.x,
+      window.scrollY + clientRect.y + r.y, r.width, r.height);
   }
 
   /** Returns grid cell renderer. */

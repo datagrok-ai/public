@@ -32,6 +32,8 @@ export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'class
 
 export class ObjectPropertyBag {
   source: any;
+  _propMap?: {[name: string]: Property};
+  _propList?: Property[];
 
   constructor(source: any, x: any = null) {
 
@@ -101,26 +103,35 @@ export class ObjectPropertyBag {
       this.set(k, v);
   }
 
-  /** @returns {Property[]} */
-  getProperties(): Property[] {
-    return this.source.getProperties();
+  get propList(): Property[] {
+    if (!this._propList)
+      this._propList = this.source.getProperties()!;
+    return this._propList!;
   }
 
-  /** Gets property by name (case-sensitive).
-   * @param {string} name
-   * @returns {Property} */
+  get propMap(): {[name: string]: Property} {
+    if (!this._propMap) {
+      this._propMap = {};
+      for (const p of this.propList!)
+        this._propMap[p.name] = p;
+    }
+    return this._propMap;
+  }
+
+  /** @returns {Property[]} */
+  getProperties(): Property[] { return this.propList; }
+
+  /** Gets property by name (case-sensitive). Throws exception if not found. */
   getProperty(name: string): Property {
-    let property = this.getProperties().find((p) => p.name === name);
+    let property = this.propMap[name];
     if (typeof property == 'undefined')
       throw `Property not found: ${name}`;
     return property;
   }
 
-  /**
-   * @param {string} name
-   * @returns {boolean} */
+  /** Checks whether the given property exists. */
   hasProperty(name: string): boolean {
-    return this.getProperties().findIndex((p) => p.name === name) !== -1;
+    return this.propMap.hasOwnProperty(name);
   }
 
   /** Sets the current state of viewer properties as the default configuration used to create new viewer
