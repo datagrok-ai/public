@@ -2,8 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Unsubscribable} from 'rxjs';
+import wu from 'wu';
+
 import {UnitsHandler} from './units-handler';
-import {NOTATION, SplitterFunc, MonomerToShortFunc, getSplitterForColumn, ALPHABET} from './macromolecule';
+import {SplitterFunc, MonomerToShortFunc, getSplitterForColumn, ALPHABET} from './macromolecule';
 import {IMonomerLib, Monomer} from '../types';
 import {HELM_POLYMER_TYPE} from './const';
 
@@ -32,8 +34,9 @@ export class MonomerPlacer {
 
   private _updated: boolean = false;
   public get updated(): boolean { return this._updated; }
-  public _monomerLengthMap: {[key: string]: TextMetrics} = {}; // caches the lengths to save time on g.measureText
-  public _monomerStructureMap: {[key: string]: HTMLDivElement} = {}; // caches the atomic structures of monomers
+
+  public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
+  public _monomerStructureMap: { [key: string]: HTMLDivElement } = {}; // caches the atomic structures of monomers
   private readonly subs: Unsubscribable[] = [];
 
   /** View is required to subscribe and handle for data frame changes */
@@ -85,7 +88,7 @@ export class MonomerPlacer {
       const seqMonList: string[] = this.getSeqMonList(rowIdx);
       res = this._monomerLengthList[rowIdx] = new Array<number>(seqMonList.length);
 
-      for (const [seqMonI, seqMonLabel] of seqMonList.entries()) {
+      for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
         const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
         const separatorWidth = this.props.unitsHandler.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
         const seqMonWidth: number = separatorWidth + shortMon.length * this.props.monomerCharWidth;
@@ -112,7 +115,7 @@ export class MonomerPlacer {
       if (seqMonList.length > res.length)
         res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
 
-      for (const [seqMonI, seqMonLabel] of seqMonList.entries()) {
+      for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
         const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
         const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
         res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
@@ -126,7 +129,7 @@ export class MonomerPlacer {
   public getPosition(rowIdx: number, x: number): number | null {
     const [monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
     const seq: string = this.col.get(rowIdx)!;
-    const seqMonList: string[] = this._splitter(seq);
+    const seqMonList: string[] = wu(this._splitter(seq)).toArray();
 
     let iterationCount: number = 100;
     let left: number | null = null;
@@ -139,11 +142,11 @@ export class MonomerPlacer {
         if (x >= monomerMaxLengthSumList[mid] && x <= monomerMaxLengthSumList[mid + 1]) {
           left = mid;
           found = true;
-        } else if (x < monomerMaxLengthSumList[mid]) {
+        } else if (x < monomerMaxLengthSumList[mid])
           right = mid - 1;
-        } else if (x > monomerMaxLengthSumList[mid + 1]) {
+        else if (x > monomerMaxLengthSumList[mid + 1])
           left = mid + 1;
-        }
+
         if (left == right)
           found = true;
 
@@ -158,7 +161,7 @@ export class MonomerPlacer {
 
   getSeqMonList(rowIdx: number): string[] {
     const seq: string | null = this.col.get(rowIdx);
-    return seq ? this._splitter(seq) : [];
+    return seq ? wu(this._splitter(seq)).toArray() : [];
   }
 
   public getMonomer(symbol: string): Monomer | null {

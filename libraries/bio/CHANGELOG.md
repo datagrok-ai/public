@@ -1,8 +1,13 @@
 # bio changelog
 
-## 5.35.0 (WIP)
+## 5.35.0 (2023-08-06)
 
-Add WebLogo property showPositionLabels
+Optimize with splitterAsFastaSimple returning ISeqSplitted allowing to speed up processing of
+single character alphabets.
+
+## Breaking changes
+
+* SplitterFunc now return type ISeqSplitted instead of string[]
 
 ### Features
 
