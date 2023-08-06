@@ -7,21 +7,19 @@ import {
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
 import {IMonomerLib} from '../types/index';
-import {TAGS} from '../utils/macromolecule/consts';
 import {SplitterFunc} from '../utils/macromolecule/types';
-import {getSplitter} from '../utils/macromolecule/utils';
+import {UnitsHandler} from '../utils/units-handler';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
   const monomerSymbolDict: { [key: string]: number } = {};
-  const units = col.tags[DG.TAGS.UNITS];
-  const sep = col.getTag(TAGS.separator);
-  const splitterFunc: SplitterFunc = getSplitter(units, sep);
+  const uh = UnitsHandler.getOrCreate(col);
+  const splitterFunc: SplitterFunc = uh.getSplitter();
   const encodedStringArray = [];
   for (let i = 0; i < col.length; ++i) {
     let encodedMonomerStr = '';
     const monomers = splitterFunc(col.get(i));
-    monomers.forEach((m: string) => {
+    for (const m of monomers) {
       if (!monomerSymbolDict[m]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);
@@ -31,21 +29,20 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
         encodeSymbol++;
       }
       encodedMonomerStr += String.fromCodePoint(monomerSymbolDict[m]);
-    });
+    }
     encodedStringArray.push(encodedMonomerStr);
   }
   return DG.Column.fromStrings('encodedMolecules', encodedStringArray);
 }
 
 export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): any[][] | null {
-  const units = col.tags[DG.TAGS.UNITS];
-  const sep = col.getTag('separator');
-  const splitterFunc: SplitterFunc = getSplitter(units, sep);
+  const uh = UnitsHandler.getOrCreate(col);
+  const splitter: SplitterFunc = uh.getSplitter();
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   for (let i = 0; i < col.length; ++i) {
     const macroMolecule = col.get(i);
-    const monomers = splitterFunc(macroMolecule);
+    const monomers = splitter(macroMolecule);
     const molFilesForSeq = [];
     for (let j = 0; j < monomers.length; ++j) {
       if (monomers[j]) {
@@ -63,9 +60,8 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
 }
 
 export function getMolfilesFromSingleSeq(cell: DG.Cell, monomersLibObject: any[]): any[][] | null {
-  const units = cell.column.tags[DG.TAGS.UNITS];
-  const sep = cell.column!.getTag('separator');
-  const splitterFunc: SplitterFunc = getSplitter(units, sep);
+  const uh = UnitsHandler.getOrCreate(cell.column);
+  const splitterFunc: SplitterFunc = uh.getSplitter();
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   const macroMolecule = cell.value;
