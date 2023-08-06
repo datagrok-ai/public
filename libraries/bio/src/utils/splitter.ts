@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {getSplitterForColumn} from './macromolecule/utils';
 
 
@@ -24,10 +26,10 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
       continue;
 
     const currentMonomerList = splitter(sequence);
-    currentMonomerList.forEach((monomer, positionIndex) => {
+    for (const [monomer, positionIndex] of wu.enumerate(currentMonomerList)) {
       const col = getCol(positionIndex) || createCol(positionIndex);
       col.set(rowIndex, monomer || '-', false);
-    });
+    }
   }
 
   return resultDf;
