@@ -1,5 +1,5 @@
 ---
-title: "Aminoacids WebLogo"
+title: "WebLogo"
 ---
 
 Web Logo is used to visualize a graphical representation of multiple sequence alignment (amino acids or
@@ -14,7 +14,7 @@ You must specify the tag `semType` with value `AminoacidsMultipleAlignment` or
 `NucleotidesMultipleAlignment` for the data column with multiple alignment sequences, it is mandatory to
 select the palette for monomers' colors.
 
-You can customize the look of the viewer with properties. Properties `startPosition` and `endPosition`)
+You can customize the look of the viewer with properties. Properties `startPosition` and `endPosition`
 allow to display multiple alignment partially. If property  `startPosition` (`endPosition`)
 is not specified, then the Logo will be plotted from the first (till the last) position of sequences.
 
