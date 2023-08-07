@@ -44,7 +44,7 @@ export async function clinicalCaseApp(): Promise<any> {
   if (Object.keys(study.domains).every((name) => grok.shell.table(name) == null)) {
     let demoFiles = await grok.dapi.projects.filter('clin-demo-files-2').list();
     if (demoFiles.length) {
-      await grok.dapi.projects.open('clin-demo-files-2');
+      await (await grok.dapi.projects.find(demoFiles[0].id)).open();
     } else {
       grok.shell.warning('Please load SDTM data or demo files');
     }
