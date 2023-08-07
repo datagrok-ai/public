@@ -30,24 +30,22 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
 
-    const dlg = await this.openDialog('Click on "ML | PLS"',
-      'PLS', this.getMenuItem('ML'));
-
+    const dlg = await this.openDialog('Click on "ML | Multivariate Analysis (PLS)..."',
+      'Multivariate Analysis (PLS)', this.getMenuItem('ML'));
     await this.dlgInputAction(dlg, 'Set "Table" to "cars"', 'Table', 'cars');
-    await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price');
-
-    await this.dlgInputAction(dlg, 'Select all columns, except "model" and "price", as "Features"', 'Features',
+    await this.dlgInputAction(dlg, 'Select all columns, except "price", as "Features"', 'Features',
       this.t!.columns.names().filter((n: string) => n !== 'model' && n !== 'price').join(','),
-      'Click "All" in the column selection dialog and uncheck two columns: "model" and "price".');
+      'Click "All" in the column selection dialog and uncheck "price".');    
+    await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model');
+    await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price');
     await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3');
 
     const outcomeDescription = `Once you run the analysis, the following visualizations will appear:
     <ul style="list-style-type:disc">
-      <li><code>Scores</code> is a scatter plot that shows correlation between observations</li>
-      <li><code>Explained variance</code> is a bar chart with variable variance explained</li>
-      <li><code>Correlation loadings</code> is a scatter plot that shows correlation between variables</li>
-      <li><code>Predicted vs. reference</code> is a scatter plot with a regression line comparing predicted vs reference outcomes</li>
+      <li><code>Reference vs. Predicted</code> is a scatter plot with a regression line comparing predicted vs reference outcomes</li>
+      <li><code>Scores</code> is a scatter plot that shows correlation between observations</li>      
       <li><code>Regression coefficients</code> is a bar chart with regression coefficients</li>
+      <li><code>Loadings</code> is a scatter plot that shows correlation between variables</li>
     </ul><br>Look into these findings to figure out which variables correlate with each other ` +
     'and which of them have a greater impact on the outcome.<br>See the context help on the right '+
     'to learn more about multivariate analysis, or navigate to a documentation page by clicking the "Open in new tab" button.';
