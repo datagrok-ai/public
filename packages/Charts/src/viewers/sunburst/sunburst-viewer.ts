@@ -154,7 +154,7 @@ export class SunburstViewer extends EChartViewer {
     for (const entry of data!) {
       const name = entry.name;
       const isSmiles = await grok.functions.call('Chem:isSmiles', {s: name});
-      if (isSmiles) {
+      if (isSmiles && entry.semType === 'Molecule') {
         const imageContainer = await grok.functions.call('Chem:drawMolecule', {
           'molStr': name, 'w': 70, 'h': 80, 'popupMenu': false
         });
