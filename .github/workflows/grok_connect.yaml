@@ -176,11 +176,11 @@ jobs:
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          if [[ "${{ steps.docker-artifact.outcome == 'skipped' }}" ]]; then
+          if [[ "${{ steps.docker-artifact.outcome == 'skipped' }}" == "true" ]]; then
             echo SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub"
           fi
 
-          if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" ]]; then
+          if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" == "true" ]]; then
             echo SLACK_MESSAGE_HEADER="${SLACK_MESSAGE_HEADER}\n*Grok Connect* Docker Image version *bleeding-edhe* is published to Docker Hub"
           fi
 
