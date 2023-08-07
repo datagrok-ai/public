@@ -95,7 +95,7 @@ jobs:
                 fi
               fi
           
-              if [[ $publish == "publish" ]]; then
+              if [[ $publish == "publish" ]] && [[ -d "${DIR}/dockerfiles" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"docker\": \"build_docker\""
               else
                 if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
