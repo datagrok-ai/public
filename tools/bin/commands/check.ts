@@ -301,6 +301,10 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (json.version.includes('beta') && isPublicPackage)
     warnings.push('File "package.json": public package cannot be beta version.');
 
+  const api = json.dependencies?.['datagrok-api'];
+  if (api && !api.startsWith('^') && api !== 'latest' && api !== '../../js-api')
+    warnings.push('File "package.json": "datagrok-api" dependency must contain ^ or be "latest".');
+
   const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
   if (dt && dt !== 'latest')
     warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
