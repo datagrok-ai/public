@@ -176,8 +176,6 @@ jobs:
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          echo "${{steps.build-push.outputs.metadata}}
-
           if [[ "${{ steps.docker-artifact.outcome == 'skipped' }}" ]]; then
             echo SLACK_MESSAGE_HEADER="*Grok Connect* Docker Image version *${{ needs.build.outputs.version }}* is published to Docker Hub"
           fi
