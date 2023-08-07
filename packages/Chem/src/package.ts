@@ -263,6 +263,10 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
   return renderer;
 }
 
+
+//name: getMorganFingerprints
+//input: column molColumn {semType: Molecule}
+//output: column result
 export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
   assure.notNull(molColumn, 'molColumn');
 

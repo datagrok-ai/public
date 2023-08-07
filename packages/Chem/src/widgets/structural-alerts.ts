@@ -77,15 +77,10 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   const list = ui.div(alerts.map((i) => {
     const description = ui.divText(descriptionCol.get(i));
     const imageHost = ui.canvas(width, height);
-    const r = window.devicePixelRatio;
-    imageHost.width = width * r;
-    imageHost.height = height * r;
-    imageHost.style.width = width.toString() + 'px';
-    imageHost.style.height = height.toString() + 'px';
     //in case molecule is smiles setting correct coordinates to save molecule orientation
     if (!DG.chem.isMolBlock(molecule))
       molecule = _convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdKitModule!);
-    drawMoleculeToCanvas(0, 0, width * r, height * r, imageHost, molecule, smartsCol.get(i));
+    drawMoleculeToCanvas(0, 0, width, height, imageHost, molecule, smartsCol.get(i));
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
