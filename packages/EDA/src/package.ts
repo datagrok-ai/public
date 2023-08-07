@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './EDAtools';
@@ -25,7 +26,7 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: ML | Dimensionality Reduction | Principal Component Analysis...
+//top-menu: ML | Dimension Reduction | PCA...
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table
@@ -35,6 +36,56 @@ export async function init(): Promise<void> {
 //input: bool scale = true
 //output: dataframe result {action:join(table)}
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
+  center: boolean, scale: boolean): Promise<DG.DataFrame> 
+{
+  return renamePCAcolumns(await computePCA(table, features, components, center, scale));
+}
+
+//top-menu: ML | Dimension Reduction | UMAP...
+//name: UMAP
+//description: Uniform Manifold Approximation and Projection (UMAP).
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int components = 2
+//output: dataframe result {action:join(table)}
+export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number): Promise<DG.DataFrame> 
+{
+  const data = features.toList().map(col => col.toList());
+
+  console.log(data);
+  
+  const umap = new DimensionalityReducer(data, 'UMAP', 'Euclidean');
+
+  console.log(await umap.transform());
+
+  return renamePCAcolumns(await computePCA(table, features, components, true, true));
+}
+
+//top-menu: ML | Dimension Reduction | t-SNE...
+//name: tSNE
+//description: t-distributed stochastic neighbor embedding (t-SNE).
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int components = 2
+//input: bool center = true
+//input: bool scale = true
+//output: dataframe result {action:join(table)}
+export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, components: number,
+  center: boolean, scale: boolean): Promise<DG.DataFrame> 
+{
+  return renamePCAcolumns(await computePCA(table, features, components, center, scale));
+}
+
+//top-menu: ML | Dimension Reduction | SPE...
+//name: SPE
+//description: Stochastic proximity embedding (SPE).
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int components = 2
+//input: bool center = true
+//input: bool scale = true
+//output: dataframe result {action:join(table)}
+export async function SPE(table: DG.DataFrame, features: DG.ColumnList, components: number,
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
 {
   return renamePCAcolumns(await computePCA(table, features, components, center, scale));
