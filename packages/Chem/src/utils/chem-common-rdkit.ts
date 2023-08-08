@@ -157,7 +157,8 @@ export function drawRdKitReactionToOffscreenCanvas(
 }
 
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
-  onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
+  onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
+  options = {normalizeDepiction: true, straightenDepiction: true}) {
   if (!w || !h) {
     console.error('Width and height cannot be zero.');
     return;

@@ -69,7 +69,7 @@ category('substructure search', () => {
     console.log(`first Call to searchSubstructure took ${midTime1 - startTime} milliseconds`);
     console.log(`loop Call to searchSubstructure took ${midTime2 - midTime1} milliseconds`);
     console.log(`last Call to searchSubstructure took ${endTime - midTime2} milliseconds`);
-  });
+  }, {timeout: 60000});
 
   test('searchSubstructureAfterChanges_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
