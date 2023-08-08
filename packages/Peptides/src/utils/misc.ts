@@ -5,6 +5,7 @@ import * as C from './constants';
 import * as type from './types';
 import {getSplitterForColumn} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -103,7 +104,7 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
   ]);
 }
 
-export async function getTemplate(sequence: string): Promise<string[]> {
+export async function getTemplate(sequence: string): Promise<ISeqSplitted> {
   const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
   await grok.data.detectSemanticTypes(tempDf);
   const splitter = getSplitterForColumn(tempDf.getCol('sequence'));

@@ -41,6 +41,7 @@ export enum TAGS {
   MONOMER_POSITION_MODE = 'monomerPositionMode',
   MULTIPLE_VIEWS = 'isMultipleViews',
   IDENTITY_TEMPLATE = 'identityTemplate',
+  SIMILARITY_TEMPLATE = 'similarityTemplate',
 }
 
 export enum SEM_TYPES {

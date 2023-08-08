@@ -1,7 +1,9 @@
 
+import {sequenceSimilarityForColumns} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import * as DG from 'datagrok-api/dg';
 
-export function calculateIdentity(template: string[], splitSeqDf: DG.DataFrame): DG.Column<number> {
+export function calculateIdentity(template: ISeqSplitted, splitSeqDf: DG.DataFrame): DG.Column<number> {
   const numPositions = splitSeqDf.columns.length;
   const positionCols: Uint32Array[] = new Array(numPositions);
   const positionEmptyCategories: number[] = new Array(numPositions);
@@ -27,4 +29,11 @@ export function calculateIdentity(template: string[], splitSeqDf: DG.DataFrame):
   }
 
   return identityScoresCol;
+}
+
+
+export async function calculateSimilarity(template: ISeqSplitted, splitSeqDf: DG.DataFrame): Promise<DG.Column<number>> {
+  const columns = splitSeqDf.columns.toList() as DG.Column<string>[];
+  const scoresCol = await sequenceSimilarityForColumns(columns, template);
+  return scoresCol;
 }

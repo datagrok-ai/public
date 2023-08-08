@@ -1,10 +1,11 @@
 # Peptides changelog
 
-## 1.11.1 (WIP)
+## 1.12.0 (WIP)
 
 ### Features
 
 * Improved Identity panel UI.
+* Added sequence similarity functionality.
 
 ### Bug Fixes
 

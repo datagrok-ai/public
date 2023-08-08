@@ -32,7 +32,8 @@ import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
-import {calculateIdentity} from './widgets/similarity';
+import {calculateIdentity, calculateSimilarity} from './widgets/similarity';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -1118,7 +1119,7 @@ export class PeptidesModel {
       //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
       let sequence = this.identityTemplate;
-      let template: string[];
+      let template: ISeqSplitted;
       const sequencesCol = this.df.getCol(this.settings.sequenceColumnName!);
       const calculateIdentityBtn = ui.button('Identity',
         async () => {
@@ -1131,15 +1132,31 @@ export class PeptidesModel {
             return;
           }
           const identityScoresCol = calculateIdentity(template, this.splitSeqDf);
-          identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, sequence);
+          this.identityTemplate = sequence;
           identityScoresCol.name = this.df.columns.getUnusedName(identityScoresCol.name);
           this.df.columns.add(identityScoresCol);
         }, 'Calculate identity');
+      const calculateSimilarityBtn = ui.button('Similarity',
+        async () => {
+          try {
+            template ??= await getTemplate(sequence);
+          } catch (e) {
+            grok.shell.warning('Couldn\'t recognize sequence format.');
+            grok.log.warning(e as string);
+            calculateSimilarityBtn.disabled = true;
+            return;
+          }
+          const similarityScoresCol = await calculateSimilarity(template, this.splitSeqDf);
+          similarityScoresCol.setTag(C.TAGS.SIMILARITY_TEMPLATE, sequence);
+          similarityScoresCol.name = this.df.columns.getUnusedName(similarityScoresCol.name);
+          this.df.columns.add(similarityScoresCol);
+        }, 'Calculate similarity');
       const templateInput = ui.stringInput('Template', sequence, async () => {
         this.identityTemplate = templateInput.value;
         if (isNaN(parseInt(templateInput.value))) {
           if (templateInput.value.length === 0) {
             calculateIdentityBtn.disabled = true;
+            calculateSimilarityBtn.disabled = true;
             return;
           }
           sequence = templateInput.value;
@@ -1149,6 +1166,7 @@ export class PeptidesModel {
           if (rowIndex < 0 || rowIndex >= selectedIndexes.length) {
             grok.shell.warning('Invalid row index');
             calculateIdentityBtn.disabled = true;
+            calculateSimilarityBtn.disabled = true;
             return;
           }
           sequence = sequencesCol.get(selectedIndexes[rowIndex]);
@@ -1159,13 +1177,15 @@ export class PeptidesModel {
           grok.shell.warning('Couldn\'t recognize sequence format.');
           grok.log.warning(e as string);
           calculateIdentityBtn.disabled = true;
+          calculateSimilarityBtn.disabled = true;
           return;
         }
         calculateIdentityBtn.disabled = false;
+        calculateSimilarityBtn.disabled = false;
       }, {placeholder: 'Sequence or row index...'});
       templateInput.setTooltip('Template sequence. Can be row index, peptide ID or sequence.');
       templateInput.fireChanged();
-      this.analysisView.setRibbonPanels([[settingsButton], [templateInput.root, calculateIdentityBtn]], false);
+      this.analysisView.setRibbonPanels([[settingsButton], [templateInput.root, calculateIdentityBtn, calculateSimilarityBtn]], false);
       this.isRibbonSet = true;
       this.updateGrid();
     }
