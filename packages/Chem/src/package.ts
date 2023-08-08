@@ -263,6 +263,9 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
   return renderer;
 }
 
+//name: getMorganFingerprints
+//input: column molColumn {semType: Molecule}
+//output: column result
 export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
   assure.notNull(molColumn, 'molColumn');
 
@@ -771,9 +774,11 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function descriptorsWidget(smiles: string): DG.Widget {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
-    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
-      getDescriptorsSingle(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  if (!smiles || DG.chem.Sketcher.isEmptyMolfile(smiles))
+    return new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return isSmarts(smiles) || isFragment(smiles)
+    ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE))
+    : getDescriptorsSingle(smiles);
 }
 
 //name: Biology | Drug Likeness
@@ -794,7 +799,7 @@ export function drugLikeness(smiles: DG.SemanticValue): DG.Widget {
 //tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
+export function properties(smiles: DG.SemanticValue): DG.Widget {
   return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
     isSmarts(smiles.value) || isFragment(smiles.value)? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
       propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));

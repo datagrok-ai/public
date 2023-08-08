@@ -27,18 +27,12 @@ async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: 
 function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   params.line.mols.forEach((mol: number, index: number) => {
     const imageHost = ui.canvas(canvasWidth, canvasHeight);
-    const r = window.devicePixelRatio;
-    imageHost.width = canvasWidth * r;
-    imageHost.height = canvasHeight * r;
-    imageHost.style.width = (canvasWidth).toString() + 'px';
-    imageHost.style.height = (canvasHeight).toString() + 'px';
     let molecule = params.seqCol.get(mol);
     if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
       //convert to molFile to draw in coordinates similar to dataframe cell
       molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
     }
-    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, params.cashedData[params.line.id],
-      {normalizeDepiction: false, straightenDepiction: false});
+    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, params.cashedData[params.line.id]);
     ui.empty(hosts[index]);
     if (!params.cashedData[params.line.id])
       hosts[index].append(ui.divText('MCS loading...'));
