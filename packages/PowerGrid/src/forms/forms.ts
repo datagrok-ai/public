@@ -1,8 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import {MARKER_TYPE} from 'datagrok-api/dg';
 import {getSettingsBase, SparklineType, SummarySettingsBase} from '../sparklines/shared';
-import {GridColumn} from "datagrok-api/src/grid";
-import {LabelElement, Scene} from "./scene";
+import {GridCell, GridColumn} from "datagrok-api/src/grid";
+import {GridCellElement, LabelElement, MarkerElement, Scene} from "./scene";
 
 
 interface FormSettings extends SummarySettingsBase {
@@ -44,17 +46,15 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     };
   }
 
-  render(g: CanvasRenderingContext2D,
-         x: number, y: number, w: number, h: number,
-         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+  static makeScene(gridCell: DG.GridCell, b?: DG.Rect): Scene {
+
+    const g = gridCell.grid.canvas.getContext("2d")!;
     const df = gridCell.grid.dataFrame;
     const settings: FormSettings = getSettings(gridCell.gridColumn);
     const row = gridCell.cell.row.idx;
     let cols = df.columns.byNames(settings.columnNames);
-    let b = new DG.Rect(x, y, w, h).inflate(-2, -2);
-
+    b ??= gridCell.bounds.inflate(-2, -2);
     const scene = new Scene(b);
-    g.font = gridCell.grid.props.defaultCellFont;
 
     // molecules first
     const molCol = cols.find(c => c.semType == DG.SEMTYPE.MOLECULE);
@@ -63,54 +63,68 @@ export class FormCellRenderer extends DG.GridCellRenderer {
       b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
       cols = cols.filter(c => c.semType !== DG.SEMTYPE.MOLECULE);
       let cell = gridCell.grid.cell(molCol.name, gridCell.gridRow);
-      cell.renderer.render(g, r.x, r.y, r.width, r.height, cell, cell.style);
+      scene.elements.push(new GridCellElement(r, cell));
+
+      //cell.renderer.render(g, r.x, r.y, r.width, r.height, cell, cell.style);
     }
 
     const maxNameWidth = Math.min(200, Math.max(...cols.map(c => g.measureText(c.name).width)));
     const maxValueWidth = Math.min(100, Math.max(...cols.map(c => getMaxValueWidth(c) * 8)));
     const showColumnNames = maxNameWidth + maxValueWidth + 10 < b.width;
     const columnNamesWidth = showColumnNames ? maxNameWidth + 10 : 0;
-
-    g.textBaseline = 'top';
-    g.textAlign = 'left';
+    const colHeight = Math.min(20, b.height / cols.length);
 
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
-      const numColor = col.meta.colors.getType() == DG.COLOR_CODING_TYPE.OFF ? gridCell.grid.props.cellTextColor : col.meta.colors.getColor(row);
+      const cell = gridCell.grid.cell(col.name, gridCell.gridRow);
+      let numColor = col.meta.colors.getType() == DG.COLOR_CODING_TYPE.OFF ? gridCell.grid.props.cellTextColor : col.meta.colors.getColor(row);
       const valueColor = DG.Color.toHtml(numColor);
 
-      if (h < cols.length * 20) {
+      if (b.height < cols.length * 20 * 0.7) {
         // render in one row
         const r = b.getLeftPart(cols.length, i);
-        //scene.elements.push(new LabelElement(r, col.getString(row)));
-        g.save();
-        g.rect(r.x, r.y, r.width, r.height);
-        g.clip();
-        g.fillStyle = valueColor;
-        if (r.width > 30)
-          g.fillText(col.getString(row), r.x + 2, r.y + 2);
-        else
-          DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, r.x + r.width / 2, r.y + r.height / 2, numColor, 5);
-        g.restore();
+        const e = new GridCellElement(r, cell);
+        // const e = r.width > 30
+        //   ? new LabelElement(r, col.getString(row), { color: valueColor, horzAlign: 'center', vertAlign: 'center' })
+        //   : new MarkerElement(new DG.Rect(r.midX - 5, r.midY - 5, 10, 10), MARKER_TYPE.CIRCLE, numColor);
+        scene.elements.push(e);
       }
       else {
-        const r = new DG.Rect(b.x, b.y + i * 20, b.width, 20);
         // render in a column
-        //g.fillStyle = 'darkgrey';
+        const r = new DG.Rect(b.x, b.y + i * colHeight, b.width, colHeight);
         if (showColumnNames)
           scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), col.name, {horzAlign: 'right'}));
-          //g.fillText(col.name, b.x + columnNamesWidth - g.measureText(col.name).width - 5, b.y + i * 20);
-        g.fillStyle = valueColor;
-
-        if (col.semType == DG.SEMTYPE.MOLECULE) {
-          let cell = gridCell.grid.cell(col.name, gridCell.gridRow);
-          cell.renderer.render(g, b.x + columnNamesWidth, r.y, 50, 30, cell, cell.style);
-        }
-        else
-          g.fillText(col.getString(row), b.x + columnNamesWidth, r.y);
+        scene.elements.push(new LabelElement(r.cutLeft(columnNamesWidth).move(5, 0), col.getString(row), {horzAlign: 'left'}));
       }
     }
 
+    return scene;
+  }
+
+  render(g: CanvasRenderingContext2D,
+         x: number, y: number, w: number, h: number,
+         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    const scene = FormCellRenderer.makeScene(gridCell);
     scene.render(g);
+  }
+
+  makeBestScene(gridCell: DG.GridCell): Scene {
+    const height = getSettings(gridCell.gridColumn).columnNames
+      .map(name => gridCell.tableColumn?.semType === DG.SEMTYPE.MOLECULE ? 150 : 20)
+      //.map(name => gridCell.grid.cell(name, gridCell.gridRow).renderer.getDefaultSize(gridCell.gridColumn).height)
+      .reduce((sum, height) => sum! + height!, 0)!;
+    return FormCellRenderer
+      .makeScene(gridCell, new DG.Rect(0, 0, 200, height));
+  }
+
+  onMouseEnter(gridCell: DG.GridCell, e: MouseEvent): void {
+    const scene = FormCellRenderer.makeScene(gridCell);
+    if (scene.elements.every(e => e.bounds.width < 25 && e.bounds.height < 25)) {
+      setTimeout(() => ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(), gridCell.documentBounds.right, gridCell.documentBounds.top), 200);
+    }
+  }
+
+  onMouseDown(gridCell: GridCell, e: MouseEvent): void {
+    grok.shell.o = this.makeBestScene(gridCell).toCanvas();
   }
 }
