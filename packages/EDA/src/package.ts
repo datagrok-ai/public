@@ -7,12 +7,13 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS} from './EDAtools';
+import {computePCA, computePLS} from './eda-tools';
 import {renamePCAcolumns, addPLSvisualization, regressionCoefficientsBarChart, 
-  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './EDAui';
-import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
+  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
+import {carsDataframe, testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
+import {getRowsOfNumericalColumnns} from './utils';
 
 export const _package = new DG.Package();
 
@@ -50,13 +51,16 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //output: dataframe result {action:join(table)}
 export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number): Promise<DG.DataFrame> 
 {
-  const data = features.toList().map(col => col.toList());
+  /*const data = features.toList().map(col => col.toList());
 
   console.log(data);
   
   const umap = new DimensionalityReducer(data, 'UMAP', 'Euclidean');
 
-  console.log(await umap.transform());
+  console.log(await umap.transform());*/
+
+  for (const row of getRowsOfNumericalColumnns(features))
+    console.log(row);
 
   return renamePCAcolumns(await computePCA(table, features, components, true, true));
 }

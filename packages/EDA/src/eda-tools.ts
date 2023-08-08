@@ -7,13 +7,13 @@ import * as DG from 'datagrok-api/dg';
 import {_principalComponentAnalysisInWebWorker,
   _partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
 
-import {checkComponenets, checkGeneratorSVMinputs} from './utils';
+import {checkWasmDimensionReducerInputs, checkGeneratorSVMinputs} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
 {
-  checkComponenets(features, components);
+  checkWasmDimensionReducerInputs(features, components);
 
   const centerNum = center ? 1 : 0;
   const scaleNum = scale ? 1 : 0;
@@ -32,7 +32,7 @@ export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, c
 // Partial least square regression (PLS)
 export async function computePLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number): Promise<any> 
 {
-  checkComponenets(features, components);
+  checkWasmDimensionReducerInputs(features, components);
 
   let _output: any;
   let _promise = _partialLeastSquareRegressionInWebWorker(table, features, predict, components);

@@ -20,14 +20,29 @@ const INCORERRECT_FEATURES_MES = 'features must be positive.';
 const INCORERRECT_SAMPLES_MES = 'samples must be positive.';
 const INCORERRECT_PERCENTAGE_MES = 'violators percentage must be from the range from 0 to 100.';
 const DATAFRAME_IS_TOO_BIG_MES = 'dataframe is too big.';
+const UNSUPPORTED_COLUMN_TYPE_MES = `unsupported column type. Only ${DG.COLUMN_TYPE.FLOAT} and ${DG.COLUMN_TYPE.INT} columns processing is supported.`;
 
-// Check components count (PCA, PLS)
-export function checkComponenets(features: DG.ColumnList, components: number): void {
+// Check column type
+export function checkColumnType(col: DG.Column): void {
+  if ((col.type != DG.COLUMN_TYPE.FLOAT) && (col.type != DG.COLUMN_TYPE.INT))
+    throw new Error(UNSUPPORTED_COLUMN_TYPE_MES);
+}
+
+// Check dimension reducer inputs
+export function checkDimensionReducerInputs(features: DG.ColumnList, components: number): void {
   if (components < COMP_MIN)
     throw new Error(COMP_POSITVE_MES);
 
   if (components > features.length)
     throw new Error(COMP_EXCESS);
+
+  for (const col of features)
+    checkColumnType(col);
+}
+
+// Check wasm dimension reducer inputs
+export function checkWasmDimensionReducerInputs(features: DG.ColumnList, components: number): void {
+  checkDimensionReducerInputs(features, components);
 
   if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
     throw new Error(DATAFRAME_IS_TOO_BIG_MES);
@@ -48,4 +63,29 @@ export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: num
 
   if ((violatorsPercentage < PERCENTAGE_MIN) || (violatorsPercentage > PERCENTAGE_MAX))
     throw new Error(INCORERRECT_PERCENTAGE_MES);
+}
+
+//
+export function getRowsOfNumericalColumnns(columnList: DG.ColumnList): any[][] {
+  const columns = columnList.toList();
+  const rowCount = columns[0].length;
+  const colCount = columns.length;  
+
+  const output = [] as any[][];
+
+  for (let i = 0; i < rowCount; ++i)
+    output.push(Array(colCount));
+
+  for (let j = 0; j < colCount; ++j) {
+    const col = columns[j];
+
+    checkColumnType(col);
+
+    const array = col.getRawData();
+
+    for (let i = 0; i < rowCount; ++i)
+      output[i][j] = array[i];
+  }
+
+  return output;
 }
