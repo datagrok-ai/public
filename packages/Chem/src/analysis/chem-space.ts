@@ -55,7 +55,7 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
 
 export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
-  options?: IUMAPOptions | ITSNEOptions):  Promise<DG.Viewer | undefined>{
+  options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
 
   const chemSpaceParams = {

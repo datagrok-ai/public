@@ -26,5 +26,7 @@ export const MAX_MCS_ROW_COUNT = 50000;
 export const MESSAGE_MALFORMED = 'MALFORMED_INPUT_VALUE';
 const TERMINATE_SEARCH = 'terminate_substructure_search';
 const SUBSTRUCTURE_SEARCH_PROGRESS = 'substructure_search_progress';
-export const getTerminateEventName = (tableName: string, colName: string) => `${TERMINATE_SEARCH}-${tableName}-${colName}`;
-export const getSearchProgressEventName = (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
+export const getTerminateEventName =
+  (tableName: string, colName: string) => `${TERMINATE_SEARCH}-${tableName}-${colName}`;
+export const getSearchProgressEventName =
+  (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;

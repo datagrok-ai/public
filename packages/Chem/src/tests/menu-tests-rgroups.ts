@@ -27,7 +27,7 @@ category('top menu r-groups', () => {
     await grok.data.detectSemanticTypes(malformed);
     coreEmpty = getMCS(empty.col('smiles')!, true, true)!;
     coreMalformed = getMCS(malformed.col('canonical_smiles')!, true, true)!;
-    dfForMcs = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_50K.csv") :
+    dfForMcs = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_50K.csv') :
       await readDataframe('tests/spgi-100.csv');
   });
 
@@ -51,13 +51,13 @@ category('top menu r-groups', () => {
     expect(mcs, DG.Test.isInBenchmark ?
       `[#8,#6,#7,#9,#15,#16,#17,#35]-,:[#17,#5,#6,#7,#8,#14,#15,#16,#33,#34]` :
       `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
-});
+  });
 
   test('rgroups.smiles', async () => {
     if (DG.Test.isInBenchmark) {
       await grok.functions.call('Chem:FindRGroups', {
         molecules: 'canonical_smiles',
-        df: await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip"),
+        df: await grok.data.files.openTable('Demo:Files/chem/smiles_200K.zip'),
         core: 'c1ccccc1',
         prefix: 'R',
       });

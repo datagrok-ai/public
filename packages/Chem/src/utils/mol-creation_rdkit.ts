@@ -54,12 +54,13 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
 }
 
 
-export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string, rdKitModule: RDModule): RDMol | null {
+export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string,
+  rdKitModule: RDModule): RDMol | null {
   let queryMol = null;
 
   if (isMolBlock(queryMolString)) {
     if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
-      queryMol = getMolSafe(queryMolString, { mergeQueryHs: true }, rdKitModule).mol;
+      queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
     else {
       try {
         queryMol = rdKitModule.get_qmol(queryMolString);
@@ -76,7 +77,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       queryMol = rdKitModule.get_qmol(queryMolString);
     } catch (e) { }
     if (queryMol !== null) {
-      const mol = getMolSafe(queryMolString, { mergeQueryHs: true }, rdKitModule).mol;
+      const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
       if (mol !== null) { // check the qmol is proper
         const match = mol.get_substruct_match(queryMol);
         if (match === '{}') {
@@ -87,7 +88,7 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       } // else, this looks to be a real SMARTS
     } else { // failover to queryMolBlockFailover
       // possibly get rid of fall-over in future
-      queryMol = getMolSafe(queryMolBlockFailover, { mergeQueryHs: true }, rdKitModule).mol;
+      queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, rdKitModule).mol;
     }
   }
   return queryMol;

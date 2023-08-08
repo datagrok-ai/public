@@ -21,22 +21,22 @@ ctx.addEventListener('message', async (e: any) => {
       _rdKitModule.use_legacy_stereo_perception(false);
       console.log('RDKit (worker) initialized');
       _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
-    } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {
+    } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES)
       result = _rdKitServiceWorker!.initMoleculesStructures(args[0]);
-    } else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE) {
+    else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE)
       result = _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2]);
-    } else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
+    else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
       _rdKitServiceWorker!.freeMoleculesStructures();
       _rdKitServiceWorker = null;
-    } else if (op === WORKER_CALL.GET_FINGERPRINTS) {
+    } else if (op === WORKER_CALL.GET_FINGERPRINTS)
       result = _rdKitServiceWorker!.getFingerprints(args[0], args[1], args[2]);
-    } else if (op === WORKER_CALL.CONVERT_MOL_NOTATION) {
+    else if (op === WORKER_CALL.CONVERT_MOL_NOTATION)
       result = _rdKitServiceWorker!.convertMolNotation(args[0]);
-    } else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
+    else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS)
       result = _rdKitServiceWorker!.getStructuralAlerts(args[0], args[1]);
-    } else if (op === WORKER_CALL.INVALIDATE_CACHE) {
+    else if (op === WORKER_CALL.INVALIDATE_CACHE)
       _rdKitServiceWorker!.invalidateCache();
-    }
+
     port.postMessage({op: op, retval: result});
   } catch (e) {
     port.postMessage({error: e});

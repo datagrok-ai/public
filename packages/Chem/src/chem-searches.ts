@@ -14,9 +14,9 @@ import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import { getMolSafe } from './utils/mol-creation_rdkit';
-import { _package } from './package';
-import { IFpResult } from './rdkit-service/rdkit-service-worker-similarity';
+import {getMolSafe} from './utils/mol-creation_rdkit';
+import {_package} from './package';
+import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
 import {getSearchProgressEventName, getTerminateEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 
@@ -27,7 +27,7 @@ const enum FING_COL_TAGS {
 let lastColumnInvalidated: string = '';
 const canonicalSmilesColName = 'canonicalSmiles';
 
-let currentSearchSmiles: {[key: string]: string} = {};
+const currentSearchSmiles: {[key: string]: string} = {};
 
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray | null)[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
@@ -48,9 +48,9 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
   for (let n = 0; n < limit; n++) {
     const idx = sortedIndices[n];
     const score = distances[idx];
-    if (score < minScore) {
+    if (score < minScore)
       break;
-    }
+
     sortedMolStringsArr.push(molStringsColumn.get(idx));
     sortedScoresArr.push(score);
     sortedMolIndArr.push(idx);
@@ -59,7 +59,7 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
   const sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', length).init((i) => sortedMolStringsArr[i]);
   const sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', length).init((i) => sortedMolIndArr[i]);
   sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
-  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', length).init((i) => sortedScoresArr[i]);;
+  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', length).init((i) => sortedScoresArr[i]); ;
   return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
 }
 
@@ -110,7 +110,7 @@ async function _invalidate(molCol: DG.Column) {
 }
 
 
-function checkForSavedColumn(col: DG.Column, colTag: Fingerprint | string): DG.Column<any> | null{
+function checkForSavedColumn(col: DG.Column, colTag: Fingerprint | string): DG.Column<any> | null {
   const savedColName = '~' + col.name + '.' + colTag;
   const colVerTag = '.' + colTag + '.Version';
 
@@ -124,13 +124,14 @@ function checkForSavedColumn(col: DG.Column, colTag: Fingerprint | string): DG.C
 
 function saveColumns(col: DG.Column, data: (Uint8Array | string | null)[][],
   tags: string[], colTypes: DG.COLUMN_TYPE[]): void {
-  
-  for (let i = 0; i < data.length; i++)
-    saveColumn(col, data[i], tags[i], colTypes[i]);
+  if (col.dataFrame) {
+    for (let i = 0; i < data.length; i++)
+      saveColumn(col, data[i], tags[i], colTypes[i]);
 
-  const colVersion = col.version + data.length;
-  for (let i = 0; i < data.length; i++)
-    col.setTag('.' + tags[i] + '.Version', String(colVersion));
+    const colVersion = col.version + data.length;
+    for (let i = 0; i < data.length; i++)
+      col.setTag('.' + tags[i] + '.Version', String(colVersion));
+  }
 }
 
 
@@ -149,15 +150,16 @@ function saveColumn(col: DG.Column, data: (Uint8Array | string | null)[],
 
 /**
 * Creates columns with fingerprints and canonical smiles (if required) if haven't been created previously or
-*  molecular column has been changed 
+*  molecular column has been changed
 * @async
 * @param {DG.Column} molCol - column to count fps for
 * @param {Fingerprint} fingerprintsType - Morgan or Pattern
-* @param {boolean} returnSmiles - optional parameter, if passed column with canonical smiles is returned additionally to fps
+* @param {boolean} returnSmiles - optional parameter, if passed column with canonical smiles is returned
+additionally to fps
 * */
 async function invalidateAndSaveColumns(molCol: DG.Column, fingerprintsType: Fingerprint,
   returnSmiles?: boolean): Promise<IFpResult> {
-  const fpRes = await (await getRdKitService()).getFingerprints(fingerprintsType,  molCol.toList(), returnSmiles);
+  const fpRes = await (await getRdKitService()).getFingerprints(fingerprintsType, molCol.toList(), returnSmiles);
   returnSmiles ?
     saveColumns(molCol, [fpRes.fps, fpRes.smiles!], [fingerprintsType, canonicalSmilesColName],
       [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
@@ -235,15 +237,17 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 * @async
 * @param {DG.Column} molStringsColumn - column search in
 * @param {string} molString - smiles/molblock to filter by
-* @param {string} molBlockFailover - smart to filter by (is used if creation of RDMol object from query parameter failed)
-* @param {boolean} columnIsCanonicalSmiles - if column is canonical smiles itself, than invisible canonical smiles column
+* @param {string} molBlockFailover - smart to filter by (is used if creation of RDMol object from
+  query parameter failed)
+* @param {boolean} columnIsCanonicalSmiles - if column is canonical smiles itself, than invisible
+canonical smiles column
 will not be created along with pattern fp column
 * @param {boolean} awaitAll - in case of true fucntion will wait for results on a whole table to be received
 before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false, awaitAll = true
-) {
+  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false,
+  awaitAll = true): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name??''}`;
   currentSearchSmiles[searchKey] = molBlockFailover;
   await chemBeginCriticalSection();
@@ -262,22 +266,25 @@ export async function chemSubstructureSearchLibrary(
     }
 
     const matchesBitArray = new BitArray(molStringsColumn.length);
-    
+
     const terminateEventName = getTerminateEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
-    const searchProgressEventName = getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
+    const searchProgressEventName =
+      getSearchProgressEventName(molStringsColumn.dataFrame?.name ?? '', molStringsColumn.name);
     const updateFilterFunc = (progress: number) => {
       grok.events.fireCustomEvent(searchProgressEventName, progress * 100);
     };
 
     const getSavedCol = (colName: string) => {
-      let savedCol = checkForSavedColumn(molStringsColumn, colName);
+      const savedCol = checkForSavedColumn(molStringsColumn, colName);
       if (!savedCol)
         invalidateCacheFlag = true;
       return savedCol;
-    }
+    };
 
-    const canonicalSmilesList = getSavedCol(canonicalSmilesColName)?.toList() ?? new Array<string | null>(molStringsColumn.length).fill(null);
-    const fgsList = getSavedCol(Fingerprint.Pattern)?.toList() ?? new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
+    const canonicalSmilesList = getSavedCol(canonicalSmilesColName)?.toList() ??
+      new Array<string | null>(molStringsColumn.length).fill(null);
+    const fgsList = getSavedCol(Fingerprint.Pattern)?.toList() ??
+      new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
 
     if (invalidateCacheFlag) //invalidating cache in case column has been changed
       await rdKitService.invalidateCache();
@@ -286,34 +293,34 @@ export async function chemSubstructureSearchLibrary(
       bitArray: matchesBitArray,
       fpsRes: {
         fps: fgsList,
-        smiles: !columnIsCanonicalSmiles ? canonicalSmilesList : null
-      }
+        smiles: !columnIsCanonicalSmiles ? canonicalSmilesList : null,
+      },
     };
     const subFuncs = await rdKitService.
-      searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc, molStringsColumn.toList(), !columnIsCanonicalSmiles);
-    
+      searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
+        molStringsColumn.toList(), !columnIsCanonicalSmiles);
+
     const saveProcessedColumns = () => {
       try {
-      !columnIsCanonicalSmiles ?
-      saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!], [Fingerprint.Pattern, canonicalSmilesColName],
-        [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-      saveColumns(molStringsColumn, [result.fpsRes!.fps], [Fingerprint.Pattern], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+        !columnIsCanonicalSmiles ?
+          saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
+            [Fingerprint.Pattern, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
+          saveColumns(molStringsColumn, [result.fpsRes!.fps], [Fingerprint.Pattern], [DG.COLUMN_TYPE.BYTE_ARRAY]);
       } catch {
 
       } finally {
-      chemEndCriticalSection();
+        chemEndCriticalSection();
       }
     };
     const fireFinishEvents = () => {
-        grok.events.fireCustomEvent(searchProgressEventName, 100);
-        grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
-        saveProcessedColumns();
-    }
+      grok.events.fireCustomEvent(searchProgressEventName, 100);
+      grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
+      saveProcessedColumns();
+    };
     if (awaitAll) {
       await Promise.all(subFuncs.promises);
       fireFinishEvents();
-    }
-    else {
+    } else {
       const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (mol: string) => {
         if (mol === molBlockFailover) {
           subFuncs!.setTerminateFlag();
@@ -338,7 +345,8 @@ export async function chemSubstructureSearchLibrary(
   }
 }
 
-export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, onError?: (error: Error) => any): BitArray {
+export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, onError?:
+  (error: Error) => any): BitArray {
   let mol = null;
   try {
     mol = getMolSafe(molString, {}, getRdKitModule()).mol;
@@ -352,7 +360,7 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, 
       } else if (fingerprint == Fingerprint.Pattern)
         fp = mol.get_pattern_fp_as_uint8array();
       else
-        throw new Error(`${fingerprint} does not match any fingerprint`);  
+        throw new Error(`${fingerprint} does not match any fingerprint`);
       return rdKitFingerprintToBitArray(fp) as BitArray;
     } else
       throw new Error(`Chem | Possibly a malformed molString: ${molString}`);

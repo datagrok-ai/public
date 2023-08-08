@@ -45,7 +45,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
 }
 
 function drawTooltipElement(params: ITooltipAndPanelParams, element: HTMLDivElement,
-  hosts: HTMLDivElement[], molIdx: number, idx: number) {
+  hosts: HTMLDivElement[], molIdx: number) {
   const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
   activity.style.display = 'flex';
   activity.style.justifyContent = 'left';

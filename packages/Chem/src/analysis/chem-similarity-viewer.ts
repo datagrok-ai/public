@@ -7,12 +7,9 @@ import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
-import {getMolSafe} from '../utils/mol-creation_rdkit';
 import '../../css/chem.css';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   followCurrentRow: boolean;
@@ -98,7 +95,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           }
           this.molCol = df.getCol('smiles');
           this.idxs = df.getCol('indexes');
-          this.scores = df.getCol('score'); 
+          this.scores = df.getCol('score');
         } catch (e: any) {
           grok.shell.error(e.message);
           return;
@@ -201,11 +198,9 @@ export async function chemSimilaritySearch(
   minScore: number,
   fingerprint: Fingerprint,
 ) : Promise<DG.DataFrame | null> {
-
-
-  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint, () => { return null; });
+  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint, () => {return null;});
   if (!targetFingerprint)
-    return null;  //returning null in case target molecule is malformed
+    return null; //returning null in case target molecule is malformed
   const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, false);
   malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];

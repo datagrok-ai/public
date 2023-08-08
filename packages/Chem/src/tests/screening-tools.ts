@@ -29,7 +29,7 @@ category('screening tools', () => {
   test('elementalAnalysis.smiles', async () => {
     let df: DG.DataFrame;
     if (DG.Test.isInBenchmark)
-      df = await grok.data.files.openTable("Demo:Files/chem/smiles_100K.zip");
+      df = await grok.data.files.openTable('Demo:Files/chem/smiles_100K.zip');
     else
       df = molecules.clone();
     const tv = grok.shell.addTableView(df);
@@ -85,7 +85,7 @@ category('screening tools: benchmarks', () => {
     const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
     // const rdkitModule = chemCommonRdKit.getRdKitModule();
     const rdkitService = await chemCommonRdKit.getRdKitService();
-    const sarSmall = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip") :
+    const sarSmall = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_200K.zip') :
       DG.DataFrame.fromCsv(await _package.files.readAsText('tests/smi10K.csv'));
     const smilesCol = sarSmall.getCol('smiles');
     const ruleSet: RuleSet = {'BMS': true, 'Dandee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,

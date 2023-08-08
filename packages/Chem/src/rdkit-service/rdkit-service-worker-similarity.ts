@@ -1,4 +1,4 @@
-import {MAX_MOL_CACHE_SIZE, RdKitServiceWorkerBase} from './rdkit-service-worker-base';
+import {RdKitServiceWorkerBase} from './rdkit-service-worker-base';
 import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint} from '../utils/chem-common';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, IMolContext} from '../utils/mol-creation_rdkit';
@@ -21,7 +21,8 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
    * web-worker method.
    *
    * @param {Fingerprint} fingerprintType Type of Fingerprint
-   * @param {string[]} molecules List of molecule strings to calculate fingerprints on. If passed, fps mols are created on the fly
+   * @param {string[]} molecules List of molecule strings to calculate fingerprints on. If passed,
+   * fps mols are created on the fly
    * @param {boolean} getCanonicalSmiles If passed canonical smiles are also calculated and returned
    * In case it is passed to function RDMols will be created on the fly.
    */
@@ -74,7 +75,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
         } catch {
           // nothing to do, fp is already null
         } finally {
-          if (!addedToCache){ //do not delete mol in case it is in cache
+          if (!addedToCache) { //do not delete mol in case it is in cache
             rdMol?.delete();
           }
         }

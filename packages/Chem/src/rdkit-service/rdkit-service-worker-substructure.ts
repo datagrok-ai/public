@@ -2,7 +2,7 @@ import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { RuleId } from '../panels/structural-alerts';
+import {RuleId} from '../panels/structural-alerts';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -31,16 +31,16 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   initMoleculesStructures(molecules: string[]): number {
     console.log(`initMoleculesStructures`);
     this.freeMoleculesStructures();
-    this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);     
+    this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
     let numMalformed = 0;
     for (let i = 0; i < molecules.length; ++i) {
       const item = molecules[i];
       if (item && item !== '') {
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
         const mol = molSafe.mol;
-        if (mol) {
+        if (mol)
             this._rdKitMols![i] = mol;
-        } else 
+        else
           numMalformed++;
       }
     }
@@ -51,10 +51,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
-    let queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
-    
+    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
+
     if (queryMol !== null) {
-      const matches = this.searchWithPatternFps(queryMol, molecules)
+      const matches = this.searchWithPatternFps(queryMol, molecules);
       queryMol.delete();
       return matches;
     } else
@@ -64,25 +64,24 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   searchWithPatternFps(queryMol: RDMol, molecules: string[]): Uint32Array {
     const matches = new BitArray(molecules.length);
-    let mol: RDMol | null = null;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
-          let mol: RDMol | null = null;
-          let isCached = false;
-          try{
-            const cachedMol = this._molsCache?.get(molecules[i]);
-            mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
-            if (cachedMol || this.addToCache(mol))
-              isCached = true;
-            if (mol) {
-              if (mol.get_substruct_match(queryMol) !== '{}')
-                matches.setFast(i, true);
-            }
-          } catch {
-            continue;
-          } finally {
-            !isCached && mol?.delete();
-          }
+      let mol: RDMol | null = null;
+      let isCached = false;
+      try {
+        const cachedMol = this._molsCache?.get(molecules[i]);
+        mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
+        if (cachedMol || this.addToCache(mol))
+          isCached = true;
+        if (mol) {
+          if (mol.get_substruct_match(queryMol) !== '{}')
+            matches.setFast(i, true);
+        }
+      } catch {
+        continue;
+      } finally {
+        !isCached && mol?.delete();
+      }
     }
     return matches.buffer;
   }
@@ -131,7 +130,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
     const ruleSmartsMap: {[rule in RuleId]?: (RDMol | null)[]} = {};
     const rules = Object.keys(alerts) as RuleId[];
-    for (let rule of rules) {
+    for (const rule of rules) {
       const ruleLength = alerts[rule]!.length;
       ruleSmartsMap[rule] = new Array(ruleLength);
       for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++) {

@@ -1,10 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {expect, testEvent} from '@datagrok-libraries/utils/src/test';
+import {expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {searchSubstructure} from '../package';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { getTerminateEventName } from '../constants';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -16,7 +14,7 @@ export async function loadFileAsBytes(name: string): Promise<Uint8Array> {
 
 export async function dfFromColWithOneCategory(colName: string, value: string, length: number): Promise<DG.DataFrame> {
   const col = DG.Column.fromType(DG.COLUMN_TYPE.STRING, colName, length);
-  col.init((i) => value);
+  col.init((_) => value);
   return DG.DataFrame.fromColumns([col]);
 }
 export async function createTableView(tableName: string): Promise<DG.TableView> {
@@ -37,8 +35,8 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]): Promise<void> {
   const col = df.columns.byName(colName);
-  let bitSet: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
-    expect(bitSet !== null, true);
+  const bitSet: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
+  expect(bitSet !== null, true);
   const bitsetString = bitSet.toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
@@ -47,7 +45,6 @@ export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   }
   for (let i = 0; i < bitsetArray.length; ++i)
     expect(bitsetArray[i] === '0', true);
-
 }
 
 export async function _testSearchSubstructureSARSmall(): Promise<void> {

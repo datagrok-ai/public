@@ -394,7 +394,7 @@ async function testCalculateGroup(funcName: string, colName: string, dlgName: st
   grok.shell.o = ui.div();
 }
 
-function findAccordionPanelElement(propPanel: HTMLElement, elName: string): HTMLElement {
+function findAccordionPanelElement(propPanel: HTMLElement): HTMLElement {
   return Array.from(propPanel.querySelectorAll('div.d4-accordion-pane-header'))
     .find((el) => el.textContent === 'Actions') as HTMLElement;
 }

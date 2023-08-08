@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {findRGroups} from '../scripts-api';
 import {getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 
 export function convertToRDKit(smiles: string): string {
@@ -93,7 +93,7 @@ export function rGroupAnalysis(col: DG.Column): void {
                 mol = module.get_mol(molStr);
                 molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
               } catch (e) {
-                //do nothing here, molsArray[i] is empty for invalid molecules  
+                //do nothing here, molsArray[i] is empty for invalid molecules
               } finally {
                 mol?.delete();
               }

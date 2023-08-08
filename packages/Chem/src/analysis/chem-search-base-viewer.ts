@@ -114,7 +114,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.metricsDiv!.appendChild(metricsButton);
   }
 
-  async render(computeData = true) {
+  async render() {
 
   }
 

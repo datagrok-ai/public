@@ -12,7 +12,6 @@ import {initRdKitService} from '../utils/chem-common-rdkit';
 import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
-import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
@@ -87,8 +86,8 @@ export class SubstructureFilter extends DG.Filter {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         /* setting syncEvent to true only if base sketcher is initialized.
         If base sketcher is initialized, it will fire onChange event */
-        if (this.currentSearches.size > 0) 
-            grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
+        if (this.currentSearches.size > 0)
+          grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
         if (this.sketcher.sketcher?.isInitialized)
           this.syncEvent = true;
         this.bitset = state.bitset!;
@@ -165,10 +164,10 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter(): void {
-   // console.log(`in apply filter ${this.sketcher.getMolFile()}`)
-      if (this.dataFrame && this.bitset && !this.isDetached) {
-        this.dataFrame.filter.and(this.bitset);
-        this.dataFrame.rows.addFilterState(this.saveState());
+    // console.log(`in apply filter ${this.sketcher.getMolFile()}`)
+    if (this.dataFrame && this.bitset && !this.isDetached) {
+      this.dataFrame.filter.and(this.bitset);
+      this.dataFrame.rows.addFilterState(this.saveState());
         this.column!.temp['chem-scaffold-filter'] = this.currentMolfile;
         this.active = true;
     }
@@ -192,7 +191,7 @@ export class SubstructureFilter extends DG.Filter {
 
       this.subs.push(grok.events.onCustomEvent(this.terminateEventName).subscribe((queryMol: string) => {
         this.finishSearch(queryMol);
-    }));
+      }));
     }
     this.active = state.active ?? true;
     if (this.column?.temp['chem-scaffold-filter'])
@@ -217,8 +216,9 @@ export class SubstructureFilter extends DG.Filter {
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
-      this.currentMolfile = newMolFile; 
-      this.bitset = !this.active ? DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null;//TODO
+      this.currentMolfile = newMolFile;
+      this.bitset = !this.active ?
+        DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null;//TODO
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.dataFrame?.rows.requestFilter();
@@ -226,36 +226,34 @@ export class SubstructureFilter extends DG.Filter {
       this.finishSearch(newSmarts ?? '');
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
         molblock: this.currentMolfile, colName: this.columnName,
-        filterId: this.filterId, tableName: this.tableName}); 
+        filterId: this.filterId, tableName: this.tableName});
     } else if (wu(this.dataFrame!.rows.filters)
-        .has(`${this.columnName}: ${_convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
-      getRdKitModule())}`)) {
+      .has(`${this.columnName}: ${_convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
+        getRdKitModule())}`)) {
       // some other filter is already filtering for the exact same thing
       return;
     } else {
-        this.terminatePreviousSearch();
-        this.currentMolfile = newMolFile; 
-        this.currentSearches.add(newSmarts ?? '');
-        this.calculating = true;
-        this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
-        try {
-          grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
-            molblock: this.currentMolfile, colName: this.columnName,
-            filterId: this.filterId, tableName: this.tableName});  
+      this.terminatePreviousSearch();
+      this.currentMolfile = newMolFile;
+      this.currentSearches.add(newSmarts ?? '');
+      this.calculating = true;
+      this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
+      try {
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
+          molblock: this.currentMolfile, colName: this.columnName,
+          filterId: this.filterId, tableName: this.tableName});
 
-          const bitArray = await this.getFilterBitset();
+        const bitArray = await this.getFilterBitset();
+        this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+        this.batchResultObservable?.unsubscribe();
+        this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-          this.batchResultObservable?.unsubscribe();
-          this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
-
-            this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-            this.dataFrame?.rows.requestFilter();
+          this.dataFrame?.rows.requestFilter();
             this.progressBar!.update(progress, `${progress?.toFixed(2)}% of search completed`);
-            
-        })
-        } catch {
-          this.finishSearch(newSmarts ?? '');
-        }
+        });
+      } catch {
+        this.finishSearch(newSmarts ?? '');
+      }
     }
   }
 
@@ -271,7 +269,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   terminatePreviousSearch() {
-    if (this.currentSearches.size > 0) 
+    if (this.currentSearches.size > 0)
       grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
   }
 
@@ -284,7 +282,7 @@ export class SubstructureFilter extends DG.Filter {
         this.batchResultObservable?.unsubscribe();
         console.log(`Unsubscribed from batchResultObservable  Filter ${this.filterId}`);
       }
-    }
+    };
     if (this.currentSearches.has(queryMol)) {
       this.currentSearches.delete(queryMol);
       finish();
@@ -296,5 +294,4 @@ export class SubstructureFilter extends DG.Filter {
       finish();
     }
   }
-
 }

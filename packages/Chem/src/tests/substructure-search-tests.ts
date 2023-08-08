@@ -57,7 +57,6 @@ category('substructure search', () => {
 
   test('searchSubstructurePerformance_awaitAll', async () => {
     const df = grok.data.demo.molecules(50000);
-
     const startTime = performance.now();
     await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1')!;
     const midTime1 = performance.now();
@@ -189,21 +188,6 @@ M  END
     await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O');
   });
 
-  test('benchmark_searchWithPreCalculatedFp_1M_awaitAll', async () => {
-    if (DG.Test.isInBenchmark)
-      await performanceTestWithCreatedFp('Demo:Files/chem/smiles_1M_withPatternFp.d42', 'smiles');
-  });
-
-  test('benchmark_searchWithPreCalculatedFp_Chembl_awaitAll', async () => {
-    if (DG.Test.isInBenchmark)
-      await performanceTestWithCreatedFp('Demo:Files/chem/smiles_Chembl_withPatternFp.d42', 'canonical_smiles');
-  });
-
-  test('benchmark_searchWithPreCalculatedFp_5M_awaitAll', async () => {
-    if (DG.Test.isInBenchmark)
-      await performanceTestWithCreatedFp('Demo:Files/chem/smiles_5M_withPatternFp.d42', 'canonical_smiles');
-  });
-
   async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
     const startTime = performance.now();
     await chemSubstructureSearchLibrary(molCol, query, '');
@@ -213,22 +197,5 @@ M  END
 
     console.log(`first Call to substructure search took ${midTime1 - startTime} milliseconds`);
     console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
-  }
-
-  async function performanceTestWithCreatedFp(fileName: string, colName: string) {
-    const df = await grok.data.files.openTable(fileName);
-    console.log(`Table ${fileName} opened`);
-    const rows = df.rowCount;
-    const colVersion = df.col(colName)!.version;
-      df.col(colName)!.setTag('.invalideted.for.version', `${colVersion + 3}`);
-      df.col(colName)!.setTag('.Pattern.Version', `${colVersion + 3}`);
-      df.col(colName)!.setTag('.canonical_smiles.Version', `${colVersion + 3}`);
-      const startTime = performance.now();
-      await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccccc1', '');
-      const benzeneTime = performance.now();
-      await chemSubstructureSearchLibrary(df.col(colName)!, 'c1ccc2ccccc2c1', '');
-      const twoBenzeneTime = performance.now();
-      console.log(`search for benzene in ${rows} rows took ${benzeneTime - startTime} milliseconds`);
-      console.log(`search for two benzene rings in ${rows} rows took ${twoBenzeneTime - benzeneTime} milliseconds`);
   }
 });
