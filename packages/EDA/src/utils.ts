@@ -20,12 +20,12 @@ const INCORERRECT_FEATURES_MES = 'features must be positive.';
 const INCORERRECT_SAMPLES_MES = 'samples must be positive.';
 const INCORERRECT_PERCENTAGE_MES = 'violators percentage must be from the range from 0 to 100.';
 const DATAFRAME_IS_TOO_BIG_MES = 'dataframe is too big.';
-const UNSUPPORTED_COLUMN_TYPE_MES = `unsupported column type. Only ${DG.COLUMN_TYPE.FLOAT} and ${DG.COLUMN_TYPE.INT} columns processing is supported.`;
+const UNSUPPORTED_COLUMN_TYPE_MES = 'unsupported column type: ';
 
 // Check column type
 export function checkColumnType(col: DG.Column): void {
   if ((col.type != DG.COLUMN_TYPE.FLOAT) && (col.type != DG.COLUMN_TYPE.INT))
-    throw new Error(UNSUPPORTED_COLUMN_TYPE_MES);
+    throw new Error(UNSUPPORTED_COLUMN_TYPE_MES + col.type);
 }
 
 // Check dimension reducer inputs
@@ -65,7 +65,7 @@ export function checkGeneratorSVMinputs(samplesCount: number, featuresCount: num
     throw new Error(INCORERRECT_PERCENTAGE_MES);
 }
 
-//
+// Returns rows of column data
 export function getRowsOfNumericalColumnns(columnList: DG.ColumnList): any[][] {
   const columns = columnList.toList();
   const rowCount = columns[0].length;
