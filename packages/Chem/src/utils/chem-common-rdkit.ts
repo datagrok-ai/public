@@ -86,7 +86,7 @@ export function getRdKitWebRoot() {
 
 export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: number, height: number) {
   ctx.lineWidth = 1;
-  ctx.strokeStyle = '#EFEFEF';
+  ctx.strokeStyle = '#DBDCDF';
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(width, height);

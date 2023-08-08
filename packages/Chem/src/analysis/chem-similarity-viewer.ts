@@ -24,6 +24,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   scores: DG.Column | null = null;
   cutoff: number;
   targetMoleculeIdx: number = 0;
+  error = '';
 
   get targetMolecule(): string {
     return this.isEditedFromSketcher ?
@@ -78,9 +79,12 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect && this.followCurrentRow) {
+        this.error = '';
+        this.root.classList.remove(`chem-malformed-molecule-error`);
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
         if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
-          this.closeWithError('Empty', progressBar);
+          this.error = 'Empty';
+          this.closeWithError(progressBar);
           return;
         }
         try {
@@ -88,7 +92,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
             this.fingerprint as Fingerprint);
           if (!df) {
-            this.closeWithError('Malformed', progressBar);
+            this.error = 'Malformed';
+            this.closeWithError(progressBar);
             return;
           }
           this.molCol = df.getCol('smiles');
@@ -102,6 +107,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         }
       } else if (this.gridSelect)
         this.gridSelect = false;
+      if (this.error) {
+        this.closeWithError(progressBar);
+        return;
+      }
       this.clearResults();
       const panel = [];
       const grids = [];
@@ -170,9 +179,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     }
   }
 
-  closeWithError(error: string, progressBar: DG.TaskBarProgressIndicator) {
-    grok.shell.error(`${error} molecule cannot be used for similarity search`);
+  closeWithError(progressBar: DG.TaskBarProgressIndicator) {
     this.clearResults();
+    this.root.append(ui.divText(`${this.error} molecule cannot be used for similarity search`));
+    this.root.classList.add(`chem-malformed-molecule-error`);
     progressBar.close();
   }
 

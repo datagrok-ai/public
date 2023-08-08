@@ -381,3 +381,9 @@
   margin-right: 5px;
   color: #2083d5;
 }
+
+.chem-malformed-molecule-error {
+    align-items: center;
+    color: red;
+    text-align: center;
+}

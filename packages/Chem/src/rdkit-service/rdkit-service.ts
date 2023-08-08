@@ -81,7 +81,7 @@ export class RdKitService {
     res: TRes,
     updateRes: (batchRes: BatchRes, res: TRes, length: number, index: number) => void,
     map: (batch: TData[], workerIdx: number, workerCount: number, batchStartIdx: number) => Promise<BatchRes>,
-    pogressFunc: (progress: number) => void): Promise<IParallelBatchesRes> {
+    progressFunc: (progress: number) => void): Promise<IParallelBatchesRes> {
       let terminateFlag = false;
 
       const setTerminateFlag = () => { terminateFlag = true; }
@@ -120,7 +120,7 @@ export class RdKitService {
                 moleculesPerProgress *= 1.5;
                 // increment *= 1.2;
                 //increment = Math.floor(increment);
-                pogressFunc(processedMolecules/dataLength);
+                progressFunc(processedMolecules/dataLength);
               }
               workingIndexes[idx].increment = Math.floor(workingIndexes[idx].increment * 1.05);
               lockedCounter.value = end;
