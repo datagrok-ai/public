@@ -296,7 +296,7 @@ async function _testSimilaritySearchFunctionality(distanceMetric: BitArrayMetric
   const testResults = testSimilarityResults[`${distanceMetric}/${fingerprint}`];
   for (let i = 0; i < testResults.length; i++) {
     console.log(testResults);
-    Object.keys(testResults[i]).forEach((it) => expect(similarityDf.get(it, i), testResults[i][it]));
+    Object.keys(testResults[i]).forEach((it) => expect(similarityDf!.get(it, i), testResults[i][it]));
   }
 }
 

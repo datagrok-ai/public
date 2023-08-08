@@ -122,7 +122,7 @@ export async function chemDiversitySearch(
       }
     }
   } else
-    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, true, false);
+    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, false);
 
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
   if (!tooltipUse)

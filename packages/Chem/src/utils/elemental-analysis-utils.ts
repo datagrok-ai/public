@@ -29,6 +29,7 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
         invalid[rowI] = rowI;
         continue;
       }
+      mol?.delete();
     }
     let curPos = 0;
     curPos = el.indexOf('\n', curPos) + 1;

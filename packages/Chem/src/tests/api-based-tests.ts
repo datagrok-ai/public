@@ -6,6 +6,7 @@ import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
 import {isColumnPresent} from './gui-utils';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 
 category('server features', () => {
@@ -41,7 +42,7 @@ category('chem exported', () => {
     await _testGetSimilarities(grok.chem.getSimilarities, grok.data.demo.molecules(100));
   });
 
-  test('substructureSearch', async () => {
+  test('substructureSearch_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const trueIndices = [0, 2];
     const bitset: DG.BitSet = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure);

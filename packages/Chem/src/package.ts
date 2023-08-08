@@ -263,15 +263,11 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
   return renderer;
 }
 
-
-//name: getMorganFingerprints
-//input: column molColumn {semType: Molecule}
-//output: column result
 export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
   assure.notNull(molColumn, 'molColumn');
 
   try {
-    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan, true, false);
+    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan, false);
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ?
@@ -358,7 +354,8 @@ export async function searchSubstructure(
 
   try {
     const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
-    return DG.Column.fromList('object', 'bitset', [result]); // TODO: should return a bitset itself
+    const resBitset = DG.BitSet.fromBytes(result.buffer.buffer, molStringsColumn.length);
+    return DG.Column.fromList('object', 'bitset', [resBitset]); // TODO: should return a bitset itself
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());
     throw e;
@@ -774,11 +771,9 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function descriptorsWidget(smiles: string): DG.Widget {
-  if (!smiles || DG.chem.Sketcher.isEmptyMolfile(smiles))
-    return new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
-  return isSmarts(smiles) || isFragment(smiles)
-    ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE))
-    : getDescriptorsSingle(smiles);
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+      getDescriptorsSingle(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 //name: Biology | Drug Likeness
@@ -799,7 +794,7 @@ export function drugLikeness(smiles: DG.SemanticValue): DG.Widget {
 //tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-export function properties(smiles: DG.SemanticValue): DG.Widget {
+export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
   return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
     isSmarts(smiles.value) || isFragment(smiles.value)? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
       propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
@@ -1142,7 +1137,8 @@ export async function callChemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
-  return await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+  const res = await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+  return res ?? DG.DataFrame.create();
 }
 
 

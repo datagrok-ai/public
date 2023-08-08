@@ -133,6 +133,9 @@ export function getDescriptorsApp(): void {
 
 //description: Open descriptors selection dialog
 function openDescriptorsDialog(selected: any, onOK: any): void {
+  _package.files.readAsText('constants/descriptors_const.json').then((res) => {
+    descriptors = JSON.parse(res);
+  });
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
 
@@ -222,11 +225,6 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
 
 //description: Get selected descriptors
 async function getSelected() : Promise<any> {
-  if (!descriptors) {
-    _package.files.readAsText('constants/descriptors_const.json').then((res) => {
-      descriptors = JSON.parse(res);
-    });
-  }
   const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {

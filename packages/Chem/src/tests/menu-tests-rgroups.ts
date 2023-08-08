@@ -5,9 +5,7 @@ import {category, expect, test, before, after} from '@datagrok-libraries/utils/s
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
-import {findMCS, findRGroups} from '../scripts-api';
-import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {getRdKitModule} from '../package';
+import {findRGroups} from '../scripts-api';
 import {getMCS} from '../utils/most-common-subs';
 
 
@@ -127,8 +125,7 @@ M  END
   }, {timeout: 60000});
 
   test('rgroups.emptyValues', async () => {
-    const res = await findRGroups('smiles', empty, _convertMolNotation(coreEmpty,
-      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
+    const res = await findRGroups('smiles', empty, coreEmpty, 'R');
     expect(res.getCol('R1').stats.valueCount, 13);
     expect(res.getCol('R2').stats.valueCount, 13);
   }, {timeout: 60000});
@@ -138,8 +135,7 @@ M  END
   });
 
   test('rgroups.malformedData', async () => {
-    const res = await findRGroups('canonical_smiles', malformed, _convertMolNotation(coreMalformed,
-      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
+    const res = await findRGroups('canonical_smiles', malformed, coreMalformed, 'R');
     expect(res.getCol('R1').stats.valueCount, 38);
     expect(res.getCol('R2').stats.valueCount, 1);
     expect(res.getCol('R3').stats.valueCount, 1);
