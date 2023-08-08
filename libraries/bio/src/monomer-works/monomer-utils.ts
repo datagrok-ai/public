@@ -7,7 +7,7 @@ import {
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
 import {IMonomerLib} from '../types/index';
-import {SplitterFunc} from '../utils/macromolecule/types';
+import {ISeqSplitted, SplitterFunc} from '../utils/macromolecule/types';
 import {UnitsHandler} from '../utils/units-handler';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
@@ -146,4 +146,64 @@ export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
 
   const res: IMonomerLibHelper = (await funcList[0].prepare().call()).getOutputParamValue() as IMonomerLibHelper;
   return res;
+}
+
+/** Calculates similarity between reference sequence and list of sequences.
+ * Similarity is computed as a sum of monomer similarities on corresponding positions. Monomer similarity is calculated
+ * based on Morgan fingerprints.
+ * @param {DG.Column<string>[]} positionColumns List of position columns containing monomers.
+ * @param {string[]} referenceSequence Reference sequence.
+ * @returns {Promise<DG.Column<number>>} Column with similarity values. */
+export async function sequenceSimilarityForColumns(positionColumns: DG.Column<string>[],
+  referenceSequence: ISeqSplitted): Promise<DG.Column<number>> {
+  const libHelper = await getMonomerLibHelper();
+  const monomerLib = libHelper.getBioLib();
+  // const smilesCols: DG.Column<string>[] = new Array(monomerCols.length);
+  const rawCols: {categories: string[], data: Uint32Array, emptyIndex: number}[] = new Array(positionColumns.length);
+  const rowCount = positionColumns[0].length;
+  const totalSimilarity = new Float32Array(rowCount);
+
+  // Calculate base similarity
+  for (let position = 0; position < positionColumns.length; ++position) {
+    const referenceMonomer = referenceSequence[position];
+    const referenceMol = monomerLib.getMonomer('PEPTIDE', referenceMonomer)?.smiles ?? '';
+
+    const monomerCol = positionColumns[position];
+    const monomerColData = monomerCol.getRawData() as Uint32Array;
+    const monomerColCategories = monomerCol.categories;
+    const emptyCategoryIdx = monomerColCategories.indexOf('');
+    rawCols[position] = {categories: monomerColCategories, data: monomerColData, emptyIndex: emptyCategoryIdx};
+    if (typeof referenceMonomer === 'undefined')
+      continue;
+    
+    // Calculating similarity for 
+    const molCol = DG.Column.fromStrings('smiles',
+      monomerColCategories.map((cat) => monomerLib.getMonomer('PEPTIDE', cat)?.smiles ?? ''));
+    const _df = DG.DataFrame.fromColumns([molCol]); // getSimilarities expects that column is in dataframe
+    const similarityCol = (await grok.chem.getSimilarities(molCol, referenceMol))!;
+    const similarityColData = similarityCol.getRawData();
+
+    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+      const monomerCategoryIdx = monomerColData[rowIdx];
+      totalSimilarity[rowIdx] += referenceMonomer !== '' && monomerCategoryIdx !== emptyCategoryIdx ?
+        similarityColData[monomerCategoryIdx] :
+        referenceMonomer === '' && monomerCategoryIdx === emptyCategoryIdx ? 1 : 0;
+    }
+  }
+
+  for (let similarityIndex = 0; similarityIndex < totalSimilarity.length; ++similarityIndex) {
+    let updatedSimilarity = totalSimilarity[similarityIndex] / referenceSequence.length;
+    for (let position = 0; position < positionColumns.length; ++position) {
+      const currentRawCol = rawCols[position];
+      if ((position >= referenceSequence.length && currentRawCol.data[similarityIndex] !== currentRawCol.emptyIndex) ||
+        (currentRawCol.data[similarityIndex] === currentRawCol.emptyIndex && position < referenceSequence.length)) {
+        updatedSimilarity = DG.FLOAT_NULL;
+        break;
+      }
+    }
+    totalSimilarity[similarityIndex] = updatedSimilarity;
+  }
+
+  const similarityCol = DG.Column.fromFloat32Array('Similarity', totalSimilarity);
+  return similarityCol;
 }
