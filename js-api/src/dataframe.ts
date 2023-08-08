@@ -1059,7 +1059,7 @@ export class ColumnList {
     this.dart = dart;
   }
 
-  /** Number of elements in the column. */
+  /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
   /** Column with the corresponding name (case-insensitive). */
