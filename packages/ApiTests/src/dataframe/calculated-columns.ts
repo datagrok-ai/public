@@ -26,6 +26,16 @@ category('DataFrame: Calculated columns', () => {
     }
   });
 
+  test('Create a calculated column with script formula', async () => {
+    try {
+      const column = await df.columns.addNewCalculated('new', 'ApiTests:FormulaScript(${x})');
+      expect(df.columns.contains(column.name), true);
+      expect(column.get(0), 11);
+    } finally {
+      df.columns.remove('new');
+    }
+  });
+
   test('Add new column dialog', () => new Promise(async (resolve, reject) => {
     if ((await grok.dapi.packages.filter('PowerPack').list()).length > 0)
       resolve('Skipped because PowerPack is installed');
