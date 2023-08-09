@@ -235,7 +235,7 @@ let offscreen : OffscreenCanvas | null = null;
 let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
 
 
-function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined): HTMLDivElement {
+function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false): HTMLDivElement {
   const r = window.devicePixelRatio;
   if (offscreen === null || offscreen.width !== Math.floor(width*r) || offscreen.height !== Math.floor(height*r)) {
     offscreen = new OffscreenCanvas(Math.floor(width*r), Math.floor(height*r));
@@ -263,12 +263,12 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   }
 
   const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
-  const moleculeHost = ui.canvas();
+  const moleculeHost = ui.canvas(width, height);
   $(moleculeHost).addClass('chem-canvas');
-  moleculeHost.width = viewer!.resizable ? (viewer!.sizesMap['large'].width) * r : width * r;
-  moleculeHost.height = viewer!.resizable ? (viewer!.sizesMap['large'].height) * r : height * r;
-  moleculeHost.style.width = viewer!.resizable ? '100%' : width.toString() + 'px';
-  moleculeHost.style.height = viewer!.resizable ? '' : height.toString() + 'px';
+  moleculeHost.width = (viewer!.resizable && !tooltip) ? (viewer!.sizesMap['large'].width) * r : width * r;
+  moleculeHost.height = (viewer!.resizable && !tooltip) ? (viewer!.sizesMap['large'].height) * r : height * r;
+  moleculeHost.style.width = (viewer!.resizable && !tooltip) ? '100%' : width.toString() + 'px';
+  moleculeHost.style.height = (viewer!.resizable && !tooltip) ? '' : height.toString() + 'px';
   moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
 
   return ui.divH([ui.div(moleculeHost, 'mol-host')], 'chem-mol-box');
@@ -422,7 +422,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
 
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
-    this.allowGenerate = this.bool('allowGenerate');
+    this.allowGenerate = this.bool('allowGenerate', true);
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
   }
@@ -476,7 +476,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
 
     this._message.style.visibility = msg === null ? 'hidden' : 'visible';
-    // @ts-ignore
     this._message.innerHTML = msg ?? '';
   }
 
@@ -986,7 +985,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const zoomIcon = ui.iconFA('search-plus');
     zoomIcon.onclick = (e) => e.stopImmediatePropagation();
     zoomIcon.onmousedown = (e) => e.stopImmediatePropagation();
-    zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(value(group).smiles, 300, 200, undefined, thisViewer), e.clientX, e.clientY);
+    zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(value(group).smiles, 300, 200, undefined, thisViewer, true), e.clientX, e.clientY);
     zoomIcon.onmouseleave = (e) => ui.tooltip.hide();
 
     const iconsDivLeft = ui.divV([notIcon, zoomIcon], 'chem-mol-box-info-buttons');
@@ -1296,7 +1295,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
 
     this.tree.onNodeMouseLeave.subscribe((node: DG.TreeViewNode) => {
-      // @ts-ignore
       dataFrame.rows.highlight(null);
     });
 

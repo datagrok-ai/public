@@ -11,6 +11,16 @@ interface IScaffoldFilterState {
   colName: string;
 }
 
+function clearNotIcon(viewer: ScaffoldTreeViewer, tree: DG.TreeViewNode[]) {
+  tree.map((group) => {
+    const castedGroup = group as DG.TreeViewGroup;
+    viewer.setNotBitOperation(castedGroup, false);
+    if (castedGroup.children) {
+      clearNotIcon(viewer, castedGroup.children)
+    }
+  });
+}
+
 export class ScaffoldTreeFilter extends DG.Filter {
   viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
   savedTree: string = '';
@@ -21,9 +31,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs = this.viewer.subs;
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.viewer.clearFilters();
-      this.viewer.tree.children.map((group) => {
-        this.viewer.setNotBitOperation(group as DG.TreeViewGroup, false);
-      });
+      clearNotIcon(this.viewer, this.viewer.tree.children);
       if (this.viewer._bitOpInput)
         this.viewer._bitOpInput.value = BitwiseOp.OR;
     }));
