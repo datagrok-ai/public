@@ -52,9 +52,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
 
           const stats = model.monomerPositionStats[position][aar];
-          const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+          const tableMap = getStatsTableMap(stats);
 
-          const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+          const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
 
           const resultMap = {...tableMap, ...aggregatedColMap};
           const distributionRoot = getStatsSummary(labels, hist, resultMap);
@@ -80,14 +80,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const mask = DG.BitSet.create(rowCount, (i) => aarIndexesList.includes(posColData[i]));
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
 
-        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
 
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
         const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const stats = getStats(activityColData, bitArray);
-        const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+        const tableMap = getStatsTableMap(stats);
 
         const resultMap = {...tableMap, ...aggregatedColMap};
         const distributionRoot = getStatsSummary(labels, hist, resultMap);
@@ -123,7 +123,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         const mask = DG.BitSet.create(rowCount,
           (i) => posColDataList.some((posColData, j) => posColData[i] === aarCategoryIndexList[j]));
-        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
 
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
@@ -131,7 +131,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const stats = getStats(activityColData, bitArray);
-        const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+        const tableMap = getStatsTableMap(stats);
 
         const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
         const distributionRoot = getStatsSummary(labels, hist, resultMap);
@@ -165,10 +165,10 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
         const mask = DG.BitSet.create(rowCount, (i) => bitArray.getBit(i));
-        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask, fractionDigits: 2});
+        const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
 
         const stats = getStats(activityColData, bitArray);
-        const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+        const tableMap = getStatsTableMap(stats);
 
         const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
         const distributionRoot = getStatsSummary(labels, hist, resultMap);
@@ -226,10 +226,9 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
 }
 
 export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number} = {}): StringDictionary {
+  options.fractionDigits ??= 3;
   const tableMap = {
-    'Statistics:': '',
-    'Count': stats.count.toString(),
-    'Ratio': stats.ratio.toFixed(options.fractionDigits),
+    'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,
     'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits),
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
   };

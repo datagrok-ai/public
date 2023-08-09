@@ -17,6 +17,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import * as uuid from 'uuid';
+import $ from 'cash-dom';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
@@ -439,23 +440,31 @@ export class PeptidesModel {
     acc.addTitle(ui.h1(`${filterAndSelectionBs.trueCount} selected rows${filteredTitlePart}`));
     if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
-        const newViewButton = ui.button('New view', () => trueModel.createNewView(),
-          'Creates a new view from current selection');
-        const newCluster = ui.button('New cluster', () => {
+        const newView = ui.label('New view');
+        $(newView).addClass('d4-link-action');
+        newView.onclick = () => trueModel.createNewView();
+        newView.onmouseover = (ev) => ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
+        const newCluster = ui.label('New cluster');
+        $(newCluster).addClass('d4-link-action');
+        newCluster.onclick = () => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.clusterFromSelection();
-        }, 'Creates a new cluster from selection');
-        const removeCluster = ui.button('Remove cluster', () => {
+        };
+        newCluster.onmouseover = (ev) => ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
+        const removeCluster = ui.label('Remove cluster');
+        $(removeCluster).addClass('d4-link-action');
+        removeCluster.onclick = () => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.removeCluster();
-        }, 'Removes currently selected custom cluster');
-        removeCluster.disabled = trueModel.clusterSelection.length === 0 ||
-          !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name));
-        return ui.divV([newViewButton, newCluster, removeCluster]);
+        };
+        removeCluster.onmouseover = (ev) => ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
+        removeCluster.style.visibility = trueModel.clusterSelection.length === 0 ||
+          !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name)) ? 'hidden' : 'visible';
+        return ui.divV([newView, newCluster, removeCluster]);
       });
     }
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
@@ -899,11 +908,11 @@ export class PeptidesModel {
       [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
     const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
     const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
-    const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
-    const aggregatedColMap = this.getAggregatedColumnValues({mask: mask, fractionDigits: 2});
+    const tableMap = getStatsTableMap(stats);
+    const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
 
     const resultMap = {...tableMap, ...aggregatedColMap};
-    const distroStatsElem = getStatsSummary(labels, hist, resultMap, true);
+    const distroStatsElem = getStatsSummary(labels, hist, resultMap);
 
     ui.tooltip.show(distroStatsElem, x, y);
 
@@ -913,6 +922,7 @@ export class PeptidesModel {
   getAggregatedColumnValues(options: {filterDf?: boolean, mask?: DG.BitSet, fractionDigits?: number} = {},
   ): StringDictionary {
     options.filterDf ??= false;
+    options.fractionDigits ??= 3;
 
     const filteredDf = options.filterDf && this.df.filter.anyFalse ? this.df.clone(this.df.filter) : this.df;
 

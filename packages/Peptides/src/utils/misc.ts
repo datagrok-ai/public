@@ -71,11 +71,9 @@ export function extractColInfo(col: DG.Column<string>): type.RawColumn {
 }
 
 export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHistogramLookSettings>,
-  statsMap: StringDictionary, isTooltip: boolean = false): HTMLDivElement {
+  statsMap: StringDictionary): HTMLDivElement {
   const result = ui.divV([legend, hist.root, ui.tableFromMap(statsMap)]);
-  result.style.minWidth = '200px';
-  if (isTooltip)
-    hist.root.style.maxHeight = '150px';
+  hist.root.style.maxHeight = '75px';
   return result;
 }
 
