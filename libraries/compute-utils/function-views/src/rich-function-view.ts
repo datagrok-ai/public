@@ -47,7 +47,6 @@ const syncParams = {
   [SYNC_FIELD.INPUTS]: 'inputParams',
   [SYNC_FIELD.OUTPUTS]: 'outputParams',
 } as const;
-
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
   private checkDisability = new Subject();
@@ -84,11 +83,29 @@ export class RichFunctionView extends FunctionView {
     if (this.runningOnStart && this.isRunnable()) await this.doRun();
   }
 
+  protected prevOpenedTab = null as DG.TabPane | null;
+  /**
+   * Saving previously opened tab
+   * @param runFunc
+   */
+  public override onBeforeRun(): Promise<void> {
+    this.prevOpenedTab = this.outputsTabsElem.currentPane;
+
+    return Promise.resolve();
+  }
+
   /**
    * Showing UI after completion of function call.
    * @param runFunc
    */
   public override onAfterRun(): Promise<void> {
+    this.outputsTabsElem.root.style.removeProperty('display');
+
+    if (this.prevOpenedTab) {
+      this.outputsTabsElem.currentPane = this.prevOpenedTab;
+      return Promise.resolve();
+    }
+
     const firstOutputTab = this.outputsTabsElem.panes
       .find((tab) => Object.keys(this.categoryToParamMap.outputs).includes(tab.name));
     if (firstOutputTab) this.outputsTabsElem.currentPane = firstOutputTab;
@@ -210,11 +227,11 @@ export class RichFunctionView extends FunctionView {
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    this.outputsTabsElem.root.style.display = 'none';
+    $(this.outputsTabsElem.root).hide();
 
     if (Object.keys(this.categoryToParamMap.inputs).length > 0) {
       this.outputsTabsElem.panes.forEach((tab) => {
-        tab.header.style.display = 'none';
+        $(tab.header).hide();
       });
     }
 
@@ -344,7 +361,7 @@ export class RichFunctionView extends FunctionView {
       const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
         this.dfToViewerMapping[dfProp.name] = [];
 
-        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, viewerIdx) => {
+        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, _) => {
           const initialValue: DG.DataFrame = this.funcCall.outputs[dfProp.name]?.value ?? this.funcCall.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
 
           const viewerType = viewerDesc['type'] as string;
@@ -499,9 +516,9 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    this.outputsTabsElem.root.style.removeProperty('display');
+    $(this.outputsTabsElem.root).show();
     this.outputsTabsElem.panes.forEach((tab) => {
-      tab.header.style.removeProperty('display');
+      $(tab.header).show();
     });
   }
 
@@ -791,7 +808,10 @@ export class RichFunctionView extends FunctionView {
 
     const firstInputTab = this.outputsTabsElem.panes
       .find((tab) => Object.keys(this.categoryToParamMap.inputs).includes(tab.name));
-    if (firstInputTab) this.outputsTabsElem.currentPane = firstInputTab;
+    if (firstInputTab)
+      this.outputsTabsElem.currentPane = firstInputTab;
+    else
+      $(this.outputsTabsElem.root).hide();
   }
 
   private sheetNamesCache = {} as Record<string, string>;
