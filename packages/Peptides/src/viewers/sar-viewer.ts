@@ -131,11 +131,10 @@ export class MonomerPosition extends DG.JsViewer {
         invariantMapMode.addPostfix(MONOMER_POSITION_MODE.INVARIANT_MAP);
         const setDefaultProperties = (input: DG.InputBase): void => {
           $(input.root).find('.ui-input-editor').css('margin', '0px').attr('type', 'radio');
-          $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
+          $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-right', '16px');
         };
         setDefaultProperties(mutationCliffsMode);
         setDefaultProperties(invariantMapMode);
-        $(mutationCliffsMode.root).css('padding-right', '10px').css('padding-left', '5px');
 
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
         $(switchHost).css('width', 'auto').css('align-self', 'center');
