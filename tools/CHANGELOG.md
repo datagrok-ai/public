@@ -1,6 +1,6 @@
 # Datagrok-tools changelog
 
-## 4.12.12 (WIP)
+## 4.12.12 (2023-08-07)
 
 ### Features
 
