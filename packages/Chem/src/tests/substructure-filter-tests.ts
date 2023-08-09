@@ -220,7 +220,7 @@ async function testOneColumn(dfName: string, colName: string, substructure: stri
   await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
     expect(df.filter.trueCount, expectedTrueCount);
     expectArray(df.filter.getBuffer(), expectedResults[expectedKey]);
-  }, () => {filter.sketcher.setSmiles(substructure);}, 7000);
+  }, () => {}, 7000);
   sketcherDialogs.forEach((it) => it.close());
   filter.detach();
 }
