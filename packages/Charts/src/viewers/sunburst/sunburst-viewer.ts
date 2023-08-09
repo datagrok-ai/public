@@ -132,8 +132,9 @@ export class SunburstViewer extends EChartViewer {
   }
 
   onTableAttached(): void {
-    const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
+    let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
+    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length);
 
     if (categoricalColumns.length < 1)
       return;
@@ -189,6 +190,8 @@ export class SunburstViewer extends EChartViewer {
         hideOverlap: 'true',
         align: 'center',
       }
+    } else {
+      delete this.option.series[0].labelLayout;
     }
 
     this.handleStructures(this.getSeriesData()).then((data) => {

@@ -113,9 +113,6 @@ export class TreeUtils {
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
         const name = columns[colIdx].getString(i);
-        if (name === '') {
-          break;
-        }
         const node: treeDataType = {
           semType: columns[colIdx].semType,
           name: name,
