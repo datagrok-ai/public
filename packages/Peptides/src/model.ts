@@ -95,7 +95,6 @@ export class PeptidesModel {
   _matrixDf?: DG.DataFrame;
   _splitSeqDf?: DG.DataFrame;
   _distanceMatrix!: DistanceMatrix;
-  _treeHelper!: ITreeHelper;
   _dm!: DistanceMatrix;
   _layoutEventInitialized = false;
 
@@ -115,11 +114,6 @@ export class PeptidesModel {
       throw new Error('PeptidesError: UUID is not defined');
 
     return id;
-  }
-
-  get treeHelper(): ITreeHelper {
-    this._treeHelper ??= getTreeHelperInstance();
-    return this._treeHelper;
   }
 
   get monomerPositionDf(): DG.DataFrame {
@@ -870,7 +864,7 @@ export class PeptidesModel {
     const monomerName = aar.toLowerCase();
 
     const mw = getMonomerWorksInstance();
-    const mol = mw.getCappedRotatedMonomer('PEPTIDE', aar);
+    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
 
     if (mol) {
       tooltipElements.push(ui.div(monomerName));
@@ -1081,10 +1075,11 @@ export class PeptidesModel {
       const pepColValues: string[] = this.df.getCol(this.settings.sequenceColumnName!).toList();
       this._dm ??= new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
       const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
-      const treeNode = await this.treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
+      const treeHelper: ITreeHelper = getTreeHelperInstance()!;
+      const treeNode = await treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
 
-      this.df.setTag(treeTAGS.NEWICK, this.treeHelper.toNewick(treeNode));
-      const leafOrdering = this.treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
+      this.df.setTag(treeTAGS.NEWICK, treeHelper.toNewick(treeNode));
+      const leafOrdering = treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
       this.analysisView.grid.setRowOrder(leafOrdering);
       const dendrogramViewer = await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
 
