@@ -104,9 +104,12 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
   ]);
 }
 
-export async function getTemplate(sequence: string): Promise<ISeqSplitted> {
-  const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
-  await grok.data.detectSemanticTypes(tempDf);
-  const splitter = getSplitterForColumn(tempDf.getCol('sequence'));
+export async function getTemplate(sequence: string, seqCol?: DG.Column<string>): Promise<ISeqSplitted> {
+  if (typeof seqCol === 'undefined') {
+    const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
+    await grok.data.detectSemanticTypes(tempDf);
+    seqCol = tempDf.getCol('sequence');
+  }
+  const splitter = getSplitterForColumn(seqCol);
   return splitter(sequence);
 }

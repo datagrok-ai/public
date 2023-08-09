@@ -6,6 +6,7 @@
 
 * Improved Identity panel UI.
 * Added sequence similarity functionality.
+* Moved Similarity & Identity form to Toolbox.
 
 ### Bug Fixes
 
