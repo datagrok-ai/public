@@ -216,11 +216,9 @@ export const fitSeriesProperties: Property[] = [
   Property.js('fitFunction', TYPE.STRING,
     {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
   Property.js('pointColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
-      inputType: 'Color'}),
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
   Property.js('fitLineColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
-      inputType: 'Color'}),
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
   Property.js('showFitLine', TYPE.BOOL,
