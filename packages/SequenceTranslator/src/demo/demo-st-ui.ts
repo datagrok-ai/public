@@ -64,7 +64,6 @@ async function openSequenceTranslatorOnPane(paneNumber: number): Promise<void> {
   await getJsonData();
   await _package.initMonomerLib();
   const v = new UnifiedUI();
-  await v.createLayout();
   tabControl = (await v.tabs.getControl());
   panes = tabControl.panes;
   tabControl.currentPane = panes[paneNumber];

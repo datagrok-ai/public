@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view';
+import {TRANSLATION_TAB, AXOLABS_TAB, DUPLEX_TAB} from './const/view';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
@@ -40,16 +40,24 @@ export class UnifiedUI {
   private readonly topPanel: HTMLElement[];
   private readonly urlRouter: URLRouter;
 
-  /** Create master layout of the app  */
-  public async createLayout(): Promise<void> {
+  /** Create master layout of the app */
+  private async createLayout(): Promise<void> {
     const tabControl = await this.tabs.getControl();
 
     const tabName = this.urlRouter.tabName;
     if (tabName)
       tabControl.currentPane = tabControl.getPane(tabName);
     this.view.append(tabControl);
+  }
 
-    grok.shell.addView(this.view);
+  public async getView(): Promise<DG.View> {
+    if (!this.view) await this.createLayout();
+    return this.view;
+  }
+
+  public async getTabs(): Promise<TabLayout> {
+    if (!this.view) await this.createLayout();
+    return this.tabs;
   }
 };
 
@@ -78,10 +86,8 @@ export class TranslateSequenceUI {
 
   /** Create master layout of the app  */
   public async createLayout(): Promise<void> {
-    this.view.append(await this.ui.getHtmlElement());
-
-    grok.shell.addView(this.view);
-
+    const v = await this.ui.getHtmlElement();
+    this.view.append(v);
     grok.shell.addView(this.view);
   }
 }
@@ -154,22 +160,22 @@ class TabLayout {
     if (this.control)
       return this.control;
     const control = ui.tabControl({
-      [MAIN_TAB]: await this.mainTab.getHtmlElement(),
+      [TRANSLATION_TAB]: await this.mainTab.getHtmlElement(),
       [AXOLABS_TAB]: this.axolabsTab.htmlDivElement,
-      [SDF_TAB]: await this.sdfTab.getHtmlDivElement(),
+      [DUPLEX_TAB]: await this.sdfTab.getHtmlDivElement(),
     });
 
-    const sdfPane = control.getPane(SDF_TAB);
+    const sdfPane = control.getPane(DUPLEX_TAB);
     ui.tooltip.bind(sdfPane.header, 'Get atomic-level structure for SS + AS/AS2 and save SDF');
 
-    const mainPane = control.getPane(MAIN_TAB);
+    const mainPane = control.getPane(TRANSLATION_TAB);
     ui.tooltip.bind(mainPane.header, 'Translate across formats');
 
     const axolabsPane = control.getPane(AXOLABS_TAB);
     ui.tooltip.bind(axolabsPane.header, 'Create modification pattern for SS and AS');
 
     control.onTabChanged.subscribe(() => {
-      if (control.currentPane.name !== MAIN_TAB)
+      if (control.currentPane.name !== TRANSLATION_TAB)
         this.urlRouter.searchParams.delete('seq');
       else {
         console.log('sequence:', this.mainTab.sequence);

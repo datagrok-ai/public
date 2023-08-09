@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {UnifiedUI, TranslateSequenceUI, AxolabsUI, DuplexUI} from './view/view';
+import {TranslateSequenceUI, AxolabsUI, DuplexUI, UnifiedUI} from './view/view';
+import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -20,7 +21,7 @@ class StPackage extends DG.Package {
 
   get monomerLib(): IMonomerLib {
     if (!this._monomerLib)
-      throw new Error ('ST: monomer lib not loaded')
+      throw new Error ('Monomer lib not loaded')
     return this._monomerLib!;
   }
 
@@ -30,15 +31,10 @@ class StPackage extends DG.Package {
 
     const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
       'Initializing Sequence Translator monomer library ...');
-    try {
+    await tryCatch(async () => {
       const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
       this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
-    } catch (err: any) {
-      const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-      throw new Error('Sequence Translator: Loading monomer library error: ' + errMsg);
-    } finally {
-      pi.close();
-    }
+    }, () => pi.close());
   }
 }
 
@@ -49,17 +45,11 @@ export const _package: StPackage = new StPackage();
 export async function sequenceTranslatorApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
 
-  try {
+  await tryCatch(async () => {
     await initSequenceTranslatorLibData();
-    const v = new UnifiedUI();
-    await v.createLayout();
-  } catch (err: any) {
-    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-    grok.shell.error(`Loading Sequence Translator application error: ` + errMsg);
-    throw err;
-  } finally {
-    pi.close();
-  }
+    const v = await (new UnifiedUI()).getView();
+    grok.shell.addView(v);
+  }, () => pi.close());
 }
 
 //name: Translate Sequence
@@ -67,17 +57,12 @@ export async function sequenceTranslatorApp(): Promise<void> {
 export async function translateSequenceApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
 
-  try {
+  await tryCatch(async () => {
     await initSequenceTranslatorLibData();
+    console.log('lib:', _package.monomerLib);
     const v = new TranslateSequenceUI();
     await v.createLayout();
-  } catch (err: any) {
-    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-    grok.shell.error(`Loading Sequence Translator application error: ` + errMsg);
-    throw err;
-  } finally {
-    pi.close();
-  }
+  }, () => pi.close());
 }
 
 //name: Sequence Design
@@ -85,17 +70,11 @@ export async function translateSequenceApp(): Promise<void> {
 export async function sequenceDesignApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
 
-  try {
+  await tryCatch(async () => {
     await initSequenceTranslatorLibData();
     const v = new AxolabsUI();
     await v.createLayout();
-  } catch (err: any) {
-    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-    grok.shell.error(`Loading Sequence Translator application error: ` + errMsg);
-    throw err;
-  } finally {
-    pi.close();
-  }
+  }, () => pi.close());
 }
 
 //name: Visualize Duplex
@@ -103,18 +82,13 @@ export async function sequenceDesignApp(): Promise<void> {
 export async function visualizeDuplex(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
 
-  try {
+  await tryCatch(async () => {
     await initSequenceTranslatorLibData();
     const v = new DuplexUI();
     await v.createLayout();
-  } catch (err: any) {
-    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-    grok.shell.error(`Loading Sequence Translator application error: ` + errMsg);
-    throw err;
-  } finally {
-    pi.close();
-  }
+  }, () => pi.close());
 }
+
 //name: initSequenceTranslatorLibData
 export async function initSequenceTranslatorLibData(): Promise<void> {
   await getJsonData();

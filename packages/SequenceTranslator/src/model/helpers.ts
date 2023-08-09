@@ -1,3 +1,6 @@
+/* Do not change these import lines to match external modules in webpack configuration */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export function sortByReverseLength(array: string[]): string[] {
@@ -10,3 +13,17 @@ export function download(name: string, href: string): void {
   element.setAttribute('download', name);
   element.click();
 }
+
+export async function tryCatch<T>(func: () => Promise<T>, finallyFunc?: () => any): Promise<T> {
+  try {
+    return await func();
+  } catch (err: any) {
+    const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
+    grok.shell.error(`Sequence Translator application error: ` + errMsg);
+    throw err;
+  } finally {
+    if (finallyFunc)
+      finallyFunc();
+  }
+};
+
