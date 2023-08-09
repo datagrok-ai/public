@@ -120,12 +120,10 @@ function drawCandlestick(g: CanvasRenderingContext2D, x: number, boxPlotStats: B
 
 /** Performs points drawing */
 function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
-  transform: Viewport, ratio: number, logOptions: LogOptions): void {
+  transform: Viewport, ratio: number, logOptions: LogOptions, pointColor: number): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
-    const color = p.outlier ? DG.Color.red :
-      series.pointColor ? DG.Color.fromHtml(series.pointColor) ?? DG.Color.scatterPlotMarker :
-      DG.Color.scatterPlotMarker;
+    const color = p.outlier ? DG.Color.red : pointColor;
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
       transform.xToScreen(p.x), transform.yToScreen(p.y), color,
@@ -135,7 +133,7 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
 
 /** Performs candles drawing */
 function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
-  transform: Viewport, ratio: number) : void {
+  transform: Viewport, ratio: number, markerColor: number) : void {
   for (let i = 0, candleStart = null; i < series.points.length!; i++) {
     const p = series.points[i];
     if (p.outlier)
@@ -151,8 +149,7 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
       const boxPlotStats = calculateBoxPlotStatistics(values);
 
       g.beginPath();
-      drawCandlestick(g, p.x, boxPlotStats, transform, ratio, series.pointColor ?
-        DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker);
+      drawCandlestick(g, p.x, boxPlotStats, transform, ratio, markerColor);
       g.stroke();
 
       if (series.showPoints === 'both') {
@@ -300,7 +297,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
-    for (const series of data.series!) {
+    for (let i = 0; i < data.series?.length!; i++) {
+      const series = data.series![i];
       if (w < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || h < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
         series.showPoints = '';
         if (data.chartOptions)
@@ -321,50 +319,54 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         series.parameters = fitResult.parameters;
         userParamsFlag = false;
       }
-
+  
       if (series.showPoints ?? 'points') {
-        g.strokeStyle = series.pointColor ?? '0xFF40699c';
+        const pointColor = series.pointColor ? DG.Color.fromHtml(series.pointColor) ?
+          series.pointColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+        g.strokeStyle = pointColor;
         if (series.showPoints === 'points')
-          drawPoints(g, series, viewport, ratio, chartLogOptions);
+          drawPoints(g, series, viewport, ratio, chartLogOptions, DG.Color.fromHtml(pointColor));
         else if (['candlesticks', 'both'].includes(series.showPoints!))
-          drawCandles(g, series, viewport, ratio);
+          drawCandles(g, series, viewport, ratio, DG.Color.fromHtml(pointColor));
       }
-
+  
       if (series.showFitLine ?? true) {
-        g.strokeStyle = series.fitLineColor ?? 'black';
+        const lineColor = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
+          series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+        g.strokeStyle = lineColor;
         g.lineWidth = 2 * ratio;
-
+  
         g.beginPath();
-        for (let i = AXES_LEFT_PX_MARGIN; i <= screenBounds.width; i++) {
-          const x = screenBounds.x + i;
+        for (let j = AXES_LEFT_PX_MARGIN; j <= screenBounds.width; j++) {
+          const x = screenBounds.x + j;
           const y = data.chartOptions?.logX ? viewport.yToScreen(Math.pow(10, curve(Math.log10(viewport.xToWorld(x))))) :
             viewport.yToScreen(curve(viewport.xToWorld(x)));
-          if (i === AXES_LEFT_PX_MARGIN)
+          if (j === AXES_LEFT_PX_MARGIN)
             g.moveTo(x, y);
           else
             g.lineTo(x, y);
         }
         g.stroke();
       }
-
+  
       if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? false)) {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
-
+  
         const confidenceIntervals = getSeriesConfidenceInterval(series, fitFunc, userParamsFlag);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
         fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport);
       }
-
+  
       if (series.droplines) {
         g.save();
         g.strokeStyle = 'blue';
         g.lineWidth = ratio;
         g.beginPath();
         g.setLineDash([5, 5]);
-        for (let i = 0; i < series.droplines.length; i++) {
-          const droplineName = series.droplines[i];
+        for (let j = 0; j < series.droplines.length; j++) {
+          const droplineName = series.droplines[j];
           if (droplineName === 'IC50')
             drawDropline(g, viewport, series.parameters[2], dataBounds, curve);
         }
@@ -374,18 +376,21 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
       if (data.chartOptions?.showStatistics) {
         const statistics = getSeriesStatistics(series, fitFunc);
-        for (let i = 0; i < data.chartOptions.showStatistics.length; i++) {
-          const statName = data.chartOptions.showStatistics[i];
+        for (let j = 0; j < data.chartOptions.showStatistics.length; j++) {
+          const statName = data.chartOptions.showStatistics[j];
           const prop = statisticsProperties.find(p => p.name === statName);
           if (prop) {
             const s = StringUtils.formatNumber(prop.get(statistics));
-            g.fillStyle = series.fitLineColor ?? 'black';
+            const statColor = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
+              series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+            g.fillStyle = statColor;
             g.textAlign = 'left';
-            g.fillText(prop.name + ': ' + s, dataBox.x + 5, dataBox.y + 20 + 20 * i);
+            g.fillText(prop.name + ': ' + s, dataBox.x + 5, dataBox.y + 20 + 20 * j);
           }
         }
       }
     }
+
     g.restore();
   }
 
