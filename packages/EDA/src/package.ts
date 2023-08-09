@@ -4,16 +4,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS} from './eda-tools';
-import {renamePCAcolumns, addPLSvisualization, regressionCoefficientsBarChart, 
+import {computePCA, computePLS, computeUMAP} from './eda-tools';
+import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
   scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
-import {getRowsOfNumericalColumnns} from './utils';
 
 export const _package = new DG.Package();
 
@@ -39,32 +37,29 @@ export async function init(): Promise<void> {
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
 {
-  return renamePCAcolumns(await computePCA(table, features, components, center, scale));
+  const pcaTable = await computePCA(table, features, components, center, scale);
+  addPrefixToEachColumnName('PCA', pcaTable.columns);
+  return pcaTable;
 }
 
 //top-menu: ML | Dimension Reduction | UMAP...
 //name: UMAP
 //description: Uniform Manifold Approximation and Projection (UMAP).
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: int components = 2
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int components = 2 {caption: Components; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
+//input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
+//input: int neighbors = 15 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
+//input: double minDist = 0.1 {caption: Minimum distance; category: Hyperparameters} [The effective minimum distance between embedded points.]
+//input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
 //output: dataframe result {action:join(table)}
-export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number): Promise<DG.DataFrame> 
-{
-  /*const data = features.toList().map(col => col.toList());
-
-  console.log(data);
-  
-  const umap = new DimensionalityReducer(data, 'UMAP', 'Euclidean');
-
-  console.log(await umap.transform());*/
-
-  for (const row of getRowsOfNumericalColumnns(features))
-    console.log(row);
-
-  return renamePCAcolumns(await computePCA(table, features, components, true, true));
+export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
+  epochs: number, neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
+{  
+  return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
 }
 
+/*
 //top-menu: ML | Dimension Reduction | t-SNE...
 //name: tSNE
 //description: t-distributed stochastic neighbor embedding (t-SNE).
@@ -93,7 +88,7 @@ export async function SPE(table: DG.DataFrame, features: DG.ColumnList, componen
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
 {
   return renamePCAcolumns(await computePCA(table, features, components, center, scale));
-}
+}*/
 
 //top-menu: ML | Multivariate Analysis (PLS)...
 //name: Multivariate Analysis (PLS)

@@ -21,6 +21,10 @@ const INCORERRECT_SAMPLES_MES = 'samples must be positive.';
 const INCORERRECT_PERCENTAGE_MES = 'violators percentage must be from the range from 0 to 100.';
 const DATAFRAME_IS_TOO_BIG_MES = 'dataframe is too big.';
 const UNSUPPORTED_COLUMN_TYPE_MES = 'unsupported column type: ';
+const INCORRECT_MIN_DIST_MES = 'min distance must be positive.';
+const INCORRECT_SPREAD_MES = 'spread must be positive.';
+const INCORRECT_EPOCH_MES = 'number of epoch must be at least 1.';
+const INCORRECT_NEIBORS_MES = 'number of neibors must be at least 2 and not greater than samples count.';
 
 // Check column type
 export function checkColumnType(col: DG.Column): void {
@@ -38,6 +42,25 @@ export function checkDimensionReducerInputs(features: DG.ColumnList, components:
 
   for (const col of features)
     checkColumnType(col);
+}
+
+// Check UMPA inputs
+export function checkUMAPinputs(features: DG.ColumnList, components: number, epochs: number,
+  neighbors: number, minDist: number, spread: number): void 
+{
+  checkDimensionReducerInputs(features, components);
+
+  if (minDist <= 0)
+    throw new Error(INCORRECT_MIN_DIST_MES);
+
+  if (spread <= 0)
+    throw new Error(INCORRECT_SPREAD_MES);
+
+  if (epochs < 1)
+    throw new Error(INCORRECT_EPOCH_MES);
+
+  if ((neighbors < 2) || (neighbors > features.byIndex(0).length))
+    throw new Error(INCORRECT_NEIBORS_MES);
 }
 
 // Check wasm dimension reducer inputs

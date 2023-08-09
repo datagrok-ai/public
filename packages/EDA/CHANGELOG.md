@@ -6,7 +6,8 @@ This release is centered around enhancing user-friendliness and addressing conce
 
 ### Features
 
-* The method PCA is replaced to Top Menu | ML | Dimensionality Reduction
+* The method PCA is replaced to Top Menu > ML > Dimensionality Reduction
+* The method UMPA is added (see Top Menu > ML > Dimensionality Reduction)
 
 ### Bug Fixes
 

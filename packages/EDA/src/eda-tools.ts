@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {_principalComponentAnalysisInWebWorker,
   _partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
 
-import {checkWasmDimensionReducerInputs, checkGeneratorSVMinputs} from './utils';
+import {checkWasmDimensionReducerInputs, checkUMAPinputs, getRowsOfNumericalColumnns} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
@@ -43,4 +43,67 @@ export async function computePLS(table: DG.DataFrame, features: DG.ColumnList, p
   );
 
   return _output;
-} 
+}
+
+// Uniform Manifold Approximation and Projection (UMAP)
+export async function computeUMAP(features: DG.ColumnList, components: number, epochs: number,
+  neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
+{
+  // check inputs
+  checkUMAPinputs(features, components, epochs, neighbors, minDist, spread);  
+
+  // get ro-by-row data
+  const data = getRowsOfNumericalColumnns(features);
+
+  /*const options = {
+    nComponents: components,
+    nEpochs: epochs,
+    nNeighbors: neighbors,
+    minDist: minDist,
+    spread: spread
+  };*/
+
+  let workerOutput: any;
+
+  // UMAP in webworker
+  let promise = new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('workers/umap-worker.ts', import.meta.url));
+    
+    worker.postMessage({
+      data: data, 
+      options: {
+        nComponents: components,
+        nEpochs: epochs,
+        nNeighbors: neighbors,
+        minDist: minDist,
+        spread: spread
+    }});
+
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(e.data.embeddings);    
+  }}); 
+  
+  await promise.then(
+    result => { workerOutput = result; },
+    error => { throw new Error ('applying UMAP fails.'); }
+  );
+
+  const embeddings = workerOutput as any[][];
+  const rowCount = embeddings.length;
+  const range = [...Array(components).keys()];
+
+  // Create output
+
+  // columns data
+  const umapColumnsData = range.map(_ => new Float32Array(rowCount));  
+
+  // perform transponation
+  for (let i = 0; i < rowCount; ++i)
+    for (let j = 0; j < components; ++j)
+      umapColumnsData[j][i] = embeddings[i][j];
+
+  return DG.DataFrame.fromColumns(range.map(i => 
+    DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i])
+  ));
+} // computeUMAP
