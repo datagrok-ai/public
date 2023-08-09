@@ -42,7 +42,7 @@ For example, to import a dataframe from a CSV file:
 
 :::note
 
-When you need more control, use the [dg namespace](https://datagrok.ai/js-api/modules/dg#namespaces).
+When you need more control, use the [DG namespace](https://datagrok.ai/js-api/modules/dg#namespaces).
 
 :::
 
