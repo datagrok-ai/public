@@ -90,7 +90,7 @@ category('top menu similarity/diversity', () => {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 2000);
-      expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 
+      expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606,
         0.2957746386528015, 0.234375, 0.23076923191547394, 0.2222222238779068, 0.2222222238779068,
         0.20253165066242218, 0.2023809552192688, 0.18309858441352844, 0.1818181872367859]);
     } finally {
@@ -296,7 +296,7 @@ async function _testSimilaritySearchFunctionality(distanceMetric: BitArrayMetric
   const testResults = testSimilarityResults[`${distanceMetric}/${fingerprint}`];
   for (let i = 0; i < testResults.length; i++) {
     console.log(testResults);
-    Object.keys(testResults[i]).forEach((it) => expect(similarityDf.get(it, i), testResults[i][it]));
+    Object.keys(testResults[i]).forEach((it) => expect(similarityDf!.get(it, i), testResults[i][it]));
   }
 }
 

@@ -17,19 +17,23 @@ export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   rdKitModule ??= getRdKitModule();
 
   const alerts: number[] = [];
-  const mol = rdKitModule.get_mol(molecule);
-  //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
-  // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
-  // lib.add_smiles(smiles);
-  const smartsCol = alertsDf!.getCol('smarts');
-  for (let i = 0; i < smartsCol.length; i++) {
-    const subMol = _smartsMap.get(smartsCol.get(i));
-    // lib.count_matches(subMol);
-    const matches = mol.get_substruct_matches(subMol!);
-    if (matches !== '{}')
-      alerts.push(i);
+  let mol: RDMol | null = null;
+  try {
+    mol = rdKitModule.get_mol(molecule);
+    //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
+    // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
+    // lib.add_smiles(smiles);
+    const smartsCol = alertsDf!.getCol('smarts');
+    for (let i = 0; i < smartsCol.length; i++) {
+      const subMol = _smartsMap.get(smartsCol.get(i));
+      // lib.count_matches(subMol);
+      const matches = mol.get_substruct_matches(subMol!);
+      if (matches !== '{}')
+        alerts.push(i);
+    }
+  } finally {
+    mol?.delete();
   }
-  mol.delete();
   return alerts;
 }
 

@@ -31,7 +31,7 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
     if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
       //convert to molFile to draw in coordinates similar to dataframe cell
       molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
-    } 
+    }
     drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, params.cashedData[params.line.id]);
     ui.empty(hosts[index]);
     if (!params.cashedData[params.line.id])
@@ -45,7 +45,7 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
 }
 
 function drawTooltipElement(params: ITooltipAndPanelParams, element: HTMLDivElement,
-  hosts: HTMLDivElement[], molIdx: number, idx: number) {
+  hosts: HTMLDivElement[], molIdx: number) {
   const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
   activity.style.display = 'flex';
   activity.style.justifyContent = 'left';
