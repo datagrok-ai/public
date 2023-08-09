@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -5,6 +6,7 @@ import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
+import wu from 'wu';
 
 export enum MONOMER_POSITION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -12,7 +14,7 @@ export enum MONOMER_POSITION_MODE {
 }
 
 export enum MONOMER_POSITION_PROPERTIES {
-  COLOR_COLUMN_NAME = 'colorColumnName',
+  COLOR_COLUMN_NAME = 'color',
   AGGREGATION = 'aggregation',
   TARGET = 'target',
 };
@@ -22,7 +24,7 @@ export class MonomerPosition extends DG.JsViewer {
   _titleHost = ui.divText(MONOMER_POSITION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
-  colorColumnName: string;
+  colorCol: string;
   aggregation: string;
   target: string;
 
@@ -30,10 +32,13 @@ export class MonomerPosition extends DG.JsViewer {
     super();
     this.target = this.string(MONOMER_POSITION_PROPERTIES.TARGET, null,
       {category: MONOMER_POSITION_MODE.MUTATION_CLIFFS, choices: []});
-    this.colorColumnName = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
-      {category: MONOMER_POSITION_MODE.INVARIANT_MAP});
+    this.colorCol = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
+      {category: MONOMER_POSITION_MODE.INVARIANT_MAP,
+        choices: wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name)});
     this.aggregation = this.string(MONOMER_POSITION_PROPERTIES.AGGREGATION, DG.AGG.AVG,
-      {category: MONOMER_POSITION_MODE.INVARIANT_MAP, choices: Object.values(DG.AGG)});
+      {category: MONOMER_POSITION_MODE.INVARIANT_MAP,
+        choices: Object.values(DG.AGG)
+          .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg))});
   }
 
   get name(): string {return VIEWER_TYPE.MONOMER_POSITION;}
@@ -84,7 +89,7 @@ export class MonomerPosition extends DG.JsViewer {
     const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setAARRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
-      this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorColumnName),
+      this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol),
       this.aggregation as DG.AggregationType));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -295,12 +300,13 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
     const positionColCategories = positionCol.categories;
 
     const colorColData = colorCol!.getRawData();
-    const colorDataList: number[] = [];
+    const colorValuesIndexes: number[] = [];
     for (let i = 0; i < positionCol.length; ++i) {
       if (positionColCategories[positionColData[i]] === currentMonomer)
-        colorDataList.push(colorColData[i]);
+        colorValuesIndexes.push(i);
     }
-    const cellColorDataCol = DG.Column.fromList('double', '', colorDataList);
+    const cellColorDataCol = DG.Column.float('color', colorValuesIndexes.length)
+      .init((i) => colorColData[colorValuesIndexes[i]]);
     const colorColStats = colorCol!.stats;
 
     const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
