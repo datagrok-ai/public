@@ -4,7 +4,9 @@ title: "Link tables"
 ---
 
 You can link tables based on the key columns. The link type determines which records should be synchronized between the
-datasets (current record, filter, selection, and mouse-over record). We support the following types:
+datasets (current record, filter, selection, and mouse-over record). 
+
+We support the following link types:
 
 * **Current row:** to row, to selection, to filter
 * **Mouse-over row:** to selection, to filter
