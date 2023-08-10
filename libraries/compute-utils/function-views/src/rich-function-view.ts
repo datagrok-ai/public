@@ -682,6 +682,11 @@ export class RichFunctionView extends FunctionView {
       return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
     case FILE_INPUT_TYPE:
       return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
+    case DG.TYPE.FLOAT:
+      const floatInput = ui.input.forProperty(prop);
+      const format = prop.options.format;
+      if (format) floatInput.format = format;
+      return floatInput;
     default:
       return ui.input.forProperty(prop);
     }
