@@ -653,7 +653,7 @@ export class RichFunctionView extends FunctionView {
         this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
         if (field === SYNC_FIELD.INPUTS)
-          this.bindOnHotkey(val, input);
+          this.bindOnHotkey(input);
 
         this.renderInput(inputs, val, input, prevCategory);
         this.afterInputPropertyRender.next({prop, input: input});
@@ -692,7 +692,7 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
-  private bindOnHotkey(val: DG.FuncCallParam, t: InputVariants) {
+  private bindOnHotkey(t: InputVariants) {
     if (isInputBase(t)) {
       t.input.onkeydown = async (ev) => {
         if (ev.key == 'Enter' && this.isRunnable()) this.doRun();
