@@ -99,7 +99,7 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onAfterRun(): Promise<void> {
-    this.outputsTabsElem.root.style.removeProperty('display');
+    this.showOutputTabsElem();
 
     if (this.prevOpenedTab) {
       this.outputsTabsElem.currentPane = this.prevOpenedTab;
@@ -346,6 +346,11 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private outputsTabsElem = ui.tabControl();
 
+  private showOutputTabsElem() {
+    $(this.outputsTabsElem.root).show();
+    $(this.outputsTabsElem.root).css('display', 'flex');
+  }
+
   public buildOutputBlock(): HTMLElement {
     this.outputsTabsElem.root.style.width = '100%';
 
@@ -381,7 +386,7 @@ export class RichFunctionView extends FunctionView {
             const updateViewerSource = async () => {
               const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
-              $(this.outputsTabsElem.root).show();
+              this.showOutputTabsElem();
               $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
@@ -424,7 +429,7 @@ export class RichFunctionView extends FunctionView {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
             const paramSub = currentParam.onChanged.subscribe(() => {
-              $(this.outputsTabsElem.root).show();
+              this.showOutputTabsElem();
               Object.keys(this.categoryToParamMap.inputs).forEach((inputTabName) => {
                 $(this.outputsTabsElem.getPane(inputTabName).header).show();
               });
@@ -485,7 +490,7 @@ export class RichFunctionView extends FunctionView {
             scalarsTable.replaceWith(newScalarsTable);
             scalarsTable = newScalarsTable;
 
-            $(this.outputsTabsElem.root).show();
+
             $(this.outputsTabsElem.getPane(tabLabel).header).show();
           });
 
@@ -516,7 +521,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    $(this.outputsTabsElem.root).show();
+    this.showOutputTabsElem();
     this.outputsTabsElem.panes.forEach((tab) => {
       $(tab.header).show();
     });
