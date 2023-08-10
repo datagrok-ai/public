@@ -76,6 +76,7 @@ jobs:
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
               fi
 
+              name="$(jq -r .name "${DIR}/package.json")"
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
