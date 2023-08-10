@@ -1,12 +1,12 @@
 # bio changelog
 
-## 5.XX.X (WIP)
+## 5.36.0 (2023-08-10)
 
-This release introduces sequence similarity calculation.
+This release introduces chemical sequence similarity functionality.
 
 ### Features
 
-* Added `sequenceSimilarityForColumns` function.
+* Added `sequenceChemSimilarity` function.
 
 ## 5.35.0 (2023-08-06)
 

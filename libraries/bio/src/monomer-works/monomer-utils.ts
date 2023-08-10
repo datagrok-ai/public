@@ -156,7 +156,7 @@ export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
  * @param {string[]} referenceSequence Reference sequence.
  * @returns {Promise<DG.Column<number>>} Column with similarity values. */
 export async function sequenceChemSimilarity(sequenceCol: DG.Column<string>, referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
-export async function sequenceChemSimilarity(sequenceCol: DG.Column<string>[], referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
+export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[], referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
 export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[] | DG.Column<string>,
   referenceSequence: ISeqSplitted): Promise<DG.Column<number>> {
   if (positionColumns instanceof DG.Column)
