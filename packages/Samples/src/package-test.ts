@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import './testDemo/demo-project-test'
-import './testDemo/projects-test'
+import './test/demo-project-test'
+import './test/projects-test'
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
