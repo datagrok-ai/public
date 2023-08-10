@@ -1,13 +1,5 @@
 # Sequence Translator changelog
 
-## 1.1.1 (Bleeding-edge)
-
-* Dependency: datgarok-api >= 1.15.2
-
-### Features
-
-### Bug fixes
-
 ## 1.1.0 (2023-07-26)
 
 * Dependency: datgarok-api >= 1.15.2

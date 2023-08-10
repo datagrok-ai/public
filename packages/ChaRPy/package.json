@@ -36,7 +36,7 @@
     "upload-debug-local": "webpack && grok publish http://localhost:8082 ",
     "upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",
     "upload-deploy": "webpack && grok publish https://dev.datagrok.ai/api --release",
-    "build": "webpack"
+    "build": "NODE_OPTIONS=--openssl-legacy-provider webpack"
   },
   "canEdit": [
     "Developers"
