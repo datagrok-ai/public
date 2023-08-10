@@ -40,7 +40,8 @@
     "webpack-cli": "latest",
     "@datagrok/bio": "latest",
     "@datagrok/helm": "latest",
-    "@datagrok/dendrogram": "latest"
+    "@datagrok/dendrogram": "latest",
+    "@datagrok/chem": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
