@@ -471,8 +471,16 @@ export class RichFunctionView extends FunctionView {
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
           tabScalarProps,
-          (scalarProp: DG.Property) =>
-            [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
+          (scalarProp: DG.Property) => {
+            const precision = scalarProp.options.precision;
+
+            return [
+              scalarProp.caption ?? scalarProp.name,
+              precision && scalarProp.propertyType === DG.TYPE.FLOAT && this.funcCall.outputs[scalarProp.name]?
+                this.funcCall.outputs[scalarProp.name].toPrecision(precision) : this.funcCall.outputs[scalarProp.name],
+              scalarProp.options['units'],
+            ];
+          },
         ).root;
         $(table).css({
           'max-width': '400px',
