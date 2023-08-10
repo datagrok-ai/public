@@ -25,6 +25,9 @@ const INCORRECT_MIN_DIST_MES = 'min distance must be positive.';
 const INCORRECT_SPREAD_MES = 'spread must be positive.';
 const INCORRECT_EPOCH_MES = 'number of epoch must be at least 1.';
 const INCORRECT_NEIBORS_MES = 'number of neibors must be at least 2 and not greater than samples count.';
+const INCORRECT_ITERATIONS_MES = 'number of iterations must be at least 1.';
+const INCORRECT_LEARNING_RATE_MES = 'learning rate must be positive.';
+const INCORRECT_PERPLEXITY_MES = 'perplexity must be at least 2 and not greater than samples count.';
 
 // Check column type
 export function checkColumnType(col: DG.Column): void {
@@ -61,6 +64,22 @@ export function checkUMAPinputs(features: DG.ColumnList, components: number, epo
 
   if ((neighbors < 2) || (neighbors > features.byIndex(0).length))
     throw new Error(INCORRECT_NEIBORS_MES);
+}
+
+// Check t-SNE inputs
+export function checkTSNEinputs(features: DG.ColumnList, components: number, 
+  learningRate: number, perplexity: number, iterations: number): void 
+{
+  checkDimensionReducerInputs(features, components);
+
+  if (learningRate < 0)
+    throw new Error(INCORRECT_LEARNING_RATE_MES);
+
+  if (iterations < 1)
+    throw new Error(INCORRECT_ITERATIONS_MES);
+
+  if ((perplexity < 2) || (perplexity > features.byIndex(0).length))
+    throw new Error(INCORRECT_PERPLEXITY_MES);
 }
 
 // Check wasm dimension reducer inputs

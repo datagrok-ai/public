@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS, computeUMAP} from './eda-tools';
+import {computePCA, computePLS, computeUMAP, computeTSNE} from './eda-tools';
 import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
   scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
@@ -55,40 +55,32 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //output: dataframe result {action:join(table)}
 export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
   epochs: number, neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
-{  
+{ 
+  // TODO: delete the following
+  /*let start = new Date().getTime();
+  const df = await computeUMAP(features, components, epochs, neighbors, minDist, spread);
+  let finish = new Date().getTime();
+  console.log(`Time for UMAP: ${finish - start} ms.`);
+  return df;*/
+
   return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
 }
 
-/*
 //top-menu: ML | Dimension Reduction | t-SNE...
 //name: tSNE
 //description: t-distributed stochastic neighbor embedding (t-SNE).
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: int components = 2
-//input: bool center = true
-//input: bool scale = true
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int components = 2 {caption: Components; category: Hyperparameters} [Dimension of the embedded space.]
+//input: double learningRate = 10 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter. Should be in the range 10...1000.]
+//input: int perplexity = 30 {caption: Perplexity; category: Hyperparameters} [The number of nearest neighbors. Should be less than the number of samples.]
+//input: int iterations = 500 {caption: Iterations; category: Hyperparameters} [Maximum number of iterations for the optimization. Should be at least 250.]
 //output: dataframe result {action:join(table)}
 export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  center: boolean, scale: boolean): Promise<DG.DataFrame> 
+  learningRate: number, perplexity: number, iterations: number): Promise<DG.DataFrame> 
 {
-  return renamePCAcolumns(await computePCA(table, features, components, center, scale));
+  return await computeTSNE(features, components, learningRate, perplexity, iterations);
 }
-
-//top-menu: ML | Dimension Reduction | SPE...
-//name: SPE
-//description: Stochastic proximity embedding (SPE).
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: int components = 2
-//input: bool center = true
-//input: bool scale = true
-//output: dataframe result {action:join(table)}
-export async function SPE(table: DG.DataFrame, features: DG.ColumnList, components: number,
-  center: boolean, scale: boolean): Promise<DG.DataFrame> 
-{
-  return renamePCAcolumns(await computePCA(table, features, components, center, scale));
-}*/
 
 //top-menu: ML | Multivariate Analysis (PLS)...
 //name: Multivariate Analysis (PLS)

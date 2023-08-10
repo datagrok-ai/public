@@ -8,6 +8,7 @@ This release is centered around enhancing user-friendliness and addressing conce
 
 * The method PCA is replaced to Top Menu > ML > Dimensionality Reduction
 * The method UMPA is added (see Top Menu > ML > Dimensionality Reduction)
+* The method t-SNE is added (see Top Menu > ML > Dimensionality Reduction)
 
 ### Bug Fixes
 
