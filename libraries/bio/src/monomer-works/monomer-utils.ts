@@ -9,6 +9,7 @@ import {
 import {IMonomerLib} from '../types/index';
 import {ISeqSplitted, SplitterFunc} from '../utils/macromolecule/types';
 import {UnitsHandler} from '../utils/units-handler';
+import {splitAlignedSequences} from '../utils/splitter';
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -148,14 +149,19 @@ export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
   return res;
 }
 
-/** Calculates similarity between reference sequence and list of sequences.
+/** Calculates chemical similarity between reference sequence and list of sequences.
  * Similarity is computed as a sum of monomer similarities on corresponding positions. Monomer similarity is calculated
  * based on Morgan fingerprints.
  * @param {DG.Column<string>[]} positionColumns List of position columns containing monomers.
  * @param {string[]} referenceSequence Reference sequence.
  * @returns {Promise<DG.Column<number>>} Column with similarity values. */
-export async function sequenceSimilarityForColumns(positionColumns: DG.Column<string>[],
+export async function sequenceChemSimilarity(sequenceCol: DG.Column<string>, referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
+export async function sequenceChemSimilarity(sequenceCol: DG.Column<string>[], referenceSequence: ISeqSplitted): Promise<DG.Column<number>>;
+export async function sequenceChemSimilarity(positionColumns: DG.Column<string>[] | DG.Column<string>,
   referenceSequence: ISeqSplitted): Promise<DG.Column<number>> {
+  if (positionColumns instanceof DG.Column)
+    positionColumns = splitAlignedSequences(positionColumns).columns.toList();
+
   const libHelper = await getMonomerLibHelper();
   const monomerLib = libHelper.getBioLib();
   // const smilesCols: DG.Column<string>[] = new Array(monomerCols.length);
