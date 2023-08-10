@@ -89,7 +89,7 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onBeforeRun(): Promise<void> {
-    this.prevOpenedTab = this.outputsTabsElem.currentPane;
+    this.prevOpenedTab = Object.keys(this.categoryToDfParamMap.inputs).includes(this.outputsTabsElem.currentPane.name) ? null: this.outputsTabsElem.currentPane;
 
     return Promise.resolve();
   }
