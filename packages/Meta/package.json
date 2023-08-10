@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.17",
+  "version": "3.5.18",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -213,15 +213,18 @@
         },
         "1.0.1": {
           "datagrok-api": "^1.6.5"
+        },
+        "1.0.2": {
+          "datagrok-api": "^1.6.5"
         }
       },
-      "description": "SQLite is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides support for importing and previewing SQLite files.",
+      "description": "Support for importing and previewing SQLite files.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/SQLite"
       },
-      "category": "Development"
+      "category": "Data Access"
     },
     "tutorials": {
       "dependencies": {
@@ -1560,9 +1563,12 @@
         },
         "1.13.3": {
           "datagrok-api": "^1.15.3"
+        },
+        "1.13.4": {
+          "datagrok-api": "^1.15.3"
         }
       },
-      "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
+      "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2507,14 +2513,18 @@
         },
         "1.1.5": {
           "datagrok-api": "^1.12.0"
+        },
+        "1.1.6": {
+          "datagrok-api": "^1.12.0"
         }
       },
-      "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "description": "Integration with the Alation data catalog.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Alation"
-      }
+      },
+      "category": "Data Access"
     },
     "arrow": {
       "dependencies": {
@@ -2526,15 +2536,18 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.0.3": {
+          "datagrok-api": "^1.11.1"
         }
       },
-      "description": "Arrow is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides us with the opportunity to work with parquet and feather file formats.",
+      "description": "Provides support for the Parquet and Feather file formats.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Arrow"
       },
-      "category": "Development"
+      "category": "Data Access"
     },
     "helm": {
       "dependencies": {
@@ -2981,9 +2994,12 @@
         },
         "1.0.4": {
           "datagrok-api": "latest"
+        },
+        "1.0.5": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
+      "description": "Automated UI tests",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -3059,6 +3075,9 @@
         },
         "1.0.2": {
           "datagrok-api": "latest"
+        },
+        "1.0.3": {
+          "datagrok-api": "latest"
         }
       },
       "description": "Automated CVM tests",
@@ -3066,7 +3085,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/CVMTests"
-      }
+      },
+      "category": "Development"
     }
   }
 }
