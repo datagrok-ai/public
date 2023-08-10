@@ -225,3 +225,23 @@ and (coalesce(pp.name, 'Core') = any(@packages) or @packages = ARRAY['all'])
 select (select count(distinct res.qid) as count1 from res where period = 1),
 (select count(distinct res.qid) as count2 from res where period = 2)
 --end
+
+--name: TestsCount
+--meta.invalidate: 0 0 0 * *
+--connection: System:Datagrok
+with res as (select e.event_time::date as date,
+case when v4.value::bool then 'skipped' when v1.value::bool then 'passed' else 'failed' end as status
+from events e
+inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.friendly_name like 'test-%'
+left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
+left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
+where e.event_time::date BETWEEN now()::date - 1 and now()::date
+)
+select res.date,
+count(*) filter (where status = 'passed') as passed,
+count(*) filter (where status = 'failed') as failed,
+count(*) filter (where status = 'skipped') as skipped
+from res
+group by date
+order by date
+--end

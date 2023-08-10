@@ -19,6 +19,7 @@ export class ViewHandler {
   private urlParams: Map<string, string> = new Map<string, string>();
   public static UAname = 'Usage Analysis';
   static UA: DG.MultiView;
+  dockFilters: DG.DockNode | null = null;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -76,9 +77,13 @@ export class ViewHandler {
       }
       if (view.name === 'Tests') {
         grok.shell.windows.showToolbox = false;
-        // open df filters ...
-      } else
+        this.dockFilters = grok.shell.dockManager.dock(TestsView.filters, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.11);
+      } else {
         grok.shell.windows.showToolbox = true;
+        if (this.dockFilters)
+          grok.shell.dockManager.close(this.dockFilters);
+        this.dockFilters = null;
+      }
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;
