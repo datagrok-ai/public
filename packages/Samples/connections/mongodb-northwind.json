@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "MongoDBNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "northwind",
+    "port": 22017
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "MongoDB",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

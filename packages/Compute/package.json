@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.13.3",
+  "version": "1.13.4",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
-  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
+  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

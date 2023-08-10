@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "ClickHouseNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "northwind",
+    "port": 8125
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "ClickHouse",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

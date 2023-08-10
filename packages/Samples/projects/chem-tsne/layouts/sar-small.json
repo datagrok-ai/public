@@ -1,0 +1,175 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "friendlyName": "sar_small",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 896,
+      "height": 642,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 896,
+          "height": 642,
+          "element": {
+            "id": "d6ab18c0-5970-11e9-dcf2-45fc8bd20892",
+            "type": "Grid",
+            "look": {
+              "#type": "HeatMapLook",
+              "rowHeight": 100,
+              "allowColumnMenu": true,
+              "topLevelDefaultMenu": true,
+              "columns": [
+                {
+                  "width": 200,
+                  "columnName": "smiles",
+                  "cellType": "string"
+                },
+                {
+                  "width": 60,
+                  "columnName": "ID",
+                  "cellType": "number"
+                },
+                {
+                  "width": 70,
+                  "columnName": "Mol Wt.",
+                  "cellType": "number"
+                },
+                {
+                  "width": 66,
+                  "columnName": "Plate #",
+                  "cellType": "number"
+                },
+                {
+                  "width": 50,
+                  "columnName": "Row",
+                  "cellType": "number"
+                },
+                {
+                  "width": 70,
+                  "columnName": "Column",
+                  "cellType": "number"
+                },
+                {
+                  "width": 64,
+                  "columnName": "LC/MS",
+                  "cellType": "string"
+                },
+                {
+                  "width": 65,
+                  "columnName": "LD(50)",
+                  "cellType": "number"
+                },
+                {
+                  "width": 112,
+                  "columnName": "In-vivo Activity",
+                  "cellType": "number"
+                },
+                {
+                  "width": 115,
+                  "columnName": "Assay #1(IC50)",
+                  "cellType": "number"
+                },
+                {
+                  "width": 119,
+                  "columnName": "Assay #2 (IC50)",
+                  "cellType": "number"
+                },
+                {
+                  "width": 71,
+                  "columnName": "Efficacy",
+                  "cellType": "number"
+                },
+                {
+                  "width": 67,
+                  "columnName": "Kd #1",
+                  "cellType": "number"
+                },
+                {
+                  "width": 75,
+                  "columnName": "Kd #2",
+                  "cellType": "number"
+                },
+                {
+                  "width": 105,
+                  "columnName": "Half life (min)",
+                  "cellType": "number"
+                },
+                {
+                  "width": 107,
+                  "columnName": "Bioavailability",
+                  "cellType": "number"
+                },
+                {
+                  "width": 62,
+                  "columnName": "cLogP",
+                  "cellType": "number"
+                },
+                {
+                  "width": 53,
+                  "columnName": "Pka",
+                  "cellType": "number"
+                },
+                {
+                  "width": 70,
+                  "columnName": "R1 fmla",
+                  "cellType": "string"
+                },
+                {
+                  "width": 70,
+                  "columnName": "R2 fmla",
+                  "cellType": "string"
+                },
+                {
+                  "width": 70,
+                  "columnName": "R3 fmla",
+                  "cellType": "string"
+                },
+                {
+                  "width": 70,
+                  "columnName": "R4 fmla",
+                  "cellType": "string"
+                },
+                {
+                  "width": 49,
+                  "columnName": "2Ka",
+                  "cellType": "number"
+                },
+                {
+                  "width": 49,
+                  "columnName": "S5",
+                  "cellType": "number"
+                },
+                {
+                  "width": 49,
+                  "columnName": "T1",
+                  "cellType": "number"
+                },
+                {
+                  "width": 49,
+                  "columnName": "1Cv",
+                  "cellType": "number"
+                },
+                {
+                  "width": 92,
+                  "columnName": "Core_id",
+                  "cellType": "string"
+                }
+              ]
+            }
+          }
+        },
+        "children": [
+
+        ]
+      }
+    ]
+  },
+  "createdOn": "2019-05-07T13:26:29.484698Z",
+  "updatedOn": "2019-05-07T13:26:29.484698Z",
+  "name": "SarSmall"
+}

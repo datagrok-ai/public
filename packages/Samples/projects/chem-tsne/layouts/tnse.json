@@ -1,0 +1,12 @@
+{
+  "#type": "ViewLayout",
+  "type": "JupyterNotebook",
+  "friendlyName": "Chemical Space Using tSNE",
+  "viewStateMap": {
+    "notebookId": "107c9a50-3260-11e9-c59a-ada830f0f28c"
+  },
+  "id": "a37ef7f0-5970-11e9-86d4-5954d0f069c6",
+  "createdOn": "2019-05-07T13:26:30.179385Z",
+  "updatedOn": "2019-05-07T13:26:30.179385Z",
+  "name": "ChemicalSpaceUsingTSNE"
+}

@@ -1650,20 +1650,6 @@
       },
       "category": "Cheminformatics"
     },
-    "widgets": {
-      "dependencies": {
-        "0.2.1": {
-          "datagrok-api": "latest"
-        }
-      },
-      "description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Widgets"
-      },
-      "category": "Visualizations"
-    },
     "charts": {
       "dependencies": {
         "0.0.5": {
@@ -1765,62 +1751,6 @@
       },
       "category": "Visualizations"
     },
-    "bio-signals": {
-      "dependencies": {
-        "0.0.3": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.4": {
-          "datagrok-api": "^0.94.10"
-        },
-        "0.0.5": {
-          "datagrok-api": "^0.94.10"
-        },
-        "0.0.6": {
-          "datagrok-api": "^1.0.0"
-        }
-      },
-      "description": "BioSignals is a package for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to offer an efficient and automated biosignal processing routine.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/BioSignals"
-      },
-      "category": "Digital Health"
-    },
-    "dsp": {
-      "dependencies": {
-        "0.0.3": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.5": {},
-        "0.0.6": {}
-      },
-      "description": "A pack of various digital signal processing tools",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/DSP"
-      },
-      "category": "Digital Health"
-    },
-    "multi-form": {
-      "dependencies": {
-        "0.2.0": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.2.1": {
-          "datagrok-api": "^0.151.6"
-        }
-      },
-      "description": "MultiForm viewer provides a convenient way to visualize a set of selected rows.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/MultiForm"
-      },
-      "category": "Visualizations"
-    },
     "chembl-api": {
       "dependencies": {
         "0.0.4": {
@@ -1896,23 +1826,6 @@
         "directory": "packages/Notebooks"
       },
       "category": "Development"
-    },
-    "custom-ml": {
-      "dependencies": {
-        "0.0.3": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.5": {
-          "datagrok-api": "^0.94.10"
-        }
-      },
-      "description": "CustomML is a [package](https://datagrok.ai/help/develop/develop#packages) for the [custom machine learning models](https://datagrok.ai/help/learn/custom-ml-models).",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/CustomML"
-      },
-      "category": "Machine Learning"
     },
     "bio": {
       "dependencies": {
@@ -2371,18 +2284,6 @@
       },
       "category": "Visualizations"
     },
-    "vdj-tools": {
-      "dependencies": {
-        "0.0.4": {}
-      },
-      "description": "VDJtools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/VDJtools"
-      },
-      "category": "Bioinformatics"
-    },
     "swaggers": {
       "dependencies": {
         "0.1.0": {
@@ -2400,73 +2301,6 @@
         "directory": "packages/Swaggers"
       },
       "category": "Development"
-    },
-    "tika": {
-      "dependencies": {
-        "0.1.0": {},
-        "0.1.1": {},
-        "1.0.0": {}
-      },
-      "description": "Apache Tika CLI tools integration",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Tika"
-      },
-      "category": "Development"
-    },
-    "leaflet": {
-      "dependencies": {
-        "0.1.0": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.1": {
-          "datagrok-api": "^0.151.6"
-        },
-        "1.0.0": {}
-      },
-      "description": "Interactive map with a number of extensions that uses Leaflet.js",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Leaflet"
-      },
-      "category": "Visualizations"
-    },
-    "sequence": {
-      "dependencies": {
-        "0.1.0": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.1": {
-          "datagrok-api": "^0.151.6"
-        }
-      },
-      "description": "Support for the biological sequences (DNA, RNA, proteins), including FASTA readers, 3D visualization of molecules, MSA viewer, and functions for working with sequences",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Sequence"
-      },
-      "category": "Bioinformatics"
-    },
-    "pedometer": {
-      "dependencies": {
-        "0.1.0": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.1": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.2": {}
-      },
-      "description": "Pedometer for accelerometer signals",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Pedometer"
-      },
-      "category": "Digital Health"
     },
     "enamine-store": {
       "dependencies": {
@@ -2519,18 +2353,6 @@
         "directory": "packages/Chemspace"
       },
       "category": "Cheminformatics"
-    },
-    "file-editors": {
-      "dependencies": {
-        "0.1.1": {}
-      },
-      "description": "Support for editing end previewing multiple file formats (PDF, SVG)",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/PdfViewer"
-      },
-      "category": "Development"
     },
     "power-grid": {
       "dependencies": {

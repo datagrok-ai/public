@@ -1,0 +1,196 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "viewStateMap": {
+    "containerType": "vertical",
+    "state": {
+      "width": 943,
+      "height": 967
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 943,
+          "height": 705,
+          "element": {
+            "id": "c5ed6a00-cea0-11e9-9aba-d5ed8be56200",
+            "type": "Network diagram",
+            "look": {
+              "node1ColumnName": "node1",
+              "node2ColumnName": "node2",
+              "node1ImageColumnName": "url1",
+              "node2ImageColumnName": "url2",
+              "node1Shape": "image",
+              "node2Shape": "image",
+              "improvedLayout": false
+            }
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 943,
+          "height": 253,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 943,
+              "height": 253,
+              "element": {
+                "id": "c5f0c560-cea0-11e9-93b5-0ffc57f797d6",
+                "type": "Grid",
+                "look": {
+                  "#type": "HeatMapLook",
+                  "allowColumnMenu": true,
+                  "topLevelDefaultMenu": true,
+                  "columns": [
+                    {
+                      "width": 53,
+                      "columnName": "id",
+                      "cellType": "number"
+                    },
+                    {
+                      "width": 106,
+                      "columnName": "node1",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 88,
+                      "columnName": "node2",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 106,
+                      "columnName": "type1",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 81,
+                      "columnName": "type2",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 329,
+                      "columnName": "url1",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 319,
+                      "columnName": "url2",
+                      "cellType": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "tableId": "bc697ab0-0b50-11e9-cde0-33a5f40c88d8"
+  },
+  "columns": [
+    {
+      "name": "node1",
+      "type": "string",
+      "id": "d0ceb650-cea0-11e9-d51c-ad7ac9362899",
+      "friendlyName": "Node1",
+      "entityTags": [
+        {
+          "tag": ".semantic_detection_duration",
+          "id": "c5f30f50-cea0-11e9-c0bb-ab594cc7f72b"
+        },
+        {
+          "tag": ".id",
+          "id": "c5f33660-cea0-11e9-ffff-21dd5a05b672"
+        }
+      ],
+      "metaParams": {
+        ".semantic_detection_duration": "2",
+        ".id": "d0ceb650-cea0-11e9-d51c-ad7ac9362899"
+      }
+    },
+    {
+      "name": "node2",
+      "type": "string",
+      "id": "d0cedd60-cea0-11e9-a1e5-81b5e9716565",
+      "friendlyName": "Node2",
+      "entityTags": [
+        {
+          "tag": ".semantic_detection_duration",
+          "id": "c5f35d70-cea0-11e9-f0f9-5dd7ab705f52"
+        },
+        {
+          "tag": ".id",
+          "id": "c5f38480-cea0-11e9-aa31-51aab6b6abd8"
+        }
+      ],
+      "metaParams": {
+        ".semantic_detection_duration": "4",
+        ".id": "d0cedd60-cea0-11e9-a1e5-81b5e9716565"
+      }
+    },
+    {
+      "name": "url1",
+      "type": "string",
+      "id": "d0cf79a0-cea0-11e9-a7e1-798b62028d33",
+      "friendlyName": "Url1",
+      "entityTags": [
+        {
+          "tag": ".semantic_detection_duration",
+          "id": "c5f3ab90-cea0-11e9-b3cf-e7714357302d"
+        },
+        {
+          "tag": "repl",
+          "id": "c5f3d2a0-cea0-11e9-a3f1-5d952aa55fa5"
+        },
+        {
+          "tag": ".id",
+          "id": "c5f3f9b0-cea0-11e9-fbf3-7f955ca60519"
+        }
+      ],
+      "metaParams": {
+        ".semantic_detection_duration": "2",
+        "repl": "/images",
+        ".id": "d0cf79a0-cea0-11e9-a7e1-798b62028d33"
+      }
+    },
+    {
+      "name": "url2",
+      "type": "string",
+      "id": "d0cf79a0-cea0-11e9-ffb6-f3df415ab612",
+      "friendlyName": "Url2",
+      "entityTags": [
+        {
+          "tag": ".semantic_detection_duration",
+          "id": "c5f420c0-cea0-11e9-fa3a-171a4d0541fc"
+        },
+        {
+          "tag": ".id",
+          "id": "c5f447d0-cea0-11e9-d07f-15ef4054da7b"
+        },
+        {
+          "tag": "repl",
+          "id": "c5f46ee0-cea0-11e9-b907-cd19835c6b90"
+        }
+      ],
+      "metaParams": {
+        ".semantic_detection_duration": "1",
+        ".id": "d0cf79a0-cea0-11e9-ffb6-f3df415ab612",
+        "repl": "/"
+      }
+    }
+  ],
+  "id": "9056ce50-cea0-11e9-f639-331d034ce114",
+  "name": "CorpNet",
+  "friendlyName": "corp_net",
+  "createdOn": "2019-09-12T22:36:04.007Z",
+  "updatedOn": "2019-09-12T22:36:04.007Z"
+}

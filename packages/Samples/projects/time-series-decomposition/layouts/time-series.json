@@ -1,0 +1,77 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "friendlyName": "births",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 923,
+      "height": 673
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 456,
+          "height": 673,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 456,
+              "height": 673,
+              "element": {
+                "id": "4444eb80-e440-11e8-ff2b-9d04d32acf22",
+                "type": "Grid",
+                "look": {
+                  "#type": "HeatMapLook",
+                  "allowColumnMenu": true,
+                  "topLevelDefaultMenu": true,
+                  "columns": [
+                    {
+                      "width": 170,
+                      "columnName": "Date",
+                      "cellType": "number"
+                    },
+                    {
+                      "width": 60,
+                      "columnName": "Births",
+                      "cellType": "number"
+                    }
+                  ]
+                }
+              }
+            },
+            "children": [
+
+            ]
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 460,
+          "height": 673,
+          "element": {
+            "id": "44451290-e440-11e8-dbe1-2d824e7eae23",
+            "type": "Scripting Viewer",
+            "look": {
+              "script": "#name: Time series decomposition\n#description: Time series decomposition\n#help: https://en.wikipedia.org/wiki/Decomposition_of_time_series\n#language: r\n#tags: demo, viewers\n#sample: births.csv\n#input: dataframe data [Input data table]\n#input: column dates {type:dateTime; format:MM/dd/yyyy; allowNulls:false} [Date time column]\n#input: column observations {type:numerical; allowNulls:false} [Observations column]\n#output: graphics [Components plot]\n\nrequire(stats)\nrequire(xts)\n\n# Get columns data and correct data types\ndates = as.Date(data[[dates]], \"%m/%d/%Y\")\nobservations = data[[observations]]\n\n# Convert into timeseries vector\nidxs <- order(dates)\ndates = dates[idxs]\nobservations = observations[idxs]\nfrequencies = list(\n  \"daily\" = 365,\n  \"weekly\" = 52,\n  \"monthly\" = 12,\n  \"quarterly\" = 4,\n  \"yearly\" = 1\n)\nobs <- ts(observations,\n          start=c(as.numeric(format(dates[1],'%Y')),\n                  as.numeric(format(dates[1],'%m'))),\n          frequency=frequencies[[periodicity(dates)$scale]])\n\n# Decompose observation components\ncomponents <- decompose(obs)\n\n# Plot components\nplot(components)\ngrid(10, 10)\n",
+              "dates": "Date",
+              "observations": "Births"
+            }
+          }
+        },
+        "children": [
+
+        ]
+      }
+    ],
+    "tableId": "251d74c0-e440-11e8-fd8a-294af62929e1"
+  },
+  "id": "251f7090-e440-11e8-dbf8-5f3f4acbb663",
+  "name": "Births"
+}
