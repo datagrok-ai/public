@@ -1,11 +1,8 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
-category('Demo: Projects', () => {
+category('Projects', () => {
     test('coffee_company', async () => {
         await grok.dapi.projects.open('coffee_company')
     });
