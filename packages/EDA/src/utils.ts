@@ -28,6 +28,9 @@ const INCORRECT_NEIBORS_MES = 'number of neibors must be at least 2 and not grea
 const INCORRECT_ITERATIONS_MES = 'number of iterations must be at least 1.';
 const INCORRECT_LEARNING_RATE_MES = 'learning rate must be positive.';
 const INCORRECT_PERPLEXITY_MES = 'perplexity must be at least 2 and not greater than samples count.';
+const INCORRECT_STEPS_MES = 'steps must be non-negative.';
+const INCORRECT_CYCLES_MES = 'cycles must be positive.';
+const INCORRECT_CUTOFF_MES = 'cutoff must be non-negative.'
 
 // Check column type
 export function checkColumnType(col: DG.Column): void {
@@ -94,6 +97,32 @@ export function checkTSNEinputs(features: DG.ColumnList, components: number,
 
   if ((perplexity < 2) || (perplexity > features.byIndex(0).length))
     throw new Error(INCORRECT_PERPLEXITY_MES);  
+}
+
+// Check SPE inputs
+export function checkSPEinputs(features: DG.ColumnList, dimension: number,
+  steps: number, cycles: number, cutoff: number, lambda: number): void 
+{
+  // General dim reducer checks
+  checkDimensionReducerInputs(features, dimension);
+
+  // Check data total size
+  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
+    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
+
+  // SPE specific checks
+
+  if (steps < 0)
+    throw new Error(INCORRECT_STEPS_MES);
+
+  if (cycles <= 0)
+    throw new Error(INCORRECT_CYCLES_MES);
+
+  if (cutoff < 0)
+    throw new Error(INCORRECT_CUTOFF_MES);
+
+  if (lambda <= 0)
+    throw new Error(INCORRECT_LEARNING_RATE_MES);
 }
 
 // Check wasm dimension reducer inputs

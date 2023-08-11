@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS, computeUMAP, computeTSNE} from './eda-tools';
+import {computePCA, computePLS, computeUMAP, computeTSNE, computeSPE} from './eda-tools';
 import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
   scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
@@ -55,14 +55,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //output: dataframe result {action:join(table)}
 export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
   epochs: number, neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
-{ 
-  // TODO: delete the following
-  /*let start = new Date().getTime();
-  const df = await computeUMAP(features, components, epochs, neighbors, minDist, spread);
-  let finish = new Date().getTime();
-  console.log(`Time for UMAP: ${finish - start} ms.`);
-  return df;*/
-
+{
   return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
 }
 
@@ -80,6 +73,23 @@ export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, compone
   learningRate: number, perplexity: number, iterations: number): Promise<DG.DataFrame> 
 {
   return await computeTSNE(features, components, learningRate, perplexity, iterations);
+}
+
+//top-menu: ML | Dimension Reduction | SPE...
+//name: SPE
+//description: Stochastic proximity embedding (SPE).
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int dimension = 2 {caption: Dimension; category: Hyperparameters} [Dimension of the embedded space.]
+//input: int steps = 0 {caption: Steps; category: Hyperparameters} [Number of random selections of point pairs and distance computations between them.]
+//input: int cycles = 1000000 {caption: Cycles; category: Hyperparameters} [Number of the method cycles.]
+//input: double cutoff = 0.0 {caption: Cutoff; category: Hyperparameters} [Cutoff distance between points.]
+//input: double lambda = 2.0 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter.]
+//output: dataframe result {action:join(table)}
+export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimension: number,
+  steps: number, cycles: number, cutoff: number, lambda: number): Promise<DG.DataFrame> 
+{
+  return await computeSPE(features, dimension, steps, cycles, cutoff, lambda);
 }
 
 //top-menu: ML | Multivariate Analysis (PLS)...

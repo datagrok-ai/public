@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.1.3 (WIP)
+## 1.1.3 (2023-08-11)
 
 This release is centered around enhancing user-friendliness and addressing concerns.
 
@@ -9,10 +9,7 @@ This release is centered around enhancing user-friendliness and addressing conce
 * The method PCA is replaced to Top Menu > ML > Dimensionality Reduction
 * The method UMPA is added (see Top Menu > ML > Dimensionality Reduction)
 * The method t-SNE is added (see Top Menu > ML > Dimensionality Reduction)
-
-### Bug Fixes
-
-* 
+* The method SPE is added (see Top Menu > ML > Dimensionality Reduction)
 
 ## 1.1.2 (2023-07-27)
 

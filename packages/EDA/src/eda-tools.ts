@@ -4,12 +4,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TSNE} from '@keckelt/tsne';
+import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {VectorMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 
 import {_principalComponentAnalysisInWebWorker,
   _partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
 
-import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs, getRowsOfNumericalColumnns} from './utils';
+import {checkWasmDimensionReducerInputs, checkUMAPinputs, checkTSNEinputs, checkSPEinputs,
+  getRowsOfNumericalColumnns} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
@@ -157,3 +159,43 @@ export async function computeTSNE(features: DG.ColumnList, components: number,
     DG.Column.fromFloat32Array('tSNE' + i.toString(), umapColumnsData[i])
   ));
 } // computeTSNE
+
+// Stochastic proximity embedding (SPE)
+export async function computeSPE(features: DG.ColumnList, dimension: number,
+  steps: number, cycles: number, cutoff: number, lambda: number): Promise<DG.DataFrame> 
+{
+  // check inputs
+  checkSPEinputs(features, dimension, steps, cycles, cutoff, lambda);
+
+  // get row-by-row data
+  const data = getRowsOfNumericalColumnns(features);
+
+  // SPE reducer
+  const spe = new DimensionalityReducer(data, 'SPE', VectorMetricsNames.Euclidean, {
+    dimension: dimension,
+    steps: steps,
+    cycles: cycles,
+    cutoff: cutoff,
+    lambda: lambda
+  });
+
+  // compute embeddings
+  const embeddings = (await spe.transform(false, false)).embedding;
+  
+  const rowCount = embeddings.length;
+  const range = [...Array(dimension).keys()];
+  
+  // Create output
+  
+  // columns data
+  const umapColumnsData = range.map(_ => new Float32Array(rowCount));  
+  
+  // perform transponation
+  for (let i = 0; i < rowCount; ++i)
+    for (let j = 0; j < dimension; ++j)
+      umapColumnsData[j][i] = embeddings[i][j];
+  
+  return DG.DataFrame.fromColumns(range.map(i => 
+    DG.Column.fromFloat32Array('SPE' + i.toString(), umapColumnsData[i])
+  ));
+} // computeSPE
