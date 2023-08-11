@@ -28,11 +28,11 @@ export async function init(): Promise<void> {
 //top-menu: ML | Dimension Reduction | PCA...
 //name: PCA
 //description: Principal component analysis (PCA).
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: int components = 2
-//input: bool center = true
-//input: bool scale = true
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int components = 2 {caption: Components; category: Hyperparameters} [Number of components.]
+//input: bool center = false {category: Hyperparameters} [Indicating whether the variables should be shifted to be zero centered.]
+//input: bool scale = false {category: Hyperparameters} [Indicating whether the variables should be scaled to have unit variance.]
 //output: dataframe result {action:join(table)}
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
