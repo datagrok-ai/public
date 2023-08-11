@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {MARKER_TYPE} from 'datagrok-api/dg';
-import {getSettingsBase, SparklineType, SummarySettingsBase} from '../sparklines/shared';
+import {getSettingsBase, names, SparklineType, SummarySettingsBase} from '../sparklines/shared';
 import {GridCell, GridColumn} from "datagrok-api/src/grid";
 import {GridCellElement, LabelElement, MarkerElement, Scene} from "./scene";
 
@@ -126,5 +126,20 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
   onMouseDown(gridCell: GridCell, e: MouseEvent): void {
     grok.shell.o = this.makeBestScene(gridCell).toCanvas();
+  }
+
+  renderSettings(gc: DG.GridColumn): Element {
+    gc.settings ??= getSettings(gc);
+    const settings = gc.settings;
+
+    return ui.inputs([
+      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
+        settings.columnNames = names(columns);
+        gc.grid.invalidate();
+      }, {
+        available: names(gc.grid.dataFrame.columns),
+        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns),
+      }),
+    ]);
   }
 }
