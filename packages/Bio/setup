@@ -29,6 +29,9 @@ unlink_cleanup
 
 for dir in ${dirs[@]}; do
   cd $package_dir && cd $dir
+  if [ $dir == "../../js-api/" ]; then
+   git clean -f -X -d ./src
+  fi
   log "npm install in $(pwd)"
   npm install
   log "npm link in $(pwd)"
