@@ -77,7 +77,7 @@ export class ViewHandler {
       }
       if (view.name === 'Tests') {
         grok.shell.windows.showToolbox = false;
-        this.dockFilters = grok.shell.dockManager.dock(TestsView.filters, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.11);
+        this.dockFilters = grok.shell.dockManager.dock(TestsView.filters, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.12);
       } else {
         grok.shell.windows.showToolbox = true;
         if (this.dockFilters)
