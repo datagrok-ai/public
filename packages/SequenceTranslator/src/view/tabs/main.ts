@@ -58,9 +58,9 @@ export class MainTabUI {
     const sequenceColoredInput = new ColoredTextInput(this.sequenceInputBase, highlightInvalidSubsequence);
 
     const downloadMolfileButton = ui.button(
-      'Get Molfile',
+      'Get SDF',
       () => { this.saveMolfile(); },
-      'Save sequence as Molfile V3000');
+      'Save structure as SDF');
 
     const copySmilesButton = ui.button(
       'Copy SMILES',
@@ -100,8 +100,8 @@ export class MainTabUI {
 
   private saveMolfile(): void {
     const result = (new SequenceToMolfileConverter(this.sequence, false,
-      this.formatChoiceInput.value!)).convert();
-    download(this.sequence + '.mol', encodeURIComponent(result));
+      this.formatChoiceInput.value!)).convert() + '\n$$$$';
+    download(this.sequence + '.sdf', encodeURIComponent(result));
   }
 
   private copySmiles(): void {
