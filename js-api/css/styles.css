@@ -23,5 +23,8 @@
 }
 
 .invalid-molecule-warning {
-  color:red;
+  color: var(--red-3);
+  position: relative;
+  left: 60px;
+  bottom: 60px;
 }
