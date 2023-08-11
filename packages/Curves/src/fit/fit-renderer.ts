@@ -46,12 +46,17 @@ const POINT_PX_SIZE = 4;
 const OUTLIER_HITBOX_RADIUS = 2;
 const MIN_AXES_CELL_PX_WIDTH = 70;
 const MIN_AXES_CELL_PX_HEIGHT = 55;
+const MIN_TITLE_PX_WIDTH = 350;
+const MIN_TITLE_PX_HEIGHT = 250;
 const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 180;
 const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 140;
-const AXES_LEFT_PX_MARGIN = (w: number, h: number) => w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT ? 45 : 38;
+const AXES_LEFT_PX_MARGIN = 38;
+const AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS = 45;
 const AXES_TOP_PX_MARGIN = 5;
+const AXES_TOP_PX_MARGIN_WITH_TITLE = 25;
 const AXES_RIGHT_PX_MARGIN = 18;
-const AXES_BOTTOM_PX_MARGIN = (w: number, h: number) => w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT ? 30 : 15;
+const AXES_BOTTOM_PX_MARGIN = 15;
+const AXES_BOTTOM_PX_MARGIN_WITH_AXES_LABELS = 30;
 const CANDLESTICK_BORDER_PX_SIZE = 4;
 const CANDLESTICK_MEDIAN_PX_SIZE = 3.5;
 const CANDLESTICK_OUTLIER_PX_SIZE = 6;
@@ -93,15 +98,16 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
 }
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
-export function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
+export function layoutChart(rect: DG.Rect, showAxes: boolean, showTitle: boolean): [DG.Rect, DG.Rect?, DG.Rect?] {
   if (rect.width < MIN_AXES_CELL_PX_WIDTH || rect.height < MIN_AXES_CELL_PX_HEIGHT)
     return [rect, undefined, undefined];
-  const axesLeftPxMargin = AXES_LEFT_PX_MARGIN(rect.width - INFLATE_SIZE, rect.height - INFLATE_SIZE);
-  const axesBottomPxMargin = AXES_BOTTOM_PX_MARGIN(rect.width - INFLATE_SIZE, rect.height - INFLATE_SIZE);
+  const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
+  const axesBottomPxMargin = showAxes ? AXES_BOTTOM_PX_MARGIN_WITH_AXES_LABELS : AXES_BOTTOM_PX_MARGIN;
+  const axesTopPxMargin = showTitle ? AXES_TOP_PX_MARGIN_WITH_TITLE : AXES_TOP_PX_MARGIN;
   return [
-    rect.cutLeft(axesLeftPxMargin).cutBottom(axesLeftPxMargin).cutTop(AXES_TOP_PX_MARGIN).cutRight(AXES_RIGHT_PX_MARGIN),
-    rect.getBottom(axesBottomPxMargin).getTop(AXES_TOP_PX_MARGIN).cutLeft(axesLeftPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
-    rect.getLeft(axesLeftPxMargin).getRight(AXES_RIGHT_PX_MARGIN).cutBottom(axesBottomPxMargin).cutTop(AXES_TOP_PX_MARGIN)
+    rect.cutLeft(axesLeftPxMargin).cutBottom(axesLeftPxMargin).cutTop(axesTopPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
+    rect.getBottom(axesBottomPxMargin).getTop(axesTopPxMargin).cutLeft(axesLeftPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
+    rect.getLeft(axesLeftPxMargin).getRight(AXES_RIGHT_PX_MARGIN).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin)
   ];
 }
 
@@ -174,9 +180,9 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
 
 /** Performs a curve confidence interval drawing */
 function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
-  screenBounds: DG.Rect, transform: Viewport, confidenceType: string): void {
+  screenBounds: DG.Rect, transform: Viewport, confidenceType: string, showAxes: boolean): void {
   g.beginPath();
-  const axesLeftPxMargin = AXES_LEFT_PX_MARGIN(screenBounds.width - INFLATE_SIZE, screenBounds.height - INFLATE_SIZE);
+  const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
   for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
     const x = screenBounds.x + i;
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
@@ -192,9 +198,9 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
 
 /** Performs a curve confidence interval color filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
-  screenBounds: DG.Rect, transform: Viewport): void {
+  screenBounds: DG.Rect, transform: Viewport, showAxes: boolean): void {
   g.beginPath();
-  const axesLeftPxMargin = AXES_LEFT_PX_MARGIN(screenBounds.width - INFLATE_SIZE, screenBounds.height - INFLATE_SIZE);
+  const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
   for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
     const x = screenBounds.x + i;
     const y = transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x)));
@@ -228,7 +234,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   get cellType() { return FIT_CELL_TYPE; }
 
   getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
-    return {width: 180, height: 145};
+    return {width: 220, height: 150};
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -242,7 +248,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       : getChartData(gridCell);
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
-    const dataBox = layoutChart(screenBounds)[0];
+    const showAxes = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
+    const showTitle = gridCell.bounds.width >= MIN_TITLE_PX_WIDTH && gridCell.bounds.height >= MIN_TITLE_PX_HEIGHT;
+    const dataBox = layoutChart(screenBounds, showAxes, showTitle)[0];
     const dataBounds = getChartBounds(data);
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
@@ -293,7 +301,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.clip();
 
     const screenBounds = new DG.Rect(x, y, w, h).inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
-    const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
+    const showAxes = w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT
+      && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
+    const showTitle = w >= MIN_TITLE_PX_WIDTH && h >= MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
+    const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds, showAxes, showTitle);
 
     const dataBounds = getChartBounds(data);
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
@@ -346,7 +357,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.lineWidth = 2 * ratio;
   
         g.beginPath();
-        const axesLeftPxMargin = AXES_LEFT_PX_MARGIN(screenBounds.width - INFLATE_SIZE, screenBounds.height - INFLATE_SIZE);
+        const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
         for (let j = axesLeftPxMargin; j <= screenBounds.width - AXES_RIGHT_PX_MARGIN; j++) {
           const x = screenBounds.x + j;
           const xForY = data.chartOptions?.logX ? Math.log10(viewport.xToWorld(x)) : viewport.xToWorld(x);
@@ -365,9 +376,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
   
         const confidenceIntervals = getSeriesConfidenceInterval(series, fitFunc, userParamsFlag);
-        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP);
-        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM);
-        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport);
+        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, showAxes);
+        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, showAxes);
+        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes);
       }
   
       if (series.droplines) {
@@ -402,15 +413,22 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
     }
 
-    if (w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT &&
-      data.chartOptions?.xAxisName && data.chartOptions.yAxisName) {
+    if (showTitle) {
+      g.font = '12px Roboto, "Roboto Local"';
+      g.textAlign = 'center';
+      g.fillStyle = 'black';
+      g.fillText(data.chartOptions?.title!, dataBox.midX - 5, y + 15);
+    }    
+
+    if (showAxes) {
       g.font = '11px Roboto, "Roboto Local"';
       g.textAlign = 'center';
       g.fillStyle = 'black';
       g.fillText(data.chartOptions?.xAxisName!, dataBox.midX - 5, y + h - 10);
       g.translate(x, y);
       g.rotate(-Math.PI / 2);
-      g.fillText(data.chartOptions?.yAxisName!, -(dataBox.height / 2 + AXES_TOP_PX_MARGIN + 15), 15);
+      const axesTopPxMargin = showTitle ? AXES_TOP_PX_MARGIN_WITH_TITLE : AXES_TOP_PX_MARGIN;
+      g.fillText(data.chartOptions?.yAxisName!, -(dataBox.height / 2 + axesTopPxMargin + 15), 15);
       g.restore();
     }
 
@@ -449,7 +467,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       : getChartData(gridCell);
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
-    const dataBox = layoutChart(screenBounds)[0];
+    const showAxes = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
+    const showTitle = gridCell.bounds.width >= MIN_TITLE_PX_WIDTH && gridCell.bounds.height >= MIN_TITLE_PX_HEIGHT;
+    const dataBox = layoutChart(screenBounds, showAxes, showTitle)[0];
     const dataBounds = getChartBounds(data);
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
