@@ -26,7 +26,8 @@ A scatter plot can respond to filters and apply filters to other viewers (**Cont
 * Use **Row Source** to define the rows to display on the scatter plot. Choices are: `All`, `Filtered`, `Selected`, `SelectedOrCurrent`, `FilteredSelected`, `MouseOverGroup`, `CurrentRow`, `MouseOverRow`.
 * Apply **Zoom and Filter** to define how the scatter plot responds during zooming. Сhoices include: `zoom by filter`, `filter by zoom`, `pack and zoom by filter`.
 
-GIF
+<!--<img alt="Filtering" src={require('./filtering.gif').default} width="800px"/>-->
+![Filtering](./filtering.gif "Filtering")
 
 ### Axes
 
@@ -45,16 +46,18 @@ You can customize scatter plot axes using settings from the **X** and **Y** info
 
 A scatter plot renders molecular structures on the axes. When you hover over a structure, a tick mark shows its position on the axis, and its label appears above the others on the axis.
 
-GIF
+<!--<img alt="Molecular structures rendering" src={require('./rendering.gif').default} width="800px"/>-->
+![Molecular structures rendering](./rendering.gif "Molecular structures rendering")
 
 ### Selection
 
-A scatter plot offers two data selection modes: Rectangle Marquee (by default)
-and Lasso (**Misc** > **Lasso tool**).  By default, to select points on a
+A scatter plot offers two data selection modes: **Rectangle Marquee** (by default)
+and **Lasso** (**L** or **Misc** > **Lasso tool**).  By default, to select points on a
 scatter plot, you need to use Shift+Mouse Drag. To enable selecting an area
 using only mouse drag, switch the **Mouse Drag** setting to `select`. 
 
-GIF
+<!--<img alt="Selection" src={require('./selection.gif').default}width="800px"/>-->
+![Selection](./selection.gif "Selection")
 
 ### Tooltip
 
@@ -69,6 +72,9 @@ custom tooltip for the scatter plot  from the **Tooltip** info panel:
 >Note: The key settings from the **Context Panel** are replicated in the context
 >menu for the scatter plot (**Context Menu > Tooltip**).
 
+<!--<img alt="Tooltip" src={require('./tooltip.gif').default} width="800px"/>-->
+![Tooltip](./tooltip.gif "Tooltip")
+
 Learn also about [Goup tooltip](https://datagrok.ai/help/visualize/viewers/#group-tooltips)
 
 ## Advanced features
@@ -79,11 +85,12 @@ Scatter plot supports formula lines (COntext Menu > Tools > Formula Lines…). T
 
 >Developers: Learn more about how to [Show formula lines](https://datagrok.ai/help/develop/how-to/show-formula-lines)
 
-GIF
+<!--<img alt="Formula lines" src={require('./formula-lines.gif').default} width="800px"/>-->
+![Formula lines](./formula-lines.gif "Formula lines")
 
 ### Regression line
 
-Hit 'R' to toggle regression line.
+Hit 'R' to toggle the regression line.
 
 ![Scatter plot](../../uploads/gifs/scatter-plot.gif "scatter plot")
 
@@ -97,6 +104,7 @@ Hit 'R' to toggle regression line.
 | Select | Shift+Mouse Drag       |
 | Invert selected | Ctrl+Mouse Click        |
 | Scroll  |  Up, Down, Left, Right       |
+| Toggle lasso tool | L        |
 | Toggle regression line | R       |
 | Show in full screen | Alt+F        |
 
