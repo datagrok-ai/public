@@ -9,6 +9,7 @@ import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
+import {TestsView} from './tabs/tests';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -18,6 +19,7 @@ export class ViewHandler {
   private urlParams: Map<string, string> = new Map<string, string>();
   public static UAname = 'Usage Analysis';
   static UA: DG.MultiView;
+  dockFilters: DG.DockNode | null = null;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -31,7 +33,7 @@ export class ViewHandler {
     const toolbox = await UaToolbox.construct();
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView];
     // const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
@@ -72,6 +74,15 @@ export class ViewHandler {
           grok.shell.o = info;
         }
         helpShown = true;
+      }
+      if (view.name === 'Tests') {
+        grok.shell.windows.showToolbox = false;
+        this.dockFilters = grok.shell.dockManager.dock(TestsView.filters, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.11);
+      } else {
+        grok.shell.windows.showToolbox = true;
+        if (this.dockFilters)
+          grok.shell.dockManager.close(this.dockFilters);
+        this.dockFilters = null;
       }
     });
     ViewHandler.UA.name = ViewHandler.UAname;

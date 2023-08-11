@@ -1059,7 +1059,7 @@ export class ColumnList {
     this.dart = dart;
   }
 
-  /** Number of elements in the column. */
+  /** Number of columns. */
   get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
   /** Column with the corresponding name (case-insensitive). */
@@ -1335,7 +1335,7 @@ export class RowList {
   /** Removes specified rows
    * @param {RowPredicate} rowPredicate */
   removeWhere(rowPredicate: RowPredicate): void {
-    api.grok_RowList_RemoveWhereIdx(this.dart, (i) => rowPredicate(this.get(i)));
+    api.grok_RowList_RemoveWhereIdx(this.dart, (i: number) => rowPredicate(this.get(i)));
   }
 
   /** Removes specified rows

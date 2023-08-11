@@ -17,10 +17,11 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import * as uuid from 'uuid';
+import $ from 'cash-dom';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram} from './utils/misc';
+import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram, getTemplate} from './utils/misc';
 import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
@@ -32,7 +33,8 @@ import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
-import {calculateIdentity, identityWidget} from './widgets/similarity';
+import {calculateIdentity, calculateSimilarity} from './widgets/similarity';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -94,9 +96,9 @@ export class PeptidesModel {
   _matrixDf?: DG.DataFrame;
   _splitSeqDf?: DG.DataFrame;
   _distanceMatrix!: DistanceMatrix;
-  _treeHelper!: ITreeHelper;
   _dm!: DistanceMatrix;
   _layoutEventInitialized = false;
+  isToolboxSet: boolean = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -114,11 +116,6 @@ export class PeptidesModel {
       throw new Error('PeptidesError: UUID is not defined');
 
     return id;
-  }
-
-  get treeHelper(): ITreeHelper {
-    this._treeHelper ??= getTreeHelperInstance();
-    return this._treeHelper;
   }
 
   get monomerPositionDf(): DG.DataFrame {
@@ -443,29 +440,36 @@ export class PeptidesModel {
     acc.addTitle(ui.h1(`${filterAndSelectionBs.trueCount} selected rows${filteredTitlePart}`));
     if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
-        const newViewButton = ui.button('New view', () => trueModel.createNewView(),
-          'Creates a new view from current selection');
-        const newCluster = ui.button('New cluster', () => {
+        const newView = ui.label('New view');
+        $(newView).addClass('d4-link-action');
+        newView.onclick = () => trueModel.createNewView();
+        newView.onmouseover = (ev) => ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
+        const newCluster = ui.label('New cluster');
+        $(newCluster).addClass('d4-link-action');
+        newCluster.onclick = () => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.clusterFromSelection();
-        }, 'Creates a new cluster from selection');
-        const removeCluster = ui.button('Remove cluster', () => {
+        };
+        newCluster.onmouseover = (ev) => ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
+        const removeCluster = ui.label('Remove cluster');
+        $(removeCluster).addClass('d4-link-action');
+        removeCluster.onclick = () => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.removeCluster();
-        }, 'Removes currently selected custom cluster');
-        removeCluster.disabled = trueModel.clusterSelection.length === 0 ||
-          !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name));
-        return ui.divV([newViewButton, newCluster, removeCluster]);
+        };
+        removeCluster.onmouseover = (ev) => ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
+        removeCluster.style.visibility = trueModel.clusterSelection.length === 0 ||
+          !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name)) ? 'hidden' : 'visible';
+        return ui.divV([newView, newCluster, removeCluster]);
       });
     }
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
-    acc.addPane('Identity', () => identityWidget(trueModel).root);
 
     return acc;
   }
@@ -532,15 +536,15 @@ export class PeptidesModel {
     const cols = this.df.columns;
     const positionColumns = this.splitSeqDf.columns.names();
     for (const colName of positionColumns) {
-      const col = this.df.col(colName);
+      let col = this.df.col(colName);
       const newCol = this.splitSeqDf.getCol(colName);
-      if (col === null)
-        cols.add(newCol);
-      else {
+      if (col !== null)
         cols.remove(colName);
-        cols.add(newCol);
-      }
-      CR.setAARRenderer(newCol, this.alphabet);
+
+      const newColCat = newCol.categories;
+      const newColData = newCol.getRawData();
+      col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
+      CR.setAARRenderer(col, this.alphabet);
     }
     this.df.name = name;
   }
@@ -870,17 +874,17 @@ export class PeptidesModel {
     const monomerName = aar.toLowerCase();
 
     const mw = getMonomerWorksInstance();
-    const mol = mw.getCappedRotatedMonomer('PEPTIDE', aar);
+    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
 
     if (mol) {
       tooltipElements.push(ui.div(monomerName));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
-    } else if (aar !== '') {
+    } else if (aar !== '')
       tooltipElements.push(ui.div(aar));
-    } else {
+    else
       return true;
-    }
+
 
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
 
@@ -904,11 +908,11 @@ export class PeptidesModel {
       [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
     const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
     const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
-    const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
-    const aggregatedColMap = this.getAggregatedColumnValues({mask: mask, fractionDigits: 2});
+    const tableMap = getStatsTableMap(stats);
+    const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
 
     const resultMap = {...tableMap, ...aggregatedColMap};
-    const distroStatsElem = getStatsSummary(labels, hist, resultMap, true);
+    const distroStatsElem = getStatsSummary(labels, hist, resultMap);
 
     ui.tooltip.show(distroStatsElem, x, y);
 
@@ -918,6 +922,7 @@ export class PeptidesModel {
   getAggregatedColumnValues(options: {filterDf?: boolean, mask?: DG.BitSet, fractionDigits?: number} = {},
   ): StringDictionary {
     options.filterDf ??= false;
+    options.fractionDigits ??= 3;
 
     const filteredDf = options.filterDf && this.df.filter.anyFalse ? this.df.clone(this.df.filter) : this.df;
 
@@ -1081,10 +1086,11 @@ export class PeptidesModel {
       const pepColValues: string[] = this.df.getCol(this.settings.sequenceColumnName!).toList();
       this._dm ??= new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
       const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
-      const treeNode = await this.treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
+      const treeHelper: ITreeHelper = getTreeHelperInstance()!;
+      const treeNode = await treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
 
-      this.df.setTag(treeTAGS.NEWICK, this.treeHelper.toNewick(treeNode));
-      const leafOrdering = this.treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
+      this.df.setTag(treeTAGS.NEWICK, treeHelper.toNewick(treeNode));
+      const leafOrdering = treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
       this.analysisView.grid.setRowOrder(leafOrdering);
       const dendrogramViewer = await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
 
@@ -1118,35 +1124,84 @@ export class PeptidesModel {
     if (!this.isRibbonSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1') {
       //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
-      let sequence = this.identityTemplate;
+      this.analysisView.setRibbonPanels([[settingsButton]], false);
+      this.isRibbonSet = true;
+      this.updateGrid();
+    }
+
+    if (!this.isToolboxSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1') {
+      let template: ISeqSplitted;
       const sequencesCol = this.df.getCol(this.settings.sequenceColumnName!);
-      const calculateIdentityBtn = ui.button('Identity',
-        async () => calculateIdentity(sequence, this), 'Calculate identity');
-      const templateInput = ui.stringInput('Template', sequence, async () => {
+      const minTemplateLength = this.splitSeqDf.columns.toList()
+        .filter((col) => col.stats.missingValueCount === 0).length;
+      const calculateIdentityBtn = ui.button('Identity', async () => {
+        let identityScoresCol = calculateIdentity(template, this.splitSeqDf);
+        identityScoresCol.name = this.df.columns.getUnusedName(identityScoresCol.name);
+        identityScoresCol = this.df.columns.add(identityScoresCol);
+        identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, new Array(template).join(' '));
+      }, 'Calculate identity');
+      const calculateSimilarityBtn = ui.button('Similarity', async () => {
+        let similarityScoresCol = await calculateSimilarity(template, this.splitSeqDf);
+        similarityScoresCol.name = this.df.columns.getUnusedName(similarityScoresCol.name);
+        similarityScoresCol = this.df.columns.add(similarityScoresCol);
+        similarityScoresCol.setTag(C.TAGS.SIMILARITY_TEMPLATE, new Array(template).join(' '));
+      }, 'Calculate similarity');
+      const templateInput = ui.stringInput('Template', this.identityTemplate, async () => {
+        this.identityTemplate = templateInput.value;
         if (isNaN(parseInt(templateInput.value))) {
           if (templateInput.value.length === 0) {
             calculateIdentityBtn.disabled = true;
-            this.identityTemplate = '';
+            calculateSimilarityBtn.disabled = true;
             return;
           }
-          sequence = templateInput.value;
-        } else {
-          const rowIndex = parseInt(templateInput.value);
-          if (rowIndex < 0 || rowIndex >= this.df.rowCount) {
-            grok.shell.warning('Invalid row index');
+          try {
+            template ??= await getTemplate(this.identityTemplate, sequencesCol);
+            if (template.length < minTemplateLength) {
+              grok.shell.warning(`Template length should be at least ${minTemplateLength} amino acids.`);
+              calculateIdentityBtn.disabled = true;
+              calculateSimilarityBtn.disabled = true;
+              return;
+            } else if (new Array(template).includes('') || new Array(template).includes('-')) {
+              grok.shell.warning('Template shouldn\'t contain gaps or empty cells.');
+              calculateIdentityBtn.disabled = true;
+              calculateSimilarityBtn.disabled = true;
+              return;
+            }
+          } catch (e) {
+            grok.shell.warning(`Only ${sequencesCol.getTag(DG.TAGS.UNITS)} sequence format is supported.`);
+            grok.log.warning(e as string);
             calculateIdentityBtn.disabled = true;
             return;
           }
-          sequence = sequencesCol.get(rowIndex);
+        } else {
+          const rowIndex = parseInt(templateInput.value) - 1;
+          const selectedIndexes = this.df.filter.getSelectedIndexes();
+          if (rowIndex < 0 || rowIndex >= selectedIndexes.length) {
+            grok.shell.warning('Invalid row index');
+            calculateIdentityBtn.disabled = true;
+            calculateSimilarityBtn.disabled = true;
+            return;
+          }
+          this.identityTemplate = sequencesCol.get(selectedIndexes[rowIndex]);
         }
-        this.identityTemplate = templateInput.value;
+        try {
+          template = await getTemplate(this.identityTemplate, sequencesCol);
+        } catch (e) {
+          grok.shell.warning('Couldn\'t recognize sequence format.');
+          grok.log.warning(e as string);
+          calculateIdentityBtn.disabled = true;
+          calculateSimilarityBtn.disabled = true;
+          return;
+        }
         calculateIdentityBtn.disabled = false;
+        calculateSimilarityBtn.disabled = false;
       }, {placeholder: 'Sequence or row index...'});
       templateInput.setTooltip('Template sequence. Can be row index, peptide ID or sequence.');
       templateInput.fireChanged();
-      this.analysisView.setRibbonPanels([[settingsButton], [templateInput.root, calculateIdentityBtn]], false);
-      this.isRibbonSet = true;
-      this.updateGrid();
+      const acc = this.analysisView.toolboxPage.accordion;
+      acc.addPane('Sequence Identity and Similarity',
+        () => ui.divV([ui.form([templateInput]), calculateIdentityBtn, calculateSimilarityBtn]), true, acc.panes[0]);
+      this.isToolboxSet = true;
     }
 
     this.fireBitsetChanged(true);

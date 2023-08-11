@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/arrow",
   "friendlyName": "Arrow",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -60,5 +60,5 @@
   "canView": [
     "All users"
   ],
-  "category": "Development"
+  "category": "Data Access"
 }

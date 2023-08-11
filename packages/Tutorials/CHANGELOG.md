@@ -1,10 +1,18 @@
 # Tutorials changelog
 
+## 1.3.10 (2023-08-07)
+
+## 1.3.9 (2023-08-07)
+
+### Features
+
+* Updated steps description in Multivariate Analysis tutorial
+
+### Bug fixes
+
+* Recognition steps in Multivariate Analysis tutorial
+
 ## 1.3.8 (2023-07-21)
-
-This release focuses on showcasing more demonstration examples, usage samples, and interactive scenarios to illustrate the platform's capabilities and functionality in practical situations.
-
-*Dependency: datagarok-api >= 1.16.0*
 
 ### Features
 

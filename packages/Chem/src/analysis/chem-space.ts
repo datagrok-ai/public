@@ -14,7 +14,7 @@ import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, true, false);
+  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, false);
   const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) =>
     !el ? idx : null).filter((it) => it !== null);
   malformedDataWarning(fpColumn, spaceParams.seqCol);
@@ -55,7 +55,7 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
 
 export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
-  options?: IUMAPOptions | ITSNEOptions):  Promise<DG.Viewer | undefined>{
+  options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
 
   const chemSpaceParams = {

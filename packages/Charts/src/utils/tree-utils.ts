@@ -113,10 +113,8 @@ export class TreeUtils {
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
         const name = columns[colIdx].getString(i);
-        if (name === '') {
-          break;
-        }
         const node: treeDataType = {
+          semType: columns[colIdx].semType,
           name: name,
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
@@ -187,6 +185,6 @@ export class TreeUtils {
   }
 }
 
-export type treeDataType = { name: string, value: number, path?: null | string, label?: {}, children?: treeDataType[],
+export type treeDataType = { name: string, value: number, semType?: null | string, path?: null | string, label?: {}, children?: treeDataType[],
   itemStyle?: { color?: string }, [prop: string]: any };
 export type aggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };

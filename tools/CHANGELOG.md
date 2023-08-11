@@ -1,5 +1,15 @@
 # Datagrok-tools changelog
 
+## 4.12.12 (2023-08-07)
+
+### Features
+
+* Check for datagrok-api dependency
+
+### Bug Fixes
+
+* Latest package version in CHANGELOG check fix
+
 ## 4.12.11 (2023-08-04)
 
 ### Features

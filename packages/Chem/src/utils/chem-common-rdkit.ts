@@ -86,7 +86,7 @@ export function getRdKitWebRoot() {
 
 export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: number, height: number) {
   ctx.lineWidth = 1;
-  ctx.strokeStyle = '#EFEFEF';
+  ctx.strokeStyle = '#DBDCDF';
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(width, height);
@@ -191,14 +191,15 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     mol.set_new_coords(true);
 
-  if (options.normalizeDepiction ?? true)
-    !isMol ? mol.normalize_depiction(1) : mol.normalize_depiction(0);
+  const molHasOwnCoords = (mol.has_coords() > 0);
+  if (molHasOwnCoords) {
+    mol.normalize_depiction(0);
+    mol.straighten_depiction(true);
+  }
 
-  if (options.straightenDepiction ?? true)
-    !isMol ? mol.straighten_depiction(false) : mol.straighten_depiction(true);
-
+  let scaffoldMol: RDMol | null = null;
   try {
-    const scaffoldMol = scaffoldMolString == null ? null :
+    scaffoldMol = scaffoldMolString == null ? null :
       (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
         getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
@@ -218,6 +219,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
     context.putImageData(image, x, y);
   } finally {
     mol?.delete();
+    scaffoldMol?.delete();
   }
 }
 

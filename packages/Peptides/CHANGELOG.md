@@ -1,12 +1,22 @@
 # Peptides changelog
 
-## 1.11.1 (WIP)
+## 1.12.0 (WIP)
+
+### Features
+
+* Improved Identity panel UI.
+* Added sequence similarity functionality.
+* Moved Similarity & Identity form to Toolbox.
+* Other UI/UX improvements.
 
 ### Bug Fixes
 
 * Fixed table view tooltips.
 * Fixed selection with WebLogo in the column header.
-* Fixed formula for sequence identity score.
+* Fixed identity scoring formula.
+* Fixed table view couldn't be filtered by monomer position columns.
+* Fixed identity panel not considering filtered table view.
+* Fixed the Identity button not disabling on incorrect input.
 
 ## 1.11.0 (2023-08-03)
 
@@ -32,7 +42,7 @@ This release introduces sequence identity functionality and some stability and u
 
 ### Bug Fixes
 
-* Fixed number of sequences had wrong values sometimes.
+* Fixed wrong values in the invariant map.
 * Fixed Mutation Cliffs pair selection would still result in wrong sequences sometimes.
 
 ## 1.10.2 (2023-07-24)

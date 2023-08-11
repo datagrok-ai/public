@@ -7,7 +7,7 @@ import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 
 export async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame,
   colName: string, simArr: (DG.Column | null)[]): Promise<(DG.Column | null)[]> {
-  const fingerprints = await chemGetFingerprints(dfSmiles.col(colName)!, Fingerprint.Morgan, true, false);
+  const fingerprints = await chemGetFingerprints(dfSmiles.col(colName)!, Fingerprint.Morgan, false);
   for (let i = 0; i != dim - 1; ++i) {
     const fp = fingerprints.shift();
     simArr[i] = fp ?

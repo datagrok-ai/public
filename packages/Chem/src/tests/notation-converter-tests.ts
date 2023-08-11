@@ -41,7 +41,7 @@ category('converters', async () => {
 
   test('SMILES to Molfile V2000', async () => {
     if (DG.Test.isInBenchmark) {
-      const df = await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip");
+      const df = await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip');
       const rdkitModule = getRdKitModule();
       for (let i = 0; i < df.rowCount; i++)
         _convertMolNotation(df.get('smiles', i), DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule);

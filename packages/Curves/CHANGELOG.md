@@ -1,5 +1,11 @@
 # Curves changelog
 
+## 1.2.3 (2023-08-07)
+
+### Bug Fixes
+
+* [#2104](https://github.com/datagrok-ai/public/issues/2104): Fixed fit detector
+
 ## 1.2.2 (2023-08-04)
 
 ### Features

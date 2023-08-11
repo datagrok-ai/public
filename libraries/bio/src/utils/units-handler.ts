@@ -1,8 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 
 import {ALIGNMENT, ALPHABET, candidateAlphabets, NOTATION, TAGS} from './macromolecule/consts';
-import {SeqColStats, SplitterFunc} from './macromolecule/types';
-import {detectAlphabet, getSplitterForColumn, getSplitterWithSeparator} from './macromolecule/utils';
+import {ISeqSplitted, SeqColStats, SplitterFunc} from './macromolecule/types';
+import {
+  detectAlphabet,
+  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm, splitterAsFastaSimple
+} from './macromolecule/utils';
 import {
   mmDistanceFunctions,
   MmDistanceFunctionsNames
@@ -124,9 +127,9 @@ export class UnitsHandler {
     if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
       const alphabetSizeStr = this.column.getTag(TAGS.alphabetSize);
       let alphabetSize: number;
-      if (alphabetSizeStr) {
+      if (alphabetSizeStr)
         alphabetSize = parseInt(alphabetSizeStr);
-      } else {
+      else {
         // calculate alphabetSize on demand
         const stats = this.stats;
         alphabetSize = Object.keys(stats.freq).length;
@@ -157,9 +160,9 @@ export class UnitsHandler {
       return this.column.getTag(TAGS.alphabetIsMultichar) === 'true';
   }
 
-  private _splitted: string[][] | null = null;
+  private _splitted: ISeqSplitted[] | null = null;
   /** */
-  public get splitted(): string[][] {
+  public get splitted(): ISeqSplitted[] {
     if (this._splitted === null) {
       const splitter = this.getSplitter();
       const colLength: number = this._column.length;
@@ -216,8 +219,8 @@ export class UnitsHandler {
   public isHelmCompatible(): boolean { return this.helmCompatible === 'true'; }
 
   public isGap(m: string): boolean {
-    return !m || (this.units === NOTATION.FASTA && m === GapSymbols.FASTA) ||
-      (this.units === NOTATION.HELM && m === GapSymbols.HELM);
+    return !m || (this.units === NOTATION.FASTA && m === GapSymbols[NOTATION.FASTA]) ||
+      (this.units === NOTATION.HELM && m === GapSymbols[NOTATION.HELM]);
   }
 
   /** Associate notation types with the corresponding units */
@@ -279,15 +282,15 @@ export class UnitsHandler {
       newColumn.setTag(TAGS.aligned, srcAligned);
 
     const srcAlphabet = col.getTag(TAGS.alphabet);
-    if (srcAlphabet)
+    if (srcAlphabet != null)
       newColumn.setTag(TAGS.alphabet, srcAlphabet);
 
     let srcAlphabetSize: string = col.getTag(TAGS.alphabetSize);
-    if (srcAlphabetSize)
+    if (srcAlphabet != null && srcAlphabetSize)
       newColumn.setTag(TAGS.alphabetSize, srcAlphabetSize);
 
     const srcAlphabetIsMultichar: string = col.getTag(TAGS.alphabetIsMultichar);
-    if (srcAlphabetIsMultichar !== undefined)
+    if (srcAlphabet != null && srcAlphabetIsMultichar !== undefined)
       newColumn.setTag(TAGS.alphabetIsMultichar, srcAlphabetIsMultichar);
 
     if (tgtNotation == NOTATION.HELM) {
@@ -352,8 +355,21 @@ export class UnitsHandler {
   }
 
   /** Gets function to split seq value to monomers */
-  public getSplitter(): SplitterFunc {
-    return getSplitterForColumn(this._column);
+  public getSplitter(limit?: number): SplitterFunc {
+    if (this.units.toLowerCase().startsWith(NOTATION.FASTA)) {
+      const alphabet: string | null = this.column.getTag(TAGS.alphabet);
+      if (alphabet !== null && !this.getAlphabetIsMultichar())
+        return splitterAsFastaSimple;
+      else
+        return splitterAsFasta;
+    } else if (this.units.toLowerCase().startsWith(NOTATION.SEPARATOR))
+      return getSplitterWithSeparator(this.separator!, limit);
+    else if (this.units.toLowerCase().startsWith(NOTATION.HELM))
+      return splitterAsHelm;
+    else
+      throw new Error(`Unexpected units ${this.units} .`);
+
+    // TODO: Splitter for HELM
   }
 
   public getDistanceFunctionName(): MmDistanceFunctionsNames {
@@ -430,16 +446,15 @@ export class UnitsHandler {
     ) {
       // The following detectors and setters are to be called because the column is likely
       // as the UnitsHandler constructor was called on the column.
-      if (this.isFasta()) {
+      if (this.isFasta())
         UnitsHandler.setUnitsToFastaColumn(this);
-      } else if (this.isSeparator()) {
+      else if (this.isSeparator()) {
         const separator = col.getTag(TAGS.separator);
         UnitsHandler.setUnitsToSeparatorColumn(this, separator);
-      } else if (this.isHelm()) {
+      } else if (this.isHelm())
         UnitsHandler.setUnitsToHelmColumn(this);
-      } else {
+      else
         throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
-      }
     }
 
     // if (!this.column.tags.has(TAGS.alphabetSize)) {
@@ -452,9 +467,9 @@ export class UnitsHandler {
     // }
 
     if (!this.column.tags.has(TAGS.alphabetIsMultichar)) {
-      if (this.isHelm()) {
+      if (this.isHelm())
         this.column.setTag(TAGS.alphabetIsMultichar, 'true');
-      } else if (['UN'].includes(this.alphabet)) {
+      else if (['UN'].includes(this.alphabet)) {
         throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
           `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
       }

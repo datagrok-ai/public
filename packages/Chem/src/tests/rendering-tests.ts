@@ -1,8 +1,8 @@
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { readDataframe } from './utils';
-import { scrollTable } from '../utils/demo-utils';
+import {readDataframe} from './utils';
+import {scrollTable} from '../utils/demo-utils';
 import * as DG from 'datagrok-api/dg';
 
 category('rendering', () => {
@@ -37,8 +37,8 @@ category('rendering', () => {
   });
 
   test('rdkit grid cell renderer', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_1M.zip")
-      : await readDataframe('tests/sar-small_test.csv');
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
+      await readDataframe('tests/sar-small_test.csv');
     const scrollCycles = DG.Test.isInBenchmark ? 1000 : 10;
     const scrollDelta = DG.Test.isInBenchmark ? 150000 : 10000;
     const tv = grok.shell.addTableView(df);

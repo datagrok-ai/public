@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {GapSymbols, UnitsHandler} from './units-handler';
-import {SplitterFunc} from './macromolecule/types';
-import {NOTATION, TAGS} from './macromolecule/consts';
+import {ISeqSplitted, SplitterFunc} from './macromolecule/types';
+import {NOTATION} from './macromolecule/consts';
 import {getSplitterForColumn, splitterAsHelm} from './macromolecule/utils';
 
 export type ConvertFunc = (src: string) => string;
@@ -57,15 +57,14 @@ export class NotationConverter extends UnitsHandler {
       let item = helmItemsArray[i];
       if (isNucleotide)
         item = item.replace(helmWrappersRe, '');
-      if (item === GapSymbols[NOTATION.HELM]) {
+      if (item === GapSymbols[NOTATION.HELM])
         tgtMonomersArray.push(tgtGapSymbol!);
-      } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
+      else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
         // the case of a multi-character monomer converted to FASTA
         const monomer = '[' + item + ']';
         tgtMonomersArray.push(monomer);
-      } else {
+      } else
         tgtMonomersArray.push(item);
-      }
     }
     return tgtMonomersArray.join(tgtSeparator);
   }
@@ -77,7 +76,6 @@ export class NotationConverter extends UnitsHandler {
    * @return {DG.Column}                Converted column
    */
   public convert(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column {
-
     const convert: ConvertFunc = this.getConverter(tgtNotation, tgtSeparator);
     const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
     // assign the values to the newly created empty column
@@ -110,7 +108,7 @@ const helmWrappersRe = /[RD]\((\w)\)P?/g;
 
 
 function convertToFasta(srcUh: UnitsHandler, src: string): string {
-  const srcMList: string[] = srcUh.isHelm() ? splitterAsHelmNucl(srcUh, src) : srcUh.getSplitter()(src);
+  const srcMList: ISeqSplitted = srcUh.isHelm() ? splitterAsHelmNucl(srcUh, src) : srcUh.getSplitter()(src);
   const tgtMList: string[] = new Array<string>(srcMList.length);
   for (const [srcM, mI] of wu.enumerate(srcMList)) {
     let m = srcM;
@@ -128,7 +126,7 @@ function convertToFasta(srcUh: UnitsHandler, src: string): string {
 }
 
 function convertToSeparator(srcUh: UnitsHandler, src: string, tgtSeparator: string): string {
-  const srcMList: string[] = srcUh.isHelm() ? splitterAsHelmNucl(srcUh, src) : srcUh.getSplitter()(src);
+  const srcMList: ISeqSplitted = srcUh.isHelm() ? splitterAsHelmNucl(srcUh, src) : srcUh.getSplitter()(src);
   const tgtMList: string[] = new Array<string>(srcMList.length);
   const isPT = src.startsWith('PEPTIDE');
   for (const [srcM, mI] of wu.enumerate(srcMList)) {
@@ -144,9 +142,9 @@ function convertToHelm(srcUh: UnitsHandler, src: string): string {
   const isDna = src.startsWith('DNA');
   const isRna = src.startsWith('RNA');
   const [prefix, leftWrapper, rightWrapper, postfix] = srcUh.getHelmWrappers();
-  const srcMList = srcUh.getSplitter()(src);
+  const srcS = srcUh.getSplitter()(src);
 
-  const tgtMList: string[] = srcMList.map((srcM: string) => {
+  const tgtMList: string[] = wu(srcS).map((srcM: string) => {
     let m: string = srcM;
     if (srcUh.isGap(m))
       m = GapSymbols[NOTATION.HELM];
@@ -155,13 +153,13 @@ function convertToHelm(srcUh: UnitsHandler, src: string): string {
     else
       m = srcM.length == 1 ? `${leftWrapper}${srcM}${rightWrapper}` : `${leftWrapper}[${srcM}]${rightWrapper}`;
     return m;
-  });
+  }).toArray();
   return `${prefix}${tgtMList.join('.')}${postfix}`;
 }
 
 /** Splits Helm sequence adjusting nucleotides to single char symbols. (!) Removes lone phosphorus. */
 function splitterAsHelmNucl(srcUh: UnitsHandler, src: string): string[] {
-  const srcMList: string[] = srcUh.getSplitter()(src);
+  const srcMList: ISeqSplitted = srcUh.getSplitter()(src);
   const tgtMList: (string | null)[] = new Array<string>(srcMList.length);
   const isDna = src.startsWith('DNA');
   const isRna = src.startsWith('RNA');

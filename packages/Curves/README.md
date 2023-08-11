@@ -80,7 +80,8 @@ Each series has its own parameters, such as:
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
 [custom-defined function](/README.md#creating-custom-fit-function).
-- `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed
+- `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed. The parameter order of the
+sigmoid function is: `max, tan, IC50, min`.
 - `parameterBounds` - defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`
 - `showPoints` - defines the data display mode, which could be either `points`, `candlesticks`, `both`, or none
 - `clickToToggle` - defines whether clicking on the point toggles its outlier status and causes curve refitting or not

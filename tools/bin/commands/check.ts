@@ -53,13 +53,15 @@ function runChecks(packagePath: string): boolean {
   if (warnings.length) {
     console.log(`Checking package ${path.basename(packagePath)}...`);
     warn(warnings);
-    if (json.version.startsWith('0') || (warnings.length === 1 && warnings[0].startsWith('Latest package version')))
+    if (json.version.startsWith('0') || (warnings.every((w) => warns.some((ww) => w.includes(ww)))))
       return true
     testUtils.exitWithCode(1);
   }
   console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
 }
+
+const warns = ['Latest package version', 'Datagrok API version should contain'];
 
 function runChecksRec(dir: string): boolean {
   const files = fs.readdirSync(dir);
@@ -301,6 +303,15 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (json.version.includes('beta') && isPublicPackage)
     warnings.push('File "package.json": public package cannot be beta version.');
 
+  const api = json.dependencies?.['datagrok-api'];
+  if (api) {
+    if (api === '../../js-api') {}
+    else if (api === 'latest')
+      warnings.push('File "package.json": you should specify Datagrok API version constraint.');
+    else if (!(api.startsWith('^') || api.startsWith('>')))
+      warnings.push('File "package.json": Datagrok API version should contain "^" or ">" symbol, otherwise it is locked to the single Datagrok version.');
+  }
+
   const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
   if (dt && dt !== 'latest')
     warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
@@ -359,8 +370,9 @@ export function checkChangelog(packagePath: string, json: PackageFile) {
       warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)`);
   }
   regex = /^## (\d+\.\d+\.\d+)/;
-  const v = h2[0].match(regex)?.[1];
-  if (v && v !== json.version)
+  const v1 = h2[0].match(regex)?.[1];
+  const v2 = h2[1]?.match(regex)?.[1];
+  if (v1 !== json.version && v2 !== json.version)
     warnings.push(`Latest package version (${json.version}) is not in CHANGELOG`);
 
   return warnings;

@@ -8,15 +8,7 @@ confirm that new changes haven't affected previous functionality. Each package s
 responsible for either UI or logic underneath. And Datagrok provides various capabilities and tools to conveniently run
 those tests any time during development.
 
-## Test writing & essential utilities
-
-Writing tests is a fundamental aspect of software development, ensuring the reliability and correctness of your code.
-With the Datagrok platform, you can easily create and run tests for any package you develop. By following some best practices and guidelines,
-you can build a robust and effective test suite. To get started with test writing on Datagrok, you can refer to the
-[APITests package](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests). It provides valuable insights and instructions on creating tests,
-setting up assertions, and examples of organizing your test code effectively.
-
-The process of writing and executing tests can be significantly easier with the help of Datagrok [library Utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils),
+The process of writing and executing tests can be significantly easier with the help of Datagrok library Utils,
 which contains a powerful [set of testing utilities](https://github.com/datagrok-ai/public/blob/master/libraries/utils/src/test.ts).
 From basic assertions to asynchronous handling and viewer testing, these utilities cover a wide range of testing scenarios.
 
@@ -98,6 +90,10 @@ await expectExceptionAsync(() => grok.functions.call('nonExistingFunction'));
 ```
 
 </details>
+
+You can find examples of tests by referring to the
+[APITests package](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests).
+This package contains a collection of test cases that can serve as illustrative models for your testing needs.
 
 ## Local testing
 

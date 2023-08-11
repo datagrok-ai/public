@@ -17,7 +17,7 @@ jobs:
 
   check:
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     name: Check version was changed
     outputs:
@@ -44,7 +44,7 @@ jobs:
   build:
     name: Build and publish to npm
     needs: [check, common-check]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - uses: actions/checkout@v3

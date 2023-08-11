@@ -18,8 +18,10 @@ import {
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {Temps as mmcrTemps, Tags as mmcrTags,
-  tempTAGS, rendererSettingsChangedState} from '../utils/cell-renderer-consts';
+import {
+  Temps as mmcrTemps, Tags as mmcrTags,
+  tempTAGS, rendererSettingsChangedState
+} from '../utils/cell-renderer-consts';
 
 type TempType = { [tagName: string]: any };
 

@@ -7,9 +7,7 @@ import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
-import {getMolSafe} from '../utils/mol-creation_rdkit';
 import '../../css/chem.css';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
@@ -23,6 +21,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   scores: DG.Column | null = null;
   cutoff: number;
   targetMoleculeIdx: number = 0;
+  error = '';
 
   get targetMolecule(): string {
     return this.isEditedFromSketcher ?
@@ -77,15 +76,23 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect && this.followCurrentRow) {
+        this.error = '';
+        this.root.classList.remove(`chem-malformed-molecule-error`);
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyOrMalformedValue()) {
-          progressBar.close();
+        if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
+          this.error = 'Empty';
+          this.closeWithError(progressBar);
           return;
         }
         try {
           const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
             this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
             this.fingerprint as Fingerprint);
+          if (!df) {
+            this.error = 'Malformed';
+            this.closeWithError(progressBar);
+            return;
+          }
           this.molCol = df.getCol('smiles');
           this.idxs = df.getCol('indexes');
           this.scores = df.getCol('score');
@@ -97,6 +104,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         }
       } else if (this.gridSelect)
         this.gridSelect = false;
+      if (this.error) {
+        this.closeWithError(progressBar);
+        return;
+      }
       this.clearResults();
       const panel = [];
       const grids = [];
@@ -165,16 +176,11 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     }
   }
 
-  isEmptyOrMalformedValue(): boolean {
-    const malformed = !getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
-    const empty = !this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule);
-    const moleculeError = malformed ? `Malformed` : empty ? `Empty` : '';
-    if (moleculeError) {
-      grok.shell.error(`${moleculeError} molecule cannot be used for similarity search`);
-      this.clearResults();
-      return true;
-    }
-    return false;
+  closeWithError(progressBar: DG.TaskBarProgressIndicator) {
+    this.clearResults();
+    this.root.append(ui.divText(`${this.error} molecule cannot be used for similarity search`));
+    this.root.classList.add(`chem-malformed-molecule-error`);
+    progressBar.close();
   }
 
   clearResults() {
@@ -191,9 +197,11 @@ export async function chemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: Fingerprint,
-) : Promise<DG.DataFrame> {
-  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
-  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, true, false);
+) : Promise<DG.DataFrame | null> {
+  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint, () => {return null;});
+  if (!targetFingerprint)
+    return null; //returning null in case target molecule is malformed
+  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, false);
   malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];
 

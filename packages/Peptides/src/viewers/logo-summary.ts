@@ -440,10 +440,10 @@ export class LogoSummaryTable extends DG.JsViewer {
     const distributionTable = this.createDistributionDf(activityCol, mask);
     const labels = getDistributionLegend(`Cluster: ${clustName}`, 'Other');
     const hist = getActivityDistribution(distributionTable, true);
-    const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
-    const aggregatedColMap = this.model.getAggregatedColumnValues({filterDf: true, mask: mask, fractionDigits: 2});
+    const tableMap = getStatsTableMap(stats);
+    const aggregatedColMap = this.model.getAggregatedColumnValues({filterDf: true, mask: mask});
     const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
-    const tooltip = getStatsSummary(labels, hist, resultMap, true);
+    const tooltip = getStatsSummary(labels, hist, resultMap);
 
     ui.tooltip.show(tooltip, x, y);
 

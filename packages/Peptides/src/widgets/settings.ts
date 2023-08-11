@@ -7,6 +7,7 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 
 import $ from 'cash-dom';
 import wu from 'wu';
+import {getTreeHelperInstance} from '../package';
 
 type PaneInputs = {[paneName: string]: DG.InputBase[]};
 type SettingsElements = {dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs};
@@ -87,6 +88,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
   const dendrogram = ui.boolInput(VIEWER_TYPE.DENDROGRAM, isDendrogramEnabled ?? false,
     () => result.showDendrogram = dendrogram.value) as DG.InputBase<boolean>;
+  dendrogram.enabled = getTreeHelperInstance() !== null;
 
   accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram]), true);
   inputs[SETTINGS_PANES.VIEWERS] = [dendrogram];
