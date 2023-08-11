@@ -47,11 +47,18 @@ export function checkDimensionReducerInputs(features: DG.ColumnList, components:
     checkColumnType(col);
 }
 
-// Check UMPA inputs
+// Check UMAP inputs
 export function checkUMAPinputs(features: DG.ColumnList, components: number, epochs: number,
   neighbors: number, minDist: number, spread: number): void 
 {
+  // General dim reducer checks
   checkDimensionReducerInputs(features, components);
+
+  // Check data total size
+  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
+    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
+
+  // UMAP specific checks
 
   if (minDist <= 0)
     throw new Error(INCORRECT_MIN_DIST_MES);
@@ -63,14 +70,21 @@ export function checkUMAPinputs(features: DG.ColumnList, components: number, epo
     throw new Error(INCORRECT_EPOCH_MES);
 
   if ((neighbors < 2) || (neighbors > features.byIndex(0).length))
-    throw new Error(INCORRECT_NEIBORS_MES);
+    throw new Error(INCORRECT_NEIBORS_MES);  
 }
 
 // Check t-SNE inputs
 export function checkTSNEinputs(features: DG.ColumnList, components: number, 
   learningRate: number, perplexity: number, iterations: number): void 
 {
+  // General dim reducer checks
   checkDimensionReducerInputs(features, components);
+
+  // Check data total size
+  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
+    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
+
+  // t-SNE specific checks
 
   if (learningRate < 0)
     throw new Error(INCORRECT_LEARNING_RATE_MES);
@@ -79,13 +93,15 @@ export function checkTSNEinputs(features: DG.ColumnList, components: number,
     throw new Error(INCORRECT_ITERATIONS_MES);
 
   if ((perplexity < 2) || (perplexity > features.byIndex(0).length))
-    throw new Error(INCORRECT_PERPLEXITY_MES);
+    throw new Error(INCORRECT_PERPLEXITY_MES);  
 }
 
 // Check wasm dimension reducer inputs
 export function checkWasmDimensionReducerInputs(features: DG.ColumnList, components: number): void {
+  // General dim reducer checks
   checkDimensionReducerInputs(features, components);
 
+  // Check data total size
   if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
     throw new Error(DATAFRAME_IS_TOO_BIG_MES);
 }

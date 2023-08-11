@@ -67,7 +67,7 @@ export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, compone
 }
 
 //top-menu: ML | Dimension Reduction | t-SNE...
-//name: tSNE
+//name: t-SNE
 //description: t-distributed stochastic neighbor embedding (t-SNE).
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
