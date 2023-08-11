@@ -477,8 +477,6 @@ export class PeptidesModel {
   updateGrid(): void {
     this.joinDataFrames();
 
-    this.sortSourceGrid();
-
     this.createScaledCol();
 
     this.initInvariantMapSelection({notify: false});
@@ -547,26 +545,6 @@ export class PeptidesModel {
       CR.setAARRenderer(col, this.alphabet);
     }
     this.df.name = name;
-  }
-
-  sortSourceGrid(): void {
-    const colNames: DG.GridColumn[] = [];
-    const sourceGridCols = this.analysisView.grid.columns;
-    const sourceGridColsCount = sourceGridCols.length;
-    for (let i = 1; i < sourceGridColsCount; i++)
-      colNames.push(sourceGridCols.byIndex(i)!);
-
-    colNames.sort((a, b) => {
-      if (a.column!.semType === C.SEM_TYPES.MONOMER) {
-        if (b.column!.semType === C.SEM_TYPES.MONOMER)
-          return 0;
-        return -1;
-      }
-      if (b.column!.semType === C.SEM_TYPES.MONOMER)
-        return 1;
-      return 0;
-    });
-    sourceGridCols.setOrder(colNames.map((v) => v.name));
   }
 
   createScaledCol(): void {
