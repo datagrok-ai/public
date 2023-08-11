@@ -138,6 +138,7 @@ export interface IFitChartOptions {
   maxX?: number;
   maxY?: number;
 
+  title?: string;            // defines the plot title. If the plot size is enough, will render it.
   xAxisName?: string;        // defines the x axis name. If the plot size is enough, will render it.
   yAxisName?: string;        // defines the Y axis name. If the plot size is enough, will render it.
 
@@ -200,6 +201,7 @@ export const fitChartDataProperties: Property[] = [
   Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
   Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
   Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
+  Property.js('title', TYPE.STRING, {description: 'Plot title. If not specified, doesn\'t renders', nullable: true}),
   Property.js('xAxisName', TYPE.STRING, {description:
     'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('yAxisName', TYPE.STRING, {description:
