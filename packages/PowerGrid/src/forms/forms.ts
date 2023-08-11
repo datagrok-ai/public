@@ -52,7 +52,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     const df = gridCell.grid.dataFrame;
     const settings: FormSettings = getSettings(gridCell.gridColumn);
     const row = gridCell.cell.row.idx;
-    let cols = df.columns.byNames(settings.columnNames);
+    let cols = df.columns.byNames(settings.columnNames).filter(c => c != null);
     b ??= gridCell.bounds.inflate(-2, -2);
     const scene = new Scene(b);
 
