@@ -46,8 +46,8 @@ const POINT_PX_SIZE = 4;
 const OUTLIER_HITBOX_RADIUS = 2;
 const MIN_AXES_CELL_PX_WIDTH = 70;
 const MIN_AXES_CELL_PX_HEIGHT = 55;
-const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 170;
-const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 130;
+const MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH = 180;
+const MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 140;
 const AXES_LEFT_PX_MARGIN = (w: number, h: number) => w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT ? 45 : 38;
 const AXES_TOP_PX_MARGIN = 5;
 const AXES_RIGHT_PX_MARGIN = 18;
@@ -402,8 +402,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
     }
 
-    if (w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT) {
-      g.font = 'bold 11px Roboto, "Roboto Local"';
+    if (w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT &&
+      data.chartOptions?.xAxisName && data.chartOptions.yAxisName) {
+      g.font = '11px Roboto, "Roboto Local"';
       g.textAlign = 'center';
       g.fillStyle = 'black';
       g.fillText(data.chartOptions?.xAxisName!, dataBox.midX - 5, y + h - 10);
