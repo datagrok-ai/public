@@ -1,5 +1,12 @@
 # statistics changelog
 
+## 1.2.3(2023-08-12)
+
+### Features
+
+* [#2105](https://github.com/datagrok-ai/public/issues/2105): Removed point and fit line color default values
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added title parameter to IFitChartOptions
+
 ## 1.2.2 (2023-08-04)
 
 ### Features
