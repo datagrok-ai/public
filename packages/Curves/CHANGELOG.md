@@ -1,5 +1,21 @@
 # Curves changelog
 
+## 1.2.5 (2023-08-12)
+
+### Features
+
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Updated the documentation about parameter order and plot title
+* [#2105](https://github.com/datagrok-ai/public/issues/2105): Made Curves by default as a DG categorical color
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added x- and y-axes labels rendering
+  * Added title rendering if the cell size is enough
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed log curves rendering
+  * Fixed sizes for axes rendering
+
 ## 1.2.3 (2023-08-07)
 
 ### Bug Fixes
