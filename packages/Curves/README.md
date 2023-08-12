@@ -91,6 +91,7 @@ sigmoid function is: `max, tan, IC50, min`.
 Each chart has its own parameters as well, such as:
 
 - `minX`, `minY`, `maxX`, `maxY` - controls the minimum x and y values of the plot
+- `title` - defines the plot title. If the plot size is enough, will render it
 - `xAxisName`, `yAxisName` - defines the x and y axis names. If the plot size is enough, will render it
 - `logX`, `logY` - defines whether the x and y data should be logarithmic or not
 - `showStatistics` - defines the statistics that would be shown on the plot (such as the area under the curve
