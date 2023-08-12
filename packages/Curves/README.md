@@ -61,6 +61,7 @@ To render a fitted curve based on series points, you need to write it in the fol
     "minY": 0.04152340441942215,
     "maxX": 7.099999904632568,
     "maxY": 1.7591952085494995,
+    "title": "Dose-Response curves",
     "xAxisName": "Concentration",
     "yAxisName": "Activity",
     "logX": true,
