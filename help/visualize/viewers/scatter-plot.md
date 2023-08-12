@@ -70,7 +70,7 @@ custom tooltip for the scatter plot  from the **Tooltip** info panel:
    axes and **Data Values** in the tooltip.
 
 >Note: The key settings from the **Context Panel** are replicated in the context
->menu for the scatter plot (**Context Menu > Tooltip**).
+>menu for the scatter plot (**Context Menu** > **Tooltip**).
 
 <!--<img alt="Tooltip" src={require('./tooltip.gif').default} width="800px"/>-->
 ![Tooltip](./tooltip.gif "Tooltip")
@@ -81,7 +81,7 @@ Learn also about [Goup tooltip](https://datagrok.ai/help/visualize/viewers/#grou
 
 ### Formula lines
 
-Scatter plot supports formula lines (COntext Menu > Tools > Formula Lines…). These lines enable you to visually represent mathematical formulas or equations on the plot. This can help illustrate trends, relationships, or patterns between variables in the data. 
+Scatter plot supports formula lines (**Context Menu** > **Tools** > **Formula Lines…**). These lines enable you to visually represent mathematical formulas or equations on the plot. This can help illustrate trends, relationships, or patterns between variables in the data. 
 
 >Developers: Learn more about how to [Show formula lines](https://datagrok.ai/help/develop/how-to/show-formula-lines)
 
