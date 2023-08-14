@@ -19,6 +19,10 @@ export abstract class Element {
   }
 
   abstract render(g: CanvasRenderingContext2D): void;
+
+  hitTest(x: number, y: number): Element | null {
+    return this.bounds.contains(x, y) ? this : null;
+  }
 }
 
 
@@ -91,6 +95,14 @@ export class Scene extends Element {
     const canvas = ui.canvas(this.bounds.width, this.bounds.height);
     this.render(canvas.getContext("2d")!);
     return canvas;
+  }
+
+  hitTest(x: number, y: number): Element | null {
+    for (const e of this.elements) {
+      if (e.hitTest(x, y))
+        return e;
+    }
+    return null;
   }
 }
 

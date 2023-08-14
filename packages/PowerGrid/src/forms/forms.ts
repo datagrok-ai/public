@@ -6,6 +6,18 @@ import {getSettingsBase, names, SparklineType, SummarySettingsBase} from '../spa
 import {GridCell, GridColumn} from "datagrok-api/src/grid";
 import {GridCellElement, LabelElement, MarkerElement, Scene} from "./scene";
 
+const markers: string[] = [
+  DG.MARKER_TYPE.CIRCLE,
+  DG.MARKER_TYPE.SQUARE,
+  DG.MARKER_TYPE.ASTERISK,
+  DG.MARKER_TYPE.DIAMOND,
+  DG.MARKER_TYPE.TRIANGLE_LEFT,
+  DG.MARKER_TYPE.TRIANGLE_RIGHT,
+  DG.MARKER_TYPE.TRIANGLE_TOP,
+  DG.MARKER_TYPE.TRIANGLE_BOTTOM,
+  DG.MARKER_TYPE.CIRCLE_BORDER,
+  DG.MARKER_TYPE.SQUARE_BORDER,
+];
 
 interface FormSettings extends SummarySettingsBase {
   colorCode: boolean;
@@ -58,14 +70,12 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
     // molecules first
     const molCol = cols.find(c => c.semType == DG.SEMTYPE.MOLECULE);
-    if (molCol != null && b.width > 50 && b.height > 50) {
+    if (molCol != null && b.width > 30 && b.height > 20) {
       const r = b.width / b.height > 1.5 ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
       b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
       cols = cols.filter(c => c.semType !== DG.SEMTYPE.MOLECULE);
       let cell = gridCell.grid.cell(molCol.name, gridCell.gridRow);
       scene.elements.push(new GridCellElement(r, cell));
-
-      //cell.renderer.render(g, r.x, r.y, r.width, r.height, cell, cell.style);
     }
 
     const maxNameWidth = Math.min(200, Math.max(...cols.map(c => g.measureText(c.name).width)));
@@ -84,17 +94,18 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         // render in one row
         const r = b.getLeftPart(cols.length, i);
         const e = new GridCellElement(r, cell);
-        // const e = r.width > 30
-        //   ? new LabelElement(r, col.getString(row), { color: valueColor, horzAlign: 'center', vertAlign: 'center' })
-        //   : new MarkerElement(new DG.Rect(r.midX - 5, r.midY - 5, 10, 10), MARKER_TYPE.CIRCLE, numColor);
         scene.elements.push(e);
       }
       else {
         // render in a column
         const r = new DG.Rect(b.x, b.y + i * colHeight, b.width, colHeight);
         if (showColumnNames)
-          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), col.name, {horzAlign: 'right'}));
-        scene.elements.push(new LabelElement(r.cutLeft(columnNamesWidth).move(5, 0), col.getString(row), {horzAlign: 'left'}));
+          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), col.name, {horzAlign: 'right', color: 'lightgrey'}));
+
+        const leftMargin = r.width >= 20 ? 5 : 0;
+        cell.style.marker = markers[i % markers.length];
+        cell.style.horzAlign = 'left';
+        scene.elements.push(new GridCellElement(r.cutLeft(columnNamesWidth + leftMargin), cell));
       }
     }
 
@@ -122,6 +133,10 @@ export class FormCellRenderer extends DG.GridCellRenderer {
     if (scene.elements.every(e => e.bounds.width < 25 && e.bounds.height < 25)) {
       setTimeout(() => ui.tooltip.show(this.makeBestScene(gridCell).toCanvas(), gridCell.documentBounds.right, gridCell.documentBounds.top), 200);
     }
+  }
+
+  onMouseMove(gridCell: GridCell, e: MouseEvent) {
+    super.onMouseMove(gridCell, e);
   }
 
   onMouseDown(gridCell: GridCell, e: MouseEvent): void {
