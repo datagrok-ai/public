@@ -541,10 +541,9 @@ export class HistoryPanel {
       dummyInput,
     ]))
       .onOK(async () => {
-        funcCall = await historyUtils.loadRun(funcCall.id);
         funcCall.options['title'] = title !== '' ? title : null;
         funcCall.options['description'] = description !== '' ? description : null;
-        funcCall.options['tags'] = tagsLine.tags;
+        funcCall.options['tags'] = [...tagsLine.tags];
 
         if (!!isShared === !!funcCall.options['isShared'] && !!isFavorite === !!funcCall.options['isFavorite']) {
           ui.setUpdateIndicator(this.tabs.root, true);
@@ -553,7 +552,7 @@ export class HistoryPanel {
           const editedRun = this.store.allRuns.value.find((call) => call.id === funcCall.id)!;
           editedRun.options['title'] = title !== '' ? title : null;
           editedRun.options['description'] = description !== '' ? description : null;
-          editedRun.options['tags'] = funcCall.options['tags'];
+          editedRun.options['tags'] = [...funcCall.options['tags']];
 
           this.store.allRuns.next(this.store.allRuns.value);
           ui.setUpdateIndicator(this.tabs.root, false);
@@ -644,18 +643,20 @@ export class HistoryPanel {
     });
 
     this.afterRunAddToFavorites.subscribe((added) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id);
-      editedRun!.options['title'] = added.options['title'];
-      editedRun!.options['description'] = added.options['description'];
-      editedRun!.options['isFavorite'] = true;
+      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id)!;
+      editedRun.options['title'] = added.options['title'];
+      editedRun.options['description'] = added.options['description'];
+      editedRun.options['tags'] = added.options['tags'];
+      editedRun.options['isFavorite'] = true;
       this.store.allRuns.next(this.store.allRuns.value);
     });
 
     this.afterRunAddToShared.subscribe((added) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id);
-      editedRun!.options['title'] = added.options['title'];
-      editedRun!.options['description'] = added.options['description'];
-      editedRun!.options['isShared'] = true;
+      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id)!;
+      editedRun.options['title'] = added.options['title'];
+      editedRun.options['description'] = added.options['description'];
+      editedRun.options['tags'] = added.options['tags'];
+      editedRun.options['isShared'] = true;
       this.store.allRuns.next(this.store.allRuns.value);
     });
 
@@ -663,6 +664,7 @@ export class HistoryPanel {
       const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
       editedRun.options['title'] = removed.options['title'];
       editedRun.options['description'] = removed.options['description'];
+      editedRun.options['tags'] = removed.options['tags'];
       editedRun.options['isFavorite'] = false;
       this.store.allRuns.next(this.store.allRuns.value);
     });
@@ -671,6 +673,7 @@ export class HistoryPanel {
       const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
       editedRun.options['title'] = removed.options['title'];
       editedRun.options['description'] = removed.options['description'];
+      editedRun.options['tags'] = removed.options['tags'];
       editedRun.options['isShared'] = false;
       this.store.allRuns.next(this.store.allRuns.value);
     });
