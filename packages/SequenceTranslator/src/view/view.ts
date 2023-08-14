@@ -9,68 +9,64 @@ import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
 import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
 
-export class UnifiedUI {
+export class AppMultiView {
   constructor() {
-    this.view = DG.View.create();
-    this.urlRouter = new URLRouter(this.view);
+    this.multiView = new DG.MultiView({viewFactories: this.viewFactories});
+  }
+
+  private multiView: DG.MultiView;
+
+  get viewFactories() {
+    function viewFactory(uiConstructor: new (view: DG.View) => AppUI): () => DG.View {
+      const view = DG.View.create();
+      const translateUI = new uiConstructor(view);
+      // intentonally don't await for the promise
+      translateUI.initView();
+      return () => view;
+    }
+
+    return {
+      [TRANSLATION_TAB]: viewFactory(TranslateSequenceUI),
+      [AXOLABS_TAB]: viewFactory(AxolabsUI),
+      [DUPLEX_TAB]: viewFactory(DuplexUI),
+    }
+  }
+
+  async createLayout(): Promise<void> {
+    grok.shell.addView(this.multiView);
+  }
+}
+
+export abstract class AppUI {
+  constructor(view: DG.View, viewName: string) {
+    this.view = view;
     this.view.box = true;
-    this.view.name = 'Sequence Translator';
+    this.view.name = viewName;
 
     const windows = grok.shell.windows;
     windows.showProperties = false;
     windows.showToolbox = false;
     windows.showHelp = false;
-
-    const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
-    this.topPanel = [
-      viewMonomerLibIcon,
-    ];
-    this.view.setRibbonPanels([this.topPanel]);
-
-    this.tabs = new TabLayout(
-      new MainTabUI(),
-      new AxolabsTabUI(),
-      new SdfTabUI(),
-      this.urlRouter
-    );
   }
 
-  private readonly view: DG.View;
-  public readonly tabs: TabLayout;
-  private readonly topPanel: HTMLElement[];
-  private readonly urlRouter: URLRouter;
+  protected readonly view: DG.View;
+  protected abstract getHtml(): Promise<HTMLDivElement>;
 
-  /** Create master layout of the app */
-  private async createLayout(): Promise<void> {
-    const tabControl = await this.tabs.getControl();
-
-    const tabName = this.urlRouter.tabName;
-    if (tabName)
-      tabControl.currentPane = tabControl.getPane(tabName);
-    this.view.append(tabControl);
+  async initView(): Promise<void> {
+    const html = await this.getHtml();
+    this.view.append(html);
   }
 
-  public async getView(): Promise<DG.View> {
-    if (!this.view) await this.createLayout();
-    return this.view;
+  /** Create master layout of the app  */
+  async createLayout(): Promise<void> {
+    await this.initView();
+    grok.shell.addView(this.view);
   }
+}
 
-  public async getTabs(): Promise<TabLayout> {
-    if (!this.view) await this.createLayout();
-    return this.tabs;
-  }
-};
-
-export class TranslateSequenceUI {
-  constructor() {
-    this.view = DG.View.create();
-    this.view.box = true;
-    this.view.name = 'Translate Sequence';
-
-    const windows = grok.shell.windows;
-    windows.showProperties = false;
-    windows.showToolbox = false;
-    windows.showHelp = false;
+export class TranslateSequenceUI extends AppUI {
+  constructor(view: DG.View) {
+    super(view,  'Translate Sequence');
 
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
@@ -80,77 +76,42 @@ export class TranslateSequenceUI {
     this.ui = new MainTabUI();
   }
 
-  private readonly view: DG.View;
   private readonly topPanel: HTMLElement[];
   private readonly ui: MainTabUI;
 
-  /** Create master layout of the app  */
-  public async createLayout(): Promise<void> {
-    const v = await this.ui.getHtmlElement();
-    this.view.append(v);
-    grok.shell.addView(this.view);
-  }
+  protected getHtml(): Promise<HTMLDivElement> {
+    return this.ui.getHtmlElement();
+  };
 }
 
-export class AxolabsUI {
-  constructor() {
-    this.view = DG.View.create();
-    this.view.box = true;
-    this.view.name = 'Translate Sequence';
-
-    const windows = grok.shell.windows;
-    windows.showProperties = false;
-    windows.showToolbox = false;
-    windows.showHelp = false;
-
+export class AxolabsUI extends AppUI {
+  constructor(view: DG.View) {
+    super(view, 'Sequence Design');
     this.ui = new AxolabsTabUI();
   }
-
-  private readonly view: DG.View;
   private readonly ui: AxolabsTabUI;
-
-  /** Create master layout of the app  */
-  public async createLayout(): Promise<void> {
-    this.view.append(this.ui.htmlDivElement);
-
-    grok.shell.addView(this.view);
-
-    grok.shell.addView(this.view);
+  protected getHtml(): Promise<HTMLDivElement> {
+    return Promise.resolve(this.ui.htmlDivElement);
   }
 }
 
-export class DuplexUI {
-  constructor() {
-    this.view = DG.View.create();
-    this.view.box = true;
-    this.view.name = 'Translate Sequence';
-
-    const windows = grok.shell.windows;
-    windows.showProperties = false;
-    windows.showToolbox = false;
-    windows.showHelp = false;
-
+export class DuplexUI extends AppUI {
+  constructor(view: DG.View) {
+    super(view,  'Visualize Structure')
     this.ui = new SdfTabUI();
   }
-
-  private readonly view: DG.View;
   private readonly ui: SdfTabUI;
 
-  /** Create master layout of the app  */
-  public async createLayout(): Promise<void> {
-    this.view.append(await this.ui.getHtmlDivElement());
-
-    grok.shell.addView(this.view);
-
-    grok.shell.addView(this.view);
+  protected getHtml(): Promise<HTMLDivElement> {
+    return this.ui.getHtmlDivElement();
   }
 }
 
 class TabLayout {
   constructor(
-    public readonly mainTab: MainTabUI,
-    public readonly axolabsTab: AxolabsTabUI,
-    public readonly sdfTab: SdfTabUI,
+    readonly mainTab: MainTabUI,
+    readonly axolabsTab: AxolabsTabUI,
+    readonly sdfTab: SdfTabUI,
     private readonly urlRouter: URLRouter
   ) {}
 
@@ -197,7 +158,7 @@ class URLRouter {
     this.searchParams = new URLSearchParams(window.location.search);
   }
 
-  public searchParams: URLSearchParams;
+  searchParams: URLSearchParams;
   private pathParts: string[];
 
   get urlParamsString(): string {
@@ -205,7 +166,7 @@ class URLRouter {
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
   }
 
-  public updatePath(control: DG.TabControl) {
+  updatePath(control: DG.TabControl) {
     const urlParamsTxt: string = Object.entries(this.searchParams)
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
     this.view.path = '/apps/SequenceTranslator' + `/${control.currentPane.name}`;

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TranslateSequenceUI, AxolabsUI, DuplexUI, UnifiedUI} from './view/view';
+import {TranslateSequenceUI, AxolabsUI, DuplexUI, AppUI, AppMultiView} from './view/view';
 import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
@@ -43,50 +43,44 @@ export const _package: StPackage = new StPackage();
 //name: Sequence Translator
 //tags: app
 export async function sequenceTranslatorApp(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
+  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator...');
 
   await tryCatch(async () => {
     await initSequenceTranslatorLibData();
-    const v = await (new UnifiedUI()).getView();
-    grok.shell.addView(v);
+    const multiView = new AppMultiView();
+    multiView.createLayout();
+  }, () => pi.close());
+}
+
+async function createAppLayout(appUI: AppUI): Promise<void> {
+  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading...');
+
+  await tryCatch(async () => {
+    await initSequenceTranslatorLibData();
+    await appUI.createLayout();
   }, () => pi.close());
 }
 
 //name: Translate Sequence
 //tags: app
 export async function translateSequenceApp(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
-
-  await tryCatch(async () => {
-    await initSequenceTranslatorLibData();
-    console.log('lib:', _package.monomerLib);
-    const v = new TranslateSequenceUI();
-    await v.createLayout();
-  }, () => pi.close());
+  const appUI = new TranslateSequenceUI(DG.View.create());
+  createAppLayout(appUI);
 }
 
 //name: Sequence Design
 //tags: app
 export async function sequenceDesignApp(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
+  const appUI = new AxolabsUI(DG.View.create());
+  createAppLayout(appUI);
 
-  await tryCatch(async () => {
-    await initSequenceTranslatorLibData();
-    const v = new AxolabsUI();
-    await v.createLayout();
-  }, () => pi.close());
 }
 
 //name: Visualize Duplex
 //tags: app
 export async function visualizeDuplex(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
-
-  await tryCatch(async () => {
-    await initSequenceTranslatorLibData();
-    const v = new DuplexUI();
-    await v.createLayout();
-  }, () => pi.close());
+  const appUI = new DuplexUI(DG.View.create());
+  createAppLayout(appUI);
 }
 
 //name: initSequenceTranslatorLibData

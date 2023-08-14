@@ -6,7 +6,7 @@ import {handleError} from './handle-error';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
-import {UnifiedUI} from '../view/view';
+// import {UnifiedUI} from '../view/view';
 import {_package} from '../package';
 
 export async function demoTranslateSequenceUI() {
