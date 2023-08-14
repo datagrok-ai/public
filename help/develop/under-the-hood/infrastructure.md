@@ -380,9 +380,9 @@ Resources(differs based on your needs):
 
 By default, the container Jupyter Kernel Gateway for [dynamic scripting environments](../../compute/scripting.md#environments) uses the default package repositories such as [conda-forge](https://conda-forge.org/), [PyPI](https://pypi.org/), [CRAN](https://cloud.r-project.org/). If you need to change this behaviour start the container with the custom environment variables:
 
-- To access repositories through proxy set `HTTP_PROXY` and `HTTPS_PROXY` variables 
-- To use custom conda repositories in addition to conda-forge specify `CONDA_CUSTOM_REPOSITORIES`. It takes precedence over conda-forge. Multiple repositories can be specified using space. For example: `CONDA_CUSTOM_REPOSITORIES='http://my-repo/custom/ http://his-repo/special/'`
-- To use custom pip repositories in addition set `PIP_EXTRA_INDEX_URL`. Multiple repositories can be specified using space. For example: `PIP_EXTRA_INDEX_URL='http://my-repo/custom http://his-repo/special'`
+* To access repositories through proxy set `HTTP_PROXY` and `HTTPS_PROXY` variables 
+* To use custom conda repositories in addition to conda-forge specify `CONDA_CUSTOM_REPOSITORIES`. It takes precedence over conda-forge. Multiple repositories can be specified using space. For example: `CONDA_CUSTOM_REPOSITORIES='http://my-repo/custom/ http://his-repo/special/'`
+* To use custom pip repositories in addition set `PIP_EXTRA_INDEX_URL`. Multiple repositories can be specified using space. For example: `PIP_EXTRA_INDEX_URL='http://my-repo/custom http://his-repo/special'`
 
 ### Jupyter Notebook
 
