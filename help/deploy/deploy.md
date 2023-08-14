@@ -62,6 +62,6 @@ You can deploy Datagrok to a [regular machine](bare-metal/deploy-regular.md): ba
 
 After the deployment, open the platform to complete the setup:  
 
-1. [Configure authentification](complete-setup/configure-auth.md)
+1. [Configure authentication](complete-setup/configure-auth.md)
 2. [Configure SMTP](complete-setup/configure-smtp.md)
 3. [Install packages](complete-setup/install-package.md)
