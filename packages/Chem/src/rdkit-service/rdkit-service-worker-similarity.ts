@@ -27,8 +27,8 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
    * In case it is passed to function RDMols will be created on the fly.
    */
 
-  getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): IFpResult {
-    if (!molecules)
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): Promise<IFpResult> {
+    if (!molecules || this._requestTerminated)
       return {fps: [], smiles: null};
     let addedToCache = false;
     const fpLength = molecules.length;
@@ -37,6 +37,12 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       JSON.stringify({radius: this._fpRadius, nBits: this._fpLength}) : null;
     const canonicalSmilesArr = getCanonicalSmiles ? new Array<string | null>(fpLength).fill(null) : null;
     for (let i = 0; i < fpLength; ++i) {
+
+      if (i % this._terminationCheckDelay === 0) //every N molecules check for termination flag
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return { fps: fps, smiles: canonicalSmilesArr };
+
       const item = molecules[i];
       if (!item && item === '')
         continue;
@@ -52,24 +58,24 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
           if (canonicalSmilesArr)
             canonicalSmilesArr[i] = rdMol.get_smiles();
           switch (fingerprintType) {
-          case Fingerprint.Pattern:
-            try {
-              fps[i] = rdMol.get_pattern_fp_as_uint8array();
-            } catch {
-              //do nothing, fp is already null
-            }
-            break;
-          case Fingerprint.Morgan:
-            try {
-              if (!rdMol.is_qmol)
-                fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
-            } catch (error) {
-              //do nothing, fp is already null
-            }
-            break;
-          default:
-            rdMol?.delete();
-            throw Error('Unknown fingerprint type: ' + fingerprintType);
+            case Fingerprint.Pattern:
+              try {
+                fps[i] = rdMol.get_pattern_fp_as_uint8array();
+              } catch {
+                //do nothing, fp is already null
+              }
+              break;
+            case Fingerprint.Morgan:
+              try {
+                if (!rdMol.is_qmol)
+                  fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
+              } catch (error) {
+                //do nothing, fp is already null
+              }
+              break;
+            default:
+              rdMol?.delete();
+              throw Error('Unknown fingerprint type: ' + fingerprintType);
           }
           addedToCache = this.addToCache(rdMol);
         } catch {

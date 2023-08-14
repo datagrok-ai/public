@@ -259,6 +259,7 @@ export async function chemSubstructureSearchLibrary(
   try {
     let invalidateCacheFlag = false;
     const rdKitService = await getRdKitService();
+    await rdKitService.setTerminateFlag(false);
     const currentCol = invalidatedColumnKey(molStringsColumn);
     if (lastColumnInvalidated !== currentCol) {
       invalidateCacheFlag = true;
@@ -323,6 +324,7 @@ export async function chemSubstructureSearchLibrary(
     } else {
       const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (mol: string) => {
         if (mol === molBlockFailover) {
+          await rdKitService.setTerminateFlag(true);
           subFuncs!.setTerminateFlag();
           await Promise.allSettled(subFuncs.promises);
           saveProcessedColumns();

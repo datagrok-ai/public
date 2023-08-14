@@ -9,6 +9,8 @@ export class RdKitServiceWorkerBase {
   _rdKitMols: (RDMol | null)[] | null = null;
   _molsCache: LRUCache<string, RDMol> | null = null;
   _cacheCounter = 0;
+  _requestTerminated = false;
+  _terminationCheckDelay = 50;
   constructor(module: RDModule, webRoot: string) {
     this._rdKitModule = module;
     this._webRoot = webRoot;
