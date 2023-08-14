@@ -3,24 +3,29 @@ title: "Configure authentication"
 sidebar_position: 1
 ---
 
-Out-of-the-box, Datagrok offers many authentication methods, including popular methods such as SSO and OAuth.
+Datagrok supports such authentication methods:
+
+* [Login-password](#Login-password-authentication)
+* [Oauth](#Oauth-authentication)
+* [OpenID](#OpenID-authentication)
+* [LDAP](#LDAP-authentication)
 
 To accommodate any enterprise needs, we can develop a customer-specific integration.
 
-All methods can be enabled separately or combined.
+You can enable all methods separately or combined.
 
 [Learn more about authentification](../govern/authentication.md).
 
 ## Common options
 
-If you want to display something on the login window, set the 'Prompt' option
+To display something on the login window, set the 'Prompt' option
 ![Login prompt](login-prompt.png)
 
 Enable the 'Send Welcome Email' option to send welcome emails to new signed-up users.
 
 ## Login-password authentication
 
-It is the most basic method to authenticate users with Datagrok.
+This is a basic method to authenticate users with Datagrok.
 
 To configure login-password authentication for Datagrok:
 
@@ -40,7 +45,7 @@ confirmation and forgot password emails.
 
 ## Oauth authentication
 
-Datagrok supports Google, Facebook and GitHub OAUTH authentication.
+Datagrok supports **Google**, **Facebook** and **GitHub** OAUTH authentication.
 
 1. Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2. Enable 'Google authentication' to use the Google Oauth method (or another provider)
