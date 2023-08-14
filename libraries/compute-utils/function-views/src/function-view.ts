@@ -43,7 +43,7 @@ export abstract class FunctionView extends DG.ViewBase {
    * Runs after an initial FuncCall loading done.
    */
   protected async onFuncCallReady() {
-    this.changeViewName(this.funcCall.func.friendlyName);
+    if (!this.options.isTabbed) this.changeViewName(this.funcCall.func.friendlyName);
     await historyUtils.augmentFuncWithPackage(this.func);
 
     this.build();
