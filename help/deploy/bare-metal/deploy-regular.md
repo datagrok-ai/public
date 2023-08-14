@@ -1,6 +1,6 @@
 ---
 title: "Regular machine"
-sidebar_position: 6
+sidebar_position: 1
 ---
 
 Datagrok is based on Docker containers, [database](../develop/under-the-hood/infrastructure.md#database)

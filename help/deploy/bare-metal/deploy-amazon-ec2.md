@@ -1,6 +1,6 @@
 ---
 title: "AWS EC2"
-sidebar_position: 7
+sidebar_position: 2
 ---
 
 The deployment consists of a few docker containers, [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,

@@ -1,5 +1,5 @@
 ---
-title: "AWS ECS using Terraform"
+title: "AWS Terraform"
 sidebar_position: 2
 ---
 

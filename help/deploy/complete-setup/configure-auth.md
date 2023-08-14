@@ -1,6 +1,6 @@
 ---
 title: "Configure authentication"
-sidebar_position: 14
+sidebar_position: 1
 ---
 
 Out-of-the-box, Datagrok offers many authentication methods, including popular methods such as SSO and OAuth.

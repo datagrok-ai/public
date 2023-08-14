@@ -1,6 +1,6 @@
 ---
-title: "SMTP configuration"
-sidebar_position: 10
+title: "Configure SMTP"
+sidebar_position: 2
 ---
 
 Datagrok supports [Mailgun email delivery platform](https://www.mailgun.com/) and different SMTP servers,

@@ -2,40 +2,20 @@
 title: "Deployment"
 ---
 
-The deployment consists of a few docker containers, [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
+[The Datagrok installation](../develop/under-the-hood/infrastructure.md) is based on Docker and consists of [core](../develop/under-the-hood/infrastructure.md#datagrok-components) containers, [compute](../develop/under-the-hood/infrastructure.md#compute-components) containers, a PostgreSQL [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
 and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) for storing files.
 
-Using Docker containers, you can deploy Datagrok on many environments, such as bare-metal machines,
-on-premise virtual machines or virtual machines in cloud providers, for example [AWS EC2](https://aws.amazon.com/ec2/),
-on-premise Kubernetes cluster or Kubernetes service in cloud providers, for
-instance [AWS EKS](https://aws.amazon.com/eks/), and container services in the cloud providers, for
-example [AWS ECS](https://aws.amazon.com/ecs/).
+Using Docker containers, you can deploy Datagrok on many environments, such as container services in the cloud providers, for example, [AWS ECS](#aws), [Kubernetes](#kubernetes), [bare-metal machines](#bare-metal), [virtual machines](#bare-metal), and so on.
 
-Datagrok requires PostgreSQL [database](../develop/under-the-hood/infrastructure.md#database) to store metadata.
-We recommend using scalable and highly reliable solutions, such as [AWS RDS](https://aws.amazon.com/rds/).
-
-For [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) Datagrok supports Local File System, Network shares or cloud
-solutions, for example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://cloud.google.com/storage).
-We recommend using scalable and highly reliable solutions for storage, such as [AWS S3](https://aws.amazon.com/s3/).
-
-This document contains different deployment options for Datagrok.
-
-More information:
-
-* [What is Datagrok?](../home.md)
-* [Architecture](../develop/under-the-hood/architecture.md)
-* [Infrastructure explanation](../develop/under-the-hood/infrastructure.md)
+To store data for Datagrok, we recommend using scalable and highly reliable solutions such as [AWS S3](https://aws.amazon.com/s3/) for persistent file storage and [AWS RDS](https://aws.amazon.com/rds/) as a PostgreSQL database.
 
 ## Deployment options
 
-Datagrok supports different deployment scenarios. You can choose the one which suits you best.
-
 ### Local deployment
 
-Local deployment is a quick way to see Datagrok in action, and should not be used as a production environment.
-[Try Datagrok Locally](docker-compose.mdx) for this case.
+[Local deployment](docker-compose/docker-compose.mdx) is a quick way to see Datagrok in action using [Docker Compose](https://docs.docker.com/compose/). You can use it for local evaluation and development.
 
-### Deploy script
+<!-- ### Deploy script
 
 The interactive way to deploy the platform is to use
 our [deployment script](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/deploy.sh)
@@ -56,52 +36,34 @@ our [deployment script](https://github.com/datagrok-ai/public/blob/master/help/d
 ```bash
 sh deploy.sh
 ```
+--->
 
-### ECS deployment
+### AWS
 
 We strongly recommend using [AWS ECS](https://aws.amazon.com/ecs/) for the Datagrok deployment. It provides a highly
 scalable, fast container management service that makes it easy to manage application components. You can go completely
-serverless using [AWS Fargate engine](https://aws.amazon.com/fargate/), which will reduce efforts on service support.
+serverless using the [AWS Fargate engine](https://aws.amazon.com/fargate/), which will reduce efforts on service support.
 
-We prepared three options for effortless deployments to ECS:
+We prepared three options for effortless and secure deployments to AWS:
 
-1. [Docker Compose](deploy-amazon-ecs.md). It deploys the default application without enabled security features such as
-   SSL and encryption. The deployment process is simple, and no foreknowledge is necessary. However, this option
-   requires separate creation for an RDS database and S3 bucket.
-2. [CloudFormation](deploy-amazon-cloudformation.md). It is an elaborate setup that considers all common security
-   policies. It uses the CloudFormation template, which creates all required resources with enabled security options
-   such as encryption and privileges control. Deployment can be provided on EC2 or FARGATE instances.
-3. [Terraform](deploy-amazon-terraform.md). It is an elaborate setup that considers all common security
-   policies. We developed terraform modules, which create all required resources with enabled security options
-   such as encryption and privileges control. The modules are checked with checkov and tfsec to provide you the best-quality code. Deployment can be provided on EC2 or FARGATE instances.
+* [Marketplace](aws/deploy-marketplace.md). The easiest way to start with Datagrok on AWS. [Marketplace](https://aws.amazon.com/marketplace) deployment scripts create a separate infrastructure for Datagrok from scratch.
+* [CloudFormation](aws/deploy-amazon-cloudformation.md). Using the [CloudFormation template](https://aws.amazon.com/cloudformation/), you can customize the Datagrok infrastructure with an elaborate template that considers all standard security policies.
+* [Terraform](aws/deploy-amazon-terraform.md). It is the most flexible solution. You can integrate Datagrok into your existing infrastructure with consideration of your security policies. However, [Terraform](https://www.terraform.io/) is also an advanced option that requires additional knowledge in infrastructure as a code area.
 
-### Kubernetes deployment
+### Kubernetes
 
-[Kubernetes](https://kubernetes.io/) is software for scaling and managing applications in Docker containers. It is an
-extensive system with complex architecture. Kubernetes provides you with a framework to run distributed systems
-resiliently.
+[Kubernetes](https://kubernetes.io/) is software for scaling and managing applications in Docker containers. It is an extensive system with complex architecture. Kubernetes provides you with a framework to run distributed systems resiliently. No matter where you host the Kubernetes cluster, on-premises or in the cloud, for example, [AWS EKS](https://aws.amazon.com/eks/), you deploy services to the Kubernetes in an easy and consistent way.
 
-Datagrok requires persistent storage, which can be created using Kubernetes persistent volumes. PostgreSQL database can
-be both deployed in Kubernetes or on any other server. Set the database address and credentials
-in [Datagrok configuration](configuration.md). Datagrok server will deploy all required schemas and users on the
-startup.
+To deploy Datagrok in Kubernetes, you can use our prepared [deployment scripts and ingress configuration](https://github.com/datagrok-ai/public/tree/master/help/deploy/k8s).
 
-To deploy Datagrok in Kubernetes, including Cloud solutions for Kubernetes, such
-as [AWS EKS](https://aws.amazon.com/eks/), you can use our prepared deployment scripts and ingress configuration.
+### Bare metal
 
-### Regular machine deployment
+You can deploy Datagrok to a [regular machine](bare-metal/deploy-regular.md): bare-metal servers or virtual machines, including [EC2 instances](https://aws.amazon.com/ec2/). However, this method is less reliable, scalable, and maintainable than others. You need to set up hosts manually and manage the data storage. Consider using other options if possible.
 
-Datagrok can be deployed to a regular machine: bare-metal servers or virtual machines. This method is not as reliable,
-scalable, and maintainable as others, so **we do not recommend it for production usage**. This deployment method will
-require separate deployment for Datagrok required resources: PostgreSQL database and persistent storage(local filesystem
-can be used).
+## Complete the setup
 
-More information:
+After the deployment, open the platform to complete the setup:  
 
-* [Deployment on a regular machine](deploy-regular.md)
-* [Deployment on AWS EC2](deploy-amazon-ec2.md)
-
-Next steps:
-
-* [Configure authentification](configure-auth.md)
-* [Configure SMTP](configure-smtp.md)
+1. [Configure authentification](complete-setup/configure-auth.md)
+2. [Configure SMTP](complete-setup/configure-smtp.md)
+3. [Install packages](complete-setup/install-package.md)

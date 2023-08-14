@@ -1,6 +1,6 @@
 ---
 title: "Docker Swarm"
-sidebar_position: 5
+sidebar_position: 3
 ---
 
 The deployment consists of a few docker containers, [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
