@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge} from 'rxjs';
-import {debounceTime, filter, first, mapTo, startWith, withLatestFrom} from 'rxjs/operators';
+import {debounceTime, filter, mapTo, startWith} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {FunctionView} from './function-view';
@@ -162,7 +162,7 @@ export class PipelineView extends ComputationView {
           stepConfig.hiddenOnInit ?? VISIBILITY_STATE.VISIBLE,
         ),
         ability: new BehaviorSubject<ABILITY_STATE>(
-          this.isHistorical ? ABILITY_STATE.ENABLED: (idx === 0) ? ABILITY_STATE.ENABLED : ABILITY_STATE.DISABLED,
+          this.isHistorical.value || (idx === 0) ? ABILITY_STATE.ENABLED : ABILITY_STATE.DISABLED,
         ),
         options: {friendlyName: stepConfig.friendlyName, helpUrl: stepConfig.helpUrl},
       };
@@ -279,15 +279,24 @@ export class PipelineView extends ComputationView {
                 step.ability.value === ABILITY_STATE.DISABLED
               ) return;
 
-              const findNextDisabledStepIdx = () => {
-                return Object.values(this.steps).find((iteratedStep) =>
-                  iteratedStep.idx > step.idx &&
-                  iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
-                  iteratedStep.ability.value === ABILITY_STATE.DISABLED,
-                );
+              const findNextDisabledStep = () => {
+                if (Object.values(this.steps)
+                  .find((iteratedStep) =>
+                    iteratedStep.idx > step.idx &&
+                    iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
+                    iteratedStep.ability.value === ABILITY_STATE.ENABLED)
+                )
+                  return null;
+
+                return Object.values(this.steps)
+                  .find((iteratedStep) =>
+                    iteratedStep.idx > step.idx &&
+                    iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
+                    iteratedStep.ability.value === ABILITY_STATE.DISABLED,
+                  );
               };
 
-              const stepToEnable = findNextDisabledStepIdx();
+              const stepToEnable = findNextDisabledStep();
 
               stepToEnable?.ability.next(ABILITY_STATE.ENABLED);
             });
@@ -301,15 +310,30 @@ export class PipelineView extends ComputationView {
       subscribeOnDisableEnable();
       this.funcCallReplaced.subscribe(() => {
         subscribeOnDisableEnable();
+      });
 
-        if (this.isHistorical)
+      this.isHistorical.subscribe((newValue) => {
+        if (newValue)
           Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
       });
 
       await this.onAfterStepFuncCallApply(loadedScript.nqName, scriptCall, view);
+
+      return view;
     });
 
-    await Promise.all(viewsLoading);
+    const loadedViews = await Promise.all(viewsLoading);
+    const plvHistorySub = combineLatest(loadedViews.map((view) => view.isHistorical))
+      .subscribe((isHistoricalArr) => {
+        if (isHistoricalArr.some((flag, idx) =>
+          !flag &&
+          Object.values(this.steps).find((step) => step.idx === idx)?.visibility.value === VISIBILITY_STATE.VISIBLE,
+        ) &&
+          this.isHistorical.value
+        )
+          this.isHistorical.next(false);
+      });
+    this.subs.push(plvHistorySub);
 
     await this.onFuncCallReady();
   }
@@ -540,8 +564,9 @@ export class PipelineView extends ComputationView {
 
       if (corrChildRun) {
         const childRun = await historyUtils.loadRun(corrChildRun.id);
-        step.view.linkFunccall(childRun);
         step.view.lastCall = childRun;
+        step.view.linkFunccall(childRun);
+        step.view.isHistorical.next(true);
 
         step.visibility.next(VISIBILITY_STATE.VISIBLE);
       } else
@@ -549,6 +574,8 @@ export class PipelineView extends ComputationView {
     };
 
     this.lastCall = pulledParentRun;
+    this.linkFunccall(pulledParentRun);
+    this.isHistorical.next(true);
 
     this.stepTabs.currentPane = this.stepTabs.panes
       .filter((tab) => ($(tab.header).css('display') !== 'none'))[idxBeforeLoad];

@@ -70,20 +70,17 @@ export namespace historyUtils {
       await augmentFuncWithPackage(func);
 
     call.func = func;
-    call.options['isHistorical'] = true;
   }
 
   export async function loadChildRuns(
     funcCallId: string,
   ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
     const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
-    parentRun.options['isHistorical'] = true;
 
     await augmentCallWithFunc(parentRun);
 
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
       .include('func').filter(`options.parentCallId="${funcCallId}"`).list();
-    childRuns.forEach((childRun) => childRun.options['isHistorical'] = true);
 
     await Promise.all(childRuns.map(async (childRun) => augmentCallWithFunc(childRun)));
 
@@ -104,7 +101,6 @@ export namespace historyUtils {
       .include('inputs, outputs, session.user').find(funcCallId);
 
     await augmentCallWithFunc(pulledRun);
-    pulledRun.options['isHistorical'] = true;
 
     if (!skipDfLoad) {
       const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])

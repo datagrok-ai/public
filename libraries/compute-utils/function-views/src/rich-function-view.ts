@@ -788,6 +788,9 @@ export class RichFunctionView extends FunctionView {
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
     t.onInput(() => {
+      if (this.isHistorical.value)
+        this.isHistorical.next(false);
+
       this.funcCall[field][val.name] = t.value;
       if (isInputBase(t)) {
         if (t.value === null)

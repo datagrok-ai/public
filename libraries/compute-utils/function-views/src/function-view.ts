@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject} from 'rxjs';
+import {Subject, BehaviorSubject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {RunComparisonView} from './run-comparison-view';
@@ -52,6 +52,24 @@ export abstract class FunctionView extends DG.ViewBase {
       ui.setUpdateIndicator(this.root, false);
       this.setAsLoaded();
     }
+
+    const historySub = this.isHistorical.subscribe((newValue) => {
+      if (this.options.isTabbed || !this.func) return;
+
+      console.log('pp isHistorical', newValue, this.name);
+      if (newValue) {
+        this.path = `?id=${this.funcCall.id}`;
+        const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+        if ((this.name.indexOf(' — ') < 0))
+          this.changeViewName(`${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`);
+        else
+          this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`);
+      } else {
+        this.path = ``;
+        this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
+      }
+    });
+    this.subs.push(historySub);
   }
 
   /**
@@ -165,22 +183,7 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   public linkFunccall(funcCall: DG.FuncCall) {
-    const isPreviousHistorical = this._funcCall?.options['isHistorical'];
     this._funcCall = funcCall;
-
-    if (!this.options.isTabbed) {
-      if (this.isHistorical) {
-        if (!isPreviousHistorical)
-          this.changeViewName(`${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
-        else
-          this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
-        this.path = `?id=${this._funcCall!.id}`;
-      } else {
-        this.path = ``;
-
-        this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
-      }
-    }
 
     this.funcCallReplaced.next(true);
   }
@@ -271,7 +274,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.subs.push(
       newHistoryBlock.onRunChosen.subscribe(async (id) => {
         ui.setUpdateIndicator(this.root, true);
-        this.linkFunccall(await this.loadRun(id));
+        await this.loadRun(id);
         ui.setUpdateIndicator(this.root, false);
       }),
       newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
@@ -361,7 +364,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.linkFunccall(savedCall);
 
     if (this.options.historyEnabled) this.buildHistoryBlock();
-    if (!this.options.isTabbed) this.path = `?id=${savedCall.id}`;
+    this.isHistorical.next(true);
 
     await this.onAfterSaveRun(savedCall);
     return savedCall;
@@ -419,6 +422,8 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeLoadRun();
     const pulledRun = await historyUtils.loadRun(funcCallId);
     this.lastCall = pulledRun;
+    this.linkFunccall(pulledRun);
+    this.isHistorical.next(true);
     await this.onAfterLoadRun(pulledRun);
     return pulledRun;
   }
@@ -462,6 +467,8 @@ export abstract class FunctionView extends DG.ViewBase {
     }
   }
 
+  public isHistorical = new BehaviorSubject<boolean>(false);
+
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
 
   /**
@@ -494,9 +501,5 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get runningOnStart() {
     return this.func.options['runOnOpen'] === 'true';
-  }
-
-  protected get isHistorical() {
-    return this.funcCall.options['isHistorical'] === true;
   }
 }
