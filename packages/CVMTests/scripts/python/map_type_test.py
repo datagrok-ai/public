@@ -1,5 +1,5 @@
 #name: Python Map
-#description: primitive inputs and outputs test
+#description: map input/output
 #language: python
 #input: map input_map
 #input: string unique_key

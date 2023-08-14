@@ -5,4 +5,3 @@
 #output: string result
 
 result = choices
-

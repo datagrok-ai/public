@@ -5,4 +5,4 @@
 #input: column_list cols
 #output: dataframe result
 
-result = df[cols].copy()
+result = df[cols]

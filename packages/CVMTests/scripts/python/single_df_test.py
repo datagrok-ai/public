@@ -1,5 +1,5 @@
 #name: Python Single Df
-#description: df input/output
+#description: df performance
 #language: python
 #input: dataframe df
 #output: dataframe result
