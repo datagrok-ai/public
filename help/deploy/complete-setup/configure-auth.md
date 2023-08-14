@@ -5,10 +5,10 @@ sidebar_position: 1
 
 Datagrok supports such authentication methods:
 
-* [Login-password](#Login-password-authentication)
-* [Oauth](#Oauth-authentication)
-* [OpenID](#OpenID-authentication)
-* [LDAP](#LDAP-authentication)
+* [Login-password](#login-password-authentication)
+* [Oauth](#oauth-authentication)
+* [OpenID](#openID-authentication)
+* [LDAP](#ldap-authentication)
 
 To accommodate any enterprise needs, we can develop a customer-specific integration.
 
