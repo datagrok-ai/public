@@ -4,11 +4,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject} from 'rxjs';
+import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {RunComparisonView} from './run-comparison-view';
 import {CARD_VIEW_TYPE} from './shared/consts';
 import {deepCopy} from './shared/utils';
+import {HistoryPanel} from '../../shared-components/src/history-panel';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -56,7 +58,6 @@ export abstract class FunctionView extends DG.ViewBase {
     const historySub = this.isHistorical.subscribe((newValue) => {
       if (this.options.isTabbed || !this.func) return;
 
-      console.log('pp isHistorical', newValue, this.name);
       if (newValue) {
         this.path = `?id=${this.funcCall.id}`;
         const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
@@ -263,6 +264,7 @@ export abstract class FunctionView extends DG.ViewBase {
     grok.shell.addView(v);
   }
 
+  protected historyBlock = null as null | HistoryPanel;
   /**
    * Override to create a custom historical runs control.
    * @returns The HTMLElement with history block UI
@@ -292,6 +294,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
     grok.shell.o = this.historyRoot;
+    this.historyBlock = newHistoryBlock;
     return newHistoryBlock.root;
   }
 
@@ -310,17 +313,37 @@ export abstract class FunctionView extends DG.ViewBase {
     historyButton.classList.add('d4-toggle-button');
     if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
 
+    const exportBtn = ui.comboPopup(
+      ui.iconFA('arrow-to-bottom'),
+      this.exportConfig!.supportedFormats,
+      async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format)),
+    );
+
+    const editBtn = ui.iconFA('edit', () => {
+      if (!this.historyBlock || !this.lastCall) return;
+
+      this.historyBlock.showEditDialog(this.lastCall);
+    }, 'Edit selected run');
+
+    this.isHistorical.subscribe((newValue) => {
+      if (newValue) {
+        $(exportBtn).show();
+        $(editBtn).show();
+      } else {
+        $(exportBtn).hide();
+        $(editBtn).hide();
+      }
+    });
+
     const newRibbonPanels: HTMLElement[][] =
       [[
-        ...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
-          ui.comboPopup(
-            ui.iconFA('arrow-to-bottom'),
-            this.exportConfig.supportedFormats,
-            async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format)),
-          )]: [],
         ...this.options.historyEnabled ? [
           historyButton,
         ]: [],
+        ...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
+          exportBtn,
+        ]: [],
+        editBtn,
       ]];
 
     this.setRibbonPanels(newRibbonPanels);
