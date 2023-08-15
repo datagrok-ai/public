@@ -323,9 +323,9 @@ export abstract class FunctionView extends DG.ViewBase {
       if (!this.historyBlock || !this.lastCall) return;
 
       this.historyBlock.showEditDialog(this.lastCall);
-    }, 'Edit selected run');
+    }, 'Edit this run');
 
-    this.isHistorical.subscribe((newValue) => {
+    const ribbonSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
         $(exportBtn).show();
         $(editBtn).show();
@@ -334,6 +334,8 @@ export abstract class FunctionView extends DG.ViewBase {
         $(editBtn).hide();
       }
     });
+
+    this.subs.push(ribbonSub);
 
     const newRibbonPanels: HTMLElement[][] =
       [[
