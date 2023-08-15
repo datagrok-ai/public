@@ -11,6 +11,7 @@ const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
   static filters: HTMLElement = ui.box();
+  cardFilter: string | null = null;
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -29,6 +30,7 @@ export class TestsView extends UaView {
     df.getCol('status').colors.setCategorical(colors);
     dfMonth.getCol('status').colors.setCategorical(colors);
     const chart = DG.Viewer.fromType('Line chart', dfMonth, historyStyle);
+    chart.root.style.marginRight = '10px';
     // this.root.removeChild(this.loader);
     df.onCurrentRowChanged.subscribe(async () => {
       const row = df.currentRow;
@@ -48,6 +50,7 @@ export class TestsView extends UaView {
         const grid = history.plot.grid();
         // grid.col('status')!.isTextColorCoded = true;
         grid.col('date')!.format = 'MM/dd/yy'; // MM/dd/yyyy HH:mm:ss
+        grid.col('date')!.width = 70;
         return grid.root;
       }), true);
       acc.addPane('Execution time', () => ui.waitBox(async () => {
@@ -72,19 +75,18 @@ export class TestsView extends UaView {
           ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : '', style: {color: getColor(c, d)}})]);
       })], 'ua-card ua-test-card');
       card.addEventListener('click', () => {
-        console.log(filtersGroup.table);
+        this.cardFilter = this.cardFilter === c ? null : c;
         filtersGroup.updateOrAdd({
           type: DG.FILTER_TYPE.CATEGORICAL,
           column: 'status',
-          selected: [c],
+          selected: this.cardFilter ? [c] : [],
         });
-        console.log(df.filter.falseCount);
       });
       cardsView.append(card);
     }
 
     this.root.append(ui.splitV([
-      ui.splitH([ui.box(cardsView), chart.root], {style: {maxHeight: '150px'}}),
+      ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart.root], {style: {maxHeight: '150px'}}),
       df.plot.grid().root,
     ], null, true));
   }
