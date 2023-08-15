@@ -7,14 +7,14 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject, BehaviorSubject, Observable} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput} from '../../shared-components/src/FuncCallInput';
+import {FuncCallInput, SubscriptionLike} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -23,6 +23,15 @@ export type InputVariants = DG.InputBase | FuncCallInput;
 function isInputBase(input: FuncCallInput): input is DG.InputBase {
   const inputAny = input as any;
   return (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
+}
+
+function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
+  return new Observable((observer: any) => {
+    const sub = onInput((val: T) => {
+      observer.next(val);
+    });
+    return () => sub.unsubscribe();
+  });
 }
 
 export interface AfterInputRenderPayload {
@@ -787,7 +796,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    t.onInput(() => {
+    DG.debounce(getObservable(t.onInput.bind(t)), 350).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
 
