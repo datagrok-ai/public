@@ -1099,18 +1099,21 @@ const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, va
   sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
 };
 
-const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column: number = 0, row: number = 0) => {
-  for (let i= 0; i < df.columns.names().length; i++) {
-    sheet.getCell(1 + row, 1 + i + column).value = df.columns.byIndex(i).name;
-    sheet.getColumn(1 + i + column).width = Math.max(
-      ...df.columns.byIndex(i).categories.map((category) => category.toString().length),
-      df.columns.byIndex(i).name.length,
-    ) * 1.2;
-  }
-  for (let dfColumn = 0; dfColumn < df.columns.length; dfColumn++) {
-    for (let i = 0; i < df.rowCount; i++)
-      sheet.getCell(i + 2 + row, 1 + column+dfColumn).value = df.columns.byIndex(dfColumn).get(i);
-  }
+let dfCounter = 0;
+const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: number, row?: number) => {
+  const columnKey = sheet.getColumn(column ?? 1).letter;
+  const tableConfig = {
+    name: `ID_${dfCounter.toString()}`,
+    ref: `${columnKey}${row ?? 1}`,
+    columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
+    rows: new Array(df.rowCount).fill(0).map((_, idx) => [...df.row(idx).cells].map((cell) => cell.value)),
+  };
+  sheet.addTable(tableConfig);
+  sheet.columns.forEach((col) => {
+    col.width = 25;
+    col.alignment = {wrapText: true};
+  });
+  dfCounter++;
 };
 
 const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
