@@ -44,13 +44,13 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   protected async onFuncCallReady() {
     if (!this.options.isTabbed) this.changeViewName(this.funcCall.func.friendlyName);
-    await historyUtils.augmentFuncWithPackage(this.func);
+    await historyUtils.augmentCallWithFunc(this.funcCall);
 
     this.build();
     const runId = this.getStartId();
     if (runId && !this.options.isTabbed) {
       ui.setUpdateIndicator(this.root, true);
-      this.linkFunccall(await this.loadRun(this.funcCall.id));
+      this.loadRun(this.funcCall.id);
       ui.setUpdateIndicator(this.root, false);
       this.setAsLoaded();
     }
