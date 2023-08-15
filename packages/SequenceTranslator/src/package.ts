@@ -48,7 +48,8 @@ export const _package: StPackage = new StPackage();
 //tags: app
 export async function sequenceTranslatorApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
-
+  let currentView = grok.shell.v.root;
+  ui.setUpdateIndicator(currentView,true);
   try {
     await initSequenceTranslatorLibData();
     const v = new SequenceTranslatorUI();
@@ -60,6 +61,7 @@ export async function sequenceTranslatorApp(): Promise<void> {
   } finally {
     pi.close();
   }
+  ui.setUpdateIndicator(currentView,false);
 }
 
 //name: initSequenceTranslatorLibData
