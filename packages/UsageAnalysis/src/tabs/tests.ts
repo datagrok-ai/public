@@ -65,8 +65,8 @@ export class TestsView extends UaView {
       const c = counters[i];
       const card = ui.div([ui.divText(c), ui.wait(async () => {
         const cardsDf = await cardsDfP;
-        const valuePrev = cardsDf.get(c, 0) ?? 0;
-        const valueNow = cardsDf.get(c, 1) ?? 0;
+        const valuePrev = cardsDf.get(c, 0);
+        const valueNow = cardsDf.get(c, 1);
         const d = valueNow - valuePrev;
         return ui.div([ui.divText(`${valueNow}`),
           ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : '', style: {color: getColor(c, d)}})]);
