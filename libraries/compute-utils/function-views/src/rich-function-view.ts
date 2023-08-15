@@ -744,7 +744,9 @@ export class RichFunctionView extends FunctionView {
     // don't use val directly, get a fresh one, since it will be replaced with fc
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newValue = this.funcCall[field][name] ?? prop.defaultValue ?? null;
+      t.notify = false;
       t.value = newValue;
+      t.notify = true;
       this.funcCall[field][name] = newValue;
       const newParam = this.funcCall[syncParams[field]][name];
       this.syncValOnChanged(t, newParam, field);
