@@ -14,6 +14,8 @@ export interface RDModule {
   _malloc(size: number): any;
   _free(buf: any): any;
   writeArrayToMemory(arr: any, buff:any): any;
+  set_log_tee(logName: string): RDLog;
+  set_log_capture(logName: string): RDLog;
   MolList: MolListConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
   }
@@ -145,3 +147,10 @@ export interface RDSubstructLibrary {
 interface RDSubstructLibraryConstructor {
   new(bits?: number): RDSubstructLibrary;
 }
+
+export interface RDLog {
+  get_buffer(): string;
+  clear_buffer(): void;
+  delete(): void;
+}
+

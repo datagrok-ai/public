@@ -42,6 +42,10 @@ export namespace chem {
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
 
+  export interface IValidationRes {
+    error?: string;
+  }
+
   export enum Notation {
     Smiles = 'smiles',
     Smarts = 'smarts',
@@ -151,7 +155,7 @@ export namespace chem {
     resized = false;
     _sketcherTypeChanged = false;
     _autoResized = true;
-    _validationFunc: Function | null = null;
+    _validationFunc: ((molecule: string) => IValidationRes) | null = null;
     _invalidFlag: boolean = false;
 
     set sketcherType(type: string) {
@@ -271,7 +275,7 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null && !isValidMolecule(x) && !isMolBlock(x))
+      if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
           .then((mol) => this.setMolecule(mol));
@@ -280,17 +284,13 @@ export namespace chem {
     }
 
     validate(x: string): boolean {
-      if (this._validationFunc && !this._validationFunc(x)) {
-        this.updateInvalidMoleculeWarning(false);
-        this._invalidFlag = true;
-        return false;
-      }
-      this.updateInvalidMoleculeWarning(true);
-      this._invalidFlag = false;
-      return true;
+      const error = this._validationFunc ? this._validationFunc(x).error : undefined;
+      this.updateInvalidMoleculeWarning(error);
+      this._invalidFlag = !!error;
+      return !this._invalidFlag;
     }
 
-    constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => boolean) {
+    constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => IValidationRes) {
       super(ui.div());
       if (mode)
         this._mode = mode;
@@ -382,10 +382,13 @@ export namespace chem {
       return clearButton;
     }
 
-    updateInvalidMoleculeWarning(valid: boolean) {
+    updateInvalidMoleculeWarning(error?: string) {
       ui.empty(this.invalidMoleculeWarning);
-      if(!valid)
-        this.invalidMoleculeWarning.append(ui.divText('Malformed molecule'));
+      if(error) {
+        const errorDiv = ui.divText('Malformed molecule');
+        ui.tooltip.bind(errorDiv, error);
+        this.invalidMoleculeWarning.append(errorDiv);
+      }
     }
 
     createExternalModeSketcher(): HTMLElement {
@@ -815,7 +818,7 @@ export namespace chem {
     return resultMolecule;
   }
 
-  export function isValidMolecule(s: string): boolean {
+  export function checkSmiles(s: string): boolean {
     const isSmilesFunc = Func.find({package: 'Chem', name: 'isSmiles'})[0];
     const funcCall: FuncCall = isSmilesFunc.prepare({s});
     funcCall.callSync();

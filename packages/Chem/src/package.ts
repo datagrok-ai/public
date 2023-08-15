@@ -889,7 +889,7 @@ export function convertMolNotation(molecule: string, sourceNotation: DG.chem.Not
 //description: Molecule
 //input: grid_cell cell
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
-  const sketcher = new Sketcher(undefined, isSmiles);
+  const sketcher = new Sketcher(undefined, validateMolecule);
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   let molecule = cell.cell.value;
   if (unit === DG.chem.Notation.Smiles) {
@@ -900,6 +900,8 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const dlg = ui.dialog()
     .add(sketcher)
     .onOK(() => {
+      if (validateMolecule(molecule).error) //do not update data in cell in case molecule initially is broken
+        return;
       if (unit === DG.chem.Notation.Smiles) {
         //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
         const newValue = sketcher.getSmiles();
@@ -907,7 +909,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         if (!checkMolEqualSmiles(mol, newValue))
           cell.cell.value = newValue;
         mol?.delete();
-      } else
+      } else 
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
@@ -1320,6 +1322,27 @@ export async function demoDatabases(): Promise<void> {
 //meta.demoPath: Cheminformatics | Scaffold Tree
 export async function demoScaffold(): Promise<void> {
   _demoScaffoldTree();
+}
+
+//name: validateMolecule
+//input: string s
+//output: object result
+export function validateMolecule(s: string): DG.chem.IValidationRes {
+  let rdkitModule = getRdKitModule();
+  let logHandle;
+  let mol;
+  try {
+    logHandle = rdkitModule.set_log_capture("rdApp.error");
+    mol = getMolSafe(s, {}, _rdKitModule, true).mol;
+    let logBuffer = logHandle.get_buffer();
+    logHandle.clear_buffer();
+    if (!mol && !logBuffer)
+      logBuffer = 'unknown error';
+    return {error: logBuffer};
+  } finally {
+    logHandle?.delete();
+    mol?.delete();
+  }
 }
 
 export {getMCS};
