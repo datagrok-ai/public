@@ -7,7 +7,7 @@ on:
 
 jobs:
   scan:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: Anchore vulnerability scan
     permissions:
       security-events: write
@@ -28,7 +28,7 @@ jobs:
           sarif_file: ${{ steps.scan.outputs.sarif }}
 
   report:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: Anchore vulnerability scan report
     permissions:
       security-events: write

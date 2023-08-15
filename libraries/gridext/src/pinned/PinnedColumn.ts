@@ -340,14 +340,18 @@ export class PinnedColumn {
     });
 
     this.m_handlerCurrRow = dframe.onCurrentRowChanged.subscribe(() => {
-          const g = eCanvasThis.getContext('2d');
-          headerThis.paint(g, grid);
+          setTimeout(() => {
+            const g = eCanvasThis.getContext('2d');
+            headerThis.paint(g, grid);
+          }, 20);
         }
     );
 
     this.m_handlerMouseOverRow = dframe.onMouseOverRowChanged.subscribe(() => {
-        const g = eCanvasThis.getContext('2d');
-        headerThis.paint(g, grid);
+        setTimeout(() => {
+          const g = eCanvasThis.getContext('2d');
+          headerThis.paint(g, grid);
+        }, 20);
       }
     );
 
@@ -369,8 +373,10 @@ export class PinnedColumn {
     });
 
     this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
-          const g = eCanvasThis.getContext('2d');
-          headerThis.paint(g, grid);
+          setTimeout(() => {
+            const g = eCanvasThis.getContext('2d');
+            headerThis.paint(g, grid);
+          }, 20);
         }
     );
 

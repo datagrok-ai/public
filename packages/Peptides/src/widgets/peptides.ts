@@ -13,7 +13,6 @@ import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 /** Peptide analysis widget.
- *
  * @param {DG.DataFrame} df Working table
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
@@ -40,7 +39,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         return viewer.root;
       }));
       //TODO: add when new version of datagrok-api is available
-    }); //, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions);
+    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
@@ -97,18 +96,15 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     activityScalingMethod.fireChanged();
   };
   //TODO: add when new version of datagrok-api is available
-  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState); //, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
+  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
+    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
   const clustersColumnChoice = ui.columnInput('Clusters', df, null);
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
-  const targetColumnChoice = ui.columnInput('Target', df, null, () => {
-    if (targetColumnChoice.value?.type !== DG.COLUMN_TYPE.STRING) {
-      grok.shell.warning('Target column should be of string type');
-      targetColumnChoice.value = null;
-    }
-  });
+  const targetColumnChoice = ui.columnInput('Target', df, null, null,
+    {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
   targetColumnChoice.nullable = true;
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];

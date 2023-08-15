@@ -1,10 +1,19 @@
 # statistics changelog
 
+## 1.2.3(2023-08-12)
+
+### Features
+
+* [#2105](https://github.com/datagrok-ai/public/issues/2105): Removed point and fit line color default values
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added title parameter to IFitChartOptions
+
+## 1.2.2 (2023-08-04)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Changed minBound and maxBound to min and max in parameterBounds
+
 ## 1.2.1 (2023-08-02)
-
-This release focuses on adding new functionality and improving stability.
-
-*Dependency: datagrok-api >= 1.16.0*
 
 ### Features
 
@@ -17,8 +26,6 @@ This release focuses on adding new functionality and improving stability.
 ## 1.2.0 (2023-07-21)
 
 This release focuses on adding new functionality and improving stability.
-
-*Dependency: datagarok-api >= 1.16.0*
 
 ### Features
 
@@ -39,10 +46,6 @@ This release focuses on adding new functionality and improving stability.
 * Fixed fit function creation.
 
 ## 1.1.8 (2023-05-21)
-
-This release focuses on adding new functionality.
-
-*Dependency: datagarok-api >= 1.13.11*
 
 ### Features
 

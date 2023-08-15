@@ -3,6 +3,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "author": {
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
+  },
   "fullName": "Utils",
   "version": "4.1.4",
   "description": "Common utilities",
@@ -27,7 +31,7 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
-    "build": "tsc",
+    "build": "git clean -f -X -d ./src && tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm run build"

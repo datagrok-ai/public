@@ -12,7 +12,6 @@ import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
 import {getRdKitModule} from '../package';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
@@ -122,7 +121,7 @@ export async function chemDiversitySearch(
       }
     }
   } else
-    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, true, false);
+    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, false);
 
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
   if (!tooltipUse)

@@ -14,7 +14,6 @@ import * as utils from './utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getDescriptorsSingle} from '../descriptors/descriptors-calculation';
-import {substructureFilter} from '../package';
 import * as CONST from './const';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {structure2dWidget} from '../widgets/structure2d';

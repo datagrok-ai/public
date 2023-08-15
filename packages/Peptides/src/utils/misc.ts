@@ -1,8 +1,11 @@
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
+import {getSplitterForColumn} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -68,11 +71,9 @@ export function extractColInfo(col: DG.Column<string>): type.RawColumn {
 }
 
 export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHistogramLookSettings>,
-  statsMap: StringDictionary, isTooltip: boolean = false): HTMLDivElement {
+  statsMap: StringDictionary): HTMLDivElement {
   const result = ui.divV([legend, hist.root, ui.tableFromMap(statsMap)]);
-  result.style.minWidth = '200px';
-  if (isTooltip)
-    hist.root.style.maxHeight = '150px';
+  hist.root.style.maxHeight = '75px';
   return result;
 }
 
@@ -99,4 +100,14 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
     DG.Column.fromList(DG.TYPE.FLOAT, activityCol.name, expandedData),
     DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
   ]);
+}
+
+export async function getTemplate(sequence: string, seqCol?: DG.Column<string>): Promise<ISeqSplitted> {
+  if (typeof seqCol === 'undefined') {
+    const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
+    await grok.data.detectSemanticTypes(tempDf);
+    seqCol = tempDf.getCol('sequence');
+  }
+  const splitter = getSplitterForColumn(seqCol);
+  return splitter(sequence);
 }

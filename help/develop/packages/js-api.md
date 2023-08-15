@@ -30,16 +30,21 @@ There are three entry points to the API:
 
 ### Grok
 
-`grok` is the entry point for most of the commonly used functionality in the platform. It is structured in a way to make
-the discovery of the capabilities very easy, especially with IntelliSense. You would just type `grok.`, then select the
-most appropriate choice the IntelliSense gives you, and so on. For instance, let’s imagine that you want to construct a
-dataframe from a CSV file. You would see the following choices after you typed `grok.`: [shell, chem, data, data, ml].
-What we want to do it related to data, so we would type `grok.data` and see the following
-choices: [demo, query, compareTables, parseCsv, upload]. Obviously, we should choose parseCsv; when we select it,
-IntelliSense will help us with the parameters as well. This is the preferred way for using the API for both ad-hoc
-scripting and more complex development, since the resulting code is streamlined and easily readable. However, in cases
-where the fluent API does not cover your particular use case, or sometimes for performance reasons, you will need to
-work with classes from the DG namespace.
+`grok` is the main entry point for the JS API. It helps you discover the functionality using IntelliSense. 
+
+For example, to import a dataframe from a CSV file:
+
+1. Type `grok.`. The following options appear: `[shell, chem, data, data, ml]`.
+1. Select the best fitting option, `grok.data`, and press `.`. The following options appear: `[demo, query, compareTables, parseCsv, upload]`.
+1. Select `grok.data.parseCsv` and press **Enter**. Use IntelliSense to provide the parameters. 
+
+![grok-intellisense](grid-adaptive-number-formatting.gif)
+
+:::note
+
+When you need more control, use the [DG namespace](https://datagrok.ai/js-api/modules/dg#namespaces).
+
+:::
 
 ### UI
 

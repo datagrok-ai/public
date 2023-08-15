@@ -66,6 +66,7 @@ export const WebLogoPropsDefault = new class {
   fitArea: boolean = true;
   minHeight: number = 50;
   maxHeight: number = 100;
+  showPositionLabels: boolean = true;
   positionMarginState: PositionMarginStates = PositionMarginStates.AUTO;
   positionMargin: number = 0;
 

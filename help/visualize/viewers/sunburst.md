@@ -29,13 +29,11 @@ have a "False" control status, and are classified as "Male" in terms of sex.
 
 ## Hierarchical data exploration
 
-The Sunburst viewer empowers you to visually explore and analyze the hierarchical category structure
-in an intuitive and efficient manner.
+Use the Sunburst viewer to explore the hierarchical nature of your dataset:
 
-* Zoom in to a specific category by clicking on the corresponding sector in the Sunburst viewer.
-* By clicking on sectors within the viewer, you can further drill down into subcategories.
-* Zoom out and return to a broader view of the categories by clicking on the blue circle located in the middle of the viewer.
-* To quickly return to the root level of the categories, press Ctrl+Shift+A.
+* To **zoom** to a category, click it.
+* To **zoom out**, click the blue circle in the middle.
+* To **reset view**, press Ctrl+Shift+A.
 
 ![Sunburst interactive data exploration](sunburst-interactive.gif)
 

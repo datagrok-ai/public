@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import './scripts/scripts';
 import './shell/ml';
+import './scripts/python_functions';
+import './scripts/r_functions';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 

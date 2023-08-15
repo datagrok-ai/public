@@ -9,6 +9,8 @@ import { delay } from '@datagrok-libraries/utils/src/test';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 
+const MAX_ROW_NUMBER = 10;
+
 /** Represents a sunburst viewer */
 @grok.decorators.viewer({
   name: 'Sunburst',
@@ -35,10 +37,6 @@ export class SunburstViewer extends EChartViewer {
           type: 'sunburst',
           label: {
             rotate: 'radial',
-          },
-          labelLayout: {
-            hideOverlap: 'true',
-            align: 'center',
           }
         },
       ],
@@ -67,6 +65,8 @@ export class SunburstViewer extends EChartViewer {
   initEventListeners(): void {
     this.chart.on('click', (params: any) => {
       const selectedSectors: string[] = [];
+      if (!params.data.path)
+        return;
       const path: string[] = params.data.path.split('|').map((str: string) => str.trim());
       const pathString: string = path.join('|');
       const isSectorSelected = selectedSectors.includes(pathString);
@@ -89,7 +89,15 @@ export class SunburstViewer extends EChartViewer {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
         const { hierarchyColumnNames, dataFrame } = this;
         for (let j = 0; j < hierarchyColumnNames.length; ++j) {
-          if (dataFrame.getCol(hierarchyColumnNames[j]).get(i).toString() === params.name) {
+          const column = dataFrame.getCol(hierarchyColumnNames[j]);
+          const format = column.getTag(DG.TAGS.FORMAT);
+          if (format) {
+            const number = format.indexOf('.');
+            const len = format.length - number - 1;
+            if ((column.get(i)).toFixed(len) === params.name)
+              return true;
+          }
+          if (column.get(i).toString() === params.name) {
             return true;
           }
         }
@@ -124,8 +132,9 @@ export class SunburstViewer extends EChartViewer {
   }
 
   onTableAttached(): void {
-    const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
+    let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
+    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length);
 
     if (categoricalColumns.length < 1)
       return;
@@ -146,7 +155,7 @@ export class SunburstViewer extends EChartViewer {
     for (const entry of data!) {
       const name = entry.name;
       const isSmiles = await grok.functions.call('Chem:isSmiles', {s: name});
-      if (isSmiles) {
+      if (isSmiles && entry.semType === 'Molecule') {
         const imageContainer = await grok.functions.call('Chem:drawMolecule', {
           'molStr': name, 'w': 70, 'h': 80, 'popupMenu': false
         });
@@ -175,6 +184,15 @@ export class SunburstViewer extends EChartViewer {
   render() {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
+    
+    if (this.dataFrame.rowCount > MAX_ROW_NUMBER || (this.dataFrame.rowCount < MAX_ROW_NUMBER && this.hierarchyColumnNames.length > 1)) {
+      this.option.series[0].labelLayout = {
+        hideOverlap: 'true',
+        align: 'center',
+      }
+    } else {
+      delete this.option.series[0].labelLayout;
+    }
 
     this.handleStructures(this.getSeriesData()).then((data) => {
       this.option.series[0].data = data;

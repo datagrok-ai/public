@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {CandidateSimType, CandidateType, MonomerFreqs, SeqColStats, SplitterFunc} from './types';
+import {CandidateSimType, CandidateType, ISeqSplitted, MonomerFreqs, SeqColStats, SplitterFunc} from './types';
 import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION, TAGS} from './consts';
 import {UnitsHandler} from '../units-handler';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
@@ -21,12 +21,12 @@ import {UnknownSeqPalettes} from '../../unknown';
  */
 export function getStatsForCol(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
   const cats = seqCol.categories;
-  const splitted: Iterable<string[]> = wu(seqCol.getRawData())
+  const splitted: Iterable<ISeqSplitted> = wu(seqCol.getRawData())
     .map((catI) => splitter(seqCol.categories[catI]));
   return getStats(splitted, minLength);
 }
 
-function getStats(splitted: Iterable<string[]>, minLength: number): SeqColStats {
+function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColStats {
   const freq: { [m: string]: number } = {};
   let sameLength = true;
   let firstLength = null;
@@ -53,14 +53,23 @@ function getStats(splitted: Iterable<string[]>, minLength: number): SeqColStats 
  * @return {string[]} array of monomers
  */
 export function splitterAsFasta(seq: any): string[] {
-  return seq.toString().replace(monomerRe, '.$1').slice(1).split('.').map((monomer: string) => {
-    if (monomer.startsWith('[') && monomer.endsWith(']'))
-      return monomer.slice(1, -1);
-    else if (monomer === '-')
-      return '';
-    else
-      return monomer;
-  });
+  // return seq.toString().replace(monomerRe, '.$1').slice(1).split('.').map((monomer: string) => {
+  //   if (monomer.startsWith('[') && monomer.endsWith(']'))
+  //     return monomer.slice(1, -1);
+  //   else if (monomer === '-')
+  //     return '';
+  //   else
+  //     return monomer;
+  // });
+
+  return wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
+    .map((ma: RegExpMatchArray) => {
+      return ma[2] ?? ma[1]; // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
+    }).toArray();
+}
+
+export function splitterAsFastaSimple(seq: any): string[] {
+  return !seq ? [] : seq as string[];
 }
 
 /** Gets method to split sequence by separator
@@ -103,36 +112,14 @@ export function splitterAsHelm(seq: any): string[] {
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */
 export type MonomerToShortFunc = (monomerLabel: string, limit: number) => string;
 
-/** Get splitter method to split sequences to monomers
- * @param {string} units
- * @param {string} separator
- * @param limit
- * @return {SplitterFunc}
- */
-export function getSplitter(units: string, separator: string, limit: number | undefined = undefined): SplitterFunc {
-  if (units.toLowerCase().startsWith(NOTATION.FASTA))
-    return splitterAsFasta;
-  else if (units.toLowerCase().startsWith(NOTATION.SEPARATOR))
-    return getSplitterWithSeparator(separator, limit);
-  else if (units.toLowerCase().startsWith(NOTATION.HELM))
-    return splitterAsHelm;
-  else
-    throw new Error(`Unexpected units ${units} .`);
-
-  // TODO: Splitter for HELM
-}
 
 /** Generate splitter function for sequence column
  * @param {DG.Column} col
  * @return {SplitterFunc} Splitter function
  */
 export function getSplitterForColumn(col: DG.Column): SplitterFunc {
-  if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
-    throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
-
-  const units = col.getTag(DG.TAGS.UNITS);
-  const separator = col.getTag(TAGS.separator);
-  return getSplitter(units, separator);
+  const uh = UnitsHandler.getOrCreate(col);
+  return uh.getSplitter();
 }
 
 const longMonomerPartRe: RegExp = /([^\W_]+)/g;
@@ -235,7 +222,7 @@ export function getPaletteByType(paletteType: string): SeqPalette {
   }
 }
 
-export function pickUpSeqCol(df: DG.DataFrame): DG.Column | null {
+export function pickUpSeqCol(df: DG.DataFrame): DG.Column<string> | null {
   const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   let resCol: DG.Column | null = semTypeColList.find((col) => {
     const units = col.getTag(DG.TAGS.UNITS);

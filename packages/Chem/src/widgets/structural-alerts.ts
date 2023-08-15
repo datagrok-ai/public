@@ -17,19 +17,23 @@ export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   rdKitModule ??= getRdKitModule();
 
   const alerts: number[] = [];
-  const mol = rdKitModule.get_mol(molecule);
-  //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
-  // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
-  // lib.add_smiles(smiles);
-  const smartsCol = alertsDf!.getCol('smarts');
-  for (let i = 0; i < smartsCol.length; i++) {
-    const subMol = _smartsMap.get(smartsCol.get(i));
-    // lib.count_matches(subMol);
-    const matches = mol.get_substruct_matches(subMol!);
-    if (matches !== '{}')
-      alerts.push(i);
+  let mol: RDMol | null = null;
+  try {
+    mol = rdKitModule.get_mol(molecule);
+    //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
+    // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
+    // lib.add_smiles(smiles);
+    const smartsCol = alertsDf!.getCol('smarts');
+    for (let i = 0; i < smartsCol.length; i++) {
+      const subMol = _smartsMap.get(smartsCol.get(i));
+      // lib.count_matches(subMol);
+      const matches = mol.get_substruct_matches(subMol!);
+      if (matches !== '{}')
+        alerts.push(i);
+    }
+  } finally {
+    mol?.delete();
   }
-  mol.delete();
   return alerts;
 }
 
@@ -77,15 +81,10 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   const list = ui.div(alerts.map((i) => {
     const description = ui.divText(descriptionCol.get(i));
     const imageHost = ui.canvas(width, height);
-    const r = window.devicePixelRatio;
-    imageHost.width = width * r;
-    imageHost.height = height * r;
-    imageHost.style.width = width.toString() + 'px';
-    imageHost.style.height = height.toString() + 'px';
     //in case molecule is smiles setting correct coordinates to save molecule orientation
     if (!DG.chem.isMolBlock(molecule))
       molecule = _convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdKitModule!);
-    drawMoleculeToCanvas(0, 0, width * r, height * r, imageHost, molecule, smartsCol.get(i));
+    drawMoleculeToCanvas(0, 0, width, height, imageHost, molecule, smartsCol.get(i));
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';
     return host;

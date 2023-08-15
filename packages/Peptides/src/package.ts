@@ -17,27 +17,25 @@ import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper | null = null;
-let dendrogramService: IDendrogramService | null = null;
 
 export const _package = new DG.Package();
 
-export function getMonomerWorksInstance(): MonomerWorks {
-  return monomerWorks!;
+export function getMonomerWorksInstance(): MonomerWorks | null {
+  return monomerWorks;
 }
 
-export function getTreeHelperInstance(): ITreeHelper {
-  return treeHelper!;
-}
-
-export function getDendrogramServiceInstance(): IDendrogramService {
-  return dendrogramService!;
+export function getTreeHelperInstance(): ITreeHelper | null {
+  return treeHelper;
 }
 
 //tags: init
 export async function initPeptides(): Promise<void> {
-  monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
-  treeHelper ??= await getTreeHelper();
-  dendrogramService ??= await getDendrogramService();
+  try {
+    monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
+    treeHelper ??= await getTreeHelper();
+  } catch (e) {
+    grok.log.error(e as string);
+  }
 }
 
 async function openDemoData(chosenFile: string): Promise<void> {

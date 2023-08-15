@@ -1,6 +1,6 @@
 ---
-title: "Datagrok server configuration"
-sidebar_position: 9
+title: "Server configuration"
+sidebar_position: 13
 ---
 
 Datagrok supports several deployment schemas which can be configured using `GROK_MODE` and `GROK_PARAMETERS` environment

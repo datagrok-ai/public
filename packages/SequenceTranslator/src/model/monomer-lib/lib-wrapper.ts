@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
+import {DEFAULT_FORMATS} from '../const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
@@ -29,6 +30,14 @@ export class MonomerLibWrapper {
     formattedObject[REQ.NAME] = sourceObj[REQ.SYMBOL];
     formattedObject[REQ.SYMBOL] = sourceObj[REQ.SYMBOL];
     formattedObject[REQ.MOLFILE] = sourceObj[REQ.MOLFILE];
+    const formats = this.getAllFormats();
+    formats.forEach((format) => {
+      if (format === DEFAULT_FORMATS.HELM)
+        return;
+      const map = codesToSymbolsDictionary[format];
+      const codes = Object.keys(map).filter((code) => map[code] === sourceObj.symbol);
+      formattedObject[format] = codes.join(', ');
+    })
 
     return formattedObject;
   }
@@ -84,6 +93,10 @@ export class MonomerLibWrapper {
 
   getCodesByFormat(format: string): string[] {
     return Object.keys(codesToSymbolsDictionary[format]);
+  }
+
+  getAllFormats(): string[] {
+    return Object.keys(codesToSymbolsDictionary);
   }
 
   getTableForViewer(): DG.DataFrame {

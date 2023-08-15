@@ -98,6 +98,11 @@
   position: relative;
 }
 
+.ua-test-card {
+  cursor: pointer;
+  text-transform: capitalize;
+}
+
 .ua-cards .ua-card > .grok-wait > .ui-div {
   display: flex;
   flex-direction: column;

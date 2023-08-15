@@ -7,6 +7,7 @@ import {PeptidesModel, VIEWER_TYPE} from '../model';
 
 import $ from 'cash-dom';
 import wu from 'wu';
+import {getTreeHelperInstance} from '../package';
 
 type PaneInputs = {[paneName: string]: DG.InputBase[]};
 type SettingsElements = {dialog: DG.Dialog, accordion: DG.Accordion, inputs: PaneInputs};
@@ -19,6 +20,7 @@ export enum SETTINGS_PANES {
 };
 
 export enum GENERAL_INPUTS {
+  ACTIVITY = 'Activity',
   ACTIVITY_SCALING = 'Activity scaling',
   BIDIRECTIONAL_ANALYSIS = 'Bidirectional analysis',
 }
@@ -58,14 +60,17 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const inputs: PaneInputs = {};
 
   // General pane options
+  const activityCol = ui.columnInput(GENERAL_INPUTS.ACTIVITY, model.df,
+    model.df.getCol(model.settings.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
+    {filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && col.name !== C.COLUMNS_NAMES.ACTIVITY_SCALED});
   const activityScaling =
     ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
       () => result.scaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
   const bidirectionalAnalysis = ui.boolInput(GENERAL_INPUTS.BIDIRECTIONAL_ANALYSIS, currentBidirectional,
     () => result.isBidirectional = bidirectionalAnalysis.value) as DG.InputBase<boolean>;
 
-  accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityScaling, bidirectionalAnalysis]), true);
-  inputs[SETTINGS_PANES.GENERAL] = [activityScaling, bidirectionalAnalysis];
+  accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityCol, activityScaling, bidirectionalAnalysis]), true);
+  inputs[SETTINGS_PANES.GENERAL] = [activityCol, activityScaling, bidirectionalAnalysis];
 
   // Viewers pane options
   /* FIXME: combinations of adding and deleting viewers are not working properly
@@ -83,6 +88,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const isDendrogramEnabled = wu(model.analysisView.viewers).some((v) => v.type === VIEWER_TYPE.DENDROGRAM);
   const dendrogram = ui.boolInput(VIEWER_TYPE.DENDROGRAM, isDendrogramEnabled ?? false,
     () => result.showDendrogram = dendrogram.value) as DG.InputBase<boolean>;
+  dendrogram.enabled = getTreeHelperInstance() !== null;
 
   accordion.addPane(SETTINGS_PANES.VIEWERS, () => ui.inputs([dendrogram]), true);
   inputs[SETTINGS_PANES.VIEWERS] = [dendrogram];

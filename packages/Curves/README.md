@@ -39,10 +39,10 @@ To render a fitted curve based on series points, you need to write it in the fol
       "fitFunction": "sigmoid",
       "parameters": [1.7391934768969721, -0.9451759934029763, 4.846020678949615, 0.15841886339211816],
       "parameterBounds": [
-        {"minBound": 1.739193476892, "maxBound": 1.739193476898},
-        {"maxBound": -0.9451759934029},
+        {"min": 1.739193476892, "max": 1.739193476898},
+        {"max": -0.9451759934029},
         {},
-        {"minBound": 0.158418863392114}
+        {"min": 0.158418863392114}
       ],
       "showPoints": "points",
       "clickToToggle": true,
@@ -61,6 +61,7 @@ To render a fitted curve based on series points, you need to write it in the fol
     "minY": 0.04152340441942215,
     "maxX": 7.099999904632568,
     "maxY": 1.7591952085494995,
+    "title": "Dose-Response curves",
     "xAxisName": "Concentration",
     "yAxisName": "Activity",
     "logX": true,
@@ -80,8 +81,9 @@ Each series has its own parameters, such as:
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
 [custom-defined function](/README.md#creating-custom-fit-function).
-- `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed
-- `parameterBounds` - defines the series parameter bounds during the fit
+- `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed. The parameter order of the
+sigmoid function is: `max, tan, IC50, min`.
+- `parameterBounds` - defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`
 - `showPoints` - defines the data display mode, which could be either `points`, `candlesticks`, `both`, or none
 - `clickToToggle` - defines whether clicking on the point toggles its outlier status and causes curve refitting or not
 - `droplines` - defines the droplines that would be shown on the plot (for instance, IC50)
@@ -90,6 +92,7 @@ Each series has its own parameters, such as:
 Each chart has its own parameters as well, such as:
 
 - `minX`, `minY`, `maxX`, `maxY` - controls the minimum x and y values of the plot
+- `title` - defines the plot title. If the plot size is enough, will render it
 - `xAxisName`, `yAxisName` - defines the x and y axis names. If the plot size is enough, will render it
 - `logX`, `logY` - defines whether the x and y data should be logarithmic or not
 - `showStatistics` - defines the statistics that would be shown on the plot (such as the area under the curve

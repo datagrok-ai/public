@@ -396,7 +396,7 @@ async function testCalculateGroup(funcName: string, colName: string, dlgName: st
 
 function findAccordionPanelElement(propPanel: HTMLElement, elName: string): HTMLElement {
   return Array.from(propPanel.querySelectorAll('div.d4-accordion-pane-header'))
-    .find((el) => el.textContent === 'Actions') as HTMLElement;
+    .find((el) => el.textContent === elName) as HTMLElement;
 }
 
 async function expandAccordionPane(propPanel: HTMLElement, elName: string) {

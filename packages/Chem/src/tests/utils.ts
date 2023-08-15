@@ -14,7 +14,7 @@ export async function loadFileAsBytes(name: string): Promise<Uint8Array> {
 
 export async function dfFromColWithOneCategory(colName: string, value: string, length: number): Promise<DG.DataFrame> {
   const col = DG.Column.fromType(DG.COLUMN_TYPE.STRING, colName, length);
-  col.init((i) => value);
+  col.init((_) => value);
   return DG.DataFrame.fromColumns([col]);
 }
 export async function createTableView(tableName: string): Promise<DG.TableView> {
@@ -35,8 +35,9 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]): Promise<void> {
   const col = df.columns.byName(colName);
-  const bitset: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
-  const bitsetString = bitset.toBinaryString();
+  const bitSet: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
+  expect(bitSet !== null, true);
+  const bitsetString = bitSet.toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
     expect(bitsetArray[trueIndices[k]] === '1', true);

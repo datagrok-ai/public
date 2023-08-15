@@ -166,7 +166,7 @@ export function summarizeColumns(columns: DG.Column[]) {
 
 //description: Adds a 'form' column for the selected columns
 //input: list columns
-//meta.action: Add form...
+//meta.action: Smart form...
 export function addFormColumn(columns: DG.Column[]) {
   const table = columns[0].dataFrame;
   const name = ui.stringInput('Name', table.columns.getUnusedName('Form'));

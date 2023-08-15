@@ -16,16 +16,18 @@ const Tags = new class {
 const svgMolOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
 
 export class MonomerTooltipHandler {
-  private readonly grid: DG.Grid;
+  private readonly gridCol: DG.GridColumn;
 
-  constructor(grid: DG.Grid) {
-    this.grid = grid;
-    this.grid.onCellTooltip(this.onCellTooltip.bind(this));
+  constructor(gridCol: DG.GridColumn) {
+    this.gridCol = gridCol;
+    this.gridCol.grid.onCellTooltip(this.onCellTooltip.bind(this));
   }
 
   private onCellTooltip(gridCell: DG.GridCell, x: number, y: number): any {
-    if (gridCell.grid.dart != this.grid.dart || !gridCell.tableColumn || !gridCell.isTableCell ||
-      gridCell.tableColumn.semType != 'Monomer') return false;
+    if (
+      gridCell.grid.dart != this.gridCol.grid.dart || gridCell.gridColumn.dart != this.gridCol.dart ||
+      !gridCell.tableColumn || !gridCell.isTableCell
+    ) return false;
 
     const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet);
     const monomerName = gridCell.cell.value;
@@ -46,13 +48,11 @@ export class MonomerTooltipHandler {
     return true; // To prevent default tooltip behaviour
   }
 
-  public static getOrCreate(grid: DG.Grid): MonomerTooltipHandler {
-    const gridTemp: { [tempName: string]: any } = grid.dataFrame.temp;
-    if (!(Tags.tooltipHandlerTemp in gridTemp)) {
-      gridTemp[Tags.tooltipHandlerTemp] = new MonomerTooltipHandler(grid);
-      grid.temp = gridTemp;
-    }
-    return gridTemp[Tags.tooltipHandlerTemp];
+  public static getOrCreate(gridCol: DG.GridColumn): MonomerTooltipHandler {
+    let res = gridCol.temp[Tags.tooltipHandlerTemp];
+    if (!res)
+      res = gridCol.temp[Tags.tooltipHandlerTemp] = new MonomerTooltipHandler(gridCol);
+    return res;
   }
 }
 
@@ -81,7 +81,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     _cellStyle: DG.GridCellStyle
   ): void {
     if (gridCell.gridRow < 0) return;
-    MonomerTooltipHandler.getOrCreate(gridCell.grid);
+    MonomerTooltipHandler.getOrCreate(gridCell.gridColumn);
 
 
     g.font = `12px monospace`;

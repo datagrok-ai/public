@@ -9,6 +9,25 @@
     justify-content: end;
 }
 
+.hit-triage-compute-dialog-host > .d4-tab-host.d4-tab-vertical > .d4-tab-header-stripe > .d4-tab-header.hit-triage-compute-dialog-pane-header {
+    border: none;
+    border-left: 4px solid transparent;
+    border-radius: 1px;
+    padding: 4px 8px;
+    min-height: 28px;
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+}
+
+.hit-triage-compute-dialog-host > .d4-tab-host.d4-tab-vertical > .d4-tab-header-stripe > .d4-tab-header.hit-triage-compute-dialog-pane-header.selected {
+    border-left: 4px solid var(--blue-1);
+    background-color: #f2f2f5;
+}
+
+.hit-triage-compute-dialog-host > .d4-tab-host.d4-tab-vertical > .d4-tab-header-stripe > .d4-tab-header.hit-triage-compute-dialog-pane-header > span {
+    padding: 0 4px;
+}
+
 table.hit-triage-table {
     margin: 10px;
     width: calc(100% - 20px);

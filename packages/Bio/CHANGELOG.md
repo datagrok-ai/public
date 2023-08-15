@@ -1,5 +1,18 @@
 # Bio changelog
 
+## 2.9.0 (WIP)
+
+*Dependency: datagrok-api >= 1.13.3*
+
+### Features
+
+* Add WebLogo property showPositionLabels
+
+### Bug fixes 
+
+* Fix vdRegionsViewer viewer package function name consistency
+* GROK-13310: Bio | Tools: Fix Split to monomers
+
 ## 2.8.2 (2023-08-01)
 
 This release focuses on improving the monomer cell renderer.
