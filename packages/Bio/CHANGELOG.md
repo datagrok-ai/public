@@ -7,11 +7,14 @@
 ### Features
 
 * Add WebLogo property showPositionLabels
+* WebLogo optimized with splitterAsFastaSimple
 
 ### Bug fixes 
 
 * Fix vdRegionsViewer viewer package function name consistency
-* GROK-13310: Bio | Tools: Fix Split to monomers
+* GROK-13310: Bio | Tools: Fix Split to monomers for multiple runs
+* GROK-12675: Bio | Tools: Fix Composition dialog error on selection column
+* Allow characters '(', ')', ',', '-', '_' in monomer names for fasta splitter 
 
 ## 2.8.2 (2023-08-01)
 

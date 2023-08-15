@@ -107,7 +107,7 @@ export function wrapSequence(seq: string, splitter: SplitterFunc, lineWidth: num
   const seqLineList: string[] = [];
   while (seqPos < seqLength) {
     /* join sliced monomer into line */
-    const seqLine: string[] = seqMonomerList.slice(seqPos, seqPos + lineWidth);
+    const seqLine: string[] = wu(seqMonomerList).slice(seqPos, seqPos + lineWidth).toArray();
     const seqLineTxt: string = seqLine.map((m) => m.length > 1 ? `[${m}]` : m).join('');
     seqLineList.push(seqLineTxt);
     seqPos += seqLine.length;
