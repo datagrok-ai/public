@@ -674,7 +674,7 @@ export namespace chem {
    * */
   export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
     return await grok.functions.call('Chem:FindRGroups', {
-      column, table, core, prefix: 'R'
+      molecules: column, df: table, core: core, prefix: 'R'
     });
   }
 
@@ -685,10 +685,13 @@ export namespace chem {
    * @param {Column} column - Column with SMILES to analyze.
    * @returns {Promise<string>}
    * */
-  export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false): Promise<string> {
+  export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false,
+    exactAtomSearch = true, exactBondSearch = true): Promise<string> {
     return await grok.functions.call('Chem:FindMCS', {
       'molecules': column,
       'df': table,
+      'exactAtomSearch': exactAtomSearch,
+      'exactBondSearch': exactBondSearch,
       'returnSmarts': returnSmarts
     });
   }
