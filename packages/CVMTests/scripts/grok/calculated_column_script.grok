@@ -1,0 +1,7 @@
+#name: Grok Calc Column
+#description: calc column
+#language: grok
+#input: int x
+#output: int y
+
+y = 2 * x

@@ -5,5 +5,4 @@
 #input: column_list cols
 #output: dataframe result
 
-select!(df, Not(first(cols)))
-result = df
+result = select!(df, Not(first(cols)))

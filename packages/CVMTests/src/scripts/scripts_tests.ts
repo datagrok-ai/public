@@ -21,7 +21,7 @@ for (const lang of langs) {
     test('Datetime input/output', async () => {
       const now = dayjs();
       const result = await grok.functions.call(`CVMTests:${lang}Date`,
-        {'input_datetime': now});
+        {'input_datetime': now.add(1, 'day')});
       expect(result, now);
     });
 

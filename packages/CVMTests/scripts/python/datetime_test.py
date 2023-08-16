@@ -4,4 +4,4 @@
 #input: datetime input_datetime
 #output: datetime output_datetime
 
-output_datetime = input_datetime
+output_datetime = input_datetime + timedelta(days=1)
