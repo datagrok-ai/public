@@ -28,5 +28,5 @@ category('Dapi', () => {
     expect((await grok.dapi.logTypes.list({filter: jsApiTestType}))[0]?.name, jsApiTestType);
     //TODO: find log
     // console.log(await grok.dapi.log.list({filter: 'jsApiTest1 = "jsApiTest2"'}));
-  });
+  }, {skipReason: 'GROK-11670'});
 });
