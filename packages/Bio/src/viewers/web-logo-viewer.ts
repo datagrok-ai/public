@@ -241,6 +241,7 @@ const defaults: WebLogoProps = WebLogoPropsDefault;
 
 enum WlRenderLevel {
   None = 0,
+  Render = 1,
   Layout = 1,
   Freqs = 2,
 }
@@ -281,14 +282,17 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   // -- Style --
   /** Gets value from properties or {@link setOptions} */ public positionWidth: number;
-  /** Value to fit area */ private _positionWidth: number;
+  /** Scaled value to fit area */ private _positionWidth: number;
   private _positionWidthWithMargin: number;
+  public get positionWidthWithMargin(): number { return this._positionWidthWithMargin; }
+
   public minHeight: number;
   public backgroundColor: number = 0xFFFFFFFF;
   public maxHeight: number;
   public showPositionLabels: boolean;
   public positionMarginState: PositionMarginStates;
-  public positionMargin: number = 0;
+  /** Gets value from properties or setOptions */ public positionMargin: number = 0;
+  /** Scaled value to fit area */ private _positionMargin: number;
   public startPositionName: string | null;
   public endPositionName: string | null;
   public fixWidth: boolean;
@@ -592,6 +596,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas.classList.remove('bio-wl-fixWidth', 'bio-wl-fitArea');
 
     this._positionWidth = this.positionWidth;
+    this._positionMargin = this.positionMargin;
     this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
 
     if (this.fixWidth)
@@ -609,9 +614,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.host.classList.add('bio-wl-fixWidth');
     this.canvas.classList.add('bio-wl-fitArea');
 
-    this._positionWidth = this.positionWidth;
-    this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
-
     const areaWidth: number = this._positionWidthWithMargin * this.Length;
     const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
 
@@ -626,7 +628,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.host.style.left = this.canvas.style.left = '0';
     this.host.style.top = this.canvas.style.top = '0';
     /* this.root.style.overflow = 'hidden'; */
-    this.host.style.setProperty('overflow-y', 'hidden', 'important');
+    this.host.style.setProperty('overflow', 'hidden', 'important');
 
     this.slider.root.style.display = 'none';
 
@@ -638,9 +640,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private calcLayoutNoFitArea(dpr: number): void {
     if (!this.host || !this.canvas || !this.slider) return; // for es-lint
-
-    this._positionWidth = this.positionWidth;
-    this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
 
     const areaWidth: number = this._positionWidthWithMargin * this.Length;
     const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
@@ -696,126 +695,190 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private calcLayoutFitArea(dpr: number): void {
     if (!this.host || !this.canvas || !this.slider) return; // for es-lint
 
-    this.host.classList.add('bio-wl-fitArea');
-    this.canvas.classList.add('bio-wl-fitArea');
+    const originalAreaWidthWoMargins: number = this._positionWidth * this.Length;
+    const originalAreaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
 
-    /** Full area width including positions outside scrolling window */
-    const areaWidth = this.Length * this._positionWidthWithMargin / dpr;
-    const areaHeight = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
+    // TODO: scale
+    const xScale = originalAreaWidthWoMargins > 0 ?
+      (this.root.clientWidth - this.positionMarginValue * this.Length) / originalAreaWidthWoMargins : 0;
+    const yScale = this.root.clientHeight / originalAreaHeight;
+    const scale = Math.max(1, Math.min(xScale, yScale));
 
-    let width = areaWidth;
-    let height = areaHeight;
+    this._positionWidth = this.positionWidth * scale;
+    // Do not scale this._positionMargin
+    this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
+    const areaWidth = (this._positionWidth + this.positionMarginValue) * this.Length;
+    const areaHeight = scale * originalAreaHeight;
 
-    const xScale = areaWidth > 0 ?
-      (this.root.clientWidth - this.Length * this.positionMarginValue) / areaWidth : 0;
-    const yScale = this.root.clientHeight / areaHeight;
-    const minScale = Math.min(xScale, yScale);
+    const height = areaHeight;
+    const width = Math.min(this.root.clientWidth, areaWidth);
 
-    let showSliderWithFitArea = true;
-    if (((minScale == xScale) || (minScale <= 1)) && (this.fitArea))
-      showSliderWithFitArea = false;
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+    this.host.style.width = `${width}px`;
+    this.host.style.height = `${this.root.clientHeight}px`;
 
-    if (this.fitArea && !this.visibleSlider) {
-      const scale = Math.max(1, Math.min(xScale, yScale));
-      width = width * scale;
-      height = height * scale;
-      this._positionWidth = this.positionWidth * scale;
-      this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
+    // host style flex-direction: row;
+    this.host.style.justifyContent = this.horizontalAlignment;
+    this.host.style.alignContent =
+      this.verticalAlignment === VerticalAlignments.TOP ? 'start' :
+        this.verticalAlignment === VerticalAlignments.MIDDLE ? 'center' :
+          this.verticalAlignment === VerticalAlignments.BOTTOM ? 'end' :
+            'inherit';
+
+    if (this.root.clientHeight < this.minHeight) {
+      this.host.style.alignContent = 'start'; /* For vertical scroller to work properly */
+      this.host.style.width = `${width + 6}px`; /* */
     }
 
+    this.host.style.width = `${this.host}px`;
 
-    // allow scroll canvas in root
-    /* this.root.style.width = */
-    this.host.style.width = '100%';
-    this.host.style.overflowX = 'auto!important';
-    this.host.style.setProperty('text-align', this.horizontalAlignment);
+    const sliderVisibility = areaWidth > width;
+    this.setSliderVisibility(sliderVisibility);
+    if (sliderVisibility) {
+      this.slider.root.style.removeProperty('display');
+      this.host.style.justifyContent = 'left'; /* For horizontal scroller to prevent */
+      this.host.style.height = `${this.root.clientHeight - this.slider.root.offsetHeight}px`;
+      this.slider.root.style.top = `${this.host.offsetHeight}px`;
 
-    const sliderHeight = this.visibleSlider ? 10 : 0;
+      let newMin = Math.min(Math.max(0, this.slider.min), this.Length - 0.001);
+      let newMax = Math.min(Math.max(0, this.slider.max), this.Length - 0.001);
 
-    // vertical alignment
-    let hostTopMargin = 0;
-    switch (this.verticalAlignment) {
-      case 'top':
-        hostTopMargin = 0;
-        break;
-      case 'middle':
-        hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
-        break;
-      case 'bottom':
-        hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
-        break;
-    }
-    // horizontal alignment
-    let hostLeftMargin = 0;
-    switch (this.horizontalAlignment) {
-      case HorizontalAlignments.LEFT:
-        hostLeftMargin = 0;
-        break;
-      case HorizontalAlignments.CENTER:
-        hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
-        break;
-      case HorizontalAlignments.RIGHT:
-        hostLeftMargin = Math.max(0, this.root.clientWidth - width);
-        break;
-    }
-    this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
-    this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
-    if (this.slider != null)
-      this.slider.root.style.setProperty('margin-top', `${hostTopMargin + this.canvas.height}px`, 'important');
+      const visibleLength = this.root.clientWidth / this._positionWidthWithMargin;
+      newMax = Math.min(Math.max(newMin, 0) + visibleLength, this.Length - 0.001);
+      newMin = Math.max(0, Math.min(newMax, this.Length - 0.001) - visibleLength);
 
-
-    if (this.root.clientHeight <= height) {
-      this.host.style.setProperty('height', `${this.root.clientHeight}px`);
-      this.host.style.setProperty('overflow-y', null);
+      this.slider.setValues(0, this.Length - 0.001, newMin, newMax);
     } else {
-      this.host.style.setProperty('overflow-y', 'hidden', 'important');
-    }
-
-    const sliderVisibility: boolean = !this.fixWidth && !showSliderWithFitArea &&
-      Math.ceil(this.canvas.width) < this.Length * this._positionWidthWithMargin * dpr;
-
-    if (sliderVisibility)
-      this.setSliderVisibility(true);
-    else
-      this.setSliderVisibility(false);
-
-    if ((this.slider != null) && (this.canvas != null)) {
-      // const diffEndScrollAndSliderMin = Math.max(0,
-      //   Math.floor(this.slider.min + this.canvas.width * dpr / this.positionWidthWithMargin) - this.Length);
-      // let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
-      // let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) +
-      //   Math.floor(this.canvas.width / dpr / this.positionWidthWithMargin);
-      // if (this.checkIsSliderVisible(dpr)) {
-      //   newMin = 0;
-      //   newMax = Math.max(newMin, this.Length - 1);
-      // }
-      // this.turnOfResizeForOneSetValue = true;
-
-      // const newMin = this.firstVisiblePos;
-      // const newMax = this.slider.max;
       //
-      // this.slider.setValues(0, this.Length,
-      //   newMin, newMax);
-      const visibleLength = Math.min(this.Length, this.canvas.width / (this._positionWidthWithMargin * dpr));
-      let newMin = this.slider.min;
-      let newMax = Math.min(visibleLength, visibleLength - newMin);
-
-      if (isNaN(newMin) || newMin < 0 || this.Length < newMin || isNaN(newMax) || newMax < 0 || this.Length < newMax) {
-        console.error('Bio: WebLogo.updateSlider() wrong range: ' +
-          JSON.stringify({minRange: 0, min: newMin, max: newMax, maxRange: this.Length}));
-        newMin = Math.min(Math.max(0, newMin), this.Length);
-        newMax = Math.min(Math.max(0, newMax), this.Length);
-      }
-      this.slider.setValues(0, this.Length, newMin, newMax);
+      this.slider.setValues(0, this.Length - 0.001, 0, this.Length - 0.001);
     }
 
-    this.canvas.width = this.root.clientWidth * dpr;
-    this.canvas.style.width = `${this.root.clientWidth}px`;
+    this.canvas.width = width * dpr;
+    this.canvas.height = height * dpr;
 
-    // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
-    this.host.style.setProperty('height', `${areaHeight}px`);
-    const canvasHeight: number = this.host.clientHeight;
-    this.canvas.height = canvasHeight * dpr;
+    // if (!this.host || !this.canvas || !this.slider) return; // for es-lint
+    //
+    // this.host.classList.add('bio-wl-fitArea');
+    // this.canvas.classList.add('bio-wl-fitArea');
+    //
+    // /** Full area width including positions outside scrolling window */
+    // const areaWidth = this.Length * this._positionWidthWithMargin / dpr;
+    // const areaHeight = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
+    //
+    // let width = areaWidth;
+    // let height = areaHeight;
+    //
+    // const xScale = areaWidth > 0 ?
+    //   (this.root.clientWidth - this.Length * this.positionMarginValue) / areaWidth : 0;
+    // const yScale = this.root.clientHeight / areaHeight;
+    // const minScale = Math.min(xScale, yScale);
+    //
+    // let showSliderWithFitArea = true;
+    // if (((minScale == xScale) || (minScale <= 1)) && (this.fitArea))
+    //   showSliderWithFitArea = false;
+    //
+    // if (this.fitArea && !this.visibleSlider) {
+    //   const scale = Math.max(1, Math.min(xScale, yScale));
+    //   width = width * scale;
+    //   height = height * scale;
+    //   this._positionWidth = this.positionWidth * scale;
+    //   this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
+    // }
+    //
+    //
+    // // allow scroll canvas in root
+    // /* this.root.style.width = */
+    // this.host.style.width = '100%';
+    // this.host.style.overflowX = 'auto!important';
+    // this.host.style.setProperty('text-align', this.horizontalAlignment);
+    //
+    // const sliderHeight = this.visibleSlider ? 10 : 0;
+    //
+    // // vertical alignment
+    // let hostTopMargin = 0;
+    // switch (this.verticalAlignment) {
+    //   case 'top':
+    //     hostTopMargin = 0;
+    //     break;
+    //   case 'middle':
+    //     hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
+    //     break;
+    //   case 'bottom':
+    //     hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
+    //     break;
+    // }
+    // // horizontal alignment
+    // let hostLeftMargin = 0;
+    // switch (this.horizontalAlignment) {
+    //   case HorizontalAlignments.LEFT:
+    //     hostLeftMargin = 0;
+    //     break;
+    //   case HorizontalAlignments.CENTER:
+    //     hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
+    //     break;
+    //   case HorizontalAlignments.RIGHT:
+    //     hostLeftMargin = Math.max(0, this.root.clientWidth - width);
+    //     break;
+    // }
+    // this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
+    // this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
+    // if (this.slider != null)
+    //   this.slider.root.style.setProperty('margin-top', `${hostTopMargin + this.canvas.height}px`, 'important');
+    //
+    //
+    // if (this.root.clientHeight <= height) {
+    //   this.host.style.setProperty('height', `${this.root.clientHeight}px`);
+    //   this.host.style.setProperty('overflow-y', null);
+    // } else {
+    //   this.host.style.setProperty('overflow-y', 'hidden', 'important');
+    // }
+    //
+    // const sliderVisibility: boolean = !this.fixWidth && !showSliderWithFitArea &&
+    //   Math.ceil(this.canvas.width) < this.Length * this._positionWidthWithMargin * dpr;
+    //
+    // if (sliderVisibility)
+    //   this.setSliderVisibility(true);
+    // else
+    //   this.setSliderVisibility(false);
+    //
+    // if ((this.slider != null) && (this.canvas != null)) {
+    //   // const diffEndScrollAndSliderMin = Math.max(0,
+    //   //   Math.floor(this.slider.min + this.canvas.width * dpr / this.positionWidthWithMargin) - this.Length);
+    //   // let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
+    //   // let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) +
+    //   //   Math.floor(this.canvas.width / dpr / this.positionWidthWithMargin);
+    //   // if (this.checkIsSliderVisible(dpr)) {
+    //   //   newMin = 0;
+    //   //   newMax = Math.max(newMin, this.Length - 1);
+    //   // }
+    //   // this.turnOfResizeForOneSetValue = true;
+    //
+    //   // const newMin = this.firstVisiblePos;
+    //   // const newMax = this.slider.max;
+    //   //
+    //   // this.slider.setValues(0, this.Length,
+    //   //   newMin, newMax);
+    //   const visibleLength = Math.min(this.Length, this.canvas.width / (this._positionWidthWithMargin * dpr));
+    //   let newMin = this.slider.min;
+    //   let newMax = Math.min(visibleLength, visibleLength - newMin);
+    //
+    //   if (isNaN(newMin) || newMin < 0 || this.Length < newMin || isNaN(newMax) || newMax < 0 || this.Length < newMax) {
+    //     console.error('Bio: WebLogo.updateSlider() wrong range: ' +
+    //       JSON.stringify({minRange: 0, min: newMin, max: newMax, maxRange: this.Length}));
+    //     newMin = Math.min(Math.max(0, newMin), this.Length);
+    //     newMax = Math.min(Math.max(0, newMax), this.Length);
+    //   }
+    //   this.slider.setValues(0, this.Length, newMin, newMax);
+    // }
+    //
+    // this.canvas.width = this.root.clientWidth * dpr;
+    // this.canvas.style.width = `${this.root.clientWidth}px`;
+    //
+    // // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
+    // this.host.style.setProperty('height', `${areaHeight}px`);
+    // const canvasHeight: number = this.host.clientHeight;
+    // this.canvas.height = canvasHeight * dpr;
   }
 
 
@@ -827,11 +890,15 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     switch (property.name) {
       case PROPS.sequenceColumnName:
+        this.updateSeqCol();
+        break;
+      case PROPS.sequenceColumnName:
       case PROPS.startPositionName:
       case PROPS.endPositionName:
       case PROPS.filterSource:
       case PROPS.shrinkEmptyTail:
       case PROPS.skipEmptyPositions:
+      case PROPS.positionHeight:
         this.updatePositions();
         break;
       // this.positionWidth obtains a new value
@@ -845,7 +912,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       case PROPS.horizontalAlignment:
       case PROPS.verticalAlignment:
       case PROPS.positionMargin:
+      case PROPS.positionMarginState:
         this.render(WlRenderLevel.Layout, `onPropertyChanged(${property.name})`).then(() => {});
+        break;
+
+      case PROPS.backgroundColor:
+        this.render(WlRenderLevel.Render, `onPropertyChanged(${property.name})`).then(() => {});
         break;
     }
   }
@@ -876,6 +948,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   /** Allows {@link VdRegionsViewer} to fit enclosed WebLogo viewers */
   public get onFreqsCalculated(): Observable<void> { return this._onFreqsCalculated; }
+
+  /** Allows {@link VdRegionsViewer} to fit enclosed WebLogo viewers */
+  private _onLayoutCalculated: Subject<void> = new Subject<void>();
+  public get onLayoutCalculated(): Observable<void> { return this._onLayoutCalculated; }
 
   // -- Routines --
 
@@ -979,6 +1055,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           alphabetSizeLog, this._positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
       }
       console.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), end `);
+      this._onLayoutCalculated.next();
     };
 
     /** Render WebLogo sensitive to changes in params of rendering

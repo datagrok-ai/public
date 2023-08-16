@@ -367,18 +367,16 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private calcSize() {
     _package.logger.debug(`Bio: VdRegionsViewer.calcSize(), start`);
     const calcSizeInt = (): void => {
-      const dpr: number = window.devicePixelRatio;
+      // Postponed calcSizeInt can result call after the viewer has been closed (on tests)
+      if (!this.host) return;
+
       const logoHeight = (this.root.clientHeight - 54) / this.chains.length;
-
-      const maxHeight: number = Math.min(logoHeight,
-        Math.max(...this.logos.map((wlDict) =>
-          Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight)))),
-      );
-
       let totalPos: number = 0;
       for (let orderI = 0; orderI < this.logos.length; orderI++) {
-        for (const chain of this.chains)
-          this.logos[orderI][chain].root.style.height = `${maxHeight}px`;
+        for (const chain of this.chains) {
+          const wl = this.logos[orderI][chain];
+          wl.root.style.height = `${logoHeight}px`;
+        }
 
         totalPos += Math.max(...this.chains.map((chain) => this.logos[orderI][chain].Length));
       }
@@ -392,8 +390,11 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
             (this.root.clientWidth - leftPad - (this.logos.length - 1) * logoMargin - rightPad) / totalPos;
 
           for (let orderI = 0; orderI < this.logos.length; orderI++) {
-            for (const chain of this.chains)
-              this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: fitPositionWidth});
+            for (const chain of this.chains) {
+              const wl = this.logos[orderI][chain];
+              wl.setOptions({[wlPROPS.positionWidth]: fitPositionWidth});
+              wl.root.style.width = `${fitPositionWidth * wl.Length}px`;
+            }
           }
         }
       } else {
