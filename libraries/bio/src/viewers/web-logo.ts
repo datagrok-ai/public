@@ -19,12 +19,14 @@ export enum PositionHeight {
   full = '100%',
 }
 
+/** top, middle, bottom */
 export enum VerticalAlignments {
   TOP = 'top',
   MIDDLE = 'middle',
   BOTTOM = 'bottom',
 }
 
+/** left, center, right */
 export enum HorizontalAlignments {
   LEFT = 'left',
   CENTER = 'center',
