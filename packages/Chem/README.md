@@ -139,6 +139,7 @@ Here are the advantages of our approach:
 
 * Utilizing pattern fingerprints for preliminary filtration to accelerate the search process.
 * Caching fingerprints: once a search is performed on a specific column, the fingerprints are calculated, saved, and can be reused without recalculating.
+* Returning search results in batches, enabling the first results to appear in less than a second, regardless of the dataset size.
 * Displaying a search progress bar for easy tracking of the search process.
 
 There are two ways to run a substructure search:
