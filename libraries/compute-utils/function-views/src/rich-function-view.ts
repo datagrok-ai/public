@@ -59,7 +59,7 @@ export class RichFunctionView extends FunctionView {
   private checkDisability = new Subject();
 
   // stores the running state
-  private isRunning = false;
+  private isRunning = new BehaviorSubject(false);
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
@@ -171,7 +171,7 @@ export class RichFunctionView extends FunctionView {
   private getStandardButtons(): HTMLElement[] {
     const runButton = this.getRunButton();
     const runButtonWrapper = ui.div([runButton]);
-    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : 'Some inputs are invalid') : '');
     const saveButton = this.getSaveButton();
 
     if (this.runningOnInput) $(runButtonWrapper).hide();
@@ -589,7 +589,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async doRun(): Promise<void> {
-    this.isRunning = true;
+    this.isRunning.next(true);
     this.checkDisability.next();
     try {
       await this.run();
@@ -597,7 +597,7 @@ export class RichFunctionView extends FunctionView {
       grok.shell.error(e.toString());
       console.log(e);
     } finally {
-      this.isRunning = false;
+      this.isRunning.next(false);
       this.checkDisability.next();
     }
   }
@@ -659,6 +659,7 @@ export class RichFunctionView extends FunctionView {
         }
         this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
+        this.disableInputsOnRun(input);
         if (field === SYNC_FIELD.INPUTS)
           this.bindOnHotkey(input);
 
@@ -674,6 +675,16 @@ export class RichFunctionView extends FunctionView {
     this.checkDisability.next();
 
     return inputs;
+  }
+
+  private disableInputsOnRun(t: InputVariants) {
+    const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
+      if (isRunning)
+        t.enabled = false;
+      else
+        t.enabled = true;
+    });
+    this.subs.push(disableOnRunSub);
   }
 
   private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
@@ -815,7 +826,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private isRunnable() {
-    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
+    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning.value;
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
