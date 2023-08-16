@@ -617,8 +617,10 @@ export class RichFunctionView extends FunctionView {
     this.funcCall.inputs[name] = value;
     this.setInputState(input, state);
     if (state !== 'default') {
-      const param: DG.FuncCallParam = this.funcCall.inputParams[name];
-      param.aux.editState = state;
+      this.funcCall.options['editState'] = {
+        ...this.funcCall.options['editState'],
+        [name]: state,
+      };
     }
   }
 
@@ -761,7 +763,7 @@ export class RichFunctionView extends FunctionView {
       this.funcCall[field][name] = newValue;
       const newParam = this.funcCall[syncParams[field]][name];
       this.syncValOnChanged(t, newParam, field);
-      this.setInputState(t, newParam.aux.editState);
+      this.setInputState(t, this.funcCall.options['editState']?.[name]);
     });
     this.subs.push(sub);
   }
