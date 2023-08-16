@@ -18,6 +18,8 @@ Conditions:
     Fn::Equals:
     - Ref: InternetIngressAccess
     - 'true'
+Description: Datagrok template to deploy all components to ECS Fargate in new VPC.
+  DNS and ACM should be configured manually.
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -679,7 +681,7 @@ Resources:
               region:
                 Ref: AWS::Region
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/datagrok:1.16.1
+        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/datagrok:1.16.2-split
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -995,6 +997,137 @@ Resources:
       - Key: datagrok.service
         Value: grok_compute
     Type: AWS::IAM::Role
+  GrokConnectPrivateDNS:
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+          - LoadBalancerIntDatagrok
+          - DNSName
+        HostedZoneId:
+          Fn::GetAtt:
+          - LoadBalancerIntDatagrok
+          - CanonicalHostedZoneID
+      Comment:
+        Fn::Sub: ${AWS::StackName} Private Datagrok grok connect DNS for internal
+          routing
+      HostedZoneId:
+        Ref: PrivateDNSZone
+      Name: grok_connect.datagrok.internal.
+      Type: A
+    Type: AWS::Route53::RecordSet
+  GrokConnectService:
+    DependsOn:
+    - TCP1234IntListener
+    Properties:
+      Cluster:
+        Fn::GetAtt:
+        - Cluster
+        - Arn
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DeploymentController:
+        Type: ECS
+      DesiredCount: 1
+      LaunchType: FARGATE
+      LoadBalancers:
+      - ContainerName: grok_connect
+        ContainerPort: 1234
+        TargetGroupArn:
+          Ref: TCP1234IntTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+          - Ref: SecurityGroup
+          Subnets:
+          - Ref: PrivateSubnet1
+          - Ref: PrivateSubnet2
+      PlatformVersion: 1.4.0
+      PropagateTags: SERVICE
+      SchedulingStrategy: REPLICA
+      ServiceRegistries:
+      - RegistryArn:
+          Fn::GetAtt:
+          - GrokConnectServiceDiscoveryEntry
+          - Arn
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      - Key: datagrok.service
+        Value: grok_connect
+      TaskDefinition:
+        Ref: GrokConnectTaskDefinition
+    Type: AWS::ECS::Service
+  GrokConnectServiceDiscoveryEntry:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Datagrok grok_connect service discovery entry in
+          Cloud Map
+      DnsConfig:
+        DnsRecords:
+        - TTL: 60
+          Type: A
+        RoutingPolicy: MULTIVALUE
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: grok_connect
+      NamespaceId:
+        Ref: CloudMap
+    Type: AWS::ServiceDiscovery::Service
+  GrokConnectTaskDefinition:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: ${AWS::Region}.compute.internal
+        - datagrok.internal
+        - datagrok.local
+        Essential: false
+        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: grok_connect
+        MemoryReservation: 100
+        Name: ResolvConf
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: ResolvConf
+        Essential: true
+        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/grok_connect:2.1.8
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: grok_connect
+        MemoryReservation: 1024
+        Name: grok_connect
+        PortMappings:
+        - ContainerPort: 1234
+          HostPort: 1234
+          Protocol: tcp
+      Cpu: '1024'
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - TaskExecutionRole
+        - Arn
+      Family: grok_connect
+      Memory: '2048'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+      TaskRoleArn:
+        Ref: TaskRole
+    Type: AWS::ECS::TaskDefinition
   H2oPrivateDNS:
     Properties:
       AliasTarget:
@@ -1007,7 +1140,7 @@ Resources:
           - LoadBalancerIntCvm
           - CanonicalHostedZoneID
       Comment:
-        Fn::Sub: ${AWS::StackName} Private Datagrok CVM DNS for internal routing
+        Fn::Sub: ${AWS::StackName} Private Datagrok H2O DNS for internal routing
       HostedZoneId:
         Ref: PrivateDNSZone
       Name: h2o.datagrok.internal.
@@ -2520,6 +2653,37 @@ Resources:
       NamespaceId:
         Ref: CloudMap
     Type: AWS::ServiceDiscovery::Service
+  TCP1234IntListener:
+    Properties:
+      DefaultActions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: TCP1234IntTargetGroup
+        Type: forward
+      LoadBalancerArn:
+        Ref: LoadBalancerIntDatagrok
+      Port: 1234
+      Protocol: HTTP
+    Type: AWS::ElasticLoadBalancingV2::Listener
+  TCP1234IntTargetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 60
+      HealthCheckPath: /health
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-gcon-i
+      Port: 1234
+      Protocol: HTTP
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      TargetType: ip
+      UnhealthyThresholdCount: 5
+      VpcId:
+        Ref: VPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
   TCP443Listener:
     Properties:
       Certificates:
