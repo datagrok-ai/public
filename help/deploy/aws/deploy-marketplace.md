@@ -5,21 +5,25 @@ sidebar_position: 0
 
 To provide our users with the easiest way to deploy Datagrok to AWS, we integrated Datagrok with [AWS Marketplace](https://aws.amazon.com/marketplace). Using AWS Marketplace, you can deploy all [Datagrok components](../../develop/under-the-hood/infrastructure.md) and the required AWS infrastructure from scratch with just a few clicks. If you want to customize the deployment or use your existing infrastructure, we suggest using [CloudFormation](deploy-amazon-cloudformation.md) or [Terraform](deploy-amazon-terraform.md) options instead.
 
+<!-- markdownlint-disable no-bare-urls -->
 :::info
 
 Datagrok product on AWS Marketplace uses BYOL (Bring Your Own License) pricing model. To purchase a license directly from Datagrok before using the product, please contact info@datagrok.ai.
 
 :::
+<!-- markdownlint-enable no-bare-urls -->
 
 ## Deployment
 
 1. Open [Datagrok product](https://aws.amazon.com/marketplace/pp/prodview-uqum2jw2yvp52) on AWS Marketplace > Continue to Subscribe > Accept terms. Wait until the subscription request is processed, and then Continue to Configuration.
 
+   <!-- markdownlint-disable no-bare-urls -->
    :::info
 
    Datagrok product has yet to be publicly available on AWS Marketplace. To request early access, please contact support@datagrok.ai.
 
    :::
+   <!-- markdownlint-enable no-bare-urls -->
 
 2. Choose one of the fulfillment options from the list, and click Continue to launch.
 
@@ -39,7 +43,6 @@ Datagrok product on AWS Marketplace uses BYOL (Bring Your Own License) pricing m
    <summary>Parameters details</summary>
 
    * **Stack name.** It must be shorter than ten symbols to meet AWS naming requirements.
-   * **ECS [Fargate](https://aws.amazon.com/fargate/) with [Route53](https://aws.amazon.com/route53/) DNS**. Creates all infrastructure from scratch, including SSL certificates and DNS records
 
    </details>
 
