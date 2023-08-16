@@ -18,6 +18,8 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
+import {_package} from '../package';
+
 declare global {
   interface HTMLCanvasElement {
     getCursorPosition(event: MouseEvent, r: number): DG.Point;
@@ -381,7 +383,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.horizontalAlignment = this.string(PROPS.horizontalAlignment, defaults.horizontalAlignment,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(HorizontalAlignments)}) as HorizontalAlignments;
     this.fixWidth = this.bool(PROPS.fixWidth, defaults.fixWidth,
-      {category: PROPS_CATS.LAYOUT});
+      {category: PROPS_CATS.LAYOUT, userEditable: false});
     this.fitArea = this.bool(PROPS.fitArea, defaults.fitArea,
       {category: PROPS_CATS.LAYOUT});
     this.minHeight = this.float(PROPS.minHeight, defaults.minHeight,
@@ -435,7 +437,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.viewSubs = [];
 
     const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView( dataFrame = ${dataFrameTxt} ) start`);
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView( dataFrame = ${dataFrameTxt} ) start`);
     super.detach();
 
     this.viewSubs.forEach((sub) => sub.unsubscribe());
@@ -443,12 +445,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.msgHost = undefined;
     this.host = undefined;
 
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView() end`);
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView() end`);
   }
 
   private async buildView(): Promise<void> {
     const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView( dataFrame = ${dataFrameTxt} ) start`);
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView( dataFrame = ${dataFrameTxt} ) start`);
     const dpr = window.devicePixelRatio;
 
     this.helpUrl = '/help/visualize/viewers/web-logo.md';
@@ -501,12 +503,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       fromEvent<WheelEvent>(this.canvas, 'wheel').subscribe(this.canvasOnWheel.bind(this)));
 
     await this.render(WlRenderLevel.Freqs, 'buildView');
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView() end`);
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.buildView() end`);
   }
 
   /** Handler of changing size WebLogo */
   private rootOnSizeChanged(): void {
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.rootOnSizeChanged(), start `);
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.rootOnSizeChanged(), start `);
 
     this.render(WlRenderLevel.Layout, 'rootOnSizeChanged').then(() => {});
   }
@@ -617,25 +619,22 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const areaWidth: number = this._positionWidthWithMargin * this.Length;
     const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
 
+    this.host.style.justifyContent = HorizontalAlignments.LEFT;
     this.host.style.removeProperty('margin-left');
     this.host.style.removeProperty('margin-top');
-    this.host.style.textAlign = 'start';
 
-    /* this.root.style.width = */
     this.host.style.width = this.canvas.style.width = `${areaWidth}px`;
-    /* this.root.style.height = */
     this.host.style.height = this.canvas.style.height = `${areaHeight}px`;
     this.host.style.left = this.canvas.style.left = '0';
     this.host.style.top = this.canvas.style.top = '0';
-    /* this.root.style.overflow = 'hidden'; */
     this.host.style.setProperty('overflow', 'hidden', 'important');
 
     this.slider.root.style.display = 'none';
 
+    this.slider.setValues(0, this.Length - 1, 0, this.Length - 1);
+
     this.canvas.width = areaWidth * dpr;
     this.canvas.height = areaHeight * dpr;
-
-    this.slider.setValues(0, this.Length - 1, 0, this.Length - 1);
   }
 
   private calcLayoutNoFitArea(dpr: number): void {
@@ -756,129 +755,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;
-
-    // if (!this.host || !this.canvas || !this.slider) return; // for es-lint
-    //
-    // this.host.classList.add('bio-wl-fitArea');
-    // this.canvas.classList.add('bio-wl-fitArea');
-    //
-    // /** Full area width including positions outside scrolling window */
-    // const areaWidth = this.Length * this._positionWidthWithMargin / dpr;
-    // const areaHeight = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
-    //
-    // let width = areaWidth;
-    // let height = areaHeight;
-    //
-    // const xScale = areaWidth > 0 ?
-    //   (this.root.clientWidth - this.Length * this.positionMarginValue) / areaWidth : 0;
-    // const yScale = this.root.clientHeight / areaHeight;
-    // const minScale = Math.min(xScale, yScale);
-    //
-    // let showSliderWithFitArea = true;
-    // if (((minScale == xScale) || (minScale <= 1)) && (this.fitArea))
-    //   showSliderWithFitArea = false;
-    //
-    // if (this.fitArea && !this.visibleSlider) {
-    //   const scale = Math.max(1, Math.min(xScale, yScale));
-    //   width = width * scale;
-    //   height = height * scale;
-    //   this._positionWidth = this.positionWidth * scale;
-    //   this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
-    // }
-    //
-    //
-    // // allow scroll canvas in root
-    // /* this.root.style.width = */
-    // this.host.style.width = '100%';
-    // this.host.style.overflowX = 'auto!important';
-    // this.host.style.setProperty('text-align', this.horizontalAlignment);
-    //
-    // const sliderHeight = this.visibleSlider ? 10 : 0;
-    //
-    // // vertical alignment
-    // let hostTopMargin = 0;
-    // switch (this.verticalAlignment) {
-    //   case 'top':
-    //     hostTopMargin = 0;
-    //     break;
-    //   case 'middle':
-    //     hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
-    //     break;
-    //   case 'bottom':
-    //     hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
-    //     break;
-    // }
-    // // horizontal alignment
-    // let hostLeftMargin = 0;
-    // switch (this.horizontalAlignment) {
-    //   case HorizontalAlignments.LEFT:
-    //     hostLeftMargin = 0;
-    //     break;
-    //   case HorizontalAlignments.CENTER:
-    //     hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
-    //     break;
-    //   case HorizontalAlignments.RIGHT:
-    //     hostLeftMargin = Math.max(0, this.root.clientWidth - width);
-    //     break;
-    // }
-    // this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
-    // this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
-    // if (this.slider != null)
-    //   this.slider.root.style.setProperty('margin-top', `${hostTopMargin + this.canvas.height}px`, 'important');
-    //
-    //
-    // if (this.root.clientHeight <= height) {
-    //   this.host.style.setProperty('height', `${this.root.clientHeight}px`);
-    //   this.host.style.setProperty('overflow-y', null);
-    // } else {
-    //   this.host.style.setProperty('overflow-y', 'hidden', 'important');
-    // }
-    //
-    // const sliderVisibility: boolean = !this.fixWidth && !showSliderWithFitArea &&
-    //   Math.ceil(this.canvas.width) < this.Length * this._positionWidthWithMargin * dpr;
-    //
-    // if (sliderVisibility)
-    //   this.setSliderVisibility(true);
-    // else
-    //   this.setSliderVisibility(false);
-    //
-    // if ((this.slider != null) && (this.canvas != null)) {
-    //   // const diffEndScrollAndSliderMin = Math.max(0,
-    //   //   Math.floor(this.slider.min + this.canvas.width * dpr / this.positionWidthWithMargin) - this.Length);
-    //   // let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
-    //   // let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) +
-    //   //   Math.floor(this.canvas.width / dpr / this.positionWidthWithMargin);
-    //   // if (this.checkIsSliderVisible(dpr)) {
-    //   //   newMin = 0;
-    //   //   newMax = Math.max(newMin, this.Length - 1);
-    //   // }
-    //   // this.turnOfResizeForOneSetValue = true;
-    //
-    //   // const newMin = this.firstVisiblePos;
-    //   // const newMax = this.slider.max;
-    //   //
-    //   // this.slider.setValues(0, this.Length,
-    //   //   newMin, newMax);
-    //   const visibleLength = Math.min(this.Length, this.canvas.width / (this._positionWidthWithMargin * dpr));
-    //   let newMin = this.slider.min;
-    //   let newMax = Math.min(visibleLength, visibleLength - newMin);
-    //
-    //   if (isNaN(newMin) || newMin < 0 || this.Length < newMin || isNaN(newMax) || newMax < 0 || this.Length < newMax) {
-    //     console.error('Bio: WebLogo.updateSlider() wrong range: ' +
-    //       JSON.stringify({minRange: 0, min: newMin, max: newMax, maxRange: this.Length}));
-    //     newMin = Math.min(Math.max(0, newMin), this.Length);
-    //     newMax = Math.min(Math.max(0, newMax), this.Length);
-    //   }
-    //   this.slider.setValues(0, this.Length, newMin, newMax);
-    // }
-    //
-    // this.canvas.width = this.root.clientWidth * dpr;
-    // this.canvas.style.width = `${this.root.clientWidth}px`;
-    //
-    // // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
-    // this.host.style.setProperty('height', `${areaHeight}px`);
-    // const canvasHeight: number = this.host.clientHeight;
-    // this.canvas.height = canvasHeight * dpr;
   }
 
 
@@ -924,7 +800,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   /** Add filter handlers when table is a attached  */
   public override onTableAttached() {
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached(), `);
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.onTableAttached(), `);
 
     // -- Props editors --
 
@@ -994,12 +870,12 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   /** Renders requested repeatedly will be performed once on window.requestAnimationFrame() */
   render(recalcLevel: WlRenderLevel, reason: string): Promise<void> {
-    console.debug(`Bio: WebLogoViewer<${this.viewerId}>` +
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>` +
       `.render( recalcLevel=${recalcLevel}, reason='${reason}' )`);
 
     /** Calculate freqs of monomers */
     const calculateFreqsInt = (): void => {
-      console.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateFreqsInt(), start `);
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateFreqsInt(), start `);
       if (!this.host || !this.seqCol || !this.dataFrame) return;
 
       const length: number = this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
@@ -1041,7 +917,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     /** Calculate layout of monomers on screen (canvas) based on freqs, required to handle mouse events */
     const calculateLayoutInt = (dpr: number, positionLabelsHeight: number): void => {
-      console.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), start `);
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), start `);
 
       this.calcLayout(dpr);
       const absoluteMaxHeight = this.canvas.height - positionLabelsHeight * dpr;
@@ -1054,7 +930,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         this.positions[jPos].calcScreen(jPos, this.slider.min, absoluteMaxHeight, this.positionHeight,
           alphabetSizeLog, this._positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
       }
-      console.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), end `);
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), end `);
       this._onLayoutCalculated.next();
     };
 
@@ -1062,7 +938,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
      *@param {WlRenderLevel} recalcLevel - indicates that need to recalculate data for rendering
      */
     const renderInt = (recalcLevel: WlRenderLevel) => {
-      console.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), ` +
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), ` +
         `start `);
       if (this.msgHost) {
         if (this.seqCol && !this.cp) {
@@ -1118,7 +994,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           /* this._positionWidthWithMargin, firstVisiblePosIdx,*/ this.cp);
       }
 
-      console.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), end`);
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${recalcLevel} ), end`);
     };
 
     this.renderLevelRequested = Math.max(this.renderLevelRequested, recalcLevel);
@@ -1158,36 +1034,36 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         min: this.slider.min, max: this.slider.max,
         maxRange: this.slider.maxRange
       };
-      console.debug(`Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
+      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
       this.render(WlRenderLevel.Layout, 'sliderOnValuesChanged').then(() => {});
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
   private dataFrameFilterOnChanged(_value: any): void {
-    console.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()');
+    _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()');
     try {
       this.updatePositions();
       if (this.filterSource === FilterSources.Filtered)
         this.render(WlRenderLevel.Freqs, 'dataFrameFilterOnChanged').then(() => {});
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterOnChanged() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterOnChanged() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
   private dataFrameSelectionOnChanged(_value: any): void {
-    console.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged()');
+    _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged()');
     try {
       if (this.filterSource === FilterSources.Selected)
         this.render(WlRenderLevel.Freqs, 'dataFrameSelectionOnChanged').then(() => {});
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1221,7 +1097,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseMove() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseMove() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1244,7 +1120,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseDown() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseDown() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1258,7 +1134,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.slider.scrollBy(this.slider.min + countOfScrollPositions);
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      console.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n' + errMsg);
+      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n' + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
