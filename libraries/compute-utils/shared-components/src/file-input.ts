@@ -67,8 +67,16 @@ export class FileInput extends DG.InputBase<File | null> {
       if (this.onValueChanged)
         this.onValueChanged(newValue);
 
+      if (!newValue) {
+        const newIcon = ui.iconFA('cloud-upload', () => this.hiddenInput.click(), 'Choose a file to upload');
+        this.icon.replaceWith(newIcon);
+        this.icon = newIcon;
+      }
+
       this.value = newValue;
     });
+
+    this.reset();
   }
 
   private subscribeOnEvents() {
@@ -133,7 +141,7 @@ export class FileInput extends DG.InputBase<File | null> {
 
     // Pass clicks to hidden file input
     this.input.addEventListener('click', () => this.hiddenInput.click(), false);
-    this.root.append(ui.div(this.icon, 'icon'));
+    this.addOptions(this.icon);
 
     ['drag', 'dragenter'].forEach((eventName) => {
       document.getElementsByClassName('layout-workarea')[0].addEventListener(eventName, (e) => {
@@ -144,9 +152,6 @@ export class FileInput extends DG.InputBase<File | null> {
 
   private reset() {
     this.input.classList.value = 'ui-input-editor default';
-    const newIcon = ui.iconFA('cloud-upload', () => this.hiddenInput.click(), 'Choose a file to upload');
-    this.icon.replaceWith(newIcon);
-    this.icon = newIcon;
     this.hiddenInput.value = '';
     this.uploadedFile$.next(null);
   }
