@@ -2,11 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
 import {category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 category('UnitsHandler', () => {
-  const data: { [testName: string]: { src: { csv: string }, tgt: { splitted: string[][] } } } = {
+  const fG = GapSymbols[NOTATION.FASTA];
+  const hG = GapSymbols[NOTATION.HELM];
+  const sG = GapSymbols[NOTATION.SEPARATOR];
+  const data: { [testName: string]: { src: { csv: string }, tgt: { splitted: (string[] | string)[] } } } = {
     fasta: {
       src: {
         csv: `seq
@@ -16,9 +23,9 @@ TTCAAC`
       },
       tgt: {
         splitted: [
-          ['A', 'C', 'G', 'T', 'C'],
-          ['C', 'A', 'G', 'T', 'G', 'T'],
-          ['T', 'T', 'C', 'A', 'A', 'C']
+          'ACGTC',
+          'CAGTGT',
+          'TTCAAC',
         ]
       }
     },
@@ -32,9 +39,9 @@ ACCGTACT`,
       tgt: {
         splitted: [
           //@formatter:off
-          ['A', 'C', '' , 'G', 'T', '' , 'C', 'T'],
-          ['C', 'A', 'C', '' , 'T', '' , 'G', 'T'],
-          ['A', 'C', 'C', 'G', 'T', 'A', 'C', 'T'],
+          'AC-GT-CT',
+          'CAC-T-GT',
+          'ACCGTACT',
           //@formatter:on
         ]
       }
@@ -65,8 +72,8 @@ rut12-rty-her2---wert`
       tgt: {
         splitted: [
           ['abc', 'dfgg', 'abc1', 'cfr3', 'rty', 'wert'],
-          ['rut12', 'her2', 'rty', '', 'abc1', 'dfgg'],
-          ['rut12', 'rty', 'her2', '', '', 'wert'],
+          ['rut12', 'her2', 'rty', sG, 'abc1', 'dfgg'],
+          ['rut12', 'rty', 'her2', sG, sG, 'wert'],
         ]
       }
     },
@@ -99,8 +106,8 @@ PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2}$$$$`
       expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
 
       const uh = UnitsHandler.getOrCreate(col);
-      const splitted: string[][] = uh.splitted;
-      expectArray(splitted, testData.tgt.splitted);
+      const resSplitted: ISeqSplitted[] = uh.splitted;
+      expectArray(resSplitted, testData.tgt.splitted);
     });
   }
 });
