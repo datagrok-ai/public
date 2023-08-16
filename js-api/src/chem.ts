@@ -190,8 +190,7 @@ export namespace chem {
     }
 
     setSmiles(x: string): void {
-      if (!this.validate(x))
-        return;
+      this.validate(x);
       this._smiles = x;
       this._molfile = null;
       this._smarts = null;
@@ -212,8 +211,7 @@ export namespace chem {
     }
 
     setMolFile(x: string): void {
-      if (!this.validate(x))
-        return;
+      this.validate(x);
       this._molfile = x;
       this._smiles = null;
       this._smarts = null;
@@ -230,8 +228,7 @@ export namespace chem {
     }
 
     setSmarts(x: string): void {
-      if (!this.validate(x))
-        return;
+      this.validate(x);
       this._smarts = x;
       this._molfile = null;
       this._smiles = null;
@@ -545,17 +542,16 @@ export namespace chem {
         this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
           const molFile = this.getMolFile();
-          if (this.validate(molFile)) {
-            this.onChanged.next(null);
-            for (let callback of this.listeners)
-              callback();
-            if (this.syncCurrentObject) {
-              if (!Sketcher.isEmptyMolfile(molFile))
-                grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
-            }
+          this.validate(molFile);
+          this.onChanged.next(null);
+          for (let callback of this.listeners)
+            callback();
+          if (this.syncCurrentObject) {
+            if (!Sketcher.isEmptyMolfile(molFile))
+              grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
-        if (molecule && !this._invalidFlag)
+        if (molecule)
           this.setMolecule(molecule!, this._smarts !== null);
       });
     }

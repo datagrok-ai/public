@@ -900,8 +900,6 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const dlg = ui.dialog()
     .add(sketcher)
     .onOK(() => {
-      if (validateMolecule(molecule).error) //do not update data in cell in case molecule initially is broken
-        return;
       if (unit === DG.chem.Notation.Smiles) {
         //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
         const newValue = sketcher.getSmiles();
