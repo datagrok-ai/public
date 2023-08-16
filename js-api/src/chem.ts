@@ -156,7 +156,6 @@ export namespace chem {
     _sketcherTypeChanged = false;
     _autoResized = true;
     _validationFunc: ((molecule: string) => IValidationRes) | null = null;
-    _invalidFlag: boolean = false;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -280,11 +279,9 @@ export namespace chem {
         this.setMolecule(x);
     }
 
-    validate(x: string): boolean {
+    validate(x: string): void {
       const error = this._validationFunc ? this._validationFunc(x).error : undefined;
       this.updateInvalidMoleculeWarning(error);
-      this._invalidFlag = !!error;
-      return !this._invalidFlag;
     }
 
     constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => IValidationRes) {
