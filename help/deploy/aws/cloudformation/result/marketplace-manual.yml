@@ -53,6 +53,7 @@ Parameters:
       If you do not use Route53 for DNS management, it is required to upload certificate
       to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html)
       and specify the Certificate ARN here.
+    MinLength: 4
     Type: String
   CIDR:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
@@ -91,7 +92,7 @@ Resources:
       - Description:
           Fn::Sub: ${AWS::StackName} Datagrok egress rules
         DestinationSecurityGroupId:
-          Ref: SecurityGroup
+          Ref: DatagrokSecurityGroup
         FromPort: 0
         IpProtocol: TCP
         ToPort: 65535
@@ -103,6 +104,14 @@ Resources:
         SourceSecurityGroupId:
           Ref: CvmSecurityGroup
         ToPort: 8080
+      - Description:
+          Fn::Sub: ${AWS::StackName} Allow internal connections from Datagrok to Grok
+            Connect
+        FromPort: 1234
+        IpProtocol: TCP
+        SourceSecurityGroupId:
+          Ref: DatagrokSecurityGroup
+        ToPort: 1234
       Tags:
       - Key: Name
         Value:
@@ -128,7 +137,8 @@ Resources:
   CloudMap:
     Properties:
       Description: ${AWS::StackName} Service Map for Datagrok
-      Name: datagrok.local
+      Name:
+        Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
       Vpc:
         Ref: VPC
     Type: AWS::ServiceDiscovery::PrivateDnsNamespace
@@ -209,28 +219,28 @@ Resources:
         FromPort: 8090
         IpProtocol: TCP
         SourceSecurityGroupId:
-          Ref: SecurityGroup
+          Ref: DatagrokSecurityGroup
         ToPort: 8090
       - Description:
           Fn::Sub: ${AWS::StackName} Allow internal connections to HTTP
         FromPort: 80
         IpProtocol: TCP
         SourceSecurityGroupId:
-          Ref: SecurityGroup
+          Ref: DatagrokSecurityGroup
         ToPort: 80
       - Description:
           Fn::Sub: ${AWS::StackName} Allow internal connections from Datagrok to H2O
         FromPort: 54321
         IpProtocol: TCP
         SourceSecurityGroupId:
-          Ref: SecurityGroup
+          Ref: DatagrokSecurityGroup
         ToPort: 54321
       - Description: ${AWS::StackName} Allow internal connections from Datagrok to
           H2O GH
         FromPort: 5005
         IpProtocol: TCP
         SourceSecurityGroupId:
-          Ref: SecurityGroup
+          Ref: DatagrokSecurityGroup
         ToPort: 5005
       Tags:
       - Key: Name
@@ -292,7 +302,8 @@ Resources:
         Fn::Sub: ${AWS::StackName} Private Datagrok CVM DNS for internal routing
       HostedZoneId:
         Ref: PrivateDNSZone
-      Name: cvm.datagrok.internal.
+      Name:
+        Fn::Sub: cvm.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
     Type: AWS::Route53::RecordSet
   CvmSecurityGroup:
@@ -336,7 +347,7 @@ Resources:
         Ref: CvmSecurityGroup
       IpProtocol: '-1'
       SourceSecurityGroupId:
-        Ref: SecurityGroup
+        Ref: DatagrokSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
   CvmSecurityGroupInternalCommunications:
     Properties:
@@ -431,7 +442,7 @@ Resources:
         FromPort: 5432
         IpProtocol: TCP
         SourceSecurityGroupId:
-          Ref: SecurityGroup
+          Ref: DatagrokSecurityGroup
         ToPort: 5432
       Tags:
       - Key: Name
@@ -556,6 +567,18 @@ Resources:
       IpProtocol: TCP
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
+  DatagrokEgress:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Datagrok egress rules
+      DestinationSecurityGroupId:
+        Ref: DatagrokSecurityGroup
+      FromPort: 0
+      GroupId:
+        Ref: ALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 65535
+    Type: AWS::EC2::SecurityGroupEgress
   DatagrokPrivateDNS:
     Properties:
       AliasTarget:
@@ -571,9 +594,23 @@ Resources:
         Fn::Sub: ${AWS::StackName} Private Datagrok DNS for internal routing
       HostedZoneId:
         Ref: PrivateDNSZone
-      Name: datagrok.datagrok.internal.
+      Name:
+        Fn::Sub: datagrok.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
     Type: AWS::Route53::RecordSet
+  DatagrokSecurityGroup:
+    Properties:
+      GroupDescription:
+        Fn::Sub: ${AWS::StackName} Datagrok Security Group
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-datagrok
+      - Key: datagrok.component
+        Value: datagrok
+      VpcId:
+        Ref: VPC
+    Type: AWS::EC2::SecurityGroup
   DatagrokService:
     DependsOn:
     - TCP80Listener
@@ -606,7 +643,7 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
-          - Ref: SecurityGroup
+          - Ref: DatagrokSecurityGroup
           Subnets:
           - Ref: PrivateSubnet1
           - Ref: PrivateSubnet2
@@ -631,8 +668,8 @@ Resources:
       ContainerDefinitions:
       - Command:
         - Fn::Sub: ${AWS::Region}.compute.internal
-        - datagrok.internal
-        - datagrok.local
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
         Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
         LogConfiguration:
@@ -642,7 +679,7 @@ Resources:
               Ref: LogGroup
             awslogs-region:
               Ref: AWS::Region
-            awslogs-stream-prefix: cvm
+            awslogs-stream-prefix: datagrok
         MemoryReservation: 100
         Name: ResolvConf
       - DependsOn:
@@ -681,7 +718,7 @@ Resources:
               region:
                 Ref: AWS::Region
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/datagrok:1.16.2-split
+        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/datagrok:1.16.3-split
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -697,13 +734,13 @@ Resources:
         - ContainerPort: 8080
           HostPort: 8080
           Protocol: tcp
-      Cpu: '1024'
+      Cpu: '2048'
       ExecutionRoleArn:
         Fn::GetAtt:
         - TaskExecutionRole
         - Arn
       Family: datagrok
-      Memory: '2048'
+      Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
@@ -761,18 +798,6 @@ Resources:
           - arn:aws:ecr:us-east-1:709825985650:repository/datagrok/*
         Version: '2012-10-17'
     Type: AWS::IAM::ManagedPolicy
-  Egress:
-    Properties:
-      Description:
-        Fn::Sub: ${AWS::StackName} Datagrok egress rules
-      DestinationSecurityGroupId:
-        Ref: SecurityGroup
-      FromPort: 0
-      GroupId:
-        Ref: ALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 65535
-    Type: AWS::EC2::SecurityGroupEgress
   GrokComputeService:
     DependsOn:
     - CvmTCP80Listener
@@ -929,8 +954,8 @@ Resources:
       ContainerDefinitions:
       - Command:
         - Fn::Sub: ${AWS::Region}.compute.internal
-        - datagrok.internal
-        - datagrok.local
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
         Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
         LogConfiguration:
@@ -1013,7 +1038,8 @@ Resources:
           routing
       HostedZoneId:
         Ref: PrivateDNSZone
-      Name: grok_connect.datagrok.internal.
+      Name:
+        Fn::Sub: grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
     Type: AWS::Route53::RecordSet
   GrokConnectService:
@@ -1040,7 +1066,7 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
-          - Ref: SecurityGroup
+          - Ref: DatagrokSecurityGroup
           Subnets:
           - Ref: PrivateSubnet1
           - Ref: PrivateSubnet2
@@ -1081,8 +1107,8 @@ Resources:
       ContainerDefinitions:
       - Command:
         - Fn::Sub: ${AWS::Region}.compute.internal
-        - datagrok.internal
-        - datagrok.local
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
         Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
         LogConfiguration:
@@ -1143,7 +1169,8 @@ Resources:
         Fn::Sub: ${AWS::StackName} Private Datagrok H2O DNS for internal routing
       HostedZoneId:
         Ref: PrivateDNSZone
-      Name: h2o.datagrok.internal.
+      Name:
+        Fn::Sub: h2o.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
     Type: AWS::Route53::RecordSet
   H2oService:
@@ -1379,8 +1406,8 @@ Resources:
       ContainerDefinitions:
       - Command:
         - Fn::Sub: ${AWS::Region}.compute.internal
-        - datagrok.internal
-        - datagrok.local
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
         Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
         LogConfiguration:
@@ -1708,8 +1735,8 @@ Resources:
       ContainerDefinitions:
       - Command:
         - Fn::Sub: ${AWS::Region}.compute.internal
-        - datagrok.internal
-        - datagrok.local
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
         Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
         LogConfiguration:
@@ -2020,8 +2047,8 @@ Resources:
       ContainerDefinitions:
       - Command:
         - Fn::Sub: ${AWS::Region}.compute.internal
-        - datagrok.internal
-        - datagrok.local
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
         Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
         LogConfiguration:
@@ -2239,7 +2266,8 @@ Resources:
       HostedZoneConfig:
         Comment:
           Fn::Sub: ${AWS::StackName} Private Datagrok Zone for internal routing
-      Name: datagrok.internal.
+      Name:
+        Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       VPCs:
       - VPCId:
           Ref: VPC
@@ -2584,25 +2612,12 @@ Resources:
       VpcId:
         Ref: VPC
     Type: AWS::EC2::VPCEndpoint
-  SecurityGroup:
-    Properties:
-      GroupDescription:
-        Fn::Sub: ${AWS::StackName} Datagrok Security Group
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName}-datagrok
-      - Key: datagrok.component
-        Value: datagrok
-      VpcId:
-        Ref: VPC
-    Type: AWS::EC2::SecurityGroup
   SecurityGroupALBCommunications:
     Properties:
       Description:
         Fn::Sub: ${AWS::StackName} Allow communication from ALB to Datagrok components
       GroupId:
-        Ref: SecurityGroup
+        Ref: DatagrokSecurityGroup
       IpProtocol: '-1'
       SourceSecurityGroupId:
         Ref: ALBSecurityGroup
@@ -2612,7 +2627,7 @@ Resources:
       Description:
         Fn::Sub: ${AWS::StackName} Allow communication from CVM to Datagrok components
       GroupId:
-        Ref: SecurityGroup
+        Ref: DatagrokSecurityGroup
       IpProtocol: '-1'
       SourceSecurityGroupId:
         Ref: CvmSecurityGroup
@@ -2623,19 +2638,20 @@ Resources:
         Fn::Sub: ${AWS::StackName} Allow communication from internal ALB to Datagrok
           components
       GroupId:
-        Ref: SecurityGroup
+        Ref: DatagrokSecurityGroup
       IpProtocol: '-1'
       SourceSecurityGroupId:
         Ref: ALBIntSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
   SecurityGroupInternalCommunications:
     Properties:
-      Description: ${AWS::StackName} Allow communication within network Datagrok
+      Description:
+        Fn::Sub: ${AWS::StackName} Allow communication within network Datagrok
       GroupId:
-        Ref: SecurityGroup
+        Ref: DatagrokSecurityGroup
       IpProtocol: '-1'
       SourceSecurityGroupId:
-        Ref: SecurityGroup
+        Ref: DatagrokSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
   ServiceDiscoveryEntry:
     Properties:

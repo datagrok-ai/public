@@ -15,7 +15,7 @@ Parameters:
   ArnSSLCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
-#    MinLength: 4
+    MinLength: 4
     Default: ''
     Description: The certificate is used for both Datagrok and CVM client endpoints. If you do not use Route53 for DNS management, it is required to upload certificate to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html) and specify the Certificate ARN here.
 Conditions:

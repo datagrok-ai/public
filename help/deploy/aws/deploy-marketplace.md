@@ -42,7 +42,7 @@ Datagrok product on AWS Marketplace uses BYOL (Bring Your Own License) pricing m
    <details>
    <summary>Parameters details</summary>
 
-   * **Stack name.** It must be shorter than ten symbols to meet AWS naming requirements.
+   * **Stack name.** To meet AWS naming requirements, name must be shorter than ten symbols and correspond [S3 Bucket naming rules](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
 
    </details>
 
