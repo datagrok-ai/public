@@ -131,6 +131,35 @@ As for Similarity search, you can adjust metrics or add fields to molecule panes
 
 ![diversity search](help/diversity_search.png)
 
+## Substructure search
+
+We offer a highly efficient and fast substructure search capability that can handle datasets of any size, including millions of molecules.
+
+Here are the advantages of our approach:
+
+* Utilizing pattern fingerprints for preliminary filtration to accelerate the search process.
+* Caching fingerprints: once a search is performed on a specific column, the fingerprints are calculated, saved, and can be reused without recalculating.
+* Displaying a search progress bar for easy tracking of the search process.
+
+There are two ways to run a substructure search:
+
+* Select `Top menu` -> `Chem` -> `Search` -> `Substructure Search...`
+* Click **Filter** icon on a toolbox
+
+In both cases, a filter opens on the right side of the table.
+
+To conduct a search:
+
+ 1. Click on the `Click to edit` pane for the desired column. The molecule sketcher opens
+ 2. Sketch some substructure. The search starts immediately.
+
+Clicking **OK** during the active search closes the sketcher, but the search continues. Clicking **Cancel** terminates the active search.
+Additionally, you can modify the substructure during an active search, and the results will recalculate instantly.
+
+Here is an example:
+
+![substructure search](help/substructure_search.gif)
+
 See also:
 
 * [Cheminformatics predictive modeling](https://datagrok.ai/help/domains/chem/chem-predictive-modeling)
