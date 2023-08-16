@@ -47,14 +47,14 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return numMalformed;
   }
 
-  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Uint32Array {
+  async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Promise<Uint32Array> {
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
     const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
 
     if (queryMol !== null) {
-      const matches = this.searchWithPatternFps(queryMol, molecules);
+      const matches = await this.searchWithPatternFps(queryMol, molecules);
       queryMol.delete();
       return matches;
     } else
@@ -62,10 +62,18 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
 
-  searchWithPatternFps(queryMol: RDMol, molecules: string[]): Uint32Array {
+  async searchWithPatternFps(queryMol: RDMol, molecules: string[]): Promise<Uint32Array> {
     const matches = new BitArray(molecules.length);
+    if (this._requestTerminated)
+      return matches.buffer;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
+      
+      if (i % this._terminationCheckDelay === 0) //every N molecules check for termination flag
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return matches.buffer;
+
       let mol: RDMol | null = null;
       let isCached = false;
       try {
@@ -193,4 +201,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       this._molsCache.clear();
     }
   }
+
+  setTerminateFlag(flag: boolean) {
+    this._requestTerminated = flag;
+  }
+
 }

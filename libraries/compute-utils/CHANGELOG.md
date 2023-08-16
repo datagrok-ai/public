@@ -1,5 +1,20 @@
 # compute-utils changelog
 
+## 1.13.6 (2023-08-15)
+
+### Features
+
+- FileInput now extends DG.InputBase
+- RFV: Historical runs become non-historical on any input change
+- RFV: Ribbon panel now reacts on "historicity" of the run
+- RFV: Inputs now have a delay before calculation re-run
+- RFV: DataFrame export to Excel now uses built-in Excel tables
+
+### Fixed bugs
+
+- Removed workarounds for GROK-13335 & GROK-13337
+- PLV: Fixed bug with extra tabs enabled on historical run load
+
 ## 1.13.5 (2023-08-10)
 
 ### Features

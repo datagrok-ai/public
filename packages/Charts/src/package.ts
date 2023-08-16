@@ -59,7 +59,7 @@ export async function _sankeyViewerDemo() {
 //name: sunburstViewerDemo
 //description: Sunburst viewer displays hierarchical data
 //meta.demoPath: Visualization | General | Sunburst
-//test: _sunburstViewerDemo() //wait: 200
+//test: _sunburstViewerDemo() //wait: 400
 export async function _sunburstViewerDemo() {
   await viewerDemo('Sunburst');
 }

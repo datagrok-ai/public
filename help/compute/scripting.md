@@ -249,6 +249,14 @@ problem with your Conda environment. It is often possible to find an equivalent 
 Using `pip` via Conda environments doesn't have timing issues, and we advise to use the `pip` section of Conda yaml spec
 to set up your libraries of interest.
 
+#### Conda and Pip custom repositories
+
+By default, conda uses conda-forge and pypi repositories to install packages. It is possible to specify custom conda and pip repositories in environments, for example to use `http://my-repo/custom/` as conda repository and `https://mirrors.sustech.edu.cn/pypi/simple` as pip repository use the following code
+
+```
+# environment: channels: [http://my-repo/custom/], dependencies: [python=3.8, glom, {pip: [--index-url https://mirrors.sustech.edu.cn/pypi/simple, requests]}]
+```
+
 ### Renv environments
 
 [_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. Datagrok runs each R

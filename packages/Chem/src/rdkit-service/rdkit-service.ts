@@ -1,7 +1,6 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import {Fingerprint} from '../utils/chem-common';
 import {RuleId} from '../panels/structural-alerts';
-import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
 import {LockedEntity} from '../utils/locked-entitie';
@@ -31,14 +30,11 @@ export class RdKitService {
   parallelWorkers: RdKitServiceWorkerClient[] = [];
   segmentLength: number = 0;
   moleculesSegmentsLengths: Uint32Array;
-  segmentLengthPatternFp: number = 0;
-  moleculesSegmentsLengthsPatternFp: Uint32Array;
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
     this.workerCount = Math.max(1, cpuLogicalCores - 2);
     this.moleculesSegmentsLengths = new Uint32Array(this.workerCount);
-    this.moleculesSegmentsLengthsPatternFp = new Uint32Array(this.workerCount);
   }
 
   async init(webRoot: string): Promise<void> {
@@ -117,6 +113,8 @@ export class RdKitService {
         const part = data.slice(workingIndexes[idx].start,
           Math.min(workingIndexes[idx].end, workingIndexes[idx].start + workingIndexes[idx].increment));
         const batchResult = await map(part, idx, t.parallelWorkers.length, workingIndexes[idx].start);
+        if (terminateFlag)
+          return;
         updateRes(batchResult, res, part.length, workingIndexes[idx].start);
         workingIndexes[idx].start += part.length;
 
@@ -235,7 +233,7 @@ export class RdKitService {
     return this._doParallelBatches(molecules, result, updateRes, async (batch, workerIdx,
       _workerCount, batchStartIdx) => {
       let fpResult: IFpResult;
-      if (!result.fpsRes || !result.fpsRes.fps[batchStartIdx])
+      if (!result.fpsRes || !result.fpsRes.fps[batchStartIdx + batch.length - 1])
         fpResult = await this.parallelWorkers[workerIdx].getFingerprints(Fingerprint.Pattern, batch, createSmiles);
       else {
         fpResult = {
@@ -366,6 +364,17 @@ export class RdKitService {
     this._doParallel(
       (i: number) => {
         return t.parallelWorkers[i].invalidateCache();
+      },
+      (_: any) => {
+        return;
+      });
+  }
+
+  async setTerminateFlag(flag: boolean): Promise<void> {
+    const t = this;
+    this._doParallel(
+      (i: number) => {
+        return t.parallelWorkers[i].setTerminateFlag(flag);
       },
       (_: any) => {
         return;

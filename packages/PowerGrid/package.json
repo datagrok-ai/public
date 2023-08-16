@@ -37,7 +37,7 @@
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "link-all": "npm link datagrok-api @datagrok-libraries/gridext",
+    "link-all": "npm link datagrok-api @datagrok-libraries/gridext @datagrok-libraries/utils",
     "link-gridext": "npm link @datagrok-libraries/gridext",
     "link-api": "npm link datagrok-api ",
     "debug-powergrid": "grok publish",
@@ -51,7 +51,7 @@
     "debug-powergrid-public": "grok publish public",
     "release-powergrid-public": "grok publish public --release",
     "debug-powergrid-local": "tsc && webpack && grok publish local",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
     "Developers"

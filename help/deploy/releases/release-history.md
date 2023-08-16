@@ -7,7 +7,7 @@ slug: develop/admin/releases/release-history
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.1](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.2](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.6](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.4](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.3](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -19,6 +19,25 @@ slug: develop/admin/releases/release-history
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose.mdx)
+
+## 2023-08-15 1.16.2
+
+### Addressed Issues
+
+* Improvement:
+* (Improvement) [#2166](https://github.com/datagrok-ai/public/issues/2166): Pivot table: improvements 
+* (Improvement) [#2165](https://github.com/datagrok-ai/public/issues/2165): Filter Panel: Always add new filters to the top  (WIP)
+* (Bug) GROK-13526: Interpret URLs as hyperlinks: incorrect behavior with line wrapping  (WIP)
+* (Bug) GROK-13632: when starting an unsaved query with parameters in dataQueryView, the form with editing parameters is not shown on the first run 
+* (Bug) [#2060](https://github.com/datagrok-ai/public/issues/2060): Projects:  the tabs order is changed from the original uploaded project state 
+* (Bug) GROK-13718: Grid: custom renderers: custom cell sizes get reset when you open a project 
+* (Improvement) [#2197](https://github.com/datagrok-ai/public/issues/2197): Add zoom slider to X axis of Histogram 
+* (Bug) GROK-13719: After applying Refresh several times, there is an error:  `Resulting message size [x] is too large for configured max of [y]` 
+* (Bug) GROK-13448: "Refresh"-ing DB query resets the sizes of Grid cells 
+* (Bug) GROK-13717: Unable to use scripts in add new column 
+* (Bug) GROK-13750: Can't create custom viewer from JS 
+* (Bug) GROK-13651: Databases | Connections: testing connection issue 
+
 
 ## 2023-07-27 1.16.1
 

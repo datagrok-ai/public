@@ -34,4 +34,6 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, molecules]);
 
   invalidateCache = async () => this.call(WORKER_CALL.INVALIDATE_CACHE);
+
+  setTerminateFlag = async (flag: boolean) => this.call(WORKER_CALL.SET_TERMINATE_FLAG, [flag]);
 }

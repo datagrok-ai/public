@@ -1,0 +1,96 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components to ECS Fargate in new VPC. Template also creates ACM and DNS records."
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Client Endpoint configuration"
+        Parameters:
+          - DNSZoneId
+          - DNSZone
+    ParameterLabels:
+      DNSZone:
+        default: "DNSZone: AWS Route53 DNS Zone"
+Parameters:
+  DNSZone:
+    Type: String
+    Default: ''
+    Description: Specify existing Route53 DNS Hosted Zone Name for Datagrok and CVM client endpoints. For example, for endpoint 'datagrok.example.com' set 'example.com'. The result DNS endpoints will consist of cloudformation stack name and datagrok service.
+  DNSZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Default: ''
+    Description: Specify existing Route53 DNS Hosted Zone ID for Datagrok and CVM client endpoints.
+Resources:
+  DatagrokDNS:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      HostedZoneId:
+        Fn::GetAtt:
+          - LoadBalancerDatagrok
+          - CanonicalHostedZoneID
+        DNSName:
+          Fn::GetAtt:
+            - LoadBalancerDatagrok
+            - DNSName
+      Comment:
+        Fn::Sub: "${AWS::StackName} Public Datagrok DNS"
+      HostedZoneName:
+        Ref: DNSZone
+      MultiValueAnswer: Boolean
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok.${domain}."
+          - domain:
+              Ref: DNSZone
+  CvmDNS:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      HostedZoneId:
+        Fn::GetAtt:
+          - LoadBalancerCvm
+          - CanonicalHostedZoneID
+        DNSName:
+          Fn::GetAtt:
+            - LoadBalancerCvm
+            - DNSName
+      Comment:
+        Fn::Sub: "${AWS::StackName} Public Datagrok CVM DNS"
+      HostedZoneName:
+        Ref: DNSZone
+      MultiValueAnswer: Boolean
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok-cvm.${domain}."
+          - domain:
+              Ref: DNSZone
+  DatagrokSSL:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateSSL
+    Properties:
+      DomainName:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok.${domain}"
+          - domain:
+              Ref: DNSZone
+      DomainValidationOptions:
+        - DomainName:
+            Fn::Sub:
+              - "${AWS::StackName}-datagrok.${domain}"
+              - domain:
+                  Ref: DNSZone
+          HostedZoneId:
+            Ref: DNSZoneId
+      KeyAlgorithm: String
+      SubjectAlternativeNames:
+        - Fn::Sub:
+            - "${AWS::StackName}-datagrok-cvm.${domain}."
+            - domain:
+                Ref: DNSZone
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName}-datagrok"
+      ValidationMethod: DNS
