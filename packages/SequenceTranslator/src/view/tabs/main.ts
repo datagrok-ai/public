@@ -24,12 +24,7 @@ import {DEFAULT_FORMATS} from '../../model/const';
 export class MainTabUI {
   constructor() {
     const INPUT_FORMATS = Object.keys(codesToHelmDictionary).concat(DEFAULT_FORMATS.HELM);
-    this.moleculeImgDiv = ui.div([]);
-    this.moleculeImgDiv.className = 'mol-host';
-    this.moleculeImgDiv.style.border = '1px solid var(--grey-2)';
-    this.moleculeImgDiv.style.borderRadius = '1px';
-    this.moleculeImgDiv.style.marginTop = '12px';
-
+    this.moleculeImgDiv = ui.block([]);
     this.outputTableDiv = ui.div([]);
     this.formatChoiceInput = ui.choiceInput('', DEFAULT_FORMATS.HELM, INPUT_FORMATS, async () => {
       this.format = this.formatChoiceInput.value;
@@ -90,11 +85,11 @@ export class MainTabUI {
     ]);
 
     const mainTabBody = ui.box(
-      ui.panel([
+      ui.div([
         upperBlock,
         outputTable,
-        ui.block([ui.box(this.moleculeImgDiv)])
-      ]),
+        this.moleculeImgDiv,
+      ], {style: {paddingTop: '20px', paddingLeft: '20px'}})
     );
 
     this.formatChoiceInput.value = this.format;
@@ -149,6 +144,7 @@ export class MainTabUI {
     const molImgObj = new MoleculeImage(this.molfile);
     await molImgObj.drawMolecule(this.moleculeImgDiv, canvasWidth, canvasHeight);
     // should the canvas be returned from the above function?
+    $(this.moleculeImgDiv).find('canvas').css('float', 'inherit');
   }
 
   // todo: sort mehtods

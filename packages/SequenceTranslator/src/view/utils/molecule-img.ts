@@ -59,10 +59,11 @@ export class MoleculeImage {
   }
 
   private async zoomIn(): Promise<void> {
-    const dialog = ui.dialog({title: 'Molecule', showFooter:false});
+    const dialog = ui.dialog('Molecule');
     const dialogDivStyle = {
       overflowX: 'scroll',
     };
+    const dialogDiv = ui.div([], {style: dialogDivStyle});
 
     const height = $(window).height() * 0.7;
     const molDimensions = this.getMoleculeDimensions();
@@ -74,14 +75,9 @@ export class MoleculeImage {
 
     const dialogCanvas = ui.canvas(dialogCanvasWidth, dialogCanvasHeight);
     await this.drawMolBlockOnCanvas(dialogCanvas);
-    
-    const dialogDiv = ui.block([dialogCanvas], {style: dialogDivStyle});
-    dialog.add(dialogDiv).showModal(true);
 
-    $(dialog.root).find('.d4-dialog-contents').removeClass('ui-form');
-    $(dialog.root).find('.d4-dialog-contents').removeClass('ui-panel');
-    $(dialog.root).find('.d4-dialog-contents').addClass('ui-box');
-    $(dialog.root).find('.d4-dialog-contents').css('padding', '0');
+    dialogDiv.appendChild(dialogCanvas);
+    dialog.add(dialogDiv).showModal(true);
   }
 
   public async drawMolecule(
@@ -95,23 +91,16 @@ export class MoleculeImage {
     // Draw zoomed-out molecule
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
-    canvas.style.cursor = 'zoom-in';
-    /*
     canvas.style.borderStyle = 'solid';
-    canvas.style.borderRadius = '1px';
-    canvas.style.borderColor = 'var(--grey-2)';
+    canvas.style.borderColor = 'var(--grey-3)';
     canvas.style.borderWidth = 'thin';
-    */
     this.drawMolBlockOnCanvas(canvas);
 
     // Dialog with zoomed-in molecule
-    canvas.addEventListener('click', async () => {
-      await this.zoomIn();
-    });
-    //$(canvas).on('click', async () => { await this.zoomIn(); });
-    //$(canvas).on('mouseover', () => $(canvas).css('cursor', 'grab')); // for some reason 'zoom-in' value wouldn't work
-    //$(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
+    $(canvas).on('click', async () => { await this.zoomIn(); });
+    $(canvas).on('mouseover', () => $(canvas).css('cursor', 'grab')); // for some reason 'zoom-in' value wouldn't work
+    $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
 
-    moleculeImgDiv.append(ui.tooltip.bind(canvas,'Click to zoom'));
+    moleculeImgDiv.append(canvas);
   }
 }
