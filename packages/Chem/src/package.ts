@@ -438,7 +438,7 @@ export function searchSubstructureEditor(call: DG.FuncCall) {
 //editor: Chem:SearchSubstructureEditor
 export function SubstructureSearchTopMenu(molecules: DG.Column): void {
   const fg = grok.shell.tv.getFiltersGroup({createDefaultFilters: false});
-  grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).add({
+  grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molecules.name,
     columnName: molecules.name,
@@ -1045,7 +1045,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   else
     molblock = molToMolblock(molecule, getRdKitModule());
 
-  tv.getFiltersGroup({createDefaultFilters: false}).add({
+  tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
