@@ -8,22 +8,6 @@ import {BehaviorSubject, Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
 
-export const defaultUsersIds = {
-  'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
-  'Admin': '878c42b0-9a50-11e6-c537-6bf8e9ab02ee',
-  'System': '3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3',
-};
-
-export const defaultGroupsIds = {
-  'All users': 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6',
-  'Developers': 'ba9cd191-9a50-11e6-9cc9-910bf827f0ab',
-  'Need to create': '00000000-0000-0000-0000-000000000000',
-  'Test': 'ca1e672e-e3be-40e0-b79b-8546b8bf62e6',
-  'Admin': 'a4b45840-9a50-11e6-c537-6bf8e9ab02ee',
-  'System': 'a4b45840-ac9c-4d39-8b4b-4db3e576b3c3',
-  'Administrators': '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5',
-};
-
 class HistoryPanelStore {
   filteringOptions = {text: ''} as {
     text: string,
@@ -259,7 +243,7 @@ export class HistoryPanel {
         this.sharedRunsFilter.next();
       });
 
-      const defaultUsers = Object.values(defaultUsersIds);
+      const defaultUsers = Object.values(DG.User.defaultUsersIds);
       const allUsers = await grok.dapi.users.list() as DG.User[];
       const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
 
@@ -709,7 +693,7 @@ export class HistoryPanel {
 
     this.beforeRunAddToShared.next(callToShare);
 
-    const allGroup = await grok.dapi.groups.find(defaultGroupsIds['All users']);
+    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
 
     const dfOutputs = wu(callToShare.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
