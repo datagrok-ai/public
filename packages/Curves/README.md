@@ -125,4 +125,4 @@ returns the result of the fit function. These functions are written as JavaScrip
 See also:
 
 - [Packages](../../help/develop/develop.md#packages)
-- [JavaScript API](../../help/develop/js-api.md)
+- [JavaScript API](../../help/develop/packages/js-api.md)

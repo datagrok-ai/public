@@ -12,7 +12,7 @@ a comprehensive platform for working with chemical and biological data.
 Regarding the performance, our goal is to be able to open chemical datasets of up to 10 millions small molecules completely
 in the browser, and interactively perform commonly used operations such as substructure and similarity search
 without having to rely on a server. In order to hit these goals, we are using a couple of techniques. First of all,
-we are leveraging Datagrok's capability to [efficiently work with relational data](https://datagrok.ai/help/develop/performance).
+we are leveraging Datagrok's capability to [efficiently work with relational data](https://datagrok.ai/help/develop/under-the-hood/performance).
 For cheminformatics, we are relying on the [RDKit library compiled to WebAssembly](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html).
 This not only gives us the ability to execute C++ code at the native speed, but also take full advantage of the
 modern multicore CPUs by running computations in multiple threads.
@@ -86,7 +86,7 @@ where d.chembl_id = @id
 
 ![molecule queries](help/molecule-queries.gif)
 
-A molecule query does not have to be a database query, any [function](../../help/datagrok/functions/function.md)
+A molecule query does not have to be a database query, any [function](../../help/datagrok/concepts/functions/functions.md)
 will do. For instance, InChi query is implemented as a Python script.
 
 ## Elemental analysis
@@ -163,8 +163,8 @@ Here is an example:
 
 See also:
 
-* [Cheminformatics predictive modeling](https://datagrok.ai/help/domains/chem/chem-predictive-modeling)
-* [Datagrok JS API](https://datagrok.ai/help/develop/js-api)
-* [Datagrok Cheminformatics API](https://datagrok.ai/help/develop/cheminformatics-development)
+* [Cheminformatics predictive modeling](https://datagrok.ai/help/datagrok/solutions/domains/chem/#qsar-and-qspr-modeling)
+* [Datagrok JS API](https://datagrok.ai/help/develop/packages/js-api)
+* [Datagrok Cheminformatics API](https://datagrok.ai/help/develop/domains/chem/cheminformatics#datagrok-js-api)
 * [Introducing new RDKit JavaScript wrappers](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
 * [Webassembly](https://webassembly.org/)

@@ -1,6 +1,6 @@
 # Bio
 
-Bio is a bioinformatics support [package](https://datagrok.ai/help/develop/develop#packages) for the
+Bio is a bioinformatics support [package](https://datagrok.ai/help/develop/#packages) for the
 [Datagrok](https://datagrok.ai) platform with an extensive toolset supporting SAR analisys for small molecules
 and antibodies.
 
@@ -110,8 +110,8 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 See also:
 
 * [WebLogo](../../libraries/)
-* [Viewers](../../help/visualize/viewers.md)
-* [Table view](../../help/datagrok/table-view.md)
+* [Viewers](../../help/visualize/viewers/viewers.md)
+* [Table view](../../help/datagrok/concepts/table.md)
 
 ## Sequence space
 
@@ -127,7 +127,7 @@ To launch the analysis from the top menu, select Bio | Structure | Sequence spac
 
 See:
 
-* [sequenceSpace()](src/utils/sequence-space.ts)
+* [sequenceSpace()](src/analysis/sequence-space.ts)
 
 ## Sequence activity cliffs
 
