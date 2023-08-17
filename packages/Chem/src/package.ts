@@ -904,7 +904,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
         const newValue = sketcher.getSmiles();
         const mol = checkMoleculeValid(cell.cell.value);
-        if (!checkMolEqualSmiles(mol, newValue))
+        if (!mol || !checkMolEqualSmiles(mol, newValue))
           cell.cell.value = newValue;
         mol?.delete();
       } else 
@@ -1326,11 +1326,10 @@ export async function demoScaffold(): Promise<void> {
 //input: string s
 //output: object result
 export function validateMolecule(s: string): DG.chem.IValidationRes {
-  let rdkitModule = getRdKitModule();
   let logHandle;
   let mol;
   try {
-    logHandle = rdkitModule.set_log_capture("rdApp.error");
+    logHandle = _rdKitModule.set_log_capture("rdApp.error");
     mol = getMolSafe(s, {}, _rdKitModule, true).mol;
     let logBuffer = logHandle.get_buffer();
     logHandle.clear_buffer();
