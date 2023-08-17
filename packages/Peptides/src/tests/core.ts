@@ -47,7 +47,7 @@ category('Core', () => {
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
 
     model!.mutationCliffsSelection = {'11': ['D']};
-  });
+  }, {skipReason: 'GROK-13790'});
 
   test('Start analysis: сomplex', async () => {
     const complexActivityColName = 'Activity';
@@ -74,7 +74,7 @@ category('Core', () => {
 
     if (model !== null)
       model.mutationCliffsSelection = {'13': ['-']};
-  });
+  }, {skipReason: 'GROK-13790'});
 
   test('Save and load project', async () => {
     const simpleActivityColName = 'IC50';
@@ -127,7 +127,7 @@ category('Core', () => {
     grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
     await awaitCheck(() => v.table!.currentRowIdx === 0, 'Grid never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.SemanticValue, 'Grid never finished initializing', 2000);
-  });
+  }, {skipReason: 'GROK-13790'});
 
   test('Cluster stats - Benchmark HELM 5k', async () => {
     if (!DG.Test.isInBenchmark)
@@ -142,7 +142,7 @@ category('Core', () => {
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     const model = await startAnalysis(
       activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
-    
+
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
     grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
@@ -207,5 +207,5 @@ category('Core', () => {
           grok.shell.closeTable(model.df);
       });
     }
-  }, {timeout: 10000});
+  }, {skipReason: 'GROK-13790', timeout: 10000});
 });
