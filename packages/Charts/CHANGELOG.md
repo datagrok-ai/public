@@ -1,5 +1,11 @@
 # Charts changelog
 
+## 1.2.0 (2023-08-17)
+
+### Bug Fixes
+
+* [#2098](https://github.com/datagrok-ai/public/issues/2098): Sunburst: Fixed an error when clicking on the root node
+
 ## 1.1.1 (2023-08-02)
 
 ### Features
