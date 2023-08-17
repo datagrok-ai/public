@@ -1,5 +1,13 @@
 # Datagrok-tools changelog
 
+## 4.12.13 (2023-08-17)
+
+### Bug Fixes
+
+* Datagrok API version check fix
+* Check Changelog fix
+* Sync --csv and --verbose flags
+
 ## 4.12.12 (2023-08-07)
 
 ### Features
