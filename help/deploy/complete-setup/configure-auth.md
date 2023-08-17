@@ -4,9 +4,10 @@ sidebar_position: 1
 ---
 
 Datagrok supports many [authentication](../../govern/authentication.md) methods, including popular methods such as SSO and OAuth:
-* [General (Login-password)](#login-password-authentication)
+
+* [General](#general-login-password-authentication) (login-password)
 * [LDAP](#ldap-authentication)
-* [Google](#google-authentication)
+* [Google](#oauth-authentication)
 * [OpenID](#openid-authentication)
 * GitHub
 * Facebook
@@ -34,6 +35,7 @@ For login-password authentication, it is important to [configure an email servic
 ### Add users
 
 To create [user](../../govern/user.md):
+
 1. On the **Sidebar** go to **Manage** > **Users**. 
 2. On the **Toolbox** click **Add User**. Create new user dialog appears. 
 3. Fill all input fields and click **OK**. New User profile appears. Click **Save** on the **Top Bar**.

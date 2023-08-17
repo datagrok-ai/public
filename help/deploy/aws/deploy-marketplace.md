@@ -27,16 +27,6 @@ Datagrok product on AWS Marketplace uses BYOL (Bring Your Own License) pricing m
 
 2. Choose one of the fulfillment options from the list, and click Continue to launch.
 
-   <!--   
-      <details>
-      <summary>Fulfillment options description</summary>
-   
-       * **ECS [Fargate](https://aws.amazon.com/fargate/) with manual DNS**. Requires to add SSL certificate to ACM and create DNS records manually. It creates all other infrastructure resources. 
-       * **ECS [Fargate](https://aws.amazon.com/fargate/) with [Route53](https://aws.amazon.com/route53/) DNS**. Creates all infrastructure from scratch, including SSL certificates and DNS records
-   
-      </details>
-   --->
-
 3. To start deployment, click on the **CloudFormation** deployment template. Quick create stack page opens.
 
 4. Fulfill all parameters for the stack; they can vary depending on the chosen fulfillment option. Click Create stack. The AWS starts the deployment, and the stack has 'CREATE_IN_PROGRESS' status. 
@@ -81,3 +71,13 @@ Datagrok product on AWS Marketplace uses BYOL (Bring Your Own License) pricing m
 
 7. If you chose the fulfillment option with _manual DNS_, you need to change CVM endpoint. On the sidebar, go to **Settings** > **Scripting**. Change the _Cvm Url Client_ to the CVM DNS record you created.
 8. Your Datagrok platform is now ready to use. Configure [authentication](../complete-setup/configure-auth.md), [SMTP](../complete-setup/configure-smtp.md), [install-packages](../complete-setup/install-packages.md). And enjoy fast and flexible data analysis.
+
+<!--   
+   <details>
+   <summary>Fulfillment options description</summary>
+
+    * **ECS [Fargate](https://aws.amazon.com/fargate/) with manual DNS**. Requires to add SSL certificate to ACM and create DNS records manually. It creates all other infrastructure resources. 
+    * **ECS [Fargate](https://aws.amazon.com/fargate/) with [Route53](https://aws.amazon.com/route53/) DNS**. Creates all infrastructure from scratch, including SSL certificates and DNS records
+
+   </details>
+--->

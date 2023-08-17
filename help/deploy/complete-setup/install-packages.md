@@ -8,6 +8,7 @@ Datagrok is very extensible, you can install any of our [public packages](../../
 To explore and install packages, use Package Manager (on the **Sidebar**, click **Manage** > **Packages**).
 
 As a start, we would suggest to install:
+
 - [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for [Bioinformatics](https://datagrok.ai/help/datagrok/solutions/domains/bio/) support
 - [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem/README.md) for [Cheminformatics](https://datagrok.ai/help/datagrok/solutions/domains/chem/) support
 - [Chembl](https://github.com/datagrok-ai/public/blob/master/packages/Chembl/README.md)
