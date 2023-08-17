@@ -47,8 +47,7 @@ function runChecks(packagePath: string): boolean {
 
   warnings.push(...checkFuncSignatures(packagePath, funcFiles));
   warnings.push(...checkPackageFile(packagePath, json, {isWebpack, externals}));
-  if (!json.servicePackage)
-    warnings.push(...checkChangelog(packagePath, json));
+  warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
     console.log(`Checking package ${path.basename(packagePath)}...`);
@@ -354,6 +353,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
 }
 
 export function checkChangelog(packagePath: string, json: PackageFile) {
+  if (json.servicePackage) return [];
   const warnings: string[] = [];
   let clf: string;
   try {
