@@ -1,4 +1,4 @@
-//name: Node Date
+//name: NodeJS Date
 //description: datetime input/output
 //language: nodejs
 //input: datetime input_datetime

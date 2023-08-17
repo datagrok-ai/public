@@ -1,4 +1,4 @@
-//name: Node Column List
+//name: NodeJS Column List
 //description: column list input
 //language: nodejs
 //input: dataframe df

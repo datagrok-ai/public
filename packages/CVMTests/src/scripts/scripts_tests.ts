@@ -3,7 +3,7 @@ import {category, test, expect, expectObject, expectTable} from '@datagrok-libra
 import dayjs from 'dayjs';
 import {DataFrame, FileSource} from 'datagrok-api/dg';
 
-const langs = ['Python', 'R', 'Julia']; // NodeJS, Octave', 'Grok', 'JavaScript'
+const langs = ['Python', 'R', 'Julia', 'NodeJS']; //  Octave', 'Grok', 'JavaScript'
 
 for (const lang of langs) {
   category(`Scripts: ${lang} scripts`, () => {
@@ -63,12 +63,14 @@ for (const lang of langs) {
       expectObject(result, {'hello': 'world', 'my_key': 'Datagrok'});
     });
 
-    test('Graphics output, Column input', async () => {
-      const df = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
-      const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
-        {'df': df, 'xName': 'x', 'yName': 'y'});
-      expect(result && result.length > 0, true);
-    });
+    if (lang !== 'Node') {
+      test('Graphics output, Column input', async () => {
+        const df = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
+        const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
+          {'df': df, 'xName': 'x', 'yName': 'y'});
+        expect(result && result.length > 0, true);
+      });
+    }
 
     test('Column list', async () => {
       const df = DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);

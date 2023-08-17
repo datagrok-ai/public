@@ -1,4 +1,4 @@
-//name: Node Simple
+//name: NodeJS Simple
 //description: primitive inputs and outputs test
 //language: nodejs
 //input: int integer_input = 1

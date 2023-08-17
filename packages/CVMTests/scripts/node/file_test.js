@@ -1,4 +1,4 @@
-//name: Node Lines Count
+//name: NodeJS Lines Count
 //description: file lines count
 //language: nodejs
 //input: file file

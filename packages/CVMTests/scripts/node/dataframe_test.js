@@ -1,4 +1,4 @@
-//name: Node Dataframe
+//name: NodeJS Dataframe
 //description: df input/output
 //language: nodejs
 //input: dataframe df

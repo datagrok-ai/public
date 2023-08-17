@@ -1,4 +1,4 @@
-//name: Node Map
+//name: NodeJS Map
 //description: map input/output
 //language: nodejs
 //input: map input_map

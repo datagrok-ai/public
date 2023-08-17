@@ -1,4 +1,4 @@
-//name: Node Calc Column
+//name: NodeJS Calc Column
 //description: calc column
 //language: nodejs
 //input: int x
