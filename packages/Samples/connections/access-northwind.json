@@ -4,7 +4,7 @@
   "friendlyName": "Northwind",
   "parameters": {
     "db": "",
-    "connString": "jdbc:ucanaccess:///home/grok/northwind/northwind.mdb;memory=false"
+    "connString": "jdbc:ucanaccess:///home/grok/northwind/northwind.mdb;"
   },
   "credentials": {
     "parameters": {
