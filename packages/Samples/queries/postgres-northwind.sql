@@ -72,7 +72,7 @@ select productname from products where @lookup(productname)
 
 --name: productDetails
 --connection: PostgresNorthwind
---input: string productName {suggestions: Demo:NorthwindDemo:productLookup}
+--input: string productName {suggestions: Demo:productLookup}
 select * from products where productname = @productName
 --end
 
