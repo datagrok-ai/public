@@ -124,7 +124,7 @@ export class RdKitService {
         const end = Math.min(processedMolecules + workingIndexes[idx].increment, dataLength);
         if (processedMolecules >= nextProgressCheck) {
           nextProgressCheck += moleculesPerProgress;
-          moleculesPerProgress *= 1.5;
+          moleculesPerProgress *= 1.05;
           // increment *= 1.2;
           //increment = Math.floor(increment);
           progressFunc(processedMolecules/dataLength);
