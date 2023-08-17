@@ -63,4 +63,4 @@ After the deployment, open the platform to complete the setup:
 
 1. [Configure authentication](complete-setup/configure-auth.md)
 2. [Configure SMTP](complete-setup/configure-smtp.md)
-3. [Install packages](complete-setup/install-package.md)
+3. [Install packages](complete-setup/install-packages.md)

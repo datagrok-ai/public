@@ -111,6 +111,14 @@ Resources:
         SourceSecurityGroupId:
           Ref: DatagrokSecurityGroup
         ToPort: 1234
+      - Description:
+          Fn::Sub: ${AWS::StackName} Allow internal connections from Datagrok to Grok
+            Spawner
+        FromPort: 8000
+        IpProtocol: TCP
+        SourceSecurityGroupId:
+          Ref: DatagrokSecurityGroup
+        ToPort: 8000
       Tags:
       - Key: Name
         Value:
@@ -133,6 +141,14 @@ Resources:
       VpcId:
         Ref: VPC
     Type: AWS::EC2::SecurityGroup
+  AdminPassword:
+    Properties:
+      Length: 16
+      ServiceToken:
+        Fn::GetAtt:
+        - RandomStringLambdaFunction
+        - Arn
+    Type: AWS::CloudFormation::CustomResource
   CloudMap:
     Properties:
       Description: ${AWS::StackName} Service Map for Datagrok
@@ -759,6 +775,11 @@ Resources:
         Environment:
         - Name: GROK_MODE
           Value: auto
+        - Name: ADMIN_PASSWORD
+          Value:
+            Fn::GetAtt:
+            - AdminPassword
+            - RandomString
         - Name: GROK_PARAMETERS
           Value:
             Fn::Sub:
@@ -766,9 +787,13 @@ Resources:
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "datagrok", "dbPassword": "${dbPassword}", "dbAdminLogin":
               "superuser", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": false,
-              "deployDemo": false, "deployTestDemo": false, "adminPassword": "admin"
+              "deployDemo": false, "deployTestDemo": false, "adminPassword": "${adminPassword}"
               }'
-            - bucket:
+            - adminPassword:
+                Fn::GetAtt:
+                - AdminPassword
+                - RandomString
+              bucket:
                 Ref: S3
               dbAdminPassword:
                 Fn::GetAtt:
@@ -839,7 +864,7 @@ Resources:
       Description:
         Fn::Sub: ${AWS::StackName} Datagrok policy for ECS Services
       ManagedPolicyName:
-        Fn::Sub: ${AWS::StackName}-ECSPolicy
+        Fn::Sub: ${AWS::StackName}-ECSPolicy-${AWS::Region}
       PolicyDocument:
         Statement:
         - Action:
@@ -867,6 +892,7 @@ Resources:
           Effect: Allow
           Resource:
           - arn:aws:ecr:us-east-1:709825985650:repository/datagrok/*
+          - Fn::Sub: arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
         Version: '2012-10-17'
     Type: AWS::IAM::ManagedPolicy
   GrokComputeService:
@@ -1065,7 +1091,7 @@ Resources:
       Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
-        - GrokComputeTaskExecutionRole
+        - TaskExecutionRole
         - Arn
       Family:
         Fn::Sub: ${AWS::StackName}-datagrok-cvm-grok_compute
@@ -1074,25 +1100,6 @@ Resources:
       RequiresCompatibilities:
       - FARGATE
     Type: AWS::ECS::TaskDefinition
-  GrokComputeTaskExecutionRole:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Condition: {}
-          Effect: Allow
-          Principal:
-            Service: ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      ManagedPolicyArns:
-      - Ref: ECSPolicy
-      Tags:
-      - Key: datagrok.component
-        Value: cvm
-      - Key: datagrok.service
-        Value: grok_compute
-    Type: AWS::IAM::Role
   GrokConnectPrivateDNS:
     Properties:
       AliasTarget:
@@ -1222,9 +1229,370 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
-      TaskRoleArn:
-        Ref: TaskRole
     Type: AWS::ECS::TaskDefinition
+  GrokSpawnerECRPolicy:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Grok Spawner ECR policy to access AWS resources
+      ManagedPolicyName:
+        Fn::Sub: ${AWS::StackName}-GrokSpawner-ECR-${AWS::Region}
+      PolicyDocument:
+        Statement:
+        - Action:
+          - ecr:GetAuthorizationToken
+          Effect: Allow
+          Resource: '*'
+        - Action:
+          - ecr:CreateRepository
+          Condition:
+            StringEquals:
+              aws:RequestTag/builder:
+              - grok_spawner
+          Effect: Allow
+          Resource: '*'
+        - Action:
+          - ecr:TagResource
+          Condition:
+            StringEquals:
+              aws:RequestTag/builder:
+              - grok_spawner
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
+        - Action:
+          - ecr:DescribeRepositories
+          - ecr:ListImages
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
+        Version: '2012-10-17'
+    Type: AWS::IAM::ManagedPolicy
+  GrokSpawnerKanikoPolicy:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Grok Spawner ECR policy to access AWS resources
+      ManagedPolicyName:
+        Fn::Sub: ${AWS::StackName}-GrokSpawner-Kaniko-${AWS::Region}
+      PolicyDocument:
+        Statement:
+        - Action:
+          - ecs:RunTask
+          Condition:
+            ArnEquals:
+              ecs:cluster:
+                Fn::GetAtt:
+                - Cluster
+                - Arn
+          Effect: Allow
+          Resource:
+            Ref: KanikoTaskDefinition
+        - Action:
+          - iam:PassRole
+          Effect: Allow
+          Resource:
+          - Fn::GetAtt:
+            - KanikoTaskRole
+            - Arn
+          - Fn::GetAtt:
+            - TaskExecutionRole
+            - Arn
+        - Action:
+          - s3:GetObject
+          - s3:PutObject
+          - s3:ListBucket
+          Effect: Allow
+          Resource:
+          - Fn::GetAtt:
+            - S3
+            - Arn
+          - Fn::Sub:
+            - ${bucket}/dockerfiles/*
+            - bucket:
+                Fn::GetAtt:
+                - S3
+                - Arn
+        Version: '2012-10-17'
+    Type: AWS::IAM::ManagedPolicy
+  GrokSpawnerPolicy:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Grok Spawner policy to access AWS resources
+      ManagedPolicyName:
+        Fn::Sub: ${AWS::StackName}-GrokSpawner-${AWS::Region}
+      PolicyDocument:
+        Statement:
+        - Action:
+          - ecs:ListTasks
+          Condition:
+            ArnEquals:
+              ecs:cluster:
+                Fn::GetAtt:
+                - Cluster
+                - Arn
+          Effect: Allow
+          Resource: '*'
+        - Action:
+          - ecs:RegisterTaskDefinition
+          Condition:
+            StringEquals:
+              aws:RequestTag/caller:
+              - grok_spawner
+          Effect: Allow
+          Resource: '*'
+        - Action:
+          - ecs:DescribeTaskDefinition
+          Condition: {}
+          Effect: Allow
+          Resource: '*'
+        - Action:
+          - ecs:DescribeServices
+          - ecs:UpdateService
+          Condition:
+            ArnEquals:
+              ecs:cluster:
+                Fn::GetAtt:
+                - Cluster
+                - Arn
+          Effect: Allow
+          Resource:
+            Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: Cluster
+        - Action:
+          - ecs:CreateService
+          Condition:
+            ArnEquals:
+              ecs:cluster:
+                Fn::GetAtt:
+                - Cluster
+                - Arn
+            StringEquals:
+              aws:RequestTag/caller:
+              - grok_spawner
+          Effect: Allow
+          Resource:
+            Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+            - cluster_name:
+                Ref: Cluster
+        - Action:
+          - ecs:DescribeTasks
+          Condition:
+            ArnEquals:
+              ecs:cluster:
+                Fn::GetAtt:
+                - Cluster
+                - Arn
+          Effect: Allow
+          Resource:
+            Fn::Sub:
+            - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*
+            - cluster_name:
+                Ref: Cluster
+        - Action:
+          - logs:GetLogEvents
+          Effect: Allow
+          Resource:
+            Fn::Sub:
+            - ${log_group}:log-stream:grok_spawner/*
+            - log_group:
+                Fn::GetAtt:
+                - LogGroup
+                - Arn
+        Version: '2012-10-17'
+    Type: AWS::IAM::ManagedPolicy
+  GrokSpawnerPrivateDNS:
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+          - LoadBalancerIntDatagrok
+          - DNSName
+        HostedZoneId:
+          Fn::GetAtt:
+          - LoadBalancerIntDatagrok
+          - CanonicalHostedZoneID
+      Comment:
+        Fn::Sub: ${AWS::StackName} Private Datagrok grok spawner DNS for internal
+          routing
+      HostedZoneId:
+        Ref: PrivateDNSZone
+      Name:
+        Fn::Sub: grok_spawner.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
+      Type: A
+    Type: AWS::Route53::RecordSet
+  GrokSpawnerService:
+    DependsOn:
+    - TCP8000IntListener
+    Properties:
+      Cluster:
+        Fn::GetAtt:
+        - Cluster
+        - Arn
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DeploymentController:
+        Type: ECS
+      DesiredCount: 1
+      LaunchType: FARGATE
+      LoadBalancers:
+      - ContainerName: grok_spawner
+        ContainerPort: 8000
+        TargetGroupArn:
+          Ref: TCP8000IntTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+          - Ref: DatagrokSecurityGroup
+          Subnets:
+          - Ref: PrivateSubnet1
+          - Ref: PrivateSubnet2
+      PlatformVersion: 1.4.0
+      PropagateTags: SERVICE
+      SchedulingStrategy: REPLICA
+      ServiceRegistries:
+      - RegistryArn:
+          Fn::GetAtt:
+          - GrokSpawnerServiceDiscoveryEntry
+          - Arn
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      - Key: datagrok.service
+        Value: grok_spawner
+      TaskDefinition:
+        Ref: GrokSpawnerTaskDefinition
+    Type: AWS::ECS::Service
+  GrokSpawnerServiceDiscoveryEntry:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Datagrok grok_spawner service discovery entry in
+          Cloud Map
+      DnsConfig:
+        DnsRecords:
+        - TTL: 60
+          Type: A
+        RoutingPolicy: MULTIVALUE
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: grok_spawner
+      NamespaceId:
+        Ref: CloudMap
+    Type: AWS::ServiceDiscovery::Service
+  GrokSpawnerTaskDefinition:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: ${AWS::Region}.compute.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+        Essential: false
+        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: grok_spawner
+        MemoryReservation: 100
+        Name: ResolvConf
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: ResolvConf
+        Environment:
+        - Name: DOCKER_REGISTRY_SECRET_ARN
+          Value: ''
+        - Name: ECS_SUBNETS
+          Value:
+            Fn::Sub:
+            - '["${s1}", "${s2}"]'
+            - s1:
+                Ref: PrivateSubnet1
+              s2:
+                Ref: PrivateSubnet2
+        - Name: ECS_SECURITY_GROUPS
+          Value:
+            Fn::Sub:
+            - '["${s1}"]'
+            - s1:
+                Ref: DatagrokSecurityGroup
+        - Name: ECS_EXEC_ROLE
+          Value:
+            Fn::GetAtt:
+            - TaskExecutionRole
+            - Arn
+        - Name: GROK_SPAWNER_ENVIRONMENT
+          Value:
+            Fn::Sub: ${AWS::StackName}
+        - Name: KANIKO_S3_BUCKET
+          Value:
+            Ref: S3
+        - Name: KANIKO_TASK_DEFINITION
+          Value:
+            Ref: KanikoTaskDefinition
+        - Name: ECS_LOG_GROUP
+          Value:
+            Fn::Sub:
+            - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
+            - logs:
+                Ref: LogGroup
+        Essential: true
+        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/grok_spawner:1.4.4
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: grok_spawner
+        MemoryReservation: 100
+        Name: grok_spawner
+        PortMappings:
+        - ContainerPort: 8000
+          HostPort: 8000
+          Protocol: tcp
+      Cpu: '256'
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - TaskExecutionRole
+        - Arn
+      Family: grok_spawner
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+      TaskRoleArn:
+        Ref: GrokSpawnerTaskRole
+    Type: AWS::ECS::TaskDefinition
+  GrokSpawnerTaskRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Condition: {}
+          Effect: Allow
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+      - Ref: GrokSpawnerPolicy
+      - Ref: GrokSpawnerECRPolicy
+      - Ref: GrokSpawnerKanikoPolicy
+      - Ref: ECSPolicy
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      - Key: datagrok.service
+        Value: grok_spawner
+    Type: AWS::IAM::Role
   H2oPrivateDNS:
     Properties:
       AliasTarget:
@@ -1517,7 +1885,7 @@ Resources:
       Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
-        - H2oTaskExecutionRole
+        - TaskExecutionRole
         - Arn
       Family:
         Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o
@@ -1526,25 +1894,6 @@ Resources:
       RequiresCompatibilities:
       - FARGATE
     Type: AWS::ECS::TaskDefinition
-  H2oTaskExecutionRole:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Condition: {}
-          Effect: Allow
-          Principal:
-            Service: ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      ManagedPolicyArns:
-      - Ref: ECSPolicy
-      Tags:
-      - Key: datagrok.component
-        Value: cvm
-      - Key: datagrok.service
-        Value: h2o
-    Type: AWS::IAM::Role
   InternetGateway:
     Condition: CreatePublicSubnets
     Properties:
@@ -1848,7 +2197,7 @@ Resources:
         SizeInGiB: 50
       ExecutionRoleArn:
         Fn::GetAtt:
-        - JupyterKernelGatewayTaskExecutionRole
+        - TaskExecutionRole
         - Arn
       Family: datagrok-cvm-jupyter_kernel_gateway
       Memory: '3072'
@@ -1856,25 +2205,6 @@ Resources:
       RequiresCompatibilities:
       - FARGATE
     Type: AWS::ECS::TaskDefinition
-  JupyterKernelGatewayTaskExecutionRole:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Condition: {}
-          Effect: Allow
-          Principal:
-            Service: ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
-      ManagedPolicyArns:
-      - Ref: ECSPolicy
-      Tags:
-      - Key: datagrok.component
-        Value: cvm
-      - Key: datagrok.service
-        Value: jupyter_kernel_gateway
-    Type: AWS::IAM::Role
   JupyterNotebookService:
     DependsOn:
     - CvmTCP80Listener
@@ -2158,7 +2488,7 @@ Resources:
       Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
-        - JupyterNotebookTaskExecutionRole
+        - TaskExecutionRole
         - Arn
       Family: datagrok-cvm-jupyter_notebook
       Memory: '2048'
@@ -2166,7 +2496,80 @@ Resources:
       RequiresCompatibilities:
       - FARGATE
     Type: AWS::ECS::TaskDefinition
-  JupyterNotebookTaskExecutionRole:
+  KanikoPolicy:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Kaniko policy to access AWS resources
+      ManagedPolicyName:
+        Fn::Sub: ${AWS::StackName}-Kaniko-${AWS::Region}
+      PolicyDocument:
+        Statement:
+        - Action:
+          - ecr:GetAuthorizationToken
+          Effect: Allow
+          Resource: '*'
+        - Action:
+          - ecr:CompleteLayerUpload
+          - ecr:UploadLayerPart
+          - ecr:InitiateLayerUpload
+          - ecr:BatchCheckLayerAvailability
+          - ecr:PutImage
+          - ecr:TagResource
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
+        - Action:
+          - ecr:BatchCheckLayerAvailability
+          - ecr:BatchGetImage
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
+        - Action:
+          - s3:GetObject
+          - s3:ListBucket
+          Effect: Allow
+          Resource:
+          - Fn::GetAtt:
+            - S3
+            - Arn
+          - Fn::Sub:
+            - ${bucket}/dockerfiles/*
+            - bucket:
+                Fn::GetAtt:
+                - S3
+                - Arn
+        Version: '2012-10-17'
+    Type: AWS::IAM::ManagedPolicy
+  KanikoTaskDefinition:
+    Properties:
+      ContainerDefinitions:
+      - Essential: true
+        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/kaniko:v1.12.1
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: grok_spawner_kaniko
+        MemoryReservation: 100
+        Name: grok_spawner_kaniko
+      Cpu: '1024'
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - TaskExecutionRole
+        - Arn
+      Family: grok_spawner_kaniko
+      Memory: '4096'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+      TaskRoleArn:
+        Ref: KanikoTaskRole
+    Type: AWS::ECS::TaskDefinition
+  KanikoTaskRole:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -2178,12 +2581,12 @@ Resources:
             Service: ecs-tasks.amazonaws.com
         Version: '2012-10-17'
       ManagedPolicyArns:
-      - Ref: ECSPolicy
+      - Ref: KanikoPolicy
       Tags:
       - Key: datagrok.component
-        Value: cvm
+        Value: datagrok
       - Key: datagrok.service
-        Value: jupyter_notebook
+        Value: grok_spawner
     Type: AWS::IAM::Role
   LoadBalancerCvm:
     Properties:
@@ -2273,7 +2676,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName:
-        Fn::Sub: ${AWS::StackName}-datagrok
+        Fn::Sub: /ecs/${AWS::StackName}-datagrok-${AWS::Region}
       RetentionInDays: 7
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -2310,7 +2713,7 @@ Resources:
       Description:
         Fn::Sub: ${AWS::StackName} Datagrok policy to access AWS resources
       ManagedPolicyName:
-        Fn::Sub: ${AWS::StackName}-S3Access
+        Fn::Sub: ${AWS::StackName}-S3Access-${AWS::Region}
       PolicyDocument:
         Statement:
         - Action:
@@ -2568,7 +2971,7 @@ Resources:
     Properties:
       LogGroupName:
         Fn::Sub:
-        - /aws/lambda/${function_name}
+        - /aws/lambda/${function_name}-${AWS::Region}
         - function_name:
             Ref: RandomStringLambdaFunction
       RetentionInDays: 7
@@ -2787,6 +3190,37 @@ Resources:
       Port: 443
       Protocol: HTTPS
     Type: AWS::ElasticLoadBalancingV2::Listener
+  TCP8000IntListener:
+    Properties:
+      DefaultActions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: TCP8000IntTargetGroup
+        Type: forward
+      LoadBalancerArn:
+        Ref: LoadBalancerIntDatagrok
+      Port: 8000
+      Protocol: HTTP
+    Type: AWS::ElasticLoadBalancingV2::Listener
+  TCP8000IntTargetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 60
+      HealthCheckPath: /info
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-gs-i
+      Port: 8000
+      Protocol: HTTP
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      TargetType: ip
+      UnhealthyThresholdCount: 5
+      VpcId:
+        Ref: VPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
   TCP8080IntListener:
     Properties:
       DefaultActions:
@@ -2862,11 +3296,6 @@ Resources:
         Version: '2012-10-17'
       ManagedPolicyArns:
       - Ref: ECSPolicy
-      Tags:
-      - Key: datagrok.component
-        Value: datagrok
-      - Key: datagrok.service
-        Value: datagrok
     Type: AWS::IAM::Role
   TaskRole:
     Properties:
