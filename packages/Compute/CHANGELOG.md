@@ -10,7 +10,7 @@
 - RFV: Inputs now have a delay before calculation re-run
 - RFV: DataFrame export to Excel now uses built-in Excel tables
 
-### Fixed bugs
+### Bug fixes
 
 - Removed workarounds for GROK-13335 & GROK-13337
 - PLV: Fixed bug with extra tabs enabled on historical run load
@@ -23,41 +23,24 @@
 - RFV now supports format setting for float inputs using `format` tag
 - RFV now supports precision setting for float outputs using `precision` tag`
 
-### Fixed bugs
+### Bug fixes
 
 - RFV now saves selected output tab on function rerun
 - RFV now fully hides output during function run panel if no input tabs is provided
 
 ## 1.13.3 (2023-08-01)
 
-### Features
-
-ModelCatalog now shows model readme on card click
+- ModelCatalog now shows model readme on card click
 
 ## 1.13.2 (2023-07-28)
 
-Dependency: datgarok-api >= 1.15.3
-
-This release includes following features:
-
-- RichComputationViewEditor now choiceInputs for string properties
+- RichComputationViewEditor now uses choiceInputs for string properties
 
 ## 1.13.0 (2023-07-28)
-
-Dependency: datgarok-api >= 1.15.3
-
-This release includes following features:
 
 - RichComputationViewEditor now supports exporting plots' images as separate export option
 
 ## 1.12.3 (2023-07-24)
 
-Dependency: datgarok-api >= 1.15.3
-
-This release includes following features:
-
 - RichComputationViewEditor now supports inputs defined in other DG functions
-
-### Bug fixes
-
 - Fixed package augmentation for manually created scripts
