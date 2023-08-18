@@ -49,7 +49,7 @@
   ],
   "ingest": {
     "type": "File",
-    "query": "System:AppData/HitTriage/campaigns/TMP1-1/enriched_table.csv",
+    "query": "System:AppData/HitTriage/Hit Triage/campaigns/TMP1-1/enriched_table.csv",
     "molColName": "smiles"
   }
 }

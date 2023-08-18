@@ -727,7 +727,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
 export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
-): Promise<void> {
+): Promise<DG.DataFrame | void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -754,6 +754,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
   } finally {
     progress.close();
   }
+  return table;
 }
 
 //#endregion
@@ -1178,7 +1179,7 @@ export async function callChemDiversitySearch(
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column,
   MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean,
   PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean,
-): Promise<void> {
+): Promise<DG.DataFrame> {
   const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
     HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
     rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
@@ -1189,6 +1190,7 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
   } finally {
     pb.close();
   }
+  return table;
 }
 
 //top-menu: Chem | Calculate | Toxicity Risks...
@@ -1202,13 +1204,14 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 //input: bool reproductiveEffects = false
 export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column,
   mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean,
-): Promise<void> {
+): Promise<DG.DataFrame> {
   const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
   try {
     await addRisksAsColumns(table, molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
   } finally {
     pb.close();
   }
+  return table;
 }
 
 //top-menu: Chem | Analyze | Scaffold Tree

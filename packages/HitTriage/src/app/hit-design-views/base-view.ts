@@ -1,22 +1,21 @@
 import * as DG from 'datagrok-api/dg';
 import {divText} from 'datagrok-api/ui';
-import {ITemplate} from '../types';
-import {HitTriageApp} from '../hit-triage-app';
+import {HitDesignApp} from '../hit-design-app';
+import {HitDesignTemplate} from '../types';
+export class HitDesignBaseView extends DG.ViewBase {
+  app: HitDesignApp;
 
-export class HitTriageBaseView extends DG.ViewBase {
-  app: HitTriageApp;
-
-  constructor(app: HitTriageApp) {
+  constructor(app: HitDesignApp) {
     super();
 
     this.app = app;
 
     this.root.classList.add('grok-hit-triage-view');
     this.root.style.display = 'flex';
-    this.statusBarPanels = [divText('Hit Triage')];
+    this.statusBarPanels = [divText('Hit Design')];
   }
 
-  get template(): ITemplate {return this.app.template!;}
+  get template(): HitDesignTemplate {return this.app.template!;}
 
   /** Override to initialize the view based on the session. */
   onActivated(): void {

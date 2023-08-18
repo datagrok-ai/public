@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from './app/hit-triage-app';
+import {HitDesignApp} from './app/hit-design-app';
 
 export const _package = new DG.Package();
 
@@ -12,6 +13,11 @@ export async function hitTriageApp() {
   new HitTriageApp();
 }
 
+//tags: app
+//name: Hit Design
+export async function hitDesignApp() {
+  new HitDesignApp();
+}
 //name: Demo Molecules 100
 //tags: HitTriageDataSource
 //output: dataframe result

@@ -33,17 +33,17 @@ table.hit-triage-table {
     width: calc(100% - 20px);
 }
 
-table.hit-triage-table tr {
+/* table.hit-triage-table tr {
     border: 1px solid black;
-}
+} */
 
-table.hit-triage-table tr:nth-child(even) {
+/* table.hit-triage-table tr:nth-child(even) {
     background-color: #f2f2f2;
-}
+} */
 
-table.hit-triage-table tr td:not(:last-child) {
+/* table.hit-triage-table tr td:not(:last-child) {
     border-right: 1px solid black;
-}
+} */
 
 .hit-triage-table-container {
     max-width: 600px;
@@ -81,8 +81,18 @@ table.hit-triage-table tr td:not(:last-child) {
 
 .hit-triage-add-campaign-field-button {
     aspect-ratio: 1;
-    align-self: start;
-    margin-top: 15px;
+    color: #2083d5;
+    /* align-self: start; */
+    /* margin-top: 15px; */
+ }
+
+ .hit-triage-remove-campaign-field-button{
+    color: #2083d5;
+    margin-left: 12px;
+    margin-right: 12px;
+ }
+ .hit-triage-new-template-functions-input > .ui-box {
+    height: unset !important;
  }
 
  .hit-triage-new-template-functions-input {
@@ -90,6 +100,7 @@ table.hit-triage-table tr td:not(:last-child) {
     max-width: unset !important;
     overflow-y: scroll;
  }
+ 
 
  .hit-triage-new-template-functions-input > .d4-tab-host {
     width: 100% !important;
@@ -106,11 +117,11 @@ table.hit-triage-table tr td:not(:last-child) {
 
  .hit-triage-campaign-field-div {
     align-items: center;
-    border-top: 1px solid gray;
     width: fit-content;
  }
- .hit-triage-campaign-field-div:last-child {
-    border-bottom: 1px solid gray;
+ 
+ .hit-triage-campaign-field-div:not(:last-child) .hit-triage-add-campaign-field-button {
+    display: none;
  }
 
  .oy-scroll {
@@ -123,11 +134,13 @@ table.hit-triage-table tr td:not(:last-child) {
 
 .hit-triage-templates-input-div {
     align-items: center;
-    padding-bottom: 10px;
-    border-bottom: 1px solid gray;
+    padding-bottom: 0;
+    padding-top: 0;
+
   }
 
 .hit-triage-additional-fields-title{
     margin-bottom: 8px;
+    margin-top: 12px;
     font-weight: bold;
 }

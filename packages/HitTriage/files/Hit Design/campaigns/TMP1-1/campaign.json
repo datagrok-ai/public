@@ -1,0 +1,11 @@
+{
+  "name": "TMP1-1",
+  "templateName": "TEMO",
+  "createDate": "2023/10/02",
+  "status": "In Progress",
+  "campaignFields": {
+    "Chemist": "Davit Rizhinashvili",
+    "Stage": 1,
+    "Project": "Project 1"
+  }
+}

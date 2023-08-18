@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from '../hit-triage-app';
 import {_package} from '../../package';
-import {ICampaign, ICampaignStatus} from '../types';
+import {HitTriageCampaign, HitTriageCampaignStatus} from '../types';
 import {CampaignJsonName, CampaignTableName} from '../consts';
 import {saveCampaignDialog} from '../dialogs/save-campaign-dialog';
 import {toFormatedDateString} from '../utils';
@@ -15,20 +15,19 @@ export class SubmitView extends HitTriageBaseView {
     this.name = 'Submit';
   }
 
-  render(): void {
+  render(): HTMLDivElement {
     ui.empty(this.root);
-    const submitDiv = ui.divH([]);
+    const submitDiv = ui.divH([], {style: {gap: '10px'}});
     if (this.app.template?.submit && this.app.template.submit.fName)
       submitDiv.appendChild(ui.bigButton('SUBMIT', () => this.submit()));
 
     submitDiv.appendChild(ui.bigButton('Save Campaign', () => this.saveCampaign()));
-
     const content = ui.divV([
       ui.h1('Summary'),
       ui.div([ui.tableFromMap(this.app.getSummary())]),
       submitDiv,
     ]);
-    this.root.appendChild(content);
+    return content;
   }
 
   onActivated(): void {
@@ -51,17 +50,17 @@ export class SubmitView extends HitTriageBaseView {
     grok.shell.info('Submitted successfully.');
   }
 
-  async saveCampaign(status?: ICampaignStatus): Promise<any> {
+  async saveCampaign(status?: HitTriageCampaignStatus): Promise<any> {
     const campaignId = this.app.campaignId!;
     const filters = this.app.filterSettings!;
     const templateName = this.app.template!.name;
     const enrichedDf = this.app.dataFrame!;
-    const campaignPrefix = `System:AppData/HitTriage/campaigns/${campaignId}/`;
+    const campaignPrefix = `System:AppData/HitTriage/Hit Triage/campaigns/${campaignId}/`;
     const campaignName = campaignId ?? await saveCampaignDialog(campaignId);
-    const campaign: ICampaign = {
+    const campaign: HitTriageCampaign = {
       name: campaignName,
       templateName,
-      filters: filters.filter((f) => f['column'] !== this.app.molColName),
+      filters: filters, //filters.filter((f) => f['column'] !== this.app.molColName),
       // TODO: one filter is chem substructure which does not work
       ingest: {
         type: 'File',
@@ -72,8 +71,13 @@ export class SubmitView extends HitTriageBaseView {
       createDate: this.app.campaign?.createDate ?? toFormatedDateString(new Date()),
       campaignFields: this.app.campaign?.campaignFields ?? this.app.campaignProps,
     };
-    await _package.files.writeAsText(`campaigns/${campaignId}/${CampaignJsonName}`, JSON.stringify(campaign));
-    await _package.files.writeAsText(`campaigns/${campaignId}/${CampaignTableName}`, enrichedDf.toCsv());
+    await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignJsonName}`,
+      JSON.stringify(campaign));
+
+    const csvDf = DG.DataFrame.fromColumns(
+      enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
+    ).toCsv();
+    await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
     grok.shell.info('Campaign saved successfully.');
   }
 }
