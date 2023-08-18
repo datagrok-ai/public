@@ -146,7 +146,7 @@ export class User extends Entity {
       "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380",
       "Admin": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee",
       "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3",
-    }
+    } as const;
   }
 }
 
@@ -724,7 +724,7 @@ export class Group extends Entity {
       "Admin": "a4b45840-9a50-11e6-c537-6bf8e9ab02ee",
       "System": "a4b45840-ac9c-4d39-8b4b-4db3e576b3c3",
       "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
-    }
+    } as const;
   }
 }
 
