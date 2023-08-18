@@ -1,5 +1,11 @@
 # bio changelog
 
+## 5.37.0 (WIP)
+
+### Bug fixes
+
+* Restore utils getSplitter method, it is required for MacromoleculeDifference column
+
 ## 5.36.0 (2023-08-10)
 
 This release introduces chemical sequence similarity functionality.
