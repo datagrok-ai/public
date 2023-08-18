@@ -1,5 +1,18 @@
 # Compute changelog
 
+## 1.13.8 (2023-08-18)
+
+### Features
+
+- RFV: Inputs are now disabled during computations
+- RFV: editState is now properly saved
+- FileInput: Moved icons into options container
+- Default users and groups IDs are now taken from API
+
+### Bug fixes
+
+- History panel CSS fixed
+
 ## 1.13.6 (2023-08-15)
 
 ### Features
