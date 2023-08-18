@@ -26,6 +26,7 @@ import * as C from './constants';
 
 import {_package, getBioLib} from '../package';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 
 type TempType = { [tagName: string]: any };
@@ -292,14 +293,15 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     const cell = gridCell.cell;
     const tableCol = gridCell.tableColumn as DG.Column<string>;
     const s: string = cell.value ?? '';
+    const separator = tableCol.tags[bioTAGS.separator];
+    const units: string = tableCol.tags[DG.TAGS.UNITS];
     w = getUpdatedWidth(grid, g, x, w);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const uh = UnitsHandler.getOrCreate(tableCol);
-    const splitter = uh.getSplitter();
+    const splitter = getSplitter(units, separator);
     const subParts1 = splitter(s1);
     const subParts2 = splitter(s2);
-    drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, uh.units);
+    drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units);
   }
 }
 
