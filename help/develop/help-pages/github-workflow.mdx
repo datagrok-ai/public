@@ -1,5 +1,5 @@
 ---
-title: "GitHub workflow"
+title: "Help docs contribution workflow"
 sidebar_position: 1
 ---
 
@@ -8,133 +8,54 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-## GitHub Actions Docusaurus workflow
+This documents described how to contribute to the Datagrok documentation.
 
-[GitHub Actions Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml) includes:
+We write our technical documentation using [GitHub-flavored Markdown](https://github.github.com/gfm/) syntax.
+The source code and READMEs are in our [public repository on GitHub](https://github.com/datagrok-ai/public/tree/master).
+For our wiki, we use [Docusaurus](https://docusaurus.io/),
+which converts
+[GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
+ into HTML.
+ For basic information about writing in Docusaurus Markdown, see our [Markdown writing guide](markdown.md).
 
-* Lint checks using [markdownlint](https://github.com/DavidAnson/markdownlint-cli2) linter.
-* If the checks are finished successfully, GitHub will convert the markdown files to HTML
-  using [Docusaurus](https://docusaurus.io/)
-  * The result HTML help pages are also available as GitHub Actions artifact: `docusaurus`
-* Then [Hyperlink](https://github.com/untitaker/hyperlink) checks the result HTML files.
-* If the checks are finished successfully and the changes are in the master branch,  GitHub Actions will deploy the documentation to the server.
-  * 'Deploy to server' step contains detailed information about changes that are made on the server.
-* Finally, GitHub Actions performs Typesense DocSearch Scrape to update indexes for search in the wiki
+ To set up the environment and learn about our GitHub policy, see the [GitHub workflow page](github-workflow.mdx).
 
-If any error occurs during checks, the deployment to the server will be canceled. Check for errors in the GitHub Actions log or in GitHub Actions run summary.
 
-More information about flow can be found on Docusaurus Help tab in [public repository CI/CD flows](../../deploy/releases/ci-flow.mdx#public-repository-cicd-flows).
+## Before you start
 
-### Trigger GitHub Actions manually
-
-If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
-
-1. Use [Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml).
-2. Press `run workflow`. Choose the target branch. Then `Run workflow`. Note that deployment to the server is executed for the master branch only.
-3. Check that the GitHub Actions workflow finished successfully.
-
-## Run docusaurus locally
 
 [Docusaurus](https://docusaurus.io/) is an optimized site generator. Docusaurus
 is a project for building, deploying, and maintaining open source project
 websites easily.
 
-### Requirements
+Read [guidelines for help docs contribution](help-pages.md) and stay to it.
 
-1. Install Node JS [v18.12.x](https://nodejs.org/dist/v18.12.0/)
-2. Upgrade npm to `v9.x.x`:
+## Prepare local environment
 
-    ```shell
-    npm install -g npm@9.x.x
-    ```
+1. Install Latest stable [Node JS](https://nodejs.org/en/download)
+2. Check that npm version is at least `v9.x.x`:
 
-### Local setup
+```shell
+npm --version
+```
+3. Install hyperlink checker.
+Internal links and anchors are checked after the help package convert to HTML.
+To test it locally wou should convert markdown to HTML using [Docusaurus](https://docusaurus.io/)
+and then check all links using [hyperlink](https://github.com/untitaker/hyperlink).
 
-1. Open the terminal and change the current directory to the directory with docusaurus code:
+```shell
+npm install --global @untitaker/hyperlink
+```
 
-    ```shell
-    cd docusaurus
-    ```
+4. Install commit linting tools
 
-2. Install package dependencies:
+```bash
+npm install --global @commitlint/config-conventional @commitlint/cli
+pip install pre-commit
+pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg
+```
 
-    ```shell
-    npm install
-    ```
-
-3. As we use docusaurus to generate the API documentation, you need to repeat these installation steps in the `js-api` folder:
-
-   ```mdx-code-block
-   <Tabs>
-   <TabItem value="win" label="Windows">
-   ```
-
-    ```cmd
-    cd ..\js-api
-    npm install
-    ```
-
-   ```mdx-code-block
-   </TabItem>
-   <TabItem value="bash" label="Linux/MacOS" default>
-   ```
-
-    ```shell
-    cd ../js-api
-    npm install
-    ```
-
-   ```mdx-code-block
-   </TabItem>
-   </Tabs>
-   ```
-
-4. To run docusaurus locally and test the changes, run the following command:
-
-   ```mdx-code-block
-   <Tabs>
-   <TabItem value="win" label="Windows">
-   ```
-
-    ```cmd
-    cd ..\docusaurus
-    npm run start-debug
-    ```
-
-   ```mdx-code-block
-   </TabItem>
-   <TabItem value="bash" label="Linux/MacOS" default>
-   ```
-
-    ```shell
-    cd ../docusaurus
-    npm run start-debug
-    ```
-
-   ```mdx-code-block
-   </TabItem>
-   </Tabs>
-   ```
-
-    It will start the server and recompile the client
-    on every change you make. If the command does not work use `docusaurus start --config docusaurus-debug.config.js`.
-
-5. Docusaurus will be available at [http://localhost:3000](http://localhost:3000). If you don't see your changes immediately, reload the page.
-6. When you think the development is over and you want to commit the code, run the following command to check that the project builds without errors. Note that the build step will take some time.
-
-    ```shell
-    npm run build
-    ```
-
-   If the command does not work use `docusaurus build`.
-
-7. Now you can commit and push your changes to the repository.
-
-## Run linter locally
-
-### Markdown linter
-
-To lint and flag style issues in markdown files we use [markdownlint](https://github.com/DavidAnson/markdownlint).
+5. Install markdown linter. To lint and flag style issues in markdown files we use [markdownlint](https://github.com/DavidAnson/markdownlint).
 
 ```mdx-code-block
 <Tabs>
@@ -144,7 +65,7 @@ To lint and flag style issues in markdown files we use [markdownlint](https://gi
 1. Install [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2#install)
 
    ```bash
-   npm install markdownlint-cli2 --global
+   npm install --global markdownlint-cli2
    ```
 
 2. [Install](https://github.com/DavidAnson/vscode-markdownlint#install) Markdownlint [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
@@ -160,7 +81,7 @@ To lint and flag style issues in markdown files we use [markdownlint](https://gi
 1. Install [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2#install)
 
    ```bash
-   npm install markdownlint-cli2 --global
+   npm install --global markdownlint-cli2
    ```
 
 2. Add MarkdownLint as [External Tool](https://www.jetbrains.com/help/idea/configuring-third-party-tools.html#local-ext-tools). `Preferences > Tools > External Tools > + (Add)`
@@ -188,7 +109,7 @@ To lint and flag style issues in markdown files we use [markdownlint](https://gi
 1. Install [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2#install)
 
    ```bash
-   npm install markdownlint-cli2 --global
+   npm install --global markdownlint-cli2
    ```
 
 2. Run MarkdownLint using the following command
@@ -238,9 +159,120 @@ To lint and flag style issues in markdown files we use [markdownlint](https://gi
 </Tabs>
 ```
 
-### Links and anchors check
 
-Internal links and anchors are checked after the help package convert to HTML. To test it locally wou should convert markdown to HTML using [Docusaurus](https://docusaurus.io/) and then check all links using [hyperlink](https://github.com/untitaker/hyperlink).
+### Prepare datagrok repository and docusaurus
+
+1. Clone Datagrok public repository
+
+    ```shell
+    git clone https://github.com/datagrok-ai/public.git
+    ```
+
+2. Open the terminal and change the current directory to the directory with Datagrok docusaurus code:
+
+    ```shell
+    cd public/docusaurus
+    ```
+
+2. Install package dependencies:
+
+    ```shell
+    npm install
+    ```
+
+3. As we use docusaurus to generate the API documentation, you need to repeat these installation steps in the `js-api` folder:
+
+   ```mdx-code-block
+   <Tabs>
+   <TabItem value="win" label="Windows">
+   ```
+
+    ```cmd
+    cd ..\js-api
+    npm install
+    ```
+
+   ```mdx-code-block
+   </TabItem>
+   <TabItem value="bash" label="Linux/MacOS" default>
+   ```
+
+    ```shell
+    cd ../js-api
+    npm install
+    ```
+
+   ```mdx-code-block
+   </TabItem>
+   </Tabs>
+   ```
+
+
+## Make changes
+
+1. Pull the latest changes from the repository
+
+    ```shell
+    git checkout master
+    git pull
+    ```
+
+2. Create a git branch. It would be best to name it according to the task; the name must be meaningful.
+   Use the agreed standard: `<first letter of your name><your surname>/<task ID>-<short description>`.
+   Task ID should be a full ID from any task tracking system.
+
+   ```bash
+   # git checkout -b <first letter of your name><you surname>/<task ID>-<short description>
+   git checkout -b jdoe/GROK-123-description
+
+   # git push –set-upstream origin <first letter of your name><you surname>/<task ID>-<short description>
+   git push --set-upstream origin jdoe/GROK-123-description
+   ```
+
+If you don't have assigned Datagrok tasks, use the naming pattern:
+`<first letter of your name><your surname>/<task ID>-<short description>`
+
+
+3. Run docusaurus locally:
+
+   ```mdx-code-block
+   <Tabs>
+   <TabItem value="win" label="Windows">
+   ```
+
+    ```cmd
+    cd ..\docusaurus
+    npm run start-debug
+    ```
+
+   ```mdx-code-block
+   </TabItem>
+   <TabItem value="bash" label="Linux/MacOS" default>
+   ```
+
+    ```shell
+    cd ../docusaurus
+    npm run start-debug
+    ```
+
+   ```mdx-code-block
+   </TabItem>
+   </Tabs>
+   ```
+
+If the command does not work use `docusaurus start --config docusaurus-debug.config.js`.
+
+4. Now you can proceed with the documentation editing.
+
+Docusaurus will be available at [http://localhost:3000](http://localhost:3000).
+It will recompile the documentation on every change you make,
+so you will immediately see the changes you made to the documentation.
+
+If you don't see your changes immediately, reload the page.
+
+6. When you think the work  reached a milestone and you want to commit it to the branch,
+run the following commands to check that the project builds without errors. Note that the build step will take some time.
+
 
 ```mdx-code-block
 <Tabs>
@@ -254,10 +286,8 @@ Internal links and anchors are checked after the help package convert to HTML. T
 
    ```cmd
    cd docusaurus
-   npm install
    npm run build
 
-   npm install @untitaker/hyperlink --global
    hyperlink --check-anchors build --sources ..\help
    ```
 
@@ -268,10 +298,8 @@ Internal links and anchors are checked after the help package convert to HTML. T
 
    ```bash
    cd docusaurus
-   npm install
    npm run build
 
-   npm install @untitaker/hyperlink --global
    hyperlink --check-anchors build/ --sources ../help/
    ```
 
@@ -284,3 +312,69 @@ Internal links and anchors are checked after the help package convert to HTML. T
 </TabItem>
 </Tabs>
 ```
+
+If the command does not work use `docusaurus build`.
+
+7. Now you can commit and push your changes to the repository.
+
+Before making a comment review the [Commit message policy](../advanced/git-policy#commit-message-policy)
+to choose correct commit naming.
+Briefly, commit messages should contain task ID, short task description and
+
+```shell
+git pull
+git add <changed-files>
+git commit -m "GROK-123: Update help pages for help docs contribution: Reorganised first two sections"
+```
+
+New push your version to the repository:
+
+```shell
+git push
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## GitHub Actions Docusaurus workflow
+
+[GitHub Actions Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml) includes:
+
+* Lint checks using [markdownlint](https://github.com/DavidAnson/markdownlint-cli2) linter.
+* If the checks are finished successfully, GitHub will convert the markdown files to HTML
+  using [Docusaurus](https://docusaurus.io/)
+  * The result HTML help pages are also available as GitHub Actions artifact: `docusaurus`
+* Then [Hyperlink](https://github.com/untitaker/hyperlink) checks the result HTML files.
+* If the checks are finished successfully and the changes are in the master branch,  GitHub Actions will deploy the documentation to the server.
+  * 'Deploy to server' step contains detailed information about changes that are made on the server.
+* Finally, GitHub Actions performs Typesense DocSearch Scrape to update indexes for search in the wiki
+
+If any error occurs during checks, the deployment to the server will be canceled. Check for errors in the GitHub Actions log or in GitHub Actions run summary.
+
+More information about flow can be found on Docusaurus Help tab in [public repository CI/CD flows](../../deploy/releases/ci-flow.mdx#public-repository-cicd-flows).
+
+### Trigger GitHub Actions manually
+
+If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
+
+1. Use [Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml).
+2. Press `run workflow`. Choose the target branch. Then `Run workflow`. Note that deployment to the server is executed for the master branch only.
+3. Check that the GitHub Actions workflow finished successfully.
+
+## Run docusaurus locally
+
+
+
+
+
+
