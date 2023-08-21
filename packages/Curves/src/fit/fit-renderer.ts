@@ -138,6 +138,12 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
       transform.xToScreen(p.x), transform.yToScreen(p.y), color,
       (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
+    if (p.stdev && !p.outlier) {
+      g.beginPath();
+      g.moveTo(transform.xToScreen(p.x), transform.yToScreen(p.y));
+      g.lineTo(transform.xToScreen(p.x), transform.yToScreen(p.stdev));
+      g.stroke();
+    }
   }
 }
 
