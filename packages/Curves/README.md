@@ -50,7 +50,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "points": [
         { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.061523404876 },
         { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true },
-        { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false },
+        { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false, "color": "#2ca02c" },
         // ...
       ]
     }
@@ -90,6 +90,7 @@ sigmoid function is: `max, tan, IC50, min`.
 - `points` - an array of objects with each object containing `x` and `y` coordinates and its own parameters:
   - `outlier` - if true, renders as 'x' and gets ignored for curve fitting
   - `stdev` - when defined, renders an error bar candlestick
+  - `color` - overrides the marker color defined in series `pointColor`
 
 Each chart has its own parameters as well, such as:
 
