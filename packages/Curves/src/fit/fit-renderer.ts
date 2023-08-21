@@ -133,12 +133,14 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
   transform: Viewport, ratio: number, logOptions: LogOptions, pointColor: number): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
-    const color = p.outlier ? DG.Color.red : pointColor;
+    const color = p.outlier ? DG.Color.red :
+      p.color ? DG.Color.fromHtml(p.color) ? DG.Color.fromHtml(p.color) : pointColor : pointColor;
     DG.Paint.marker(g,
       p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
       transform.xToScreen(p.x), transform.yToScreen(p.y), color,
       (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
     if (p.stdev && !p.outlier) {
+      g.strokeStyle = DG.Color.toHtml(color);
       g.beginPath();
       g.moveTo(transform.xToScreen(p.x), transform.yToScreen(p.y));
       g.lineTo(transform.xToScreen(p.x), transform.yToScreen(p.stdev));
