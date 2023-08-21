@@ -5,10 +5,10 @@ import './tests/core';
 //FIXME: fails on CI; crashes browser
 // import './tests/peptide-space-test';
 import './tests/algorithms';
-// import './tests/viewers';     //TODO: GROK-13790
-// import './tests/widgets';     //TODO: GROK-13790
-// import './tests/table-view';  // TODO: GROK-13790
-// import './tests/model';       // TODO: GROK-13790
+import './tests/viewers';
+import './tests/widgets';
+import './tests/table-view';
+import './tests/model';
 
 export const _package = new DG.Package();
 export {tests};
