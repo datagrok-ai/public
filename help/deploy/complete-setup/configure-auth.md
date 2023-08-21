@@ -16,9 +16,8 @@ You can enable all authentication methods separately or combined. To accommodate
 
 ## Common options
 
-To display something on the login window, set the **Prompt** option
 <p align="center">
-  <img src="login-prompt.png" alt="Login prompt" width="300">
+  <img src="login-prompt.png" alt="Login prompt" style="max-width: 300px;">
 </p>
 
 Enable the **Send Welcome Email** option to send welcome emails to new signed-up users.
