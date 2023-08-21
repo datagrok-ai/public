@@ -59,12 +59,12 @@ category('top menu chem space', async () => {
   });
 
   test('TSNE', async () => {
-    await _testDimensionalityReducer(smallDf.col('smiles')!, DimReductionMethods.T_SNE);
-  }, {skipReason: '#1384'});
+    await _testDimensionalityReducer(spgi100.col('Structure')!, DimReductionMethods.T_SNE);
+  });
 
   test('UMAP', async () => {
-    await _testDimensionalityReducer(smallDf.col('smiles')!, DimReductionMethods.UMAP);
-  }, {skipReason: 'GROK-12227'});
+    await _testDimensionalityReducer(spgi100.col('Structure')!, DimReductionMethods.UMAP);
+  });
 
   after(async () => {
     grok.shell.closeAll();
