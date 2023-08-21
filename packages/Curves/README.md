@@ -13,7 +13,7 @@ including in-grid rendering, storing charts in cells, interactivity, and automat
 - Deep integration with the Datagrok grid
   - Either fitting on the fly or using the supplied function + parameters
   - Multiple series in one cell
-  - Candlesticks, confidence intervals, and droplines drawing
+  - Candlesticks, confidence intervals, standard deviation and droplines drawing
   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
       on the column level, with the ability to override it on a grid cell or point level
   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
@@ -48,7 +48,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "clickToToggle": true,
       "droplines": ["IC50"],
       "points": [
-        { "x": 0.10000000149011612, "y": 0.04152340441942215 },
+        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.061523404876 },
         { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true },
         { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false },
         // ...
@@ -87,7 +87,9 @@ sigmoid function is: `max, tan, IC50, min`.
 - `showPoints` - defines the data display mode, which could be either `points`, `candlesticks`, `both`, or none
 - `clickToToggle` - defines whether clicking on the point toggles its outlier status and causes curve refitting or not
 - `droplines` - defines the droplines that would be shown on the plot (for instance, IC50)
-- `points` - an array of objects with each object containing x and y coordinates and a boolean outlier value
+- `points` - an array of objects with each object containing `x` and `y` coordinates and its own parameters:
+  - `outlier` - if true, renders as 'x' and gets ignored for curve fitting
+  - `stdev` - when defined, renders an error bar candlestick
 
 Each chart has its own parameters as well, such as:
 
