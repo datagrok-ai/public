@@ -27,7 +27,7 @@ export function substructureSearchDialog(col: DG.Column<string>): void {
   const separator = col.getTag(bioTAGS.separator);
   // const notations = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM];
 
-  const substructureInput = ui.textInput('Substructure', '');
+  const substructureInput = ui.stringInput('Substructure', '');
 
   const editHelmLink = ui.link('Edit helm', async () => {
     updateDivInnerHTML(inputsDiv, grid.root);
@@ -43,7 +43,7 @@ export function substructureSearchDialog(col: DG.Column<string>): void {
   df.col(SUBSTR_HELM_COL_NAME)!.semType = col.semType;
   df.col(SUBSTR_HELM_COL_NAME)!.setTag(DG.TAGS.UNITS, NOTATION.HELM);
   const grid = df.plot.grid();
-  const separatorInput = ui.textInput('Separator', separator);
+  const separatorInput = ui.stringInput('Separator', separator);
 
   const inputsDiv = ui.div();
 
