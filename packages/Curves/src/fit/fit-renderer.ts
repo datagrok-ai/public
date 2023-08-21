@@ -135,8 +135,9 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
     const p = series.points[i];
     const color = p.outlier ? DG.Color.red :
       p.color ? DG.Color.fromHtml(p.color) ? DG.Color.fromHtml(p.color) : pointColor : pointColor;
+    const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
     DG.Paint.marker(g,
-      p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
+      p.outlier ? DG.MARKER_TYPE.OUTLIER : marker,
       transform.xToScreen(p.x), transform.yToScreen(p.y), color,
       (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
     if (p.stdev && !p.outlier) {
