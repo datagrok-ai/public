@@ -116,6 +116,7 @@ export interface IFitPoint {
   maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
   marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
+  stdev?: number;          // when defined, renders an error bar candlestick
 }
 
 /** A series consists of points, has a name, and options.
