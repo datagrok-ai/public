@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import {category, test, expect, expectObject, expectTable} from '@datagrok-libraries/utils/src/test';
 import dayjs from 'dayjs';
-import {DataFrame, FileSource} from 'datagrok-api/dg';
+import {DataFrame} from 'datagrok-api/dg';
 
-const langs = ['Python', 'R', 'Julia', 'NodeJS']; //  Octave', 'Grok', 'JavaScript'
+const langs = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
 
 for (const lang of langs) {
   category(`Scripts: ${lang} scripts`, () => {
@@ -63,7 +63,7 @@ for (const lang of langs) {
       expectObject(result, {'hello': 'world', 'my_key': 'Datagrok'});
     });
 
-    if (lang !== 'Node') {
+    if (lang != 'Node' && lang !== 'JavaScript') {
       test('Graphics output, Column input', async () => {
         const df = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
         const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
@@ -95,10 +95,11 @@ for (const lang of langs) {
     });
 
     test('File input', async () => {
-      const files = await new FileSource('System:AppData/CVMTests').list('datasets', false, 'cars');
+      const files = await grok.dapi.files.list('System:AppData/CvmTests/', false, 'cars.csv');
       const result = await grok.functions.call(`CVMTests:${lang}LinesCount`,
         {'file': files[0], 'header': true, 'separator': ',', 'dec': '.'});
-      expect(result, 30);
+      const expected = ['Python', 'Octave'].includes(lang) ? 31 : 30;
+      expect(result, expected);
     });
 
     if (lang === 'Python') {
@@ -113,11 +114,11 @@ for (const lang of langs) {
       }, {timeout: 120000});
 
       test('File type input and environment yaml', async () => {
-        const files = await new FileSource('System:AppData/CVMTests').list('images', false, 'silver.jpg');
+        const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
         expect(79498, result);
-      }, {timeout: 120000, skipReason: 'File input is not working'});
+      });
     }
   });
 }

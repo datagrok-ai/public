@@ -1,6 +1,6 @@
-//name: NodeJS Lines Count
+//name: JavaScript Lines Count
 //description: file lines count
-//language: nodejs
+//language: javascript
 //input: file file
 //input: bool header
 //input: string separator = ","
@@ -8,5 +8,5 @@
 //condition: file.isFile && file.name.endsWith("csv")
 //output: int num_lines
 
-df = await DataFrame.fromCSV("file://" + path.resolve(file));
-num_lines = df.dim()[0];
+df = await DG.DataFrame.fromCsv(file);
+num_lines = df.rowCount;

@@ -1,6 +1,6 @@
-#name: Grok Lines Count
+#name: Octave Lines Count
 #description: file lines count
-#language: grok
+#language: octave
 #input: file file
 #input: bool header
 #input: string separator = ","
@@ -8,5 +8,4 @@
 #condition: file.isFile && file.name.endsWith("csv")
 #output: int num_lines
 
-df = OpenFile(file.path)
-num_lines = df.rowCount
+num_lines = rows(csv2cell(file, separator));

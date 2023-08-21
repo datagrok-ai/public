@@ -5,6 +5,5 @@
 #input: column_list cols
 #output: dataframe result
 
-S = cell2struct(df(1:end,:).', df(1,:) );
-S = rmfield(S,cols{1})
-result = struct2cell(S)
+df(:,[1,]) = [];
+result = df;
