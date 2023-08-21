@@ -1482,6 +1482,10 @@ export class Cell {
   get value(): any { return api.grok_Cell_Get_Value(this.dart); }
   set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
 
+  /** String representation of the value, if both [column] and [row] are defined;
+     otherwise, empty string. */
+  get valueString(): string { return api.grok_Cell_Get_ValueString(this.dart); }
+
   /** Whether the cell is empty */
   isNone(): boolean { return this.column.isNone(this.rowIndex); }
 
