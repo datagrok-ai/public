@@ -41,7 +41,6 @@ See also:
 
 * [UMAP](https://arxiv.org/abs/1802.03426)
 
-
 ## t-SNE
 
 t-distributed stochastic neighbor embedding (t-SNE) reveals the underlying complex data structure by representing its similar points as nearby neighbors in a lower-dimensional space.
