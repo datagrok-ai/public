@@ -174,8 +174,8 @@ export function test(args: TestArgs): boolean {
                   failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
                 }
               }
-              // if (!options.verbose)
-              //   df.rows.removeWhere((r: any) => r.get('success'));
+              if (!options.verbose)
+                df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
               resolve({failReport, skipReport, passReport, failed, csv, countReport});
             }).catch((e: any) => reject(e));
