@@ -6,11 +6,13 @@ import {delay, awaitCheck, category, expect, test} from '@datagrok-libraries/uti
 import {_package} from '../package-test';
 
 
-export async function awaitContainerStart(ms: number = 5000): Promise<DockerContainer> {
-    const dockerContainer = await grok.dapi.docker.dockerContainers.filter(_package.name).first();
-    console.log(`Docker container: ${dockerContainer}`);
-    if (!dockerContainer || (dockerContainer.status !== 'started' && dockerContainer.status !== 'checking'))
-        await delay(ms);
+export async function awaitContainerStart(): Promise<DockerContainer> {
+    let dockerContainer
+    do {
+        dockerContainer = await grok.dapi.docker.dockerContainers.filter(_package.name).first();
+        await delay(500);
+    }
+    while (!dockerContainer || (dockerContainer?.status !== 'started' && dockerContainer?.status !== 'checking'))
     return dockerContainer;
 }
 
