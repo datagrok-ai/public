@@ -296,14 +296,6 @@ Tesla, Model S,  ,          1.6,    120000`);
     return df5.rows.match('countries = USA').highlight();
   });
 
-  // test('row list removeWhere', async () => {
-  //   const df = createDf2();
-  //   df.rows.removeWhere((r) => {
-  //     return r.get('population') < 3;
-  //   });
-  //   expect(df.rowCount, 2);
-  // }, {skipReason: 'Error'});
-
   test('datetime column', async () => {
     const t = grok.data.testData('demog');
     const c = t.columns.byName('started');
