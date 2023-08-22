@@ -137,10 +137,16 @@ export function fillRandomMatrix(dimension1: number, dimension2: number, scale: 
  * @return {number} Euclidean distance between the given vectors.
  */
 export function calculateEuclideanDistance(p: Vector, q: Vector): number {
-  const diff = vectorAdd(p, q, -1);
-  const sqdiff = vectorSquare(diff);
-  const sqdiffSumm = itemsSum(sqdiff);
-  return Math.sqrt(sqdiffSumm);
+  let result = 0;
+  let len = p.length;
+
+  if (len !== q.length)
+    throw new Error('The dimensionality of the vectors must match');
+  
+  for (let i = 0; i < len; ++i)
+    result += (p[i] - q[i]) ** 2;
+  
+  return Math.sqrt(result);
 }
 
 /**

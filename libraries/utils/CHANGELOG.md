@@ -1,5 +1,13 @@
 # utils changelog
 
+## 4.2.0 (WIP)
+
+This release focuses on improving performance.
+
+### Features
+
+* Computation of Euclidean metric is accelerated
+
 ## 4.1.3 (2023-07-19)
 
 ### Bug Fixes
