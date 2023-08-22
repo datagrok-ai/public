@@ -10,11 +10,11 @@ The middle circle represents the root node. Categories spread out in rings aroun
 
 Every ring stands for a particular trait or column.
 
-We split and cut the rings based on their hierarchy in relation to the parent slice. Each sector on the outer rings displays a combination from the inner rings.
+We split the rings based on their hierarchy in relation to the parent slice. Each sector on the outer rings displays a combination from the inner rings.
 
-The sectors’ size reflects category correlation within the dataset. 
+The sectors’ size reflects category distribution within the dataset. 
 
-In the example below, you can see that the prominent yellow sector on the outer ring shows people who are `Caucasian`, have a `False` control status and are labeled as `Male`.
+In the example below, the prominent yellow sector on the outer ring shows people who are `Caucasian`, have a `False` control status and are labeled as `Male`.
 
 ![Sunburst viewer](sunburst-viewer.png)
 
@@ -48,7 +48,7 @@ Other viewers respond to the data selection and dynamically update the represent
 
 ## Molecule rendering
 
-A sunburst viewer renders molecular structures on the rings. When you hover over the structure, a label appears above. 
+A sunburst viewer renders molecular structures on the rings. Hover over the structure to see the label. 
 
 If the number of structures to show is excessive, only a part of the structures is visible. 
 
@@ -56,7 +56,7 @@ If the number of structures to show is excessive, only a part of the structures 
 
 ## Configuring a Sunburst viewer
 
-To configure a sunburst viewer, click on the Gear icon on top of the viewer. Context Pane with settings opens.
+To configure a sunburst viewer, click the Gear icon on top of the viewer. Context Pane with settings opens.
 
 ## Interaction with other viewers
 
