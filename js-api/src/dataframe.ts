@@ -287,6 +287,16 @@ export class DataFrame {
     return api.grok_DataFrame_ToCsv(this.dart, options);
   }
 
+  /** Exports the content to JSON format */
+  toJson(): any[] {
+    return Array.from({length: this.rowCount}, (_, idx) => 
+      this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
+        entry[colName] = this.get(colName, idx);
+        return entry;
+      }, {})
+    );
+  }
+
   /** Exports dataframe to binary */
   toByteArray(): Uint8Array {
     return api.grok_DataFrame_ToByteArray(this.dart);
