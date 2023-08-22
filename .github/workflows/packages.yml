@@ -95,7 +95,7 @@ jobs:
                 fi
               fi
           
-              if [[ $publish == "publish" ]] && [[ -d "${DIR}/dockerfiles" ]]; then
+              if ([[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]) && [[ -d "${DIR}/dockerfiles" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"docker\": \"build_docker\""
               else
                 if [[ "${{ steps.changed-files.outputs.all_changed_files }}" == *"${DIR}/dockerfiles"* ]]; then
@@ -306,14 +306,23 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
+      - name: Wait for published docker to become available
+        if: matrix.docker == 'build_docker'
+        timeout-minutes: 5
+        run: |
+          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+          do
+            sleep 1
+            docker ps
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+            echo -e "\nRetrying..."
+          done
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
         run: |
-          docker ps
-          docker logs datagrok-grok_spawner-1
           npm run test -- --skip-build --skip-publish --record --csv --verbose
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
