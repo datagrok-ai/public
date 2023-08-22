@@ -33,7 +33,7 @@ import './dapi/tables';
 import './dapi/user-data-storage';
 import './dapi/users';
 import './dapi/benchmarks';
-import './dapi/docker';
+// import './dapi/docker';
 import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
