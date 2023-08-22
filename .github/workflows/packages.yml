@@ -311,7 +311,7 @@ jobs:
             docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
             echo -e "\nRetrying..."
           done
-          curl http://127.0.0.1:8080/api/users/login/dev/admin
+          curl -Lv http://127.0.0.1:8080/api/users/login/dev/admin
           token=$(curl http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
           curl -Lv http://127.0.0.1:8080/api/docker/containers?text=ApiTests&limit=1 -H "Authorization: $token"
       - name: Test Package
