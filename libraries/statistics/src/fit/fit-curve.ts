@@ -112,11 +112,12 @@ export interface IFitPoint {
   x: number;
   y: number;
   outlier?: boolean;       // if true, renders as 'x' and gets ignored for curve fitting
-  minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
+  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
+  size?: number;           // overrides the default marker size
   stdev?: number;          // when defined, renders an error bar candlestick
+  // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
+  // maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
 }
 
 /** A series consists of points, has a name, and options.
