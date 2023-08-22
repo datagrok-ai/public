@@ -48,7 +48,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "clickToToggle": true,
       "droplines": ["IC50"],
       "points": [
-        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.061523404876, "marker": "square" },
+        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.031523404876, "marker": "square" },
         { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true },
         { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false, "color": "#2ca02c" },
         // ...

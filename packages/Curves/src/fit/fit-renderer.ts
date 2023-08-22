@@ -143,8 +143,8 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
     if (p.stdev && !p.outlier) {
       g.strokeStyle = DG.Color.toHtml(color);
       g.beginPath();
-      g.moveTo(transform.xToScreen(p.x), transform.yToScreen(p.y));
-      g.lineTo(transform.xToScreen(p.x), transform.yToScreen(p.stdev));
+      g.moveTo(transform.xToScreen(p.x), transform.yToScreen(p.y + p.stdev));
+      g.lineTo(transform.xToScreen(p.x), transform.yToScreen(p.y - p.stdev));
       g.stroke();
     }
   }
