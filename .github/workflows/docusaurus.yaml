@@ -73,11 +73,13 @@ jobs:
             js-api/package-lock.json
       - name: Cache Docusaurus
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build
