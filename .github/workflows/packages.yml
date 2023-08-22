@@ -156,10 +156,10 @@ jobs:
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "apitests" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "cvmtests" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"apitests"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"cvmtests"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
             echo "Add Scripting as dependency for package ${{ matrix.package }}"
             profiles+=' --profile scripting'
