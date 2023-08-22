@@ -327,7 +327,7 @@ jobs:
         if: steps.datagrok-image.outcome == 'success'
         run: |
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
-          docker system prune -af --volumes
+#          docker system prune -af --volumes
 
       - name: Get docker image version
         if: matrix.docker == 'build_docker'
