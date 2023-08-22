@@ -237,7 +237,10 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         id: datagrok-tools
-        run: npm install -g datagrok-tools@latest
+        working-directory: tools
+        run: |
+          npm install
+          npm run build
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'test' }}
         timeout-minutes: 5
@@ -253,7 +256,7 @@ jobs:
       - name: Create configuration for grok command-line tool
         if: ${{ matrix.test == 'test' }}
         run: |
-          echo 'N' | grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
+          tools/bin/grok.js config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
           cat /home/runner/.grok/config.yaml
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
@@ -266,7 +269,7 @@ jobs:
               count=0
               retries=5
               echo "Publishing $dep to ${HOST}..."
-              until grok publish ${HOST}; do
+              until ${current_dir}/../../tools/bin/grok.js publish ${HOST}; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
@@ -287,7 +290,7 @@ jobs:
         run: |
           count=0
           retries=5
-          until grok publish ${HOST}; do
+          until ../../tools/bin/grok.js publish ${HOST}; do
             exit=$?
             docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             wait=$((2 ** count))
@@ -306,7 +309,7 @@ jobs:
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
-        run: npm run test -- --skip-build --skip-publish --record --csv
+        run: ../../tools/bin/grok.js test --skip-build --skip-publish --record --csv
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'
@@ -368,7 +371,7 @@ jobs:
 
       - name: grok check
         if: ${{ !contains(matrix.package, 'Tests') && !contains(matrix.package, 'Meta') && matrix.beta != 'true' }}
-        run: grok check
+        run: ../../tools/bin/grok.js check
         id: check
         working-directory: packages/${{ matrix.package }}
 
