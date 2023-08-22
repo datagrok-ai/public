@@ -138,7 +138,7 @@ export function fillRandomMatrix(dimension1: number, dimension2: number, scale: 
  */
 export function calculateEuclideanDistance(p: Vector, q: Vector): number {
   let result = 0;
-  let len = p.length;
+  const len = p.length;
 
   if (len !== q.length)
     throw new Error('The dimensionality of the vectors must match');
@@ -275,21 +275,27 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
  * @param {Vector} data numerical array
  */
 export function normalize(data: Vector): Vector {
-  let mean = 0;
-  let std = 0;
+  const len = data.length;
 
-  for (let i = 0; i < data.length; ++i)
+  let mean = 0;   
+
+  for (let i = 0; i < len; ++i)
     mean += data[i];
 
-  mean /= data.length;
+  mean /= len;
+  
+  let std = 0;
 
-  for (let i = 0; i < data.length; ++i)
-    std += (data[i] - mean) * (data[i] - mean);
+  for (let i = 0; i < len; ++i)
+    std += (data[i] - mean) ** 2;
 
-  std = Math.sqrt(std / data.length);
+  if (std === 0)
+    throw new Error('Normalization cannot be performed, since variance is zero');
 
-  for (let i = 0; i < data.length; ++i)
-    data[i] = (data[i] - mean) / std;
+  const stdInverse = Math.sqrt(len / std);
+
+  for (let i = 0; i < len; ++i)
+    data[i] = (data[i] - mean) * stdInverse;
 
   return data;
 }

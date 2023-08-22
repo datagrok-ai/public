@@ -7,6 +7,7 @@ This release focuses on improving performance.
 ### Features
 
 * Computation of Euclidean metric is accelerated
+* Vector normalization is accelerated
 
 ## 4.1.3 (2023-07-19)
 
