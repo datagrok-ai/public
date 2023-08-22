@@ -222,6 +222,12 @@ jobs:
             cd $crnt
           done
         working-directory: packages/${{ matrix.package }}
+      - uses: actions/cache@v3
+        with:
+          path: node_modules/.cache/webpack/
+          key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
+          restore-keys: |
+            master-webpack-build
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build
