@@ -235,6 +235,11 @@ jobs:
             npm run build
           fi
         working-directory: packages/${{ matrix.package }}
+      - name: Cache npm package
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-packages-datagrok-tools
       - name: Install datagrok tools
         id: datagrok-tools
         run: npm install -g datagrok-tools@latest
