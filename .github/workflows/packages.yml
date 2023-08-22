@@ -221,10 +221,10 @@ jobs:
       - name: webpack cache
         uses: actions/cache@v3
         with:
-          path: node_modules/.cache/webpack/
+          path: packages/${{ matrix.package }}/node_modules/.cache/webpack/
           key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
           restore-keys: |
-            master-webpack-build
+            ${{ matrix.package }}-master-webpack-build
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build
@@ -330,7 +330,7 @@ jobs:
         if: steps.datagrok-image.outcome == 'success'
         run: |
           docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
-          docker system prune -f --volumes
+          docker system prune -af --volumes
 
       - name: Get docker image version
         if: matrix.docker == 'build_docker'
