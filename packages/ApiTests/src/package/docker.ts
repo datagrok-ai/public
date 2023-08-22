@@ -8,6 +8,7 @@ import {_package} from '../package-test';
 
 export async function awaitContainerStart(ms: number = 5000): Promise<DockerContainer> {
     const dockerContainer = await grok.dapi.docker.dockerContainers.filter(_package.name).first();
+    console.log(`Docker container: ${dockerContainer}`);
     if (dockerContainer.status !== 'started' && dockerContainer.status !== 'checking')
         await delay(ms);
     return dockerContainer;
