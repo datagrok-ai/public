@@ -317,6 +317,7 @@ jobs:
           do
             sleep 1
             curl -Lv -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+            docker ps
             echo -e "\nRetrying..."
           done
       - name: Test Package

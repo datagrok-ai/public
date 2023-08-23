@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 command=$1
 expected_result=$2
