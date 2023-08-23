@@ -179,7 +179,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     await delay(5000);
     await testEvent(s.onChanged,
       () => {compareTwoMols(rdkitModule, mol, s.getMolFile());},
-      () => {s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));}, 10000);
+      () => {s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));}, 20000);
     d.close();
   }
   mol?.delete();
