@@ -320,6 +320,7 @@ jobs:
             docker ps
             docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+            docker exec -ti datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
             echo -e "\nRetrying..."
           done
       - name: Test Package
