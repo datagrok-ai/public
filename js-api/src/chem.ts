@@ -254,7 +254,7 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
-      const index = extractors.map(it => it.name).indexOf('nameToSmiles');
+      const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
       const el = extractors.splice(index, 1)[0];
       extractors.splice(extractors.length, 0, el);
 
