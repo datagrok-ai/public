@@ -34,7 +34,7 @@ export const enum TAGS {
   isHelmCompatible = '.isHelmCompatible',
 }
 
-export const monomerRe: RegExp = /(\[[A-Za-z0-9-_]+\]|.)/g;
+export const monomerRe: RegExp = /(?:\[([A-Za-z0-9_\-,()]+)\])|([A-Za-z\-])/g;
 
 export const Alphabets = new class {
   fasta = {

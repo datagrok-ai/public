@@ -278,8 +278,7 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 
 ### Similarity and diversity search
 
-Datagrok offers two analytical tools to help you analyze a collection of molecules based on molecular similarity: _similarity search_ and _diversity search_ (**Menu Ribbon** > **Chem** > **Search**). Similarity search finds structures similar to the reference molecule, while diversity search shows N molecules of different chemical classes presented in the dataset. Both tools are based on fingerprints, with the customizable distance metric.
-One may also perform a sorting of the dataset by similarity based on the structure of interest (**Right click** > **Current value** > **Sort by similarity**), it will be pinned at the top of the dataset.;
+Datagrok offers two analytical tools to help you analyze a collection of molecules based on molecular similarity: _similarity search_ and _diversity search_. Similarity search finds structures similar to the reference molecule, while diversity search shows N molecules of different chemical classes presented in the dataset. Both tools are based on fingerprints, with the customizable distance metric.
 
 <details>
 <summary> Available distance metrics </summary>
@@ -290,21 +289,20 @@ One may also perform a sorting of the dataset by similarity based on the structu
 
 </details>
 
-Both similarity search and diversity search are implemented as _viewers_<!--add link when we have an article on this-->, which means they are interactive and synchronized with other viewers, such as the chemical spreadsheet or info panes. This allows you to zoom in on the area of interest and perform common operations like filtering or selection.
+To sort a dataset by similarity, right-click your reference molecule and select **Current value** > **Sort by similarity**. The dataset is sorted with the reference molecule pinned at the top.
+
+To explore the dataset further, use the similarity and diversity viewers (**Top Menu** > **Chem** > **Search** > **Similarity Search...**  or **Diversity Search...**). The viewers are interactive and let you quickly switch between the molecules of interest. 
 
 <img alt="Similarity and diversity search" src={require('./similarity-and-diversity-search.gif').default} width="800px"/>
 
 <details>
 <summary>How to use</summary>
 
-Similarity search finds structures similar to the current molecule. To change the reference molecule, you have several options:
+To configure a similarity or diversity viewer, click the **Gear** icon at the viewer's top. The **Context Panel** updates with available controls. You can change parameters like the similarity threshold, fingerprint type<!--we only have Morgan?-->, or the distance measure.
 
-1. Click the molecule in the spreadsheet, or within the similarity or diversity viewers.
-1. Sketch it by clicking the **Edit** icon on top of the reference molecule.
+By default, a reference molecule follows the current row. If you click a different molecule, both the similarity and diversity viewers update. To lock in a specific reference molecule, clear the **Follow Current Row** control. To sketch a custom reference molecule, click the **Edit** icon on the reference molecule card.
 
-To change search parameters like the similarity cutoff, fingerprints type<!--we only have Morgan?-->, or distance metric, edit the viewer's properties by clicking the **Gear** icon (to reveal, hover over the top of the viewer).
-
-You can customize each molecule tile in the similarity and diversity viewers to display data from any dataset column. To add column data, open the viewer properties and select the desired column using the **Molecule Properties** control. Color-coding applied to the selected column will be picked up and displayed in the viewers. You can choose between background or text color-coding using the **Apply Color To** control. To remove highlighting, clear the color-coding from the respective column in the dataset.
+You can enhance the viewer cards by incorporating column data. To do so, use the **Molecule Properties** control. If a column is color-coded, its format is reflected on the card's value. To adjust how the color is shown (either as a background or text), use the **Apply Color To** control. To remove highlighting, clear the color-coding from the corresponding column in the dataset.
 
 ![similarity_search_add_fields](img/simsearch-colors.gif)
 

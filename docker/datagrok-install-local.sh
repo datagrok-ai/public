@@ -91,6 +91,9 @@ function datagrok_start() {
     message "Starting Datagrok containers"
     docker compose -f "${compose_config_path}" --project-name datagrok --profile all up -d
     message "Waiting while the Datagrok server is starting"
+    count_down ${timeout}
+    message "Running browser"
+    xdg-open ${datagrok_local_url}
     echo "When the browser opens, use the following credentials to log in:"
     echo "------------------------------"
     echo -ne "${GREEN}"
@@ -98,11 +101,8 @@ function datagrok_start() {
     echo "Password: admin"
     echo -ne "${RESET}"
     echo "------------------------------"
-    echo "If you see the message 'Datagrok server is unavaliable' just wait for a while and reload the web page "
-    count_down ${timeout}
-    message "Running browser"
-    xdg-open ${datagrok_local_url}
     message "If the browser hasn't open, use the following link: $datagrok_local_url"
+    message "If you see the message 'Datagrok server is unavaliable' just wait for a while and reload the web page "
     message "To extend Datagrok fucntionality, install extension packages on the 'Manage -> Packages' page"
 }
 

@@ -136,7 +136,7 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$`,
     return function(srcCol: DG.Column): DG.Column {
       const converter = new NotationConverter(srcCol);
       const resCol = converter.convert(tgtNotation, tgtSeparator);
-      expect(resCol.getTag('units'), tgtNotation);
+      expect(resCol.getTag(DG.TAGS.UNITS), tgtNotation);
       return resCol;
     };
   }

@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "1.16.0",
+  "version": "1.16.2",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.0.12",
@@ -37,7 +37,7 @@
     "link-all": "npm link @datagrok-libraries/chem-meta",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "git clean -f -X -d ./src && tsc && webpack",
-    "build": "git clean -f -X -d ./src && tsc && webpack",
+    "build": "tsc && webpack",
     "typedoc": "typedoc dg.ts grok.ts ui.ts --readme ../help/develop/js-api.md --disableOutputCheck",
     "build-all": "npm --prefix ./../libraries/chem-meta run build && npm run build"
   }

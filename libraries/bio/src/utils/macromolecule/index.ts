@@ -15,7 +15,6 @@ export {
 } from './consts';
 
 export {
-  getSplitter,
   splitterAsFasta,
   getSplitterWithSeparator,
   splitterAsHelm,

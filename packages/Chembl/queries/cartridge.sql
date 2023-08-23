@@ -42,6 +42,19 @@ from
 limit @maxNumberOfMolecules
 --end
 
+--name: ChemblMolregNoBySmiles
+--friendlyName: Chembl Molregno by smiles
+--input: string smiles {semType: Molecule}
+--connection: Chembl
+select
+  molregno
+from
+  compound_structures
+where
+  canonical_smiles = @smiles
+limit 1
+--end
+
 --name: StructuresByOrganism
 --friendlyName: Chembl Targets by organism
 --input: int maxNumberOfMolecules = 1000

@@ -7,15 +7,14 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject, BehaviorSubject, Observable} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput} from '../../shared-components/src/FuncCallInput';
-import {FileInput} from '../../shared-components/src/file-input';
+import {FuncCallInput, SubscriptionLike} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -23,8 +22,16 @@ export type InputVariants = DG.InputBase | FuncCallInput;
 
 function isInputBase(input: FuncCallInput): input is DG.InputBase {
   const inputAny = input as any;
-  return input instanceof FileInput ||
-    (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
+  return (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
+}
+
+function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
+  return new Observable((observer: any) => {
+    const sub = onInput((val: T) => {
+      observer.next(val);
+    });
+    return () => sub.unsubscribe();
+  });
 }
 
 export interface AfterInputRenderPayload {
@@ -47,13 +54,12 @@ const syncParams = {
   [SYNC_FIELD.INPUTS]: 'inputParams',
   [SYNC_FIELD.OUTPUTS]: 'outputParams',
 } as const;
-
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
   private checkDisability = new Subject();
 
   // stores the running state
-  private isRunning = false;
+  private isRunning = new BehaviorSubject(false);
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
@@ -84,13 +90,31 @@ export class RichFunctionView extends FunctionView {
     if (this.runningOnStart && this.isRunnable()) await this.doRun();
   }
 
+  protected prevOpenedTab = null as DG.TabPane | null;
+  /**
+   * Saving previously opened tab
+   * @param runFunc
+   */
+  public override onBeforeRun(): Promise<void> {
+    this.prevOpenedTab = Object.keys(this.categoryToDfParamMap.inputs).includes(this.outputsTabsElem.currentPane.name) ? null: this.outputsTabsElem.currentPane;
+
+    return Promise.resolve();
+  }
+
   /**
    * Showing UI after completion of function call.
    * @param runFunc
    */
   public override onAfterRun(): Promise<void> {
+    this.showOutputTabsElem();
+
+    if (this.prevOpenedTab) {
+      this.outputsTabsElem.currentPane = this.prevOpenedTab;
+      return Promise.resolve();
+    }
+
     const firstOutputTab = this.outputsTabsElem.panes
-      .find((tab) => Object.keys(this.categoryToParamMap.outputs).includes(tab.name));
+      .find((tab) => Object.keys(this.categoryToDfParamMap.outputs).includes(tab.name));
     if (firstOutputTab) this.outputsTabsElem.currentPane = firstOutputTab;
 
     return Promise.resolve();
@@ -147,7 +171,7 @@ export class RichFunctionView extends FunctionView {
   private getStandardButtons(): HTMLElement[] {
     const runButton = this.getRunButton();
     const runButtonWrapper = ui.div([runButton]);
-    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : 'Some inputs are invalid') : '');
     const saveButton = this.getSaveButton();
 
     if (this.runningOnInput) $(runButtonWrapper).hide();
@@ -210,11 +234,11 @@ export class RichFunctionView extends FunctionView {
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    this.outputsTabsElem.root.style.display = 'none';
+    $(this.outputsTabsElem.root).hide();
 
-    if (Object.keys(this.categoryToParamMap.inputs).length > 0) {
+    if (Object.keys(this.categoryToDfParamMap.inputs).length > 0) {
       this.outputsTabsElem.panes.forEach((tab) => {
-        tab.header.style.display = 'none';
+        $(tab.header).hide();
       });
     }
 
@@ -329,11 +353,16 @@ export class RichFunctionView extends FunctionView {
   // Main element of the output block. Stores all the tabs for the output and input
   private outputsTabsElem = ui.tabControl();
 
+  private showOutputTabsElem() {
+    $(this.outputsTabsElem.root).show();
+    $(this.outputsTabsElem.root).css('display', 'flex');
+  }
+
   public buildOutputBlock(): HTMLElement {
     this.outputsTabsElem.root.style.width = '100%';
 
     this.tabsLabels.forEach((tabLabel) => {
-      const [tabParams, isInputTab] = this.categoryToParamMap.outputs[tabLabel] ? [this.categoryToParamMap.outputs[tabLabel], false] : [this.categoryToParamMap.inputs[tabLabel], true];
+      const [tabParams, isInputTab] = this.categoryToDfParamMap.outputs[tabLabel] ? [this.categoryToDfParamMap.outputs[tabLabel], false] : [this.categoryToDfParamMap.inputs[tabLabel], true];
 
       const tabDfProps = tabParams.filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
       const tabScalarProps = tabParams.filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
@@ -344,7 +373,7 @@ export class RichFunctionView extends FunctionView {
       const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
         this.dfToViewerMapping[dfProp.name] = [];
 
-        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, viewerIdx) => {
+        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}, _) => {
           const initialValue: DG.DataFrame = this.funcCall.outputs[dfProp.name]?.value ?? this.funcCall.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
 
           const viewerType = viewerDesc['type'] as string;
@@ -364,7 +393,7 @@ export class RichFunctionView extends FunctionView {
             const updateViewerSource = async () => {
               const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
-              $(this.outputsTabsElem.root).show();
+              this.showOutputTabsElem();
               $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
@@ -399,7 +428,7 @@ export class RichFunctionView extends FunctionView {
           return loadedViewer;
         }));
 
-        const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: '';
+        const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: ' ';
         prevDfBlockTitle = dfBlockTitle;
 
         if (isInputTab) {
@@ -407,8 +436,8 @@ export class RichFunctionView extends FunctionView {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
             const paramSub = currentParam.onChanged.subscribe(() => {
-              $(this.outputsTabsElem.root).show();
-              Object.keys(this.categoryToParamMap.inputs).forEach((inputTabName) => {
+              this.showOutputTabsElem();
+              Object.keys(this.categoryToDfParamMap.inputs).forEach((inputTabName) => {
                 $(this.outputsTabsElem.getPane(inputTabName).header).show();
               });
             });
@@ -431,7 +460,7 @@ export class RichFunctionView extends FunctionView {
           });
 
           return ui.divV([
-            ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
+            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
             viewerRoot,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
@@ -449,8 +478,16 @@ export class RichFunctionView extends FunctionView {
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
           tabScalarProps,
-          (scalarProp: DG.Property) =>
-            [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
+          (scalarProp: DG.Property) => {
+            const precision = scalarProp.options.precision;
+
+            return [
+              scalarProp.caption ?? scalarProp.name,
+              precision && scalarProp.propertyType === DG.TYPE.FLOAT && this.funcCall.outputs[scalarProp.name]?
+                this.funcCall.outputs[scalarProp.name].toPrecision(precision) : this.funcCall.outputs[scalarProp.name],
+              scalarProp.options['units'],
+            ];
+          },
         ).root;
         $(table).css({
           'max-width': '400px',
@@ -468,7 +505,7 @@ export class RichFunctionView extends FunctionView {
             scalarsTable.replaceWith(newScalarsTable);
             scalarsTable = newScalarsTable;
 
-            $(this.outputsTabsElem.root).show();
+
             $(this.outputsTabsElem.getPane(tabLabel).header).show();
           });
 
@@ -499,9 +536,9 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    this.outputsTabsElem.root.style.removeProperty('display');
+    this.showOutputTabsElem();
     this.outputsTabsElem.panes.forEach((tab) => {
-      tab.header.style.removeProperty('display');
+      $(tab.header).show();
     });
   }
 
@@ -510,12 +547,12 @@ export class RichFunctionView extends FunctionView {
 
   protected get tabsLabels() {
     return [
-      ...Object.keys(this.categoryToParamMap.inputs),
-      ...Object.keys(this.categoryToParamMap.outputs),
+      ...Object.keys(this.categoryToDfParamMap.inputs),
+      ...Object.keys(this.categoryToDfParamMap.outputs),
     ];
   }
 
-  protected get categoryToParamMap() {
+  protected get categoryToDfParamMap() {
     const map = {
       inputs: {} as Record<string, DG.Property[]>,
       outputs: {} as Record<string, DG.Property[]>,
@@ -552,7 +589,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async doRun(): Promise<void> {
-    this.isRunning = true;
+    this.isRunning.next(true);
     this.checkDisability.next();
     try {
       await this.run();
@@ -560,7 +597,7 @@ export class RichFunctionView extends FunctionView {
       grok.shell.error(e.toString());
       console.log(e);
     } finally {
-      this.isRunning = false;
+      this.isRunning.next(false);
       this.checkDisability.next();
     }
   }
@@ -580,8 +617,10 @@ export class RichFunctionView extends FunctionView {
     this.funcCall.inputs[name] = value;
     this.setInputState(input, state);
     if (state !== 'default') {
-      const param: DG.FuncCallParam = this.funcCall.inputParams[name];
-      param.aux.editState = state;
+      this.funcCall.options['editState'] = {
+        ...this.funcCall.options['editState'],
+        [name]: state,
+      };
     }
   }
 
@@ -622,8 +661,9 @@ export class RichFunctionView extends FunctionView {
         }
         this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
+        this.disableInputsOnRun(input);
         if (field === SYNC_FIELD.INPUTS)
-          this.bindOnHotkey(val, input);
+          this.bindOnHotkey(input);
 
         this.renderInput(inputs, val, input, prevCategory);
         this.afterInputPropertyRender.next({prop, input: input});
@@ -639,6 +679,16 @@ export class RichFunctionView extends FunctionView {
     return inputs;
   }
 
+  private disableInputsOnRun(t: InputVariants) {
+    const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
+      if (isRunning)
+        t.enabled = false;
+      else
+        t.enabled = true;
+    });
+    this.subs.push(disableOnRunSub);
+  }
+
   private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
     const prop = val.property;
     if (this.inputsOverride[val.property.name])
@@ -652,12 +702,17 @@ export class RichFunctionView extends FunctionView {
       return ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables);
     case FILE_INPUT_TYPE:
       return UiUtils.fileInput(prop.caption ?? prop.name, null, null, null);
+    case DG.TYPE.FLOAT:
+      const floatInput = ui.input.forProperty(prop);
+      const format = prop.options.format;
+      if (format) floatInput.format = format;
+      return floatInput;
     default:
       return ui.input.forProperty(prop);
     }
   }
 
-  private bindOnHotkey(val: DG.FuncCallParam, t: InputVariants) {
+  private bindOnHotkey(t: InputVariants) {
     if (isInputBase(t)) {
       t.input.onkeydown = async (ev) => {
         if (ev.key == 'Enter' && this.isRunnable()) this.doRun();
@@ -702,11 +757,13 @@ export class RichFunctionView extends FunctionView {
     // don't use val directly, get a fresh one, since it will be replaced with fc
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newValue = this.funcCall[field][name] ?? prop.defaultValue ?? null;
+      t.notify = false;
       t.value = newValue;
+      t.notify = true;
       this.funcCall[field][name] = newValue;
       const newParam = this.funcCall[syncParams[field]][name];
       this.syncValOnChanged(t, newParam, field);
-      this.setInputState(t, newParam.aux.editState);
+      this.setInputState(t, this.funcCall.options['editState']?.[name]);
     });
     this.subs.push(sub);
   }
@@ -754,7 +811,10 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    t.onInput(() => {
+    DG.debounce(getObservable(t.onInput.bind(t)), 350).subscribe(() => {
+      if (this.isHistorical.value)
+        this.isHistorical.next(false);
+
       this.funcCall[field][val.name] = t.value;
       if (isInputBase(t)) {
         if (t.value === null)
@@ -768,7 +828,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private isRunnable() {
-    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
+    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning.value;
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
@@ -786,12 +846,15 @@ export class RichFunctionView extends FunctionView {
 
   private hideOutdatedOutput() {
     this.outputsTabsElem.panes
-      .filter((tab) => Object.keys(this.categoryToParamMap.outputs).includes(tab.name))
+      .filter((tab) => Object.keys(this.categoryToDfParamMap.outputs).includes(tab.name))
       .forEach((tab) => $(tab.header).hide());
 
     const firstInputTab = this.outputsTabsElem.panes
-      .find((tab) => Object.keys(this.categoryToParamMap.inputs).includes(tab.name));
-    if (firstInputTab) this.outputsTabsElem.currentPane = firstInputTab;
+      .find((tab) => Object.keys(this.categoryToDfParamMap.inputs).includes(tab.name));
+    if (firstInputTab)
+      this.outputsTabsElem.currentPane = firstInputTab;
+    else
+      $(this.outputsTabsElem.root).hide();
   }
 
   private sheetNamesCache = {} as Record<string, string>;
@@ -824,81 +887,81 @@ export class RichFunctionView extends FunctionView {
    */
   protected richFunctionExport = async (format: string) => {
     if (format === 'Excel') {
-      const lastCall = this.lastCall;
+      try {
+        const lastCall = this.lastCall;
 
-      if (!lastCall) throw new Error(`Function was not called`);
+        if (!lastCall) throw new Error(`Function was not called`);
 
-      if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
+        if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
 
-      if (!this.func) throw new Error('The correspoding function is not specified');
+        if (!this.func) throw new Error('The correspoding function is not specified');
 
-      const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
-      const exportWorkbook = new ExcelJS.Workbook();
+        const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        const exportWorkbook = new ExcelJS.Workbook();
 
-      const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
+        const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
 
-      const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
+        const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
-      const dfInputs = this.func.inputs.filter((input) => isDataFrame(input.propertyType));
-      const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
-      const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
-      const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
+        const dfInputs = this.func.inputs.filter((input) => isDataFrame(input));
+        const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
+        const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output));
+        const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
 
-      dfInputs.forEach((dfInput) => {
-        const visibleTitle = dfInput.options.caption || dfInput.name;
-        const currentDfSheet =
+        dfInputs.forEach((dfInput) => {
+          const visibleTitle = dfInput.options.caption || dfInput.name;
+          const currentDfSheet =
         exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
         exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
 
-        const currentDf = lastCall.inputs[dfInput.name];
-        dfToSheet(currentDfSheet, currentDf);
-      });
+          const currentDf = lastCall.inputs[dfInput.name];
+          dfToSheet(currentDfSheet, currentDf);
+        });
 
-      if (scalarInputs.length) {
-        const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
-        scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
-          caption: scalarInput.options['caption'] || scalarInput.name,
-          value: lastCall.inputs[scalarInput.name],
-          units: scalarInput.options['units'] || '',
-        })));
-      }
+        if (scalarInputs.length) {
+          const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+          scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
+            caption: scalarInput.options['caption'] || scalarInput.name,
+            value: lastCall.inputs[scalarInput.name],
+            units: scalarInput.options['units'] || '',
+          })));
+        }
 
-      dfOutputs.forEach((dfOutput) => {
-        const visibleTitle = dfOutput.options.caption || dfOutput.name;
-        const currentDfSheet =
+        dfOutputs.forEach((dfOutput) => {
+          const visibleTitle = dfOutput.options.caption || dfOutput.name;
+          const currentDfSheet =
         exportWorkbook.worksheets.find((ws) => ws.name === this.getSheetName(visibleTitle, exportWorkbook)) ??
         exportWorkbook.addWorksheet(this.getSheetName(visibleTitle, exportWorkbook));
 
-        const currentDf = lastCall.outputs[dfOutput.name];
-        dfToSheet(currentDfSheet, currentDf);
-      });
+          const currentDf = lastCall.outputs[dfOutput.name];
+          dfToSheet(currentDfSheet, currentDf);
+        });
 
 
-      if (scalarOutputs.length) {
-        const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
-        scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
-          caption: scalarOutput.options['caption'] || scalarOutput.name,
-          value: lastCall.outputs[scalarOutput.name],
-          units: scalarOutput.options['units'] || '',
-        })));
-      }
+        if (scalarOutputs.length) {
+          const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
+          scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
+            caption: scalarOutput.options['caption'] || scalarOutput.name,
+            value: lastCall.outputs[scalarOutput.name],
+            units: scalarOutput.options['units'] || '',
+          })));
+        }
 
-      const tabControl = this.outputsTabsElem;
-      for (const tabLabel of this.tabsLabels) {
-        if (!tabControl.getPane(tabLabel)) continue;
+        const tabControl = this.outputsTabsElem;
 
-        tabControl.currentPane = tabControl.getPane(tabLabel);
-        await new Promise((r) => setTimeout(r, 100));
-        if (Object.keys(this.categoryToParamMap.inputs).includes(tabLabel)) {
-          for (const inputProp of this.categoryToParamMap.inputs[tabLabel]
-            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
+        for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.inputs).includes(label))) {
+          for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
             const nonGridViewers = this.dfToViewerMapping[inputProp.name]
               .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
               .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-            const dfInput = dfInputs.find((input) => input.name === inputProp.name)!;
-            const visibleTitle: string = dfInput!.options.caption || inputProp.name;
-            const currentDf = lastCall.inputs[dfInput.name];
+            if (nonGridViewers.length === 0) continue;
+
+            tabControl.currentPane = tabControl.getPane(tabLabel);
+            await new Promise((r) => setTimeout(r, 100));
+
+            const visibleTitle = inputProp.options.caption || inputProp.name;
+            const currentDf = lastCall.inputs[inputProp.name];
 
             for (const [index, viewer] of nonGridViewers.entries()) {
               await plotToSheet(
@@ -910,16 +973,21 @@ export class RichFunctionView extends FunctionView {
               );
             };
           }
-        } else {
-          for (const outputProp of this.categoryToParamMap.outputs[tabLabel]
-            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
+        }
+
+        for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.outputs).includes(label))) {
+          for (const outputProp of this.categoryToDfParamMap.outputs[tabLabel].filter((prop) => isDataFrame(prop))) {
             const nonGridViewers = this.dfToViewerMapping[outputProp.name]
               .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
               .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-            const dfOutput = dfOutputs.find((output) => output.name === outputProp.name)!;
-            const visibleTitle = dfOutput.options.caption || outputProp.name;
-            const currentDf = lastCall.outputs[dfOutput.name];
+            if (nonGridViewers.length === 0) continue;
+
+            tabControl.currentPane = tabControl.getPane(tabLabel);
+            await new Promise((r) => setTimeout(r, 100));
+
+            const visibleTitle = outputProp.options.caption || outputProp.name;
+            const currentDf = lastCall.outputs[outputProp.name];
 
             for (const [index, viewer] of nonGridViewers.entries()) {
               if (viewer.type === DG.VIEWER.STATISTICS) {
@@ -949,62 +1017,65 @@ export class RichFunctionView extends FunctionView {
                 );
               }
             }
-          };
+          }
         }
-      };
-      const buffer = await exportWorkbook.xlsx.writeBuffer();
 
-      return new Blob([buffer], {type: BLOB_TYPE});
+        const buffer = await exportWorkbook.xlsx.writeBuffer();
+
+        return new Blob([buffer], {type: BLOB_TYPE});
+      } catch (e) {
+        console.log(e);
+      }
     }
 
     if (format === 'DataUrl images') {
       const jsonText = {} as Record<string, Record<number, {dataUrl: string, width: number, height: number}>>;
 
-      const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
-      const dfInputs = this.func.inputs.filter((input) => isDataFrame(input.propertyType));
-      const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
+      const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
       const tabControl = this.outputsTabsElem;
-      for (const tabLabel of this.tabsLabels) {
-        if (!tabControl.getPane(tabLabel)) continue;
 
-        tabControl.currentPane = tabControl.getPane(tabLabel);
-        await new Promise((r) => setTimeout(r, 100));
-        if (Object.keys(this.categoryToParamMap.inputs).includes(tabLabel)) {
-          for (const inputProp of this.categoryToParamMap.inputs[tabLabel]
-            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
-            const nonGridViewers = this.dfToViewerMapping[inputProp.name]
-              .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
-              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+      for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.inputs).includes(label))) {
+        for (const inputProp of this.categoryToDfParamMap.inputs[tabLabel].filter((prop) => isDataFrame(prop))) {
+          const nonGridViewers = this.dfToViewerMapping[inputProp.name]
+            .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
+            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-            const dfInput = dfInputs.find((input) => input.name === inputProp.name)!;
+          if (nonGridViewers.length === 0) continue;
 
-            for (const [i, viewer] of nonGridViewers.entries()) {
-              const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+          tabControl.currentPane = tabControl.getPane(tabLabel);
+          await new Promise((r) => setTimeout(r, 100));
 
-              if (!jsonText[dfInput.name]) jsonText[dfInput.name] = {};
+          for (const [i, viewer] of nonGridViewers.entries()) {
+            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
 
-              jsonText[dfInput.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
-            }
+            if (!jsonText[inputProp.name]) jsonText[inputProp.name] = {};
+
+            jsonText[inputProp.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
           }
-        } else {
-          for (const outputProp of this.categoryToParamMap.outputs[tabLabel]
-            .filter((prop) => prop.propertyType === DG.TYPE.DATA_FRAME)) {
-            const nonGridViewers = this.dfToViewerMapping[outputProp.name]
-              .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
-              .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
-
-            const dfOutput = dfOutputs.find((output) => output.name === outputProp.name)!;
-            for (const [i, viewer] of nonGridViewers.entries()) {
-              const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
-
-              if (!jsonText[dfOutput.name]) jsonText[dfOutput.name] = {};
-
-              jsonText[dfOutput.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
-            }
-          };
         }
-      };
+      }
+
+      for (const tabLabel of this.tabsLabels.filter((label) => Object.keys(this.categoryToDfParamMap.outputs).includes(label))) {
+        for (const outputProp of this.categoryToDfParamMap.outputs[tabLabel].filter((prop) => isDataFrame(prop))) {
+          const nonGridViewers = this.dfToViewerMapping[outputProp.name]
+            .filter((viewer) => viewer.type !== DG.VIEWER.GRID && viewer.type !== DG.VIEWER.STATISTICS)
+            .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
+
+          if (nonGridViewers.length === 0) continue;
+
+          tabControl.currentPane = tabControl.getPane(tabLabel);
+          await new Promise((r) => setTimeout(r, 100));
+
+          for (const [i, viewer] of nonGridViewers.entries()) {
+            const dataUrl = (await html2canvas(viewer.root, {logging: false})).toDataURL();
+
+            if (!jsonText[outputProp.name]) jsonText[outputProp.name] = {};
+
+            jsonText[outputProp.name][i] = {dataUrl, width: viewer.root.clientWidth, height: viewer.root.clientHeight};
+          }
+        };
+      }
       return new Blob([JSON.stringify(jsonText)], {type: 'text/plain'});
     }
 
@@ -1043,18 +1114,21 @@ const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, va
   sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
 };
 
-const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column: number = 0, row: number = 0) => {
-  for (let i= 0; i < df.columns.names().length; i++) {
-    sheet.getCell(1 + row, 1 + i + column).value = df.columns.byIndex(i).name;
-    sheet.getColumn(1 + i + column).width = Math.max(
-      ...df.columns.byIndex(i).categories.map((category) => category.toString().length),
-      df.columns.byIndex(i).name.length,
-    ) * 1.2;
-  }
-  for (let dfColumn = 0; dfColumn < df.columns.length; dfColumn++) {
-    for (let i = 0; i < df.rowCount; i++)
-      sheet.getCell(i + 2 + row, 1 + column+dfColumn).value = df.columns.byIndex(dfColumn).get(i);
-  }
+let dfCounter = 0;
+const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: number, row?: number) => {
+  const columnKey = sheet.getColumn(column ?? 1).letter;
+  const tableConfig = {
+    name: `ID_${dfCounter.toString()}`,
+    ref: `${columnKey}${row ?? 1}`,
+    columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
+    rows: new Array(df.rowCount).fill(0).map((_, idx) => [...df.row(idx).cells].map((cell) => cell.value)),
+  };
+  sheet.addTable(tableConfig);
+  sheet.columns.forEach((col) => {
+    col.width = 25;
+    col.alignment = {wrapText: true};
+  });
+  dfCounter++;
 };
 
 const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {

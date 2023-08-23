@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable no-multi-spaces */
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/src/entities';
@@ -28,8 +29,8 @@ export enum FitErrorModel {
 }
 
 export type FitParamBounds = {
-  minBound?: number;
-  maxBound?: number;
+  min?: number;
+  max?: number;
 };
 
 /** Fit function description. Applies to custom user fit functions.
@@ -111,10 +112,12 @@ export interface IFitPoint {
   x: number;
   y: number;
   outlier?: boolean;       // if true, renders as 'x' and gets ignored for curve fitting
-  minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
+  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
+  size?: number;           // overrides the default marker size
+  stdev?: number;          // when defined, renders an error bar candlestick
+  // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
+  // maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
 }
 
 /** A series consists of points, has a name, and options.
@@ -137,6 +140,7 @@ export interface IFitChartOptions {
   maxX?: number;
   maxY?: number;
 
+  title?: string;            // defines the plot title. If the plot size is enough, will render it.
   xAxisName?: string;        // defines the x axis name. If the plot size is enough, will render it.
   yAxisName?: string;        // defines the Y axis name. If the plot size is enough, will render it.
 
@@ -166,7 +170,7 @@ export interface IFitSeriesOptions {
   name?: string;                        // controls the series name
   fitFunction?: string | IFitFunctionDescription; // controls the series fit function
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
-  parameterBounds?: FitParamBounds[];   // defines the series parameter bounds during the fit
+  parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
@@ -199,6 +203,7 @@ export const fitChartDataProperties: Property[] = [
   Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
   Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
   Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
+  Property.js('title', TYPE.STRING, {description: 'Plot title. If not specified, doesn\'t renders', nullable: true}),
   Property.js('xAxisName', TYPE.STRING, {description:
     'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('yAxisName', TYPE.STRING, {description:
@@ -215,11 +220,9 @@ export const fitSeriesProperties: Property[] = [
   Property.js('fitFunction', TYPE.STRING,
     {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
   Property.js('pointColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
-      inputType: 'Color'}),
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
   Property.js('fitLineColor', TYPE.STRING,
-    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true,
-      inputType: 'Color'}),
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
   Property.js('showFitLine', TYPE.BOOL,
@@ -422,16 +425,16 @@ export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFuncti
       break;
 
     for (let i = 0; i < parameterBounds.length; i++) {
-      if (parameterBounds[i]?.maxBound !== undefined && paramValues[i] > parameterBounds[i].maxBound!) {
+      if (parameterBounds[i]?.max !== undefined && paramValues[i] > parameterBounds[i].max!) {
         overLimits = true;
         fixed.push(i);
-        paramValues[i] = parameterBounds[i].maxBound!;
+        paramValues[i] = parameterBounds[i].max!;
         break;
       }
-      if (parameterBounds[i]?.minBound !== undefined && paramValues[i] < parameterBounds[i].minBound!) {
+      if (parameterBounds[i]?.min !== undefined && paramValues[i] < parameterBounds[i].min!) {
         overLimits = true;
         fixed.push(i);
-        paramValues[i] = parameterBounds[i].minBound!;
+        paramValues[i] = parameterBounds[i].min!;
         break;
       }
     }

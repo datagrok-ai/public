@@ -5,71 +5,78 @@ import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
 import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../utils/interfaces';
 import { PackageFile } from '../utils/interfaces';
+import * as testUtils from '../utils/test-utils';
 
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
   if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
     return false;
-
   const curDir = process.cwd();
 
-  if (args.recursive) {
-    function runChecksRec(dir: string) {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        const filepath = path.join(dir, file);
-        const stats = fs.statSync(filepath);
-        if (stats.isDirectory()) {
-          if (utils.isPackageDir(filepath))
-            runChecks(filepath);
-          else {
-            if (file !== 'node_modules' && !file.startsWith('.'))
-              runChecksRec(path.join(dir, file));
-          }
-        }
-      }
-    }
-    runChecksRec(curDir);
-  } else {
+  if (args.recursive)
+    return runChecksRec(curDir);
+  else {
     if (!utils.isPackageDir(curDir)) {
       color.error('File `package.json` not found. Run the command from the package directory');
       return false;
     }
+    return runChecks(curDir);
+  }
+}
 
-    runChecks(curDir);
+function runChecks(packagePath: string): boolean {
+  const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
+  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
+  const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
+    'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
+  const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  const warnings: string[] = [];
+  const packageFilePath = path.join(packagePath, 'package.json');
+  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
+
+  const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
+  const isWebpack = fs.existsSync(webpackConfigPath);
+  let externals: { [key: string]: string } | null = null;
+  if (isWebpack) {
+    const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
+    externals = extractExternals(content);
+    if (externals)
+      warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
 
-  function runChecks(packagePath: string) {
-    const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
-    const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
-    const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
-      'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
-    const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
-    const warnings: string[] = [];
+  warnings.push(...checkFuncSignatures(packagePath, funcFiles));
+  warnings.push(...checkPackageFile(packagePath, json, {isWebpack, externals}));
+  warnings.push(...checkChangelog(packagePath, json));
 
-    const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
-    const isWebpack = fs.existsSync(webpackConfigPath);
-    let externals: { [key: string]: string } | null = null;
-    if (isWebpack) {
-      const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
-      externals = extractExternals(content);
-      if (externals)
-        warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
-    }
-
-    warnings.push(...checkFuncSignatures(packagePath, funcFiles));
-    warnings.push(...checkPackageFile(packagePath, { isWebpack, externals }));
-    warnings.push(...checkChangelog(packagePath));
-
-    if (warnings.length) {
-      console.log(`Checking package ${path.basename(packagePath)}...`);
-      warn(warnings);
-    } else
-      console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
+  if (warnings.length) {
+    console.log(`Checking package ${path.basename(packagePath)}...`);
+    warn(warnings);
+    if (json.version.startsWith('0') || (warnings.every((w) => warns.some((ww) => w.includes(ww)))))
+      return true
+    testUtils.exitWithCode(1);
   }
-
+  console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   return true;
+}
+
+const warns = ['Latest package version', 'Datagrok API version should contain'];
+
+function runChecksRec(dir: string): boolean {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filepath = path.join(dir, file);
+    const stats = fs.statSync(filepath);
+    if (stats.isDirectory()) {
+      if (utils.isPackageDir(filepath))
+        return runChecks(filepath);
+      else {
+        if (file !== 'node_modules' && !file.startsWith('.'))
+          runChecksRec(path.join(dir, file));
+      }
+    }
+  }
+  return false;
 }
 
 export function extractExternals(config: string): {}|null {
@@ -266,11 +273,9 @@ const sharedLibExternals: {[lib: string]: {}} = {
   'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
 };
 
-export function checkPackageFile(packagePath: string, options?: { externals?:
+export function checkPackageFile(packagePath: string, json: PackageFile, options?: { externals?:
   { [key: string]: string } | null, isWebpack?: boolean }): string[] {
   const warnings: string[] = [];
-  const packageFilePath = path.join(packagePath, 'package.json');
-  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
   const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
     path.basename(path.dirname(path.dirname(packagePath))) === 'public';
 
@@ -293,6 +298,22 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
 
   if (json.author == null && isPublicPackage)
     warnings.push('File "package.json": add the "author" field.');
+
+  if (json.version.includes('beta') && isPublicPackage)
+    warnings.push('File "package.json": public package cannot be beta version.');
+
+  const api = json.dependencies?.['datagrok-api'];
+  if (api) {
+    if (api === '../../js-api') {}
+    else if (api === 'latest')
+      warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
+    else if (!/^(\^|>|<|~).+/.test(api))
+      warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
+  }
+
+  const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
+  if (dt && dt !== 'latest')
+    warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
 
   if (Array.isArray(json.sources) && json.sources.length > 0) {
     for (const source of json.sources) {
@@ -331,7 +352,8 @@ export function checkPackageFile(packagePath: string, options?: { externals?:
   return warnings;
 }
 
-export function checkChangelog(packagePath: string) {
+export function checkChangelog(packagePath: string, json: PackageFile) {
+  if (json.servicePackage) return [];
   const warnings: string[] = [];
   let clf: string;
   try {
@@ -347,6 +369,12 @@ export function checkChangelog(packagePath: string) {
     if (!regex.test(h))
       warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)`);
   }
+  regex = /^## (\d+\.\d+\.\d+)/;
+  const v1 = h2[0].match(regex)?.[1];
+  const v2 = h2[1]?.match(regex)?.[1];
+  if (v1 !== json.version && v2 !== json.version)
+    warnings.push(`Latest package version (${json.version}) is not in CHANGELOG`);
+
   return warnings;
 }
 

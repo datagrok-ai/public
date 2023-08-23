@@ -1,3 +1,44 @@
 # compute-utils changelog
 
-## 1.12.3 (WIP)
+## 1.13.9 (2023-08-23)
+
+### Fixed bugs
+
+- Fixed bug with empty captions in RFV blocks
+
+## 1.13.8 (2023-08-18)
+
+### Features
+
+- RFV: Inputs are now disabled during computations
+- RFV: editState is now properly saved
+- FileInput: Moved icons into options container
+- Default users and groups IDs are now taken from API
+
+## 1.13.6 (2023-08-15)
+
+### Features
+
+- FileInput now extends DG.InputBase
+- RFV: Historical runs become non-historical on any input change
+- RFV: Ribbon panel now reacts on "historicity" of the run
+- RFV: Inputs now have a delay before calculation re-run
+- RFV: DataFrame export to Excel now uses built-in Excel tables
+
+### Fixed bugs
+
+- Removed workarounds for GROK-13335 & GROK-13337
+- PLV: Fixed bug with extra tabs enabled on historical run load
+
+## 1.13.5 (2023-08-10)
+
+### Features
+
+- Heavily optimized export functions for RFV
+- RFV now supports format setting for float inputs using `format` tag
+- RFV now supports precision setting for float outputs using `precision` tag`
+
+### Fixed bugs
+
+- RFV now saves selected output tab on function rerun
+- RFV now fully hides output during function run panel if no input tabs is provided

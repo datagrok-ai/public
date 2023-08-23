@@ -1,9 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import wu from 'wu';
+
 import {getHelmMonomers} from '../package';
-import {TAGS as bioTAGS, getSplitter, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const V2000_ATOM_NAME_POS = 31;
 
@@ -27,7 +30,7 @@ export async function getMonomericMols(
   } else {
     molV3000Array = new Array<string>(mcol.length);
     for (let i = 0; i < mcol.length; i++) {
-      const sequenceMonomers = uh.splitted[i].filter((it) => it !== '');
+      const sequenceMonomers = wu(uh.splitted[i]).filter((it) => it !== '').toArray();
       const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
       molV3000Array[i] = molV3000;
     }
@@ -36,7 +39,7 @@ export async function getMonomericMols(
 }
 
 function molV3000FromNonHelmSequence(
-  monomers: Array<string>, monomersDict: Map<string, string>, pattern: boolean = false) {
+  monomers: ISeqSplitted, monomersDict: Map<string, string>, pattern: boolean = false) {
   let molV3000 = `
   Datagrok macromolecule handler
 

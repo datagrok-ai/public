@@ -1,11 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import wu from 'wu';
+
 import {TAGS as bioTAGS, ALPHABET, getPaletteByType} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import '../../css/composition-analysis.css';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+
 
 export function getCompositionAnalysisWidget(val: DG.SemanticValue) {
   const host = ui.div();
@@ -30,14 +34,14 @@ export function getCompositionAnalysisWidget(val: DG.SemanticValue) {
   const splitter = uh.getSplitter();
   const parts = splitter(val.value);
   const len = parts.length;
-  parts.filter((p) => p && p !== '').forEach((c: string) => {
+  wu(parts).filter((p) => !!p && p !== '').forEach((c: string) => {
     const count = counts.get(c) || 0;
     counts.set(c, count + 1);
     max = Math.max(max, count + 1);
   });
   max /= len;// percentage
   // calculate frequencies
-  const compositionMap: {[key: string]: HTMLElement} = {};
+  const compositionMap: { [key: string]: HTMLElement } = {};
   const valueArray = Array.from(counts.entries());
   valueArray.sort((a, b) => b[1] - a[1]);
   valueArray.forEach(([key, value]) => {

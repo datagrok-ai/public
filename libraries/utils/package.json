@@ -3,6 +3,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "author": {
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
+  },
   "fullName": "Utils",
   "version": "4.1.4",
   "description": "Common utilities",

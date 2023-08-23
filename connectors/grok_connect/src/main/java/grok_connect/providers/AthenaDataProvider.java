@@ -3,6 +3,7 @@ package grok_connect.providers;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
@@ -53,6 +54,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
         }};
         descriptor.canBrowseSchema = true;
         descriptor.defaultSchema = "default";
+        descriptor.nameBrackets = "\"\"";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("tinyint", Types.INT);
             put("smallint", Types.INT);
@@ -82,24 +84,25 @@ public class AthenaDataProvider extends JdbcDataProvider {
     public String getConnectionStringImpl(DataConnection conn) {
         String formatString;
         String vpc = conn.get(DbCredentials.VPC_ENDPOINT);
-        if (vpc == null || vpc.isEmpty()) {
-            formatString = "jdbc:awsathena://athena.%s.amazonaws.com:443;User=%s;"
-            + "Password=%s;S3OutputLocation=%s;%s%s";
-        } else {
-            formatString = vpc + ".athena.%s.vpce.amazonaws.com:443;User=%s;Password=%s;S3OutputLocation=%s;%s%s";
-        }
-        String accessKey = conn.credentials.parameters.get(DbCredentials.ACCESS_KEY).toString();
-        String secretKey = conn.credentials.parameters.get(DbCredentials.SECRET_KEY).toString();
-        String encode = conn.get(DbCredentials.S3OutputEncOption);
-        String database = conn.getDb();
+        if (vpc == null || vpc.isEmpty())
+            formatString = "jdbc:awsathena://athena.%s.amazonaws.com:443;";
+        else
+            formatString = vpc + ".athena.%s.vpce.amazonaws.com:443;";
         return String.format(formatString,
-                conn.get(DbCredentials.REGION_ID),
-                accessKey,
-                secretKey,
-                conn.get(DbCredentials.S3OutputLocation),
-                database == null || database.isEmpty() ? "" : String.format("Schema=%s;", database),
-                encode == null || encode.isEmpty() ? "" : String.format("S3OutputEncOption=%s;", encode)
-                );
+                conn.get(DbCredentials.REGION_ID));
+    }
+
+    @Override
+    public Properties getProperties(DataConnection conn) {
+        Properties properties = new Properties();
+        properties.put("User", conn.credentials.parameters.get(DbCredentials.ACCESS_KEY).toString());
+        properties.put("Password", conn.credentials.parameters.get(DbCredentials.SECRET_KEY).toString());
+        if (!conn.hasCustomConnectionString()) {
+            properties.put("S3OutputLocation", conn.get(DbCredentials.S3OutputLocation));
+            properties.put("Schema", conn.getDb());
+            properties.put("S3OutputEncOption", conn.get(DbCredentials.S3OutputEncOption));
+        }
+        return properties;
     }
 
     @Override
@@ -138,5 +141,11 @@ public class AthenaDataProvider extends JdbcDataProvider {
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
+    }
+
+    @Override
+    public String addBrackets(String name) {
+        String brackets = descriptor.nameBrackets;
+        return brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
     }
 }

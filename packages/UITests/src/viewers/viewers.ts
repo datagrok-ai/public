@@ -15,7 +15,7 @@ category('Viewers: Core Viewers', () => {
     v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud');
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
-  coreViewers.push('Leaflet', 'distributionProfiler');
+  coreViewers.push('distributionProfiler');
 
   before(async () => {
     df = await _package.files.readCsv('SPGI_v2_100.csv');

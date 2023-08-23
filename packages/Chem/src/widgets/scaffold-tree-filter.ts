@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {ScaffoldTreeViewer, BitwiseOp} from "./scaffold-tree";
+import {ScaffoldTreeViewer, BitwiseOp} from './scaffold-tree';
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
 
@@ -11,19 +11,27 @@ interface IScaffoldFilterState {
   colName: string;
 }
 
+function clearNotIcon(viewer: ScaffoldTreeViewer, tree: DG.TreeViewNode[]) {
+  tree.map((group) => {
+    const castedGroup = group as DG.TreeViewGroup;
+    viewer.setNotBitOperation(castedGroup, false);
+    if (castedGroup.children) {
+      clearNotIcon(viewer, castedGroup.children)
+    }
+  });
+}
+
 export class ScaffoldTreeFilter extends DG.Filter {
   viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
   savedTree: string = '';
-  
+
   constructor() {
     super();
     this.root = ui.divV([]);
     this.subs = this.viewer.subs;
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       this.viewer.clearFilters();
-      this.viewer.tree.children.map((group) => {
-        this.viewer.setNotBitOperation(group as DG.TreeViewGroup, false);
-      });
+      clearNotIcon(this.viewer, this.viewer.tree.children);
       if (this.viewer._bitOpInput)
         this.viewer._bitOpInput.value = BitwiseOp.OR;
     }));
@@ -34,7 +42,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   }
 
   get filterSummary(): string {
-    return ScaffoldTreeViewer.TYPE;  
+    return ScaffoldTreeViewer.TYPE;
   }
 
   attach(dataFrame: DG.DataFrame): void {
@@ -42,16 +50,15 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name;
     this.subs.push(this.dataFrame!.onRowsFiltering
-      .pipe(filter((_) => !this.isFiltering), debounce(_ => interval(100)))
+      .pipe(filter((_) => !this.isFiltering), debounce((_) => interval(100)))
       .subscribe((_) => {
         delete this.column!.temp['chem-scaffold-filter'];
         this.viewer.updateFilters(this.isFiltering);
-      })
+      }),
     );
     this.subs.push(grok.events.onCustomEvent(COLUMN_NAME_CHANGED).subscribe((state: IScaffoldFilterState) => {
-      if (state.colName === this.columnName) {
+      if (state.colName === this.columnName)
         this.createViewer(dataFrame);
-      }
     }));
   }
 
@@ -79,7 +86,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   createViewer(dataFrame: DG.DataFrame) {
     this.viewer.allowGenerate = false;
-    this.viewer.size = 'small';
+    this.viewer.size = 'large';
+    this.viewer.resizable = true;
     this.viewer.molCol = this.column;
     this.viewer.MoleculeColumn = this.columnName!;
     this.viewer.dataFrame = dataFrame;

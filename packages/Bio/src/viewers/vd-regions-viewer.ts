@@ -42,6 +42,24 @@ const vrt = VdRegionType;
 //   new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '118', null/*128*/),
 // ];
 
+export enum PROPS_CATS {
+  STYLE = 'Style',
+  BEHAVIOR = 'Behavior',
+  LAYOUT = 'Layout',
+  DATA = 'Data',
+}
+
+export enum PROPS {
+  // -- Data --
+  skipEmptyPositions = 'skipEmptyPositions',
+  regionTypes = 'regionTypes',
+  chains = 'chains',
+
+  // -- Style --
+  positionWidth = 'positionWidth',
+  positionHeight = 'positionHeight',
+}
+
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
  */
@@ -69,20 +87,24 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   constructor() {
     super();
 
-    // To prevent ambiguous numbering scheme in MLB
-    this.regionTypes = this.stringList('regionTypes', [vrt.CDR],
-      {choices: Object.values(vrt).filter((t) => t != vrt.Unknown)}) as VdRegionType[];
-    this.chains = this.stringList('chains', ['Heavy', 'Light'],
-      {choices: ['Heavy', 'Light']});
-    // this.sequenceColumnNamePostfix = this.string('sequenceColumnNamePostfix', 'chain sequence');
+    // -- Data --
+    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, false,
+      {category: PROPS_CATS.DATA});
 
-    this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
-    this.positionWidth = this.float('positionWidth', 16, {
-      editor: 'slider', min: 0, max: 64,
+    // To prevent ambiguous numbering scheme in MLB
+    this.regionTypes = this.stringList(PROPS.regionTypes, [vrt.CDR], {
+      category: PROPS_CATS.DATA, choices: Object.values(vrt).filter((t) => t != vrt.Unknown)
+    }) as VdRegionType[];
+    this.chains = this.stringList(PROPS.chains, ['Heavy', 'Light'],
+      {category: PROPS_CATS.DATA, choices: ['Heavy', 'Light']});
+
+    // -- Layout --
+    this.positionWidth = this.float(PROPS.positionWidth, 16, {
+      category: PROPS_CATS.LAYOUT, editor: 'slider', min: 0, max: 64,
       description: 'Internal WebLogo viewers property width of position. A value of zero means autofit to the width.'
     });
-    this.positionHeight = this.string('positionHeight', PositionHeight.Entropy,
-      {choices: Object.keys(PositionHeight)}) as PositionHeight;
+    this.positionHeight = this.string(PROPS.positionHeight, PositionHeight.Entropy,
+      {category: PROPS_CATS.LAYOUT, choices: Object.keys(PositionHeight)}) as PositionHeight;
   }
 
   public async init() {
@@ -140,28 +162,35 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       return;
     }
 
-    if (property) {
-      switch (property.name) {
-        case 'regionTypes':
-          break;
-        case 'chains':
-          break;
-        case 'sequenceColumnNamePostfix':
-          break;
-        // for (let orderI = 0; orderI < this.logos.length; orderI++) {
-        //   for (let chainI = 0; chainI < this.chains.length; chainI++) {
-        //     const chain: string = this.chains[chainI];
-        //     this.logos[orderI][chain].setOptions({skipEmptyPositions: this.skipEmptyPositions});
-        //   }
-        // }
-        // this.calcSize();
-      }
+    switch (property.name) {
+      case PROPS.regionTypes:
+      case PROPS.chains:
+        this.setData(this.dataFrame, this.regions);
+        break;
     }
 
     switch (property.name) {
-      case 'skipEmptyPositions':
-      case 'positionWidth':
-      case 'positionHeight':
+      case PROPS.skipEmptyPositions:
+        for (let orderI = 0; orderI < this.logos.length; ++orderI) {
+          for (const chain of this.chains)
+            this.logos[orderI][chain].setOptions({[wlPROPS.skipEmptyPositions]: this.skipEmptyPositions});
+        }
+        this.calcSize();
+        break;
+
+      case PROPS.positionWidth:
+        this.calcSize();
+        break;
+
+      case PROPS.positionHeight:
+        for (let orderI = 0; orderI < this.logos.length; ++orderI) {
+          for (const chain of this.chains)
+            this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: this.positionWidth});
+        }
+        this.calcSize();
+        break;
+
+      default:
         this.setData(this.dataFrame, this.regions); // onPropertyChanged
         break;
     }
@@ -265,8 +294,10 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     this.logos = new Array(orderList.length);
     for (let orderI = 0; orderI < orderList.length; ++orderI)
       this.logos[orderI] = {};
-    for (const [orderI, chain, wl] of logoList)
+    for (const [orderI, chain, wl] of logoList) {
       this.logos[orderI][chain] = wl;
+      this.viewSubs.push(wl.onFreqsCalculated.subscribe(() => { this.calcSize(); }));
+    }
 
     // ui.tableFromMap()
     // DG.HtmlTable.create()
@@ -336,34 +367,40 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private calcSize() {
     _package.logger.debug(`Bio: VdRegionsViewer.calcSize(), start`);
     const calcSizeInt = (): void => {
-      const dpr: number = window.devicePixelRatio;
+      // Postponed calcSizeInt can result call after the viewer has been closed (on tests)
+      if (!this.host) return;
+
       const logoHeight = (this.root.clientHeight - 54) / this.chains.length;
-
-      const maxHeight: number = Math.min(logoHeight,
-        Math.max(...this.logos.map((wlDict) =>
-          Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight)))),
-      );
-
       let totalPos: number = 0;
       for (let orderI = 0; orderI < this.logos.length; orderI++) {
-        for (const chain of this.chains)
-          this.logos[orderI][chain].root.style.height = `${maxHeight}px`;
+        for (const chain of this.chains) {
+          const wl = this.logos[orderI][chain];
+          wl.root.style.height = `${logoHeight}px`;
+        }
 
         totalPos += Math.max(...this.chains.map((chain) => this.logos[orderI][chain].Length));
       }
 
-      if (this.positionWidth === 0 && this.logos.length > 0 && totalPos > 0) {
-        const leftPad = 22/* Chain label */;
-        const rightPad = 6 + 6 + 1;
-        const logoMargin = 8 + 1;
-        const fitPositionWidth =
-          (this.root.clientWidth - leftPad - (this.logos.length - 1) * logoMargin - rightPad) / totalPos * dpr;
+      if (this.positionWidth === 0) {
+        if (this.logos.length > 0 && totalPos > 0) {
+          const leftPad = 22/* Chain label */;
+          const rightPad = 6 + 6 + 1;
+          const logoMargin = 8 + 1;
+          const fitPositionWidth =
+            (this.root.clientWidth - leftPad - (this.logos.length - 1) * logoMargin - rightPad) / totalPos;
 
-        for (let orderI = 0; orderI < this.logos.length; orderI++) {
-          for (let chainI = 0; chainI < this.chains.length; chainI++) {
-            const chain: string = this.chains[chainI];
-            this.logos[orderI][chain].setOptions({positionWidth: fitPositionWidth});
+          for (let orderI = 0; orderI < this.logos.length; orderI++) {
+            for (const chain of this.chains) {
+              const wl = this.logos[orderI][chain];
+              wl.setOptions({[wlPROPS.positionWidth]: fitPositionWidth});
+              wl.root.style.width = `${fitPositionWidth * wl.Length}px`;
+            }
           }
+        }
+      } else {
+        for (let orderI = 0; orderI < this.logos.length; orderI++) {
+          for (const chain of this.chains)
+            this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: this.positionWidth});
         }
       }
 

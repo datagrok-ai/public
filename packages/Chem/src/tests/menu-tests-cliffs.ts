@@ -6,10 +6,10 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import { getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import { chemSpace } from '../analysis/chem-space';
-import { getSimilaritiesMarix } from '../utils/similarity-utils';
-import { createPropPanelElement, createTooltipElement } from '../analysis/activity-cliffs';
+import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {chemSpace} from '../analysis/chem-space';
+import {getSimilaritiesMarix} from '../utils/similarity-utils';
+import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
 // const {jStat} = require('jstat');
 
 
@@ -22,7 +22,8 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffsOpen.smiles', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_10K_with_activities.csv") :
+    const df = DG.Test.isInBenchmark ?
+      await grok.data.files.openTable('Demo:Files/chem/smiles_10K_with_activities.csv') :
       await readDataframe('tests/activity_cliffs_test.csv');
     await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2);
   });
@@ -68,7 +69,8 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activit
   await getActivityCliffs(df, df.col(molCol)!,
     null as any, ['Embed_X_1', 'Embed_Y_1'], 'Activity cliffs', actCliffsTableView.dataFrame.getCol(activityCol),
     80, BitArrayMetricsNames.Tanimoto, DimReductionMethods.UMAP, DG.SEMTYPE.MOLECULE,
-    { 'units': df.col(molCol)!.tags['units'] }, chemSpace, getSimilaritiesMarix, createTooltipElement, createPropPanelElement);
+    {'units': df.col(molCol)!.tags['units']}, chemSpace,
+    getSimilaritiesMarix, createTooltipElement, createPropPanelElement);
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {
     if (i.type == DG.VIEWER.SCATTER_PLOT)

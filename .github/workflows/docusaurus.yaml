@@ -24,7 +24,7 @@ jobs:
   lint:
     name: Lint
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout
@@ -49,7 +49,7 @@ jobs:
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Markdown Linter errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#markdown-linter)" >> help/_lint-check-report.md
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#markdown-linter)" >> help/_lint-check-report.md
             sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
             cat help/_lint-check-report.md
             cat help/_lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
@@ -60,7 +60,7 @@ jobs:
     name: Convert to HTML
     needs: [lint, common-check]
     if: needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -108,7 +108,7 @@ jobs:
           else
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Hyperlink link checker errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#links-and-anchors-check)" >> help/_anchor-check-report.md
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#links-and-anchors-check)" >> help/_anchor-check-report.md
             cat help/_anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
             cat help/_anchor-check-report.md
             sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
@@ -134,7 +134,7 @@ jobs:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
     if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: Help
     steps:
       - name: Download artifact
@@ -143,6 +143,7 @@ jobs:
           name: docusaurus
           path: docusaurus/build
       - name: Deploy to server
+        id: deploy
         shell: bash
         run: |
           mkdir -p ~/.ssh/
@@ -175,6 +176,54 @@ jobs:
           REMOTE_USER: ${{ secrets.HELP_USER }}
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
 
+      - name: Prepare Slack Message
+        if: steps.deploy.outcome == 'success'
+        id: slack-user
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+
+          header="<https://datagrok.ai/help/datagrok/|Help> is deployed"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+
+          context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+      - name: Send to Slack
+        id: slack
+        if: steps.deploy.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+
+
   scrape:
     name: Scrape
     needs: [deploy, common-check]
@@ -183,7 +232,7 @@ jobs:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
     if: github.ref == 'refs/heads/master' && needs.common-check.outputs.continue == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3

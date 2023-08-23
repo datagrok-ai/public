@@ -3,9 +3,9 @@
   "friendlyName": "Clinical Case",
   "author": {
     "name": "Maria Dolotova",
-    "email": "mdolotova@datagrok.ai"
+    "email": "maria.dolotova@softwarecountry.com"
   },
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
   "repository": {
     "type": "git",

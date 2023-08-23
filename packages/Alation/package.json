@@ -1,7 +1,8 @@
 {
   "name": "@datagrok/alation",
   "friendlyName": "Alation",
-  "version": "1.1.5",
+  "version": "1.1.6",
+  "category": "Data Access",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"

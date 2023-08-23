@@ -126,6 +126,28 @@ export async function getChemblCompounds(maxNumberOfMolecules: number): Promise<
   return df;
 }
 
+//name: Chembl molregno
+//tags: HitTriageFunction
+//input: dataframe table [Input data table] {caption: Table}
+//input: column molecules {caption: Molecules; semType: Molecule}
+//output: dataframe result
+export async function chemblMolregno(table: DG.DataFrame, molecules: DG.Column): Promise<DG.DataFrame> {
+  const name = table.columns.getUnusedName('CHEMBL molregno');
+  table.columns.addNewInt(name);
+  for (let i = 0; i < molecules.length; i++) {
+    const smile = molecules.get(i);
+    if (!smile) {
+      table.set(name, i, null);
+      continue;
+    }
+    const canonical = grok.chem.convert(smile, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+    const resDf: DG.DataFrame = await grok.data.query('Chembl:ChemblMolregNoBySmiles', {smiles: canonical});
+    const res: number = resDf.getCol('molregno').toList()[0];
+    table.set(name, i, res);
+  }
+  return table;
+}
+
 
 /*
 //name_: Chembl Browser

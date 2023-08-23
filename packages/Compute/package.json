@@ -1,21 +1,21 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.13.3",
+  "version": "1.13.11",
   "author": {
     "name": "Aufar Zakiev",
     "email": "aufar.zakiev@softwarecountry.com"
   },
-  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
+  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Compute"
   },
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.13.2",
+    "@datagrok-libraries/compute-utils": "^1.13.11",
     "cash-dom": "latest",
-    "datagrok-api": "^1.15.3",
+    "datagrok-api": "^1.16.3",
     "dayjs": "=1.11.7",
     "rxjs": "^6.5.5",
     "source-map-loader": "^4.0.1",

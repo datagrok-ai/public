@@ -20,8 +20,8 @@ export const SS = 'SS' as const;
 export const AS = 'AS' as const;
 export const STRANDS = [SS, AS];
 export const STRAND_NAME = {
-  [SS]: 'Sense Strand',
-  [AS]: 'Antisense Strand',
+  [SS]: 'Sense strand',
+  [AS]: 'Anti sense',
 }
 
 export const THREE_PRIME = 'THREE_PRIME' as const;

@@ -2,18 +2,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
+
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+
 import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
-import {ALPHABET, NOTATION, TAGS} from '../utils/macromolecule/consts';
+import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
 import {NotationConverter} from '../utils/notation-converter';
 import {IMonomerLib, Monomer} from '../types';
 import {UnitsHandler} from '../utils/units-handler';
-import {getFormattedMonomerLib,
-  keepPrecision} from './to-atomic-level-utils';
+import {
+  getFormattedMonomerLib,
+  keepPrecision
+} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, ITypedArray, MolGraph, MonomerMetadata, NumberWrapper, Point} from './types';
+import {SplitterFunc} from '../utils/macromolecule';
+
 import {monomerWorksConsts as C} from './consts';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {SplitterFunc, getSplitter} from '../utils/macromolecule';
 
 // todo: verify that all functions have return types
 
@@ -21,7 +27,7 @@ import {SplitterFunc, getSplitter} from '../utils/macromolecule';
  * @param {DG.DataFrame} df - DataFrame containing the column to be converted
  * @param {DG.Column} seqCol - Column containing the macromolecule sequence
  * @param {IMonomerLib} monomerLib - Monomer library
-*/
+ */
 export async function _toAtomicLevel(
   df: DG.DataFrame, seqCol: DG.Column<string>, monomerLib: IMonomerLib
 ): Promise<{ col: DG.Column | null, warnings: string [] }> {
@@ -89,14 +95,13 @@ export function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string
   const result: string[][] = new Array(columnLength);
 
   // split the string into monomers
-  const colUnits = macroMolCol.getTag(DG.TAGS.UNITS);
-  const separator = macroMolCol.getTag(TAGS.separator);
-  const splitterFunc: SplitterFunc = getSplitter(colUnits, separator);
+  const uh = UnitsHandler.getOrCreate(macroMolCol);
+  const splitter: SplitterFunc = uh.getSplitter();
 
   for (let row = 0; row < columnLength; ++row) {
     const macroMolecule = macroMolCol.get(row);
-    // todo: handle the exception case when macroMolecule is null
-    result[row] = macroMolecule ? splitterFunc(macroMolecule).filter((monomerCode) => monomerCode !== '') : [];
+    result[row] = macroMolecule ? wu(splitter(macroMolecule))
+      .filter((monomerCode) => monomerCode !== '').toArray() : [];
   }
   return result;
 }

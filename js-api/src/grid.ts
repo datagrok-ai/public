@@ -697,6 +697,9 @@ export class GridColumn {
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
 
+  /** Number of pixels required to render the longest element in the column. */
+  getDataWidth(): number { return api.grok_GridColumn_GetDataWidth(this.dart); }
+
   /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
   scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
 }
@@ -1026,6 +1029,10 @@ export class Grid extends Viewer<IGridLookSettings> {
 }
 
 
+export type HorzAlign = 'right' | 'center' | 'left';
+export type VertAlign = 'top' | 'center' | 'bottom';
+
+
 /** Represents grid cell style. */
 export class GridCellStyle {
   dart: any;
@@ -1041,6 +1048,15 @@ export class GridCellStyle {
   /** Font. Example: 12px Verdana */
   get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
   set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
+
+  get hozrAlign(): string { return api.grok_GridCellStyle_Get_HorzAlign(this.dart) ?? ''; }
+  set horzAlign(x: string) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
+
+  get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
+  set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
+
+  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? ''; }
+  set marginLeft(x: number) { api.grok_GridCellStyle_Set_MarginLeft(this.dart, x); }
 
   /** Text color (RGBA-encoded) */
   get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }

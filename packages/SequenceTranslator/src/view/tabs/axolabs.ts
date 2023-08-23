@@ -282,14 +282,14 @@ export class AxolabsTabUI {
             lstMy.push(ent);//getShortName(ent));
         }
 
-        let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
+        let loadPattern = ui.choiceInput('Load pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
 
         const currentUserName = (await grok.dapi.users.current()).friendlyName;
         const otherUsers = 'Other users';
 
         const patternListChoiceInput = ui.choiceInput('', currentUserName, [currentUserName, otherUsers], (v: string) => {
           const currentList = v === currentUserName ? lstMy : lstOthers;
-          loadPattern = ui.choiceInput('Load Pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
+          loadPattern = ui.choiceInput('Load pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
 
           loadPattern.root.append(patternListChoiceInput.input);
           loadPattern.root.append(loadPattern.input);
@@ -391,7 +391,7 @@ export class AxolabsTabUI {
     const baseChoices: string[] = Object.keys(axolabsStyleMap);
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
-    const sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {
+    const sequenceBase = ui.choiceInput('Sequence basis', defaultBase, baseChoices, (v: string) => {
       updateBases(v);
       updateOutputExamples();
     });
@@ -421,7 +421,7 @@ export class AxolabsTabUI {
     ));
     const strandLengthInput = Object.fromEntries(STRANDS.map(
       (strand) => {
-        const input = ui.intInput(`${strand} Length`, DEFAULT_SEQUENCE_LENGTH, () => updateUiForNewSequenceLength());
+        const input = ui.intInput(`${STRAND_NAME[strand]} length`, DEFAULT_SEQUENCE_LENGTH, () => updateUiForNewSequenceLength());
         input.setTooltip(`Length of ${STRAND_NAME[strand].toLowerCase()}, including overhangs`);
         return [strand, input];
     }));
@@ -437,7 +437,7 @@ export class AxolabsTabUI {
 
     // todo: rename to strandColumnInput
     const inputStrandColumn = Object.fromEntries(STRANDS.map((strand) => {
-      const input: StringInput = ui.choiceInput(`${STRAND_NAME[strand]} Column`, '', [], (colName: string) => {
+      const input: StringInput = ui.choiceInput(`${STRAND_NAME[strand]} column`, '', [], (colName: string) => {
         validateStrandColumn(colName, strand);
         strandVar[strand] = colName;
       });
@@ -491,19 +491,21 @@ export class AxolabsTabUI {
       // todo: remove ts-ignore
       // @ts-ignore
       outputExample[s].input.disabled = 'true';
+      let options = ui.div([
+        ui.button(ui.iconFA('copy', () => {}), () => {
+          navigator.clipboard.writeText(outputExample[s].value).then(() =>
+            grok.shell.info('Sequence was copied to clipboard'));
+        }),
+      ], 'ui-input-options');
+      options.style.height = 'inherit';
       outputExample[s].root.append(
-        ui.div([
-          ui.button(ui.iconFA('copy', () => {}), () => {
-            navigator.clipboard.writeText(outputExample[s].value).then(() =>
-              grok.shell.info('Sequence was copied to clipboard'));
-          }),
-        ], 'ui-input-options'),
+        options
       );
     })
 
     const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
-    const asExampleDiv = ui.div([]);
+    const asExampleDiv = ui.div([], 'ui-form ui-form-wide');
     const appAxolabsDescription = ui.div([]);
     const loadPatternDiv = ui.div([]);
     const asModificationDiv = ui.div([]);
@@ -526,7 +528,7 @@ export class AxolabsTabUI {
 
     const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
       STRANDS.forEach((strand) => {
-        inputStrandColumn[strand] = ui.choiceInput(`${strand} Column`, '', t.columns.names(), (colName: string) => {
+        inputStrandColumn[strand] = ui.choiceInput(`${strand} column`, '', t.columns.names(), (colName: string) => {
           validateStrandColumn(colName, strand);
           strandVar[strand] = colName;
         });
@@ -535,7 +537,7 @@ export class AxolabsTabUI {
       })
 
       // todo: unify with inputStrandColumn
-      const inputIdColumn = ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => {
+      const inputIdColumn = ui.choiceInput('ID column', '', t.columns.names(), (colName: string) => {
         validateIdsColumn(colName);
         idVar = colName;
       });
@@ -546,7 +548,7 @@ export class AxolabsTabUI {
 
     // todo: unify with strandVar
     let idVar = '';
-    const inputIdColumn = ui.choiceInput('ID Column', '', [], (colName: string) => {
+    const inputIdColumn = ui.choiceInput('ID column', '', [], (colName: string) => {
       validateIdsColumn(colName);
       idVar = colName;
     });
@@ -554,7 +556,7 @@ export class AxolabsTabUI {
 
     updatePatternsList();
 
-    const createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
+    const createAsStrand = ui.boolInput('Anti sense strand', true, (v: boolean) => {
       modificationSection[AS].hidden = !v;
       inputStrandColumnDiv[AS].hidden = !v;
       asLengthDiv.hidden = !v;
@@ -565,7 +567,7 @@ export class AxolabsTabUI {
     });
     createAsStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
-    const saveAs = ui.textInput('Save As', 'Pattern Name', () => updateSvgScheme());
+    const saveAs = ui.textInput('Save as', 'Pattern name', () => updateSvgScheme());
     saveAs.setTooltip('Name Of New Pattern');
 
 
@@ -575,11 +577,11 @@ export class AxolabsTabUI {
 
     const comment = ui.textInput('Comment', '', () => updateSvgScheme());
 
-    const savePatternButton = ui.button('Save', () => {
+    const savePatternButton = ui.bigButton('Save', () => {
       if (saveAs.value !== '')
         savePattern().then(() => grok.shell.info('Pattern saved'));
       else {
-        const name = ui.stringInput('Enter Name', '');
+        const name = ui.stringInput('Enter name', '');
         ui.dialog('Pattern Name')
           .add(name.root)
           .onOK(() => {
@@ -590,7 +592,7 @@ export class AxolabsTabUI {
       }
     });
 
-    const convertSequenceButton = ui.button('Convert Sequences', () => {
+    const convertSequenceButton = ui.bigButton('Convert', () => {
       const condition = [true, createAsStrand.value];
       if (STRANDS.some((s, i) => condition[i] && strandVar[s] === ''))
         grok.shell.info('Please select table and columns on which to apply pattern');
@@ -633,22 +635,19 @@ export class AxolabsTabUI {
       inputExample[SS].root,
       outputExample[SS].root,
       asExampleDiv,
-    ], 'ui-form');
+    ], 'ui-form ui-form-wide');
 
-    const inputsSection = ui.div([
+    const inputsSection = ui.block50([
       ui.h1('Convert options'),
-      ui.divH([
-        tables.root,
-        inputStrandColumnDiv[SS],
-      ]),
-      ui.divH([
-        inputStrandColumnDiv[AS],
-        inputIdColumnDiv,
-      ]),
+      tables.root,
+      inputStrandColumnDiv[SS],
+      inputStrandColumnDiv[AS],
+      inputIdColumnDiv,
       ui.buttonsInput([
         convertSequenceButton,
       ]),
-    ], 'ui-form');
+    ]);
+    inputsSection.classList.add('ui-form');
 
     const downloadButton = ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value,
       {backgroundColor: 'white'}));
@@ -665,7 +664,7 @@ export class AxolabsTabUI {
             ui.h1('Pattern options'),
           ]),
           ui.divH([
-            ui.div([
+            ui.block([
               strandLengthInput[SS].root,
               asLengthDiv,
               sequenceBase.root,
@@ -676,7 +675,7 @@ export class AxolabsTabUI {
                 savePatternButton,
               ]),
             ], 'ui-form'),
-            ui.div([
+            ui.block([
               createAsStrand.root,
               fullyPto.root,
               firstPto[SS].root,
@@ -685,7 +684,7 @@ export class AxolabsTabUI {
               terminalModification[SS][THREE_PRIME].root,
               asModificationDiv,
             ], 'ui-form'),
-          ], 'ui-form'),
+          ]),
         ], 'ui-form'),
         inputsSection,
         exampleSection,

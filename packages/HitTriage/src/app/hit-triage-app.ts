@@ -1,18 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ICampaign, IComputeDialogResult, IFunctionArgs, ITemplate, ITemplateIngest, IngestType} from './types';
-import {InfoView} from './views/info-view';
-import {HitTriageBaseView} from './views/base-view';
-import {SubmitView} from './views/submit-view';
-import {CampaignIdKey, HitSelectionColName} from './consts';
+import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
+  HitTriageTemplate, HitTriageTemplateIngest, IngestType} from './types';
+import {InfoView} from './hit-triage-views/info-view';
+import {HitTriageBaseView} from './hit-triage-views/base-view';
+import {SubmitView} from './hit-triage-views/submit-view';
+import {CampaignIdKey, HitSelectionColName, i18n} from './consts';
 import {modifyUrl} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
-
 export class HitTriageApp {
-  template?: ITemplate;
+  template?: HitTriageTemplate;
   dataFrame?: DG.DataFrame;
   multiView: DG.MultiView;
 
@@ -27,7 +27,7 @@ export class HitTriageApp {
   private _molColName?: string;
   public _fileInputType?: IngestType;
 
-  private _campaign?: ICampaign;
+  private _campaign?: HitTriageCampaign;
   protected _filterDescriptions: string[] = [];
   public campaignProps: {[key: string]: any} = {};
   constructor() {
@@ -40,8 +40,8 @@ export class HitTriageApp {
     grok.shell.addView(this.multiView);
   }
 
-  public async setTemplate(template: ITemplate, presetFilters?: {[key: string]: any}[],
-    campaignId?: string, ingestProps?: ITemplateIngest) {
+  public async setTemplate(template: HitTriageTemplate, presetFilters?: {[key: string]: any}[],
+    campaignId?: string, ingestProps?: HitTriageTemplateIngest) {
     if (!campaignId) {
       campaignId = await this.getNewCampaignName(template.key);
       modifyUrl(CampaignIdKey, campaignId);
@@ -59,6 +59,7 @@ export class HitTriageApp {
     await this.dataFrame.meta.detectSemanticTypes();
     this._molColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? undefined;
     this._dfName = this.dataFrame.name ?? ingestProps?.query;
+    this.dataFrame.name = this._dfName ?? this.dataFrame.name ?? 'Molecules';
     this._campaignId = campaignId;
     this.template = template;
     this._campaignFilters = presetFilters;
@@ -75,9 +76,10 @@ export class HitTriageApp {
       });
     };
 
+    //this.currentView.root.appendChild(this.pickView.root);
     this.multiView.addView(this._filterViewName, () => this.pickView, true);
     this._submitView ??= new SubmitView(this);
-    this.multiView.addView(this._submitView.name, () => this._submitView!, false);
+    // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
 
@@ -91,9 +93,9 @@ export class HitTriageApp {
 
   get fileInputType(): IngestType | undefined {return this._fileInputType;}
 
-  get campaign(): ICampaign | undefined {return this._campaign;}
+  get campaign(): HitTriageCampaign | undefined {return this._campaign;}
 
-  set campaign(campaign: ICampaign | undefined) {this._campaign = campaign;}
+  set campaign(campaign: HitTriageCampaign | undefined) {this._campaign = campaign;}
 
   private getFilterType(colName: string): DG.FILTER_TYPE {
     const col = this.dataFrame!.col(colName);
@@ -144,21 +146,26 @@ export class HitTriageApp {
     const view = DG.TableView.create(this.dataFrame!, false);
     const ribbons = view.getRibbonPanels();
     const calculateRibbon = ui.icons.add(getComputeDialog, 'Calculate additional properties');
-    ribbons.push([calculateRibbon]);
+    const submitButton = ui.div(ui.bigButton('Submit', () => {
+      const dialogContent = this._submitView?.render();
+      if (dialogContent)
+        ui.dialog('Submit').add(dialogContent).show();
+    }));
+
+    ribbons.push([calculateRibbon, submitButton]);
     view.setRibbonPanels(ribbons);
     view.name = this._filterViewName;
-
     setTimeout(async () => {
+      view._onAdded();
+      await new Promise((r) => setTimeout(r, 1000));
       // const ribbons = view.getRibbonPanels();
       // ribbons[0].push(ui.div(ui.icons.add(() => null), {classes: 'd4-ribbon-item'}));
       // console.log(ribbons);
-      view._onAdded();
       // we need to wait for chem package to be initialized first to be able to use chem filters
-      // const someChemFunction = DG.Func.find({package: 'Chem', name: 'substructureFilter'})[0];
-      // await someChemFunction.package.init();
 
+      //const f = view.filters();
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
-
+      // view.getFiltersGroup().add()
       // const group = view.getFiltersGroup();
       view.dataFrame.onFilterChanged
         .subscribe((_) => {
@@ -169,42 +176,39 @@ export class HitTriageApp {
         this._filterDescriptions = Array.from(view.dataFrame.rows.filters);
         this._campaignFilters = f.getOptions().look.filters;
       }, 300);
-    }, 100);
+    }, 300);
     return view;
   }
 
   getSummary(): {[_: string]: any} {
-    const getStyledDownloadButton = (callBackFn: () => void): HTMLElement => {
-      const db = ui.iconFA('arrow-to-bottom', callBackFn);
-      db.classList.add('hit-triage-download-button');
-      return db;
-    };
     const campaignProps = this.campaign?.campaignFields ?? this.campaignProps;
     return {
       'Template': this.template?.name ?? 'Molecules',
-      'File path': ui.divH([ui.divText(this._dfName ?? ''), getStyledDownloadButton(
-        () => this.download(this.dataFrame!, 'molecules'))], {style: {alignItems: 'center'}}),
+      'File path': ui.divH([ui.link(this._dfName ?? '-', () => this.download(this.dataFrame!, 'molecules'),
+        i18n.download)],
+      {style: {alignItems: 'center'}}),
       ...campaignProps,
       'Number of molecules': this.dataFrame!.rowCount.toString(),
       'Enrichment methods': [this.template!.compute.descriptors.enabled ? 'descriptors' : '',
         ...this.template!.compute.functions.map((func) => func.name)].filter((f) => f && f.trim() !== '').join(', '),
       'Filters': this._filterDescriptions.join(', '),
-      'Result Molecules': ui.divH([ui.divText(this.dataFrame?.filter.trueCount.toString() ?? '0'),
-        getStyledDownloadButton(
-          () => this.download(this.dataFrame!, 'hits', true))], {style: {alignItems: 'center'}}),
+      'Result Molecules': ui.divH([ui.link(this.dataFrame?.filter.trueCount.toString() ?? '0', () => {
+        this.download(this.dataFrame!, 'hits', true);
+      }, i18n.download)], {style: {alignItems: 'center'}}),
     };
   }
 
   download(df: DG.DataFrame, name: string, onlyFiltered = false): void {
     const element = document.createElement('a');
-    const result = df.toCsv({filteredRowsOnly: onlyFiltered});
+    const result = DG.DataFrame.fromColumns(df.columns.toList().filter((c) => !c.name.startsWith('~')))
+      .toCsv({filteredRowsOnly: onlyFiltered});
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
     element.setAttribute('download', name + '.csv');
     element.click();
   }
 
   async getNewCampaignName(templateKey: string) {
-    const templateCampaigns = (await _package.files.list('campaigns'))
+    const templateCampaigns = (await _package.files.list('Hit Triage/campaigns'))
       .map((file) => file.name)
       .filter((name) => name.startsWith(templateKey));
     if (templateCampaigns.length === 0)

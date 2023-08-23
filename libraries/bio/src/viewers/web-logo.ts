@@ -19,12 +19,14 @@ export enum PositionHeight {
   full = '100%',
 }
 
+/** top, middle, bottom */
 export enum VerticalAlignments {
   TOP = 'top',
   MIDDLE = 'middle',
   BOTTOM = 'bottom',
 }
 
+/** left, center, right */
 export enum HorizontalAlignments {
   LEFT = 'left',
   CENTER = 'center',
@@ -66,6 +68,7 @@ export const WebLogoPropsDefault = new class {
   fitArea: boolean = true;
   minHeight: number = 50;
   maxHeight: number = 100;
+  showPositionLabels: boolean = true;
   positionMarginState: PositionMarginStates = PositionMarginStates.AUTO;
   positionMargin: number = 0;
 

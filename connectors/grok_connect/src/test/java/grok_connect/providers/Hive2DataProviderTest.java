@@ -43,19 +43,14 @@ import java.util.Optional;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class Hive2DataProviderTest {
     private static final Provider type = Provider.HIVE2;
-    private static final String META_STORE_PROVIDER = "Postgres";
     private static final String SERVICE_NAME = "hive-server";
-    private static final String META_STORE_NAME = "hive-metastore-postgresql";
     private static final int SERVICE_PORT = 10000;
-    private static final int META_STORE_PORT = 5432;
     private static final int WAITING_TIME = 180;
 
     @Container
     private static final DockerComposeContainer<?> dockerComposeContainer =
             new DockerComposeContainer<>(new File("src/test/resources/scripts/hive2/docker-compose.yml"))
                     .withExposedService(SERVICE_NAME, SERVICE_PORT,
-                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(WAITING_TIME)))
-                    .withExposedService(META_STORE_NAME, META_STORE_PORT,
                             Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(WAITING_TIME)));
 
     private JdbcDataProvider provider;
@@ -96,14 +91,6 @@ class Hive2DataProviderTest {
                 dockerComposeContainer.getServiceHost(SERVICE_NAME, SERVICE_PORT));
         connection.parameters.put(DbCredentials.PORT,
                 (double) dockerComposeContainer.getServicePort(SERVICE_NAME, SERVICE_PORT));
-        connection.parameters.put(DbCredentials.META_STORE, META_STORE_PROVIDER);
-        connection.parameters.put(DbCredentials.META_STORE_SERVER, dockerComposeContainer.getServiceHost(META_STORE_NAME,
-                META_STORE_PORT));
-        connection.parameters.put(DbCredentials.META_STORE_PORT,
-                (double) dockerComposeContainer.getServicePort(META_STORE_NAME,
-                META_STORE_PORT));
-        connection.parameters.put(DbCredentials.META_STORE_LOGIN, "postgres");
-        connection.parameters.put(DbCredentials.META_STORE_PASSWORD, "");
     }
 
     @Order(1)

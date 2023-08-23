@@ -3,6 +3,7 @@ on:
   workflow_dispatch: { }
   push:
   pull_request:
+    types: [ opened, edited, synchronize, reopened ]
 
 jobs:
   common-check:
@@ -11,79 +12,88 @@ jobs:
     with:
       run_trigger: ${{ github.event_name }}
 
-  super-linter:
-    name: Super Lint Code Base
-    needs: common-check
-    runs-on: ubuntu-20.04
-    if: needs.common-check.outputs.continue == 'true'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
-          fetch-depth: 0
-      - name: Lint Code Base
-        uses: github/super-linter@v4.9.6
-        env:
-          DISABLE_ERRORS: true
-          DEFAULT_BRANCH: master
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MULTI_STATUS: true
-          LOG_LEVEL: WARN
-          ERROR_ON_MISSING_EXEC_BIT: true
-          SUPPRESS_FILE_TYPE_WARN: false
-          JSCPD_CONFIG_FILE: .jscpd.json
-          NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
-          JAVASCRIPT_ES_CONFIG_FILE: .eslintrc.json
-          TYPESCRIPT_ES_CONFIG_FILE: .eslintrc.json
-          VALIDATE_ALL_CODEBASE: false
-          IGNORE_GITIGNORED_FILES: true
-          VALIDATE_BASH: true
-          VALIDATE_BASH_EXEC: true
-          VALIDATE_CPP: true
-          VALIDATE_CLANG_FORMAT: true
-          VALIDATE_CLOUDFORMATION: true
-          VALIDATE_CSS: true
-          VALIDATE_DART: true
-          VALIDATE_DOCKERFILE_HADOLINT: true
-          VALIDATE_EDITORCONFIG: true
-          VALIDATE_GITHUB_ACTIONS: true
-          VALIDATE_GITLEAKS: true
-          VALIDATE_GOOGLE_JAVA_FORMAT: true
-          VALIDATE_HTML: true
-          VALIDATE_JAVA: true
-          VALIDATE_JAVASCRIPT_ES: true
-          VALIDATE_JSON: true
-          VALIDATE_JSX: true
-          VALIDATE_KUBERNETES_KUBEVAL: true
-          VALIDATE_LUA: true
-          VALIDATE_NATURAL_LANGUAGE: true
-          VALIDATE_POWERSHELL: true
-          VALIDATE_SHELL_SHFMT: true
-          VALIDATE_TERRAFORM_TERRASCAN: true
-          VALIDATE_TERRAFORM_TFLINT: true
-          VALIDATE_TSX: true
-          VALIDATE_TYPESCRIPT_ES: true
-          VALIDATE_XML: true
-          VALIDATE_YAML: true
+  #  super-linter:
+  #    name: Super Lint Code Base
+  #    needs: common-check
+  #    runs-on: ubuntu-22.04
+  #    if: needs.common-check.outputs.continue == 'true'
+  #    steps:
+  #      - name: Checkout Code
+  #        uses: actions/checkout@v3
+  #        with:
+  #          # Full git history is needed to get a proper list of changed files within `super-linter`
+  #          fetch-depth: 0
+  #      - name: Lint Code Base
+  #        uses: github/super-linter@v4.9.6
+  #        env:
+  #          DISABLE_ERRORS: true
+  #          DEFAULT_BRANCH: master
+  #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #          MULTI_STATUS: true
+  #          LOG_LEVEL: WARN
+  #          ERROR_ON_MISSING_EXEC_BIT: true
+  #          SUPPRESS_FILE_TYPE_WARN: false
+  #          JSCPD_CONFIG_FILE: .jscpd.json
+  #          NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
+  #          JAVASCRIPT_ES_CONFIG_FILE: .eslintrc.json
+  #          TYPESCRIPT_ES_CONFIG_FILE: .eslintrc.json
+  #          VALIDATE_ALL_CODEBASE: false
+  #          IGNORE_GITIGNORED_FILES: true
+  #          VALIDATE_BASH: true
+  #          VALIDATE_BASH_EXEC: true
+  #          VALIDATE_CPP: true
+  #          VALIDATE_CLANG_FORMAT: true
+  #          VALIDATE_CLOUDFORMATION: true
+  #          VALIDATE_CSS: true
+  #          VALIDATE_DART: true
+  #          VALIDATE_DOCKERFILE_HADOLINT: true
+  #          VALIDATE_EDITORCONFIG: true
+  #          VALIDATE_GITHUB_ACTIONS: true
+  #          VALIDATE_GITLEAKS: true
+  #          VALIDATE_GOOGLE_JAVA_FORMAT: true
+  #          VALIDATE_HTML: true
+  #          VALIDATE_JAVA: true
+  #          VALIDATE_JAVASCRIPT_ES: true
+  #          VALIDATE_JSON: true
+  #          VALIDATE_JSX: true
+  #          VALIDATE_KUBERNETES_KUBEVAL: true
+  #          VALIDATE_LUA: true
+  #          VALIDATE_NATURAL_LANGUAGE: true
+  #          VALIDATE_POWERSHELL: true
+  #          VALIDATE_SHELL_SHFMT: true
+  #          VALIDATE_TERRAFORM_TERRASCAN: true
+  #          VALIDATE_TERRAFORM_TFLINT: true
+  #          VALIDATE_TSX: true
+  #          VALIDATE_TYPESCRIPT_ES: true
+  #          VALIDATE_XML: true
+  #          VALIDATE_YAML: true
 
   markdown:
     name: MarkdownLint
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
+    permissions:
+      pull-requests: read
     steps:
+      - name: Set git fetch depth
+        run: |
+          if [[ ${{ github.event_name }} != 'pull_request' ]]; then
+              echo "FETCH_DEPTH=2" >> "$GITHUB_ENV"
+          else
+              echo "FETCH_DEPTH=0" >> "$GITHUB_ENV"
+          fi
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          # Full git history is needed to get a proper list of changed files within `markdownlint`
-          fetch-depth: 0
-      - uses: tj-actions/changed-files@v35
+          fetch-depth: ${{ env.FETCH_DEPTH }}
+      - name: Get changed files
+        uses: tj-actions/changed-files@v37
         id: changed-files
         with:
           files: '**/*.{md,mdx}'
           separator: ","
-      - name: markdownlint-cli2-action
+      - name: markdownlint-cli
         uses: DavidAnson/markdownlint-cli2-action@v9
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
@@ -93,21 +103,42 @@ jobs:
   commit:
     name: Lint Commit message
     needs: common-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          # Full git history is needed to get a proper list of changed files within `commitlint`
-          fetch-depth: 0
-      - uses: actions/setup-node@v3
+          fetch-depth: 2
+      - name: Setup node
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - run: npm install --location=global @commitlint/config-conventional @commitlint/cli
-      - uses: wagoid/commitlint-github-action@v5
+      - name: Install commitlint dependencies
+        run: npm install --location=global @commitlint/config-conventional @commitlint/cli
+      - name: Commitlint
+        uses: wagoid/commitlint-github-action@v5
         with:
           configFile: commitlint.config.js
-          firstParent: true
           failOnWarnings: false
           helpURL: https://datagrok.ai/help/develop/advanced/git-policy#commit-message-policy
+
+  pr-name:
+    name: Lint PR name
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install commitlint dependencies
+        run: npm install @commitlint/config-conventional @commitlint/cli
+      - name: Commitlint PR title
+        uses: JulienKode/pull-request-name-linter-action@v0.5.0
+        with:
+          configuration-path: ./commitlint.config.js

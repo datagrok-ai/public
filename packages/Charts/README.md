@@ -1,6 +1,6 @@
 # Charts
 
-Charts is a [package](https://datagrok.ai/help/develop/develop#packages) for the
+Charts is a [package](https://datagrok.ai/help/develop/#packages) for the
 [Datagrok](https://datagrok.ai) platform. It provides visualizations built using
 the [ECharts](https://echarts.apache.org/en/index.html) and [D3.js](https://d3js.org/)
 libraries. Individual data visualizations use Javascript libraries, such as
@@ -230,7 +230,7 @@ See also:
 - [D3](https://d3js.org/)
 - [Circos](https://github.com/nicgirault/circosJS)
 - [Three.js](https://threejs.org/)
-- [Datagrok JavaScript API](https://datagrok.ai/help/develop/js-api)
-- [Packages](https://datagrok.ai/help/develop/develop#packages)
+- [Datagrok JavaScript API](https://datagrok.ai/help/develop/packages/js-api)
+- [Packages](https://datagrok.ai/help/develop/#packages)
 - [Viewers](https://datagrok.ai/help/visualize/viewers)
 - [How to Develop Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)

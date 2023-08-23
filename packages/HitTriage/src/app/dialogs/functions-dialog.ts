@@ -1,11 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree, ITemplate} from '../types';
+import $ from 'cash-dom';
+import {IChemFunctionsDialogResult, IComputeDialogResult, IDescriptorTree, HitTriageTemplate} from '../types';
 import '../../../css/hit-triage.css';
 
 export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
-  template: ITemplate, dialog?: boolean,
+  template: Omit<HitTriageTemplate, 'dataSourceType'>, dialog?: boolean,
 ): Promise<IChemFunctionsDialogResult> {
   const functions = template?.compute?.functions ?? [];
   const useDescriptors = !!template?.compute?.descriptors?.enabled;
@@ -67,11 +68,14 @@ export async function chemFunctionsDialog(onOk: (result: IComputeDialogResult) =
   host.appendChild(tc.root);
   // add checkboxes to each hader
   tc.panes.forEach((pane)=> {
-    const functionCheck = ui.boolInput('', calculatedFunctions[funcNamesMap[pane.name]], () => {
+    const functionCheck = ui.boolInput('', calculatedFunctions[funcNamesMap[pane.name]], (v:boolean) => {
       calculatedFunctions[funcNamesMap[pane.name]] = !!functionCheck.value;
+      if (!v)
+        $(pane.content).find('input').attr('disabled', 'true');
+      else
+        $(pane.content).find('input').removeAttr('disabled');
     });
     functionCheck.setTooltip('Toggle calculation of this function');
-    functionCheck.root.style.marginLeft = '5px';
     pane.header.appendChild(functionCheck.root);
     pane.header.classList.add('hit-triage-compute-dialog-pane-header');
   });

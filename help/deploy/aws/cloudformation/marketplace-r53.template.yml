@@ -1,0 +1,207 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components to ECS Fargate in new VPC. Template also creates ACM and DNS records."
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Client Endpoint configuration"
+        Parameters:
+          - DNSZoneId
+          - DNSZone
+    ParameterLabels:
+      DNSZone:
+        default: "DNSZone: AWS Route53 DNS Zone"
+Parameters:
+  DNSZone:
+    Type: String
+    Default: ''
+    Description: Specify existing Route53 DNS Hosted Zone Name for Datagrok and CVM client endpoints. For example, for endpoint 'datagrok.example.com' set 'example.com'. The result DNS endpoints will consist of cloudformation stack name and datagrok service.
+  DNSZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Default: ''
+    Description: Specify existing Route53 DNS Hosted Zone ID for Datagrok and CVM client endpoints.
+Resources:
+  DatagrokDNS:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      HostedZoneId:
+        Fn::GetAtt:
+          - LoadBalancerDatagrok
+          - CanonicalHostedZoneID
+        DNSName:
+          Fn::GetAtt:
+            - LoadBalancerDatagrok
+            - DNSName
+      Comment:
+        Fn::Sub: "${AWS::StackName} Public Datagrok DNS"
+      HostedZoneName:
+        Ref: DNSZone
+      MultiValueAnswer: Boolean
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok.${domain}."
+          - domain:
+              Ref: DNSZone
+  CvmDNS:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      HostedZoneId:
+        Fn::GetAtt:
+          - LoadBalancerCvm
+          - CanonicalHostedZoneID
+        DNSName:
+          Fn::GetAtt:
+            - LoadBalancerCvm
+            - DNSName
+      Comment:
+        Fn::Sub: "${AWS::StackName} Public Datagrok CVM DNS"
+      HostedZoneName:
+        Ref: DNSZone
+      MultiValueAnswer: Boolean
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok-cvm.${domain}."
+          - domain:
+              Ref: DNSZone
+  DatagrokSSL:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateSSL
+    Properties:
+      DomainName:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok.${domain}"
+          - domain:
+              Ref: DNSZone
+      DomainValidationOptions:
+        - DomainName:
+            Fn::Sub:
+              - "${AWS::StackName}-datagrok.${domain}"
+              - domain:
+                  Ref: DNSZone
+          HostedZoneId:
+            Ref: DNSZoneId
+      KeyAlgorithm: String
+      SubjectAlternativeNames:
+        - Fn::Sub:
+            - "${AWS::StackName}-datagrok-cvm.${domain}."
+            - domain:
+                Ref: DNSZone
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName}-datagrok"
+      ValidationMethod: DNS
+
+  SettingsSetLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName:
+            Fn::Sub: "${AWS::StackName}-allow-lambda-logging"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  Fn::Sub:
+                    - "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${log}:*"
+                    - log:
+                        Ref: SettingsSetLambdaFunctionLogGroup
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                Resource:
+                  Fn::Sub:
+                    "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
+  SettingsSetLambdaFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: DatagrokService
+    Properties:
+      Code:
+        ZipFile: |
+          # Imports
+          import json
+          import os
+          import logging
+          import urllib3
+
+          # Set up the logger
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          # logger.setLevel(logging.DEBUG) # Very verbose
+
+          key = os.environ.get('DevKey', 'admin')
+          host = os.environ.get('Host', 'http://localhost:8080')
+          cvmClient = os.environ.get('cvmClient', 'http://localhost:8090')
+
+          http = urllib3.PoolManager()
+
+
+          def lambda_handler(event, context):
+              http.request("GET", f'{host}/api/info/server', retries=10)
+
+              r = http.request(
+                  "POST", f'{host}/api/users/login/dev/{key}', retries=10)
+              auth = json.loads(r.data)['token']
+              get_settings = http.request(
+                  "GET",
+                  f'{host}/api/admin/plugins/scripts/settings',
+                  headers={
+                      'Authorization': auth
+                  },
+                  retries=10
+              )
+              oldSettings = json.loads(get_settings.data)
+              new_settings = {
+                  '#type': oldSettings['settings']['#type'],
+                  'apiUrl': oldSettings['settings']['apiUrl'],
+                  'cvmUrl': oldSettings['settings']['cvmUrl'],
+                  'h2oUrl': oldSettings['settings']['h2oUrl'],
+                  'cvmUrlClient': cvmClient,
+                  'cvmSplit': oldSettings['settings']['cvmSplit'],
+                  'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],
+                  'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
+              }
+              setSettings = http.request(
+                  "POST",
+                  f'{host}/api/admin/plugins/scripts/settings',
+                  body=json.dumps(new_settings),
+                  headers={'Authorization': auth, "Content-Type": "application/json"},
+                  retries=10
+              )
+
+              return setSettings.status
+      Handler: index.handler
+      Runtime: nodejs14.x
+      Role:
+        Fn::GetAtt:
+          - SettingsSetLambdaRole
+          - Arn
+      MemorySize: 128
+      Timeout: 20
+  SettingsSetLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+          - "/aws/lambda/${function_name}-${AWS::Region}"
+          - function_name:
+              Ref: SettingsSetLambdaFunction
+      RetentionInDays: 7

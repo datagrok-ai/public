@@ -1,10 +1,13 @@
 import * as DG from "datagrok-api/dg";
+import * as ui from 'datagrok-api/ui';
 
 export interface IStyle {
   color?: string;
   backColor?: string;
+  font?: string;
   horzAlign?: 'left' | 'right' | 'center';
   vertAlign?: 'top' | 'bottom' | 'center';
+  tooltip?: string | HTMLElement;
 }
 
 
@@ -18,16 +21,18 @@ export abstract class Element {
   }
 
   abstract render(g: CanvasRenderingContext2D): void;
+
+  hitTest(x: number, y: number): Element | null {
+    return this.bounds.contains(x, y) ? this : null;
+  }
 }
 
 
 export class LabelElement extends Element {
-  text: string;
-
-  constructor(bounds: DG.Rect, text: string, style?: IStyle) {
+  constructor(bounds: DG.Rect,
+              public text: string,
+              public style?: IStyle) {
     super(bounds);
-    this.text = text;
-    this.style = style;
   }
 
   render(g: CanvasRenderingContext2D) {
@@ -40,18 +45,33 @@ export class LabelElement extends Element {
         = g.textAlign == 'left' ? this.bounds.x
         : g.textAlign == 'right' ? this.bounds.right
         : g.textAlign == 'center' ? this.bounds.midX : 0;
-      g.fillText(this.text, this.bounds.x, this.bounds.midY, this.bounds.width);
+      if (this.style?.font != null)
+        g.font = this.style.font;
+      g.fillText(this.text, x, this.bounds.midY, this.bounds.width);
     });
   }
 }
 
 
-export class GridCellElement extends Element {
-  gridCell: DG.GridCell;
-
-  constructor(bounds: DG.Rect, gridCell: DG.GridCell) {
+export class MarkerElement extends Element {
+  constructor(bounds: DG.Rect,
+              public marker: DG.MARKER_TYPE.CIRCLE,
+              public color: number) {
     super(bounds);
-    this.gridCell = gridCell;
+  }
+
+  render(g: CanvasRenderingContext2D) {
+    DG.Paint.marker(g, this.marker, this.bounds.midX, this.bounds.midY, this.color,
+      Math.min(this.bounds.width / 2, this.bounds.height / 2));
+  }
+}
+
+
+export class GridCellElement extends Element {
+  constructor(bounds: DG.Rect,
+              public gridCell: DG.GridCell) {
+    super(bounds);
+    this.style = { tooltip: gridCell.cell.valueString }
   }
 
   render(g: CanvasRenderingContext2D) {
@@ -75,17 +95,31 @@ export class Scene extends Element {
       e.render(g);
     }
   }
+
+  toCanvas(): HTMLCanvasElement {
+    const canvas = ui.canvas(this.bounds.width, this.bounds.height);
+    this.render(canvas.getContext("2d")!);
+    return canvas;
+  }
+
+  hitTest(x: number, y: number): Element | null {
+    for (const e of this.elements) {
+      if (e.hitTest(x, y))
+        return e;
+    }
+    return null;
+  }
 }
 
 
 function drawClipped(g: CanvasRenderingContext2D, bounds: DG.Rect, draw: () => void) {
   try {
-    g.save();
-    g.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-    g.clip();
+    //g.save();
+    //g.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+    //g.clip();
     draw();
   }
   finally {
-    g.restore();
+    //g.restore();
   }
 }
