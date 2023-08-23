@@ -268,7 +268,7 @@ export class HistoryPanel {
 
       const defaultUsers = Object.values(DG.User.defaultUsersIds);
       const allUsers = await grok.dapi.users.list() as DG.User[];
-      const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
+      const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id as typeof defaultUsers[0]));
 
       const authorInput = ui.choiceInput<DG.User | string>('Author', 'Anyone', ['Anyone', ...filteredUsers], (v: DG.User | string) => {
         this.store.filteringOptions.author = (v === 'Anyone') ? undefined : v as DG.User;
