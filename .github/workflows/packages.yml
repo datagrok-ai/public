@@ -312,7 +312,13 @@ jobs:
             echo -e "\nRetrying..."
           done
           token=$(curl -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
-          curl -Lv -H "Authorization: $token" http://127.0.0.1:8080/api/docker/containers?text=ApiTests&limit=1
+
+          until .github/scripts/check-output.sh "curl -Lv -H 'Authorization: $token' 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'" '${{ matrix.package }}'
+          do
+            sleep 1
+            curl -Lv -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+            echo -e "\nRetrying..."
+          done
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
