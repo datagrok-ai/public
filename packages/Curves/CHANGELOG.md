@@ -1,5 +1,16 @@
 # Curves changelog
 
+## 1.2.5 (2023-08-23)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added standard deviation rendering for points
+  * Added custom point color coding
+  * Added custom point marker
+  * Added custom marker size rendering
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Updated the documentation regarding the standard deviation, the point color, the point marker type and size
+
 ## 1.2.4 (2023-08-12)
 
 ### Features
