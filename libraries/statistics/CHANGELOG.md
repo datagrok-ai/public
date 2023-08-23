@@ -1,6 +1,14 @@
 # statistics changelog
 
-## 1.2.3(2023-08-12)
+## 1.2.4 (2023-08-23)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added standard deviation to the IFitPoint interface
+  * Added marker size to the IFitPoint interface
+
+## 1.2.3 (2023-08-12)
 
 ### Features
 
