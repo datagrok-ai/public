@@ -61,6 +61,12 @@ const CANDLESTICK_BORDER_PX_SIZE = 4;
 const CANDLESTICK_MEDIAN_PX_SIZE = 3.5;
 const CANDLESTICK_OUTLIER_PX_SIZE = 6;
 export const INFLATE_SIZE = -12;
+export const LINE_STYLES: {[key: string]: number[]} = {
+  'solid': [],
+  'dotted': [1, 1],
+  'dashed': [5, 5],
+  'dashdotted': [5, 5, 2, 5],
+};
 
 
 /** Merges properties of the two objects by iterating over the specified {@link properties}
@@ -362,10 +368,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (series.showFitLine ?? true) {
         const lineColor = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
           series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+        g.save();
         g.strokeStyle = lineColor;
         g.lineWidth = 2 * ratio;
   
         g.beginPath();
+        if (series.lineStyle)
+          g.setLineDash(LINE_STYLES[series.lineStyle]);
         const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
         for (let j = axesLeftPxMargin; j <= screenBounds.width - AXES_RIGHT_PX_MARGIN; j++) {
           const x = screenBounds.x + j;
@@ -378,6 +387,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             g.lineTo(x, y);
         }
         g.stroke();
+        g.restore();
       }
   
       if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? false)) {
