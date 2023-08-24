@@ -131,7 +131,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
   const registry: { [propertyName: string]: Track } = {
     'dataAnalysisTrack': eda,
     'machineLearningTrack': ml,
-    'cheminformaticsTrack': chem,
+    //'cheminformaticsTrack': chem,
     'dataAccessTrack': da,
     'dataTransformation': dataTransformation,
   };
