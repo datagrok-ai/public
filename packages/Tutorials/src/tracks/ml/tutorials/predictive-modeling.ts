@@ -32,9 +32,9 @@ export class PredictiveModelingTutorial extends Tutorial {
     const trainModel = async (method: string, skipPMVOpening = false): Promise<void> => {
       const pmv = await this.openViewByType(
         skipPMVOpening ? 'Return to the model training view' :
-        'Click on "ML | Train Model..." to open a dialog for training models',
+        'Click on "Tools | Predictive Modeling | Train Model..." to open a dialog for training models',
         'PredictiveModel',
-        this.getMenuItem('ML'),
+        skipPMVOpening ? null: this.getMenuItem('Tools'),
       );
 
       // UI generation delay
@@ -64,14 +64,14 @@ export class PredictiveModelingTutorial extends Tutorial {
         await this.dlgInputAction(dlg, 'Set "Data" to "DIS_POP"', 'Data', 'DIS_POP');
         await this.dlgInputAction(dlg, 'Set the number of nearest neighbors to "5"', 'Nearest Neighbours', '5');
   
-        await this.action('Click "OK" and wait for the values to be calculated.',
+        await this.action('Click "OK" and wait for the values to be calculated',
           grok.functions.onAfterRunAction.pipe(
             filter((call: DG.FuncCall) => call.func.name === 'MissingValuesImputation'),
           ));
       }
 
       await this.choiceInputAction(pmv.root, `Set "Method" to "${method}"`, 'Method', method);
-      await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN');
+      await this.buttonClickAction(pmv.root, 'Click the "Train" button and wait for the model to be trained', 'TRAIN');
 
       await delay(1500); // model training delay
     };
@@ -96,7 +96,7 @@ export class PredictiveModelingTutorial extends Tutorial {
     const modelsViewInfo = 'Search for the model you trained (applicable models are always ' +
       'at the top of the list, also, you can search for it by the previously defined name). ' +
       'Now, select the model by clicking on it.';
-    await this.action('Find your model', grok.events.onAccordionConstructed.pipe(
+    await this.action('Find your model (search for "Predict sex")', grok.events.onAccordionConstructed.pipe(
       map((acc) => {
         modelPP = acc;
         return acc.context;
@@ -120,7 +120,7 @@ export class PredictiveModelingTutorial extends Tutorial {
     await this.openViewByType('Click on "Functions | Models" to open the Models Browser',
       DG.View.MODELS, funcPaneHints);
 
-    await this.action('Find the trained models and compare them',
+    await this.action('Find the trained models and compare them (search for "Predict sex by")',
       grok.events.onViewAdded.pipe(filter((view) => view.name == 'Compare models')),
       $('div.d4-accordion-pane-header').filter((idx, el) => el.textContent == 'Commands')[0],
       'Search for the trained models and select them holding <b>Shift</b>. ' +

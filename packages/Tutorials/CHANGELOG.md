@@ -1,5 +1,11 @@
 # Tutorials changelog
 
+## 1.3.12 (WIP)
+
+### Bug fixes
+
+* Recognition steps in Predicitve modeling tutorial
+
 ## 1.3.10 (2023-08-07)
 
 ## 1.3.9 (2023-08-07)
