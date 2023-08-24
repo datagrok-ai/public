@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 
 export class ImageCellRenderer extends DG.GridCellRenderer {
@@ -55,5 +56,17 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
     // }
 
     // g.restore();
+  }
+
+  onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (!gridCell.cell.value)
+      return;
+
+    const image = new Image();
+    image.src = gridCell.cell.value;
+
+    ui.dialog({title: 'Image'})
+      .add(image)
+      .show({resizable: true});
   }
 }
