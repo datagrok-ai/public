@@ -17,8 +17,6 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
     x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
-    g.fillText(`image ${gridCell.cell.value}`, x + 3, y + 3);
-
     if (w < 5 || h < 5) return;
     const url = gridCell.cell.value;
     if (url == null) return;
