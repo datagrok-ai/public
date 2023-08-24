@@ -73,10 +73,9 @@ export const SDF_MONOMER_NAME = 'MonomerName';
 
 /** For Enumerator  */
 export const helmFieldsToEnumeratorInputFields = {
-  'symbol': 'Short Name',
-  'name': 'Medium Name',
-  'smiles': 'SMILES',
-  'synonyms': 'Synonyms',
+  [HELM_REQUIRED_FIELDS.SYMBOL]: 'Short Name',
+  [HELM_REQUIRED_FIELDS.NAME]: 'Medium Name',
+  [HELM_REQUIRED_FIELDS.SMILES]: 'SMILES',
 };
 
 /** For Enumerator  */
@@ -110,6 +109,19 @@ export const jsonSdfMonomerLibDict = {
   'symbol': 'MonomerCode'
 };
 
+export const dummyMonomer = {
+  'monomerType': 'Backbone',
+  'smiles': '',
+  'name': '',
+  'author': 'Datagrok',
+  'molfile': '',
+  'naturalAnalog': '',
+  'rgroups': [],
+  'createDate': null,
+  'id': 0,
+  'polymerType': 'PEPTIDE',
+  'symbol': ''
+};
 // range of hex nubers used in PepSea library to endode monomers
 export const MONOMER_ENCODE_MIN = 0x100;
 export const MONOMER_ENCODE_MAX = 0x40A;
