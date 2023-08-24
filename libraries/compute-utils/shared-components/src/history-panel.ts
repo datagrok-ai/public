@@ -563,6 +563,7 @@ export class HistoryPanel {
       dummyInput,
     ]))
       .onOK(async () => {
+        funcCall = await historyUtils.loadRun(funcCall.id);
         funcCall.options['title'] = title !== '' ? title : null;
         funcCall.options['description'] = description !== '' ? description : null;
         funcCall.options['tags'] = [...tagsLine.tags];
