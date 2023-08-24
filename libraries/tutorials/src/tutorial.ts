@@ -257,6 +257,13 @@ export abstract class Tutorial extends DG.Widget {
     }
   }
 
+  _setHintVisibility(hints: HTMLElement[], visibility: boolean) {
+    hints.forEach((hint) => {
+      if (hint != null)
+        hint.style.visibility = visibility ? 'visible' : 'hidden';
+    });
+  }
+
   _removeHints(hint: HTMLElement | HTMLElement[]) {
     if (hint instanceof HTMLElement)
       ui.hints.remove(hint);
@@ -276,6 +283,13 @@ export abstract class Tutorial extends DG.Widget {
     this.activeHints.length = 0;
     if (hint != null)
       this._placeHints(hint);
+
+    const view = grok.shell.v;
+    const hints = Array.from(document.getElementsByClassName('ui-hint-blob')) as HTMLElement[];
+    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+      if (hint)
+        this._setHintVisibility(hints, grok.shell.v === view ? true : false);
+    });
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const descriptionDiv = ui.divText('', {classes: 'grok-tutorial-step-description', style: {
@@ -314,6 +328,7 @@ export abstract class Tutorial extends DG.Widget {
 
     if (hint != null)
       this._removeHints(hint);
+    sub.unsubscribe();
   }
 
   clearRoot(): void {

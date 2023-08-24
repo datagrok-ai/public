@@ -47,8 +47,7 @@ function runChecks(packagePath: string): boolean {
 
   warnings.push(...checkFuncSignatures(packagePath, funcFiles));
   warnings.push(...checkPackageFile(packagePath, json, {isWebpack, externals}));
-  if (!json.servicePackage)
-    warnings.push(...checkChangelog(packagePath, json));
+  warnings.push(...checkChangelog(packagePath, json));
 
   if (warnings.length) {
     console.log(`Checking package ${path.basename(packagePath)}...`);
@@ -307,9 +306,9 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
   if (api) {
     if (api === '../../js-api') {}
     else if (api === 'latest')
-      warnings.push('File "package.json": you should specify Datagrok API version constraint.');
-    else if (!(api.startsWith('^') || api.startsWith('>')))
-      warnings.push('File "package.json": Datagrok API version should contain "^" or ">" symbol, otherwise it is locked to the single Datagrok version.');
+      warnings.push('File "package.json": you should specify Datagrok API version constraint (for example ^1.16.0, >=1.16.0).');
+    else if (!/^(\^|>|<|~).+/.test(api))
+      warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 
   const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
@@ -354,6 +353,7 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
 }
 
 export function checkChangelog(packagePath: string, json: PackageFile) {
+  if (json.servicePackage) return [];
   const warnings: string[] = [];
   let clf: string;
   try {

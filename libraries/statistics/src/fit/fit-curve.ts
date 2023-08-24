@@ -107,15 +107,19 @@ export const DROPLINES = ['IC50'];
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
 
+export type FitLineStyle = 'solid' | 'dotted' | 'dashed' | 'dashdotted';
+
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
   x: number;
   y: number;
   outlier?: boolean;       // if true, renders as 'x' and gets ignored for curve fitting
-  minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
-  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
   color?: string;          // overrides the marker color defined in IFitSeriesOptions
+  marker?: FitMarkerType;  // overrides the marker type defined in IFitSeriesOptions
+  size?: number;           // overrides the default marker size
+  stdev?: number;          // when defined, renders an error bar candlestick
+  // minY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
+  // maxY?: number;           // when defined, the marker renders as a candlestick with whiskers [minY, maxY]
 }
 
 /** A series consists of points, has a name, and options.
@@ -138,6 +142,7 @@ export interface IFitChartOptions {
   maxX?: number;
   maxY?: number;
 
+  title?: string;            // defines the plot title. If the plot size is enough, will render it.
   xAxisName?: string;        // defines the x axis name. If the plot size is enough, will render it.
   yAxisName?: string;        // defines the Y axis name. If the plot size is enough, will render it.
 
@@ -169,6 +174,7 @@ export interface IFitSeriesOptions {
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
+  lineStyle?: FitLineStyle;             // defines the series line style
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
@@ -200,6 +206,7 @@ export const fitChartDataProperties: Property[] = [
   Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
   Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
   Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
+  Property.js('title', TYPE.STRING, {description: 'Plot title. If not specified, doesn\'t renders', nullable: true}),
   Property.js('xAxisName', TYPE.STRING, {description:
     'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('yAxisName', TYPE.STRING, {description:
@@ -231,6 +238,8 @@ export const fitSeriesProperties: Property[] = [
   Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
     defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+  Property.js('lineStyle', TYPE.STRING, {category: 'Rendering', description: 'Line style used when rendering',
+    defaultValue: 'solid', choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
   Property.js('droplines', TYPE.STRING_LIST, {choices: DROPLINES, inputType: 'MultiChoice'}),
 ];
 

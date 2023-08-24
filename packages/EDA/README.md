@@ -1,6 +1,6 @@
 # EDA
 
-EDA is a [package](https://datagrok.ai/help/develop/packages/extensions) for the [Datagrok](https://datagrok.ai) platform. It provides the following exploratory data analysis and machine learning tools:
+EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides the following exploratory data analysis and machine learning tools:
 
 * Dimensionality reduction
   * Principal component analysis ([PCA](https://en.wikipedia.org/wiki/Principal_component_analysis))

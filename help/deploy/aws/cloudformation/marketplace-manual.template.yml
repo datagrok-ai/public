@@ -1,0 +1,25 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components to ECS Fargate in new VPC. DNS and ACM should be configured manually."
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Client Endpoint configuration"
+        Parameters:
+          - ArnSSLCertificate
+    ParameterLabels:
+      ArnSSLCertificate:
+        default: "ArnSSLCertificate: AWS ACM certificate ARN"
+Parameters:
+  ArnSSLCertificate:
+    Type: String
+    AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
+    Default: ''
+    Description: The certificate is used for both Datagrok and CVM client endpoints. If you do not use Route53 for DNS management, it is required to upload certificate to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html) and specify the Certificate ARN here.
+Conditions:
+  CreateSSL:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: ArnSSLCertificate
+          - ''

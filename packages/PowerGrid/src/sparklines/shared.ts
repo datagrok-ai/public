@@ -34,6 +34,7 @@ export const sparklineTypes: string[] = [
   SparklineType.PieChart,
   SparklineType.Radar,
   SparklineType.Sparkline,
+  SparklineType.Form
 ];
 
 export function distance(p1: DG.Point, p2: DG.Point): number {

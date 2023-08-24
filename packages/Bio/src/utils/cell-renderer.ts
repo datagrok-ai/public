@@ -2,13 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {_package, getBioLib} from '../package';
+import wu from 'wu';
+
 import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import * as C from './constants';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {
   getPaletteByType,
-  getSplitter,
   monomerToShort,
   MonomerToShortFunc,
   NOTATION,
@@ -18,10 +17,17 @@ import {
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+
 import {
   Temps as mmcrTemps, Tags as mmcrTags,
   tempTAGS, rendererSettingsChangedState
 } from '../utils/cell-renderer-consts';
+import * as C from './constants';
+
+import {_package, getBioLib} from '../package';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+
 
 type TempType = { [tagName: string]: any };
 
@@ -32,20 +38,21 @@ function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: n
   return grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
 }
 
-export function processSequence(subParts: string[]): [string[], boolean] {
-  const simplified = !subParts.some((amino, index) =>
+export function processSequence(subParts: ISeqSplitted): [string[], boolean] {
+  const simplified = !wu.enumerate(subParts).some(([amino, index]) =>
     amino.length > 1 &&
     index != 0 &&
     index != subParts.length - 1);
 
   const text: string[] = [];
   const gap = simplified ? '' : ' ';
-  subParts.forEach((amino: string, index) => {
+  for (const [amino, index] of wu.enumerate(subParts)) {
+    let aminoRes = amino;
     if (index < subParts.length)
-      amino += `${amino ? '' : '-'}${gap}`;
+      aminoRes += `${amino ? '' : '-'}${gap}`;
 
-    text.push(amino);
-  });
+    text.push(aminoRes);
+  }
   return [text, simplified];
 }
 
@@ -190,11 +197,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
       const separator = tableCol.getTag(bioTAGS.separator) ?? '';
       const splitLimit = w / 5;
-      const splitterFunc: SplitterFunc = getSplitter(units, separator, splitLimit);
+      const uh = UnitsHandler.getOrCreate(tableCol);
+      const splitterFunc: SplitterFunc = uh.getSplitter(splitLimit);
 
       const tempReferenceSequence: string | null = tableColTemp[tempTAGS.referenceSequence];
       const tempCurrentWord: string | null = tableColTemp[tempTAGS.currentWord];
-      const referenceSequence: string[] = splitterFunc(
+      const referenceSequence: ISeqSplitted = splitterFunc(
         ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
           tempReferenceSequence : tempCurrentWord ?? '');
 
@@ -228,7 +236,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       //   maxLengthWords = colTemp[tempTAGS.bioMaxLengthWords];
       // }
 
-      const subParts: string[] = splitterFunc(value);
+      const subParts: ISeqSplitted = splitterFunc(value);
       /* let x1 = x; */
       let color = undefinedColor;
       let drawStyle = DrawStyle.classic;
@@ -236,7 +244,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
         drawStyle = DrawStyle.MSA;
 
-      for (const [index, amino] of subParts.entries()) {
+      for (const [amino, index] of wu.enumerate(subParts)) {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
         const last = index === subParts.length - 1;
@@ -283,9 +291,10 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     _cellStyle: DG.GridCellStyle): void {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
+    const tableCol = gridCell.tableColumn as DG.Column<string>;
     const s: string = cell.value ?? '';
-    const separator = gridCell.tableColumn!.tags[bioTAGS.separator];
-    const units: string = gridCell.tableColumn!.tags[DG.TAGS.UNITS];
+    const separator = tableCol.tags[bioTAGS.separator];
+    const units: string = tableCol.tags[DG.TAGS.UNITS];
     w = getUpdatedWidth(grid, g, x, w);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
@@ -302,14 +311,14 @@ export function drawMoleculeDifferenceOnCanvas(
   y: number,
   w: number,
   h: number,
-  subParts1: string [],
-  subParts2: string [],
+  subParts1: ISeqSplitted,
+  subParts2: ISeqSplitted,
   units: string,
   fullStringLength?: boolean,
   molDifferences?: { [key: number]: HTMLCanvasElement },
 ): void {
   if (subParts1.length !== subParts2.length) {
-    const sequences: IComparedSequences = fillShorterSequence(subParts1, subParts2);
+    const sequences: IComparedSequences = fillShorterSequence(wu(subParts1).toArray(), wu(subParts2).toArray());
     subParts1 = sequences.subParts1;
     subParts2 = sequences.subParts2;
   }

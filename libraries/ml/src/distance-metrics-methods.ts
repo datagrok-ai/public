@@ -173,8 +173,8 @@ export function getSimilarityFromDistance(distance: number) {
   return 1 / (1 + distance);
 }
 
-export function getDistanceFromSimilarity(similarity: number) {
-  return 1 / similarity - 1;
+export function getDistanceFromSimilarity(similarity: number) { //in case similarity is 0, use max number for float32
+  return similarity === 0 ? 3.402823E+38 : (1 / similarity) - 1;
 }
 
 export function numericDistance(x: number, y: number) {

@@ -17,7 +17,8 @@ category('Settings', () => {
   test('Dev Settings', async () => {
     expect(gss.loadDefaultsOnStart, true, 'loadDefaultsOnStart');
     expect(gss.webpackDevUrl, null, 'webpackDevUrl');
-    expect(gss.cvmUrl.startsWith('https://cvm'), true, 'cvmUrl');
+    expect(gss.cvmUrl.startsWith('http://localhost') ||
+      gss.cvmUrl.startsWith('https://cvm') || gss.cvmUrl.startsWith('http://cvm'), true, 'cvmUrl');
     expect(gss.cvmSplit, true, 'cvmSplit');
     expect(gss.apiUrl.endsWith('/api'), true, 'apiUrl');
     expect(gss.helpBaseUrl, '', 'helpBaseUrl');

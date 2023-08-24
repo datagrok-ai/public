@@ -1,6 +1,7 @@
 {
   "Axolabs": {
     "nucleoside": {
+      "(GalNAc)": "[GalNAc]",
       "Uf": "[fR](U)p",
       "Af": "[fR](A)p",
       "Cf": "[fR](C)p",
@@ -16,6 +17,7 @@
   },
   "BioSpring": {
     "nucleoside": {
+      "(GalNAc)": "[GalNAc]",
       "A": "r(A)p",
       "T": "r(T)p",
       "G": "r(G)p",
@@ -36,6 +38,7 @@
   },
   "Mermade12": {
     "nucleoside": {
+      "(GalNAc)": "[GalNAc]",
       "h": "[25r](U)[sp]",
       "e": "[25r](A)[sp]",
       "f": "[25r](C)[sp]",

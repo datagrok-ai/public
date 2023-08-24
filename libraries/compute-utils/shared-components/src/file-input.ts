@@ -5,45 +5,35 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Subject} from 'rxjs';
 import Validation from './validation';
 import '../css/file-input.css';
-import {FuncCallInput, InputWrapper} from './FuncCallInput';
 
 export const EXCEL_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-export class FileInput implements FuncCallInput<File>, InputWrapper<any> {
+export class FileInput extends DG.InputBase<File | null> {
   // events to emit
   public uploadedFile$ = new Subject<File | null>();
   // legacy compatibility
   public onFileUploaded = this.uploadedFile$;
 
-  public notify = true;
-  public value: File | null = null;
-
-  public get enabled() {
-    return this.primaryInput.enabled;
-  }
-
-  public set enabled(val: boolean) {
-    this.primaryInput.enabled = val;
-  }
-
-  public get input() {
-    return this.primaryInput;
-  }
-
-  public get captionLabel() {
-    return this.primaryInput.captionLabel;
-  }
-
-  // HTML root of component
-  public root = ui.div();
+  // Real file value
+  private fileValue: File | null = null;
   // Validation object
   public validation = new Validation<File>();
+  private isValid = new BehaviorSubject<boolean>(true);
 
-  public primaryInput = ui.stringInput('Input file', this.initialText, null);
   private hiddenInput = document.createElement('input');
   private icon = ui.iconFA('cloud-upload', () => this.hiddenInput.click());
 
-  private isValid = new BehaviorSubject<boolean>(true);
+  public get value() {
+    return this.fileValue;
+  }
+
+  public set value(value: File | null) {
+    this.stringValue = value?.name || 'Drag-n-drop your file';
+    this.fileValue = value;
+
+    if (this.notify)
+      this.fireInput();
+  }
 
   constructor(
     public initialText = 'Drag-n-drop here',
@@ -51,18 +41,22 @@ export class FileInput implements FuncCallInput<File>, InputWrapper<any> {
     public onValueChanged: Function | null = null,
     public fileType: string | null = EXCEL_BLOB_TYPE,
   ) {
-    this.draw();
+    const primaryInput = ui.stringInput('Input file', '', null);
+    super(primaryInput.dart);
+    this.subscribeOnEvents();
+
+    this.root.style.display = 'flex';
 
     this.isValid.subscribe((isValid) => {
       if (isValid) {
-        this.primaryInput.input.classList.remove('error');
-        this.primaryInput.input.classList.add('success');
+        this.input.classList.remove('error');
+        this.input.classList.add('success');
         const newIcon = ui.iconFA('times', () => this.reset(), 'Reset uploaded file');
         this.icon.replaceWith(newIcon);
         this.icon = newIcon;
       } else {
-        this.primaryInput.input.classList.remove('success');
-        this.primaryInput.input.classList.add('error');
+        this.input.classList.remove('success');
+        this.input.classList.add('error');
         const newIcon = ui.iconFA('redo', () => this.hiddenInput.click(), 'Re-upload a file');
         this.icon.replaceWith(newIcon);
         this.icon = newIcon;
@@ -73,110 +67,92 @@ export class FileInput implements FuncCallInput<File>, InputWrapper<any> {
       if (this.onValueChanged)
         this.onValueChanged(newValue);
 
+      if (!newValue) {
+        const newIcon = ui.iconFA('cloud-upload', () => this.hiddenInput.click(), 'Choose a file to upload');
+        this.icon.replaceWith(newIcon);
+        this.icon = newIcon;
+      }
+
       this.value = newValue;
     });
+
+    this.reset();
   }
 
-  public onInput(cb: Function) {
-    return this.uploadedFile$.subscribe((file) => {
-      if (this.notify)
-        cb(file);
-    });
-  }
+  private subscribeOnEvents() {
+    (this.input as HTMLInputElement).readOnly = true;
+    this.input.classList.add('default');
 
-  private draw() {
-    this.clear();
+    const handleFiles = async (files: FileList | null) => {
+      if (!files || !files.length || !this.enabled)
+        return;
 
-    const createFileArea = () => {
-      (this.primaryInput.input as HTMLInputElement).readOnly = true;
-      this.primaryInput.input.classList.add('default');
+      if (files.length > 1) {
+        this.isValid.next(false);
+        throw new Error('Please specify single input file');
+      }
 
-      const handleFiles = async (files: FileList | null) => {
-        if (!files || !files.length || !this.enabled)
-          return;
+      if (this.fileType && files[0].type !== this.fileType) {
+        this.isValid.next(false);
+        throw new Error('File type is not supported');
+      }
 
-        if (files.length > 1) {
-          this.isValid.next(false);
-          throw new Error('Please specify single input file');
-        }
+      this.isValid.next(await this.validation.validate(files[0]));
 
-        this.primaryInput.value = files[0].name;
-        if (this.fileType && files[0].type !== this.fileType) {
-          this.isValid.next(false);
-          throw new Error('File type is not supported');
-        }
-
-        this.isValid.next(await this.validation.validate(files[0]));
-
-        if (this.isValid.value)
-          this.uploadedFile$.next(files[0]);
-        else
-          this.uploadedFile$.next(null);
-      };
-
-      this.primaryInput.root.classList.add('fi-drop-area');
-      this.primaryInput.root.style.width = '100%';
-
-      // hidden input to handle file dialog
-
-      this.hiddenInput.type = 'file';
-      this.hiddenInput.addEventListener('change', async () => await handleFiles(this.hiddenInput.files), false);
-
-      // Prevent default drag behaviors
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
-        this.primaryInput.input.addEventListener(eventName, (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }, false);
-      });
-
-      ['dragenter', 'dragover'].forEach((eventName) => {
-        this.primaryInput.input.addEventListener(eventName, () => {
-          this.primaryInput.input.classList.add('drag-n-dropping');
-        }, false);
-      });
-
-      ['dragleave', 'drop'].forEach((eventName) => {
-        this.primaryInput.input.addEventListener(eventName, () => {
-          this.primaryInput.input.classList.remove('drag-n-dropping');
-        }, false);
-      });
-
-      // Handle dropped files
-      this.primaryInput.input.addEventListener('drop', async (e: DragEvent) => {
-        const dt = e.dataTransfer;
-        const files = dt!.files;
-        handleFiles(files);
-      }, false);
-
-      // Pass clicks to hidden file input
-      this.primaryInput.input.addEventListener('click', () => this.hiddenInput.click(), false);
-      this.primaryInput.root.append(ui.div(this.icon, 'icon'));
-
-      return this.primaryInput;
+      if (this.isValid.value)
+        this.uploadedFile$.next(files[0]);
+      else
+        this.uploadedFile$.next(null);
     };
+
+    this.root.classList.add('fi-drop-area');
+    this.root.style.width = '100%';
+
+    // hidden input to handle file dialog
+    this.hiddenInput.type = 'file';
+    this.hiddenInput.addEventListener('change', async () => await handleFiles(this.hiddenInput.files), false);
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
+      this.input.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      this.input.addEventListener(eventName, () => {
+        this.input.classList.add('drag-n-dropping');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      this.input.addEventListener(eventName, () => {
+        this.input.classList.remove('drag-n-dropping');
+      }, false);
+    });
+
+    // Handle dropped files
+    this.input.addEventListener('drop', async (e: DragEvent) => {
+      const dt = e.dataTransfer;
+      const files = dt!.files;
+      handleFiles(files);
+    }, false);
+
+    // Pass clicks to hidden file input
+    this.input.addEventListener('click', () => this.hiddenInput.click(), false);
+    this.addOptions(this.icon);
 
     ['drag', 'dragenter'].forEach((eventName) => {
       document.getElementsByClassName('layout-workarea')[0].addEventListener(eventName, (e) => {
         e.stopPropagation();
       }, false);
     });
-
-    this.root.style.display = 'flex';
-    this.root.append(createFileArea().root);
   }
 
   private reset() {
-    this.primaryInput.input.classList.value = 'ui-input-editor default';
-    const newIcon = ui.iconFA('cloud-upload', () => this.hiddenInput.click(), 'Choose a file to upload');
-    this.icon.replaceWith(newIcon);
-    this.icon = newIcon;
-    this.primaryInput.value = 'Drag-n-drop here';
+    this.input.classList.value = 'ui-input-editor default';
     this.hiddenInput.value = '';
     this.uploadedFile$.next(null);
-  }
-
-  private clear() {
-    ui.empty(this.root);
   }
 }

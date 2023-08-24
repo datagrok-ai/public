@@ -11,11 +11,11 @@ export type Descriptor = {
     description: string,
 };
 
-export type IFunctionArgs = {
-    [key: string]: any,
+export type IFunctionArgs<T = any> = {
+    [key: string]: T,
 }
 
-export type ITemplateFunction = {
+export type HitTriageTemplateFunction = {
     package: string,
     name: string,
     args: IFunctionArgs,
@@ -28,12 +28,12 @@ export type IComputeDialogResult = {
     }
 }
 
-export type ITemplate = {
+export type HitTriageTemplate = {
     name: string,
     key: string,
-    compute: ITemplateCompute,
-    submit?: ITemplateSubmit,
-    campaignFields: ICampaignField[],
+    compute: HitTriageTemplateCompute,
+    submit?: HitTriageTemplateSubmit,
+    campaignFields: HitTriageCampaignField[],
     dataSourceType: IngestType,
 }
 
@@ -44,44 +44,56 @@ export const CampaignFieldTypes = {
   Date: DG.TYPE.DATE_TIME,
 } as const;
 
-export type ICampaignFieldType = keyof typeof CampaignFieldTypes;
+export type HitTriageCampaignFieldType = keyof typeof CampaignFieldTypes;
 
-export type ICampaignField = {name: string, type: ICampaignFieldType, required?: boolean};
+export type HitTriageCampaignField = {name: string, type: HitTriageCampaignFieldType, required?: boolean};
 
 export type IngestType = 'File' | 'Query';
 
-export type ITemplateIngest = {
+export type HitTriageTemplateIngest = {
     type: IngestType,
     query: string,
     molColName: string,
 };
 
-export type ITemplateCompute = {
+export type HitTriageTemplateCompute = {
     descriptors: {
         enabled: boolean,
         args: string[],
     }
-    functions: ITemplateFunction[],
+    functions: HitTriageTemplateFunction[],
 };
 
-export type ITemplateSubmit = {
+export type HitTriageTemplateSubmit = {
     fName: string,
     package: string
 };
 
-export type ICampaignStatus = 'In Progress' | 'Submitted';
+export type HitTriageCampaignStatus = 'In Progress' | 'Submitted';
 
-export type ICampaign = {
+export type HitTriageCampaign = {
     name: string,
     templateName: string,
-    status: ICampaignStatus,
+    status: HitTriageCampaignStatus,
     createDate: string,
     campaignFields: {[key: string]: any},
     filters: {[key: string]: any}[],
-    ingest: ITemplateIngest,
+    ingest: HitTriageTemplateIngest,
 };
 
 export type IChemFunctionsDialogResult = {
     okProxy: () => void,
     root: HTMLElement,
 };
+
+export type INewTemplateResult<T> = {
+    template: Promise<T>,
+    root: HTMLElement,
+    cancelPromise: Promise<void>,
+}
+
+// ##################### HIT DESIGN TYPES #####################
+
+export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType'> & {stages: string[]};
+
+export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'>;

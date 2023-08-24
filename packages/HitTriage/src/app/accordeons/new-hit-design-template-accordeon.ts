@@ -1,0 +1,184 @@
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import {_package} from '../../package';
+import * as C from '../consts';
+import '../../../css/hit-triage.css';
+import {HitDesignTemplate, IComputeDialogResult, INewTemplateResult} from '../types';
+import {chemFunctionsDialog} from '../dialogs/functions-dialog';
+import {getCampaignFieldEditors} from './new-template-accordeon';
+
+export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResult<HitDesignTemplate>> {
+  const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
+  const availableTemplates = (await _package.files.list('Hit Design/templates'))
+    .map((file) => file.name.slice(0, -5)); // Remove .json from end
+
+  const availableTemplateKeys: string[] = [];
+  const availableSubmitFunctions = DG.Func.find({tags: [C.HitTriageSubmitTag]});
+  const submitFunctionsMap: {[key: string]: DG.Func} = {};
+  availableSubmitFunctions.forEach((func) => {
+    submitFunctionsMap[func.friendlyName ?? func.name] = func;
+  });
+  const submitFunctionInput = ui.choiceInput('Submit function', null, Object.keys(submitFunctionsMap));
+  submitFunctionInput.value = null;
+  submitFunctionInput.setTooltip('Select function to be called upon submitting');
+  const errorDiv = ui.divText('Template name is empty or already exists', {classes: 'hit-triage-error-div'});
+  const keyErrorDiv = ui.divText('Template key is empty or already exists', {classes: 'hit-triage-error-div'});
+  // ######### TEMPLATE NAME INPUT #########
+  const templateNameInput = ui.stringInput('Name', '', () => {
+    if (templateNameInput.value === '' || availableTemplates.includes(templateNameInput.value)) {
+      templateNameInput.root.style.borderBottom = '1px solid red';
+      errorDiv.style.opacity = '100%';
+    } else {
+      templateNameInput.root.style.borderBottom = 'none';
+      errorDiv.style.opacity = '0%';
+    }
+  });
+  // ######### TEMPLATE KEY INPUT #########
+  const templateKeyInput = ui.stringInput('Key', '', () => {
+    if (templateKeyInput.value === '' || availableTemplateKeys.includes(templateKeyInput.value)) {
+      templateKeyInput.root.style.borderBottom = '1px solid red';
+      keyErrorDiv.style.opacity = '100%';
+    } else {
+      templateKeyInput.root.style.borderBottom = 'none';
+      keyErrorDiv.style.opacity = '0%';
+    }
+  });
+  templateKeyInput.setTooltip('Template key used for campaign prefix');
+  templateNameInput.setTooltip('Template name');
+  templateNameInput.root.style.borderBottom = 'none';
+  templateKeyInput.root.style.borderBottom = 'none';
+  errorDiv.style.opacity = '0%';
+  keyErrorDiv.style.opacity = '0%';
+
+  const functionsMap: {[key: string]: string} = {};
+  functionsMap['Descriptors'] = 'Descriptors';
+  functions.forEach((func) => {
+    functionsMap[func.friendlyName ?? func.name] = `${func.package.name}:${func.name}`;
+  });
+
+  let funcDialogRes: IComputeDialogResult | null = null;
+  // used just for functions editor
+  const dummyTemplate = {
+    compute: {
+      descriptors: {
+        enabled: true,
+        args: [],
+      },
+      functions: functions.map((f) => ({name: f.name, package: f.package.name, args: []})),
+    },
+  } as unknown as HitDesignTemplate;
+  const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
+    dummyTemplate, false);
+  funcInput.root.classList.add('hit-triage-new-template-functions-input');
+  const fieldsEditor = getCampaignFieldEditors();
+  const tileCategoriesEditor = getTileCategoryEditor();
+  const detailsDiv = ui.divV(
+    [ui.divV([templateNameInput, errorDiv]), ui.divV([templateKeyInput, keyErrorDiv]), fieldsEditor.fieldsDiv]);
+
+  const form = ui.divV(
+    [ui.h2('Details'),
+      detailsDiv,
+      ui.h2('Stages'),
+      tileCategoriesEditor.fieldsDiv,
+      ui.h2('Compute'),
+      funcInput.root,
+      ui.h2('Submit'),
+      submitFunctionInput.root,
+    ], 'ui-form');
+  const content = ui.div(form);
+  const buttonsDiv = ui.divH([]);
+  form.appendChild(buttonsDiv);
+
+
+  const promise = new Promise<HitDesignTemplate>((resolve) => {
+    async function onOkProxy() {
+      funcInput.okProxy();
+      if (errorDiv.style.opacity === '100%') {
+        grok.shell.error('Template name is empty or already exists');
+        return;
+      }
+      const submitFunction = submitFunctionInput.value ? submitFunctionsMap[submitFunctionInput.value] : undefined;
+      const out: HitDesignTemplate = {
+        name: templateNameInput.value,
+        key: templateKeyInput.value,
+        campaignFields: fieldsEditor.getFields(),
+        stages: tileCategoriesEditor.getFields(),
+        compute: {
+          descriptors: {
+            enabled: !!funcDialogRes?.descriptors?.length,
+            args: funcDialogRes?.descriptors ?? [],
+          },
+          functions: Object.entries(funcDialogRes?.externals ?? {}).map(([funcName, args]) => {
+            const splitFunc = funcName.split(':');
+            return ({
+              name: splitFunc[1],
+              package: splitFunc[0],
+              args: args,
+            });
+          }),
+        },
+        ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
+      };
+      saveHitDesignTemplate(out);
+      grok.shell.info('Template created successfully');
+      resolve(out);
+    }
+    const createTemplateButton = ui.bigButton(C.i18n.createTemplate, () => onOkProxy());
+    buttonsDiv.appendChild(createTemplateButton);
+  });
+  const cancelPromise = new Promise<void>((resolve) => {
+    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
+    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
+    //buttonsDiv.appendChild(cancelButton);
+  });
+  return {root: content, template: promise, cancelPromise};
+}
+
+export function saveHitDesignTemplate(template: HitDesignTemplate) {
+  _package.files.writeAsText(`Hit Design/templates/${template.name}.json`, JSON.stringify(template));
+}
+
+
+export function getTileCategoryEditor() {
+  const getNewFieldEditor = (defVal: string = '') => {
+    const nameInput = ui.stringInput('Name', defVal, () => out.changed = true);
+    nameInput.root.style.width = '100%';
+    const out = {changed: defVal !== '', nameInput};
+    return out;
+  };
+  const fields: ReturnType<typeof getNewFieldEditor>[] = [getNewFieldEditor('Stage 1')];
+  function getFieldParams(): string[] {
+    return fields.filter((f) => f.changed && f.nameInput.value && f.nameInput.value !== '')
+      .map((f) => f.nameInput.value);
+  };
+  function getFieldDiv(field: ReturnType<typeof getNewFieldEditor>) {
+    const removeButton = ui.icons.delete(() => {
+      if (fields.length > 1) {
+        fieldDiv.remove();
+        fields.splice(fields.indexOf(field), 1);
+      }
+    }, 'Remove Field');
+    removeButton.style.marginLeft = '15px';
+    const addFieldButton = ui.icons.add(() => {
+      if (!fields.length || fields[fields.length - 1].changed) {
+        const newField = getNewFieldEditor();
+        fields.push(newField);
+        fieldsContainer.appendChild(getFieldDiv(newField));
+      }
+    }, 'Add field');
+    addFieldButton.classList.add('hit-triage-add-campaign-field-button');
+    field.nameInput.addOptions(removeButton);
+    field.nameInput.addOptions(addFieldButton);
+    const fieldDiv = ui.divH([
+      field.nameInput.root,
+    ], {classes: 'hit-triage-campaign-field-div', style: {width: '400px'}});
+    return fieldDiv;
+  }
+  const fieldsContainer = ui.divV([getFieldDiv(fields[0])], 'ui-form');
+
+  return {
+    getFields: getFieldParams,
+    fieldsDiv: fieldsContainer,
+  };
+}

@@ -14,7 +14,6 @@ import './functions/logical-functions';
 import './functions/math-functions';
 import './functions/stats-functions';
 import './functions/text-functions';
-import './functions/python_functions';
 
 // import './functions/cache';
 import './shell/shell';

@@ -1,7 +1,7 @@
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, expect, category, test} from '@datagrok-libraries/utils/src/test';
-import {isFragment, isSmarts} from '../utils/mol-creation_rdkit';
+import {isFragment, _isSmarts} from '../utils/mol-creation_rdkit';
 import {readDataframe} from './utils';
 
 const smarts = [
@@ -328,9 +328,9 @@ category('isSmarts', async () => {
 
   test('isSmarts', async () => {
     smarts.forEach((mol) => {
-      expect(isSmarts(mol), true);
+      expect(_isSmarts(mol), true);
     });
-    notSmarts.forEach((mol) => expect(isSmarts(mol), false));
+    notSmarts.forEach((mol) => expect(_isSmarts(mol), false));
   });
 
   test('isFragment', async () => {
@@ -345,7 +345,7 @@ category('isSmarts', async () => {
     const molecules = molfiles.col('molfile')!.categories;
     console.profile('isSmarts');
     for (let i = 0; i < 100000; i++)
-      isSmarts(molecules[i%100]);
+      _isSmarts(molecules[i%100]);
     console.profileEnd('isSmarts');
   });
 });

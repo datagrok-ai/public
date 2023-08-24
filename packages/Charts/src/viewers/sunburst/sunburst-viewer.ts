@@ -127,11 +127,16 @@ export class SunburstViewer extends EChartViewer {
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
     if (p?.name === 'hierarchyColumnNames')
       this.render();
+    if (p?.name === 'table') {
+      const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
+      this.dataFrame = dataFrame!;
+      this.onTableAttached(true);
+    }
     else
       super.onPropertyChanged(p, render);
   }
 
-  onTableAttached(): void {
+  onTableAttached(propertyChanged?: boolean): void {
     let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
     categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length);
@@ -139,7 +144,7 @@ export class SunburstViewer extends EChartViewer {
     if (categoricalColumns.length < 1)
       return;
 
-    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0 || propertyChanged)
       this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
     
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => {this.render()}));

@@ -16,7 +16,7 @@ export function isFragment(molString: string) {
     return !!molString.match(/\[.?:|\*.?\]/g);
 }
 
-export function isSmarts(molString: string): boolean {
+export function _isSmarts(molString: string): boolean {
   if (isMolBlock(molString))
     return MolfileHandler.getInstance(molString).isQuery();
   else

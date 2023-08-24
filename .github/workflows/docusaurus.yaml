@@ -49,7 +49,7 @@ jobs:
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Markdown Linter errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#markdown-linter)" >> help/_lint-check-report.md
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#markdown-linter)" >> help/_lint-check-report.md
             sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
             cat help/_lint-check-report.md
             cat help/_lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
@@ -108,7 +108,7 @@ jobs:
           else
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Hyperlink link checker errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#links-and-anchors-check)" >> help/_anchor-check-report.md
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/help-pages/github-workflow#links-and-anchors-check)" >> help/_anchor-check-report.md
             cat help/_anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
             cat help/_anchor-check-report.md
             sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}

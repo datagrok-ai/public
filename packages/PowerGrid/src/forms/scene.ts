@@ -4,8 +4,10 @@ import * as ui from 'datagrok-api/ui';
 export interface IStyle {
   color?: string;
   backColor?: string;
+  font?: string;
   horzAlign?: 'left' | 'right' | 'center';
   vertAlign?: 'top' | 'bottom' | 'center';
+  tooltip?: string | HTMLElement;
 }
 
 
@@ -19,6 +21,10 @@ export abstract class Element {
   }
 
   abstract render(g: CanvasRenderingContext2D): void;
+
+  hitTest(x: number, y: number): Element | null {
+    return this.bounds.contains(x, y) ? this : null;
+  }
 }
 
 
@@ -39,6 +45,8 @@ export class LabelElement extends Element {
         = g.textAlign == 'left' ? this.bounds.x
         : g.textAlign == 'right' ? this.bounds.right
         : g.textAlign == 'center' ? this.bounds.midX : 0;
+      if (this.style?.font != null)
+        g.font = this.style.font;
       g.fillText(this.text, x, this.bounds.midY, this.bounds.width);
     });
   }
@@ -63,6 +71,7 @@ export class GridCellElement extends Element {
   constructor(bounds: DG.Rect,
               public gridCell: DG.GridCell) {
     super(bounds);
+    this.style = { tooltip: gridCell.cell.valueString }
   }
 
   render(g: CanvasRenderingContext2D) {
@@ -91,6 +100,14 @@ export class Scene extends Element {
     const canvas = ui.canvas(this.bounds.width, this.bounds.height);
     this.render(canvas.getContext("2d")!);
     return canvas;
+  }
+
+  hitTest(x: number, y: number): Element | null {
+    for (const e of this.elements) {
+      if (e.hitTest(x, y))
+        return e;
+    }
+    return null;
   }
 }
 

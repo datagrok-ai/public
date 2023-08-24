@@ -764,7 +764,8 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
 export async function webLogoLargeApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('WebLogo');
   try {
-    const app = new WebLogoApp();
+    const urlParams = new URLSearchParams(window.location.search);
+    const app = new WebLogoApp(urlParams);
     const df: DG.DataFrame = await _package.files.readCsv('data/sample_PT_100000x5.csv');
     await grok.data.detectSemanticTypes(df);
     await app.init(df, 'webLogoLargeApp');

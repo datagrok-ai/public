@@ -48,7 +48,7 @@ function getHelmToCodeDict(infoObj: CodesInfo) {
   const result: {[key: string]: string | string[]} = {};
   Object.values(infoObj).forEach((obj: {[code: string]: string}) => {
     Object.entries(obj).forEach(([code, helm]) => {
-      const key = helm.replace(/\)p/g, ')');
+      const key = helm.replace(/\)p/g, ')').replace(/\]p/g, ']');
       if (result[key] === undefined) {
         result[key] = [code];
       } else {
