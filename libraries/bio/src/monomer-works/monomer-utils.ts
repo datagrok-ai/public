@@ -95,12 +95,12 @@ export function createMomomersMolDict(lib: any[]): { [key: string]: string | any
   return dict;
 }
 
-export function isEnumeratorLib(json: any[]): boolean {
+export function isValidEnumeratorLib(json: any[]): boolean {
   return json.every((entry) => {
     return typeof entry === 'object' &&
       Object.values(helmFieldsToEnumeratorInputFields).every((field) => {
         return field in entry &&
-          typeof entry.field === 'string';
+          typeof entry[field] === 'string';
       });
   });
 }
@@ -140,9 +140,9 @@ export function getJsonMonomerLibForEnumerator(rawLib: any[]): any {
         const smilesWithRestoredRgroups = restoreRgroupsInSmiles(rawSmiles);
         const smiles = prepareOutputSmilesColValue(smilesWithRestoredRgroups);
         monomer[key] = smiles;
-      } else if (key === HELM_FIELDS.RGROUPS) {
+      } else if (key === HELM_FIELDS.RGROUPS)
         monomer[key] = rGroupsDummy;
-      } else if (key === HELM_FIELDS.MOLFILE) {
+      else if (key === HELM_FIELDS.MOLFILE) {
         const rawSmiles = monomer[helmFieldsToEnumeratorInputFields[HELM_FIELDS.SMILES]];
         const smiles = restoreRgroupsInSmiles(rawSmiles);
         const rawMolfile = DG.chem.convert(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);

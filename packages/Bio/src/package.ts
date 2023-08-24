@@ -94,10 +94,9 @@ export class SeqPaletteCustom implements SeqPalette {
 
 //tags: init
 export async function initBio() {
-  let module: RDModule;
+  const module = await grok.functions.call('Chem:getRdKitModule');
   await Promise.all([
     (async () => { await MonomerLibHelper.instance.loadLibraries(); })(),
-    (async () => { module = await grok.functions.call('Chem:getRdKitModule'); })(),
     (async () => {
       const pkgProps = await _package.getProperties();
       const bioPkgProps = new BioPackageProperties(pkgProps);

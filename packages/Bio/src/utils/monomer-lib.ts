@@ -9,7 +9,7 @@ import {
   createJsonMonomerLibFromSdf,
   getJsonMonomerLibForEnumerator,
   IMonomerLibHelper,
-  isEnumeratorLib,
+  isValidEnumeratorLib,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
@@ -246,11 +246,27 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       } else {
         grok.shell.warning('Chem package is not installed');
       }
-    } else {
+    } else if (fileName.endsWith('.json')) {
       const file = await fileSource.readAsText(fileName);
       rawLibData = JSON.parse(file);
-      if (isEnumeratorLib(rawLibData))
-        rawLibData = getJsonMonomerLibForEnumerator(rawLibData);
+    } else if (fileName.endsWith('.csv')) {
+      // todo: replace by DataFrame's method after update of js-api
+      function toJson(df: DG.DataFrame): any[] {
+        return Array.from({length: df.rowCount}, (_, idx) =>
+          df.columns.names().reduce((entry: {[key: string]: any}, colName) => {
+            entry[colName] = df.get(colName, idx);
+            return entry;
+          }, {})
+        );
+      }
+      const df = await fileSource.readCsv(fileName);
+      const json = toJson(df);
+      if (isValidEnumeratorLib(json))
+        rawLibData = getJsonMonomerLibForEnumerator(json);
+      else
+        throw new Error('Invalid format of CSV monomer lib');
+    } else {
+      throw new Error('Monomer library of unknown file format, supported formats: SDF, JSON, CSV');
     }
 
     const monomers: { [polymerType: string]: { [monomerSymbol: string]: Monomer } } = {};
@@ -263,6 +279,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomer as Monomer;
     });
 
+    console.log('monomers', monomers);
     return new MonomerLib(monomers);
   }
 

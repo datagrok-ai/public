@@ -76,6 +76,7 @@ export const helmFieldsToEnumeratorInputFields = {
   'symbol': 'Short Name',
   'name': 'Medium Name',
   'smiles': 'SMILES',
+  'synonyms': 'Synonyms',
 };
 
 /** For Enumerator  */
