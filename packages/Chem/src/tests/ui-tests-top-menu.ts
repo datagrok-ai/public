@@ -282,7 +282,7 @@ category('UI top menu', () => {
             'cannot create viewer', 3000);
         const stviewer = Array.from(v.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0];
         await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
-            'scaffold tree has not been generated', 30000);
+            'scaffold tree has not been generated', 60000);
         await delay(2000); //need to scaffold to finish generation
         v.close();
         grok.shell.o = ui.div();

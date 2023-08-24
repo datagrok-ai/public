@@ -236,7 +236,7 @@ export namespace chem {
 
     /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats */
     setMolecule(molString: string, substructure: boolean = false): void {
-      if (substructure)
+      if (substructure || isSmarts(molString))
         this.setSmarts(molString);
       else if (isMolBlock(molString))
         this.setMolFile(molString);
@@ -789,6 +789,17 @@ export namespace chem {
     funcCall.callSync();
     const resultBool = funcCall.getOutputParamValue();
     return resultBool;
+  }
+
+  export function isSmarts(s: string): boolean {
+    const isSmartsFunc = Func.find({package: 'Chem', name: 'isSmarts'});
+    if (isSmartsFunc.length) {
+      const funcCall: FuncCall = isSmartsFunc[0].prepare({s});
+      funcCall.callSync();
+      const resultBool = funcCall.getOutputParamValue();
+      return resultBool;
+    }
+    return false;
   }
 
   export function smilesFromSmartsWarning(): string {
