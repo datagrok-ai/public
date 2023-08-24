@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.1.3 (2023-08-11)
+## 1.1.3 (2023-08-24)
 
 This release is centered around enhancing user-friendliness and addressing concerns.
 

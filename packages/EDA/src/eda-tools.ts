@@ -22,15 +22,7 @@ export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, c
   const centerNum = center ? 1 : 0;
   const scaleNum = scale ? 1 : 0;
 
-  let _output: any;
-  let _promise = _principalComponentAnalysisInWebWorker(table, features, components, centerNum, scaleNum);
-
-  await _promise.then(
-    _result => { _output = _result; },
-    _error => {  throw new Error (`Error: ${_error}`); }
-  );
-
-  return _output;  
+  return await _principalComponentAnalysisInWebWorker(table, features, components, centerNum, scaleNum);
 } 
 
 // Partial least square regression (PLS)
@@ -39,15 +31,7 @@ export async function computePLS(table: DG.DataFrame, features: DG.ColumnList, p
   // Inputs are checked in the same manner as in PCA, since the same computations are applied.
   checkWasmDimensionReducerInputs(features, components);
 
-  let _output: any;
-  let _promise = _partialLeastSquareRegressionInWebWorker(table, features, predict, components);
-
-  await _promise.then(
-    _result => { _output = _result; },    
-    _error => {  throw new Error (`Error: ${_error}`); }
-  );
-
-  return _output;
+  return await _partialLeastSquareRegressionInWebWorker(table, features, predict, components);
 }
 
 // Uniform Manifold Approximation and Projection (UMAP)
@@ -86,7 +70,7 @@ export async function computeUMAP(features: DG.ColumnList, components: number, e
     error => { throw new Error ('applying UMAP fails.'); }
   );
 
-  const embeddings = workerOutput as any[][];
+  const embeddings = workerOutput as number[][];
   const rowCount = embeddings.length;
   const range = [...Array(components).keys()];
 
