@@ -107,6 +107,8 @@ export const DROPLINES = ['IC50'];
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
 
+export type FitLineStyle = 'solid' | 'dotted' | 'dashed' | 'dashdotted';
+
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
   x: number;
@@ -172,6 +174,7 @@ export interface IFitSeriesOptions {
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
+  lineStyle?: FitLineStyle;
   pointColor?: string;                  // overrides the standardized series point color
   fitLineColor?: string;                // overrides the standardized series fit line color
   confidenceIntervalColor?: string;     // overrides the standardized series confidence interval color
@@ -235,6 +238,8 @@ export const fitSeriesProperties: Property[] = [
   Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
     defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
+  Property.js('lineStyle', TYPE.STRING, {category: 'Rendering', description: 'Line style used when rendering',
+    defaultValue: 'solid', choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
   Property.js('droplines', TYPE.STRING_LIST, {choices: DROPLINES, inputType: 'MultiChoice'}),
 ];
 
