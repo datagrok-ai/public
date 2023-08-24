@@ -1653,3 +1653,186 @@ interface HintPage {
    * or null if validated */
   validate?: () => string | null;
 }
+
+export namespace css {
+
+  export enum flex {
+    row = 'd4-flex-row',
+    col = 'd4-flex-col',
+    wrap = 'd4-flex-wrap',
+    nowrap = 'd4-flex-nowrap',
+    grow = 'd4-flex-grow',
+  }
+
+  export enum alignItems {
+    start = 'align-items-start',
+    end = 'align-items-end',
+    center = 'align-items-center',
+    baseline = 'align-items-baseline',
+    stretch = 'align-items-stretch',
+  }
+
+  export enum justifyContent {
+    start = 'justify-content-start',
+    end = 'justify-content-end',
+    center = 'justify-content-center',
+    between = 'justify-content-between',
+    around = 'justify-content-around',
+  }
+
+  export enum gap {
+    small = 'gap-small',
+    medium = 'gap-medium',
+    large = 'gap-large',
+  }
+
+  export enum margin {
+    none = 'm-none',
+    small = 'm-small',
+    medium = 'm-meidum',
+    large = 'm-large',
+    auto = 'm-auto'
+  }
+
+  export enum marginX {
+    none = 'mx-none',
+    small = 'mx-small',
+    medium = 'mx-meidum',
+    large = 'mx-large',
+    auto = 'mx-auto'
+  }
+
+  export enum marginY {
+    none = 'my-none',
+    small = 'my-small',
+    medium = 'my-meidum',
+    large = 'my-large',
+    auto = 'my-auto'
+  }
+
+  export enum marginLeft {
+    none = 'ml-none',
+    small = 'ml-small',
+    medium = 'ml-meidum',
+    large = 'ml-large',
+    auto = 'ml-auto'
+  }
+
+  export enum marginRight {
+    none = 'mr-none',
+    small = 'mr-small',
+    medium = 'mr-meidum',
+    large = 'mr-large',
+    auto = 'mr-auto'
+  }
+
+  export enum marginTop {
+    none = 'mt-none',
+    small = 'mt-small',
+    medium = 'mt-meidum',
+    large = 'mt-large',
+    auto = 'mt-auto'
+  }
+
+  export enum marginBottom {
+    none = 'mb-none',
+    small = 'mb-small',
+    medium = 'mb-meidum',
+    large = 'mb-large',
+    auto = 'mb-auto'
+  }
+
+  export enum padding {
+    none = 'p-none',
+    small = 'p-small',
+    medium = 'p-meidum',
+    large = 'p-large',
+  }
+
+  export enum paddingX {
+    none = 'px-none',
+    small = 'px-small',
+    medium = 'px-meidum',
+    large = 'px-large',
+  }
+
+  export enum paddingY {
+    none = 'py-none',
+    small = 'py-small',
+    medium = 'py-meidum',
+    large = 'py-large',
+  }
+
+  export enum paddingLeft {
+    none = 'pl-none',
+    small = 'pl-small',
+    medium = 'pl-meidum',
+    large = 'pl-large',
+  }
+
+  export enum paddingRight {
+    none = 'pr-none',
+    small = 'pr-small',
+    medium = 'pr-meidum',
+    large = 'pr-large',
+  }
+
+  export enum paddingTop {
+    none = 'pt-none',
+    small = 'pt-small',
+    medium = 'pt-meidum',
+    large = 'pt-large',
+  }
+
+  export enum paddingBottom {
+    none = 'pb-none',
+    small = 'pb-small',
+    medium = 'pb-meidum',
+    large = 'pb-large',
+  }
+
+  export enum textSize {
+    small = 'text-small',
+    medium = 'text-meidum',
+    large = 'text-large',
+  }
+
+  export enum textAlign {
+    left = 'text-left',
+    right = 'text-right',
+    center = 'text-center',
+  }
+
+  export enum textWeight {
+    light = 'text-light',
+    normal = 'text-normal',
+    bolder = 'text-bolder',
+    bold = 'text-bold',
+  }
+
+  export enum textTransform {
+    lowercase = 'text-lowercase',
+    uppercase = 'text-uppercase',
+    capitalize = 'text-capitalize',
+  }
+
+  export enum lineHeight {
+    small = 'lh-small',
+    medium = 'lh-medium',
+    large = 'lh-large',
+  }
+
+  export enum background {
+    none = 'bg-none',
+    white = 'bg-white',
+    light = 'bg-light',
+  }
+
+  export enum shadow {
+    none = 'shadow-none',
+    small = 'shadow-small',
+    medium = 'shado-medium',
+    large = 'shadow-large',
+  }
+
+}
