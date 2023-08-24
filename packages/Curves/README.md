@@ -34,6 +34,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "fitLineColor": "#2ca02c",
       "confidenceIntervalColor": "#fbec5d",
       "markerType": "circle",
+      "lineStyle": "dashed",
       "showFitLine": true,
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
@@ -77,6 +78,7 @@ Each series has its own parameters, such as:
 - `fitLineColor` - overrides the standardized series fit line color
 - `confidenceIntervalColor` - overrides the standardized series confidence interval color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
+- `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
