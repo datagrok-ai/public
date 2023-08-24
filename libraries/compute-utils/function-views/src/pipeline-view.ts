@@ -15,6 +15,7 @@ import {RunComparisonView} from './run-comparison-view';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from './shared/consts';
 import wu from 'wu';
 import {RichFunctionView} from './rich-function-view';
+import {deepCopy} from './shared/utils';
 
 type StepState = {
   func: DG.Func,
@@ -561,7 +562,7 @@ export class PipelineView extends ComputationView {
 
       if (corrChildRun) {
         const childRun = await historyUtils.loadRun(corrChildRun.id);
-        step.view.lastCall = childRun;
+        step.view.lastCall = deepCopy(childRun);
         step.view.linkFunccall(childRun);
         step.view.isHistorical.next(true);
 
