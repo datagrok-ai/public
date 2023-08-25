@@ -1,0 +1,35 @@
+{
+	"name": "trywebgpu",
+	"friendlyName": "tryWebGPU",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-trywebgpu": "webpack && grok publish",
+		"release-trywebgpu": "webpack && grok publish --release",
+		"build-trywebgpu": "webpack",
+		"build": "webpack",
+		"debug-trywebgpu-dev": "webpack && grok publish dev",
+		"release-trywebgpu-dev": "webpack && grok publish dev --release",
+		"debug-trywebgpu-local": "webpack && grok publish local",
+		"release-trywebgpu-local": "webpack && grok publish local --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
+}
