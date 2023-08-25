@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {checkNavigator, accessGPU, buffers, 
-  matrixMultiplicationExample, gpuMatrixProduct, cpuMatrixProduct} from './web-gpu-sandbox';
+  matrixMultiplicationExample, gpuMatrixProduct, cpuMatrixProduct} from '../web-gpu/web-gpu-sandbox';
 
 export const _package = new DG.Package();
 
