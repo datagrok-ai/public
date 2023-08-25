@@ -19,6 +19,7 @@ import {
   fitChartDataProperties,
   TAG_FIT,
   FitParamBounds,
+  IFitChartOptions,
 } from './fit-curve';
 
 export type LogOptions = {
@@ -86,23 +87,43 @@ function getMedianPoints(data: {x: number[], y: number[]}): {x: number[], y: num
 }
 
 /** Returns logarithmic IC50 parameter bounds. */
-function logIC50ParameterBounds(IC50Bounds: FitParamBounds): FitParamBounds {
-  if (IC50Bounds) {
-    if (IC50Bounds.max !== undefined)
-      IC50Bounds.max = Math.log10(IC50Bounds.max);
-    if (IC50Bounds.min !== undefined) {
-      IC50Bounds.min = IC50Bounds.min === 0 ?
-        -Number.MAX_VALUE : Math.log10(IC50Bounds.min);
+function logIC50ParameterBounds(ic50Bounds: FitParamBounds): FitParamBounds {
+  if (ic50Bounds) {
+    if (ic50Bounds.max !== undefined)
+      ic50Bounds.max = Math.log10(ic50Bounds.max);
+    if (ic50Bounds.min !== undefined) {
+      ic50Bounds.min = ic50Bounds.min === 0 ?
+        -Number.MAX_VALUE : Math.log10(ic50Bounds.min);
     }
   }
-  return IC50Bounds;
+  return ic50Bounds;
+}
+
+function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect {
+  let x = bounds.x;
+  let y = bounds.y;
+  let width = bounds.width;
+  let height = bounds.height;
+
+  if (chartOptions.minX !== undefined && chartOptions.minX > 0) {
+    width += x - chartOptions.minX;
+    x = chartOptions.minX;
+  }
+  if (chartOptions.maxX !== undefined && chartOptions.maxX > 0)
+    width += chartOptions.maxX - (x + width);
+  if (chartOptions.minY !== undefined) {
+    height += y - chartOptions.minY;
+    y = chartOptions.minY;
+  }
+  if (chartOptions.maxY !== undefined)
+    height += chartOptions.maxY - (y + height);
+
+  return new DG.Rect(x, y, width, height);
 }
 
 /** Returns the bounds of an {@link IFitChartData} object */
 export function getChartBounds(chartData: IFitChartData): DG.Rect {
   const o = chartData.chartOptions;
-  if (o?.minX && o.minY && o.maxX && o.maxY)
-    return new DG.Rect(o.minX, o.minY, o.maxX - o.minX, o.maxY - o.minY);
   if (!chartData.series?.length || chartData.series.length === 0)
     return new DG.Rect(0, 0, 1, 1);
   else {
@@ -112,7 +133,7 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
       const {xs, ys} = getPointsArrays(chartData.series[i].points);
       bounds = bounds.union(DG.Rect.fromXYArrays(xs, ys));
     }
-    return bounds;
+    return o ? changeBounds(bounds, o!): bounds;
   }
 }
 
