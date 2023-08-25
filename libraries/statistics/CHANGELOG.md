@@ -1,5 +1,18 @@
 # statistics changelog
 
+## 1.2.5 (2023-08-25)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added lineStyle to the IFitSeriesOptions interface
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Added code comments about line style
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed the curve fitting algorithm
+  * Fixed axes scales
+
 ## 1.2.4 (2023-08-23)
 
 ### Features
