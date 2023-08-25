@@ -1,5 +1,12 @@
 # Compute changelog
 
+## 1.13.12 (2023-08-25)
+
+### Fixed bugs
+
+- Fixed rare bug with historical runs in PLV
+- Fixed bug with viewers' captions duplication
+
 ## 1.13.9 (2023-08-23)
 
 ### Fixed bugs
