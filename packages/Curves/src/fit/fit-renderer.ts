@@ -344,8 +344,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       const fitFunc = getSeriesFitFunction(series);
       let curve: (x: number) => number;
       if (series.parameters) {
-        if (data.chartOptions?.logX)
-          series.parameters[2] = Math.log10(series.parameters[2]);
+        if (data.chartOptions?.logX) {
+          if (series.parameters[2] > 0)
+            series.parameters[2] = Math.log10(series.parameters[2]);
+        }
         curve = getCurve(series, fitFunc);
       }
       else {
