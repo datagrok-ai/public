@@ -460,7 +460,7 @@ export class RichFunctionView extends FunctionView {
           });
 
           return ui.divV([
-            ui.h2(dfBlockTitle, {style: {'white-space': 'pre'}}),
+            ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
             viewerRoot,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
