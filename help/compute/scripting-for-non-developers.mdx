@@ -1,5 +1,5 @@
 ---
-title: "Scripting for non-developers"
+title: "Scripting for non-professional developers"
 ---
 
 ```mdx-code-block
@@ -7,33 +7,92 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-This article describes Datagrok scripting feature. Datagrok allows to deploy scripts on platform and control their lifecycle.
-For deployed scripts you can:
+This article describes Datagrok scripting \-
+an integration mechanism with languages for statistical/mathematical computing.
+This is an extremely powerful concept allowing you to drastically improve
+your data analysis experience with Datagrok.
 
-- use different languages
-- generate graphical user interface (GUI)
-- access computations history
-- control sharing
-- integrate them into external systems
+Scripting combines fast
+interactive visualizations and other features of the
+Datagrok platform with thousands of statistical packages and
+visualizations available in
+[R](https://www.r-project.org/about.html), [Python](https://www.python.org),
+[Octave](https://octave.org/), [Julia](https://julialang.org), or
+[JavaScript](https://www.javascript.com).
 
-## Prerequisites
+## How scripting in Datagrok works?
 
-Sign up and login to [public server of Datagrok](https://public.datagrok.ai/). After successful login, you should see welcome screen:
+Briefly, you only need to do the follows:
 
-![welcome-screen](welcome-screen.png)
+* Create a new script in Datagrok
+* Write the code in any supported languages: Python, R, Julia, etc.
+* Add **header parameters**: special comments specifying the script language, tags,
+  input and output variables, etc
+* Save your script
 
-## How to create a script
+That's all. These simple actions turn your script to a **Datagrok function**.
+Without any additional efforts you have received a wide range of possibilities:
 
-You can create a script directly on the platform in two ways:
+* Execute your script "as is".
+  Datagrok automatically creates UI to specify input parameters and captures output data.
+  The RichFunctionView editors allows you to create complex UI with parameters tabs and groups
+  just by adding annotation comments
+* Seamlessly transfer data between Datagrok and your script.
+  For example, retrieve data table via Datagrok connections, process it by your custom script,
+  return data table back and visualize it with any of the Datagrok viewers.
+* Use your script as input or output for other scripts.
+  Probably, you want to process your data in Python and plot graphs in R? Easily.
+  Just write two scripts and annotate parameters. Datagrok will care about all data transfers for you.
+* Integrate your script in the Datagrok platform.
+  For example, you can create a script calculating some value for macromolecule.
+  By using semantic data types
+  Datagrok recognizes the meaning of the data and automatically applies the  script
+  when you browse macromolecule details.
+* Access computational history. Datagrok saves all runs of the script in a history,
+  so you can easily
+* Sharing and collaborative work. You can easily share your scripts with your colleagues,
+  specify access groups.
+
+All examples in this article contains code in Python, R, and Javascript.
+However, the same concepts are applicable to all other languages.
+
+:::tip Pro tip
+
+The JavaScript historically is not considered as a language for data science.
+However, in Datagrok Javascript has several advantages
+over "traditional" data science languages, like Python or R:
+
+* JS scripts run locally in the browser,
+  so you can start them faster and achieve better responsibility to user actions.
+* Datagrok has wide range of JS API, allowing you to precisely control parameters of
+  all Datagrok viewers, call functions of Datagrok core and perform some other advanced features.
+
+Therefore, for advanced scripting in Datagrok we recommend you to try Javascript.
+
+:::
+
+## Introduction to Datagrok scripting
+
+### Prerequisites
+
+Sign up and login to [public server of Datagrok](https://public.datagrok.ai/).
+
+Alternatively, set up a [local Datagrok environment](../deploy/docker-compose/docker-compose.mdx).
+
+### How to create a script
+
+You can create a script directly on the platform by two ways:
 
 ```mdx-code-block
 <Tabs>
 <TabItem value="fast" label="Fast way" default>
 ```
 
-- Open Datagrok's [Scripts section](https://public.datagrok.ai/scripts).
-- Hover over the taskbar on the left side. Toolbox appears.
-- Select `New Javascript Script` action on the bottom of toolbox.
+* Open Datagrok (e.g. [public homepage](https://public.datagrok.ai/))
+* Select `Functions` icon on the right toolbar.
+* Select Datagrok's [Scripts section](https://public.datagrok.ai/scripts).
+* Hover over the taskbar on the left side. Toolbox appears.
+* Open **Actions** submenu and create a new script in preferred language.
 ![scripts](scripts.png)
 
 ```mdx-code-block
@@ -41,115 +100,197 @@ You can create a script directly on the platform in two ways:
 <TabItem value="advanced" label="Advanced way">
 ```
 
-- Open Datagrok (e.g. [public homepage](https://public.datagrok.ai/))
-- Select `Functions` icon on the right toolbar.
-- Select `Scripts` icon on the opened toolbox.
-- Select `New Javascript Script` action on the bottom of toolbox.
-![scripts](scripts.png)
+* Enable extended **Main menu** in the **Window** icon on the right toolbar
+* Open **Main manu > Tools > Scripting**.
+* Choose the language for the script
 
 ```mdx-code-block
 </TabItem>
 </Tabs>
 ```
 
-The code editor appears with the Javascript code inside.
+The code editor appears with the code inside.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="python" label="Python" default>
+```
+
+```python
+#name: Template
+#description: Calculates number of cells in the table
+#language: python
+#tags: template, demo
+#sample: cars.csv
+#input: dataframe table [Data table]
+#output: int count [Number of cells in table]
+count = table.shape[0] * table.shape[1]
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="r" label="R">
+```
+
+```r
+#name: Template
+#description: Calculates number of cells in the table
+#language: r
+#tags: template, demo
+#sample: cars.csv
+#input: dataframe table [Data table]
+#output: int count [Number of cells in table]
+count <- nrow(table) * ncol(table)
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+Congratulations, you've just written and published a script in Datagrok!
+This is a very simple example script calculating the number of cells in a dataframe.
+
+The header of the script contains several **header parameters**
+used by Datagrok to run the script and pass parameters to it:
+
+* `# name: Template`: The name of the script.
+* `# description: Calculates number of cells in the table`: Human readable description.
+* `# language: python`: The script language. Se the [full list of supported languages](header-parameters.md#supported-languages)
+* `# tags: template, demo`: The list of tags used to organise and search scripts.
+* `# input: dataframe table [Data table]`: Specification of the input parameter.
+   The `table` is the parameter name, and `dataframe` is the parameter type.
+   See the [supported parameter types](header-parameters.md#format-template-for-input-and-output) for details.
+* `# output: int count [Number of cells in table]`: Specification of the output parameter:
+   The `int` variable named `count`.
+
+See the [full list of header parameters](header-parameters.md) for more detailed information.
+
+After the script is created and saved, you can run it.
+Lets' try how it works.
+
+### How to run a script
+
+Built-in editor has <i class="fas fa-play"></i> **Run** button on the top panel.
+Press it to run a script. You will see the following window:
+![Running the template script](pics/template-script-run.png)
+
+When you run a script,
+with no explicitly specified parameters,
+Datagrok analyzes annotation comments
+and automatically creates UI for the script.
+It uses [script header](../datagrok/concepts/functions/func-params-annotation.md)
+to create an input form and properly show the outputs.
+You may specify different [options](../datagrok/concepts/functions/func-params-annotation.md#options) in header.
+
+Specify the dataframe for the script and press **Ok** to run it.
+You can choose already opened dataframe,
+open a dataframe form file or retrieve it via SQL query.
+When you press **Ok**, Datagrok injects all parameters to the script and then the script starts work.
+
+After script finishes, Datagrok collects all output parameters and displays it.
+In the provided examples this is a single scalar value, so it will be shown in the **Variables** panel.
+You will see the following output:
+![The template script output](pics/template-script-output.png)
+
+### Returning a dataframe
+
+Let's modify our script to return a new dataframe.
+We just copy original dataframe and add to it a new column,
+containing the length of the string in first column.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="python" label="Python" default>
+```
+
+```python
+#name: Template2
+#description: Calculates number of cells in the table
+#language: python
+#tags: template, demo
+#sample: cars.csv
+#input: dataframe table [Data table]
+#output: dataframe new_table [New table with additional column]
+
+new_table = table
+new_table["Len-of-first-column"] = len(str(table.iloc[:,0]))
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="r" label="R">
+```
+
+```r
+Add example here
+
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### How to open and edit script
+
+You can open and edit previously saved script directly on the platform using built-in editor.
+To edit an existing script:
+
+* Find it in [Scripts section](https://public.datagrok.ai/scripts).
+* Right click on script card. Context menu appears.
+* Choose **Edit** action. Built-in editor with script code opens.
+
+### How to debug a script
+
+Currently, Datagrok has limited debugging capabilities.
+All scripts except JS are executed in isolated environments,
+and the only way of communication between the script and Datagrok are returned parameters.
+
+If script throws an unhandeled exception, Datagrok catches it and display in an error popup:
+![Exception message from a script](pics/script-exception.png)
+
+However, at the moment there is no convenient way to access regular script output.
+
+For big and complicated scripts we recommend you to develop it locally in your IDE,
+and then integrate it to Datagrok.
+
+## How to share a script
+
+You may control access rights to your scripts. All sharing features are located in the Sharing dialog.
+
+* To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right click on it.
+* Choose "Share..." option in the context menu. In the opened dialog you will see groups and users with their privileges.
+* You may edit list of collaborators, grant or revoke privileges at any moment.
 
 <details>
-<summary> Your first script </summary>
+<summary> Sharing step-by-step </summary>
 <div>
 
-```javascript
-//name: Template
-//description: Hello world script
-//language: javascript
-
-alert('Hello World!');
-```
+![share-demo](sharing.gif)
 
 </div>
 </details>
 
-:::tip Pro tip
+### How to delete a script
 
-You may create and store scripts locally (as any other code) using [packages](https://datagrok.ai/help/develop/#packages) feature.
+* Find your script in [Scripts section](https://public.datagrok.ai/scripts).
+* Right click on it. Context menu opens.
+* Choose "Delete" option.
+
+:::caution
+
+This action is irreversible!
+Your collaborators will lose access to it, and all historical runs will become inaccessible.
 
 :::
 
-## How to edit and save a script
+## Enhancing script input view
 
-You can edit the script directly on the platform using built-in editor.
-
-- Built-in editor opens for newly created scripts (see [how to create a script](#how-to-create-a-script))
-- To edit an existing script:
-  - Find it in [Scripts secton](https://public.datagrok.ai/scripts).
-  - Right click on script card. Context menu appears.
-  - Choose **Edit** action. Built-in editor with script code opens.
-
-## How to run a script
-
-After the script is created, you can run it:
-
-- Built-in editor has <i class="fas fa-play"></i> **Run** button  on the top panel
-- To run an existing script:
-  - Find it in [Scripts secton](https://public.datagrok.ai/scripts).
-  - Right click on script card. Context menu appears.
-  - Choose **Run** action. Run dialog opens.
-  - Fill out the input form. Select **Run** action to start computations.
-
-## How to debug a script
-
-Datagrok supports several languages for [scripting](scripting.md#supported-languages). We recommend you to JavaScript scripts for learning purposes:
-
-- Datagrok has wide range of JS API
-- JS scripts run locally in the browser, so you can start them faster
-
-### JavaScript
-
-There is the set of [script examples](https://public.datagrok.ai/js/samples) available publicly. Feel free to play around with them to explore different Datagrok capabilities.
-
-You may to use debugging output. Output could be written:
-
-- into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
-- into the console (use `console.log()` and developer console available by F12)
-
-In addition, you can use built-in Inspector to see what's happening "under the hood" of the platform. To open Inspector, use `Alt+I` hotkey.
-For example, Inspector provides an information about triggered events.
-
-### Octave
-
-Octave scripts are run in a separate container on server. This container includes following Octave packages:
-
-- [symbolic](https://gnu-octave.github.io/packages/symbolic/)
-- [optim](https://gnu-octave.github.io/packages/optim/)
-
-Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are fully independent.
-
-### Python
-
-Here is a script header that is prepended to your script:
-
-```
-import os
-import io
-import json
-import pandas as pd
-import requests
-from datetime import datetime, timedelta
-```
-
-See [Conda environments](scripting.md#conda-environments) for details.
-
-### R
-
-See [Renv environments](scripting.md#renv-environments) for details.
-
-## How to enhance a script view
-
-Datagrok automatically creates a graphical user interface for your scripts. It uses [script header](../datagrok/concepts/functions/func-params-annotation.md) to create an input form and properly show the outputs.
-You may specify different [options](../datagrok/concepts/functions/func-params-annotation.md#options) in header.
-
-You may customize script view using additional GUI-related options. These options are, basically, hints to create more user-friendly interface for your scripts.
-Options should be listed in curly braces in corresponding header lines. The order of the hints makes no difference. All options are optional.
+You may customize script view using additional GUI-related options.
+These options are, basically, hints to create more user-friendly interface for your scripts.
+Options should be listed in curly braces in corresponding header lines.
+The order of the hints makes no difference. All options are optional.
 
 ### Input captions
 
@@ -157,24 +298,20 @@ You can add an arbitrary caption for an input parameter. Proper caption helps us
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="short" label="Short sample" default>
+<TabItem value="Python" label="Python/R" default>
 ```
 
-```javascript
-//input: double V1 { caption: Initial volume of liquid }
+```python
+# input: double V1 { caption: Initial volume of liquid }
 ```
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="full" label="Full sample">
+<TabItem value="js" label="JavaScript">
 ```
 
 ```javascript
-//name: Captions sample
-//language: javascript
 //input: double V1 { caption: Initial volume of liquid }
-
-grok.shell.info(`V1 equals ${V1}`);
 ```
 
 ```mdx-code-block
@@ -195,24 +332,20 @@ You can add a proper unit label for an input parameter. Unit label will appear i
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="short" label="Short sample" default>
+<TabItem value="python" label="Python/R" default>
 ```
 
-```javascript
-//input: double initialTemp { units: °С }
+```python
+# input: double initialTemp { units: °С }
 ```
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="full" label="Full sample">
+<TabItem value="js" label="JavaScript">
 ```
 
 ```javascript
-//name: Units sample
-//language: javascript
 //input: double initialTemp { units: °С }
-
-grok.shell.info(`Initial temperature equals ${initialTemp}`);
 ```
 
 ```mdx-code-block
@@ -229,10 +362,13 @@ grok.shell.info(`Initial temperature equals ${initialTemp}`);
 
 ### Adding viewers for output dataframes
 
-You can specify viewers to review output dataframes in human-friendly way. Each dataframe parameter may have a list of viewers.
-For instance, the following code adds `Scatter plot` and `Line chart` viewers on input dataframe.
+You can specify viewers to review output dataframes in human-friendly way.
+Each dataframe parameter may have a list of viewers.
+For instance, the following code adds `Scatter plot`
+and `Line chart` viewers on input dataframe.
 
-You may see all available viewers opening [demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv) and opening toolbox on the left.
+You may see all available viewers opening [demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv)
+and opening toolbox on the left.
 
 <details>
 <summary> Fantastic viewers and where to find them </summary>
@@ -245,16 +381,22 @@ You may see all available viewers opening [demo dataframe](https://public.datagr
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="short" label="Short sample">
+<TabItem value="python" label="Python/R">
 ```
 
-```javascript
-//output: dataframe outputDF { viewer: Line chart | Scatter plot }
+```python
+# name: Adding viewer on output dataframe
+# language: javascript
+# input: dataframe inputDF
+# output: dataframe outputDF { viewer: Line chart | Scatter plot }
+
+outputDF = inputDF
+outputDF.name = "DF with linechart"
 ```
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="full" label="Full sample">
+<TabItem value="js" label="JavaScript">
 ```
 
 ```javascript
@@ -281,24 +423,31 @@ outputDF.name = "DF with linechart"
 
 :::tip
 
-Default script view supports viewers for *output* dataframes only. You may specify viewers *input* dataframes using [Rich function view](#Adding input dataframes viewers)
+Default script view supports viewers for *output* dataframes only.
+You may specify viewers *input* dataframes using [Rich function view](#Adding input dataframes viewers)
 
 :::
 
 ### Customizing dataframes viewers
 
-Each viewer has a list of customizable properties. They change how the viewer is rendered and how it behaves.
+Each viewer has a list of customizable properties.
+They change how the viewer is rendered and how it behaves.
 For instance, you may specify dataframe column used as X axis on scatter plot.
 
-List of available properties differs for each type of viewer. You may right click on viewer and select `Properties` item in the context menu.
-Any of properties listed in the opened property panel could be specified in `viewer` option. For example, the following code:
+List of available properties differs for each type of viewer.
+You may right click on viewer and select `Properties` item in the context menu.
+Any of properties listed in the opened property panel
+could be specified in `viewer` option.
+For example, the following code:
 
-- specifies marker type and size for linechart
-- enables regression line rendering for scatterplot
+* specifies marker type and size for linechart
+* enables regression line rendering for scatterplot
 
 :::tip
 
-Viewer property should be entered in camelCase format. For example, here "Show regression line" property of scatteplot becomes `showRegressionLine`.
+Viewer property should be entered in camelCase format.
+For example, here "Show regression line" property
+of scatteplot becomes `showRegressionLine`.
 
 :::
 
@@ -338,69 +487,34 @@ grok.shell.info(`Data row count: ${dummyData.rowCount}`);
 </Tabs>
 ```
 
-### Validating inputs
+## Advanved scripting
 
-You can add custom validation on input values of your script. By default, the input form only validates that value is presented and has expected type.
-A validator is a JS-function that accepts one parameter of any type and returns `null` (if validation passes) or error string (if valdiation fails).
-You can add multiple validators on each input value.
+### Using semantic types
 
-```mdx-code-block
-<Tabs>
-<TabItem value="short" label="Short sample">
-```
-
-```javascript
-//input: int rowCount {validators: ["isPositive"]}
-
-grok.functions.register({
-  signature: 'List<String> isPositive(int input)',
-  run: (input) => input > 0 ? null : "Should be positive"
-});
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="full" label="Full sample">
-```
-
-```javascript
-//name: Custom validation sample
-//description: Hello world script
-//language: javascript
-//input: int rowCount {validators: ["isPositive"]}
-
-grok.functions.register({
-  signature: 'List<String> isPositive(int input)',
-  run: (input) => input > 0 ? null : "Should be positive"
-});
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-![builtin-validators](builtin-validators.gif)
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
+## Controlling installed packages and environments
 
 ## How to use the Rich script view
+
+The RichScriptView is an advanced input control,
+allowing you to create complex full-featured interface for your script
 
 You can use Rich function view feature to use advanced features.
 It has all the features of basic script view, such as
 [captions](#input-captions),
-[viewers for outputs](#adding-viewers-for-output-dataframes) or
+[viewers for outputs](#adding-viewers-for-output-dataframes)
+
+<!---
+or
 [input validators](#validating-inputs).
 
-Advanced features include:
+--->
 
-- [Viewers for input dataframes](#adding-input-dataframes-viewers)
-- Grouping [inputs](#grouping-inputs) and [outputs](#grouping-outputs)
-- Automatic [export](#exporting-to-a-file)
-- Saving and accessing [history](#accessing-history)
+In addition to it, you can use:
+
+* [Viewers for input dataframes](#adding-input-dataframes-viewers)
+* Grouping [inputs](#grouping-inputs) and [outputs](#grouping-outputs)
+* Automatic [export](#exporting-to-a-file)
+* Saving and accessing [history](#accessing-history)
 
 To enable it, add following code to your script header:
 
@@ -466,9 +580,17 @@ O5 = S2
 </Tabs>
 ```
 
+:::warning Package dependency
+
+The `RichFunctionViewEditor` is a part of `Compute` package.
+Ensure that `Compute` package is installed before working with `RichFunctionViewEditor`
+
+:::
+
 :::tip
 
-Use Rich function view only when you are sure that the script works as expected. Features of Rich function view affect GUI only and have no effect on computations.
+Use Rich function view only when you are sure that the script works as expected.
+Features of Rich function view affect GUI only and have no effect on computations.
 
 :::
 
@@ -478,26 +600,20 @@ You can add viewers for input dataframes. Using them, you can review your input 
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="short" label="Short sample">
+<TabItem value="python" label="Python/R">
 ```
 
-```javascript
-//input: dataframe test { viewer: Line chart | Grid }
+```python
+# input: dataframe test { viewer: Line chart | Grid }
 ```
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="full" label="Full sample">
+<TabItem value="js" label="JavaScript">
 ```
 
 ```javascript
-//name: Input DF viewers demo
-//language: javascript
 //input: dataframe test { viewer: Line chart | Grid }
-//output: double rowCount
-//editor: Compute:RichFunctionViewEditor
-
-rowCount = test.rowCount
 ```
 
 ```mdx-code-block
@@ -514,36 +630,33 @@ rowCount = test.rowCount
 
 ### Grouping inputs
 
-You can group script inputs into categories using the `category` tag. Specified categories are rendered as separate blocks of the input form.
+You can group script inputs into categories using the `category` tag.
+Specified categories are rendered as separate blocks of the input form.
 
 ```mdx-code-block
 <Tabs>
-<TabItem value="short" label="Short sample">
+<TabItem value="python" label="Python/R">
 ```
 
-```javascript
-//input: dataframe tempData { category: Experimental data }
-//input: double initialPressure { category: Experimental data }
-//input: double desiredPressure { category: Goals }
-//input: double desiredHumidity { category: Goals }
+```python
+# input: dataframe tempData { caption: Temperature data; category: Experimental data }
+# input: double initialPressure { caption: Initial pressure; category: Experimental data }
+# input: double desiredPressure { caption: Goal pressure; category: Goals }
+# input: double desiredHumidity { caption: Goal humidity; category: Goals }
+# editor: Compute:RichFunctionViewEditor
 ```
 
 ```mdx-code-block
 </TabItem>
-<TabItem value="full" label="Full sample">
+<TabItem value="js" label="JavaScript">
 ```
 
 ```javascript
-//name: Input categories demo
-//language: javascript
 //input: dataframe tempData { caption: Temperature data; category: Experimental data }
 //input: double initialPressure { caption: Initial pressure; category: Experimental data }
 //input: double desiredPressure { caption: Goal pressure; category: Goals }
 //input: double desiredHumidity { caption: Goal humidity; category: Goals }
 //editor: Compute:RichFunctionViewEditor
-
-grok.shell.info(`Initial pressure: ${initialPressure}`);
-grok.shell.info(`Temperature data row count: ${tempData.rowCount}`);
 ```
 
 :::tip
@@ -629,8 +742,12 @@ View includes 4 tabs in total since there is a separate tab for input dataframe 
 
 ### Exporting to a file
 
-You may use one-click export feature to save entire script run data to a local file. To generate export file, Select <i class="fas fa-arrow-to-bottom"></i> **Export** icon on the top panel.
-Automatic export saves all input and output values with their captions, units and even viewers' screenshots. This feature is available for all scripts using Rich function view by default.
+You may use one-click export feature to save entire script run data to a local file.
+To generate export file,
+Select <i class="fas fa-arrow-to-bottom"></i> **Export** icon on the top panel.
+Automatic export saves all input and output values with their captions,
+units and even viewers' screenshots.
+This feature is available for all scripts using Rich function view by default.
 
 <details>
 <summary> Export file example </summary>
@@ -652,22 +769,9 @@ the platform will create a new historical run.
 
 This is a feature of the Rich function view.
 
-## How to share a script
+<!---
 
-You may control access rights to your scripts. All sharing features are located in the Sharing dialog.
-
-- To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right click on it.
-- Choose "Share..." option in the context menu. In the opened dialog you will see groups and users with their privileges.
-- You may edit list of collaborators, grant or revoke privileges at any moment.
-
-<details>
-<summary> Sharing step-by-step </summary>
-<div>
-
-![share-demo](sharing.gif)
-
-</div>
-</details>
+This part should be modes to advanced sections
 
 ## How to integrate script into third-party software
 
@@ -716,14 +820,112 @@ You will see a dialog with the HTML code on top that you can use to embed this i
 </div>
 </details>
 
-## How to delete a script
+### JavaScript
 
-- Find your script in [Scripts section](https://public.datagrok.ai/scripts).
-- Right click on it. Context menu opens.
-- Choose "Delete" option.
+There is the set of [script examples](https://public.datagrok.ai/js/samples) available publicly.
+Feel free to play around with them to explore different Datagrok capabilities.
 
-:::caution
+You may to use debugging output. Output could be written:
 
-This action is irreversible! Your collaborators will lose access to it and all historical runs will become inaccessible.
+- into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
+- into the console (use `console.log()` and developer console available by F12)
 
-:::
+In addition, you can use built-in Inspector to see what's happening "under the hood" of the platform. To open Inspector, use `Alt+I` hotkey.
+For example, Inspector provides an information about triggered events.
+
+### Octave
+
+Octave scripts are run in a separate container on server. This container includes following Octave packages:
+
+- [symbolic](https://gnu-octave.github.io/packages/symbolic/)
+- [optim](https://gnu-octave.github.io/packages/optim/)
+
+Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are fully independent.
+
+### Python
+
+Here is a script header that is prepended to your script:
+
+```
+import os
+import io
+import json
+import pandas as pd
+import requests
+from datetime import datetime, timedelta
+```
+
+See [Conda environments](scripting.md#conda-environments) for details.
+
+### R
+
+See [Renv environments](scripting.md#renv-environments) for details.
+
+:::tip Pro tip
+
+You may create and store scripts locally (as any other code)
+using [packages](https://datagrok.ai/help/develop/#packages) feature.
+
+:::\
+
+<details>
+<summary> To run a previously created script</summary>
+<div>
+
+- Find it in [Scripts secton](https://public.datagrok.ai/scripts).
+- Right click on script card. Context menu appears.
+- Choose **Run** action.
+
+</div>
+</details>
+
+### Validating inputs
+
+You can add custom validation on input values of your script. By default, the input form only validates that value is presented and has expected type.
+A validator is a JS-function that accepts one parameter of any type and returns `null` (if validation passes) or error string (if valdiation fails).
+You can add multiple validators on each input value.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="short" label="Short sample">
+```
+
+```javascript
+//input: int rowCount {validators: ["isPositive"]}
+
+grok.functions.register({
+  signature: 'List<String> isPositive(int input)',
+  run: (input) => input > 0 ? null : "Should be positive"
+});
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```javascript
+//name: Custom validation sample
+//description: Hello world script
+//language: javascript
+//input: int rowCount {validators: ["isPositive"]}
+
+grok.functions.register({
+  signature: 'List<String> isPositive(int input)',
+  run: (input) => input > 0 ? null : "Should be positive"
+});
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="result" label="Result">
+```
+
+![builtin-validators](builtin-validators.gif)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+--->
