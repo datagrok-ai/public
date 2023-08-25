@@ -18,6 +18,7 @@ import {
   fitSeriesProperties,
   fitChartDataProperties,
   TAG_FIT,
+  FitParamBounds,
 } from './fit-curve';
 
 export type LogOptions = {
@@ -61,6 +62,42 @@ export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[
   return {xs: xs, ys: ys};
 }
 
+/** Returns median points from within multiple points with the same x. */
+function getMedianPoints(data: {x: number[], y: number[]}): {x: number[], y: number[]} {
+  const medianPoints: {x: number[], y: number[]} = {x: [], y: []};
+  const currentPoints: {x: number[], y: number[]} = {x: [data.x[0]], y: [data.y[0]]};
+  for (let i = 1; i < data.x.length; i++) {
+    if (data.x[i] === currentPoints.x[0]) {
+      currentPoints.x[currentPoints.x.length] = data.x[i];
+      currentPoints.y[currentPoints.y.length] = data.y[i];
+      continue;
+    }
+    const mid = Math.floor(currentPoints.y.length / 2);
+    const sortedPoints = currentPoints.y.sort((a, b) => a - b);
+    const median = sortedPoints.length % 2 === 0 ? (sortedPoints[mid - 1] + sortedPoints[mid]) / 2 : sortedPoints[mid];
+
+    medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
+    medianPoints.y[medianPoints.y.length] = median;
+    currentPoints.x = [data.x[i]];
+    currentPoints.y = [data.y[i]];
+  }
+
+  return medianPoints;
+}
+
+/** Returns logarithmic IC50 parameter bounds. */
+function logIC50ParameterBounds(IC50Bounds: FitParamBounds): FitParamBounds {
+  if (IC50Bounds) {
+    if (IC50Bounds.max !== undefined)
+      IC50Bounds.max = Math.log10(IC50Bounds.max);
+    if (IC50Bounds.min !== undefined) {
+      IC50Bounds.min = IC50Bounds.min === 0 ?
+        -Number.MAX_VALUE : Math.log10(IC50Bounds.min);
+    }
+  }
+  return IC50Bounds;
+}
+
 /** Returns the bounds of an {@link IFitChartData} object */
 export function getChartBounds(chartData: IFitChartData): DG.Rect {
   const o = chartData.chartOptions;
@@ -93,7 +130,9 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
 export function fitSeries(series: IFitSeries, fitFunc: FitFunction, logOptions?: LogOptions): FitCurve {
   const data = {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
     y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
-  return fitData(data, fitFunc, FitErrorModel.Constant, series.parameterBounds);
+  if (series.parameterBounds && logOptions?.logX)
+    series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
+  return fitData(getMedianPoints(data), fitFunc, FitErrorModel.Constant, series.parameterBounds);
 }
 
 /** Returns series confidence interval functions */

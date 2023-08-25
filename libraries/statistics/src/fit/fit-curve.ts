@@ -305,7 +305,7 @@ export class SigmoidFunction extends FitFunction {
       }
     }
     const xAtMedY = x[nearestXIndex];
-    const slope = y[0] > y[y.length - 1] ? 1.2 : -1.2;
+    const slope = y[0] > y[y.length - 1] ? 1 : -1;
 
     // params are: [max, tan, IC50, min]
     return [dataBounds.bottom, slope, xAtMedY, dataBounds.top];
