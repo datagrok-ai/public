@@ -39,8 +39,8 @@ export class DataConnectorsTutorial extends Tutorial {
       return (label?.textContent ?? '').startsWith('Postgres');
     })[0];
 
-    const dlg = await this.openDialog('Create a connection to PostgreSQL server', 'Add new connection',
-      providerRoot, 'Open the context menu on the PostgreSQL connector and click "Add connection..."');
+    const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
+      providerRoot, 'Open the context menu on the Postgres connector and click "Add connection..."');
 
     await this.dlgInputAction(dlg, 'Set "Name" to "Starbucks"', 'Name', 'Starbucks');
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
@@ -53,7 +53,7 @@ export class DataConnectorsTutorial extends Tutorial {
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
       'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
         el.textContent === 'Starbucks')[0],
-      'Open the context menu on PostgreSQL | Starbucks and click "Add query..."');
+      'Open the context menu on Postgres | Starbucks and click "Add query..."');
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
