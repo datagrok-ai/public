@@ -1324,6 +1324,12 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
   }
   _options(d, options);
   $(d).addClass('ui-form');
+  onSizeChanged(d).subscribe((_) => {
+    if (d.clientWidth < 350)
+      d.classList.add('ui-form-condensed');
+    else if (d.clientWidth > 350)
+    d.classList.remove('ui-form-condensed');
+  })
   return d;
 }
 
