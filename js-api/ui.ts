@@ -37,6 +37,7 @@ import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
+import {ItemsGrid} from "./src/ui/items-grid";
 
 
 let api = <any>window;
@@ -665,10 +666,19 @@ export namespace input {
     return input;
   }
 
+  export function grid(items: any[], properties: Property[]): ItemsGrid {
+    return new ItemsGrid(items, properties);
+  }
+
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
+
+  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
+    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+  }
+
 
   // export function bySemType(semType: string) {
   //
