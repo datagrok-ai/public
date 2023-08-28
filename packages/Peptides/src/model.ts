@@ -34,7 +34,6 @@ import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './packag
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {calculateIdentity, calculateSimilarity} from './widgets/similarity';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -442,26 +441,29 @@ export class PeptidesModel {
       acc.addPane('Actions', () => {
         const newView = ui.label('New view');
         $(newView).addClass('d4-link-action');
-        newView.onclick = () => trueModel.createNewView();
-        newView.onmouseover = (ev) => ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
+        newView.onclick = (): string => trueModel.createNewView();
+        newView.onmouseover =
+          (ev): void => ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
         const newCluster = ui.label('New cluster');
         $(newCluster).addClass('d4-link-action');
-        newCluster.onclick = () => {
+        newCluster.onclick = (): void => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.clusterFromSelection();
         };
-        newCluster.onmouseover = (ev) => ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
+        newCluster.onmouseover =
+          (ev): void => ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
         const removeCluster = ui.label('Remove cluster');
         $(removeCluster).addClass('d4-link-action');
-        removeCluster.onclick = () => {
+        removeCluster.onclick = (): void => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.removeCluster();
         };
-        removeCluster.onmouseover = (ev) => ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
+        removeCluster.onmouseover =
+          (ev): void => ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
         removeCluster.style.visibility = trueModel.clusterSelection.length === 0 ||
           !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name)) ? 'hidden' : 'visible';
         return ui.divV([newView, newCluster, removeCluster]);
@@ -1108,7 +1110,7 @@ export class PeptidesModel {
     }
 
     if (!this.isToolboxSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1') {
-      let template: ISeqSplitted;
+      let template: string[] = [];
       const sequencesCol = this.df.getCol(this.settings.sequenceColumnName!);
       const minTemplateLength = this.splitSeqDf.columns.toList()
         .filter((col) => col.stats.missingValueCount === 0).length;
@@ -1124,61 +1126,64 @@ export class PeptidesModel {
         similarityScoresCol = this.df.columns.add(similarityScoresCol);
         similarityScoresCol.setTag(C.TAGS.SIMILARITY_TEMPLATE, new Array(template).join(' '));
       }, 'Calculate similarity');
+      const warnings = {rowIndex: true, sequenceFormat: true, templateLength: true, templateGaps: true};
       const templateInput = ui.stringInput('Template', this.identityTemplate, async () => {
-        this.identityTemplate = templateInput.value;
-        if (isNaN(parseInt(templateInput.value))) {
-          if (templateInput.value.length === 0) {
-            calculateIdentityBtn.disabled = true;
-            calculateSimilarityBtn.disabled = true;
-            return;
-          }
-          try {
-            template ??= await getTemplate(this.identityTemplate, sequencesCol);
-            if (template.length < minTemplateLength) {
-              grok.shell.warning(`Template length should be at least ${minTemplateLength} amino acids.`);
-              calculateIdentityBtn.disabled = true;
-              calculateSimilarityBtn.disabled = true;
-              return;
-            } else if (new Array(template).includes('') || new Array(template).includes('-')) {
-              grok.shell.warning('Template shouldn\'t contain gaps or empty cells.');
-              calculateIdentityBtn.disabled = true;
-              calculateSimilarityBtn.disabled = true;
+        template = [];
+        let disableButtons = false;
+        this.identityTemplate = templateInput.stringValue;
+        const rowIndex = parseInt(templateInput.stringValue);
+        try {
+          if (!isNaN(rowIndex)) {
+            const selectedIndexes = this.df.filter.getSelectedIndexes();
+            if (rowIndex < 1 || rowIndex > selectedIndexes.length) {
+              if (warnings.rowIndex)
+                grok.shell.warning('Invalid row index');
+              warnings.rowIndex = false;
+              disableButtons = true;
               return;
             }
-          } catch (e) {
-            grok.shell.warning(`Only ${sequencesCol.getTag(DG.TAGS.UNITS)} sequence format is supported.`);
-            grok.log.warning(e as string);
-            calculateIdentityBtn.disabled = true;
-            return;
+            this.identityTemplate = sequencesCol.get(selectedIndexes[rowIndex - 1]);
           }
-        } else {
-          const rowIndex = parseInt(templateInput.value) - 1;
-          const selectedIndexes = this.df.filter.getSelectedIndexes();
-          if (rowIndex < 0 || rowIndex >= selectedIndexes.length) {
-            grok.shell.warning('Invalid row index');
+          if (this.identityTemplate.length === 0)
+            disableButtons = true;
+          else
+            template = await getTemplate(this.identityTemplate, sequencesCol);
+        } catch (e) {
+          if (warnings.sequenceFormat)
+            grok.shell.warning(`Only ${sequencesCol.getTag(DG.TAGS.UNITS)} sequence format is supported.`);
+          grok.log.warning(e as string);
+          warnings.sequenceFormat = false;
+          disableButtons = true;
+        } finally {
+          if (template?.length < minTemplateLength) {
+            if (warnings.templateLength)
+              grok.shell.warning(`Template should be at least ${minTemplateLength} amino acids long.`);
+            warnings.templateLength = false;
+            disableButtons = true;
+          }
+          if (template.includes('') || template.includes('-')) {
+            if (warnings.templateGaps)
+              grok.shell.warning('Template shouldn\'t contain gaps or empty cells.');
+            warnings.templateGaps = false;
+            disableButtons = true;
+          }
+          if (disableButtons) {
             calculateIdentityBtn.disabled = true;
             calculateSimilarityBtn.disabled = true;
             return;
           }
-          this.identityTemplate = sequencesCol.get(selectedIndexes[rowIndex]);
         }
-        try {
-          template = await getTemplate(this.identityTemplate, sequencesCol);
-        } catch (e) {
-          grok.shell.warning('Couldn\'t recognize sequence format.');
-          grok.log.warning(e as string);
-          calculateIdentityBtn.disabled = true;
-          calculateSimilarityBtn.disabled = true;
-          return;
-        }
+        for (const key of (Object.keys(warnings) as Array<keyof typeof warnings>))
+          warnings[key] = true;
         calculateIdentityBtn.disabled = false;
         calculateSimilarityBtn.disabled = false;
       }, {placeholder: 'Sequence or row index...'});
       templateInput.setTooltip('Template sequence. Can be row index, peptide ID or sequence.');
       templateInput.fireChanged();
       const acc = this.analysisView.toolboxPage.accordion;
-      acc.addPane('Sequence Identity and Similarity',
-        () => ui.divV([ui.form([templateInput]), calculateIdentityBtn, calculateSimilarityBtn]), true, acc.panes[0]);
+      acc.addPane('Identity and Similarity',
+        () => ui.narrowForm([templateInput, ui.buttonsInput([calculateIdentityBtn, calculateSimilarityBtn]) as any]),
+        true, acc.panes[0]);
       this.isToolboxSet = true;
     }
 
