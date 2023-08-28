@@ -19,11 +19,14 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
 
     const grid = scaffoldsDf.plot.grid();
 
-    let gridMolCol = grid.columns.byName('Molecule')!;
-    gridMolCol.width = 100;
-
     let molEditCol = grid.columns.byName('Edit')!;
     molEditCol.cellType = 'html';
+
+    const resetSketcherAndFireDfChanges = () => {
+        col.dataFrame.fireValuesChanged();
+        sketcher.setMolFile(DG.WHITE_MOLBLOCK);
+        sketcher.updateExtSketcherContent();
+    }
 
 
     grid.onCellPrepare(function (gc) {
@@ -48,9 +51,7 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
                 scaffoldsDf.rows.removeAt(gc.tableRowIndex!, 1);
                 const scaffolds = scaffoldsDf.rowCount ? convertDfToObj(scaffoldsDf) : [];
                 col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(scaffolds));
-                col.dataFrame.fireValuesChanged();
-                sketcher.setMolFile(DG.WHITE_MOLBLOCK);
-                sketcher.updateExtSketcherContent();
+                resetSketcherAndFireDfChanges();
             });
         }
     });
@@ -68,9 +69,7 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
                 scaffolds[substrIdx].color = hexToPercentRgb(colorPicker.value)!;
             }
             col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(scaffolds));
-            col.dataFrame.fireValuesChanged();
-            sketcher.setMolFile(DG.WHITE_MOLBLOCK);
-            sketcher.updateExtSketcherContent();
+            resetSketcherAndFireDfChanges();
         }
     })
 
@@ -82,9 +81,7 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
             editingMoleculeIdx = null;
             const scaffolds = convertDfToObj(scaffoldsDf);
             col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(scaffolds));
-            col.dataFrame.fireValuesChanged();
-            sketcher.setMolFile(DG.WHITE_MOLBLOCK);
-            sketcher.updateExtSketcherContent();
+            resetSketcherAndFireDfChanges();
             ui.empty(buttonDiv);
             buttonDiv.append(addMoleculeButton);
         }
