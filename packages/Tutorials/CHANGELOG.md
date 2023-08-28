@@ -1,8 +1,19 @@
 # Tutorials changelog
 
+## 1.3.13 (2023-08-28)
+
+### Bug fixes
+
+* [GROK-13826](https://reddata.atlassian.net/browse/GROK-13826): Tutorials:
+  * Temporarily commented the calculated columns tutorial.
+  * Temporarily commented the predictive modelling tutorial.
+* [GROK-13824](https://reddata.atlassian.net/browse/GROK-13824): Tutorials:
+  * Fixed doc links.
+  * Replaced PostgreSQL by Postgres.
+
 ## 1.3.12 (2023-08-24)
 
-### Buf fixes
+### Bug fixes
 
 * [GROK-13357](https://reddata.atlassian.net/browse/GROK-13357): Tutorials: Fixed indicator on current view change.
 
