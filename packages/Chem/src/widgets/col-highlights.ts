@@ -31,14 +31,14 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
 
     grid.onCellPrepare(function (gc) {
         if (gc.isTableCell && gc.gridColumn.name === 'Edit') {
-            gc.style.element = ui.icons.edit(() => {
+            gc.style.element = ui.div(ui.icons.edit(() => {
                 colorPicker.value = gc.grid.dataFrame.get('Color', gc.tableRowIndex!)
                 sketcher.setSmarts(gc.grid.dataFrame.get('Molecule', gc.tableRowIndex!));
                 sketcher.updateExtSketcherContent();
                 editingMoleculeIdx = gc.tableRowIndex!;
                 ui.empty(buttonDiv);
                 buttonDiv.append(saveEditedButton);
-            })
+            }), 'highlight-substr-grid-button')
         }
     });
 
@@ -47,12 +47,12 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
 
     grid.onCellPrepare(function (gc) {
         if (gc.isTableCell && gc.gridColumn.name === 'Delete') {
-            gc.style.element = ui.icons.delete(() => {
+            gc.style.element = ui.div(ui.icons.delete(() => {
                 scaffoldsDf.rows.removeAt(gc.tableRowIndex!, 1);
                 const scaffolds = scaffoldsDf.rowCount ? convertDfToObj(scaffoldsDf) : [];
                 col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(scaffolds));
                 resetSketcherAndFireDfChanges();
-            });
+            }), 'highlight-substr-grid-button');
         }
     });
 
