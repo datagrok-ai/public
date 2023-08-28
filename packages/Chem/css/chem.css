@@ -396,3 +396,11 @@
     color: red;
     text-align: center;
 }
+
+.struct-alerts-mol-box {
+  position: relative
+}
+
+.struct-alerts-mol-box > .pep-more-icon {
+  position: absolute;
+}

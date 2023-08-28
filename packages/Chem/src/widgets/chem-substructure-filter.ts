@@ -15,7 +15,7 @@ import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, getSearchProgressEventName, getTerminateEventName} from '../constants';
+import {FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, getSearchProgressEventName, getTerminateEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
@@ -138,7 +138,7 @@ export class SubstructureFilter extends DG.Filter {
     // hide the scaffold when user deactivates the filter
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => this.column != null && !this.isFiltering))
-      .subscribe((_: any) => delete this.column!.temp['chem-scaffold-filter']));
+      .subscribe((_: any) => delete this.column!.temp[FILTER_SCAFFOLD_TAG]));
 
     this.currentSearches.add('');
     chemSubstructureSearchLibrary(this.column!, '', '', false, false)
@@ -158,8 +158,8 @@ export class SubstructureFilter extends DG.Filter {
 
   detach() {
     super.detach();
-    if (this.column?.temp['chem-scaffold-filter'])
-      this.column.temp['chem-scaffold-filter'] = null;
+    if (this.column?.temp[FILTER_SCAFFOLD_TAG])
+      this.column.temp[FILTER_SCAFFOLD_TAG] = null;
     this.batchResultObservable?.unsubscribe();
   }
 
@@ -168,7 +168,7 @@ export class SubstructureFilter extends DG.Filter {
     if (this.dataFrame && this.bitset && !this.isDetached) {
       this.dataFrame.filter.and(this.bitset);
       this.dataFrame.rows.addFilterState(this.saveState());
-        this.column!.temp['chem-scaffold-filter'] = this.currentMolfile;
+        this.column!.temp[FILTER_SCAFFOLD_TAG] = this.currentMolfile;
         this.active = true;
     }
   }
@@ -194,8 +194,8 @@ export class SubstructureFilter extends DG.Filter {
       }));
     }
     this.active = state.active ?? true;
-    if (this.column?.temp['chem-scaffold-filter'])
-      state.molBlock = this.column?.temp['chem-scaffold-filter'];
+    if (this.column?.temp[FILTER_SCAFFOLD_TAG])
+      state.molBlock = this.column?.temp[FILTER_SCAFFOLD_TAG];
     if (state.molBlock) {
       this.sketcher.setMolFile(state.molBlock);
       this.updateExternalSketcher();
@@ -219,8 +219,8 @@ export class SubstructureFilter extends DG.Filter {
       this.currentMolfile = newMolFile;
       this.bitset = !this.active ?
         DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null;//TODO
-      if (this.column?.temp['chem-scaffold-filter'])
-        delete this.column.temp['chem-scaffold-filter'];
+      if (this.column?.temp[FILTER_SCAFFOLD_TAG])
+        delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.dataFrame?.rows.requestFilter();
       this.terminatePreviousSearch();
       this.finishSearch(newSmarts ?? '');

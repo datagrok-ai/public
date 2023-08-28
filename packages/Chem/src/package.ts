@@ -62,6 +62,7 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
+import { getmolColumnHighlights } from './widgets/col-highlights';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -768,6 +769,14 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 //output: widget result
 export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMolColumnPropertyPanel(molColumn);
+}
+
+//name: Chemistry | Highlight
+//input: column molColumn {semType: Molecule}
+//tags: panel, exclude-actions-panel
+//output: widget result
+export function molColumnHighlights(molColumn: DG.Column): DG.Widget {
+  return getmolColumnHighlights(molColumn);
 }
 
 //name: Chemistry | Descriptors

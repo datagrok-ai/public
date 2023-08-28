@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { ALIGN_BY_SCAFFOLD_TAG } from '../constants';
 
 enum StructureFilterType {
   Sketch = 'Sketch',
@@ -71,11 +72,11 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   ]);
   const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;
-  sketcher.setMolFile(col.tags['chem-scaffold']);
+  sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_TAG]);
   sketcher.onChanged.subscribe((_: any) => {
     const molFile = sketcher.getMolFile();
-    col.tags['chem-scaffold'] = molFile;
-    col.temp['chem-scaffold'] = molFile;
+    col.tags[ALIGN_BY_SCAFFOLD_TAG] = molFile;
+    col.temp[ALIGN_BY_SCAFFOLD_TAG] = molFile;
     col.dataFrame.fireValuesChanged();
   });
   sketcher.root.classList.add('ui-input-editor');
