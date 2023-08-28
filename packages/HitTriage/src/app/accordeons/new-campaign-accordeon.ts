@@ -67,10 +67,12 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
   };
   const funcEditorDiv = ui.div();
   const dataSourceFunctionInput = ui.choiceInput(
-    C.i18n.dataSourceFunction, Object.keys(dataSourceFunctionsMap)[0],
+    C.i18n.dataSourceFunction, template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
     Object.keys(dataSourceFunctionsMap), onDataFunctionChange);
   // call the onchange function to create an editor for the first function
   onDataFunctionChange();
+  if (template.queryFunctionName)
+    dataSourceFunctionInput.root.getElementsByTagName('select').item(0)?.setAttribute('disabled', 'true');
   const functionInputDiv = ui.divV([dataSourceFunctionInput, funcEditorDiv]);
   // if the file source is selected as 'File', no other inputs are needed so we hide the function editor
   functionInputDiv.style.display = 'none';

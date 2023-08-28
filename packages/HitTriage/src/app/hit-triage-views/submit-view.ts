@@ -1,15 +1,15 @@
-import {HitTriageBaseView} from './base-view';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from '../hit-triage-app';
 import {_package} from '../../package';
-import {HitTriageCampaign, HitTriageCampaignStatus} from '../types';
+import {HitTriageCampaign, HitTriageCampaignStatus, HitTriageTemplate} from '../types';
 import {CampaignJsonName, CampaignTableName} from '../consts';
 import {saveCampaignDialog} from '../dialogs/save-campaign-dialog';
 import {toFormatedDateString} from '../utils';
+import {HitBaseView} from '../base-view';
 
-export class SubmitView extends HitTriageBaseView {
+export class SubmitView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Submit';
@@ -57,11 +57,12 @@ export class SubmitView extends HitTriageBaseView {
     const enrichedDf = this.app.dataFrame!;
     const campaignPrefix = `System:AppData/HitTriage/Hit Triage/campaigns/${campaignId}/`;
     const campaignName = campaignId ?? await saveCampaignDialog(campaignId);
+    const columnSemTypes: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
     const campaign: HitTriageCampaign = {
       name: campaignName,
       templateName,
-      filters: filters, //filters.filter((f) => f['column'] !== this.app.molColName),
-      // TODO: one filter is chem substructure which does not work
+      filters: filters,
       ingest: {
         type: 'File',
         query: `${campaignPrefix}${CampaignTableName}`,
@@ -70,6 +71,7 @@ export class SubmitView extends HitTriageBaseView {
       status: status ?? this.app.campaign?.status ?? 'In Progress',
       createDate: this.app.campaign?.createDate ?? toFormatedDateString(new Date()),
       campaignFields: this.app.campaign?.campaignFields ?? this.app.campaignProps,
+      columnSemTypes,
     };
     await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignJsonName}`,
       JSON.stringify(campaign));

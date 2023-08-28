@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageApp} from '../hit-triage-app';
-import {HitTriageBaseView} from './base-view';
 import {_package} from '../../package';
 import {HitTriageTemplate} from '../types';
 import {CampaignIdKey, CampaignJsonName, i18n} from '../consts';
@@ -12,8 +11,9 @@ import {addBreadCrumbsToRibbons, hideComponents, modifyUrl} from '../utils';
 import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
+import {HitBaseView} from '../base-view';
 
-export class InfoView extends HitTriageBaseView {
+export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
@@ -162,7 +162,7 @@ export class InfoView extends HitTriageBaseView {
     const newTemplateAccordeon = await createTemplateAccordeon();
     $(containerDiv).empty();
     $(templateInputDiv).empty();
-    const {breadcrumbs, sub} = addBreadCrumbsToRibbons(grok.shell.v, i18n.createNewTemplate, () => {
+    const {breadcrumbs, sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit triage', i18n.createNewTemplate, () => {
       this.init();
     });
     //this.root.prepend(breadcrumbs.root);

@@ -1,5 +1,5 @@
 export const CampaignIdKey = 'campaignId';
-export const HitDesignCampaignIdKey = 'hitDesignCampaignId';
+export const HitDesignCampaignIdKey = 'campaignId';
 export const CampaignTableName = 'enriched_table.csv';
 export const CampaignJsonName = 'campaign.json';
 export const HitTriageComputeFunctionTag = 'HitTriageFunction';

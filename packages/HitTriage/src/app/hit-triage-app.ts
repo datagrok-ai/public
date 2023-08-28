@@ -4,23 +4,22 @@ import * as DG from 'datagrok-api/dg';
 import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
   HitTriageTemplate, HitTriageTemplateIngest, IngestType} from './types';
 import {InfoView} from './hit-triage-views/info-view';
-import {HitTriageBaseView} from './hit-triage-views/base-view';
 import {SubmitView} from './hit-triage-views/submit-view';
 import {CampaignIdKey, HitSelectionColName, i18n} from './consts';
 import {modifyUrl} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
-export class HitTriageApp {
-  template?: HitTriageTemplate;
-  dataFrame?: DG.DataFrame;
+import {HitAppBase} from './hit-app-base';
+import {HitBaseView} from './base-view';
+export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
   private _infoView: InfoView;
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
 
-  private _filterViewName = 'Pick';
+  private _filterViewName = 'Hit triage | Pick';
   private _campaignFilters?: {[key: string]: any}[];
   private _campaignId?: string;
   private _dfName?: string;
@@ -30,20 +29,31 @@ export class HitTriageApp {
   private _campaign?: HitTriageCampaign;
   protected _filterDescriptions: string[] = [];
   public campaignProps: {[key: string]: any} = {};
+  private currentPickViewId?: string;
   constructor() {
+    super();
     this._infoView = new InfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
-      if (this.multiView.currentView instanceof HitTriageBaseView)
-        (this.multiView.currentView as HitTriageBaseView).onActivated();
+      if (this.multiView.currentView instanceof HitBaseView)
+        (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
     grok.shell.addView(this.multiView);
+    grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.v?.name === this.currentPickViewId) {
+        grok.shell.windows.showHelp = false;
+        this.setBaseUrl();
+        modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
+      }
+    });
   }
 
   public async setTemplate(template: HitTriageTemplate, presetFilters?: {[key: string]: any}[],
     campaignId?: string, ingestProps?: HitTriageTemplateIngest) {
+    this._pickView?.dataFrame && grok.shell.closeTable(this._pickView?.dataFrame);
+    this._pickView = undefined;
     if (!campaignId) {
-      campaignId = await this.getNewCampaignName(template.key);
+      campaignId = await this.getNewCampaignName('Hit Triage/campaigns', template.key);
       modifyUrl(CampaignIdKey, campaignId);
     } else if (ingestProps) {
       this._fileInputType = ingestProps.type;
@@ -55,6 +65,13 @@ export class HitTriageApp {
     if (!this.dataFrame) {
       console.error('Dataframe is empty.');
       return;
+    }
+    if (this._campaign?.columnSemTypes) {
+      Object.entries(this._campaign.columnSemTypes).forEach(([colName, semtype]) => {
+        const col = this.dataFrame!.columns.byName(colName);
+        if (col)
+          col.semType = semtype;
+      });
     }
     await this.dataFrame.meta.detectSemanticTypes();
     this._molColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? undefined;
@@ -76,9 +93,11 @@ export class HitTriageApp {
       });
     };
 
-    //this.currentView.root.appendChild(this.pickView.root);
-    this.multiView.addView(this._filterViewName, () => this.pickView, true);
+    const pickV = grok.shell.addView(this.pickView);
+    this.currentPickViewId = pickV.name;
     this._submitView ??= new SubmitView(this);
+    this.setBaseUrl();
+    modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
     // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
@@ -96,18 +115,6 @@ export class HitTriageApp {
   get campaign(): HitTriageCampaign | undefined {return this._campaign;}
 
   set campaign(campaign: HitTriageCampaign | undefined) {this._campaign = campaign;}
-
-  private getFilterType(colName: string): DG.FILTER_TYPE {
-    const col = this.dataFrame!.col(colName);
-    if (col?.semType === DG.SEMTYPE.MOLECULE)
-      return DG.FILTER_TYPE.SUBSTRUCTURE;
-    if (col?.type === DG.COLUMN_TYPE.BOOL)
-      return DG.FILTER_TYPE.BOOL_COLUMNS;
-    if (col?.type === DG.COLUMN_TYPE.STRING)
-      return DG.FILTER_TYPE.CATEGORICAL;
-    return DG.FILTER_TYPE.HISTOGRAM;
-  }
-
 
   public async calculateColumns(resultMap: IComputeDialogResult, view?: DG.TableView) {
     const previousColumns = this.dataFrame!.columns.names();
@@ -165,8 +172,7 @@ export class HitTriageApp {
 
       //const f = view.filters();
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
-      // view.getFiltersGroup().add()
-      // const group = view.getFiltersGroup();
+
       view.dataFrame.onFilterChanged
         .subscribe((_) => {
           this._filterDescriptions = Array.from(view.dataFrame.rows.filters);
@@ -196,24 +202,5 @@ export class HitTriageApp {
         this.download(this.dataFrame!, 'hits', true);
       }, i18n.download)], {style: {alignItems: 'center'}}),
     };
-  }
-
-  download(df: DG.DataFrame, name: string, onlyFiltered = false): void {
-    const element = document.createElement('a');
-    const result = DG.DataFrame.fromColumns(df.columns.toList().filter((c) => !c.name.startsWith('~')))
-      .toCsv({filteredRowsOnly: onlyFiltered});
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-    element.setAttribute('download', name + '.csv');
-    element.click();
-  }
-
-  async getNewCampaignName(templateKey: string) {
-    const templateCampaigns = (await _package.files.list('Hit Triage/campaigns'))
-      .map((file) => file.name)
-      .filter((name) => name.startsWith(templateKey));
-    if (templateCampaigns.length === 0)
-      return templateKey + '-1';
-    const postFixes = templateCampaigns.map((c) => c.split('-')[1]).filter(Boolean).map((c) => parseInt(c, 10)).sort();
-    return templateKey + '-' + ((postFixes[postFixes.length - 1] + 1).toString());
   }
 }
