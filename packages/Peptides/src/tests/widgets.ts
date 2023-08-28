@@ -37,6 +37,8 @@ category('Widgets: Settings', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -44,6 +46,7 @@ category('Widgets: Settings', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
@@ -85,7 +88,8 @@ category('Widgets: Distribution panel', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -93,6 +97,7 @@ category('Widgets: Distribution panel', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
@@ -121,6 +126,8 @@ category('Widgets: Mutation cliffs', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -128,6 +135,7 @@ category('Widgets: Mutation cliffs', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
@@ -156,6 +164,8 @@ category('Widgets: Actions', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -163,6 +173,7 @@ category('Widgets: Actions', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('New view', async () => {
@@ -249,6 +260,8 @@ category('Widgets: Identity', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -256,6 +269,7 @@ category('Widgets: Identity', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Identity', async () => {

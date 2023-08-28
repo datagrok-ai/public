@@ -46,6 +46,9 @@ category('Viewers: Monomer-Position', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
     mpViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
@@ -54,6 +57,7 @@ category('Viewers: Monomer-Position', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Tooltip', async () => {
@@ -102,6 +106,9 @@ category('Viewers: Most Potent Residues', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
     mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
@@ -110,6 +117,7 @@ category('Viewers: Most Potent Residues', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Tooltip', async () => {
@@ -142,6 +150,9 @@ category('Viewers: Logo Summary Table', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
     lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
@@ -150,6 +161,7 @@ category('Viewers: Logo Summary Table', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Properties', async () => {
