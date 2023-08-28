@@ -1110,28 +1110,28 @@ export class PeptidesModel {
     }
 
     if (!this.isToolboxSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1') {
-      let template: string[] = [];
+      let reference: string[] = [];
       const sequencesCol = this.df.getCol(this.settings.sequenceColumnName!);
       const minTemplateLength = this.splitSeqDf.columns.toList()
         .filter((col) => col.stats.missingValueCount === 0).length;
       const calculateIdentityBtn = ui.button('Identity', async () => {
-        let identityScoresCol = calculateIdentity(template, this.splitSeqDf);
+        let identityScoresCol = calculateIdentity(reference, this.splitSeqDf);
         identityScoresCol.name = this.df.columns.getUnusedName(identityScoresCol.name);
         identityScoresCol = this.df.columns.add(identityScoresCol);
-        identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, new Array(template).join(' '));
-      }, 'Calculate identity');
+        identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, new Array(reference).join(' '));
+      }, 'Calculate identity scores for each sequence in dataset given reference');
       const calculateSimilarityBtn = ui.button('Similarity', async () => {
-        let similarityScoresCol = await calculateSimilarity(template, this.splitSeqDf);
+        let similarityScoresCol = await calculateSimilarity(reference, this.splitSeqDf);
         similarityScoresCol.name = this.df.columns.getUnusedName(similarityScoresCol.name);
         similarityScoresCol = this.df.columns.add(similarityScoresCol);
-        similarityScoresCol.setTag(C.TAGS.SIMILARITY_TEMPLATE, new Array(template).join(' '));
-      }, 'Calculate similarity');
-      const warnings = {rowIndex: true, sequenceFormat: true, templateLength: true, templateGaps: true};
-      const templateInput = ui.stringInput('Template', this.identityTemplate, async () => {
-        template = [];
+        similarityScoresCol.setTag(C.TAGS.SIMILARITY_TEMPLATE, new Array(reference).join(' '));
+      }, 'Calculate similarity scores for each sequence in dataset given reference');
+      const warnings = {rowIndex: true, sequenceFormat: true, referenceLength: true, referenceGaps: true};
+      const referenceInput = ui.stringInput('Reference', this.identityTemplate, async () => {
+        reference = [];
         let disableButtons = false;
-        this.identityTemplate = templateInput.stringValue;
-        const rowIndex = parseInt(templateInput.stringValue);
+        this.identityTemplate = referenceInput.stringValue;
+        const rowIndex = parseInt(referenceInput.stringValue);
         try {
           if (!isNaN(rowIndex)) {
             const selectedIndexes = this.df.filter.getSelectedIndexes();
@@ -1147,7 +1147,7 @@ export class PeptidesModel {
           if (this.identityTemplate.length === 0)
             disableButtons = true;
           else
-            template = await getTemplate(this.identityTemplate, sequencesCol);
+            reference = await getTemplate(this.identityTemplate, sequencesCol);
         } catch (e) {
           if (warnings.sequenceFormat)
             grok.shell.warning(`Only ${sequencesCol.getTag(DG.TAGS.UNITS)} sequence format is supported.`);
@@ -1155,16 +1155,16 @@ export class PeptidesModel {
           warnings.sequenceFormat = false;
           disableButtons = true;
         } finally {
-          if (template?.length < minTemplateLength) {
-            if (warnings.templateLength)
-              grok.shell.warning(`Template should be at least ${minTemplateLength} amino acids long.`);
-            warnings.templateLength = false;
+          if (reference?.length < minTemplateLength) {
+            if (warnings.referenceLength)
+              grok.shell.warning(`Reference should be at least ${minTemplateLength} amino acids long.`);
+            warnings.referenceLength = false;
             disableButtons = true;
           }
-          if (template.includes('') || template.includes('-')) {
-            if (warnings.templateGaps)
-              grok.shell.warning('Template shouldn\'t contain gaps or empty cells.');
-            warnings.templateGaps = false;
+          if (reference.includes('') || reference.includes('-')) {
+            if (warnings.referenceGaps)
+              grok.shell.warning('Reference shouldn\'t contain gaps or empty cells.');
+            warnings.referenceGaps = false;
             disableButtons = true;
           }
           if (disableButtons) {
@@ -1177,12 +1177,12 @@ export class PeptidesModel {
           warnings[key] = true;
         calculateIdentityBtn.disabled = false;
         calculateSimilarityBtn.disabled = false;
-      }, {placeholder: 'Sequence or row index...'});
-      templateInput.setTooltip('Template sequence. Can be row index, peptide ID or sequence.');
-      templateInput.fireChanged();
+      }, {placeholder: `${sequencesCol.getTag(DG.TAGS.UNITS)} sequence or row index...`});
+      referenceInput.setTooltip('Reference sequence. Can be row index or sequence.');
+      referenceInput.fireChanged();
       const acc = this.analysisView.toolboxPage.accordion;
       acc.addPane('Identity and Similarity',
-        () => ui.narrowForm([templateInput, ui.buttonsInput([calculateIdentityBtn, calculateSimilarityBtn]) as any]),
+        () => ui.narrowForm([referenceInput, ui.buttonsInput([calculateIdentityBtn, calculateSimilarityBtn]) as any]),
         true, acc.panes[0]);
       this.isToolboxSet = true;
     }
