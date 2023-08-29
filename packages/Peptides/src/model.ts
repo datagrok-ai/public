@@ -34,6 +34,7 @@ import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './packag
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {calculateIdentity, calculateSimilarity} from './widgets/similarity';
+import {getDataSliceWidget} from './widgets/selection';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -472,6 +473,7 @@ export class PeptidesModel {
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
+    acc.addPane('Selection', () => getDataSliceWidget(table, trueModel).root);
 
     return acc;
   }
