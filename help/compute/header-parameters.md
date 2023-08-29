@@ -1,5 +1,5 @@
 ---
-title: "Header annotation comments"
+title: "Liso of script header parameters"
 ---
 
 This page contains detailed description
@@ -38,7 +38,7 @@ Also, it is possible to add custom parameter using "meta." prefix.
 | grok                     | Grok Scripting |
 | JavaScript               | JavaScript     |
 
-### Format template for 'input' and 'output'
+## Input and output parameters
 
 ```
 #<direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]
