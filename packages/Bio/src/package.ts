@@ -751,8 +751,6 @@ export function searchSubsequenceEditor(call: DG.FuncCall) {
 //input: column macromolecules
 //editor: Bio:SearchSubsequenceEditor
 export function SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
-  grok.shell.info('huheuder');
-  const fg = grok.shell.tv.getFiltersGroup({createDefaultFilters: false});
   grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
     type: "Bio:bioSubstructureFilter",
     column: macromolecules.name,

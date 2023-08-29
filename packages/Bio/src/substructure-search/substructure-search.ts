@@ -100,7 +100,7 @@ export class SubstructureSearchDialog {
           matches = await helmSubstructureSearch(substructure, this.col);
         else
           matches = linearSubstructureSearch(substructure, this.col);
-        this.col.dataFrame.selection.copyFrom(matches);
+        this.col.dataFrame.filter.and(matches);
       })
       .show();
   }
