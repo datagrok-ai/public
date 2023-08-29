@@ -322,6 +322,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds, showAxes, showTitle);
 
     const dataBounds = getChartBounds(data);
+    if (dataBounds.x <= 0 && data.chartOptions) data.chartOptions.logX = false;
+    if (dataBounds.y <= 0 && data.chartOptions) data.chartOptions.logY = false;
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
