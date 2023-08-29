@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
-import {getSplitterForColumn} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {TAGS as bioTags} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -102,12 +102,13 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
   ]);
 }
 
-export async function getTemplate(sequence: string, seqCol?: DG.Column<string>): Promise<ISeqSplitted> {
+export async function getTemplate(sequence: string, seqCol?: DG.Column<string>): Promise<string[]> {
   if (typeof seqCol === 'undefined') {
     const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
     await grok.data.detectSemanticTypes(tempDf);
     seqCol = tempDf.getCol('sequence');
   }
-  const splitter = getSplitterForColumn(seqCol);
-  return splitter(sequence);
+  // const splitter = getSplitterForColumn(seqCol);
+  const splitter = getSplitter(seqCol.getTag(DG.TAGS.UNITS), seqCol.getTag(bioTags.separator));
+  return splitter(sequence) as string[];
 }

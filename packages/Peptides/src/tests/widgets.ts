@@ -286,5 +286,5 @@ category('Widgets: Identity', () => {
     const identityCol = await calculateSimilarity(template, model.splitSeqDf);
     expect(identityCol.get(0), 1, 'Expected 1 identity score when sequence is matching template');
     expectFloat(identityCol.get(3)!, 0, 0.001, 'Expected 7 identity score agains sequence at position 3');
-  })
+  });
 });

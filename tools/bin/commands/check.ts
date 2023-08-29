@@ -359,21 +359,21 @@ export function checkChangelog(packagePath: string, json: PackageFile) {
   try {
     clf = fs.readFileSync(path.join(packagePath, 'CHANGELOG.md'), {encoding: 'utf-8'});
   } catch (e) {
-    return ['CHANGELOG.md file does not exist'];
+    return ['CHANGELOG.md file does not exist\n'];
   }
   let regex = /^##[^#].*$/gm;
   const h2 = clf.match(regex);
-  if (!h2) return ['No versions found in CHANGELOG.md'];
+  if (!h2) return ['No versions found in CHANGELOG.md\n'];
   regex = /^## \d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\)$/;
   for (const h of h2) {
     if (!regex.test(h))
-      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)`);
+      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)\n`);
   }
   regex = /^## (\d+\.\d+\.\d+)/;
   const v1 = h2[0].match(regex)?.[1];
   const v2 = h2[1]?.match(regex)?.[1];
   if (v1 !== json.version && v2 !== json.version)
-    warnings.push(`Latest package version (${json.version}) is not in CHANGELOG`);
+    warnings.push(`Latest package version (${json.version}) is not in CHANGELOG\n`);
 
   return warnings;
 }

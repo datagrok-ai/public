@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.13.13 (2023-08-29)
+
+### Features
+
+- HistoryInput redesigned
+
 ## 1.13.9 (2023-08-23)
 
 ### Fixed bugs
