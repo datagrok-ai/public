@@ -216,6 +216,12 @@ Resources:
           - Arn
       MemorySize: 128
       Timeout: 600
+      VpcConfig:
+        SecurityGroupIds:
+          - Ref: DatagrokSecurityGroup
+        SubnetIds:
+          - Ref: PrivateSubnet1
+          - Ref: PrivateSubnet2
   SettingsSetLambdaFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete

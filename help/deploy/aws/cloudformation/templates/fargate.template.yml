@@ -583,6 +583,107 @@ Resources:
       IpProtocol: TCP
       ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
+  Cvm80IngressVPC:
+    Properties:
+      CidrIp:
+        Ref: CIDR
+      Description:
+        Fn::Sub: "${AWS::StackName} VPC 80/tcp on CVM ALB for JKG, JN, GC"
+      FromPort: 80
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm443IngressVPC:
+    Properties:
+      CidrIp:
+        Ref: CIDR
+      Description:
+        Fn::Sub: "${AWS::StackName} VPC 443/tcp on CVM ALB for JKG, JN, GC"
+      FromPort: 443
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm5005IngressVPC:
+    Properties:
+      CidrIp:
+        Ref: CIDR
+      Description:
+        Fn::Sub: "${AWS::StackName} VPC 5005/tcp on CVM ALB for H2O GH"
+      FromPort: 5005
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 5005
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm54321IngressVPC:
+    Properties:
+      CidrIp:
+        Ref: CIDR
+      Description:
+        Fn::Sub: "${AWS::StackName} VPC 54321/tcp on CVM ALB for H2O"
+      FromPort: 54321
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 54321
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm80IngressNatGW:
+    Condition: InternetEgressAccess
+    Properties:
+      CidrIp:
+        Ref: NatGatewayEIP
+      Description:
+        Fn::Sub: "${AWS::StackName} NatGW 80/tcp on CVM ALB for JKG, JN, GC"
+      FromPort: 80
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm443IngressNatGW:
+    Condition: InternetEgressAccess
+    Properties:
+      CidrIp:
+        Ref: NatGatewayEIP
+      Description:
+        Fn::Sub: "${AWS::StackName} NatGW 443/tcp on CVM ALB for JKG, JN, GC"
+      FromPort: 443
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm5005IngressNatGW:
+    Condition: InternetEgressAccess
+    Properties:
+      CidrIp:
+        Ref: NatGatewayEIP
+      Description:
+        Fn::Sub: "${AWS::StackName} NatGW 5005/tcp on CVM ALB for H2O GH"
+      FromPort: 5005
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 5005
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm54321IngressNatGW:
+    Condition: InternetEgressAccess
+    Properties:
+      CidrIp:
+        Ref: NatGatewayEIP
+      Description:
+        Fn::Sub: "${AWS::StackName} NatGW 54321/tcp on CVM ALB for H2O"
+      FromPort: 54321
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 54321
+    Type: AWS::EC2::SecurityGroupIngress
+
   DatagrokSecurityGroup:
     Properties:
       GroupDescription:
@@ -679,6 +780,56 @@ Resources:
         Ref: InternetSubnetAllow
       Description:
         Fn::Sub: "${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server"
+      FromPort: 443
+      GroupId:
+        Ref: ALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok80IngressVPC:
+    Properties:
+      CidrIp:
+        Ref: CIDR
+      Description:
+        Fn::Sub: "${AWS::StackName} VPC 80/tcp on Datagrok ALB for Datagrok Server"
+      FromPort: 80
+      GroupId:
+        Ref: ALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok443IngressVPC:
+    Properties:
+      CidrIp:
+        Ref: CIDR
+      Description:
+        Fn::Sub: "${AWS::StackName} VPC 443/tcp on Datagrok ALB for Datagrok Server"
+      FromPort: 443
+      GroupId:
+        Ref: ALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok80IngressNatGW:
+    Condition: InternetEgressAccess
+    Properties:
+      CidrIp:
+        Ref: NatGatewayEIP
+      Description:
+        Fn::Sub: "${AWS::StackName} NatGW 80/tcp on Datagrok ALB for Datagrok Server"
+      FromPort: 80
+      GroupId:
+        Ref: ALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok443IngressNatGW:
+    Condition: InternetEgressAccess
+    Properties:
+      CidrIp:
+        Ref: NatGatewayEIP
+      Description:
+        Fn::Sub: "${AWS::StackName} NatGW 443/tcp on Datagrok ALB for Datagrok Server"
       FromPort: 443
       GroupId:
         Ref: ALBSecurityGroup
@@ -2566,6 +2717,12 @@ Resources:
           - Arn
       MemorySize: 128
       Timeout: 600
+      VpcConfig:
+        SecurityGroupIds:
+          - Ref: DatagrokSecurityGroup
+        SubnetIds:
+          - Ref: PrivateSubnet1
+          - Ref: PrivateSubnet2
   S3EmptyLambdaFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
