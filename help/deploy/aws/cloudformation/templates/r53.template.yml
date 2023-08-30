@@ -1,0 +1,368 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components to ECS Fargate in new VPC. Template also creates ACM and DNS records."
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Client Endpoint configuration"
+        Parameters:
+          - DNSZoneId
+          - DNSDomain
+    ParameterLabels:
+      DNSZoneId:
+        default: "DNSZoneId: AWS Route53 Hosted Zone ID"
+      DNSDomain:
+        default: "DNSDomain: DNS domain"
+Parameters:
+  DNSZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Select existing Route53 Hosted Zone ID for Datagrok and CVM client endpoints.
+  DNSDomain:
+    Type: String
+    Description: Specify DNS domain for Datagrok and CVM client endpoints. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName-datagrok.subdomain.domain.com'.
+Conditions:
+  CreateDNS:
+    Fn::And:
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: DNSDomain
+              - ''
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: DNSZoneId
+              - ''
+  CreateSSL:
+    Fn::And:
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: DNSDomain
+              - ''
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: DNSZoneId
+              - ''
+Resources:
+  DatagrokDNS:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      Type: A
+      AliasTarget:
+        HostedZoneId:
+          Fn::GetAtt:
+            - LoadBalancerDatagrok
+            - CanonicalHostedZoneID
+        DNSName:
+          Fn::GetAtt:
+            - LoadBalancerDatagrok
+            - DNSName
+      Comment:
+        Fn::Sub: "${AWS::StackName} Public Datagrok DNS"
+      HostedZoneId:
+        Ref: DNSZoneId
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok.${domain}."
+          - domain:
+              Ref: DNSDomain
+  CvmDNS:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDNS
+    Properties:
+      Type: A
+      AliasTarget:
+        HostedZoneId:
+          Fn::GetAtt:
+            - LoadBalancerCvm
+            - CanonicalHostedZoneID
+        DNSName:
+          Fn::GetAtt:
+            - LoadBalancerCvm
+            - DNSName
+      Comment:
+        Fn::Sub: "${AWS::StackName} Public Datagrok CVM DNS"
+      HostedZoneId:
+        Ref: DNSZoneId
+      Name:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok-cvm.${domain}."
+          - domain:
+              Ref: DNSDomain
+  ArnSSLCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateSSL
+    Properties:
+      DomainName:
+        Fn::Sub:
+          - "${AWS::StackName}-datagrok.${domain}"
+          - domain:
+              Ref: DNSDomain
+      DomainValidationOptions:
+        - DomainName:
+            Fn::Sub:
+              - "${AWS::StackName}-datagrok.${domain}"
+              - domain:
+                  Ref: DNSDomain
+          HostedZoneId:
+            Ref: DNSZoneId
+        - DomainName:
+            Fn::Sub:
+              - "${AWS::StackName}-datagrok-cvm.${domain}"
+              - domain:
+                  Ref: DNSDomain
+          HostedZoneId:
+            Ref: DNSZoneId
+
+      KeyAlgorithm: RSA_2048
+      SubjectAlternativeNames:
+        - Fn::Sub:
+            - "${AWS::StackName}-datagrok-cvm.${domain}"
+            - domain:
+                Ref: DNSDomain
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName}-datagrok"
+      ValidationMethod: DNS
+
+  SettingsSetLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName:
+            Fn::Sub: "${AWS::StackName}-settings-lambda-logging"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-SettingsSetLambdaFunction-*:*"
+  SettingsSetLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Sets required settings for Datagrok
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import urllib3
+          from urllib3.util import Retry
+          import cfnresponse
+
+          http = urllib3.PoolManager()
+          retries = 10
+          retry = Retry(
+              total=retries,
+              read=retries,
+              connect=retries,
+              status_forcelist=tuple(range(401, 600)))
+
+
+          def handler(event, context):
+              try:
+                  status = 0
+                  if event['RequestType'] != 'Delete':
+                      key = event['ResourceProperties']['DevKey']
+                      host = event['ResourceProperties']['Host']
+                      cvmClient = event['ResourceProperties']['cvmClient']
+
+                      http.request("GET", f'https://{host}/api/info/server', retries=retry)
+
+                      r = http.request("POST", f'https://{host}/api/users/login/dev/{key}', retries=retry)
+                      auth = json.loads(r.data)['token']
+                      get_settings = http.request("GET", f'https://{host}/api/admin/plugins/scripts/settings',
+                                                  headers={'Authorization': auth},
+                                                  retries=retry)
+                      oldSettings = json.loads(get_settings.data)
+                      new_settings = {
+                          '#type': oldSettings['settings']['#type'],
+                          'apiUrl': oldSettings['settings']['apiUrl'],
+                          'cvmUrl': oldSettings['settings']['cvmUrl'],
+                          'h2oUrl': oldSettings['settings']['h2oUrl'],
+                          'cvmUrlClient': cvmClient,
+                          'cvmSplit': oldSettings['settings']['cvmSplit'],
+                          'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],
+                          'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
+                      }
+                      setSettings = http.request("POST", f'https://{host}/api/admin/plugins/scripts/settings',
+                                                 body=json.dumps(new_settings),
+                                                 headers={'Authorization': auth, "Content-Type": "application/json"},
+                                                 retries=retry)
+                      status = setSettings.status
+                      if status != 200:
+                          raise Exception(f'Could not update settings for {host} with status code {status}')
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status': status})
+              except Exception as e:
+                  print(type(e).__name__, e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception': f"{type(e).__name__}: {e}"})
+      Handler: index.handler
+      Runtime: python3.11
+      Role:
+        Fn::GetAtt:
+          - SettingsSetLambdaRole
+          - Arn
+      MemorySize: 128
+      Timeout: 600
+  SettingsSetLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+          - "/aws/lambda/${function_name}"
+          - function_name:
+              Ref: SettingsSetLambdaFunction
+      RetentionInDays: 1
+  SettingsSet:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - DatagrokService
+      - SettingsSetLambdaFunctionLogGroup
+    Properties:
+      DevKey:
+        Fn::Sub:
+          - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
+          - secret:
+              Ref: AdminDevKey
+      Host:
+        Ref: DatagrokDNS
+      cvmClient:
+        Ref: CvmDNS
+      ServiceToken:
+        Fn::GetAtt:
+          - SettingsSetLambdaFunction
+          - Arn
+
+  R53CleanupLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName:
+            Fn::Sub: "${AWS::StackName}-r53-lambda"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-R53CleanupLambdaFunction-*:*"
+              - Effect: Allow
+                Action:
+                  - 'acm:DescribeCertificate'
+                Resource:
+                  Ref: ArnSSLCertificate
+              - Effect: Allow
+                Action:
+                  - 'route53:ListResourceRecordSets'
+                  - 'route53:ChangeResourceRecordSets'
+                Resource:
+                  Fn::Sub:
+                    - "arn:${AWS::Partition}:route53:::hostedzone/${zone}"
+                    - zone:
+                        Ref: DNSZoneId
+  R53CleanupLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Removes obsolete validation records from AWS
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+
+
+          def handler(event, context):
+              responseData = {}
+              try:
+                  zone_id = event['ResourceProperties']['DNSZone']
+                  certArn = event['ResourceProperties']['SSLCertificate']
+
+                  if event['RequestType'] == 'Delete':
+                      session = boto3.Session()
+                      acm = session.client('acm')
+                      response = acm.describe_certificate(CertificateArn=certArn)
+                      records = []
+                      for d in response['Certificate']['DomainValidationOptions']:
+                          records.append(d['ResourceRecord'])
+                      r53 = session.client('route53')
+                      for r in records:
+                          response = r53.list_resource_record_sets(HostedZoneId=zone_id, StartRecordName=r['Name'], MaxItems='1')
+                          if r['Name'] in response['ResourceRecordSets'][0]['Name']:
+                              r53.change_resource_record_sets(
+                                  HostedZoneId=zone_id,
+                                  ChangeBatch={
+                                      'Changes': [{
+                                          'Action': 'DELETE',
+                                          'ResourceRecordSet': response['ResourceRecordSets'][0]
+                                      }]
+                                  }
+                              )
+                              print(f'Deleted: {response["ResourceRecordSets"][0]}')
+                          else:
+                              print(f'Record {r["Name"]} does not exist')
+                      responseData['Status'] = 200
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
+              except Exception as e:
+                  print(type(e).__name__, e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, responseData)
+      Handler: index.handler
+      Runtime: python3.11
+      Role:
+        Fn::GetAtt:
+          - R53CleanupLambdaRole
+          - Arn
+      MemorySize: 128
+      Timeout: 600
+  R53CleanupLambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+          - "/aws/lambda/${function_name}"
+          - function_name:
+              Ref: R53CleanupLambdaFunction
+      RetentionInDays: 1
+  R53Cleanup:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - R53CleanupLambdaFunctionLogGroup
+    Properties:
+      SSLCertificate:
+        Ref: ArnSSLCertificate
+      DNSZone:
+        Ref: DNSZoneId
+      ServiceToken:
+        Fn::GetAtt:
+          - R53CleanupLambdaFunction
+          - Arn
+Outputs:
+  DatagrokEndpoint:
+    Description: Datagrok endpoint
+    Value:
+      Ref: DatagrokDNS
