@@ -375,8 +375,6 @@ jobs:
           context: packages/${{ matrix.package }}/dockerfiles
           load: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: General checks
         run: |
@@ -478,8 +476,6 @@ jobs:
           context: packages/${{ matrix.package }}/dockerfiles
           push: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Commit package-lock.json
         id: git
