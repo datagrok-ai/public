@@ -2759,12 +2759,20 @@ Resources:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-datagrok"
-      Scheme: internet-facing
+      Scheme:
+        'Fn::If':
+          - InternetIngressAccess
+          - 'internet-facing'
+          - 'internal'
       SecurityGroups:
         - Ref: ALBSecurityGroup
       Subnets:
-        - Ref: PublicSubnet1
-        - Ref: PublicSubnet2
+        'Fn::If':
+          - InternetIngressAccess
+          - - Ref: PublicSubnet1
+            - Ref: PublicSubnet2
+          - - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
       Tags:
         - Key: Name
           Value:
@@ -2780,12 +2788,20 @@ Resources:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-datagrok-cvm"
-      Scheme: internet-facing
+      Scheme:
+        'Fn::If':
+          - InternetIngressAccess
+          - 'internet-facing'
+          - 'internal'
       SecurityGroups:
         - Ref: CvmALBSecurityGroup
       Subnets:
-        - Ref: PublicSubnet1
-        - Ref: PublicSubnet2
+        'Fn::If':
+          - InternetIngressAccess
+          - - Ref: PublicSubnet1
+            - Ref: PublicSubnet2
+          - - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
       Tags:
         - Key: Name
           Value:
