@@ -1121,13 +1121,13 @@ export class PeptidesModel {
         identityScoresCol.name = this.df.columns.getUnusedName(identityScoresCol.name);
         identityScoresCol = this.df.columns.add(identityScoresCol);
         identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, new Array(reference).join(' '));
-      }, 'Calculate identity scores for each sequence in dataset given reference');
+      }, 'Adds a column with fraction of matching monomers');
       const calculateSimilarityBtn = ui.button('Similarity', async () => {
         let similarityScoresCol = await calculateSimilarity(reference, this.splitSeqDf);
         similarityScoresCol.name = this.df.columns.getUnusedName(similarityScoresCol.name);
         similarityScoresCol = this.df.columns.add(similarityScoresCol);
         similarityScoresCol.setTag(C.TAGS.SIMILARITY_TEMPLATE, new Array(reference).join(' '));
-      }, 'Calculate similarity scores for each sequence in dataset given reference');
+      }, 'Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities');
       const warnings = {rowIndex: true, sequenceFormat: true, referenceLength: true, referenceGaps: true};
       const referenceInput = ui.stringInput('Reference', this.identityTemplate, async () => {
         reference = [];
