@@ -1,27 +1,26 @@
 # Bio changelog
 
-## 2.9.0 (WIP)
-
-*Dependency: datagrok-api >= 1.13.3*
+## 2.9.0 (2023-08-30)
 
 ### Features
 
-* WebLogo: add property showPositionLabels
-* WebLogo: optimized with splitterAsFastaSimple
-* VdRegionsViewer: optimized preventing rebuild on positionWidth changed and resize
-* VdRegionsViewer: to fit WebLogo enclosed on positionWidth of value 0
-* WebLogo: disable userEditable for fixWidth
+* WebLogo: add property `showPositionLabels`.
+* WebLogo: optimized with `splitterAsFastaSimple`.
+* WebLogo: disable `userEditable` for `fixWidth`.
+* VdRegionsViewer: optimized preventing rebuild on `positionWidth` changed and resize.
+* VdRegionsViewer: to fit WebLogo enclosed on `positionWidth` of value 0.
+* Introduced sequence identity and similarity scoring.
 
-### Bug fixes 
+### Bug fixes
 
-* Fix vdRegionsViewer viewer package function name consistency
-* GROK-13310: Bio | Tools: Fix Split to monomers for multiple runs
-* GROK-12675: Bio | Tools: Fix Composition dialog error on selection column
-* Allow characters '(', ')', ',', '-', '_' in monomer names for fasta splitter
-* WebLogo: Fix horizontal alignment to left while fixWidth
-* WebLogo: Fix layout for fixWidth, fitArea, and normal modes
-* VdRegionsViewer: Fix postponed rendering for tests
-* MacromoleculeDifferenceCellRenderer: Fix to do not use UnitsHandler
+* Fix vdRegionsViewer viewer package function name consistency.
+* GROK-13310: Bio | Tools: Fix Split to monomers for multiple runs.
+* GROK-12675: Bio | Tools: Fix the Composition dialog error on the selection column.
+* Allow characters '(', ')', ',', '-', '_' in monomer names for fasta splitter.
+* WebLogo: Fix horizontal alignment to the left while `fixWidth``.
+* WebLogo: Fix layout for `fixWidth`, `fitArea`, and normal modes.
+* VdRegionsViewer: Fix postponed rendering for tests.
+* MacromoleculeDifferenceCellRenderer: Fix to not use `UnitsHandler`.
 
 ## 2.8.2 (2023-08-01)
 
@@ -31,12 +30,12 @@ This release focuses on improving the monomer cell renderer.
 
 ### Features
 
-* Added sample datasets for natural and synthetic peptide sequences
-* Added sample dataset for cyclic sequences with HELM notation
+* Added sample datasets for natural and synthetic peptide sequences.
+* Added sample dataset for cyclic sequences with HELM notation.
 
 ### Bug fixes
 
-* GROK-13659: Bio | Tools: Fix MaxMonomerLength for Macromolecule cell renderer
+* GROK-13659: Bio | Tools: Fix MaxMonomerLength for Macromolecule cell renderer.
 
 ## 2.8.1 (2023-07-24)
 
