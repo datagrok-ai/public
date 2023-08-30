@@ -1,10 +1,18 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
+  CreateDNS:
+    Fn::Equals:
+    - Ref: ArnSSLCertificate
+    - ''
   CreatePublicSubnets:
     Fn::Or:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
+  CreateSSL:
+    Fn::Equals:
+    - Ref: ArnSSLCertificate
+    - ''
   InternetEgressAccess:
     Fn::Equals:
     - Ref: InternetEgressAccess
@@ -14,7 +22,42 @@ Conditions:
     - Ref: InternetIngressAccess
     - 'true'
 Description: Datagrok template to deploy all components to ECS Fargate in new VPC.
-  Template also creates ACM and DNS records.
+  DNS and ACM should be configured manually.
+Mappings:
+  Images:
+    Datagrok:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/datagrok
+    GrokCompute:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/grok_compute
+    GrokConnect:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/grok_connect
+    GrokSpawner:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/grok_spawner
+    H2o:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/h2o
+    JKG:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/jupyter_kernel_gateway
+    JN:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/jupyter_notebook
+    Kaniko:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/kaniko
+      version: v1.12.1
+    Searchdomain:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/ecs-searchdomain-sidecar
+      version: '1.0'
+    Smtp:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/smtp
+      version: 1.0.0
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -28,37 +71,99 @@ Metadata:
     - Label:
         default: Client Endpoint configuration
       Parameters:
-      - DNSZoneId
-      - DNSZone
+      - ArnSSLCertificate
+    - Label:
+        default: Service version
+      Parameters:
+      - DatagrokVersion
+      - GrokConnectVersion
+      - GrokSpawnerVersion
+      - JKGVersion
+      - JNVersion
+      - GrokComputeVersion
+      - H2oVersion
     ParameterLabels:
+      ArnSSLCertificate:
+        default: 'ArnSSLCertificate: AWS ACM certificate ARN'
       CIDR:
         default: 'CIDR: VPC CIDR'
-      DNSZone:
-        default: 'DNSZone: AWS Route53 DNS Zone'
+      DatagrokVersion:
+        default: Datagrok Version
+      GrokComputeVersion:
+        default: Grok Compute Version
+      GrokConnectVersion:
+        default: Grok Connect Version
+      GrokSpawnerVersion:
+        default: Grok Spawner Version
+      H2oVersion:
+        default: H2O Version
       InternetEgressAccess:
         default: 'InternetEgressAccess: Access to internet'
       InternetIngressAccess:
         default: 'InternetIngressAccess: Access from internet'
       InternetSubnetAllow:
         default: 'InternetSubnetAllow: Allow connect from CIDR'
+      JKGVersion:
+        default: Jupyter Kernel Gateway Version
+      JNVersion:
+        default: Jupyter Notebook Version
+Outputs:
+  CvmLoadBalancerDNSName:
+    Condition: CreateDNS
+    Description: Datagrok CVM Load Balancer DNS to create CNAME record
+    Value:
+      Fn::GetAtt:
+      - LoadBalancerCvm
+      - DNSName
+  DatagrokAdminPassword:
+    Description: Admin password for first login
+    Value:
+      Ref: AdminPassword
+  DatagrokLoadBalancerDNSName:
+    Condition: CreateDNS
+    Description: Datagrok Load Balancer DNS to create CNAME record
+    Value:
+      Fn::GetAtt:
+      - LoadBalancerDatagrok
+      - DNSName
 Parameters:
+  ArnSSLCertificate:
+    AllowedPattern: (arn:([^:\n]*):([^:\n]*):([^:\n]*):([^:\n]*):(([^:\/\n]*)[:\/])?(.*))?
+    Description: The certificate is used for both Datagrok and CVM client endpoints.
+      If you do not use Route53 for DNS management, it is required to upload certificate
+      to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html)
+      and specify the Certificate ARN here.
+    Type: String
   CIDR:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
     Default: 10.0.0.0/17
     Description: CIDR block for the new Datagrok VPC
     Type: String
-  DNSZone:
-    Default: ''
-    Description: Specify existing Route53 DNS Hosted Zone Name for Datagrok and CVM
-      client endpoints. For example, for endpoint 'datagrok.example.com' set 'example.com'.
-      The result DNS endpoints will consist of cloudformation stack name and datagrok
-      service.
+  DatagrokVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
+    Default: 1.16.3
+    Description: Enter Datagrok docker image version.
     Type: String
-  DNSZoneId:
-    Default: ''
-    Description: Specify existing Route53 DNS Hosted Zone ID for Datagrok and CVM
-      client endpoints.
-    Type: AWS::Route53::HostedZone::Id
+  GrokComputeVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.5.4
+    Description: Enter Grok Compute docker image version.
+    Type: String
+  GrokConnectVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 2.1.8
+    Description: Enter Grok Connect docker image version.
+    Type: String
+  GrokSpawnerVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.4.4
+    Description: Enter Grok Spawner docker image version.
+    Type: String
+  H2oVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.1.1
+    Description: Enter Datagrok H2O docker image version.
+    Type: String
   InternetEgressAccess:
     AllowedValues:
     - 'true'
@@ -79,8 +184,20 @@ Parameters:
     Type: String
   InternetSubnetAllow:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
-    Default: 0.0.0.0/0
-    Description: Subnet which will have access to Datagrok client endpoints
+    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0
+      to allow all IP addresses access, or another CIDR range.
+    Type: String
+  JKGVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.6.1
+    Description: Enter Datagrok Jupyter Kernel Gateway docker image version. Default
+      is 'latest'.
+    Type: String
+  JNVersion:
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+    Default: 1.1.1
+    Description: Enter Datagrok Jupyter Notebook docker image version. Default is
+      'latest'.
     Type: String
 Resources:
   ALBIntSecurityGroup:
@@ -141,14 +258,26 @@ Resources:
       VpcId:
         Ref: VPC
     Type: AWS::EC2::SecurityGroup
+  AdminDevKey:
+    Properties:
+      Description: Datagrok Admin user developer key
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        PasswordLength: 24
+        RequireEachIncludedType: true
+        SecretStringTemplate: '{"user": "admin"}'
+    Type: AWS::SecretsManager::Secret
   AdminPassword:
     Properties:
-      Length: 16
-      ServiceToken:
-        Fn::GetAtt:
-        - RandomStringLambdaFunction
-        - Arn
-    Type: AWS::CloudFormation::CustomResource
+      Description: Datagrok Admin user first-login password
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        PasswordLength: 16
+        RequireEachIncludedType: true
+        SecretStringTemplate: '{"user": "admin"}'
+    Type: AWS::SecretsManager::Secret
   CloudMap:
     Properties:
       Description: ${AWS::StackName} Service Map for Datagrok
@@ -290,28 +419,6 @@ Resources:
       - Key: datagrok.component
         Value: cvm
     Type: AWS::ECS::Cluster
-  CvmDNS:
-    Condition: CreateDNS
-    Properties:
-      Comment:
-        Fn::Sub: ${AWS::StackName} Public Datagrok CVM DNS
-      HostedZoneId:
-        DNSName:
-          Fn::GetAtt:
-          - LoadBalancerCvm
-          - DNSName
-        Fn::GetAtt:
-        - LoadBalancerCvm
-        - CanonicalHostedZoneID
-      HostedZoneName:
-        Ref: DNSZone
-      MultiValueAnswer: Boolean
-      Name:
-        Fn::Sub:
-        - ${AWS::StackName}-datagrok-cvm.${domain}.
-        - domain:
-            Ref: DNSZone
-    Type: AWS::Route53::RecordSet
   CvmEgress:
     Properties:
       Description:
@@ -324,6 +431,17 @@ Resources:
       IpProtocol: TCP
       ToPort: 65535
     Type: AWS::EC2::SecurityGroupEgress
+  CvmInsightsLogGroup:
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+        - /aws/ecs/containerinsights/${cluster_name}/performance
+        - cluster_name:
+            Ref: CvmCluster
+      RetentionInDays: 1
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
   CvmPrivateDNS:
     Properties:
       AliasTarget:
@@ -453,10 +571,15 @@ Resources:
       Engine: postgres
       EngineVersion: '12.15'
       MasterUserPassword:
-        Fn::GetAtt:
-        - DbAdminPassword
-        - RandomString
-      MasterUsername: superuser
+        Fn::Sub:
+        - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+        - secret:
+            Ref: DatagrokDbAdminUser
+      MasterUsername:
+        Fn::Sub:
+        - '{{resolve:secretsmanager:${secret}:SecretString:user}}'
+        - secret:
+            Ref: DatagrokDbAdminUser
       MultiAZ: false
       Port: '5432'
       PubliclyAccessible: false
@@ -604,28 +727,26 @@ Resources:
       IpProtocol: TCP
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
-  DatagrokDNS:
-    Condition: CreateDNS
+  DatagrokDbAdminUser:
     Properties:
-      Comment:
-        Fn::Sub: ${AWS::StackName} Public Datagrok DNS
-      HostedZoneId:
-        DNSName:
-          Fn::GetAtt:
-          - LoadBalancerDatagrok
-          - DNSName
-        Fn::GetAtt:
-        - LoadBalancerDatagrok
-        - CanonicalHostedZoneID
-      HostedZoneName:
-        Ref: DNSZone
-      MultiValueAnswer: Boolean
-      Name:
-        Fn::Sub:
-        - ${AWS::StackName}-datagrok.${domain}.
-        - domain:
-            Ref: DNSZone
-    Type: AWS::Route53::RecordSet
+      Description: Datagrok Admin User First-login password
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        PasswordLength: 32
+        RequireEachIncludedType: true
+        SecretStringTemplate: '{"user": "superuser"}'
+    Type: AWS::SecretsManager::Secret
+  DatagrokDbUser:
+    Properties:
+      Description: Datagrok Admin User First-login password
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        PasswordLength: 32
+        RequireEachIncludedType: true
+        SecretStringTemplate: '{"user": "dg"}'
+    Type: AWS::SecretsManager::Secret
   DatagrokEgress:
     Properties:
       Description:
@@ -638,6 +759,17 @@ Resources:
       IpProtocol: TCP
       ToPort: 65535
     Type: AWS::EC2::SecurityGroupEgress
+  DatagrokInsightsLogGroup:
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+        - /aws/ecs/containerinsights/${cluster_name}/performance
+        - cluster_name:
+            Ref: Cluster
+      RetentionInDays: 1
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
   DatagrokPrivateDNS:
     Properties:
       AliasTarget:
@@ -657,34 +789,6 @@ Resources:
         Fn::Sub: datagrok.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
     Type: AWS::Route53::RecordSet
-  DatagrokSSL:
-    Condition: CreateSSL
-    Properties:
-      DomainName:
-        Fn::Sub:
-        - ${AWS::StackName}-datagrok.${domain}
-        - domain:
-            Ref: DNSZone
-      DomainValidationOptions:
-      - DomainName:
-          Fn::Sub:
-          - ${AWS::StackName}-datagrok.${domain}
-          - domain:
-              Ref: DNSZone
-        HostedZoneId:
-          Ref: DNSZoneId
-      KeyAlgorithm: String
-      SubjectAlternativeNames:
-      - Fn::Sub:
-        - ${AWS::StackName}-datagrok-cvm.${domain}.
-        - domain:
-            Ref: DNSZone
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName}-datagrok
-      ValidationMethod: DNS
-    Type: AWS::CertificateManager::Certificate
   DatagrokSecurityGroup:
     Properties:
       GroupDescription:
@@ -758,7 +862,24 @@ Resources:
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -775,34 +896,47 @@ Resources:
         Environment:
         - Name: GROK_MODE
           Value: auto
-        - Name: ADMIN_PASSWORD
-          Value:
-            Fn::GetAtt:
-            - AdminPassword
-            - RandomString
         - Name: GROK_PARAMETERS
           Value:
             Fn::Sub:
-            - '{ "amazonStorageRegion": "${region}", "amazonStorageBucket": "${bucket}",
+            - '{ "amazonStorageRegion": "${AWS::Region}", "amazonStorageBucket": "${bucket}",
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
-              "dbLogin": "datagrok", "dbPassword": "${dbPassword}", "dbAdminLogin":
-              "superuser", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": false,
-              "deployDemo": false, "deployTestDemo": false, "adminPassword": "${adminPassword}"
-              }'
-            - adminPassword:
-                Fn::GetAtt:
-                - AdminPassword
-                - RandomString
+              "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
+              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl":
+              false, "deployDemo": false, "deployTestDemo": false, "adminPassword":
+              "${adminPassword}", "adminDevKey": "${adminDevKey}" }'
+            - adminDevKey:
+                Fn::Sub:
+                - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                - secret:
+                    Ref: AdminDevKey
+              adminPassword:
+                Fn::Sub:
+                - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                - secret:
+                    Ref: AdminPassword
               bucket:
                 Ref: S3
+              dbAdminLogin:
+                Fn::Sub:
+                - '{{resolve:secretsmanager:${secret}:SecretString:user}}'
+                - secret:
+                    Ref: DatagrokDbAdminUser
               dbAdminPassword:
-                Fn::GetAtt:
-                - DbAdminPassword
-                - RandomString
+                Fn::Sub:
+                - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                - secret:
+                    Ref: DatagrokDbAdminUser
+              dbLogin:
+                Fn::Sub:
+                - '{{resolve:secretsmanager:${secret}:SecretString:user}}'
+                - secret:
+                    Ref: DatagrokDbUser
               dbPassword:
-                Fn::GetAtt:
-                - DbPassword
-                - RandomString
+                Fn::Sub:
+                - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                - secret:
+                    Ref: DatagrokDbUser
               dbPort:
                 Fn::GetAtt:
                 - DB
@@ -811,10 +945,22 @@ Resources:
                 Fn::GetAtt:
                 - DB
                 - Endpoint.Address
-              region:
-                Ref: AWS::Region
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/datagrok:1.16.3-split
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Datagrok
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Datagrok
+              - repo
+            tag:
+              Ref: DatagrokVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -843,22 +989,6 @@ Resources:
       TaskRoleArn:
         Ref: TaskRole
     Type: AWS::ECS::TaskDefinition
-  DbAdminPassword:
-    Properties:
-      Length: 32
-      ServiceToken:
-        Fn::GetAtt:
-        - RandomStringLambdaFunction
-        - Arn
-    Type: AWS::CloudFormation::CustomResource
-  DbPassword:
-    Properties:
-      Length: 32
-      ServiceToken:
-        Fn::GetAtt:
-        - RandomStringLambdaFunction
-        - Arn
-    Type: AWS::CloudFormation::CustomResource
   ECSPolicy:
     Properties:
       Description:
@@ -1054,7 +1184,24 @@ Resources:
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -1072,7 +1219,21 @@ Resources:
         - Name: GROK_COMPUTE_NUM_CORES
           Value: '2'
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/grok_compute:1.5.4
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - GrokCompute
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - GrokCompute
+              - repo
+            tag:
+              Ref: GrokComputeVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -1188,7 +1349,24 @@ Resources:
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -1203,7 +1381,21 @@ Resources:
         - Condition: SUCCESS
           ContainerName: ResolvConf
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/grok_connect:2.1.8
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - GrokConnect
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - GrokConnect
+              - repo
+            tag:
+              Ref: GrokConnectVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -1490,7 +1682,24 @@ Resources:
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -1542,7 +1751,21 @@ Resources:
             - logs:
                 Ref: LogGroup
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/grok_spawner:1.4.4
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - GrokSpawner
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - GrokSpawner
+              - repo
+            tag:
+              Ref: GrokSpawnerVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -1848,7 +2071,24 @@ Resources:
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -1863,7 +2103,21 @@ Resources:
         - Condition: SUCCESS
           ContainerName: ResolvConf
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/h2o:1.1.1
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - H2o
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - H2o
+              - repo
+            tag:
+              Ref: H2oVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -2158,7 +2412,24 @@ Resources:
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -2173,7 +2444,21 @@ Resources:
         - Condition: SUCCESS
           ContainerName: ResolvConf
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/jupyter_kernel_gateway:1.6.1
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - JKG
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - JKG
+              - repo
+            tag:
+              Ref: JKGVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -2451,7 +2736,24 @@ Resources:
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
         - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
         Essential: false
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/ecs-searchdomain-sidecar:1.0
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -2466,7 +2768,21 @@ Resources:
         - Condition: SUCCESS
           ContainerName: ResolvConf
         Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/jupyter_notebook:1.1.1
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - JN
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - JN
+              - repo
+            tag:
+              Ref: JNVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -2544,7 +2860,24 @@ Resources:
     Properties:
       ContainerDefinitions:
       - Essential: true
-        Image: 709825985650.dkr.ecr.us-east-1.amazonaws.com/datagrok/kaniko:v1.12.1
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Kaniko
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Kaniko
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Kaniko
+              - repo
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -2925,58 +3258,6 @@ Resources:
       VpcId:
         Ref: VPC
     Type: AWS::EC2::RouteTable
-  RandomStringLambdaExecutionRole:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - sts:AssumeRole
-          Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-        Version: '2012-10-17'
-      Policies:
-      - PolicyDocument:
-          Statement:
-          - Action:
-            - logs:*
-            Effect: Allow
-            Resource: '*'
-          Version: '2012-10-17'
-        PolicyName:
-          Fn::Sub: ${AWS::StackName}-allow-lambda-logging
-    Type: AWS::IAM::Role
-  RandomStringLambdaFunction:
-    Properties:
-      Code:
-        ZipFile: "const response = require(\"cfn-response\");\nconst randomString\
-          \ = (length, chars) => {\n    var result = '';\n    for (var i = length;\
-          \ i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];\n\
-          \    return result;\n}\nexports.handler = (event, context) =>{\n  const\
-          \ str = randomString(event['ResourceProperties']['Length'], '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');\n\
-          \  const responseData = {RandomString: str};\n  response.send(event, context,\
-          \ response.SUCCESS, responseData);\n};\n"
-      Handler: index.handler
-      MemorySize: 128
-      Role:
-        Fn::GetAtt:
-        - RandomStringLambdaExecutionRole
-        - Arn
-      Runtime: nodejs14.x
-      Timeout: 20
-    Type: AWS::Lambda::Function
-  RandomStringLambdaFunctionLogGroup:
-    DeletionPolicy: Delete
-    Properties:
-      LogGroupName:
-        Fn::Sub:
-        - /aws/lambda/${function_name}-${AWS::Region}
-        - function_name:
-            Ref: RandomStringLambdaFunction
-      RetentionInDays: 7
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
   S3:
     Properties:
       BucketEncryption:
@@ -3003,6 +3284,90 @@ Resources:
       - Key: datagrok.component
         Value: datagrok
     Type: AWS::S3::Bucket
+  S3Empty:
+    DependsOn:
+    - S3EmptyLambdaFunctionLogGroup
+    Properties:
+      BucketName:
+        Ref: S3
+      ServiceToken:
+        Fn::GetAtt:
+        - S3EmptyLambdaFunction
+        - Arn
+    Type: AWS::CloudFormation::CustomResource
+  S3EmptyLambdaFunction:
+    Properties:
+      Code:
+        ZipFile: "import boto3\nimport cfnresponse\n\n\ndef handler(event, context):\n\
+          \    try:\n        bucket = event['ResourceProperties']['BucketName']\n\
+          \        status = 0\n\n        if event['RequestType'] == 'Delete':\n  \
+          \          s3 = boto3.resource('s3')\n            bucket = s3.Bucket(bucket)\n\
+          \            for obj in bucket.objects.filter():\n                s3.Object(bucket.name,\
+          \ obj.key).delete()\n            status = 201\n\n        cfnresponse.send(event,\
+          \ context, cfnresponse.SUCCESS, {'Status': status})\n    except Exception\
+          \ as e:\n        print(type(e).__name__, e)\n        cfnresponse.send(event,\
+          \ context, cfnresponse.FAILED, {'Exception': f\"{type(e).__name__} {e}\"\
+          })\n"
+      Description: Sets required settings for Datagrok
+      Handler: index.handler
+      MemorySize: 128
+      Role:
+        Fn::GetAtt:
+        - S3EmptyLambdaRole
+        - Arn
+      Runtime: python3.11
+      Timeout: 600
+    Type: AWS::Lambda::Function
+  S3EmptyLambdaFunctionLogGroup:
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+        - /aws/lambda/${function_name}
+        - function_name:
+            Ref: S3EmptyLambdaFunction
+      RetentionInDays: 1
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+  S3EmptyLambdaRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-S3EmptyLambdaFunction-*:*
+          - Action:
+            - s3:GetObject
+            - s3:DeleteObject
+            - s3:ListBucket
+            Effect: Allow
+            Resource:
+            - Fn::GetAtt:
+              - S3
+              - Arn
+            - Fn::Sub:
+              - ${bucket}/*
+              - bucket:
+                  Fn::GetAtt:
+                  - S3
+                  - Arn
+          Version: '2012-10-17'
+        PolicyName:
+          Fn::Sub: ${AWS::StackName}-s3-lambda
+    Type: AWS::IAM::Role
   S3Policy:
     Properties:
       Bucket:
