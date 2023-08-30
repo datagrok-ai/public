@@ -111,7 +111,7 @@ export function layoutChart(rect: DG.Rect, showAxes: boolean, showTitle: boolean
   const axesBottomPxMargin = showAxes ? AXES_BOTTOM_PX_MARGIN_WITH_AXES_LABELS : AXES_BOTTOM_PX_MARGIN;
   const axesTopPxMargin = showTitle ? AXES_TOP_PX_MARGIN_WITH_TITLE : AXES_TOP_PX_MARGIN;
   return [
-    rect.cutLeft(axesLeftPxMargin).cutBottom(axesLeftPxMargin).cutTop(axesTopPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
+    rect.cutLeft(axesLeftPxMargin).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
     rect.getBottom(axesBottomPxMargin).getTop(axesTopPxMargin).cutLeft(axesLeftPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
     rect.getLeft(axesLeftPxMargin).getRight(AXES_RIGHT_PX_MARGIN).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin)
   ];
