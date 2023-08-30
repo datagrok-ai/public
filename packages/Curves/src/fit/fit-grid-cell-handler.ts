@@ -7,7 +7,7 @@ import {
   getSeriesStatistics,
   getSeriesFitFunction,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {getChartData} from './fit-renderer';
 import {MultiCurveViewer} from './multi-curve-viewer';
 
@@ -47,8 +47,11 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
     const acc = ui.accordion();
     const chartData = getChartData(gridCell);
-    const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
-    const refresh = {onValueChanged: (_: any) => gridCell.grid.invalidate()};
+    const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
+    const refresh = {onValueChanged: (_: any) => {
+      gridCell.cell.column.tags[TAG_FIT] = JSON.stringify(columnChartOptions);
+      gridCell.grid.invalidate();
+    }};
 
     acc.addPane('Options', () => ui.divV([
       ui.input.form(columnChartOptions.seriesOptions, fitSeriesProperties, refresh),

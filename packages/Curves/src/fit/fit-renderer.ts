@@ -90,7 +90,7 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
     convertXMLToIFitChartData(gridCell.cell.value) :
     JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
 
-  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
+  const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
 
   cellChartData.series ??= [];
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
