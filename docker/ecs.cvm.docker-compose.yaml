@@ -28,27 +28,6 @@ services:
           cpus: '0.25'
           memory: 200M
 
-  jupyter_notebook:
-    image: datagrok/jupyter_notebook:latest
-    networks:
-      - cvm
-    ports:
-      - target: 5005
-        x-aws-protocol: http
-        protocol: tcp
-      - target: 8889
-        x-aws-protocol: http
-        protocol: tcp
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 200M
-
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:latest
     networks:
@@ -58,6 +37,9 @@ services:
         x-aws-protocol: http
         protocol: tcp
       - target: 8888
+        x-aws-protocol: http
+        protocol: tcp
+      - target: 8889
         x-aws-protocol: http
         protocol: tcp
     deploy:
@@ -265,47 +247,7 @@ x-aws-cloudformation:
         ListenerArn:
           Ref: GrokcomputeTCP80Listener
       Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    JupyterkernelgatewayService:
-      DependsOn:
-        - JupyterkernelgatewayTCP5005ListenerRule
-        - JupyterkernelgatewayTCP8888Listener
-        - JupyterkernelgatewayTCP8888ListenerRule
-      Properties:
-        NetworkConfiguration:
-          AwsvpcConfiguration:
-            AssignPublicIp: DISABLED
-
-    JupyternotebookTCP5005Listener:
-    JupyternotebookTCP5005ListenerRule:
-      Properties:
-        Priority: 5
-        Actions:
-          - ForwardConfig:
-              TargetGroups:
-                - TargetGroupArn:
-                    Ref: JupyternotebookTCP5005TargetGroup
-            Type: forward
-        Conditions:
-          - Field: path-pattern
-            PathPatternConfig:
-              Values:
-                - /notebook/helper/*
-        ListenerArn:
-          Ref: GrokcomputeTCP80Listener
-      Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    JupyternotebookTCP5005TargetGroup:
-      Properties:
-        HealthCheckPath: /notebook/helper/info
-        Matcher:
-          HttpCode: 200
-        TargetGroupAttributes:
-          - Key: stickiness.enabled
-            Value: true
-          - Key: stickiness.type
-            Value: lb_cookie
-          - Key: stickiness.lb_cookie.duration_seconds
-            Value: 86400
-    JupyternotebookTCP8889TargetGroup:
+    JupyterkernelgatewayTCP8889TargetGroup:
       Properties:
         HealthCheckPath: /notebook/api
         Matcher:
@@ -317,23 +259,23 @@ x-aws-cloudformation:
             Value: lb_cookie
           - Key: stickiness.lb_cookie.duration_seconds
             Value: 86400
-    JupyternotebookTCP8889Listener:
+    JupyterkernelgatewayTCP8889Listener:
       Properties:
         DefaultActions:
           - ForwardConfig:
               TargetGroups:
                 - TargetGroupArn:
-                    Ref: JupyternotebookTCP8889TargetGroup
+                    Ref: JupyterkernelgatewayTCP8889TargetGroup
             Type: forward
         Protocol: "HTTP"
-    JupyternotebookTCP8889ListenerRule:
+    JupyterkernelgatewayTCP8889ListenerRule:
       Properties:
         Priority: 6
         Actions:
           - ForwardConfig:
               TargetGroups:
                 - TargetGroupArn:
-                    Ref: JupyternotebookTCP8889TargetGroup
+                    Ref: JupyterkernelgatewayTCP8889TargetGroup
             Type: forward
         Conditions:
           - Field: path-pattern
@@ -343,11 +285,13 @@ x-aws-cloudformation:
         ListenerArn:
           Ref: GrokcomputeTCP80Listener
       Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    JupyternotebookService:
+    JupyterkernelgatewayService:
       DependsOn:
-        - JupyternotebookTCP5005ListenerRule
-        - JupyternotebookTCP8889Listener
-        - JupyternotebookTCP8889ListenerRule
+        - JupyterkernelgatewayTCP5005ListenerRule
+        - JupyterkernelgatewayTCP8888Listener
+        - JupyterkernelgatewayTCP8888ListenerRule
+        - JupyterkernelgatewayTCP8889Listener
+        - JupyterkernelgatewayTCP8889ListenerRule
       Properties:
         NetworkConfiguration:
           AwsvpcConfiguration:
