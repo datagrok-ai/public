@@ -140,7 +140,7 @@ Resources:
               - sts:AssumeRole
       Policies:
         - PolicyName:
-            Fn::Sub: "${AWS::StackName}-settings-lambda-logging"
+            Fn::Sub: "${AWS::StackName}-settings-lambda"
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -150,6 +150,50 @@ Resources:
                   - 'logs:PutLogEvents'
                 Resource:
                   Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-SettingsSetLambdaFunction-*:*"
+              - Effect: Allow
+                Action:
+                  - 'ec2:DescribeNetworkInterfaces'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 'ec2:CreateNetworkInterface'
+                Resource:
+                  - Fn::Sub:
+                      - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
+                      - subnet_id:
+                          Ref: PrivateSubnet1
+                  - Fn::Sub:
+                      - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
+                      - subnet_id:
+                          Ref: PrivateSubnet2
+                  - Fn::Sub:
+                      - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${security_group_id}
+                      - security_group_id:
+                          Ref: DatagrokSecurityGroup
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*
+              - Effect: Allow
+                Action:
+                  - 'ec2:DeleteNetworkInterface'
+                  - "ec2:AssignPrivateIpAddresses"
+                  - "ec2:UnassignPrivateIpAddresses"
+                Condition:
+                  ArnLikeIfExists:
+                    "ec2:Vpc":
+                      Fn::Sub:
+                        - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${vpc}"
+                        - vpc:
+                            Ref: VPC
+                    "ec2:Subnet":
+                      - Fn::Sub:
+                          - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}"
+                          - subnet:
+                              Ref: PrivateSubnet1
+                      - Fn::Sub:
+                          - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}"
+                          - subnet:
+                              Ref: PrivateSubnet2
+                Resource: '*'
+
   SettingsSetLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
