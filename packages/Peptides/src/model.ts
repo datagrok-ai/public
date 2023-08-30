@@ -33,7 +33,7 @@ import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
-import {getDataSliceWidget} from './widgets/selection';
+import {getSelectionWidget} from './widgets/selection';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -473,7 +473,7 @@ export class PeptidesModel {
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
-    acc.addPane('Selection', () => getDataSliceWidget(table, trueModel).root);
+    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel).root);
 
     return acc;
   }
@@ -1112,7 +1112,7 @@ export class PeptidesModel {
     }
 
     this.subs.push(grok.events.onAccordionConstructed.subscribe((acc) => {
-      if (!(grok.shell.o instanceof DG.SemanticValue || grok.shell.o instanceof DG.Column))
+      if (!(grok.shell.o instanceof DG.SemanticValue || (grok.shell.o instanceof DG.Column && this.df.columns.toList().includes(grok.shell.o))))
         return;
 
       const actionsPane = acc.getPane('Actions');
@@ -1121,7 +1121,7 @@ export class PeptidesModel {
       const calculateIdentity = ui.label('Calculate identity');
       calculateIdentity.classList.add('d4-link-action');
       ui.tooltip.bind(calculateIdentity, 'Adds a column with fractions of matching monomers against sequence in the current row');
-      calculateIdentity.onclick = () => {
+      calculateIdentity.onclick = (): void => {
         const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
         calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.IDENTITY);
       };
@@ -1130,7 +1130,7 @@ export class PeptidesModel {
       const calculateSimilarity = ui.label('Calculate similarity');
       calculateSimilarity.classList.add('d4-link-action');
       ui.tooltip.bind(calculateSimilarity, 'Adds a column with sequence similarity scores against sequence in the current row');
-      calculateSimilarity.onclick = () => {
+      calculateSimilarity.onclick = (): void => {
         const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
         calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.SIMILARITY);
       };

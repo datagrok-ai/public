@@ -1,25 +1,20 @@
 # Peptides changelog
 
-## 1.12.0 (WIP)
+## 1.12.0 (2023-08-30)
 
 ### Features
 
-* Improved Identity panel UI.
-* Added sequence similarity functionality.
-* Moved Similarity & Identity to Actions panel.
-* Other UI/UX improvements.
+* Added sequence identity and similairty functionality.
 * Peptides moved to Bio > Analyze > SAR.
 * Added tooltips for all inputs and buttons.
 * Added Selection panel which shows the current selection as a separate table.
+* UI/UX improvements.
 
 ### Bug Fixes
 
 * Fixed table view tooltips.
 * Fixed selection with WebLogo in the column header.
-* Fixed identity scoring formula.
 * Fixed table view couldn't be filtered by monomer position columns.
-* Fixed identity panel not considering filtered table view.
-* Fixed the Identity button not disabling on incorrect input.
 
 ## 1.11.0 (2023-08-03)
 

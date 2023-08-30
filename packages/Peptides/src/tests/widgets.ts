@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, awaitCheck, expectFloat} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
-import {getTemplate, scaleActivity} from '../utils/misc';
+import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as C from '../utils/constants';
