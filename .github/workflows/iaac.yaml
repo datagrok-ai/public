@@ -44,6 +44,8 @@ jobs:
         with:
           files: help/deploy/**
           files_ignore: '**/*.md'
+      - name: Output
+        run: echo ${{ steps.changed-files.outputs.all_changed_files }}
 
   template_cfn:
     needs:
@@ -51,7 +53,7 @@ jobs:
       - changed-files
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation')
-    name: САТ Templates
+    name: Templates CFN
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -138,6 +140,7 @@ jobs:
       - uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: snyk.sarif
+
 #  checkov:
 #    needs: common-check
 #    runs-on: ubuntu-22.04
@@ -173,7 +176,7 @@ jobs:
       - changed-files
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation')
-    name: Validate САТ
+    name: Validate CFN
     steps:
       - name: Set git fetch depth
         run: |
