@@ -6,11 +6,11 @@
 
 * Improved Identity panel UI.
 * Added sequence similarity functionality.
-* Moved Similarity & Identity form to Toolbox.
+* Moved Similarity & Identity to Actions panel.
 * Other UI/UX improvements.
 * Peptides moved to Bio > Analyze > SAR.
 * Added tooltips for all inputs and buttons.
-* Added Selection panel which shows current selection as a separate table.
+* Added Selection panel which shows the current selection as a separate table.
 
 ### Bug Fixes
 
