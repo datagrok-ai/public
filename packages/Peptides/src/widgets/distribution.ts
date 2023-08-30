@@ -195,10 +195,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
   const splitByPosition = ui.boolInput('', defaultValuePos, updateDistributionHost);
   splitByPosition.addPostfix('Split by position');
+  splitByPosition.setTooltip('Constructs distribution for each position separately');
   setDefaultProperties(splitByPosition);
   $(splitByPosition.root).css('margin-right', '10px');
   const splitByAAR = ui.boolInput('', defaultValueAAR, updateDistributionHost);
   splitByAAR.addPostfix('Split by monomer');
+  splitByAAR.setTooltip('Constructs distribution for each monomer separately');
   setDefaultProperties(splitByAAR);
 
   const controlsHost = ui.divH([splitByPosition.root, splitByAAR.root]);

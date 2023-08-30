@@ -8,7 +8,6 @@ import {PeptidesModel} from '../model';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 /** Manual sequence alignment widget.
- *
  * @param {DG.Column} alignedSequenceCol Aligned sequence column
  * @param {DG.DataFrame} currentDf Working table
  * @return {DG.Widget} Widget for manual sequence alignment */
@@ -32,13 +31,10 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
 
     const peptidesController = PeptidesModel.getInstance(currentDf);
     peptidesController.updateGrid();
-  });
+  }, 'Apply changes');
 
-  const resetBtn = ui.button(
-    ui.iconFA('redo'),
-    () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx)!,
-    'Reset',
-  );
+  const resetBtn = ui.button(ui.iconFA('redo'),
+    () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx)!, 'Reset');
   $(resetBtn).addClass('pep-snippet-editor-icon pep-reset-icon');
 
   return new DG.Widget(ui.divV([resetBtn, sequenceInput.root, applyChangesBtn], 'pep-textarea-box'));

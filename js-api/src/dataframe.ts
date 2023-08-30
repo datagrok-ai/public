@@ -287,6 +287,16 @@ export class DataFrame {
     return api.grok_DataFrame_ToCsv(this.dart, options);
   }
 
+  /** Exports the content to JSON format */
+  toJson(): any[] {
+    return Array.from({length: this.rowCount}, (_, idx) => 
+      this.columns.names().reduce((entry: {[key: string]: any}, colName) => {
+        entry[colName] = this.get(colName, idx);
+        return entry;
+      }, {})
+    );
+  }
+
   /** Exports dataframe to binary */
   toByteArray(): Uint8Array {
     return api.grok_DataFrame_ToByteArray(this.dart);
@@ -1481,6 +1491,10 @@ export class Cell {
    * @returns {*} */
   get value(): any { return api.grok_Cell_Get_Value(this.dart); }
   set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
+
+  /** String representation of the value, if both [column] and [row] are defined;
+     otherwise, empty string. */
+  get valueString(): string { return api.grok_Cell_Get_ValueString(this.dart); }
 
   /** Whether the cell is empty */
   isNone(): boolean { return this.column.isNone(this.rowIndex); }

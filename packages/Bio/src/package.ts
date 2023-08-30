@@ -21,7 +21,7 @@ import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-uti
 
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
-import {substructureSearchDialog} from './substructure-search/substructure-search';
+import {SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
@@ -40,7 +40,7 @@ import {
   getLibFileNameList,
   getLibraryPanelUI
 } from './utils/monomer-lib';
-import {getMacromoleculeColumn} from './utils/ui-utils';
+import {getMacromoleculeColumns} from './utils/ui-utils';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
@@ -602,7 +602,7 @@ export function importBam(fileContent: string): DG.DataFrame [] {
 //top-menu: Bio | Convert | Notation...
 //name: convertDialog
 export function convertDialog() {
-  const col = getMacromoleculeColumn();
+  const col = getMacromoleculeColumns()[0];
   convert(col);
 }
 
@@ -734,12 +734,29 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//top-menu: Bio | Search | Substructure...
-//name: bioSubstructureSearch
-//description: Finds sequence with the given subsequence
-export function bioSubstructureSearch(): void {
-  const col = getMacromoleculeColumn();
-  substructureSearchDialog(col);
+//name: SearchSubsequenceEditor
+//tags: editor
+//input: funccall call
+export function searchSubsequenceEditor(call: DG.FuncCall) {
+  const columns = getMacromoleculeColumns();
+  if (columns.length === 1)
+    call.func.prepare({macromolecules: columns[0]}).call(true);
+  else {
+    new SubstructureSearchDialog(columns);
+  }
+}
+
+//top-menu: Bio | Search | Subsequence...
+//name: Subsequence Search
+//input: column macromolecules
+//editor: Bio:SearchSubsequenceEditor
+export function SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
+  grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+    type: "Bio:bioSubstructureFilter",
+    column: macromolecules.name,
+    columnName: macromolecules.name,
+  });
+  grok.shell.tv.grid.scrollToCell(macromolecules, 0);
 }
 
 //name: saveAsFasta

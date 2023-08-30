@@ -85,56 +85,97 @@ export class RdKitService {
     const getTerminateFlag = () => {return terminateFlag;};
     const t = this;
     const dataLength = data.length;
-    const increment = 50;
-    const workingIndexes = new Array<{start: number, end: number, increment: number}>(this.workerCount)
-      .fill({start: 0, end: 0, increment});
-    const sizePerWorker = Math.floor(dataLength / this.workerCount);
+    const increment = Math.floor(Math.max(500 / this.workerCount, 20));
+    const incrementMultiplier = 1.05; // each iteration increment is multiplied by this value to increase sub_batch size
+    const workingIndexes = new Array<{start: number, increment: number}>(this.workerCount)
+      .fill({start: 0, increment});
+    // const sizePerWorker = Math.floor(dataLength / this.workerCount);
 
     /*distribute data between workers, makes sure that same molecules always end up in the same worker,
     important for caching */
     for (let i = 0; i < this.workerCount; i++) {
       workingIndexes[i] = {
-        start: i * sizePerWorker,
-        end: i === this.workerCount - 1 ? dataLength : (i + 1) * sizePerWorker,
+        start: i * increment,
         increment,
-      };
+      }; // if we have 3 workers per se, the working indexes are disted in this way between workers:
+      // | 1 | 2 | 3 |  1  |  2  |  3  |   1   |   2   |   3   |    1    |    2    |    3    |
     }
 
     const lockedCounter = new LockedEntity(0);
-
+    // array that stores how many iterations each worker did
+    const workerIterationCounter = new Array<number>(this.workerCount).fill(0);
+    let iterationCheckPoint = 1; // next checkpoint of iterations for sending progress
+    let iterationsPerProgress = 1; // how many iterations should be done before sending progress
     let processedMolecules = 0;
-    let moleculesPerProgress = Math.min(Math.max(Math.floor(dataLength / 100), 10), 100);
-    let nextProgressCheck = moleculesPerProgress;
+
+    // array with worker indexes containing map of iteration number to updateRes closure
+    const updateResMapArray = new Array(this.workerCount).fill(0)
+      .map(() => new Map<number, {batchResult: BatchRes, curWorkerStart: number, l: number}>());
     const promises = t.parallelWorkers.map((_, idx) => {
       const post = async () => {
-        if (workingIndexes[idx].start >= workingIndexes[idx].end || terminateFlag)
+        if (workingIndexes[idx].start >= dataLength || terminateFlag)
           return;
 
         const part = data.slice(workingIndexes[idx].start,
-          Math.min(workingIndexes[idx].end, workingIndexes[idx].start + workingIndexes[idx].increment));
+          Math.min(dataLength, workingIndexes[idx].start + workingIndexes[idx].increment));
         const batchResult = await map(part, idx, t.parallelWorkers.length, workingIndexes[idx].start);
         if (terminateFlag)
           return;
-        updateRes(batchResult, res, part.length, workingIndexes[idx].start);
-        workingIndexes[idx].start += part.length;
 
         await lockedCounter.unlockPromise();
         lockedCounter.lock();
+        const curWorkerStart = workingIndexes[idx].start;
+        updateResMapArray[idx].set(workerIterationCounter[idx],
+          {batchResult: batchResult, curWorkerStart: curWorkerStart, l: part.length});
+
+        workingIndexes[idx].start += // worker with index idx will have this.workerCount - idx chunks in front with size
+          part.length * (this.workerCount - idx) + // of old increment and idx amount of chunks with new increment size
+          idx * (Math.floor(part.length * (incrementMultiplier))); // hence the two terms
         processedMolecules = lockedCounter.value;
         const end = Math.min(processedMolecules + workingIndexes[idx].increment, dataLength);
-        if (processedMolecules >= nextProgressCheck) {
-          nextProgressCheck += moleculesPerProgress;
-          moleculesPerProgress *= 1.05;
-          // increment *= 1.2;
-          //increment = Math.floor(increment);
-          progressFunc(processedMolecules/dataLength);
+        workerIterationCounter[idx] += 1;
+        if (workerIterationCounter.every((it) => it >= iterationCheckPoint)) {
+          // update all results:
+          const updatePromises: Promise<void>[] = [];
+          for (let i = 0; i < this.workerCount; i++) {
+            const updateResMap = updateResMapArray[i];
+            for (const it of updateResMap.keys()) {
+              if (it <= iterationCheckPoint) {
+                const br = updateResMap.get(it)!;
+                updatePromises.push(new Promise<void>((resolveUpdate) => {
+                  setTimeout(() => {
+                    updateRes(br.batchResult, res, br.l, br.curWorkerStart);
+                    updateResMap.delete(it);
+                    resolveUpdate();
+                  });
+                }));
+              }
+            }
+          }
+          iterationsPerProgress *= 1.05; // increase iterations per progress
+          iterationCheckPoint += iterationsPerProgress;
+          iterationCheckPoint = Math.floor(iterationCheckPoint);
+          const progressFraction = processedMolecules/dataLength;
+          Promise.all(updatePromises).then(() => progressFunc(progressFraction));
         }
-        workingIndexes[idx].increment = Math.floor(workingIndexes[idx].increment * 1.05);
+
+        workingIndexes[idx].increment = Math.floor(workingIndexes[idx].increment * incrementMultiplier);
         lockedCounter.value = end;
         lockedCounter.release();
         await post();
       };
       return post();
+    });
+    // some workers might have finished before others, so we need to update the results with what is left
+    Promise.all(promises).then(() => {
+      updateResMapArray.forEach((leftMap) => {
+        for (const it of leftMap.keys()) {
+          const br = leftMap.get(it)!;
+          updateRes(br.batchResult, res, br.l, br.curWorkerStart);
+          leftMap.delete(it);
+        }
+      });
+      progressFunc(1);
     });
     const getProgress = () => processedMolecules / dataLength;
     return {getProgress, setTerminateFlag, getTerminateFlag, promises};

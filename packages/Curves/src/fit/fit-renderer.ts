@@ -61,6 +61,12 @@ const CANDLESTICK_BORDER_PX_SIZE = 4;
 const CANDLESTICK_MEDIAN_PX_SIZE = 3.5;
 const CANDLESTICK_OUTLIER_PX_SIZE = 6;
 export const INFLATE_SIZE = -12;
+export const LINE_STYLES: {[key: string]: number[]} = {
+  'solid': [],
+  'dotted': [1, 1],
+  'dashed': [5, 5],
+  'dashdotted': [5, 5, 2, 5],
+};
 
 
 /** Merges properties of the two objects by iterating over the specified {@link properties}
@@ -105,7 +111,7 @@ export function layoutChart(rect: DG.Rect, showAxes: boolean, showTitle: boolean
   const axesBottomPxMargin = showAxes ? AXES_BOTTOM_PX_MARGIN_WITH_AXES_LABELS : AXES_BOTTOM_PX_MARGIN;
   const axesTopPxMargin = showTitle ? AXES_TOP_PX_MARGIN_WITH_TITLE : AXES_TOP_PX_MARGIN;
   return [
-    rect.cutLeft(axesLeftPxMargin).cutBottom(axesLeftPxMargin).cutTop(axesTopPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
+    rect.cutLeft(axesLeftPxMargin).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
     rect.getBottom(axesBottomPxMargin).getTop(axesTopPxMargin).cutLeft(axesLeftPxMargin).cutRight(AXES_RIGHT_PX_MARGIN),
     rect.getLeft(axesLeftPxMargin).getRight(AXES_RIGHT_PX_MARGIN).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin)
   ];
@@ -133,15 +139,18 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries,
   transform: Viewport, ratio: number, logOptions: LogOptions, pointColor: number): void {
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
-    const color = p.outlier ? DG.Color.red : pointColor;
+    const color = p.outlier ? DG.Color.red :
+      p.color ? DG.Color.fromHtml(p.color) ? DG.Color.fromHtml(p.color) : pointColor : pointColor;
+    const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
+    const size = p.outlier ? OUTLIER_PX_SIZE * ratio : p.size ? p.size : POINT_PX_SIZE * ratio;
     DG.Paint.marker(g,
-      p.outlier ? DG.MARKER_TYPE.OUTLIER : (series.markerType as DG.MARKER_TYPE),
-      transform.xToScreen(p.x), transform.yToScreen(p.y), color,
-      (p.outlier ? OUTLIER_PX_SIZE : POINT_PX_SIZE) * ratio);
+      p.outlier ? DG.MARKER_TYPE.OUTLIER : marker,
+      transform.xToScreen(p.x), transform.yToScreen(p.y), color, size);
     if (p.stdev && !p.outlier) {
+      g.strokeStyle = DG.Color.toHtml(color);
       g.beginPath();
-      g.moveTo(transform.xToScreen(p.x), transform.yToScreen(p.y));
-      g.lineTo(transform.xToScreen(p.x), transform.yToScreen(p.stdev));
+      g.moveTo(transform.xToScreen(p.x), transform.yToScreen(p.y + p.stdev));
+      g.lineTo(transform.xToScreen(p.x), transform.yToScreen(p.y - p.stdev));
       g.stroke();
     }
   }
@@ -313,6 +322,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds, showAxes, showTitle);
 
     const dataBounds = getChartBounds(data);
+    if (dataBounds.x <= 0 && data.chartOptions) data.chartOptions.logX = false;
+    if (dataBounds.y <= 0 && data.chartOptions) data.chartOptions.logY = false;
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
@@ -335,8 +346,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       const fitFunc = getSeriesFitFunction(series);
       let curve: (x: number) => number;
       if (series.parameters) {
-        if (data.chartOptions?.logX)
-          series.parameters[2] = Math.log10(series.parameters[2]);
+        if (data.chartOptions?.logX) {
+          if (series.parameters[2] > 0)
+            series.parameters[2] = Math.log10(series.parameters[2]);
+        }
         curve = getCurve(series, fitFunc);
       }
       else {
@@ -359,10 +372,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (series.showFitLine ?? true) {
         const lineColor = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
           series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+        g.save();
         g.strokeStyle = lineColor;
         g.lineWidth = 2 * ratio;
   
         g.beginPath();
+        if (series.lineStyle)
+          g.setLineDash(LINE_STYLES[series.lineStyle]);
         const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
         for (let j = axesLeftPxMargin; j <= screenBounds.width - AXES_RIGHT_PX_MARGIN; j++) {
           const x = screenBounds.x + j;
@@ -375,6 +391,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             g.lineTo(x, y);
         }
         g.stroke();
+        g.restore();
       }
   
       if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? false)) {

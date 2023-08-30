@@ -34,6 +34,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "fitLineColor": "#2ca02c",
       "confidenceIntervalColor": "#fbec5d",
       "markerType": "circle",
+      "lineStyle": "dashed",
       "showFitLine": true,
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
@@ -48,9 +49,9 @@ To render a fitted curve based on series points, you need to write it in the fol
       "clickToToggle": true,
       "droplines": ["IC50"],
       "points": [
-        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.061523404876 },
+        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.031523404876, "marker": "square" },
         { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true },
-        { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false },
+        { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false, "color": "#2ca02c", "size": 5 },
         // ...
       ]
     }
@@ -77,6 +78,7 @@ Each series has its own parameters, such as:
 - `fitLineColor` - overrides the standardized series fit line color
 - `confidenceIntervalColor` - overrides the standardized series confidence interval color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
+- `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
@@ -89,6 +91,9 @@ sigmoid function is: `max, tan, IC50, min`.
 - `droplines` - defines the droplines that would be shown on the plot (for instance, IC50)
 - `points` - an array of objects with each object containing `x` and `y` coordinates and its own parameters:
   - `outlier` - if true, renders as 'x' and gets ignored for curve fitting
+  - `color` - overrides the marker color defined in series `pointColor`
+  - `marker` - overrides the marker type defined in series `markerType`
+  - `size` - overrides the default marker size
   - `stdev` - when defined, renders an error bar candlestick
 
 Each chart has its own parameters as well, such as:

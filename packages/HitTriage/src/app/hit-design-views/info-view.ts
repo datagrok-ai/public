@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitDesignBaseView} from './base-view';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import $ from 'cash-dom';
@@ -10,8 +9,9 @@ import {HitDesignCampaign, HitDesignTemplate} from '../types';
 import {addBreadCrumbsToRibbons, hideComponents, modifyUrl} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
+import {HitBaseView} from '../base-view';
 
-export class HitDesignInfoView extends HitDesignBaseView {
+export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
   newItemHeader: HTMLElement = ui.h1(i18n.startNewCampaign);
   constructor(app: HitDesignApp) {
     super(app);
@@ -164,7 +164,7 @@ export class HitDesignInfoView extends HitDesignBaseView {
     this.newItemHeader.style.display = 'block';
     this.newItemHeader.innerText = i18n.createNewTemplate;
     const newTemplateAccordeon = await newHitDesignTemplateAccordeon();
-    const {breadcrumbs, sub} = addBreadCrumbsToRibbons(grok.shell.v, i18n.createNewTemplate, () => {
+    const {breadcrumbs, sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit design', i18n.createNewTemplate, () => {
       this.init();
     });
     $(containerDiv).empty();

@@ -71,7 +71,8 @@
     "webpack-cli": "latest",
     "style-loader": "latest",
     "css-loader": "latest",
-    "ts-loader": "latest"
+    "ts-loader": "latest",
+    "@datagrok/chembl": "latest"
   },
   "browser": {
     "fs": false,

@@ -35,6 +35,7 @@ export type HitTriageTemplate = {
     submit?: HitTriageTemplateSubmit,
     campaignFields: HitTriageCampaignField[],
     dataSourceType: IngestType,
+    queryFunctionName?: string;
 }
 
 export const CampaignFieldTypes = {
@@ -79,6 +80,7 @@ export type HitTriageCampaign = {
     campaignFields: {[key: string]: any},
     filters: {[key: string]: any}[],
     ingest: HitTriageTemplateIngest,
+    columnSemTypes?: {[key: string]: string},
 };
 
 export type IChemFunctionsDialogResult = {
@@ -94,6 +96,6 @@ export type INewTemplateResult<T> = {
 
 // ##################### HIT DESIGN TYPES #####################
 
-export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType'> & {stages: string[]};
+export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'queryFunctionName'> & {stages: string[]};
 
 export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'>;

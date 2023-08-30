@@ -56,7 +56,7 @@ category('screening tools', () => {
     elementalAnalysis(df, df.getCol('smiles'), false, false);
     expect(df.columns.length, 6);
     expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
-  }, {skipReason: 'GROK-12227'});
+  });
 
   test('elementalAnalysis.malformedData', async () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
@@ -94,7 +94,7 @@ category('screening tools: benchmarks', () => {
     await DG.timeAsync('Structural Alerts', async () => {
       await runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitService);
     });
-  }, {timeout: 90000, skipReason: 'GROK-13428'});
+  }, {timeout: 120000});
 
   test('elementalAnalysis', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));

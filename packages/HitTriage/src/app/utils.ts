@@ -32,9 +32,9 @@ export function showComponents(styles: CSSStyleDeclaration[]) {
   });
 }
 
-export function addBreadCrumbsToRibbons(view: DG.ViewBase, secondPath: string, handler: Function):
+export function addBreadCrumbsToRibbons(view: DG.ViewBase, firstPath: string, secondPath: string, handler: Function):
   {breadcrumbs: DG.Breadcrumbs, sub: Subscription} {
-  const breadcrumbs = ui.breadcrumbs(['Hit Triage', secondPath]);
+  const breadcrumbs = ui.breadcrumbs([firstPath, secondPath]);
   breadcrumbs.root.id = 'hit-triage-breadcrumbs';
   const sub = breadcrumbs.onPathClick.subscribe((path) => {
     if (path.length === 1) {

@@ -1,14 +1,14 @@
-import {HitDesignBaseView} from './base-view';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
-import {HitDesignCampaign, HitTriageCampaignStatus} from '../types';
+import {HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus} from '../types';
 import {toFormatedDateString} from '../utils';
 import {CampaignJsonName, CampaignTableName} from '../consts';
+import {HitBaseView} from '../base-view';
 
-export class HitDesignSubmitView extends HitDesignBaseView {
+export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
   constructor(app: HitDesignApp) {
     super(app);
     this.name = 'Submit';
@@ -55,12 +55,15 @@ export class HitDesignSubmitView extends HitDesignBaseView {
     const templateName = this.app.template!.name;
     const enrichedDf = this.app.dataFrame!;
     const campaignName = campaignId;
+    const columnSemTypes: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
     const campaign: HitDesignCampaign = {
       name: campaignName,
       templateName,
       status: status ?? this.app.campaign?.status ?? 'In Progress',
       createDate: this.app.campaign?.createDate ?? toFormatedDateString(new Date()),
       campaignFields: this.app.campaign?.campaignFields ?? this.app.campaignProps,
+      columnSemTypes,
     };
     await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignJsonName}`,
       JSON.stringify(campaign));

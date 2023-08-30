@@ -68,8 +68,8 @@ async function invalidationCacheTest(dataQuery: DataQuery, days: number): Promis
         is not approximately equals to the first execution time ${firstExecutionTime} ms`);
 }
 
-async function basicCacheTest(query: String): Promise<void> {
-  const dataQuery = await grok.dapi.queries.filter(`friendlyName="${query}"`).first();
+async function basicCacheTest(query: string): Promise<void> {
+  const dataQuery = await grok.functions.eval(`Dbtests:${query}`);
   const funcCall1 = dataQuery.prepare();
   const firstExecutionTime = await getCallTime(funcCall1);
   await delay(100);

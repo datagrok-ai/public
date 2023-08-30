@@ -12,6 +12,12 @@ export function renamePCAcolumns(pcaTable: DG.DataFrame): DG.DataFrame {
   return pcaTable;
 }
 
+// Adds prefix to each column name
+export function addPrefixToEachColumnName(prefix: string, columns: DG.ColumnList): void {
+  for (const col of columns.toList())
+    col.name = prefix + col.name;
+}
+
 // Predicted vs Reference scatter plot
 export function predictedVersusReferenceScatterPlot(samplesNames: DG.Column, reference: DG.Column, prediction: DG.Column): DG.Viewer {  
   prediction.name = reference.name + '(predicted)';

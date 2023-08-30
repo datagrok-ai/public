@@ -64,8 +64,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
         if (!series.parameters)
           series.parameters = fitSeries(series, fitFunction).parameters;
         const seriesStatistics = getSeriesStatistics(series, fitFunction);
+        const color = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
+          series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
         host.appendChild(ui.panel([
-          ui.h1(series.name ?? 'series ' + i),
+          ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
           ui.input.form(seriesStatistics, statisticsProperties, {
             onCreated: (input) => input.root.appendChild(
               ui.iconFA('plus',

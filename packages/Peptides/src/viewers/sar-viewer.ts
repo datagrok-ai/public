@@ -121,6 +121,7 @@ export class MonomerPosition extends DG.JsViewer {
           mutationCliffsMode.value = true;
           this.mode = MONOMER_POSITION_MODE.MUTATION_CLIFFS;
         });
+        mutationCliffsMode.setTooltip('Statistically significant changes in activity');
         mutationCliffsMode.addPostfix(MONOMER_POSITION_MODE.MUTATION_CLIFFS);
         const invariantMapMode = ui.boolInput('', this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP);
         invariantMapMode.root.addEventListener('click', () => {
@@ -128,6 +129,7 @@ export class MonomerPosition extends DG.JsViewer {
           invariantMapMode.value = true;
           this.mode = MONOMER_POSITION_MODE.INVARIANT_MAP;
         });
+        invariantMapMode.setTooltip('Number of sequences having monomer-position');
         invariantMapMode.addPostfix(MONOMER_POSITION_MODE.INVARIANT_MAP);
         const setDefaultProperties = (input: DG.InputBase): void => {
           $(input.root).find('.ui-input-editor').css('margin', '0px').attr('type', 'radio');

@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import {_properties} from '../package';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {isSmarts} from '../utils/mol-creation_rdkit';
+import {_isSmarts} from '../utils/mol-creation_rdkit';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
@@ -44,7 +44,7 @@ export function renderMolecule(
         e.stopImmediatePropagation();
         const menu = DG.Menu.popup();
         menu.item('Copy SMILES', () => {
-          const smiles = !DG.chem.isMolBlock(molStr) && !isSmarts(molStr) ? molStr :
+          const smiles = !DG.chem.isMolBlock(molStr) && !_isSmarts(molStr) ? molStr :
             _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
           navigator.clipboard.writeText(smiles);
           grok.shell.info('SMILES copied to clipboard');

@@ -76,8 +76,21 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
   const funcInput = await chemFunctionsDialog((res) => {funcDialogRes = res;}, () => null,
     dummyTemplate, false);
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
-
-  const ingestTypeInput = ui.choiceInput<IngestType>('Ingest using', 'Query', ['Query', 'File']);
+  // functions that have special tag and are applicable for data source. they should return a dataframe with molecules
+  const dataSourceFunctions = DG.Func.find({tags: [C.HitTriageDataSourceTag]});
+  const dataSourceFunctionsMap: {[key: string]: DG.Func} = {};
+  dataSourceFunctions.forEach((func) => {
+    dataSourceFunctionsMap[func.friendlyName ?? func.name] = func;
+  });
+  const dataSourceFunctionInput = ui.choiceInput(
+    C.i18n.dataSourceFunction, Object.keys(dataSourceFunctionsMap)[0],
+    Object.keys(dataSourceFunctionsMap));
+  const ingestTypeInput = ui.choiceInput<IngestType>('Ingest using', 'Query', ['Query', 'File'], () => {
+    if (ingestTypeInput.value !== 'Query')
+      dataSourceFunctionInput.root.style.display = 'none';
+    else
+      dataSourceFunctionInput.root.style.display = 'block';
+  });
 
   const fieldsEditor = getCampaignFieldEditors();
 
@@ -86,6 +99,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
     ui.divV([templateNameInput, errorDiv]),
     ui.divV([templateKeyInput, keyErrorDiv]),
     ingestTypeInput.root,
+    dataSourceFunctionInput.root,
     fieldsEditor.fieldsDiv,
     ui.h2('Compute'),
     funcInput.root,
@@ -124,6 +138,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
           }),
         },
         ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
+        queryFunctionName: (ingestTypeInput.value === 'Query') ? dataSourceFunctionInput.value ?? undefined : undefined,
       };
       saveTemplate(out);
       grok.shell.info('Template created successfully');

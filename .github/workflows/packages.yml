@@ -328,8 +328,7 @@ jobs:
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
-        run: |
-          npm run test -- --skip-build --skip-publish --record --csv --verbose
+        run: npm run test -- --skip-build --skip-publish --record --csv --verbose
         working-directory: packages/${{ matrix.package }}
       - name: Upload Artifact
         if: always() && steps.test-package.outcome != 'skipped'

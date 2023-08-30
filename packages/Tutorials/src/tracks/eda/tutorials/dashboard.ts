@@ -44,8 +44,8 @@ export class DashboardTutorial extends Tutorial {
     const providerRoot = $('div.d4-tree-view-group-label').filter((idx, el) =>
       (el.textContent ?? '')?.startsWith('Postgres'))[0]!;
 
-    const dlg = await this.openDialog('Create a connection to PostgreSQL server', 'Add new connection',
-      providerRoot, 'Open the context menu on the PostgreSQL connector and click "Add connection..."');
+    const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
+      providerRoot, 'Open the context menu on the Postgres connector and click "Add connection..."');
 
     await this.dlgInputAction(dlg, `Set "Name" to "${connectionName}"`, 'Name', connectionName);
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
@@ -58,7 +58,7 @@ export class DashboardTutorial extends Tutorial {
     const dqv = await this.openViewByType(`Create a data query to the "${connectionName}" data connection`,
       'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
         el.textContent === connectionName)[0],
-      `Open the context menu on PostgreSQL | ${connectionName} and click "Add query..."`);
+      `Open the context menu on Postgres | ${connectionName} and click "Add query..."`);
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
