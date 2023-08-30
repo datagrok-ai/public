@@ -1,5 +1,11 @@
 # compute-utils changelog
 
+## 1.13.14 (2023-08-30)
+
+### Features
+
+- HistoryInput allow skip df load
+
 ## 1.13.13 (2023-08-29)
 
 ### Features
