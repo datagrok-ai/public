@@ -6,8 +6,6 @@ ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
 COPY requirements.txt ${VIRTUAL_ENV}/requirements.txt
 
 RUN python -m venv ${VIRTUAL_ENV} && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --upgrade wheel setuptools && \
     pip install --timeout 3600 --no-cache-dir --requirement ${VIRTUAL_ENV}/requirements.txt && \
     rm -rf /tmp/*
 
