@@ -4,5 +4,4 @@
 #input: datetime input_datetime
 #output: datetime output_datetime
 
-input_datetime + 1 'day'
-output_datetime = input_datetime
+output_datetime = dateAdd(input_datetime, 86400000)

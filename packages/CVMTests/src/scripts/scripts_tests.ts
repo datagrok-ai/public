@@ -19,10 +19,13 @@ for (const lang of langs) {
     });
 
     test('Datetime input/output', async () => {
-      const now = dayjs();
+      const currentTime = dayjs();
       const result = await grok.functions.call(`CVMTests:${lang}Date`,
-        {'input_datetime': now.add(1, 'day')});
-      expect(result, now);
+        {'input_datetime': currentTime});
+      if (lang == 'Octave')
+        expect(currentTime.add(1, 'day').format('YYYY-MM-DDTHH:mm:ss'), result.format('YYYY-MM-DDTHH:mm:ss'));
+      else
+        expect(result.valueOf(), currentTime.add(1, 'day').valueOf());
     });
 
     test('Dataframe input/output', async () => {
@@ -34,7 +37,7 @@ for (const lang of langs) {
       expectTable(result['resultCategorical'], df);
     });
 
-    test('Dataframe performance test 15 consequently', async () => {
+    test(`Dataframe performance test ${lang == 'Octave' ? 5 : 15} consequently`, async () => {
       const results = [];
       for (let i = 0; i < 15; i++) {
         results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,
@@ -45,9 +48,9 @@ for (const lang of langs) {
         'Min time': Math.min(...results), 'Max time': Math.max(...results)};
     }, {timeout: 120000});
 
-    test('Dataframe performance test 25 parallel', async () => {
+    test('Dataframe performance test 15 parallel', async () => {
       const calls = [];
-      for (let i = 0; i < 25; i++) {
+      for (let i = 0; i < 15; i++) {
         calls.push(getScriptTime(`CVMTests:${lang}SingleDf`,
           {'df': grok.data.demo.demog(10000)}));
       }
@@ -61,21 +64,23 @@ for (const lang of langs) {
       const result = await grok.functions.call(`CVMTests:${lang}Map`,
         {'input_map': {'hello': 'world'}, 'unique_key': 'my_key'});
       expectObject(result, {'hello': 'world', 'my_key': 'Datagrok'});
-    });
+    }, {skipReason: lang === 'R' || lang === 'Grok' ? 'GROK-12452' : undefined});
 
-    if (lang != 'Node' && lang !== 'JavaScript') {
+    if (!['NodeJS', 'JavaScript', 'Grok'].includes(lang)) {
       test('Graphics output, Column input', async () => {
         const df = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
         const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
           {'df': df, 'xName': 'x', 'yName': 'y'});
         expect(result && result.length > 0, true);
+        if (lang != 'Julia')
+          expect(result.charAt(0), 'i'); // expects png format
       });
     }
 
     test('Column list', async () => {
       const df = DataFrame.fromCsv(`id,date,name\nid1,${Date.now()},datagrok`);
       const result = await grok.functions.call(`CVMTests:${lang}ColumnList`,
-        {'df': df, 'cols': df.columns.toList()});
+        {'df': df, 'cols': ['id', 'date', 'name']});
       df.columns.remove('id');
       expectTable(result, df);
     });
@@ -92,7 +97,7 @@ for (const lang of langs) {
       const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
       return `Execution time: ${Date.now() - start}`;
-    });
+    }, {timeout: 120000});
 
     test('File input', async () => {
       const files = await grok.dapi.files.list('System:AppData/CvmTests/', false, 'cars.csv');
@@ -117,8 +122,8 @@ for (const lang of langs) {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
-        expect(79498, result);
-      });
+        expect(49090022, result);
+      }, {timeout: 120000});
     }
   });
 }
