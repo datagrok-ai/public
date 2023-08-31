@@ -94,7 +94,8 @@ export class ItemsGrid {
       if (item[prop.name] === undefined)
         item[prop.name] = null; // needed for date editor, it can not handle undefined
       const input = ui.input.forProperty(prop, item);
-      editors.push(this.options.horizontalInputNames ? input.root : input.input);
+      editors.push(this.options.horizontalInputNames ? input.root : this.hideLabel(input.root));
+      input.input.style.width = '100%';
       inputsMap[prop.name] = input;
       input.onChanged(() => {
         isAdding ? this.onAddingItemChanged.next({item, fieldName: prop.name}) :
@@ -128,6 +129,11 @@ export class ItemsGrid {
     editors.push(companionButton);
     companionButton.style.color = '#2083d5';
     return editors;
+  }
+  //needed for color input
+  private hideLabel(el: HTMLElement): HTMLElement {
+    el.removeChild(el.getElementsByTagName('label')[0]);
+    return el;
   }
 }
 
