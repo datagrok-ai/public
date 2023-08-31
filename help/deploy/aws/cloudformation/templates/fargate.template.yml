@@ -90,9 +90,8 @@ Resources:
       InternetGatewayId:
         Ref: DatagrokInternetGateway
       VpcId:
-        Ref: VPC
-  PublicSubnetRouteTable:
         Ref: DatagrokVPC
+  DatagrokPublicSubnetRouteTable:
     Condition: CreatePublicSubnets
     Properties:
       Tags:
@@ -112,9 +111,8 @@ Resources:
       GatewayId:
         Ref: DatagrokInternetGateway
       RouteTableId:
-        Ref: PublicSubnetRouteTable
-  PublicSubnet1:
         Ref: DatagrokPublicSubnetRouteTable
+  DatagrokPublicSubnet1:
     Condition: CreatePublicSubnets
     Properties:
       CidrBlock:
@@ -150,6 +148,7 @@ Resources:
       SubnetId:
         Ref: PublicSubnet1
   PublicSubnet2:
+        Ref: DatagrokPublicSubnet1
     Condition: CreatePublicSubnets
     Properties:
       CidrBlock:
@@ -876,6 +875,7 @@ Resources:
           SourceSecurityGroupId:
             Ref: CvmSecurityGroup
         - Description:
+        - Description:
             Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Grok Connect"
           FromPort: 1234
           ToPort: 1234
@@ -935,6 +935,7 @@ Resources:
       ManagedPolicyName:
         Fn::Sub: "${AWS::StackName}-ECSPolicy-${AWS::Region}"
   TaskExecutionRole:
+        Fn::Sub: "${AWS::StackName}-DatagrokECSPolicy-${AWS::Region}"
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -3648,3 +3649,4 @@ Outputs:
     Description: Admin password for first login
     Value:
       Ref: AdminPassword
+      Fn::Sub:
