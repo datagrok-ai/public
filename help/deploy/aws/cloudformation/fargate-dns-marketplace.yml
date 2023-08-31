@@ -1,3 +1,4 @@
+#file: noinspection YAMLIncompatibleTypes
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
@@ -397,8 +398,9 @@ Resources:
         SourceSecurityGroupId:
           Ref: DatagrokSecurityGroup
         ToPort: 54321
-      - Description: ${AWS::StackName} Allow internal connections from Datagrok to
-          H2O GH
+      - Description:
+          Fn::Sub: ${AWS::StackName} Allow internal connections from Datagrok to H2O
+            GH
         FromPort: 5005
         IpProtocol: TCP
         SourceSecurityGroupId:
@@ -586,7 +588,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - FixedResponseConfig:
           StatusCode: 204
@@ -787,7 +789,8 @@ Resources:
     Type: AWS::SecretsManager::Secret
   DatagrokCloudMap:
     Properties:
-      Description: ${AWS::StackName} Service Map for Datagrok
+      Description:
+        Fn::Sub: ${AWS::StackName} Service Map for Datagrok
       Name:
         Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
       Vpc:
@@ -867,9 +870,9 @@ Resources:
     Type: AWS::EC2::SecurityGroup
   DatagrokDBSubnetGroup:
     Properties:
-      DatagrokDBSubnetGroupDescription:
+      DBSubnetGroupDescription:
         Fn::Sub: ${AWS::StackName} Datagrok DatagrokDB Subnet Group
-      DatagrokDBSubnetGroupName:
+      DBSubnetGroupName:
         Fn::Sub: ${AWS::StackName}-datagrok-rds-subnet
       SubnetIds:
       - Ref: DatagrokDataSubnet1
@@ -877,7 +880,7 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: rds
-    Type: AWS::RDS::DatagrokDatagrokDBSubnetGroup
+    Type: AWS::RDS::DBSubnetGroup
   DatagrokDataSubnet1:
     Properties:
       AvailabilityZone:
@@ -1160,7 +1163,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - ForwardConfig:
           TargetGroups:
@@ -1235,7 +1238,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - ForwardConfig:
           TargetGroups:
@@ -2335,9 +2338,9 @@ Resources:
   DatagrokPrivateSubnetNatRoute:
     Condition: InternetEgressAccess
     Properties:
-      DatagrokNatGatewayId:
-        Ref: DatagrokNatGateway
       DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: DatagrokNatGateway
       RouteTableId:
         Ref: DatagrokPrivateSubnetRouteTable
     Type: AWS::EC2::Route
@@ -2514,7 +2517,7 @@ Resources:
         Fn::GetAtt:
         - DatagrokS3EmptyLambdaRole
         - Arn
-      Runtime: python3.11
+      Runtime: python3.10
       Timeout: 600
     Type: AWS::Lambda::Function
   DatagrokS3EmptyLambdaFunctionDatagrokLogGroup:
@@ -2580,7 +2583,7 @@ Resources:
           Condition:
             StringNotEquals:
               aws:PrincipalArn:
-              - arn:aws:iam::${AWS::AccountId}:root
+              - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
               - Ref: DatagrokS3EmptyLambdaRole
               aws:SourceVpce:
                 Ref: DatagrokS3VPCEndpoint
@@ -2797,7 +2800,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - ForwardConfig:
           TargetGroups:
@@ -3007,8 +3010,6 @@ Resources:
           HostPort: 8080
           Protocol: tcp
       Cpu: '2048'
-      DatagrokTaskRoleArn:
-        Ref: DatagrokTaskRole
       ExecutionRoleArn:
         Fn::GetAtt:
         - DatagrokTaskExecutionRole
@@ -3018,6 +3019,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
+      TaskRoleArn:
+        Ref: DatagrokTaskRole
     Type: AWS::ECS::TaskDefinition
   DatagrokTaskExecutionRole:
     Properties:
@@ -3855,8 +3858,6 @@ Resources:
           HostPort: 8000
           Protocol: tcp
       Cpu: '256'
-      DatagrokTaskRoleArn:
-        Ref: GrokSpawnerTaskRole
       ExecutionRoleArn:
         Fn::GetAtt:
         - DatagrokTaskExecutionRole
@@ -3866,6 +3867,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
+      TaskRoleArn:
+        Ref: GrokSpawnerTaskRole
     Type: AWS::ECS::TaskDefinition
   GrokSpawnerTaskRole:
     Properties:

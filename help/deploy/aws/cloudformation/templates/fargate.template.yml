@@ -1,3 +1,4 @@
+#file: noinspection YAMLIncompatibleTypes
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: "Datagrok template to deploy all components to ECS Fargate in new VPC"
@@ -226,7 +227,7 @@ Resources:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      DatagrokNatGatewayId:
+      NatGatewayId:
         Ref: DatagrokNatGateway
       RouteTableId:
         Ref: DatagrokPrivateSubnetRouteTable
@@ -374,11 +375,11 @@ Resources:
       SubnetId:
         Ref: DatagrokDataSubnet2
   DatagrokDBSubnetGroup:
-    Type: AWS::RDS::DatagrokDatagrokDBSubnetGroup
+    Type: AWS::RDS::DBSubnetGroup
     Properties:
-      DatagrokDBSubnetGroupDescription:
+      DBSubnetGroupDescription:
         Fn::Sub: "${AWS::StackName} Datagrok DatagrokDB Subnet Group"
-      DatagrokDBSubnetGroupName:
+      DBSubnetGroupName:
         Fn::Sub: "${AWS::StackName}-datagrok-rds-subnet"
       SubnetIds:
         - Ref: DatagrokDataSubnet1
@@ -508,7 +509,8 @@ Resources:
           IpProtocol: TCP
           SourceSecurityGroupId:
             Ref: DatagrokSecurityGroup
-        - Description: "${AWS::StackName} Allow internal connections from Datagrok to H2O GH"
+        - Description:
+            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to H2O GH"
           FromPort: 5005
           ToPort: 5005
           IpProtocol: TCP
@@ -1059,7 +1061,7 @@ Resources:
       Protocol: HTTPS
       Certificates:
         - CertificateArn:
-            Ref: ArnSSLCertificate
+            Ref: DatagrokArnSSLCertificate
     Type: AWS::ElasticLoadBalancingV2::Listener
   GrokComputeTCP5005TargetGroup:
     Properties:
@@ -1268,7 +1270,7 @@ Resources:
       Protocol: HTTPS
       Certificates:
         - CertificateArn:
-            Ref: ArnSSLCertificate
+            Ref: DatagrokArnSSLCertificate
     Type: AWS::ElasticLoadBalancingV2::Listener
   DatagrokH2oTCP5005IntListener:
     Properties:
@@ -1343,7 +1345,7 @@ Resources:
       Protocol: HTTPS
       Certificates:
         - CertificateArn:
-            Ref: ArnSSLCertificate
+            Ref: DatagrokArnSSLCertificate
     Type: AWS::ElasticLoadBalancingV2::Listener
   DatagrokH2oTCP54321IntListener:
     Properties:
@@ -2124,7 +2126,8 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
   DatagrokCloudMap:
     Properties:
-      Description: "${AWS::StackName} Service Map for Datagrok"
+      Description:
+        Fn::Sub: "${AWS::StackName} Service Map for Datagrok"
       Name:
         Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
       Vpc:
@@ -2255,7 +2258,7 @@ Resources:
       Protocol: HTTPS
       Certificates:
         - CertificateArn:
-            Ref: ArnSSLCertificate
+            Ref: DatagrokArnSSLCertificate
     Type: AWS::ElasticLoadBalancingV2::Listener
   DatagrokTCP8080IntListener:
     Properties:
@@ -2654,7 +2657,7 @@ Resources:
                 aws:SourceVpce:
                   Ref: DatagrokS3VPCEndpoint
                 "aws:PrincipalArn":
-                  - "arn:aws:iam::${AWS::AccountId}:root",
+                  - Fn::Sub: "arn:aws:iam::${AWS::AccountId}:root",
                   - Ref: DatagrokS3EmptyLambdaRole
             Effect: Deny
             Principal: '*'
@@ -2750,7 +2753,7 @@ Resources:
                   print(type(e).__name__, e)
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception': f"{type(e).__name__} {e}"})
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.10
       Role:
         Fn::GetAtt:
           - DatagrokS3EmptyLambdaRole
@@ -2896,7 +2899,7 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - "FARGATE"
-      DatagrokTaskRoleArn:
+      TaskRoleArn:
         Ref: DatagrokTaskRole
     Type: AWS::ECS::TaskDefinition
   DatagrokPolicy:
@@ -3558,7 +3561,7 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - "FARGATE"
-      DatagrokTaskRoleArn:
+      TaskRoleArn:
         Ref: GrokSpawnerTaskRole
     Type: AWS::ECS::TaskDefinition
   DatagrokKanikoTaskDefinition:

@@ -1,3 +1,4 @@
+#file: noinspection YAMLIncompatibleTypes
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
@@ -133,7 +134,10 @@ Outputs:
   DatagrokEndpoint:
     Description: Datagrok endpoint
     Value:
-      Ref: DatagrokDNS
+      Fn::If:
+      - CreateDNS
+      - Ref: DatagrokDNS
+      - Create DNS endpoint for Datagrok manually using DatagrokLoadBalancer
 Parameters:
   CIDR:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
@@ -406,8 +410,9 @@ Resources:
         SourceSecurityGroupId:
           Ref: DatagrokSecurityGroup
         ToPort: 54321
-      - Description: ${AWS::StackName} Allow internal connections from Datagrok to
-          H2O GH
+      - Description:
+          Fn::Sub: ${AWS::StackName} Allow internal connections from Datagrok to H2O
+            GH
         FromPort: 5005
         IpProtocol: TCP
         SourceSecurityGroupId:
@@ -452,11 +457,11 @@ Resources:
       AliasTarget:
         DNSName:
           Fn::GetAtt:
-          - LoadBalancerCvm
+          - CvmLoadBalancer
           - DNSName
         HostedZoneId:
           Fn::GetAtt:
-          - LoadBalancerCvm
+          - CvmLoadBalancer
           - CanonicalHostedZoneID
       Comment:
         Fn::Sub: ${AWS::StackName} Public Datagrok CVM DNS
@@ -618,7 +623,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - FixedResponseConfig:
           StatusCode: 204
@@ -854,7 +859,8 @@ Resources:
     Type: AWS::CertificateManager::Certificate
   DatagrokCloudMap:
     Properties:
-      Description: ${AWS::StackName} Service Map for Datagrok
+      Description:
+        Fn::Sub: ${AWS::StackName} Service Map for Datagrok
       Name:
         Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
       Vpc:
@@ -934,9 +940,9 @@ Resources:
     Type: AWS::EC2::SecurityGroup
   DatagrokDBSubnetGroup:
     Properties:
-      DatagrokDBSubnetGroupDescription:
+      DBSubnetGroupDescription:
         Fn::Sub: ${AWS::StackName} Datagrok DatagrokDB Subnet Group
-      DatagrokDBSubnetGroupName:
+      DBSubnetGroupName:
         Fn::Sub: ${AWS::StackName}-datagrok-rds-subnet
       SubnetIds:
       - Ref: DatagrokDataSubnet1
@@ -944,18 +950,18 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: rds
-    Type: AWS::RDS::DatagrokDatagrokDBSubnetGroup
+    Type: AWS::RDS::DBSubnetGroup
   DatagrokDNS:
     Condition: CreateDNS
     Properties:
       AliasTarget:
         DNSName:
           Fn::GetAtt:
-          - LoadBalancerDatagrok
+          - DatagrokLoadBalancer
           - DNSName
         HostedZoneId:
           Fn::GetAtt:
-          - LoadBalancerDatagrok
+          - DatagrokLoadBalancer
           - CanonicalHostedZoneID
       Comment:
         Fn::Sub: ${AWS::StackName} Public Datagrok DNS
@@ -1250,7 +1256,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - ForwardConfig:
           TargetGroups:
@@ -1325,7 +1331,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - ForwardConfig:
           TargetGroups:
@@ -2425,9 +2431,9 @@ Resources:
   DatagrokPrivateSubnetNatRoute:
     Condition: InternetEgressAccess
     Properties:
-      DatagrokNatGatewayId:
-        Ref: DatagrokNatGateway
       DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: DatagrokNatGateway
       RouteTableId:
         Ref: DatagrokPrivateSubnetRouteTable
     Type: AWS::EC2::Route
@@ -2592,7 +2598,7 @@ Resources:
         Fn::GetAtt:
         - DatagrokR53CleanupLambdaRole
         - Arn
-      Runtime: python3.11
+      Runtime: python3.10
       Timeout: 600
     Type: AWS::Lambda::Function
   DatagrokR53CleanupLambdaFunctionLogGroup:
@@ -2701,7 +2707,7 @@ Resources:
         Fn::GetAtt:
         - DatagrokS3EmptyLambdaRole
         - Arn
-      Runtime: python3.11
+      Runtime: python3.10
       Timeout: 600
     Type: AWS::Lambda::Function
   DatagrokS3EmptyLambdaFunctionDatagrokLogGroup:
@@ -2767,7 +2773,7 @@ Resources:
           Condition:
             StringNotEquals:
               aws:PrincipalArn:
-              - arn:aws:iam::${AWS::AccountId}:root
+              - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
               - Ref: DatagrokS3EmptyLambdaRole
               aws:SourceVpce:
                 Ref: DatagrokS3VPCEndpoint
@@ -2984,6 +2990,7 @@ Resources:
     DependsOn:
     - DatagrokService
     - DatagrokSettingsSetLambdaFunctionLogGroup
+    - DatagrokS3VPCEndpoint
     Properties:
       DevKey:
         Ref: DatagrokAdminDevKey
@@ -3046,7 +3053,7 @@ Resources:
           \ oldSettings['settings']['#type'],\n                'apiUrl': oldSettings['settings']['apiUrl'],\n\
           \                'cvmUrl': oldSettings['settings']['cvmUrl'],\n        \
           \        'h2oUrl': oldSettings['settings']['h2oUrl'],\n                'cvmUrlClient':\
-          \ cvmClient,\n                'cvmSplit': oldSettings['settings']['cvmSplit'],\n\
+          \ f\"https://{cvmClient}\",\n                'cvmSplit': oldSettings['settings']['cvmSplit'],\n\
           \                'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],\n\
           \                'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']\n\
           \            }\n\n            setSettings = http.request(\"POST\", f'{host}/api/admin/plugins/scripts/settings',\n\
@@ -3055,11 +3062,12 @@ Resources:
           \ \"Content-Type\": \"application/json\"},\n                           \
           \            retries=retry)\n            status = setSettings.status\n \
           \           if status != 200:\n                raise Exception(f'Could not\
-          \ update settings for {host} with status code {status}')\n        cfnresponse.send(event,\
-          \ context, cfnresponse.SUCCESS, {'Status': status})\n    except Exception\
-          \ as e:\n        print(type(e).__name__, e)\n        cfnresponse.send(event,\
-          \ context, cfnresponse.FAILED, {'Exception': f\"{type(e).__name__}: {e}\"\
-          })\n"
+          \ update settings for {host} with status code {status}')\n            else:\n\
+          \                print(f\"Changed Cvm Client Url to https://{cvmClient}\"\
+          )\n        cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status':\
+          \ status})\n    except Exception as e:\n        print(type(e).__name__,\
+          \ e)\n        cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception':\
+          \ f\"{type(e).__name__}: {e}\"})\n"
       Description: Sets required settings for Datagrok
       Handler: index.handler
       MemorySize: 128
@@ -3067,14 +3075,14 @@ Resources:
         Fn::GetAtt:
         - DatagrokSettingsSetLambdaRole
         - Arn
-      Runtime: python3.11
+      Runtime: python3.10
       Timeout: 600
       VpcConfig:
         SecurityGroupIds:
         - Ref: DatagrokSecurityGroup
         SubnetIds:
-        - Ref: PrivateSubnet1
-        - Ref: PrivateSubnet2
+        - Ref: DatagrokPrivateSubnet1
+        - Ref: DatagrokPrivateSubnet2
     Type: AWS::Lambda::Function
   DatagrokSettingsSetLambdaFunctionLogGroup:
     DeletionPolicy: Delete
@@ -3118,11 +3126,11 @@ Resources:
             - Fn::Sub:
               - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
               - subnet_id:
-                  Ref: PrivateSubnet1
+                  Ref: DatagrokPrivateSubnet1
             - Fn::Sub:
               - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
               - subnet_id:
-                  Ref: PrivateSubnet2
+                  Ref: DatagrokPrivateSubnet2
             - Fn::Sub:
               - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${security_group_id}
               - security_group_id:
@@ -3138,16 +3146,16 @@ Resources:
                 - Fn::Sub:
                   - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}
                   - subnet:
-                      Ref: PrivateSubnet1
+                      Ref: DatagrokPrivateSubnet1
                 - Fn::Sub:
                   - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}
                   - subnet:
-                      Ref: PrivateSubnet2
+                      Ref: DatagrokPrivateSubnet2
                 ec2:Vpc:
                   Fn::Sub:
                   - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${vpc}
                   - vpc:
-                      Ref: VPC
+                      Ref: DatagrokVPC
             Effect: Allow
             Resource: '*'
           - Action:
@@ -3163,7 +3171,7 @@ Resources:
     Properties:
       Certificates:
       - CertificateArn:
-          Ref: ArnSSLCertificate
+          Ref: DatagrokArnSSLCertificate
       DefaultActions:
       - ForwardConfig:
           TargetGroups:
@@ -3373,8 +3381,6 @@ Resources:
           HostPort: 8080
           Protocol: tcp
       Cpu: '2048'
-      DatagrokTaskRoleArn:
-        Ref: DatagrokTaskRole
       ExecutionRoleArn:
         Fn::GetAtt:
         - DatagrokTaskExecutionRole
@@ -3384,6 +3390,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
+      TaskRoleArn:
+        Ref: DatagrokTaskRole
     Type: AWS::ECS::TaskDefinition
   DatagrokTaskExecutionRole:
     Properties:
@@ -4221,8 +4229,6 @@ Resources:
           HostPort: 8000
           Protocol: tcp
       Cpu: '256'
-      DatagrokTaskRoleArn:
-        Ref: GrokSpawnerTaskRole
       ExecutionRoleArn:
         Fn::GetAtt:
         - DatagrokTaskExecutionRole
@@ -4232,6 +4238,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
+      TaskRoleArn:
+        Ref: GrokSpawnerTaskRole
     Type: AWS::ECS::TaskDefinition
   GrokSpawnerTaskRole:
     Properties:

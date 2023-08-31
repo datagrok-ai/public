@@ -51,11 +51,11 @@ Resources:
       AliasTarget:
         HostedZoneId:
           Fn::GetAtt:
-            - LoadBalancerDatagrok
+            - DatagrokLoadBalancer
             - CanonicalHostedZoneID
         DNSName:
           Fn::GetAtt:
-            - LoadBalancerDatagrok
+            - DatagrokLoadBalancer
             - DNSName
       Comment:
         Fn::Sub: "${AWS::StackName} Public Datagrok DNS"
@@ -74,11 +74,11 @@ Resources:
       AliasTarget:
         HostedZoneId:
           Fn::GetAtt:
-            - LoadBalancerCvm
+            - CvmLoadBalancer
             - CanonicalHostedZoneID
         DNSName:
           Fn::GetAtt:
-            - LoadBalancerCvm
+            - CvmLoadBalancer
             - DNSName
       Comment:
         Fn::Sub: "${AWS::StackName} Public Datagrok CVM DNS"
@@ -161,11 +161,11 @@ Resources:
                   - Fn::Sub:
                       - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
                       - subnet_id:
-                          Ref: PrivateSubnet1
+                          Ref: DatagrokPrivateSubnet1
                   - Fn::Sub:
                       - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
                       - subnet_id:
-                          Ref: PrivateSubnet2
+                          Ref: DatagrokPrivateSubnet2
                   - Fn::Sub:
                       - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${security_group_id}
                       - security_group_id:
@@ -182,16 +182,16 @@ Resources:
                       Fn::Sub:
                         - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${vpc}"
                         - vpc:
-                            Ref: VPC
+                            Ref: DatagrokVPC
                     "ec2:Subnet":
                       - Fn::Sub:
                           - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}"
                           - subnet:
-                              Ref: PrivateSubnet1
+                              Ref: DatagrokPrivateSubnet1
                       - Fn::Sub:
                           - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}"
                           - subnet:
-                              Ref: PrivateSubnet2
+                              Ref: DatagrokPrivateSubnet2
                 Resource: '*'
               - Effect: Allow
                 Action:
@@ -282,7 +282,7 @@ Resources:
                           'apiUrl': oldSettings['settings']['apiUrl'],
                           'cvmUrl': oldSettings['settings']['cvmUrl'],
                           'h2oUrl': oldSettings['settings']['h2oUrl'],
-                          'cvmUrlClient': cvmClient,
+                          'cvmUrlClient': f"https://{cvmClient}",
                           'cvmSplit': oldSettings['settings']['cvmSplit'],
                           'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],
                           'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
@@ -295,12 +295,14 @@ Resources:
                       status = setSettings.status
                       if status != 200:
                           raise Exception(f'Could not update settings for {host} with status code {status}')
+                      else:
+                          print(f"Changed Cvm Client Url to https://{cvmClient}")
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status': status})
               except Exception as e:
                   print(type(e).__name__, e)
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception': f"{type(e).__name__}: {e}"})
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.10
       Role:
         Fn::GetAtt:
           - DatagrokSettingsSetLambdaRole
@@ -311,8 +313,8 @@ Resources:
         SecurityGroupIds:
           - Ref: DatagrokSecurityGroup
         SubnetIds:
-          - Ref: PrivateSubnet1
-          - Ref: PrivateSubnet2
+          - Ref: DatagrokPrivateSubnet1
+          - Ref: DatagrokPrivateSubnet2
   DatagrokSettingsSetLambdaFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -329,6 +331,7 @@ Resources:
     DependsOn:
       - DatagrokService
       - DatagrokSettingsSetLambdaFunctionLogGroup
+      - DatagrokS3VPCEndpoint
     Properties:
       DevKey:
         Ref: DatagrokAdminDevKey
@@ -429,7 +432,7 @@ Resources:
                   print(type(e).__name__, e)
                   cfnresponse.send(event, context, cfnresponse.FAILED, responseData)
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.10
       Role:
         Fn::GetAtt:
           - DatagrokR53CleanupLambdaRole
@@ -464,4 +467,7 @@ Outputs:
   DatagrokEndpoint:
     Description: Datagrok endpoint
     Value:
-      Ref: DatagrokDNS
+      Fn::If:
+        - CreateDNS
+        - Ref: DatagrokDNS
+        - 'Create DNS endpoint for Datagrok manually using DatagrokLoadBalancer'
