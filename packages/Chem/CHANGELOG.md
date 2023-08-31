@@ -1,5 +1,32 @@
 # Chem changelog
 
+## 1.7.1 (2023-08-31)
+
+### Features
+
+* GROK-13571: Chem | Ability to terminate substructure search if substructure has been changed
+
+### Bug Fixes
+
+* GROK-13327: Chem | Substructure Search: two identical panels open on the Filter Panel
+* GROK-13791: Chem | Chemical space (using t-SNE) fails on smiles dataset
+* [#2135](https://github.com/datagrok-ai/public/issues/2135):
+  * The structure rendering is too small.
+* [#2322](https://github.com/datagrok-ai/public/issues/2322): Properties panel is unexpectedly reset on changing viewer properties if there is a scaffold tree filter in filters panel 
+* GROK-13848: Chem: Substructure search results flickering
+
+## 1.7.0 (2023-08-09)
+
+### Features
+
+* GROK-13172: Chem | implement substructure search using JSSubstructLibrary
+
+## 1.6.22 (2023-08-07)
+
+### Bug Fixes
+
+* GROK-13713: Chem | Incorrect molecule rendering
+
 ## 1.6.21 (2023-08-02)
 
 *Dependency: datagarok-api >= 1.16.0*
