@@ -89,7 +89,7 @@ Resources:
           - "${AWS::StackName}-datagrok-cvm.${domain}."
           - domain:
               Ref: DNSDomain
-  ArnSSLCertificate:
+  DatagrokArnSSLCertificate:
     Type: AWS::CertificateManager::Certificate
     Condition: CreateSSL
     Properties:
@@ -126,7 +126,7 @@ Resources:
             Fn::Sub: "${AWS::StackName}-datagrok"
       ValidationMethod: DNS
 
-  SettingsSetLambdaRole:
+  DatagrokSettingsSetLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -149,7 +149,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-SettingsSetLambdaFunction-*:*"
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokSettingsSetLambdaFunction-*:*"
               - Effect: Allow
                 Action:
                   - 'ec2:DescribeNetworkInterfaces'
@@ -195,18 +195,21 @@ Resources:
                 Resource: '*'
 
   SettingsSetLambdaFunction:
+              - Effect: Allow
     Type: AWS::Lambda::Function
     Properties:
       Description: Sets required settings for Datagrok
       Code:
         ZipFile: |
+          import base64
           import json
           import os
+          import boto3
           import urllib3
           from urllib3.util import Retry
-          import cfnresponse
 
           http = urllib3.PoolManager()
+          timeout = urllib3.Timeout(connect=5.0, read=5.0)
           retries = 10
           retry = Retry(
               total=retries,
@@ -219,11 +222,12 @@ Resources:
               try:
                   status = 0
                   if event['RequestType'] != 'Delete':
-                      key = event['ResourceProperties']['DevKey']
+                      key_arn = event['ResourceProperties']['DevKey']
                       host = event['ResourceProperties']['Host']
                       cvmClient = event['ResourceProperties']['cvmClient']
 
                       http.request("GET", f'https://{host}/api/info/server', retries=retry)
+                      session = boto3.session.Session()
 
                       r = http.request("POST", f'https://{host}/api/users/login/dev/{key}', retries=retry)
                       auth = json.loads(r.data)['token']
@@ -231,6 +235,7 @@ Resources:
                                                   headers={'Authorization': auth},
                                                   retries=retry)
                       oldSettings = json.loads(get_settings.data)
+                      while True:
                       new_settings = {
                           '#type': oldSettings['settings']['#type'],
                           'apiUrl': oldSettings['settings']['apiUrl'],
@@ -242,6 +247,7 @@ Resources:
                           'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
                       }
                       setSettings = http.request("POST", f'https://{host}/api/admin/plugins/scripts/settings',
+
                                                  body=json.dumps(new_settings),
                                                  headers={'Authorization': auth, "Content-Type": "application/json"},
                                                  retries=retry)
@@ -256,7 +262,7 @@ Resources:
       Runtime: python3.11
       Role:
         Fn::GetAtt:
-          - SettingsSetLambdaRole
+          - DatagrokSettingsSetLambdaRole
           - Arn
       MemorySize: 128
       Timeout: 600
@@ -266,7 +272,7 @@ Resources:
         SubnetIds:
           - Ref: PrivateSubnet1
           - Ref: PrivateSubnet2
-  SettingsSetLambdaFunctionLogGroup:
+  DatagrokSettingsSetLambdaFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -275,29 +281,30 @@ Resources:
         Fn::Sub:
           - "/aws/lambda/${function_name}"
           - function_name:
-              Ref: SettingsSetLambdaFunction
+              Ref: DatagrokSettingsSetLambdaFunction
       RetentionInDays: 1
-  SettingsSet:
+  DatagrokSettingsSet:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
       - DatagrokService
-      - SettingsSetLambdaFunctionLogGroup
+      - DatagrokSettingsSetLambdaFunctionLogGroup
     Properties:
       DevKey:
+        Ref: DatagrokAdminDevKey
         Fn::Sub:
-          - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-          - secret:
-              Ref: AdminDevKey
-      Host:
-        Ref: DatagrokDNS
+          - "http://${dns}:8080"
+          - dns:
+              Fn::GetAtt:
+                - DatagrokLoadBalancerInt
+                - DNSName
       cvmClient:
         Ref: CvmDNS
       ServiceToken:
         Fn::GetAtt:
-          - SettingsSetLambdaFunction
+          - DatagrokSettingsSetLambdaFunction
           - Arn
 
-  R53CleanupLambdaRole:
+  DatagrokR53CleanupLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -320,12 +327,12 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-R53CleanupLambdaFunction-*:*"
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokR53CleanupLambdaFunction-*:*"
               - Effect: Allow
                 Action:
                   - 'acm:DescribeCertificate'
                 Resource:
-                  Ref: ArnSSLCertificate
+                  Ref: DatagrokArnSSLCertificate
               - Effect: Allow
                 Action:
                   - 'route53:ListResourceRecordSets'
@@ -335,7 +342,7 @@ Resources:
                     - "arn:${AWS::Partition}:route53:::hostedzone/${zone}"
                     - zone:
                         Ref: DNSZoneId
-  R53CleanupLambdaFunction:
+  DatagrokR53CleanupLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Description: Removes obsolete validation records from AWS
@@ -383,11 +390,11 @@ Resources:
       Runtime: python3.11
       Role:
         Fn::GetAtt:
-          - R53CleanupLambdaRole
+          - DatagrokR53CleanupLambdaRole
           - Arn
       MemorySize: 128
       Timeout: 600
-  R53CleanupLambdaFunctionLogGroup:
+  DatagrokR53CleanupLambdaFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -396,20 +403,20 @@ Resources:
         Fn::Sub:
           - "/aws/lambda/${function_name}"
           - function_name:
-              Ref: R53CleanupLambdaFunction
+              Ref: DatagrokR53CleanupLambdaFunction
       RetentionInDays: 1
-  R53Cleanup:
+  DatagrokR53Cleanup:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
-      - R53CleanupLambdaFunctionLogGroup
+      - DatagrokR53CleanupLambdaFunctionLogGroup
     Properties:
       SSLCertificate:
-        Ref: ArnSSLCertificate
+        Ref: DatagrokArnSSLCertificate
       DNSZone:
         Ref: DNSZoneId
       ServiceToken:
         Fn::GetAtt:
-          - R53CleanupLambdaFunction
+          - DatagrokR53CleanupLambdaFunction
           - Arn
 Outputs:
   DatagrokEndpoint:

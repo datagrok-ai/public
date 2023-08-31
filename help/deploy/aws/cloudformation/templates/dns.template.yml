@@ -7,36 +7,37 @@ Metadata:
       - Label:
           default: "Client Endpoint configuration"
         Parameters:
-          - ArnSSLCertificate
+          - DatagrokArnSSLCertificate
     ParameterLabels:
       ArnSSLCertificate:
         default: "ArnSSLCertificate: AWS ACM certificate ARN"
+      DatagrokArnSSLCertificate:
 Parameters:
-  ArnSSLCertificate:
+  DatagrokArnSSLCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
     Description: The certificate is used for both Datagrok and CVM client endpoints. If you do not use Route53 for DNS management, it is required to upload certificate to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html) and specify the Certificate ARN here.
 Conditions:
   CreateDNS:
     Fn::Equals:
-      - Ref: ArnSSLCertificate
+      - Ref: DatagrokArnSSLCertificate
       - ''
   CreateSSL:
     Fn::Equals:
-      - Ref: ArnSSLCertificate
+      - Ref: DatagrokArnSSLCertificate
       - ''
 Outputs:
   DatagrokLoadBalancerDNSName:
     Description: Datagrok Load Balancer DNS to create CNAME record
     Value:
       Fn::GetAtt:
-        - LoadBalancerDatagrok
+        - DatagrokLoadBalancer
         - DNSName
     Condition: CreateDNS
   CvmLoadBalancerDNSName:
     Description: Datagrok CVM Load Balancer DNS to create CNAME record
     Value:
       Fn::GetAtt:
-        - LoadBalancerCvm
+        - CvmLoadBalancer
         - DNSName
     Condition: CreateDNS
