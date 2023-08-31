@@ -146,9 +146,8 @@ Resources:
       RouteTableId:
         Ref: DatagrokPublicSubnetRouteTable
       SubnetId:
-        Ref: PublicSubnet1
-  PublicSubnet2:
         Ref: DatagrokPublicSubnet1
+  DatagrokPublicSubnet2:
     Condition: CreatePublicSubnets
     Properties:
       CidrBlock:
@@ -875,6 +874,12 @@ Resources:
           SourceSecurityGroupId:
             Ref: CvmSecurityGroup
         - Description:
+            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Datagrok"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: TCP
+          SourceSecurityGroupId:
+            Ref: DatagrokSecurityGroup
         - Description:
             Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Grok Connect"
           FromPort: 1234
@@ -933,9 +938,8 @@ Resources:
               - "arn:aws:ecr:us-east-1:709825985650:repository/datagrok/*"
               - Fn::Sub: "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*"
       ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}-ECSPolicy-${AWS::Region}"
-  TaskExecutionRole:
         Fn::Sub: "${AWS::StackName}-DatagrokECSPolicy-${AWS::Region}"
+  DatagrokTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -3648,5 +3652,7 @@ Outputs:
   DatagrokAdminPassword:
     Description: Admin password for first login
     Value:
-      Ref: AdminPassword
       Fn::Sub:
+        - "https://${AWS::Region}.console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${secret}"
+        - secret:
+            Ref: DatagrokAdminPassword
