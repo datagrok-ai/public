@@ -92,6 +92,7 @@ Resources:
       VpcId:
         Ref: VPC
   PublicSubnetRouteTable:
+        Ref: DatagrokVPC
     Condition: CreatePublicSubnets
     Properties:
       Tags:
@@ -113,6 +114,7 @@ Resources:
       RouteTableId:
         Ref: PublicSubnetRouteTable
   PublicSubnet1:
+        Ref: DatagrokPublicSubnetRouteTable
     Condition: CreatePublicSubnets
     Properties:
       CidrBlock:
