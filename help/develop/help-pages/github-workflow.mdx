@@ -1,5 +1,6 @@
 ---
 title: "Help docs contribution workflow"
+
 sidebar_position: 1
 keywords:
  - docs
@@ -360,7 +361,6 @@ or make a pull request to merge your changes to the master branch.
 
 When you completed your task,
 you are ready to make a pull request to the master branch.
-
 Review the
 [Github documentation](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
 for the details of pull request creation.
@@ -368,6 +368,36 @@ for the details of pull request creation.
 The pull request name should follow the same template as the commit message. For example:
 
 `GROK-13754: Help docs contribution: Reworked help page for documentation contribution`
+
+### How to fix my pull request
+
+GitHub performs a set of automated checks for every pull request.
+This section describes most common issues revealed by these checks and tips to resolve it.
+
+* **Incorrect pull request name**. Just correct the pull request name via GitHub UI
+  according to the [naming convention](#8-create-a-pull-request).
+* **Incorrect commit message for the latest commit**.
+  * Run `git commit --amend` and provide a new commit message.
+  * Run `git push --force-with-lease` to overwrite comments in your branch
+
+   :::warning Never overwrite commits in the master branch.
+   Changing comment in the master branch can be very tricky and dangerous.
+   Never do it unless you're absolutely sure what are you doing.
+   In most cases if you have accidentally published commit with failed checks in the master branch,
+   the best solution would be leave it as is. And do not repeat this mistake.
+   :::
+
+* **Errors in documentation files**. Incorrect links, linting errors. etc.
+  * Fix all revealed errors in the documentation files
+  * Run `git add` to add all changed files
+  * Run `git commit --amend --no-edit`. This action changes files in the last commit.
+  * Run `git push --force-with-lease` to overwrite comments in your branch. Please note  
+
+* **Incorrect commit messages in several commits**. This could be tricky.  
+  * Use `git rebase -i` set for picking all commits and provide a correct commit message for each of them.
+    Please be careful, review the [git rebase documentaion](https://git-scm.com/docs/git-rebase).
+    If you are not familiar with `git rebase`, make a backup of your files, or even a whole repository.
+  * Run `git push --force-with-lease` to overwrite comments in your branch
 
 ## Workflow for documentation owners
 
