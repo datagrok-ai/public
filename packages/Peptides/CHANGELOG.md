@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.12.1 (WIP)
+
+### Bug Fixes
+
+* Logo Summary Table: Fixed interaction.
+
 ## 1.12.0 (2023-08-30)
 
 ### Features
