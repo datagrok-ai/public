@@ -25,28 +25,20 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   twoColorMode: boolean = false, renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal: number = positionStats[currentAAR].pValue;
-  const currentMeanDiff = positionStats[currentAAR].meanDifference;
 
   let coef: string;
-  const isMeanDeltaNegative = currentMeanDiff < 0;
   if (pVal < 0.01)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FF7900' : '#299617';
+    coef = twoColorMode ? '#FF7900' : '#299617';
   else if (pVal < 0.05)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FFA500' : '#32CD32';
+    coef = twoColorMode ? '#FFA500' : '#32CD32';
   else if (pVal < 0.1)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FBCEB1' : '#98FF98';
+    coef = twoColorMode ? '#FBCEB1' : '#98FF98';
   else
     coef = DG.Color.toHtml(DG.Color.lightLightGray);
 
-
-  const minMeanDifference = twoColorMode ? 0 : monomerPositionStats.general.minMeanDifference;
-  const maxMeanDifference = twoColorMode ?
-    Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference) :
-    monomerPositionStats.general.maxMeanDifference;
-  const currentMeanDifference = twoColorMode ? Math.abs(currentMeanDiff) : currentMeanDiff;
-
-  const rCoef = (currentMeanDifference - minMeanDifference) / (maxMeanDifference - minMeanDifference);
-
+  const maxMeanDifference = Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference);
+  const currentMeanDifference = Math.abs(positionStats[currentAAR].meanDifference);
+  const rCoef = currentMeanDifference / maxMeanDifference;
   const maxRadius = 0.9 * (bound.width > bound.height ? bound.height : bound.width) / 2;
   const radius = Math.floor(maxRadius * rCoef);
 

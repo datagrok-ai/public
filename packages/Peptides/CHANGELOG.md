@@ -2,6 +2,10 @@
 
 ## 1.12.1 (WIP)
 
+### Features
+
+* Monomer-Position and Most Potent Residues: Circle size is now based on absolute value of mean difference.
+
 ### Bug Fixes
 
 * Logo Summary Table: Fixed interaction.
