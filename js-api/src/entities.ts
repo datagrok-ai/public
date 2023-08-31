@@ -646,6 +646,8 @@ export class FileInfo extends Entity {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
   // }
 
+  get data(): Uint8Array {return api.grok_FileInfo_Get_Data(this.dart);}
+
   readAsString(): Promise<string> {
     return api.grok_FileInfo_ReadAsString(this.dart);
   }
