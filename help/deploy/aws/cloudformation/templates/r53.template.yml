@@ -193,9 +193,12 @@ Resources:
                           - subnet:
                               Ref: PrivateSubnet2
                 Resource: '*'
-
-  SettingsSetLambdaFunction:
               - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetSecretValue'
+                Resource:
+                  Ref: DatagrokAdminDevKey
+  DatagrokSettingsSetLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Description: Sets required settings for Datagrok
@@ -203,13 +206,13 @@ Resources:
         ZipFile: |
           import base64
           import json
-          import os
           import boto3
+          import cfnresponse
           import urllib3
           from urllib3.util import Retry
 
-          http = urllib3.PoolManager()
           timeout = urllib3.Timeout(connect=5.0, read=5.0)
+          http = urllib3.PoolManager(timeout=timeout)
           retries = 10
           retry = Retry(
               total=retries,
@@ -226,16 +229,54 @@ Resources:
                       host = event['ResourceProperties']['Host']
                       cvmClient = event['ResourceProperties']['cvmClient']
 
-                      http.request("GET", f'https://{host}/api/info/server', retries=retry)
                       session = boto3.session.Session()
+                      client = session.client(service_name='secretsmanager')
+                      response = client.get_secret_value(SecretId=key_arn)
+                      if 'SecretString' in response:
+                          secret = response['SecretString']
+                          j = json.loads(secret)
+                          devKey = j['password']
+                      else:
+                          decoded_binary_secret = base64.b64decode(response['SecretBinary'])
+                          devKey = decoded_binary_secret.password
 
-                      r = http.request("POST", f'https://{host}/api/users/login/dev/{key}', retries=retry)
-                      auth = json.loads(r.data)['token']
-                      get_settings = http.request("GET", f'https://{host}/api/admin/plugins/scripts/settings',
-                                                  headers={'Authorization': auth},
-                                                  retries=retry)
-                      oldSettings = json.loads(get_settings.data)
                       while True:
+                          r = http.request("GET", f'{host}/api/info/server', retries=retry)
+                          if r.data:
+                              try:
+                                  print(f"{host} is available for {json.loads(r.data)['Uptime']}.")
+                                  break
+                              except (ValueError, KeyError) as e:
+                                  print(type(e).__name__, e)
+                                  print(f"Response for url {host}/api/info/server: {r.data}")
+                          print(f"{host} is unavailable.")
+
+                      auth = ''
+                      while True:
+                          r = http.request("POST", f'{host}/api/users/login/dev/{devKey}', retries=retry)
+                          if r.data:
+                              try:
+                                  auth = json.loads(r.data)['token']
+                                  print(f"Got auth for {host}.")
+                                  break
+                              except (ValueError, KeyError) as e:
+                                  print(type(e).__name__, e)
+                                  print(f"Response for url {host}/api/users/login/dev/XXX: {r.data}")
+
+                      oldSettings = {}
+                      while True:
+                          r = http.request("GET", f'{host}/api/admin/plugins/scripts/settings',
+                                           headers={'Authorization': auth},
+                                           retries=retry)
+                          if r.data:
+                              try:
+                                  oldSettings = json.loads(r.data)
+                                  print(f"Got settings for {host}.")
+                                  break
+                              except ValueError as e:
+                                  print(type(e).__name__, e)
+                                  print(f"Response for url {host}/api/admin/plugins/scripts/settings: {r.data}")
+
                       new_settings = {
                           '#type': oldSettings['settings']['#type'],
                           'apiUrl': oldSettings['settings']['apiUrl'],
@@ -246,8 +287,8 @@ Resources:
                           'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],
                           'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
                       }
-                      setSettings = http.request("POST", f'https://{host}/api/admin/plugins/scripts/settings',
 
+                      setSettings = http.request("POST", f'{host}/api/admin/plugins/scripts/settings',
                                                  body=json.dumps(new_settings),
                                                  headers={'Authorization': auth, "Content-Type": "application/json"},
                                                  retries=retry)
@@ -291,6 +332,7 @@ Resources:
     Properties:
       DevKey:
         Ref: DatagrokAdminDevKey
+      Host:
         Fn::Sub:
           - "http://${dns}:8080"
           - dns:

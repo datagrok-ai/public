@@ -9,9 +9,8 @@ Metadata:
         Parameters:
           - DatagrokArnSSLCertificate
     ParameterLabels:
-      ArnSSLCertificate:
-        default: "ArnSSLCertificate: AWS ACM certificate ARN"
       DatagrokArnSSLCertificate:
+        default: "DatagrokArnSSLCertificate: AWS ACM certificate ARN"
 Parameters:
   DatagrokArnSSLCertificate:
     Type: String
