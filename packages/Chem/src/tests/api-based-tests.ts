@@ -33,7 +33,7 @@ category('server features', () => {
 category('chem exported', () => {
   test('findSimilar.api.sar-small', async () => {
     await _testFindSimilar(grok.chem.findSimilar);
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('getSimilarities.api.molecules', async () => {
     await _testGetSimilarities(grok.chem.getSimilarities, grok.data.demo.molecules(100));

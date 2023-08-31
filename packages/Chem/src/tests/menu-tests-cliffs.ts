@@ -39,7 +39,7 @@ category('top menu activity cliffs', async () => {
   test('activityCliffs.emptyValues', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_empty_rows.csv'),
       'smiles', 'Activity', 1);
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('activityCliffs.malformedData', async () => {
     DG.Balloon.closeAll();
