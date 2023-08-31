@@ -37,7 +37,7 @@ for (const lang of langs) {
       expectTable(result['resultCategorical'], df);
     });
 
-    test(`Dataframe performance test ${lang == 'Octave' ? 5 : 15} consequently`, async () => {
+    test(`Dataframe performance test 15 consequently`, async () => {
       const results = [];
       for (let i = 0; i < 15; i++) {
         results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,
