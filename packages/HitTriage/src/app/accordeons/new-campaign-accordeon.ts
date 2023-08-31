@@ -93,10 +93,6 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     functionInputDiv.style.display = 'block';
   }
 
-  // const accordeon = ui.accordion();
-  // accordeon.root.classList.add('hit-triage-new-campaign-accordeon');
-  // accordeon.addPane('File source', () => dataInputsDiv, true);
-  //campaignProps.length && accordeon.addPane('Campaign details', () => campaignPropsForm, true);
   const form = ui.divV([
     dataInputsDiv,
     ...(campaignProps.length ? [ui.h2('Campaign details'), campaignPropsForm] : [])], 'ui-form');

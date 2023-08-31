@@ -7,6 +7,7 @@ import {CampaignFieldTypes, HitTriageCampaignField, HitTriageCampaignFieldType,
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
+import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
 
 export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitTriageTemplate>> {
@@ -157,54 +158,20 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
 }
 
 export function getCampaignFieldEditors() {
-  const getNewFieldEditor = () => {
-    const nameInput = ui.stringInput('Name', '', () => out.changed = true);
-    const typeInput = ui.choiceInput('Type', 'String', Object.keys(CampaignFieldTypes), () => out.changed = true);
-    const requiredInput = ui.boolInput('Required', false, () => out.changed = true);
-    requiredInput.classList.add('mx-5');
-    const addFieldButton = ui.icons.add(() => {
-      if (!fields.length || fields[fields.length - 1].changed) {
-        const newField = getNewFieldEditor();
-        fields.push(newField);
-        fieldsContainer.appendChild(getFieldDiv(newField));
-      }
-    }, 'Add field');
-    addFieldButton.classList.add('hit-triage-add-campaign-field-button');
-    const out = {changed: false, nameInput, typeInput, requiredInput, addFieldButton};
-    return out;
-  };
-
-  const fields: ReturnType<typeof getNewFieldEditor>[] = [getNewFieldEditor()];
+  const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING}),
+    DG.Property.fromOptions({name: 'Type', type: DG.TYPE.STRING, choices: Object.keys(CampaignFieldTypes)}),
+    DG.Property.fromOptions({name: 'Required', type: DG.TYPE.BOOL})];
+  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: true});
 
   function getFieldParams(): HitTriageCampaignField[] {
-    return fields.filter((f) => f.changed && f.nameInput.value).map((f) => ({
-      name: f.nameInput.value,
-      type: f.typeInput.value as HitTriageCampaignFieldType,
-      required: f.requiredInput.value ?? false,
+    return itemsGrid.items.filter((f) => f.Name).map((f) => ({
+      name: f.Name,
+      type: f.Type as HitTriageCampaignFieldType,
+      required: f.Required ?? false,
     }));
-  };
-
-  function getFieldDiv(field: ReturnType<typeof getNewFieldEditor>) {
-    const removeButton = ui.icons.delete(() => {
-      if (fields.length <= 1)
-        return;
-      fieldDiv.remove();
-      fields.splice(fields.indexOf(field), 1);
-    }, 'Remove Field');
-    removeButton.classList.add('hit-triage-remove-campaign-field-button');
-    field.requiredInput.addOptions(removeButton);
-    field.requiredInput.addOptions(field.addFieldButton);
-    const fieldDiv = ui.divH([
-      field.nameInput.root,
-      field.typeInput.root,
-      field.requiredInput.root,
-      // removeButton,
-      // field.addFieldButton,
-    ], {classes: 'hit-triage-campaign-field-div ui-input-row ui-input-root'});
-    return fieldDiv;
   }
-  const fieldsContainer = ui.divV([ui.divText('Additional Fields', {classes: 'hit-triage-additional-fields-title'}),
-    getFieldDiv(fields[0])]);
+  const fieldsContainer = ui.divV([ui.divText('Additional fields', {classes: 'hit-triage-additional-fields-title'}),
+    itemsGrid.root]);
   return {
     getFields: getFieldParams,
     fieldsDiv: ui.divV([fieldsContainer]),

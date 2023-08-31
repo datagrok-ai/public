@@ -7,6 +7,7 @@ import '../../../css/hit-triage.css';
 import {HitDesignTemplate, IComputeDialogResult, INewTemplateResult} from '../types';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {getCampaignFieldEditors} from './new-template-accordeon';
+import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
 export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResult<HitDesignTemplate>> {
   const functions = DG.Func.find({tags: [C.HitTriageComputeFunctionTag]});
@@ -141,41 +142,13 @@ export function saveHitDesignTemplate(template: HitDesignTemplate) {
 
 
 export function getTileCategoryEditor() {
-  const getNewFieldEditor = (defVal: string = '') => {
-    const nameInput = ui.stringInput('Name', defVal, () => out.changed = true);
-    nameInput.root.style.width = '100%';
-    const out = {changed: defVal !== '', nameInput};
-    return out;
-  };
-  const fields: ReturnType<typeof getNewFieldEditor>[] = [getNewFieldEditor('Stage 1')];
+  const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING})];
+  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: true});
+
   function getFieldParams(): string[] {
-    return fields.filter((f) => f.changed && f.nameInput.value && f.nameInput.value !== '')
-      .map((f) => f.nameInput.value);
-  };
-  function getFieldDiv(field: ReturnType<typeof getNewFieldEditor>) {
-    const removeButton = ui.icons.delete(() => {
-      if (fields.length > 1) {
-        fieldDiv.remove();
-        fields.splice(fields.indexOf(field), 1);
-      }
-    }, 'Remove Field');
-    removeButton.style.marginLeft = '15px';
-    const addFieldButton = ui.icons.add(() => {
-      if (!fields.length || fields[fields.length - 1].changed) {
-        const newField = getNewFieldEditor();
-        fields.push(newField);
-        fieldsContainer.appendChild(getFieldDiv(newField));
-      }
-    }, 'Add field');
-    addFieldButton.classList.add('hit-triage-add-campaign-field-button');
-    field.nameInput.addOptions(removeButton);
-    field.nameInput.addOptions(addFieldButton);
-    const fieldDiv = ui.divH([
-      field.nameInput.root,
-    ], {classes: 'hit-triage-campaign-field-div', style: {width: '400px'}});
-    return fieldDiv;
+    return itemsGrid.items.filter((f) => f.Name).map((f) => f.Name);
   }
-  const fieldsContainer = ui.divV([getFieldDiv(fields[0])], 'ui-form');
+  const fieldsContainer = ui.divV([itemsGrid.root], 'ui-form');
 
   return {
     getFields: getFieldParams,
