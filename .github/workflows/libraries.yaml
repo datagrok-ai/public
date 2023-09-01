@@ -175,6 +175,7 @@ jobs:
         id: grok_check
         working-directory: libraries/${{ matrix.project }}
       - name: npm publish
+        id: publish
         run: npm publish --access public
         if: matrix.publish == 'publish' && github.ref == 'refs/heads/master'
         working-directory: libraries/${{ matrix.project }}
