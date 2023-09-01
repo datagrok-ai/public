@@ -183,14 +183,12 @@ Parameters:
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
     Default: 1.6.1
-    Description: Enter Datagrok Jupyter Kernel Gateway docker image version. Default
-      is 'latest'.
+    Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
   JNVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
     Default: 1.1.1
-    Description: Enter Datagrok Jupyter Notebook docker image version. Default is
-      'latest'.
+    Description: Enter Datagrok Jupyter Notebook docker image version.
     Type: String
 Resources:
   Cvm443Ingress:
