@@ -2618,7 +2618,7 @@ Resources:
               - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
               - "arn:aws:s3:::docker-images-prod"
               - "arn:aws:s3:::docker-images-prod/*"
-              - "arn:aws:s3:::datagrok-data",
+              - "arn:aws:s3:::datagrok-data"
               - "arn:aws:s3:::datagrok-data/*"
               - Fn::Sub:
                   - "arn:aws:s3:::cloudformation-custom-resource-response-${region}"
@@ -2660,7 +2660,7 @@ Resources:
                 aws:SourceVpce:
                   Ref: DatagrokS3VPCEndpoint
                 "aws:PrincipalArn":
-                  - Fn::Sub: "arn:aws:iam::${AWS::AccountId}:root",
+                  - Fn::Sub: "arn:aws:iam::${AWS::AccountId}:root"
                   - Ref: DatagrokS3EmptyLambdaRole
             Effect: Deny
             Principal: '*'
