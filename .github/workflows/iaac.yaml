@@ -1,7 +1,7 @@
 name: "IaC"
 
 on:
-  workflow_dispatch: { }
+#  workflow_dispatch: { }
   push:
     paths:
       - 'help/deploy/**'
@@ -52,7 +52,7 @@ jobs:
       - common-check
       - changed-files
     runs-on: ubuntu-22.04
-    if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation')
+    if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation') && github.event_name != 'pull_request'
     name: Templates CFN
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
@@ -76,8 +76,8 @@ jobs:
         id: git
         continue-on-error: true
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config --global user.name '{{ github.event.pusher.name }}'
+          git config --global user.email '${{ github.event.pusher.email }}'
           git pull
           continue=false
           if [ -n "$(git status -s help/deploy/aws/cloudformation)" ]; then
