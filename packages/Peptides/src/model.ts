@@ -616,15 +616,17 @@ export class PeptidesModel {
     if (genObj.minMeanDifference > possibleMinMeanDifference)
       genObj.minMeanDifference = possibleMinMeanDifference;
 
-    const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
-    genObj.maxPValue ??= possibleMaxPValue;
-    if (genObj.maxPValue < possibleMaxPValue)
-      genObj.maxPValue = possibleMaxPValue;
+    if (!isNaN(stats?.pValue ?? NaN)) {
+      const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
+      genObj.maxPValue ??= possibleMaxPValue;
+      if (genObj.maxPValue < possibleMaxPValue)
+        genObj.maxPValue = possibleMaxPValue;
 
-    const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
-    genObj.minPValue ??= possibleMinPValue;
-    if (genObj.minPValue > possibleMinPValue)
-      genObj.minPValue = possibleMinPValue;
+      const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
+      genObj.minPValue ??= possibleMinPValue;
+      if (genObj.minPValue > possibleMinPValue)
+        genObj.minPValue = possibleMinPValue;
+    }
 
     const possibleMaxRatio = stats?.ratio ?? summaryStats!.maxRatio;
     genObj.maxRatio ??= possibleMaxRatio;

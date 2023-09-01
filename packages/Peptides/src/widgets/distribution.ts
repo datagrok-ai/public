@@ -229,11 +229,12 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
 
 export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number} = {}): StringDictionary {
   options.fractionDigits ??= 3;
-  const tableMap = {
+  const tableMap: StringDictionary = {
     'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,
-    'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits),
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
   };
+  if (!isNaN(stats.pValue))
+    tableMap['p-value'] = stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits);
   return tableMap;
 }
 

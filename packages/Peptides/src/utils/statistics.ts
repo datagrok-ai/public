@@ -27,8 +27,8 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
   const currentMeanDiff = testResult['Mean difference']!;
   return {
     count: selected.length,
-    pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'] || 0,
-    meanDifference: currentMeanDiff || 0,
+    pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
+    meanDifference: currentMeanDiff,
     ratio: selected.length / (bitArray.length),
   };
 }
