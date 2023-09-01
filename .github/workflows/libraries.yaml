@@ -193,7 +193,7 @@ jobs:
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
-          header="Library *${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "packages/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>"
+          header="Library *${{ matrix.project }}* version *${{ matrix.version }}* published to <https://www.npmjs.com/package/$(jq -r .name "libraries/${{ matrix.project }}/package.json")/v/${{ matrix.version }}|NPM>"
           echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
 
           context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1)>"
