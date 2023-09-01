@@ -5,12 +5,30 @@ on:
   workflow_dispatch: { }
   push:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
   pull_request:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
 
