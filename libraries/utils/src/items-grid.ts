@@ -47,7 +47,7 @@ export class ItemsGrid {
     this.options = {...this.options, ...options};
     this._root = ui.divV([],
       {style: {
-        display: 'grid', gridTemplateColumns: `repeat(${this.properties.length + 1}, 1fr)`,
+        display: 'grid', gridTemplateColumns: `repeat(${this.properties.length}, 1fr)`,
         alignItems: 'center', gap: '12px'}});
     this._items = items;
     this.render();
@@ -69,12 +69,11 @@ export class ItemsGrid {
         header.style.fontWeight = 'bold';
         this._root.appendChild(header);
       }
-      this._root.appendChild(ui.divText(''));
     }
     for (const item of this._items) {
       const editors = this.getItemDiv(item);
-      if (editors.length !== this.properties.length + 1)
-        editors.push(ui.div());
+      // if (editors.length !== this.properties.length + 1)
+      //   editors.push(ui.div());
       for (const editor of editors)
         this._root.appendChild(editor);
     }
@@ -90,18 +89,21 @@ export class ItemsGrid {
     const editors: HTMLElement[] = [];
 
     const inputsMap: {[_: string]: DG.InputBase} = {};
+    let lastInput: DG.InputBase | null = null;
     for (const prop of this.properties) {
       if (item[prop.name] === undefined)
         item[prop.name] = null; // needed for date editor, it can not handle undefined
       const input = ui.input.forProperty(prop, item);
       editors.push(this.options.horizontalInputNames ? input.root : this.hideLabel(input.root));
-      input.input.style.width = '100%';
+      if (prop.propertyType !== DG.TYPE.BOOL)
+        input.input.style.width = '100%';
       inputsMap[prop.name] = input;
       input.onChanged(() => {
         isAdding ? this.onAddingItemChanged.next({item, fieldName: prop.name}) :
           this.onItemChanged.next({item, fieldName: prop.name});
       });
       input.root.style.alignItems = 'center'; // needed for molecule editor
+      lastInput = input;
     }
 
     let companionButton: HTMLElement | null = null;
@@ -126,7 +128,8 @@ export class ItemsGrid {
       companionButton = removeButton;
     }
 
-    editors.push(companionButton);
+    //editors.push(companionButton);
+    lastInput && lastInput.addOptions(companionButton);
     companionButton.style.color = '#2083d5';
     return editors;
   }
