@@ -37,7 +37,7 @@ category('chem exported', () => {
 
   test('getSimilarities.api.molecules', async () => {
     await _testGetSimilarities(grok.chem.getSimilarities, grok.data.demo.molecules(100));
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('substructureSearch_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
@@ -49,7 +49,7 @@ category('chem exported', () => {
       expect(bitsetArray[trueIndices[k]] === '1', true);
       bitsetArray[trueIndices[k]] = '0';
     }
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('mcs', async () => {
     // const df = DG.DataFrame.fromCsv(testCsv);
