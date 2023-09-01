@@ -32,7 +32,7 @@ export class ChoiceInputGroups {
         return {value: g.id, label: g.friendlyName};
       }));
     });
-    const all = await grok.dapi.groups.getGroupsLookup('');
+    const all = await grok.dapi.groups.list();
     choices.setChoices(() => all.map((g: DG.Group) => {
       return {value: g.id, label: g.friendlyName};
     }));
@@ -48,7 +48,7 @@ export class ChoiceInputGroups {
 
   getSelectedGroups(): string[] {
     const users = this.choices?.getValue(true) as string[];
-    if (users && users.length > 0)
+    if (users && users.length > 0 && users[0] !== '[]')
       return users;
     else
       return this.allUsers;

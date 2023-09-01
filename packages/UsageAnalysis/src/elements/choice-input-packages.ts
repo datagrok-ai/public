@@ -49,7 +49,7 @@ export class ChoiceInputPackages {
 
   getSelectedPackages(): string[] {
     const packages = this.choices?.getValue(true) as string[];
-    if (packages && packages.length > 0)
+    if (packages && packages.length > 0 && packages[0] !== '[]')
       return packages;
     else
       return ['all'];

@@ -41,7 +41,31 @@ export class TestsView extends UaView {
       df.onCurrentRowChanged.subscribe(async () => {
         const row = df.currentRow;
         const acc = DG.Accordion.create();
-        const history: DG.DataFrame = await grok.data.query('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
+        let history: DG.DataFrame = await grok.data.query('UsageAnalysis:ScenarioHistory', {id: row.get('~id')});
+        history.getCol('id').name = '~id';
+        history.getCol('uid').name = '~uid';
+        const resName = history.getCol('res_name');
+        if (resName.stats.valueCount) {
+          const newHistory = history.groupBy(['date', 'status', 'ms', 'result', '~uid']).add('key', '~id').aggregate();
+          const categories = resName.categories.filter((c) => c);
+          categories.forEach((c) => newHistory.columns.addNewString(c));
+          for (const row of newHistory.rows) {
+            const id = row.get('~id');
+            const df = history.rows.match({'~id': `= ${id}`}).toDataFrame();
+            for (const r of df.rows) {
+              const name = r.get('res_name');
+              if (name)
+                newHistory.set(name, row.idx, r.get('res_value'));
+            }
+          }
+          newHistory.columns.byNames(categories).forEach((col) => col.name = col.name.replace('result.', ''));
+          history = newHistory;
+        } else {
+          history.columns.remove('res_name');
+          history.columns.remove('res_value');
+        }
+        const grid = history.plot.grid();
+        grid.sort(['date'], [false]);
         acc.addPane('Details', () => {
           const table = ui.tableFromMap({
             Test: row.get('test'),
@@ -51,15 +75,26 @@ export class TestsView extends UaView {
           table.style.userSelect = 'text';
           return table;
         }, true);
-        acc.addPane('History', () => ui.waitBox(async () => {
+        const hPane = acc.addPane('History', () => ui.waitBox(async () => {
           history.getCol('status').colors.setCategorical(colors);
-          const grid = history.plot.grid();
           // grid.col('status')!.isTextColorCoded = true;
           grid.col('date')!.format = 'MM/dd/yy'; // MM/dd/yyyy HH:mm:ss
           grid.col('date')!.width = 70;
           grid.col('status')!.width = 19;
+          grid.onCellTooltip((gc, x, y) => {
+            if (gc.isColHeader) return false;
+            const row = gc.tableRow;
+            ui.tooltip.show(ui.tableFromMap({
+              'Time': row?.get('date'),
+              'Run by': ui.render(`#{x.${row?.get('~uid')}}`),
+              // Package: ui.render(`#{x.${r.uid}}`),
+            }), x, y);
+            return true;
+          });
           return grid.root;
         }), true);
+        const info = hPane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
+        info.firstChild?.after(ui.button('Add to workspace', () => grok.shell.addTableView(history)));
         acc.addPane('Execution time', () => ui.waitBox(async () => {
           const lct = DG.Viewer.fromType('Line chart', history, execTimeStyle);
           return lct.root;
@@ -141,7 +176,7 @@ const historyStyle = {
   'autoLayout': false,
   // 'lineWidth': 2,
   // 'lineColoringType': 'Custom',
-  'chartTypes': ['Area Chart'],
+  'chartTypes': ['Stacked Bar Chart'],
 };
 
 const execTimeStyle = {
