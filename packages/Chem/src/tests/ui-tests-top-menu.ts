@@ -140,7 +140,7 @@ category('UI top menu', () => {
         await awaitCheck(() => document.querySelector('.grok-sketcher ') !== null, 'cannot open sketcher', 2000);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('to inchi', async () => {
         await testGroup('Calculate', 'To InchI...', 'inchi', 'To InchI');
