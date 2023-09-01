@@ -6,10 +6,28 @@ on:
     paths:
       - 'help/deploy/**'
       - '!help/deploy/**/*.md'
+      - '!help/deploy/**/*.mdx'
+      - '!help/deploy/**/_category_.yml'
+      - '!help/deploy/**/*.gif'
+      - '!help/deploy/**/*.jpg'
+      - '!help/deploy/**/*.JPG'
+      - '!help/deploy/**/*.jpeg'
+      - '!help/deploy/**/*.png'
+      - '!help/deploy/**/*.svg'
+      - '!help/deploy/**/*.bmp'
   pull_request:
     paths:
       - 'help/deploy/**'
       - '!help/deploy/**/*.md'
+      - '!help/deploy/**/*.mdx'
+      - '!help/deploy/**/_category_.yml'
+      - '!help/deploy/**/*.gif'
+      - '!help/deploy/**/*.jpg'
+      - '!help/deploy/**/*.JPG'
+      - '!help/deploy/**/*.jpeg'
+      - '!help/deploy/**/*.png'
+      - '!help/deploy/**/*.svg'
+      - '!help/deploy/**/*.bmp'
 
 jobs:
   common-check:
