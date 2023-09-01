@@ -42,4 +42,4 @@ Outputs:
   #    Condition: CreateDNS
   DatagrokEndpoint:
     Description: Datagrok endpoint
-    Value: 'Remember to create DNS records for datagrok and CVM using stated CNAMEs as values'
+    Value: 'Create DNS records for Datagrok and CVM using stated CNAMEs as values'
