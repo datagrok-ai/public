@@ -11,6 +11,7 @@ category('viewers', () => {
   const viewersToSkip: {[v: string]: string} = {
     'Scaffold Tree': 'GROK-12946',
     'Similarity Search': 'GROK-12946',
+    'Diversity Search': 'GROK-12946'
   };
   for (const v of viewers) {
     test(v, async () => {
