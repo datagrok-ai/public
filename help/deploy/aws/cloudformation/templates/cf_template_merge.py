@@ -31,7 +31,7 @@ for i in args.input:
 if args.output:
     output = args.output
 else:
-    output = "-".join(output_names)
+    output = "-".join(output_names) + '.yml'
 
 with open(args.output, 'w') as file:
     yaml.dump(result, file, explicit_start=True)
