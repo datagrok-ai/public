@@ -88,11 +88,11 @@ jobs:
                     MATRIX_PUBLISH_JSON+=", \"packages\": \"$packages\""
                   else
                     echo "Library $LIB version ${current_version} has unpublished dependencies: $unpublished_deps"
-                    echo "::notice title=${$LIB}::Version ${current_version} has unpublished dependencies"
+                    echo "::notice title=${LIB}::Version ${current_version} has unpublished dependencies"
                   fi
                 else
-                  echo "Library $LIB version ${current_version} already published"
-                  echo "::notice title=${$LIB}::Version ${current_version} is already published"
+                  echo "Library $LIB version ${current_version} is already published"
+                  echo "::notice title=${LIB}::Version ${current_version} is already published"
                 fi
               else
                   echo "It is an actions for PR. Publish will be skipped."
