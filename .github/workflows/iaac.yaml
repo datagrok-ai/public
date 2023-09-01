@@ -1,7 +1,7 @@
 name: "IaC"
 
 on:
-#  workflow_dispatch: { }
+  #  workflow_dispatch: { }
   push:
     paths:
       - 'help/deploy/**'
@@ -129,10 +129,10 @@ jobs:
         uses: tj-actions/changed-files@v37
         id: changed-files
         with:
-          files: 'help/deploy/**'
-          files_ignore: |
-            **/templates/**
-            **/*.md
+          files: |
+            help/deploy/**
+            !help/deploy/**/templates/**
+            !help/deploy/**/*.md
       - name: Output
         run: echo ${{ steps.changed-files.outputs.all_changed_files }}
       - name: Snyk check
@@ -148,34 +148,34 @@ jobs:
         with:
           sarif_file: snyk.sarif
 
-#  checkov:
-#    needs: common-check
-#    runs-on: ubuntu-22.04
-#    if: needs.common-check.outputs.continue == 'true'
-#    name: Checkov
-#    steps:
-#      - uses: actions/checkout@v3
-#        if: ${{ github.event_name == 'pull_request' }}
-#        name: Checkout PR branch
-#        with:
-#          ref: ${{ github.head_ref }}
-#
-#      - uses: actions/checkout@v3
-#        if: ${{ github.event_name != 'pull_request' }}
-#        name: Checkout
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Set up Python 3.8 for Checkov
-#        uses: actions/setup-python@v1
-#        with:
-#          python-version: 3.8
-#
-#      - name: Test with Checkov
-#        id: checkov
-#        uses: bridgecrewio/checkov-action@v12.1347.0
-#        with:
-#          download_external_modules: true
+  #  checkov:
+  #    needs: common-check
+  #    runs-on: ubuntu-22.04
+  #    if: needs.common-check.outputs.continue == 'true'
+  #    name: Checkov
+  #    steps:
+  #      - uses: actions/checkout@v3
+  #        if: ${{ github.event_name == 'pull_request' }}
+  #        name: Checkout PR branch
+  #        with:
+  #          ref: ${{ github.head_ref }}
+  #
+  #      - uses: actions/checkout@v3
+  #        if: ${{ github.event_name != 'pull_request' }}
+  #        name: Checkout
+  #        with:
+  #          fetch-depth: 0
+  #
+  #      - name: Set up Python 3.8 for Checkov
+  #        uses: actions/setup-python@v1
+  #        with:
+  #          python-version: 3.8
+  #
+  #      - name: Test with Checkov
+  #        id: checkov
+  #        uses: bridgecrewio/checkov-action@v12.1347.0
+  #        with:
+  #          download_external_modules: true
 
   validate_cfn:
     needs:
