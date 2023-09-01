@@ -12,9 +12,9 @@ export class ChoiceInputGroups {
   allUsers: string[];
 
   static async construct() {
-    const field = ui.choiceInput('Groups', [], []);
-
+    const field = ui.choiceInput('Groups', null, []);
     field.input.setAttribute('multiple', '');
+    field.input.querySelectorAll('option').forEach((o) => {o.selected = false;});
     const choices = new Choices(field.input, {
       addItems: true,
       removeItems: true,
