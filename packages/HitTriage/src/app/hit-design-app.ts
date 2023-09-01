@@ -203,7 +203,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       const submitButton = ui.div(ui.bigButton('Submit', () => {
         const dialogContent = this._submitView?.render();
         if (dialogContent)
-          ui.dialog('Submit').add(dialogContent).show();
+          ui.dialog('Submit').add(dialogContent).show().getButton('Cancel').textContent = 'Ok';
       }), 'hit-design-submit-button');
       ribbons.push([submitButton]);
       view.setRibbonPanels(ribbons);

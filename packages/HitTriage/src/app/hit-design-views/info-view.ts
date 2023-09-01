@@ -26,7 +26,6 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
   }
 
   async init(presetTemplate?: HitDesignTemplate) {
-    $(this.root).empty();
     const wikiLink = ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage');
     const textLink = ui.inlineText([wikiLink, '.']);
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
@@ -46,13 +45,14 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const templatesDiv = ui.divH([], {classes: 'hit-triage-templates-input-div ui-form'});
 
     const campaignsTable = await this.getCampaignsTable();
+    $(this.root).empty();
     this.root.appendChild(ui.divV([
       ui.divV([appDescription, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
       campaignsTable,
       createNewCampaignHeader,
       templatesDiv,
       campaignAccordionDiv,
-    ]));
+    ], {style: {maxWidth: '800px'}}));
     this.startNewCampaign(campaignAccordionDiv, templatesDiv,
       [campaignsTable.style, continueCampaignsHeader.style, createNewCampaignHeader.style, appDescription.style],
       presetTemplate);
@@ -84,13 +84,11 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const createNewtemplateButton = ui.icons.add(() => {
       this.createNewTemplate(containerDiv, templateInputDiv, toRemove);
     }, i18n.createNewTemplate);
-    createNewtemplateButton.style.marginLeft = '15px';
     createNewtemplateButton.style.color = '#2083d5';
-
+    templatesInput.addOptions(createNewtemplateButton);
     await onTemmplateChange();
     $(templateInputDiv).empty();
     templateInputDiv.appendChild(templatesInput.root);
-    templateInputDiv.appendChild(createNewtemplateButton);
   }
 
 
@@ -159,10 +157,10 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
 
   private async createNewTemplate(
     containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[]) {
+    const newTemplateAccordeon = await newHitDesignTemplateAccordeon();
     hideComponents(toRemove);
     $(containerDiv).empty();
     $(templateInputDiv).empty();
-    const newTemplateAccordeon = await newHitDesignTemplateAccordeon();
     const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', i18n.createNewTemplate, () => {
       this.init();
     });
@@ -171,6 +169,10 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       popRibbonPannels(grok.shell.v);
       sub.unsubscribe();
       this.init(t);
+    });
+    newTemplateAccordeon.cancelPromise.then(() => {
+      sub.unsubscribe();
+      this.init();
     });
   }
 }

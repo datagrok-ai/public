@@ -12,7 +12,6 @@ import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
 import {HitBaseView} from '../base-view';
-import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
 export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   constructor(app: HitTriageApp) {
@@ -29,7 +28,6 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   async init(presetTemplate?: HitTriageTemplate): Promise<void> {
-    $(this.root).empty();
     this.root.style.flexDirection = 'column';
     const wikiLink = ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage');
     const textLink = ui.inlineText([wikiLink, '.']);
@@ -50,27 +48,14 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     const templatesDiv = ui.divH([], {classes: 'hit-triage-templates-input-div ui-form'});
 
     const campaignsTable = await this.getCampaignsTable();
-
-    // #################### start testting
-    const props = [DG.Property.js('String', DG.TYPE.STRING),
-      DG.Property.js('Number', DG.TYPE.NUM),
-      DG.Property.fromOptions({name: 'Choices', type: DG.TYPE.STRING, choices: ['a', 'b', 'c']}),
-      DG.Property.js('Color', DG.TYPE.STRING, {inputType: 'Color'})];
-    const itemsGrid = new ItemsGrid(props, [{Color: '#ff0000'}]);
-    itemsGrid.onItemAdded.subscribe((item) => {console.log(item);});
-    itemsGrid.onItemRemoved.subscribe((item) => {console.log(item);});
-    itemsGrid.onItemChanged.subscribe((item) => {console.log(item);});
-
-    // ###########3 end testing
+    $(this.root).empty();
     this.root.appendChild(ui.divV([
       appDescription,
       campaignsTable,
       createNewCampaignHeader,
       templatesDiv,
       campaignAccordionDiv,
-      itemsGrid.root,
-      ui.button('log', () => {console.log(itemsGrid.items);}),
-    ]));
+    ], {style: {maxWidth: '800px'}}));
     this.startNewCampaign(campaignAccordionDiv, templatesDiv,
       [campaignsTable.style, continueCampaignsHeader.style, createNewCampaignHeader.style, appDescription.style],
       presetTemplate);
@@ -101,13 +86,12 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     const createNewtemplateButton = ui.icons.add(() => {
       this.createNewTemplate(containerDiv, templateInputDiv, toRemove);
     }, i18n.createNewTemplate);
-    createNewtemplateButton.style.marginLeft = '15px';
+    templatesInput.addOptions(createNewtemplateButton);
     createNewtemplateButton.style.color = '#2083d5';
     templatesInput.root.style.width = '100%';
     await onTemmplateChange();
     $(templateInputDiv).empty();
     templateInputDiv.appendChild(templatesInput.root);
-    templateInputDiv.appendChild(createNewtemplateButton);
   }
 
   private async checkCampaign(campId?: string) {
@@ -177,8 +161,8 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
 
   private async createNewTemplate(
     containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[]) {
-    hideComponents(toRemove);
     const newTemplateAccordeon = await createTemplateAccordeon();
+    hideComponents(toRemove);
     $(containerDiv).empty();
     $(templateInputDiv).empty();
     const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Triage', i18n.createNewTemplate, () => {
@@ -191,6 +175,9 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       popRibbonPannels(grok.shell.v);
       this.init(t);
     });
-    newTemplateAccordeon.cancelPromise.then(() => this.init());
+    newTemplateAccordeon.cancelPromise.then(() => {
+      sub.unsubscribe();
+      this.init();
+    });
   }
 };

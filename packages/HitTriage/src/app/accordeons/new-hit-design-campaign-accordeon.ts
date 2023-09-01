@@ -42,7 +42,7 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
     campaignPropsForm,
   ], 'ui-form');
   const content = ui.div(form);
-  const buttonsDiv = ui.divH([]); // div for create and cancel buttons
+  const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
   form.appendChild(buttonsDiv);
   const okPromise = new Promise<NewHitDesignCampaignRes>((resolve) => {
     const startCampaignButton = ui.bigButton(i18n.StartCampaign,

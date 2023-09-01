@@ -62,6 +62,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     const func = dataSourceFunctionsMap[dataSourceFunctionInput.value!];
     funcCall = func.prepare();
     const editor = await funcCall.getEditor();
+    editor.classList.remove('ui-form');
     funcEditorDiv.innerHTML = '';
     funcEditorDiv.appendChild(editor);
   };
@@ -97,7 +98,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     dataInputsDiv,
     ...(campaignProps.length ? [ui.h2('Campaign details'), campaignPropsForm] : [])], 'ui-form');
   const content = ui.div(form, 'ui-form');
-  const buttonsDiv = ui.divH([]); // div for create and cancel buttons
+  const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
   content.appendChild(buttonsDiv);
   const promise = new Promise<INewCampaignResult>((resolve) => {
     const onOkProxy = async () => {

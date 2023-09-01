@@ -69,3 +69,6 @@ docusaurus/.env
 test-console-output.log
 
 .terraform
+
+# local history
+.lh

@@ -37,7 +37,7 @@ export class HitDesignTilesView extends HitBaseView<HitDesignTemplate, HitDesign
         const submitButton = ui.div(ui.bigButton('Submit', () => {
           const dialogContent = this.app._submitView?.render();
           if (dialogContent)
-            ui.dialog('Submit').add(dialogContent).show();
+            ui.dialog('Submit').add(dialogContent).show().getButton('CANCEL').textContent = 'Ok';
         }), {classes: 'hit-design-submit-button'});
         ribbons.push([submitButton]);
         grok.shell.v.setRibbonPanels(ribbons);

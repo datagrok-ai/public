@@ -109,7 +109,8 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
   ], 'ui-form');
 
   const content = ui.div(form);
-  const buttonsDiv = ui.divH([]);
+  const buttonsDiv = ui.buttonsInput([]);
+  const buttonsContainerDiv = buttonsDiv.getElementsByClassName('ui-input-editor')?.[0] ?? buttonsDiv;
   form.appendChild(buttonsDiv);
   const promise = new Promise<HitTriageTemplate>((resolve) => {
     async function onOkProxy() {
@@ -146,13 +147,13 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
       resolve(out);
     }
     const createTemplateButton = ui.bigButton(C.i18n.createTemplate, () => onOkProxy());
-    buttonsDiv.appendChild(createTemplateButton);
+    buttonsContainerDiv.appendChild(createTemplateButton);
   });
 
   const cancelPromise = new Promise<void>((resolve) => {
     const cancelButton = ui.button(C.i18n.cancel, () => resolve());
     cancelButton.classList.add('hit-triage-accordeon-cancel-button');
-    //buttonsDiv.appendChild(cancelButton);
+    buttonsContainerDiv.appendChild(cancelButton);
   });
   return {root: content, template: promise, cancelPromise};
 }
