@@ -16,15 +16,15 @@ Parameters:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
     Description: The certificate is used for both Datagrok and CVM client endpoints. If you do not use Route53 for DNS management, it is required to upload certificate to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html) and specify the Certificate ARN here.
-Conditions:
-  CreateDNS:
-    Fn::Equals:
-      - Ref: DatagrokArnSSLCertificate
-      - ''
-  CreateSSL:
-    Fn::Equals:
-      - Ref: DatagrokArnSSLCertificate
-      - ''
+#Conditions:
+#  CreateDNS:
+#    Fn::Equals:
+#      - Ref: DatagrokArnSSLCertificate
+#      - ''
+#  CreateSSL:
+#    Fn::Equals:
+#      - Ref: DatagrokArnSSLCertificate
+#      - ''
 Outputs:
   DatagrokLoadBalancerDNSName:
     Description: Datagrok Load Balancer DNS to create CNAME record
@@ -32,11 +32,14 @@ Outputs:
       Fn::GetAtt:
         - DatagrokLoadBalancer
         - DNSName
-    Condition: CreateDNS
+  #    Condition: CreateDNS
   CvmLoadBalancerDNSName:
     Description: Datagrok CVM Load Balancer DNS to create CNAME record
     Value:
       Fn::GetAtt:
         - CvmLoadBalancer
         - DNSName
-    Condition: CreateDNS
+  #    Condition: CreateDNS
+  DatagrokEndpoint:
+    Description: Datagrok endpoint
+    Value: 'Remember to create DNS records for datagrok and CVM using stated CNAMEs as values'

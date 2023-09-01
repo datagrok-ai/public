@@ -8,8 +8,8 @@ on:
       - '!help/deploy/**/*.md'
   pull_request:
     paths:
-      - 'help/deploy/'
-      - '!**/*.md'
+      - 'help/deploy/**'
+      - '!help/deploy/**/*.md'
 
 jobs:
   common-check:
@@ -58,7 +58,10 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
-
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
       - name: Set up Python
         uses: actions/setup-python@v4
       - name: Run merge script
@@ -129,6 +132,8 @@ jobs:
           files_ignore: |
             **/templates/**
             **/*.md
+      - name: Output
+        run: echo ${{ steps.changed-files.outputs.all_changed_files }}
       - name: Snyk check
         uses: snyk/actions/iac@master
         env:
@@ -209,8 +214,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        provider: [aws]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        provider: [ aws ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3

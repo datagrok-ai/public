@@ -20,32 +20,33 @@ Parameters:
     Description: Select existing Route53 Hosted Zone ID for Datagrok and CVM client endpoints.
   DNSDomain:
     Type: String
+    MinLength: 3
     Description: Specify DNS domain for Datagrok and CVM client endpoints. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName-datagrok.subdomain.domain.com'.
-Conditions:
-  CreateDNS:
-    Fn::And:
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSDomain
-              - ''
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSZoneId
-              - ''
-  CreateSSL:
-    Fn::And:
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSDomain
-              - ''
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSZoneId
-              - ''
+#Conditions:
+#  CreateDNS:
+#    Fn::And:
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSDomain
+#              - ''
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSZoneId
+#              - ''
+#  CreateSSL:
+#    Fn::And:
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSDomain
+#              - ''
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSZoneId
+#              - ''
 Resources:
   DatagrokDNS:
     Type: AWS::Route53::RecordSet
-    Condition: CreateDNS
+    #    Condition: CreateDNS
     Properties:
       Type: A
       AliasTarget:
@@ -68,7 +69,7 @@ Resources:
               Ref: DNSDomain
   CvmDNS:
     Type: AWS::Route53::RecordSet
-    Condition: CreateDNS
+    #    Condition: CreateDNS
     Properties:
       Type: A
       AliasTarget:
@@ -91,7 +92,7 @@ Resources:
               Ref: DNSDomain
   DatagrokArnSSLCertificate:
     Type: AWS::CertificateManager::Certificate
-    Condition: CreateSSL
+    #    Condition: CreateSSL
     Properties:
       DomainName:
         Fn::Sub:
@@ -469,7 +470,4 @@ Outputs:
   DatagrokEndpoint:
     Description: Datagrok endpoint
     Value:
-      Fn::If:
-        - CreateDNS
-        - Ref: DatagrokDNS
-        - 'Create DNS endpoint for Datagrok manually using DatagrokLoadBalancer'
+      Ref: DatagrokDNS
