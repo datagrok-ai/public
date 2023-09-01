@@ -141,7 +141,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       customMembersColData[rowIdx] = stats.count;
       customBitsets[rowIdx] = bsMask;
       customMDColData[rowIdx] = stats.meanDifference;
-      customPValColData[rowIdx] = stats.pValue;
+      customPValColData[rowIdx] = stats.pValue ?? DG.FLOAT_NULL;
       customRatioColData[rowIdx] = stats.ratio;
 
       for (let aggColIdx = 0; aggColIdx < aggColNames.length; ++aggColIdx) {
@@ -191,7 +191,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       origMembersColData[rowIdx] = stats.count;
       origBitsets[rowIdx] = bsMask;
       origMDColData[rowIdx] = stats.meanDifference;
-      origPValColData[rowIdx] = stats.pValue;
+      origPValColData[rowIdx] = stats.pValue ?? DG.FLOAT_NULL;
       origRatioColData[rowIdx] = stats.ratio;
     }
 

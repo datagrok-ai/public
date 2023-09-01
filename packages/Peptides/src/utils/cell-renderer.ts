@@ -24,7 +24,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs | null = null,
   twoColorMode: boolean = false, renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
-  const pVal: number = positionStats[currentAAR].pValue;
+  const pVal = positionStats[currentAAR].pValue;
   const currentMeanDifference = positionStats[currentAAR].meanDifference;
 
   // Transform p-value to increase intensity for smaller values and decrease for larger values
@@ -34,7 +34,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   const centeredMaxPValComplement = maxPValComplement - pValCentering;
   const centeredMinPValComplement = minPValComplement - pValCentering;
   const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement)
-  const pValComplement = isNaN(pVal) ? 0 : 1 - pVal - pValCentering;
+  const pValComplement = pVal === null ? 0 : 1 - pVal - pValCentering;
 
   let coef: string = DG.Color.toHtml(DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement,
     -centeredPValLimit, centeredPValLimit));
@@ -48,7 +48,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   const midY = bound.y + bound.height / 2;
   canvasContext.beginPath();
   canvasContext.fillStyle = coef;
-  canvasContext.arc(midX, midY, radius < 3 || isNaN(pVal) ? 3 : radius, 0, Math.PI * 2, true);
+  canvasContext.arc(midX, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
   canvasContext.closePath();
   canvasContext.fill();
 
