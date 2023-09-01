@@ -4,8 +4,8 @@ on:
   workflow_dispatch: { }
   push:
     paths:
-      - 'help/deploy/'
-      - '!**/*.md'
+      - 'help/deploy/**'
+      - '!help/deploy/**/*.md'
   pull_request:
     paths:
       - 'help/deploy/'

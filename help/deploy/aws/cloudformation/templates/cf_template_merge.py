@@ -25,6 +25,5 @@ for i in args.input:
         data = yaml.safe_load(file)
     result = always_merger.merge(result, data)
 
-# Write the merged dictionary to a new file
 with open(args.output, 'w') as file:
     yaml.dump(result, file, explicit_start=True)
