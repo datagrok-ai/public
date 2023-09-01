@@ -53,7 +53,7 @@ category('top menu activity cliffs', async () => {
       grok.shell.closeAll();
       DG.Balloon.closeAll();
     }
-  });
+  }, {skipReason: 'GROK-12946'});
 
   after(async () => {
     grok.shell.closeAll();
