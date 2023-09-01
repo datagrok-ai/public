@@ -20,42 +20,43 @@ Parameters:
     Description: Select existing Route53 Hosted Zone ID for Datagrok and CVM client endpoints.
   DNSDomain:
     Type: String
+    MinLength: 3
     Description: Specify DNS domain for Datagrok and CVM client endpoints. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName-datagrok.subdomain.domain.com'.
-Conditions:
-  CreateDNS:
-    Fn::And:
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSDomain
-              - ''
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSZoneId
-              - ''
-  CreateSSL:
-    Fn::And:
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSDomain
-              - ''
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: DNSZoneId
-              - ''
+#Conditions:
+#  CreateDNS:
+#    Fn::And:
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSDomain
+#              - ''
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSZoneId
+#              - ''
+#  CreateSSL:
+#    Fn::And:
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSDomain
+#              - ''
+#      - Fn::Not:
+#          - Fn::Equals:
+#              - Ref: DNSZoneId
+#              - ''
 Resources:
   DatagrokDNS:
     Type: AWS::Route53::RecordSet
-    Condition: CreateDNS
+    #    Condition: CreateDNS
     Properties:
       Type: A
       AliasTarget:
         HostedZoneId:
           Fn::GetAtt:
-            - LoadBalancerDatagrok
+            - DatagrokLoadBalancer
             - CanonicalHostedZoneID
         DNSName:
           Fn::GetAtt:
-            - LoadBalancerDatagrok
+            - DatagrokLoadBalancer
             - DNSName
       Comment:
         Fn::Sub: "${AWS::StackName} Public Datagrok DNS"
@@ -68,17 +69,17 @@ Resources:
               Ref: DNSDomain
   CvmDNS:
     Type: AWS::Route53::RecordSet
-    Condition: CreateDNS
+    #    Condition: CreateDNS
     Properties:
       Type: A
       AliasTarget:
         HostedZoneId:
           Fn::GetAtt:
-            - LoadBalancerCvm
+            - CvmLoadBalancer
             - CanonicalHostedZoneID
         DNSName:
           Fn::GetAtt:
-            - LoadBalancerCvm
+            - CvmLoadBalancer
             - DNSName
       Comment:
         Fn::Sub: "${AWS::StackName} Public Datagrok CVM DNS"
@@ -89,9 +90,9 @@ Resources:
           - "${AWS::StackName}-datagrok-cvm.${domain}."
           - domain:
               Ref: DNSDomain
-  ArnSSLCertificate:
+  DatagrokArnSSLCertificate:
     Type: AWS::CertificateManager::Certificate
-    Condition: CreateSSL
+    #    Condition: CreateSSL
     Properties:
       DomainName:
         Fn::Sub:
@@ -126,7 +127,7 @@ Resources:
             Fn::Sub: "${AWS::StackName}-datagrok"
       ValidationMethod: DNS
 
-  SettingsSetLambdaRole:
+  DatagrokSettingsSetLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -140,7 +141,7 @@ Resources:
               - sts:AssumeRole
       Policies:
         - PolicyName:
-            Fn::Sub: "${AWS::StackName}-settings-lambda-logging"
+            Fn::Sub: "${AWS::StackName}-settings-lambda"
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -149,20 +150,70 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-SettingsSetLambdaFunction-*:*"
-  SettingsSetLambdaFunction:
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokSettingsSetLambdaFunction-*:*"
+              - Effect: Allow
+                Action:
+                  - 'ec2:DescribeNetworkInterfaces'
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - 'ec2:CreateNetworkInterface'
+                Resource:
+                  - Fn::Sub:
+                      - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
+                      - subnet_id:
+                          Ref: DatagrokPrivateSubnet1
+                  - Fn::Sub:
+                      - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
+                      - subnet_id:
+                          Ref: DatagrokPrivateSubnet2
+                  - Fn::Sub:
+                      - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${security_group_id}
+                      - security_group_id:
+                          Ref: DatagrokSecurityGroup
+                  - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*
+              - Effect: Allow
+                Action:
+                  - 'ec2:DeleteNetworkInterface'
+                  - "ec2:AssignPrivateIpAddresses"
+                  - "ec2:UnassignPrivateIpAddresses"
+                Condition:
+                  ArnLikeIfExists:
+                    "ec2:Vpc":
+                      Fn::Sub:
+                        - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${vpc}"
+                        - vpc:
+                            Ref: DatagrokVPC
+                    "ec2:Subnet":
+                      - Fn::Sub:
+                          - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}"
+                          - subnet:
+                              Ref: DatagrokPrivateSubnet1
+                      - Fn::Sub:
+                          - "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}"
+                          - subnet:
+                              Ref: DatagrokPrivateSubnet2
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetSecretValue'
+                Resource:
+                  Ref: DatagrokAdminDevKey
+  DatagrokSettingsSetLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Description: Sets required settings for Datagrok
       Code:
         ZipFile: |
+          import base64
           import json
-          import os
+          import boto3
+          import cfnresponse
           import urllib3
           from urllib3.util import Retry
-          import cfnresponse
 
-          http = urllib3.PoolManager()
+          timeout = urllib3.Timeout(connect=5.0, read=5.0)
+          http = urllib3.PoolManager(timeout=timeout)
           retries = 10
           retry = Retry(
               total=retries,
@@ -175,48 +226,97 @@ Resources:
               try:
                   status = 0
                   if event['RequestType'] != 'Delete':
-                      key = event['ResourceProperties']['DevKey']
+                      key_arn = event['ResourceProperties']['DevKey']
                       host = event['ResourceProperties']['Host']
                       cvmClient = event['ResourceProperties']['cvmClient']
 
-                      http.request("GET", f'https://{host}/api/info/server', retries=retry)
+                      session = boto3.session.Session()
+                      client = session.client(service_name='secretsmanager')
+                      response = client.get_secret_value(SecretId=key_arn)
+                      if 'SecretString' in response:
+                          secret = response['SecretString']
+                          j = json.loads(secret)
+                          devKey = j['password']
+                      else:
+                          decoded_binary_secret = base64.b64decode(response['SecretBinary'])
+                          devKey = decoded_binary_secret.password
 
-                      r = http.request("POST", f'https://{host}/api/users/login/dev/{key}', retries=retry)
-                      auth = json.loads(r.data)['token']
-                      get_settings = http.request("GET", f'https://{host}/api/admin/plugins/scripts/settings',
-                                                  headers={'Authorization': auth},
-                                                  retries=retry)
-                      oldSettings = json.loads(get_settings.data)
+                      while True:
+                          r = http.request("GET", f'{host}/api/info/server', retries=retry)
+                          if r.data:
+                              try:
+                                  print(f"{host} is available for {json.loads(r.data)['Uptime']}.")
+                                  break
+                              except (ValueError, KeyError) as e:
+                                  print(type(e).__name__, e)
+                                  print(f"Response for url {host}/api/info/server: {r.data}")
+                          print(f"{host} is unavailable.")
+
+                      auth = ''
+                      while True:
+                          r = http.request("POST", f'{host}/api/users/login/dev/{devKey}', retries=retry)
+                          if r.data:
+                              try:
+                                  auth = json.loads(r.data)['token']
+                                  print(f"Got auth for {host}.")
+                                  break
+                              except (ValueError, KeyError) as e:
+                                  print(type(e).__name__, e)
+                                  print(f"Response for url {host}/api/users/login/dev/XXX: {r.data}")
+
+                      oldSettings = {}
+                      while True:
+                          r = http.request("GET", f'{host}/api/admin/plugins/scripts/settings',
+                                           headers={'Authorization': auth},
+                                           retries=retry)
+                          if r.data:
+                              try:
+                                  oldSettings = json.loads(r.data)
+                                  print(f"Got settings for {host}.")
+                                  break
+                              except ValueError as e:
+                                  print(type(e).__name__, e)
+                                  print(f"Response for url {host}/api/admin/plugins/scripts/settings: {r.data}")
+
                       new_settings = {
                           '#type': oldSettings['settings']['#type'],
                           'apiUrl': oldSettings['settings']['apiUrl'],
                           'cvmUrl': oldSettings['settings']['cvmUrl'],
                           'h2oUrl': oldSettings['settings']['h2oUrl'],
-                          'cvmUrlClient': cvmClient,
+                          'cvmUrlClient': f"https://{cvmClient}",
                           'cvmSplit': oldSettings['settings']['cvmSplit'],
                           'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],
                           'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']
                       }
-                      setSettings = http.request("POST", f'https://{host}/api/admin/plugins/scripts/settings',
+
+                      setSettings = http.request("POST", f'{host}/api/admin/plugins/scripts/settings',
                                                  body=json.dumps(new_settings),
                                                  headers={'Authorization': auth, "Content-Type": "application/json"},
                                                  retries=retry)
                       status = setSettings.status
                       if status != 200:
                           raise Exception(f'Could not update settings for {host} with status code {status}')
+                      else:
+                          print(f"Changed Cvm Client Url to https://{cvmClient}")
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status': status})
               except Exception as e:
                   print(type(e).__name__, e)
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception': f"{type(e).__name__}: {e}"})
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.10
       Role:
         Fn::GetAtt:
-          - SettingsSetLambdaRole
+          - DatagrokSettingsSetLambdaRole
           - Arn
       MemorySize: 128
       Timeout: 600
-  SettingsSetLambdaFunctionLogGroup:
+      VpcConfig:
+        SecurityGroupIds:
+          - Ref: DatagrokSecurityGroup
+        SubnetIds:
+          - Ref: DatagrokPrivateSubnet1
+          - Ref: DatagrokPrivateSubnet2
+  DatagrokSettingsSetLambdaFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -225,29 +325,34 @@ Resources:
         Fn::Sub:
           - "/aws/lambda/${function_name}"
           - function_name:
-              Ref: SettingsSetLambdaFunction
+              Ref: DatagrokSettingsSetLambdaFunction
       RetentionInDays: 1
-  SettingsSet:
+  DatagrokSettingsSet:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
       - DatagrokService
-      - SettingsSetLambdaFunctionLogGroup
+      - DatagrokSettingsSetLambdaFunctionLogGroup
+      - DatagrokS3VPCEndpoint
+      - DatagrokPrivateSubnetRouteAssos1
+      - DatagrokPrivateSubnetRouteAssos2
     Properties:
       DevKey:
-        Fn::Sub:
-          - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-          - secret:
-              Ref: AdminDevKey
+        Ref: DatagrokAdminDevKey
       Host:
-        Ref: DatagrokDNS
+        Fn::Sub:
+          - "http://${dns}:8080"
+          - dns:
+              Fn::GetAtt:
+                - DatagrokLoadBalancerInt
+                - DNSName
       cvmClient:
         Ref: CvmDNS
       ServiceToken:
         Fn::GetAtt:
-          - SettingsSetLambdaFunction
+          - DatagrokSettingsSetLambdaFunction
           - Arn
 
-  R53CleanupLambdaRole:
+  DatagrokR53CleanupLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -270,12 +375,12 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-R53CleanupLambdaFunction-*:*"
+                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokR53CleanupLambdaFunction-*:*"
               - Effect: Allow
                 Action:
                   - 'acm:DescribeCertificate'
                 Resource:
-                  Ref: ArnSSLCertificate
+                  Ref: DatagrokArnSSLCertificate
               - Effect: Allow
                 Action:
                   - 'route53:ListResourceRecordSets'
@@ -285,7 +390,7 @@ Resources:
                     - "arn:${AWS::Partition}:route53:::hostedzone/${zone}"
                     - zone:
                         Ref: DNSZoneId
-  R53CleanupLambdaFunction:
+  DatagrokR53CleanupLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Description: Removes obsolete validation records from AWS
@@ -330,14 +435,14 @@ Resources:
                   print(type(e).__name__, e)
                   cfnresponse.send(event, context, cfnresponse.FAILED, responseData)
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.10
       Role:
         Fn::GetAtt:
-          - R53CleanupLambdaRole
+          - DatagrokR53CleanupLambdaRole
           - Arn
       MemorySize: 128
       Timeout: 600
-  R53CleanupLambdaFunctionLogGroup:
+  DatagrokR53CleanupLambdaFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -346,20 +451,20 @@ Resources:
         Fn::Sub:
           - "/aws/lambda/${function_name}"
           - function_name:
-              Ref: R53CleanupLambdaFunction
+              Ref: DatagrokR53CleanupLambdaFunction
       RetentionInDays: 1
-  R53Cleanup:
+  DatagrokR53Cleanup:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
-      - R53CleanupLambdaFunctionLogGroup
+      - DatagrokR53CleanupLambdaFunctionLogGroup
     Properties:
       SSLCertificate:
-        Ref: ArnSSLCertificate
+        Ref: DatagrokArnSSLCertificate
       DNSZone:
         Ref: DNSZoneId
       ServiceToken:
         Fn::GetAtt:
-          - R53CleanupLambdaFunction
+          - DatagrokR53CleanupLambdaFunction
           - Arn
 Outputs:
   DatagrokEndpoint:

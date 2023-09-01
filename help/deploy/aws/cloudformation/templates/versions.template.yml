@@ -48,14 +48,12 @@ Parameters:
     Type: String
     Default: 1.6.1
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Datagrok Jupyter Kernel Gateway docker image version. Default
-      is 'latest'.
+    Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
   JNVersion:
     Type: String
     Default: 1.1.1
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Datagrok Jupyter Notebook docker image version. Default is
-      'latest'.
+    Description: Enter Datagrok Jupyter Notebook docker image version.
   GrokComputeVersion:
     Type: String
     Default: 1.5.4

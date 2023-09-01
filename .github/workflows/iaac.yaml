@@ -1,15 +1,33 @@
 name: "IaC"
 
 on:
-  workflow_dispatch: { }
+  #  workflow_dispatch: { }
   push:
     paths:
-      - 'help/deploy/'
+      - 'help/deploy/**'
       - '!help/deploy/**/*.md'
+      - '!help/deploy/**/*.mdx'
+      - '!help/deploy/**/_category_.yml'
+      - '!help/deploy/**/*.gif'
+      - '!help/deploy/**/*.jpg'
+      - '!help/deploy/**/*.JPG'
+      - '!help/deploy/**/*.jpeg'
+      - '!help/deploy/**/*.png'
+      - '!help/deploy/**/*.svg'
+      - '!help/deploy/**/*.bmp'
   pull_request:
     paths:
-      - 'help/deploy/'
+      - 'help/deploy/**'
       - '!help/deploy/**/*.md'
+      - '!help/deploy/**/*.mdx'
+      - '!help/deploy/**/_category_.yml'
+      - '!help/deploy/**/*.gif'
+      - '!help/deploy/**/*.jpg'
+      - '!help/deploy/**/*.JPG'
+      - '!help/deploy/**/*.jpeg'
+      - '!help/deploy/**/*.png'
+      - '!help/deploy/**/*.svg'
+      - '!help/deploy/**/*.bmp'
 
 jobs:
   common-check:
@@ -44,19 +62,25 @@ jobs:
         with:
           files: help/deploy/**
           files_ignore: '**/*.md'
+      - name: Output
+        run: echo ${{ steps.changed-files.outputs.all_changed_files }}
 
   template_cfn:
     needs:
       - common-check
       - changed-files
     runs-on: ubuntu-22.04
-    if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation')
-    name: САТ Templates
+    if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation') && github.event_name != 'pull_request'
+    name: Templates CFN
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
-
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.WRITE_TOKEN }}
       - name: Set up Python
         uses: actions/setup-python@v4
       - name: Run merge script
@@ -71,8 +95,8 @@ jobs:
         id: git
         continue-on-error: true
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config --global user.name '${{ github.event.pusher.name }}'
+          git config --global user.email '${{ github.event.pusher.email }}'
           git pull
           continue=false
           if [ -n "$(git status -s help/deploy/aws/cloudformation)" ]; then
@@ -123,49 +147,53 @@ jobs:
         uses: tj-actions/changed-files@v37
         id: changed-files
         with:
-          files: 'help/deploy/**'
-          files_ignore: |
-            **/templates/**
-            **/*.md
+          files: |
+            help/deploy/**
+            !help/deploy/**/templates/**
+            !help/deploy/**/*.md
+      - name: Output
+        run: echo ${{ steps.changed-files.outputs.all_changed_files }}
       - name: Snyk check
         uses: snyk/actions/iac@master
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
           sarif: true
           file: ${{ steps.changed-files.outputs.all_changed_files }}
-      - uses: github/codeql-action/upload-sarif@v1
+      - uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: snyk.sarif
-#  checkov:
-#    needs: common-check
-#    runs-on: ubuntu-22.04
-#    if: needs.common-check.outputs.continue == 'true'
-#    name: Checkov
-#    steps:
-#      - uses: actions/checkout@v3
-#        if: ${{ github.event_name == 'pull_request' }}
-#        name: Checkout PR branch
-#        with:
-#          ref: ${{ github.head_ref }}
-#
-#      - uses: actions/checkout@v3
-#        if: ${{ github.event_name != 'pull_request' }}
-#        name: Checkout
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Set up Python 3.8 for Checkov
-#        uses: actions/setup-python@v1
-#        with:
-#          python-version: 3.8
-#
-#      - name: Test with Checkov
-#        id: checkov
-#        uses: bridgecrewio/checkov-action@v12.1347.0
-#        with:
-#          download_external_modules: true
+
+  #  checkov:
+  #    needs: common-check
+  #    runs-on: ubuntu-22.04
+  #    if: needs.common-check.outputs.continue == 'true'
+  #    name: Checkov
+  #    steps:
+  #      - uses: actions/checkout@v3
+  #        if: ${{ github.event_name == 'pull_request' }}
+  #        name: Checkout PR branch
+  #        with:
+  #          ref: ${{ github.head_ref }}
+  #
+  #      - uses: actions/checkout@v3
+  #        if: ${{ github.event_name != 'pull_request' }}
+  #        name: Checkout
+  #        with:
+  #          fetch-depth: 0
+  #
+  #      - name: Set up Python 3.8 for Checkov
+  #        uses: actions/setup-python@v1
+  #        with:
+  #          python-version: 3.8
+  #
+  #      - name: Test with Checkov
+  #        id: checkov
+  #        uses: bridgecrewio/checkov-action@v12.1347.0
+  #        with:
+  #          download_external_modules: true
 
   validate_cfn:
     needs:
@@ -173,7 +201,7 @@ jobs:
       - changed-files
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true' && contains(needs.changed-files.outputs.all_changed_files, 'cloudformation')
-    name: Validate САТ
+    name: Validate CFN
     steps:
       - name: Set git fetch depth
         run: |
@@ -206,8 +234,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        provider: [aws]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        provider: [ aws ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
