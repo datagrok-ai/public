@@ -5,11 +5,11 @@ on:
   push:
     paths:
       - 'help/deploy/'
-      - '!help/deploy/**/*.md'
+      - '!**/*.md'
   pull_request:
     paths:
       - 'help/deploy/'
-      - '!help/deploy/**/*.md'
+      - '!**/*.md'
 
 jobs:
   common-check:
