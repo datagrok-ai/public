@@ -1,31 +1,10 @@
-#file: noinspection YAMLIncompatibleTypes
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
-  CreateDNS:
-    Fn::And:
-    - Fn::Not:
-      - Fn::Equals:
-        - Ref: DNSDomain
-        - ''
-    - Fn::Not:
-      - Fn::Equals:
-        - Ref: DNSZoneId
-        - ''
   CreatePublicSubnets:
     Fn::Or:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
-  CreateSSL:
-    Fn::And:
-    - Fn::Not:
-      - Fn::Equals:
-        - Ref: DNSDomain
-        - ''
-    - Fn::Not:
-      - Fn::Equals:
-        - Ref: DNSZoneId
-        - ''
   InternetEgressAccess:
     Fn::Equals:
     - Ref: InternetEgressAccess
@@ -134,10 +113,7 @@ Outputs:
   DatagrokEndpoint:
     Description: Datagrok endpoint
     Value:
-      Fn::If:
-      - CreateDNS
-      - Ref: DatagrokDNS
-      - Create DNS endpoint for Datagrok manually using DatagrokLoadBalancer
+      Ref: DatagrokDNS
 Parameters:
   CIDR:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
@@ -150,6 +126,7 @@ Parameters:
       you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain
       you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint
       will be 'StackName-datagrok.subdomain.domain.com'.
+    MinLength: 3
     Type: String
   DNSZoneId:
     Description: Select existing Route53 Hosted Zone ID for Datagrok and CVM client
@@ -452,7 +429,6 @@ Resources:
         Value: cvm
     Type: AWS::ECS::Cluster
   CvmDNS:
-    Condition: CreateDNS
     Properties:
       AliasTarget:
         DNSName:
@@ -823,7 +799,6 @@ Resources:
         SecretStringTemplate: '{"user": "admin"}'
     Type: AWS::SecretsManager::Secret
   DatagrokArnSSLCertificate:
-    Condition: CreateSSL
     Properties:
       DomainName:
         Fn::Sub:
@@ -952,7 +927,6 @@ Resources:
         Value: rds
     Type: AWS::RDS::DBSubnetGroup
   DatagrokDNS:
-    Condition: CreateDNS
     Properties:
       AliasTarget:
         DNSName:
@@ -2245,7 +2219,11 @@ Resources:
         Value: 'true'
       Name:
         Fn::Sub: ${AWS::StackName}-datagrok
-      Scheme: internet-facing
+      Scheme:
+        Fn::If:
+        - InternetIngressAccess
+        - internet-facing
+        - internal
       SecurityGroups:
       - Ref: DatagrokALBSecurityGroup
       Subnets:

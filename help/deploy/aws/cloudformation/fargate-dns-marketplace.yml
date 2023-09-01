@@ -1,19 +1,10 @@
-#file: noinspection YAMLIncompatibleTypes
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
-  CreateDNS:
-    Fn::Equals:
-    - Ref: DatagrokArnSSLCertificate
-    - ''
   CreatePublicSubnets:
     Fn::Or:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
-  CreateSSL:
-    Fn::Equals:
-    - Ref: DatagrokArnSSLCertificate
-    - ''
   InternetEgressAccess:
     Fn::Equals:
     - Ref: InternetEgressAccess
@@ -110,7 +101,6 @@ Metadata:
         default: Jupyter Notebook Version
 Outputs:
   CvmLoadBalancerDNSName:
-    Condition: CreateDNS
     Description: Datagrok CVM Load Balancer DNS to create CNAME record
     Value:
       Fn::GetAtt:
@@ -123,8 +113,11 @@ Outputs:
       - https://${AWS::Region}.console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${secret}
       - secret:
           Ref: DatagrokAdminPassword
+  DatagrokEndpoint:
+    Description: Datagrok endpoint
+    Value: Remember to create DNS records for datagrok and CVM using stated CNAMEs
+      as values
   DatagrokLoadBalancerDNSName:
-    Condition: CreateDNS
     Description: Datagrok Load Balancer DNS to create CNAME record
     Value:
       Fn::GetAtt:
@@ -2152,7 +2145,11 @@ Resources:
         Value: 'true'
       Name:
         Fn::Sub: ${AWS::StackName}-datagrok
-      Scheme: internet-facing
+      Scheme:
+        Fn::If:
+        - InternetIngressAccess
+        - internet-facing
+        - internal
       SecurityGroups:
       - Ref: DatagrokALBSecurityGroup
       Subnets:
