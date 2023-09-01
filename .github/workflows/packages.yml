@@ -83,16 +83,27 @@ jobs:
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
-              if [[ $npm_version != ${current_version} ]]; then
-                if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
-                  if [[ $unpublished_deps == "" ]] && [[ "${{ github.event_name }}" != "pull_request" ]]; then
-                    publish="publish"
-                    MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
+              if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+                if [[ $npm_version != ${current_version} ]]; then
+                  if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
+                    if [[ $unpublished_deps == "" ]]; then
+                      publish="publish"
+                      MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
+                    else
+                      echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps"
+                      echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies"
+                    fi
+                  else
+                    MATRIX_PUBLISH_JSON+=", \"beta\": \"beta\""
+                    echo "Package $PACKAGE version ${current_version} is under 1.0.0 and is not going to be published"
+                    echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0 and is not going to be published"
                   fi
                 else
-                  MATRIX_PUBLISH_JSON+=", \"beta\": \"beta\""
-                  echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0 and is not going to be published"
+                  echo "Package $PACKAGE version ${current_version} already published"
+                  echo "::notice title=${PACKAGE}::Version ${current_version} is already published"
                 fi
+              else
+                  echo "It is an actions for PR. Publish will be skipped."
               fi
           
               if ([[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]) && [[ -d "${DIR}/dockerfiles" ]]; then
