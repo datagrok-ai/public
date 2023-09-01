@@ -115,8 +115,7 @@ Outputs:
           Ref: DatagrokAdminPassword
   DatagrokEndpoint:
     Description: Datagrok endpoint
-    Value: Remember to create DNS records for datagrok and CVM using stated CNAMEs
-      as values
+    Value: Create DNS records for Datagrok and CVM using stated CNAMEs as values
   DatagrokLoadBalancerDNSName:
     Description: Datagrok Load Balancer DNS to create CNAME record
     Value:
