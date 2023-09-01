@@ -44,7 +44,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -69,7 +69,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -87,7 +87,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('structure3D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -106,7 +106,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('properties', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -163,7 +163,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules();

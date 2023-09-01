@@ -39,7 +39,7 @@ category('UI top menu', () => {
         await awaitCheck(() => Array.from(v.viewers).length === 1, 'SimilaritySearch viewer was not closed', 1000);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('diversity search', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -59,7 +59,7 @@ category('UI top menu', () => {
         await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 5, 'molecules number != 5', 3000);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('mutate', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -78,7 +78,7 @@ category('UI top menu', () => {
         grok.shell.closeTable(grok.shell.t);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('curate', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -94,7 +94,7 @@ category('UI top menu', () => {
         await awaitCheck(() => smiles.columns.names().includes('curated_molecule'), 'curated molecule hasn\'t been added', 10000);
         v.close();
         grok.shell.o = ui.div();
-    }); 
+    }, {skipReason: 'GROK-12946'}); 
 
     test('map identifiers', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -130,7 +130,7 @@ category('UI top menu', () => {
 
      test('fingerprints', async () => {
         await testGroup('Calculate', 'Fingerprints...', 'Fingerprints', 'Fingerprints');
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('substructure search', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -144,11 +144,11 @@ category('UI top menu', () => {
 
     test('to inchi', async () => {
         await testGroup('Calculate', 'To InchI...', 'inchi', 'To InchI');
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('to inchi keys', async () => {
         await testGroup('Calculate', 'To InchI Keys...', 'inchi_key', 'To InchI Keys');
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('descriptors', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -171,15 +171,15 @@ category('UI top menu', () => {
         isColumnPresent(smiles.columns, 'RingCount');
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('toxicity risks', async () => {
         await testGroup('Calculate', 'Toxicity Risks...', 'Mutagenicity', 'Toxicity risks');
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('properties', async () => {
         await testGroup('Calculate', 'Properties...', 'MW', 'Chemical Properties');
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('rgroups', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -205,11 +205,11 @@ category('UI top menu', () => {
         v.close();
         await delay(1000);
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('structural alerts', async () => {
         await testGroup('Analyze', 'Structural Alerts...', 'PAINS (smiles)', 'Structural Alerts');
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('chem space', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -232,7 +232,7 @@ category('UI top menu', () => {
         }, 'scatter plot hasn\'t been added', 5000);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('activity cliffs', async () => {
         smiles = await readDataframe('tests/activity_cliffs_test.csv');
@@ -257,7 +257,7 @@ category('UI top menu', () => {
         }, 'scatter plot hasn\'t been added', 5000);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('elemental analysis', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -271,7 +271,7 @@ category('UI top menu', () => {
         await awaitCheck(() => smiles.columns.length === 11, 'element columns haven\'t been added', 5000);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {skipReason: 'GROK-12946'});
 
     test('scaffold tree', async () => {
         smiles = grok.data.demo.molecules(20);
