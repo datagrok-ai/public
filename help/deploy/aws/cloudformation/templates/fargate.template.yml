@@ -1133,7 +1133,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: grok_compute
           MemoryReservation: 100
           Name: ResolvConf
         - DependsOn:
@@ -1160,7 +1160,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: grok_compute
           MemoryReservation: 1024
           Name: grok_compute
           PortMappings:
@@ -1430,7 +1430,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: h2o
           MemoryReservation: 100
           Name: ResolvConf
         - DependsOn:
@@ -1454,7 +1454,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: h2o
           MemoryReservation: 1024
           Name: h2o
           PortMappings:
@@ -1669,7 +1669,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: jkg
           MemoryReservation: 100
           Name: ResolvConf
         - DependsOn:
@@ -1693,7 +1693,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: jkg
           MemoryReservation: 2048
           Name: jupyter_kernel_gateway
           PortMappings:
@@ -1708,7 +1708,8 @@ Resources:
         Fn::GetAtt:
           - DatagrokTaskExecutionRole
           - Arn
-      Family: datagrok-cvm-jupyter_kernel_gateway
+      Family:
+        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jupyter_kernel_gateway"
       Memory: '3072'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1909,7 +1910,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: jn
           MemoryReservation: 100
           Name: ResolvConf
         - DependsOn:
@@ -1933,7 +1934,7 @@ Resources:
                 Ref: DatagrokLogGroup
               awslogs-region:
                 Ref: AWS::Region
-              awslogs-stream-prefix: cvm
+              awslogs-stream-prefix: jn
           MemoryReservation: 1024
           Name: jupyter_notebook
           PortMappings:
@@ -1948,7 +1949,8 @@ Resources:
         Fn::GetAtt:
           - DatagrokTaskExecutionRole
           - Arn
-      Family: datagrok-cvm-jupyter_notebook
+      Family:
+        Fn::Sub: "${AWS::StackName}-datagrok-cvm-jupyter_notebook"
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -2441,7 +2443,8 @@ Resources:
         Fn::GetAtt:
           - DatagrokTaskExecutionRole
           - Arn
-      Family: grok_connect
+      Family:
+        Fn::Sub: "${AWS::StackName}-datagrok-grok_connect"
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -2894,7 +2897,8 @@ Resources:
         Fn::GetAtt:
           - DatagrokTaskExecutionRole
           - Arn
-      Family: datagrok
+      Family:
+        Fn::Sub: "${AWS::StackName}-datagrok"
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -3556,7 +3560,8 @@ Resources:
         Fn::GetAtt:
           - DatagrokTaskExecutionRole
           - Arn
-      Family: grok_spawner
+      Family:
+        Fn::Sub: "${AWS::StackName}-datagrok-grok_spawner"
       Memory: '512'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -3576,7 +3581,7 @@ Resources:
                 repo:
                   Fn::FindInMap: [ Images, Kaniko, repo ]
                 tag:
-                  Fn::FindInMap: [ Images, Kaniko, repo ]
+                  Fn::FindInMap: [ Images, Kaniko, version ]
           LinuxParameters: { }
           LogConfiguration:
             LogDriver: awslogs
@@ -3593,7 +3598,8 @@ Resources:
         Fn::GetAtt:
           - DatagrokTaskExecutionRole
           - Arn
-      Family: grok_spawner_kaniko
+      Family:
+        Fn::Sub: "${AWS::StackName}-datagrok-grok_spawner_kaniko"
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:

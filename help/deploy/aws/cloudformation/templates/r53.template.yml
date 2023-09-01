@@ -332,6 +332,8 @@ Resources:
       - DatagrokService
       - DatagrokSettingsSetLambdaFunctionLogGroup
       - DatagrokS3VPCEndpoint
+      - DatagrokPrivateSubnetRouteAssos1
+      - DatagrokPrivateSubnetRouteAssos2
     Properties:
       DevKey:
         Ref: DatagrokAdminDevKey
