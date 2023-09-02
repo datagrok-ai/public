@@ -41,7 +41,6 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
     ...(template.campaignFields?.length > 0 ? [ui.h2('Campaign details')]: []),
     campaignPropsForm,
   ], 'ui-form');
-  const content = ui.div(form);
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
   form.appendChild(buttonsDiv);
   const okPromise = new Promise<NewHitDesignCampaignRes>((resolve) => {
@@ -50,10 +49,9 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
     buttonsDiv.appendChild(startCampaignButton);
   });
   const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.button(i18n.cancel, () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
+    const _cancelButton = ui.button(i18n.cancel, () => resolve());
     //buttonsDiv.appendChild(cancelButton);
   });
 
-  return {promise: okPromise, root: content, cancelPromise};
+  return {promise: okPromise, root: form, cancelPromise};
 }

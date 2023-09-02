@@ -97,9 +97,8 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
   const form = ui.divV([
     dataInputsDiv,
     ...(campaignProps.length ? [ui.h2('Campaign details'), campaignPropsForm] : [])], 'ui-form');
-  const content = ui.div(form, 'ui-form');
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
-  content.appendChild(buttonsDiv);
+  form.appendChild(buttonsDiv);
   const promise = new Promise<INewCampaignResult>((resolve) => {
     const onOkProxy = async () => {
       if (template.dataSourceType === 'File') {
@@ -129,10 +128,9 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
   });
 
   const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
+    const _cancelButton = ui.button(C.i18n.cancel, () => resolve());
     //buttonsDiv.appendChild(cancelButton);
   });
 
-  return {promise, root: content, cancelPromise};
+  return {promise, root: form, cancelPromise};
 }

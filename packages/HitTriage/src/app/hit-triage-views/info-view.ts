@@ -45,7 +45,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     ], {style: {marginLeft: '10px'}});
 
     const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([], {classes: 'hit-triage-templates-input-div ui-form'});
+    const templatesDiv = ui.divH([], {classes: 'ui-form'});
 
     const campaignsTable = await this.getCampaignsTable();
     $(this.root).empty();

@@ -96,19 +96,18 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
   const fieldsEditor = getCampaignFieldEditors();
 
   const form = ui.divV([
-    ui.h2('Details'),
+    ui.h3('Details'),
     ui.divV([templateNameInput, errorDiv]),
     ui.divV([templateKeyInput, keyErrorDiv]),
     ingestTypeInput.root,
     dataSourceFunctionInput.root,
     fieldsEditor.fieldsDiv,
-    ui.h2('Compute'),
+    ui.h3('Compute'),
     funcInput.root,
-    ui.h2('Submit'),
+    ui.h3('Submit'),
     submitFunctionInput.root,
   ], 'ui-form');
 
-  const content = ui.div(form);
   const buttonsDiv = ui.buttonsInput([]);
   const buttonsContainerDiv = buttonsDiv.getElementsByClassName('ui-input-editor')?.[0] ?? buttonsDiv;
   form.appendChild(buttonsDiv);
@@ -152,10 +151,9 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
 
   const cancelPromise = new Promise<void>((resolve) => {
     const cancelButton = ui.button(C.i18n.cancel, () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
     buttonsContainerDiv.appendChild(cancelButton);
   });
-  return {root: content, template: promise, cancelPromise};
+  return {root: form, template: promise, cancelPromise};
 }
 
 export function getCampaignFieldEditors() {
@@ -171,7 +169,7 @@ export function getCampaignFieldEditors() {
       required: f.Required ?? false,
     }));
   }
-  const fieldsContainer = ui.divV([ui.divText('Additional fields', {classes: 'hit-triage-additional-fields-title'}),
+  const fieldsContainer = ui.divV([ui.h3('Additional fields'),
     itemsGrid.root]);
   return {
     getFields: getFieldParams,
