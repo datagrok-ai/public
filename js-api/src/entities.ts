@@ -1159,6 +1159,14 @@ export class Property {
   get editor(): string { return api.grok_Property_Get(this.dart, 'editor'); }
   set editor(s: string) { api.grok_Property_Set(this.dart, 'editor', s); }
 
+  /** Whether a slider appears next to the number input. Applies to numerical columns only. */
+  get showSlider(): string { return api.grok_Property_GetShowSlider(this.dart); }
+  set showSlider(s: string) { api.grok_Property_SetShowSlider(this.dart, s); }
+
+  /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
+  get showPlusMinus(): string { return api.grok_Property_GetShowPlusMinus(this.dart); }
+  set showPlusMinus(s: string) { api.grok_Property_SetShowPlusMinus(this.dart, s); }
+
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
    *  @returns {Array<string>} */
