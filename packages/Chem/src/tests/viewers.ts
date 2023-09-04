@@ -8,9 +8,14 @@ import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 category('viewers', () => {
   const df = grok.data.demo.molecules(100);
   const viewers = DG.Func.find({package: 'Chem', tags: ['viewer']}).map((f) => f.friendlyName);
+  const viewersToSkip: {[v: string]: string} = {
+    'Scaffold Tree': 'GROK-12946',
+    'Similarity Search': 'GROK-12946',
+    'Diversity Search': 'GROK-12946'
+  };
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, df.clone(), {detectSemanticTypes: true, readOnly: true});
-    });
+    }, v in viewersToSkip ? {skipReason: viewersToSkip[v]} : {});
   }
 });

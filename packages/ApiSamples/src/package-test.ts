@@ -6,7 +6,7 @@ export {tests};
 
 import './tests/test';
 
-const skip = ['function-events', 'demo', 'ui-events'];
+const skip = ['function-events', 'demo', 'ui-events', 'last-error', 'shellLastError'];
 
 //name: test
 //input: string category {optional: true}

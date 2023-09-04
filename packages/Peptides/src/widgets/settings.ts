@@ -62,7 +62,8 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   // General pane options
   const activityCol = ui.columnInput(GENERAL_INPUTS.ACTIVITY, model.df,
     model.df.getCol(model.settings.activityColumnName!), () => result.activityColumnName = activityCol.value!.name,
-    {filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && col.name !== C.COLUMNS_NAMES.ACTIVITY_SCALED});
+    {filter: (col: DG.Column) => (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
+      col.name !== C.COLUMNS_NAMES.ACTIVITY_SCALED && col.stats.missingValueCount === 0});
   activityCol.setTooltip('Numeric activity column');
   const activityScaling =
     ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),

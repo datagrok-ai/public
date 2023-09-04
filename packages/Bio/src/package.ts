@@ -44,6 +44,7 @@ import {getMacromoleculeColumns} from './utils/ui-utils';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
+import {SCORE, calculateScores} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
@@ -741,9 +742,8 @@ export function searchSubsequenceEditor(call: DG.FuncCall) {
   const columns = getMacromoleculeColumns();
   if (columns.length === 1)
     call.func.prepare({macromolecules: columns[0]}).call(true);
-  else {
+  else
     new SubstructureSearchDialog(columns);
-  }
 }
 
 //top-menu: Bio | Search | Subsequence...
@@ -752,11 +752,35 @@ export function searchSubsequenceEditor(call: DG.FuncCall) {
 //editor: Bio:SearchSubsequenceEditor
 export function SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
   grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
-    type: "Bio:bioSubstructureFilter",
+    type: 'Bio:bioSubstructureFilter',
     column: macromolecules.name,
     columnName: macromolecules.name,
   });
   grok.shell.tv.grid.scrollToCell(macromolecules, 0);
+}
+
+//top-menu: Bio | Caclulate | Identity...
+//name: Identity Scoring
+//description: Adds a column with fraction of matching monomers
+//input: dataframe table [Table containing Macromolecule column]
+//input: column macromolecules {semType: Macromolecule} [Sequences to score]
+//input: string reference [Sequence, matching column format]
+//output: column scores
+export async function sequenceIdentityScoring(table: DG.DataFrame, macromolecule: DG.Column, reference: string): Promise<DG.Column<number>> {
+  const scores = calculateScores(table, macromolecule, reference, SCORE.IDENTITY);
+  return scores;
+}
+
+//top-menu: Bio | Caclulate | Similarity...
+//name: Similarity Scoring
+//description: Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities
+//input: dataframe table [Table containing Macromolecule column]
+//input: column macromolecules {semType: Macromolecule} [Sequences to score]
+//input: string reference [Sequence, matching column format]
+//output: column scores
+export async function sequenceSimilarityScoring(table: DG.DataFrame, macromolecule: DG.Column, reference: string): Promise<DG.Column<number>> {
+  const scores = calculateScores(table, macromolecule, reference, SCORE.SIMILARITY);
+  return scores;
 }
 
 //name: saveAsFasta

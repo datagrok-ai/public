@@ -32,7 +32,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
-import {MultiCurveViewer} from './multi-curve-viewer';
+import {CellRenderViewer} from './cell-render-viewer';
 
 
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
@@ -90,7 +90,7 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
     convertXMLToIFitChartData(gridCell.cell.value) :
     JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
 
-  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
+  const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
 
   cellChartData.series ??= [];
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
@@ -304,9 +304,26 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    ui.dialog({title: 'Edit chart'})
-      .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
+    const cellRenderViewer = CellRenderViewer.fromGridCell(gridCell);
+    const dlg = ui.dialog({title: 'Edit chart'})
+      .add(cellRenderViewer.root)
       .show({resizable: true});
+
+    // canvas is created as (300, 150), so we change its size to the dialog contents box size
+    const dlgContentsBox = dlg.root.getElementsByClassName('d4-dialog-contents dlg-edit-chart')[0].firstChild as HTMLElement;
+    cellRenderViewer.canvas.width = dlgContentsBox.clientWidth;
+    cellRenderViewer.canvas.height = dlgContentsBox.clientHeight;
+    cellRenderViewer.render();
+
+    // contents ui-box isn't resizable by default
+    dlgContentsBox.style.width = '100%';
+    dlgContentsBox.style.height = '100%';
+
+    ui.tools.handleResize(dlgContentsBox, (w: number, h: number) => {
+      cellRenderViewer.canvas.width = w;
+      cellRenderViewer.canvas.height = h;
+      cellRenderViewer.render();
+    });
   }
 
   renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData): void {

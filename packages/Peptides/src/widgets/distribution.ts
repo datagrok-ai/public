@@ -158,18 +158,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           otherStr = otherConst;
         }
         const labels = getDistributionLegend(aarStr, otherStr);
-
         const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-
         const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
-
         const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
-        const mask = DG.BitSet.create(rowCount, (i) => bitArray.getBit(i));
+        const mask = DG.BitSet.create(rowCount, bitArray.allFalse ? (_) => true : (i) => bitArray.getBit(i));
         const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
-
-        const stats = getStats(activityColData, bitArray);
+        const stats = bitArray.allFalse ? {count: rowCount, pValue: null, meanDifference: 0, ratio: 1} :
+          getStats(activityColData, bitArray);
         const tableMap = getStatsTableMap(stats);
-
         const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
         const distributionRoot = getStatsSummary(labels, hist, resultMap);
         $(distributionRoot).addClass('d4-flex-col');
@@ -229,11 +225,12 @@ export function getActivityDistribution(table: DG.DataFrame, isTooltip: boolean 
 
 export function getStatsTableMap(stats: Stats, options: {fractionDigits?: number} = {}): StringDictionary {
   options.fractionDigits ??= 3;
-  const tableMap = {
+  const tableMap: StringDictionary = {
     'Count': `${stats.count} (${stats.ratio.toFixed(options.fractionDigits)}%)`,
-    'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits),
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
   };
+  if (stats.pValue !== null)
+    tableMap['p-value'] = stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(options.fractionDigits);
   return tableMap;
 }
 

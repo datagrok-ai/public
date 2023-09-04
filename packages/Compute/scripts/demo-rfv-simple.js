@@ -17,6 +17,7 @@
 //meta.uploadMode: true
 //meta.runOnOpen: true
 //meta.runOnInput: true
+//meta.foldedCategories: ["Object properties"]
 
 timeToCool = undefined;
 

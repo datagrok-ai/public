@@ -7,6 +7,7 @@ import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -21,20 +22,18 @@ import $ from 'cash-dom';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram, getTemplate} from './utils/misc';
+import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram} from './utils/misc';
 import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
-import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap,
-} from './widgets/distribution';
+import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap} from './widgets/distribution';
 import {getAggregatedValue, getStats, Stats} from './utils/statistics';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
-import {calculateIdentity, calculateSimilarity} from './widgets/similarity';
-import {getDataSliceWidget} from './widgets/selection';
+import {getSelectionWidget} from './widgets/selection';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -98,7 +97,8 @@ export class PeptidesModel {
   _distanceMatrix!: DistanceMatrix;
   _dm!: DistanceMatrix;
   _layoutEventInitialized = false;
-  isToolboxSet: boolean = false;
+
+  subs: rxjs.Subscription[] = [];
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -473,7 +473,7 @@ export class PeptidesModel {
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
-    acc.addPane('Selection', () => getDataSliceWidget(table, trueModel).root);
+    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel).root);
 
     return acc;
   }
@@ -616,15 +616,17 @@ export class PeptidesModel {
     if (genObj.minMeanDifference > possibleMinMeanDifference)
       genObj.minMeanDifference = possibleMinMeanDifference;
 
-    const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
-    genObj.maxPValue ??= possibleMaxPValue;
-    if (genObj.maxPValue < possibleMaxPValue)
-      genObj.maxPValue = possibleMaxPValue;
+    if (!isNaN(stats?.pValue ?? NaN)) {
+      const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
+      genObj.maxPValue ??= possibleMaxPValue;
+      if (genObj.maxPValue < possibleMaxPValue)
+        genObj.maxPValue = possibleMaxPValue;
 
-    const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
-    genObj.minPValue ??= possibleMinPValue;
-    if (genObj.minPValue > possibleMinPValue)
-      genObj.minPValue = possibleMinPValue;
+      const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
+      genObj.minPValue ??= possibleMinPValue;
+      if (genObj.minPValue > possibleMinPValue)
+        genObj.minPValue = possibleMinPValue;
+    }
 
     const possibleMaxRatio = stats?.ratio ?? summaryStats!.maxRatio;
     genObj.maxRatio ??= possibleMaxRatio;
@@ -1111,83 +1113,47 @@ export class PeptidesModel {
       this.updateGrid();
     }
 
-    if (!this.isToolboxSet && this.df.getTag(C.TAGS.MULTIPLE_VIEWS) !== '1') {
-      let reference: string[] = [];
-      const sequencesCol = this.df.getCol(this.settings.sequenceColumnName!);
-      const minTemplateLength = this.splitSeqDf.columns.toList()
-        .filter((col) => col.stats.missingValueCount === 0).length;
-      const calculateIdentityBtn = ui.button('Identity', async () => {
-        let identityScoresCol = calculateIdentity(reference, this.splitSeqDf);
-        identityScoresCol.name = this.df.columns.getUnusedName(identityScoresCol.name);
-        identityScoresCol = this.df.columns.add(identityScoresCol);
-        identityScoresCol.setTag(C.TAGS.IDENTITY_TEMPLATE, new Array(reference).join(' '));
-      }, 'Calculate identity scores for each sequence in dataset given reference');
-      const calculateSimilarityBtn = ui.button('Similarity', async () => {
-        let similarityScoresCol = await calculateSimilarity(reference, this.splitSeqDf);
-        similarityScoresCol.name = this.df.columns.getUnusedName(similarityScoresCol.name);
-        similarityScoresCol = this.df.columns.add(similarityScoresCol);
-        similarityScoresCol.setTag(C.TAGS.SIMILARITY_TEMPLATE, new Array(reference).join(' '));
-      }, 'Calculate similarity scores for each sequence in dataset given reference');
-      const warnings = {rowIndex: true, sequenceFormat: true, referenceLength: true, referenceGaps: true};
-      const referenceInput = ui.stringInput('Reference', this.identityTemplate, async () => {
-        reference = [];
-        let disableButtons = false;
-        this.identityTemplate = referenceInput.stringValue;
-        const rowIndex = parseInt(referenceInput.stringValue);
-        try {
-          if (!isNaN(rowIndex)) {
-            const selectedIndexes = this.df.filter.getSelectedIndexes();
-            if (rowIndex < 1 || rowIndex > selectedIndexes.length) {
-              if (warnings.rowIndex)
-                grok.shell.warning('Invalid row index');
-              warnings.rowIndex = false;
-              disableButtons = true;
-              return;
-            }
-            this.identityTemplate = sequencesCol.get(selectedIndexes[rowIndex - 1]);
-          }
-          if (this.identityTemplate.length === 0)
-            disableButtons = true;
-          else
-            reference = await getTemplate(this.identityTemplate, sequencesCol);
-        } catch (e) {
-          if (warnings.sequenceFormat)
-            grok.shell.warning(`Only ${sequencesCol.getTag(DG.TAGS.UNITS)} sequence format is supported.`);
-          grok.log.warning(e as string);
-          warnings.sequenceFormat = false;
-          disableButtons = true;
-        } finally {
-          if (reference?.length < minTemplateLength) {
-            if (warnings.referenceLength)
-              grok.shell.warning(`Reference should be at least ${minTemplateLength} amino acids long.`);
-            warnings.referenceLength = false;
-            disableButtons = true;
-          }
-          if (reference.includes('') || reference.includes('-')) {
-            if (warnings.referenceGaps)
-              grok.shell.warning('Reference shouldn\'t contain gaps or empty cells.');
-            warnings.referenceGaps = false;
-            disableButtons = true;
-          }
-          if (disableButtons) {
-            calculateIdentityBtn.disabled = true;
-            calculateSimilarityBtn.disabled = true;
-            return;
-          }
-        }
-        for (const key of (Object.keys(warnings) as Array<keyof typeof warnings>))
-          warnings[key] = true;
-        calculateIdentityBtn.disabled = false;
-        calculateSimilarityBtn.disabled = false;
-      }, {placeholder: `${sequencesCol.getTag(DG.TAGS.UNITS)} sequence or row index...`});
-      referenceInput.setTooltip('Reference sequence. Can be row index or sequence.');
-      referenceInput.fireChanged();
-      const acc = this.analysisView.toolboxPage.accordion;
-      acc.addPane('Identity and Similarity',
-        () => ui.narrowForm([referenceInput, ui.buttonsInput([calculateIdentityBtn, calculateSimilarityBtn]) as any]),
-        true, acc.panes[0]);
-      this.isToolboxSet = true;
-    }
+    this.subs.push(grok.events.onAccordionConstructed.subscribe((acc) => {
+      if (!(grok.shell.o instanceof DG.SemanticValue || (grok.shell.o instanceof DG.Column && this.df.columns.toList().includes(grok.shell.o))))
+        return;
+
+      const actionsPane = acc.getPane('Actions');
+
+      const actionsHost = $(actionsPane.root).find('.d4-flex-col');
+      const calculateIdentity = ui.label('Calculate identity');
+      calculateIdentity.classList.add('d4-link-action');
+      ui.tooltip.bind(calculateIdentity, 'Adds a column with fractions of matching monomers against sequence in the current row');
+      calculateIdentity.onclick = (): void => {
+        const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.IDENTITY);
+      };
+      actionsHost.append(ui.span([calculateIdentity], 'd4-markdown-row'));
+
+      const calculateSimilarity = ui.label('Calculate similarity');
+      calculateSimilarity.classList.add('d4-link-action');
+      ui.tooltip.bind(calculateSimilarity, 'Adds a column with sequence similarity scores against sequence in the current row');
+      calculateSimilarity.onclick = (): void => {
+        const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.SIMILARITY);
+      };
+      actionsHost.append(ui.span([calculateSimilarity], 'd4-markdown-row'));
+    }));
+
+    this.subs.push(grok.events.onViewRemoved.subscribe((view) => {
+      if (view.id === this.analysisView.id)
+        this.subs.forEach((v) => v.unsubscribe());
+      grok.log.debug(`Peptides: view ${view.name} removed`);
+    }));
+    this.subs.push(grok.events.onTableRemoved.subscribe((table: DG.DataFrame) => {
+      if (table.id === this.df.id)
+        this.subs.forEach((v) => v.unsubscribe());
+      grok.log.debug(`Peptides: table ${table.name} removed`);
+    }));
+    this.subs.push(grok.events.onProjectClosed.subscribe((project: DG.Project) => {
+      if (project.id === grok.shell.project.id)
+        this.subs.forEach((v) => v.unsubscribe());
+      grok.log.debug(`Peptides: project ${project.name} closed`);
+    }));
 
     this.fireBitsetChanged(true);
     if (typeof this.settings.targetColumnName === 'undefined')

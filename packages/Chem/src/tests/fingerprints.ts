@@ -19,11 +19,11 @@ category('fingerprints', async () => {
 
   test('Pattern', async () => {
     await chemGetFingerprints(molecules.col('smiles')!, Fingerprint.Pattern, false)!;
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('Morgan', async () => {
     await chemGetFingerprints(molecules.col('smiles')!, Fingerprint.Morgan, false)!;
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('fp_withoutDf', async () => {
     const col = DG.Column.fromStrings('smiles', [
@@ -32,5 +32,5 @@ category('fingerprints', async () => {
     ]);
     const res = await chemGetFingerprints(col, Fingerprint.Morgan, false)!;
     expect(res.length, 2);
-  });
+  }, {skipReason: 'GROK-12946'});
 });

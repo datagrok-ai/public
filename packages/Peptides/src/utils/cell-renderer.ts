@@ -24,29 +24,23 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs | null = null,
   twoColorMode: boolean = false, renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
-  const pVal: number = positionStats[currentAAR].pValue;
-  const currentMeanDiff = positionStats[currentAAR].meanDifference;
+  const pVal = positionStats[currentAAR].pValue;
+  const currentMeanDifference = positionStats[currentAAR].meanDifference;
 
-  let coef: string;
-  const isMeanDeltaNegative = currentMeanDiff < 0;
-  if (pVal < 0.01)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FF7900' : '#299617';
-  else if (pVal < 0.05)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FFA500' : '#32CD32';
-  else if (pVal < 0.1)
-    coef = isMeanDeltaNegative && twoColorMode ? '#FBCEB1' : '#98FF98';
-  else
-    coef = DG.Color.toHtml(DG.Color.lightLightGray);
+  // Transform p-value to increase intensity for smaller values and decrease for larger values
+  const maxPValComplement = 1 - positionStats.general.maxPValue;
+  const minPValComplement = 1 - positionStats.general.minPValue;
+  const pValCentering = Math.min(maxPValComplement, minPValComplement);
+  const centeredMaxPValComplement = maxPValComplement - pValCentering;
+  const centeredMinPValComplement = minPValComplement - pValCentering;
+  const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement)
+  const pValComplement = pVal === null ? 0 : 1 - pVal - pValCentering;
 
+  let coef: string = DG.Color.toHtml(DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement,
+    -centeredPValLimit, centeredPValLimit));
 
-  const minMeanDifference = twoColorMode ? 0 : monomerPositionStats.general.minMeanDifference;
-  const maxMeanDifference = twoColorMode ?
-    Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference) :
-    monomerPositionStats.general.maxMeanDifference;
-  const currentMeanDifference = twoColorMode ? Math.abs(currentMeanDiff) : currentMeanDiff;
-
-  const rCoef = (currentMeanDifference - minMeanDifference) / (maxMeanDifference - minMeanDifference);
-
+  const maxMeanDifference = Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference);
+  const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;
   const maxRadius = 0.9 * (bound.width > bound.height ? bound.height : bound.width) / 2;
   const radius = Math.floor(maxRadius * rCoef);
 
@@ -54,7 +48,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   const midY = bound.y + bound.height / 2;
   canvasContext.beginPath();
   canvasContext.fillStyle = coef;
-  canvasContext.arc(midX, midY, radius < 3 ? 3 : radius, 0, Math.PI * 2, true);
+  canvasContext.arc(midX, midY, radius < 3 || pVal === null ? 3 : radius, 0, Math.PI * 2, true);
   canvasContext.closePath();
   canvasContext.fill();
 

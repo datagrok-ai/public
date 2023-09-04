@@ -16,12 +16,14 @@ export namespace UiUtils {
 
   export function historyInput(
     label: string,
-    _funcName: string,
-    _stringValueFunc: (currentRun: DG.FuncCall) => string,
-    _visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
-    _visibleColumnsForFilter: string[] = [],
+    funcName: string,
+    stringValueFunc: (currentRun: DG.FuncCall) => string,
+    visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
+    visibleColumnsForFilter: string[] = [],
+    includeParams = true,
   ) {
-    return new HistoryInput(label, _funcName, _stringValueFunc, _visibleColumnsForGrid, _visibleColumnsForFilter);
+    return new HistoryInput(
+      label, funcName, stringValueFunc, visibleColumnsForGrid, visibleColumnsForFilter, includeParams);
   }
 
   export function historyPanel(objFunc: DG.Func) {

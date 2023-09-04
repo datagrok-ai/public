@@ -101,14 +101,3 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
     DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
   ]);
 }
-
-export async function getTemplate(sequence: string, seqCol?: DG.Column<string>): Promise<string[]> {
-  if (typeof seqCol === 'undefined') {
-    const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
-    await grok.data.detectSemanticTypes(tempDf);
-    seqCol = tempDf.getCol('sequence');
-  }
-  // const splitter = getSplitterForColumn(seqCol);
-  const splitter = getSplitter(seqCol.getTag(DG.TAGS.UNITS), seqCol.getTag(bioTags.separator));
-  return splitter(sequence) as string[];
-}

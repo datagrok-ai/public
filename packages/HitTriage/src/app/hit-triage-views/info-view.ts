@@ -7,7 +7,7 @@ import {HitTriageTemplate} from '../types';
 import {CampaignIdKey, CampaignJsonName, i18n} from '../consts';
 import {HitTriageCampaign} from '../types';
 import '../../../css/hit-triage.css';
-import {addBreadCrumbsToRibbons, hideComponents, modifyUrl} from '../utils';
+import {addBreadCrumbsToRibbons, hideComponents, modifyUrl, popRibbonPannels} from '../utils';
 import {newCampaignAccordeon} from '../accordeons/new-campaign-accordeon';
 import $ from 'cash-dom';
 import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
@@ -28,9 +28,8 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   async init(presetTemplate?: HitTriageTemplate): Promise<void> {
-    $(this.root).empty();
     this.root.style.flexDirection = 'column';
-    const wikiLink = ui.link('Read more', _package.webRoot + 'README.md');
+    const wikiLink = ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage');
     const textLink = ui.inlineText([wikiLink, '.']);
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
@@ -46,16 +45,17 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     ], {style: {marginLeft: '10px'}});
 
     const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([], {classes: 'hit-triage-templates-input-div ui-form'});
+    const templatesDiv = ui.divH([], {classes: 'ui-form'});
 
     const campaignsTable = await this.getCampaignsTable();
+    $(this.root).empty();
     this.root.appendChild(ui.divV([
       appDescription,
       campaignsTable,
       createNewCampaignHeader,
       templatesDiv,
       campaignAccordionDiv,
-    ]));
+    ], {style: {maxWidth: '800px'}}));
     this.startNewCampaign(campaignAccordionDiv, templatesDiv,
       [campaignsTable.style, continueCampaignsHeader.style, createNewCampaignHeader.style, appDescription.style],
       presetTemplate);
@@ -86,13 +86,12 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     const createNewtemplateButton = ui.icons.add(() => {
       this.createNewTemplate(containerDiv, templateInputDiv, toRemove);
     }, i18n.createNewTemplate);
-    createNewtemplateButton.style.marginLeft = '15px';
+    templatesInput.addOptions(createNewtemplateButton);
     createNewtemplateButton.style.color = '#2083d5';
     templatesInput.root.style.width = '100%';
     await onTemmplateChange();
     $(templateInputDiv).empty();
     templateInputDiv.appendChild(templatesInput.root);
-    templateInputDiv.appendChild(createNewtemplateButton);
   }
 
   private async checkCampaign(campId?: string) {
@@ -129,9 +128,12 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     }
 
     const campaignsInfo = Object.values(campaignNamesMap).map((campaign) =>
-      ({name: campaign.name, createDate: campaign.createDate, status: campaign.status}));
-    const table = ui.table(campaignsInfo, (info) => ([ui.link(info.name, () => this.setCampaign(info.name)),
-      info.createDate, info.status]), ['Campaign', 'Create date', 'Status']);
+      ({name: campaign.name, createDate: campaign.createDate,
+        rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
+    const table = ui.table(campaignsInfo, (info) =>
+      ([ui.link(info.name, () => this.setCampaign(info.name)),
+        info.createDate, info.rowCount, info.filtered, info.status]),
+    ['Campaign', 'Created', 'Total', 'Selected', 'Status']);
     table.classList.add('hit-triage-table');
     return ui.div(table, {classes: 'hit-triage-table-container'});
   }
@@ -143,11 +145,12 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
 
   private async getNewCampaignAccordeon(template: HitTriageTemplate) {
     const {root, promise, cancelPromise} = newCampaignAccordeon(template);
-    promise.then((camp) => {
+    promise.then(async (camp) => {
       this.app.dataFrame = camp.df;
       this.app._fileInputType = camp.type;
-      this.app.setTemplate(template);
+      await this.app.setTemplate(template);
       this.app.campaignProps = camp.campaignProps;
+      this.app.saveCampaign(undefined, false);
     });
 
     cancelPromise.then(() => {
@@ -158,21 +161,23 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
 
   private async createNewTemplate(
     containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[]) {
-    hideComponents(toRemove);
     const newTemplateAccordeon = await createTemplateAccordeon();
+    hideComponents(toRemove);
     $(containerDiv).empty();
     $(templateInputDiv).empty();
-    const {breadcrumbs, sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit triage', i18n.createNewTemplate, () => {
+    const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Triage', i18n.createNewTemplate, () => {
       this.init();
     });
     //this.root.prepend(breadcrumbs.root);
     containerDiv.appendChild(newTemplateAccordeon.root);
     newTemplateAccordeon.template.then((t) => {
       sub.unsubscribe();
+      popRibbonPannels(grok.shell.v);
       this.init(t);
-      $(breadcrumbs.root).empty();
-      $(breadcrumbs.root).remove();
     });
-    newTemplateAccordeon.cancelPromise.then(() => this.init());
+    newTemplateAccordeon.cancelPromise.then(() => {
+      sub.unsubscribe();
+      this.init();
+    });
   }
 };

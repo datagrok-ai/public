@@ -48,8 +48,8 @@ export function createDefaultChartData(): IFitChartData {
 }
 
 /** Returns existing, or creates new column default chart options. */
-export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData {
-  return gridColumn.temp[TAG_FIT] ??= createDefaultChartData();
+export function getColumnChartOptions(column: DG.Column): IFitChartData {
+  return JSON.parse(column.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
 }
 
 /** Returns points arrays from {@link IFitPoint} array */

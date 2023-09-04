@@ -34,7 +34,6 @@ export class ViewHandler {
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView];
-    // const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       currentView.tryToinitViewers();

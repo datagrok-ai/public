@@ -20,7 +20,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
   const logoHost = ui.div();
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
-    const sequenceColumns = df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE);
+    const sequenceColumns = df.columns.toList()
+      .filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE && dfCol.stats.missingValueCount === 0);
     const potentialCol = DG.Utils.firstOrNull(sequenceColumns);
     if (potentialCol === null)
       throw new Error('Peptides Error: table doesn\'t contain sequence columns');
@@ -37,7 +38,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
         return viewer.root;
       }));
       //TODO: add when new version of datagrok-api is available
-    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
+    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE && col.stats.missingValueCount === 0});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
@@ -88,24 +89,23 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
   activityScalingMethod.setTooltip('Activity column transformation method');
 
   const activityScalingMethodState = (): void => {
-    activityScalingMethod.enabled = (activityColumnChoice.value ?? false) &&
-      DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
-    activityScalingMethod.fireChanged();
+    activityScalingMethod.enabled = (activityColumnChoice.value ?? false) && DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
+    activityScalingMethod.value = C.SCALING_METHODS.NONE;
   };
   //TODO: add when new version of datagrok-api is available
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
-    {filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT});
+    {filter: (col: DG.Column) => (col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT) && col.stats.missingValueCount === 0});
   activityColumnChoice.setTooltip('Numerical activity column');
-  const clustersColumnChoice = ui.columnInput('Clusters', df, null);
+  const clustersColumnChoice = ui.columnInput('Clusters', df, null, null, {filter: (col: DG.Column) => col.stats.missingValueCount === 0});
   clustersColumnChoice.setTooltip('Optional. Clusters column is used to create Logo Summary Table');
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
   const targetColumnChoice = ui.columnInput('Target', df, null, null,
-    {filter: (col: DG.Column) => col.type === DG.TYPE.STRING});
-  targetColumnChoice.setTooltip('Optional. Target represents a cellular protein the peptide binds to. ' +
-    'Modifies Mutation Cliffs calculation to consider only mutations that are present in the target.');
+    {filter: (col: DG.Column) => col.type === DG.TYPE.STRING && col.stats.missingValueCount === 0});
+  targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in the data. ' +
+    'Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
   targetColumnChoice.nullable = true;
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];

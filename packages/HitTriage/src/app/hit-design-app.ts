@@ -1,14 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {HitDesignCampaign, HitDesignTemplate} from './types';
+import {HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
-import {CampaignIdKey, CampaignTableName, EmptyStageCellValue, HitDesignCampaignIdKey,
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, EmptyStageCellValue, HitDesignCampaignIdKey,
   HitDesignMolColName, TileCategoriesColName, ViDColName, i18n} from './consts';
 import {calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
 import {_package} from '../package';
-import {modifyUrl} from './utils';
+import {modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
 import {HitDesignTilesView} from './hit-design-views/tiles-view';
 import {HitAppBase} from './hit-app-base';
@@ -42,13 +42,17 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     });
     grok.shell.addView(this.multiView);
     grok.events.onCurrentViewChanged.subscribe(() => {
-      if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {
-        grok.shell.windows.showHelp = false;
+      try {
+        if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {
+          grok.shell.windows.showHelp = false;
 
-        this.setBaseUrl();
-        modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
-        if (grok.shell.v?.name === this.currentTilesViewId)
-          this._tilesView?.onActivated();
+          this.setBaseUrl();
+          modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
+          if (grok.shell.v?.name === this.currentTilesViewId)
+            this._tilesView?.onActivated();
+        }
+      } catch (e) {
+        console.error(e);
       }
     });
   }
@@ -129,7 +133,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   set campaign(campaign: HitDesignCampaign | undefined) {this._campaign = campaign;}
 
   private getDesignView(): DG.TableView {
-    const isNew = this.dataFrame!.rowCount === 1;
+    const isNew = this.dataFrame!.col(this.molColName)?.toList().every((m) => !m && m === '');
     const view = DG.TableView.create(this.dataFrame!, false);
     view.name = this._designViewName;
     this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
@@ -138,53 +142,68 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       await new Promise((r) => setTimeout(r, 1000)); // needed for substruct filter
       if (isNew)
         grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
-      //const _f = view.filters();
 
       this.dataFrame!.onRowsAdded.subscribe(() => { // TODO, insertion of rows in the middle
-        const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
-        this.processedValues.push(...new Array(newRowsNum).fill(''));
+        try {
+          const newRowsNum = this.dataFrame!.rowCount - this.processedValues.length;
+          this.processedValues.push(...new Array(newRowsNum).fill(''));
+        } catch (e) {
+          console.error(e);
+        }
         //const lastCell = view.grid.cell(this.molColName, this.dataFrame!.rowCount - 1);
         //view.grid.onCellValueEdited
       });
       this.dataFrame?.onRowsRemoved.subscribe(() => {
-        this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
+        try {
+          this.processedValues = this.dataFrame!.getCol(this.molColName).toList();
+        } catch (e) {
+          console.error(e);
+        }
       });
 
       this.dataFrame!.onValuesChanged.subscribe(async () => {
-        let newValueIdx: number | null = null;
-        for (let i = 0; i < this.processedValues.length; i++) {
-          if (this.processedValues[i] !== this.dataFrame!.get(this.molColName, i)) {
-            newValueIdx = i;
-            break;
+        try {
+          let newValueIdx: number | null = null;
+          for (let i = 0; i < this.processedValues.length; i++) {
+            if (this.processedValues[i] !== this.dataFrame!.get(this.molColName, i)) {
+              newValueIdx = i;
+              break;
+            }
           }
-        }
-        if (newValueIdx == null) return;
-        this.processedValues[newValueIdx] = this.dataFrame!.get(this.molColName, newValueIdx);
-        const newCellValue: string = this.processedValues[newValueIdx];
-        this.dataFrame!.col(TileCategoriesColName)!.set(newValueIdx, this.template!.stages[0], false);
-        if (!this.dataFrame!.col(ViDColName)?.get(newValueIdx))
+          if (newValueIdx == null) return;
+          this.processedValues[newValueIdx] = this.dataFrame!.get(this.molColName, newValueIdx);
+          const newCellValue: string = this.processedValues[newValueIdx];
+          this.dataFrame!.col(TileCategoriesColName)!.set(newValueIdx, this.template!.stages[0], false);
+          if (!this.dataFrame!.col(ViDColName)?.get(newValueIdx))
           this.dataFrame!.col(ViDColName)!.set(newValueIdx, getNewVid(this.dataFrame!.col(ViDColName)!), false);
 
-        const computeObj = this.template!.compute;
-        const calcDf =
-          await calculateSingleCellValues(newCellValue, computeObj.descriptors.args, computeObj.functions);
-        for (const col of calcDf.columns.toList()) {
-          if (col.name === HitDesignMolColName) continue;
-          if (!this.dataFrame!.columns.contains(col.name)) {
-            const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
-            newCol.semType = col.semType;
-          }
+          const computeObj = this.template!.compute;
+          if (!newCellValue || newCellValue === '')
+            return;
+          const calcDf =
+            await calculateSingleCellValues(newCellValue, computeObj.descriptors.args, computeObj.functions);
+
+          for (const col of calcDf.columns.toList()) {
+            if (col.name === HitDesignMolColName) continue;
+            if (!this.dataFrame!.columns.contains(col.name)) {
+              const newCol = this.dataFrame!.columns.addNew(col.name, col.type);
+              newCol.semType = col.semType;
+            }
           this.dataFrame!.col(col.name)!.set(newValueIdx, col.get(0), false);
-        }
+          }
         this.dataFrame!.fireValuesChanged();
-      });
+        } catch (e) {
+          console.error(e);
+        }
+      },
+      );
     }, 300);
     const ribbons = view?.getRibbonPanels();
     if (ribbons) {
       const submitButton = ui.div(ui.bigButton('Submit', () => {
         const dialogContent = this._submitView?.render();
         if (dialogContent)
-          ui.dialog('Submit').add(dialogContent).show();
+          ui.dialog('Submit').add(dialogContent).show().getButton('Cancel').textContent = 'Ok';
       }), 'hit-design-submit-button');
       ribbons.push([submitButton]);
       view.setRibbonPanels(ribbons);
@@ -196,7 +215,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     const campaignProps = this.campaign?.campaignFields ?? this.campaignProps;
     return {
       'Template': this.template?.name ?? 'Molecules',
-      'File path': ui.divH([ui.link(this._dfName ?? '-',
+      'File path': ui.divH([ui.link(this._dfName ?? 'Molecules',
         () => this.download(this.dataFrame!, 'Molecules'), i18n.download)],
       {style: {alignItems: 'center'}}),
       ...campaignProps,
@@ -204,5 +223,32 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       'Enrichment methods': [this.template!.compute.descriptors.enabled ? 'descriptors' : '',
         ...this.template!.compute.functions.map((func) => func.name)].filter((f) => f && f.trim() !== '').join(', '),
     };
+  }
+
+  async saveCampaign(status?: HitTriageCampaignStatus, notify = true): Promise<any> {
+    const campaignId = this.campaignId!;
+    const templateName = this.template!.name;
+    const enrichedDf = this.dataFrame!;
+    const campaignName = campaignId;
+    const columnSemTypes: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
+    const campaign: HitDesignCampaign = {
+      name: campaignName,
+      templateName,
+      status: status ?? this.campaign?.status ?? 'In Progress',
+      createDate: this.campaign?.createDate ?? toFormatedDateString(new Date()),
+      campaignFields: this.campaign?.campaignFields ?? this.campaignProps,
+      columnSemTypes,
+      rowCount: enrichedDf.col(ViDColName)?.toList().filter((s) => s !== EmptyStageCellValue).length ?? 0,
+      filteredRowCount: enrichedDf.filter.trueCount,
+    };
+    await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignJsonName}`,
+      JSON.stringify(campaign));
+
+    const csvDf = DG.DataFrame.fromColumns(
+      enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
+    ).toCsv();
+    await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
+    notify && grok.shell.info('Campaign saved successfully.');
   }
 }

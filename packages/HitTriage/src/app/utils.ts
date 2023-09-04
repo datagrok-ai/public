@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
 
 export const toFormatedDateString = (d: Date): string => {
@@ -39,8 +38,7 @@ export function addBreadCrumbsToRibbons(view: DG.ViewBase, firstPath: string, se
   const sub = breadcrumbs.onPathClick.subscribe((path) => {
     if (path.length === 1) {
       sub.unsubscribe();
-      $(breadcrumbs.root).empty();
-      $(breadcrumbs.root).remove();
+      popRibbonPannels(view);
       handler();
     }
   });
@@ -56,3 +54,11 @@ export function addBreadCrumbsToRibbons(view: DG.ViewBase, firstPath: string, se
   }
   return {breadcrumbs, sub};
 }
+
+export function popRibbonPannels(view: DG.ViewBase) {
+  const ribbons = view.getRibbonPanels();
+  if (!ribbons?.length)
+    return;
+  ribbons.pop();
+  view.setRibbonPanels(ribbons);
+};

@@ -7,8 +7,8 @@ slug: develop/admin/releases/release-history
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.2](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.6](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.4](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.8](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.4](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.3](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../compute/scripting.md)   | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
@@ -19,6 +19,27 @@ slug: develop/admin/releases/release-history
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose.mdx)
+## 2023-08-30 1.16.4
+
+### Addressed Issues
+
+* (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
+* (Improvement) [#2057](https://github.com/datagrok-ai/public/issues/2057): Box plot has to render structures on the X axis 
+* (Bug) [#2293](https://github.com/datagrok-ai/public/issues/2293): Cannot search in 'order and hide columns' if table contains a summary column 
+* (Bug) [#2163](https://github.com/datagrok-ai/public/issues/2163): Line chart lines are displayed incorrectly in some cases (drop below the X axis) 
+* (Bug) [#2285](https://github.com/datagrok-ai/public/issues/2285): Scatter plot: default marker size is not changed on moving slider 
+* (Bug) [#2316](https://github.com/datagrok-ai/public/issues/2316):  Errors on combining scaffold tree with some other filters 
+* (Bug) [#2272](https://github.com/datagrok-ai/public/issues/2272): Loading page performance issues (WIP)
+* (Bug) [#2301](https://github.com/datagrok-ai/public/issues/2301): Histogram slider's end can be dragged out of valid range 
+* (Bug) GROK-13843: ScatterPlot: displaying the legend issues (WIP)
+* (Improvement) [#1063](https://github.com/datagrok-ai/public/issues/1063): A way to indicate current viewer 
+
+
+## 2023-08-17 1.16.3
+
+### Addressed Issues
+
+* (Improvement) GROK-13737: Cleanup package if it's not in NPM and is not installed 
 
 ## 2023-08-15 1.16.2
 

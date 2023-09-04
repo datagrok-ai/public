@@ -81,6 +81,8 @@ export type HitTriageCampaign = {
     filters: {[key: string]: any}[],
     ingest: HitTriageTemplateIngest,
     columnSemTypes?: {[key: string]: string},
+    rowCount?: number,
+    filteredRowCount?: number,
 };
 
 export type IChemFunctionsDialogResult = {

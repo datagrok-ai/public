@@ -62,6 +62,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     const func = dataSourceFunctionsMap[dataSourceFunctionInput.value!];
     funcCall = func.prepare();
     const editor = await funcCall.getEditor();
+    editor.classList.remove('ui-form');
     funcEditorDiv.innerHTML = '';
     funcEditorDiv.appendChild(editor);
   };
@@ -93,16 +94,11 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     functionInputDiv.style.display = 'block';
   }
 
-  // const accordeon = ui.accordion();
-  // accordeon.root.classList.add('hit-triage-new-campaign-accordeon');
-  // accordeon.addPane('File source', () => dataInputsDiv, true);
-  //campaignProps.length && accordeon.addPane('Campaign details', () => campaignPropsForm, true);
   const form = ui.divV([
     dataInputsDiv,
     ...(campaignProps.length ? [ui.h2('Campaign details'), campaignPropsForm] : [])], 'ui-form');
-  const content = ui.div(form, 'ui-form');
-  const buttonsDiv = ui.divH([]); // div for create and cancel buttons
-  content.appendChild(buttonsDiv);
+  const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
+  form.appendChild(buttonsDiv);
   const promise = new Promise<INewCampaignResult>((resolve) => {
     const onOkProxy = async () => {
       if (template.dataSourceType === 'File') {
@@ -132,10 +128,9 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
   });
 
   const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
+    const _cancelButton = ui.button(C.i18n.cancel, () => resolve());
     //buttonsDiv.appendChild(cancelButton);
   });
 
-  return {promise, root: content, cancelPromise};
+  return {promise, root: form, cancelPromise};
 }
