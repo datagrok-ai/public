@@ -11,7 +11,7 @@ export type Stats = {
 };
 
 export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
-  if (data.length !== bitArray.length)
+  if (data.length !== bitArray.length && data.some((v, i) => i >= bitArray.length ? v !== 0 : false))
     throw new Error('PeptidesError: Data and bit array have different lengths');
   if (bitArray.falseCount() === 0 || bitArray.trueCount() === 0)
     throw new Error('PeptidesError: One of the samples is empty');

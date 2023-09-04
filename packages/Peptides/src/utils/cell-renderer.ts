@@ -33,11 +33,11 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   const pValCentering = Math.min(maxPValComplement, minPValComplement);
   const centeredMaxPValComplement = maxPValComplement - pValCentering;
   const centeredMinPValComplement = minPValComplement - pValCentering;
-  const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement)
+  const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement);
   const pValComplement = pVal === null ? 0 : 1 - pVal - pValCentering;
 
-  let coef: string = DG.Color.toHtml(DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement,
-    -centeredPValLimit, centeredPValLimit));
+  const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
+    DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement, -centeredPValLimit, centeredPValLimit));
 
   const maxMeanDifference = Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference);
   const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;

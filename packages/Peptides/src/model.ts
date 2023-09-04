@@ -582,7 +582,8 @@ export class PeptidesModel {
             boolArray[i] = true;
         }
         const bitArray = BitArray.fromValues(boolArray);
-        const stats = getStats(activityColData, bitArray);
+        const stats = bitArray.allFalse || bitArray.allTrue ?
+          {count: sourceDfLen, meanDifference: 0, ratio: 1.0, pValue: null} : getStats(activityColData, bitArray);
         currentPositionObject[monomer] = stats;
         this.getSummaryStats(currentPositionObject.general, stats);
       }
@@ -666,7 +667,8 @@ export class PeptidesModel {
       const resultStats = clustType === 0 ? origClustStats : customClustStats;
       for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
         const mask = masks[maskIdx];
-        const stats = getStats(activityColData, mask);
+        const stats = mask.allTrue || mask.allFalse ? {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null} :
+          getStats(activityColData, mask);
         resultStats[clustNames[maskIdx]] = stats;
       }
     }
@@ -679,28 +681,31 @@ export class PeptidesModel {
 
   createMostPotentResiduesDf(): DG.DataFrame {
     const monomerPositionStatsEntries = Object.entries(this.monomerPositionStats) as [string, PositionStats][];
-    const mprDf = DG.DataFrame.create(monomerPositionStatsEntries.length - 1); // Subtract 'general' entry from mp-stats
-    const mprDfCols = mprDf.columns;
-    const posCol = mprDfCols.addNewInt(C.COLUMNS_NAMES.POSITION);
-    const monomerCol = mprDfCols.addNewString(C.COLUMNS_NAMES.MONOMER);
-    const mdCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const pValCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
-    const countCol = mprDfCols.addNewInt(C.COLUMNS_NAMES.COUNT);
-    const ratioCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
+    const posData: number[] = new Array(monomerPositionStatsEntries.length - 1);
+    const monomerData: string[] = new Array(posData.length);
+    const mdData: number[] = new Array(posData.length);
+    const pValData: (number | null)[] = new Array(posData.length);
+    const countData: number[] = new Array(posData.length);
+    const ratioData: number[] = new Array(posData.length);
 
     let i = 0;
     for (const [position, positionStats] of monomerPositionStatsEntries) {
       const generalPositionStats = positionStats.general;
       if (!generalPositionStats)
         continue;
+      if (Object.entries(positionStats).length === 1)
+        continue;
 
-      const filteredMonomerStats = Object.entries(positionStats).filter((v) => {
-        const key = v[0];
-        if (key === 'general')
-          return false;
+      const filteredMonomerStats: [string, Stats][] = [];
+      for (const [monomer, monomerStats] of Object.entries(positionStats)) {
+        if (monomer === 'general')
+          continue;
+        if ((monomerStats as Stats).count > 1 && (monomerStats as Stats).pValue === null)
+          filteredMonomerStats.push([monomer, monomerStats as Stats]);
 
-        return (v[1] as Stats).pValue === generalPositionStats.minPValue;
-      }) as [string, Stats][];
+        if ((monomerStats as Stats).pValue === generalPositionStats.minPValue)
+          filteredMonomerStats.push([monomer, monomerStats as Stats]);
+      }
 
       let maxEntry: [string, Stats];
       for (const [monomer, monomerStats] of filteredMonomerStats) {
@@ -708,14 +713,31 @@ export class PeptidesModel {
           maxEntry = [monomer, monomerStats];
       }
 
-      posCol.set(i, parseInt(position));
-      monomerCol.set(i, maxEntry![0]);
-      mdCol.set(i, maxEntry![1].meanDifference);
-      pValCol.set(i, maxEntry![1].pValue);
-      countCol.set(i, maxEntry![1].count);
-      ratioCol.set(i, maxEntry![1].ratio);
+      posData[i] = parseInt(position);
+      monomerData[i] = maxEntry![0];
+      mdData[i] = maxEntry![1].meanDifference;
+      pValData[i] = maxEntry![1].pValue;
+      countData[i] = maxEntry![1].count;
+      ratioData[i] = maxEntry![1].ratio;
       ++i;
     }
+
+    posData.length = i;
+    monomerData.length = i;
+    mdData.length = i;
+    pValData.length = i;
+    countData.length = i;
+    ratioData.length = i;
+
+    const mprDf = DG.DataFrame.create(i); // Subtract 'general' entry from mp-stats
+    const mprDfCols = mprDf.columns;
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.POSITION, posData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.STRING, C.COLUMNS_NAMES.MONOMER, monomerData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.MEAN_DIFFERENCE, mdData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.P_VALUE, pValData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.COUNT, countData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.RATIO, ratioData));
+
     return mprDf;
   }
 
