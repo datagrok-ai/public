@@ -13,8 +13,7 @@ import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transfor
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
-// import {demoDesignPatternUI, demoVisualizeDuplexUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
-import {demoOligoTranslatorUI} from './demo/demo-st-ui';
+import {demoOligoTranslatorUI, demoOligoPatternUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
 import {COMBINED_APP_NAME, PATTERN_APP_NAME, STRUCTRE_APP_NAME, TRANSLATOR_APP_NAME} from './view/const/view';
 
@@ -124,20 +123,20 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
   return linkStrandsV3000(strands, true);
 }
 
-//name: demoTranslateSequence
-//meta.demoPath: Bioinformatics | Oligo Toolkit: Translator
+//name: demoOligoTranslator
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
 export async function demoTranslateSequence(): Promise<void> {
   await demoOligoTranslatorUI();
 }
 
-//name: demoDesignPattern
-//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Design
+//name: demoOligoPattern
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
 //description: Design a modification pattern for an oligonucleotide sequence
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
 export async function demoDesignPattern(): Promise<void> {
-  // await demoDesignPatternUI();
+  await demoOligoPatternUI();
 }
 
 //name: demoVisualizeDuplex
