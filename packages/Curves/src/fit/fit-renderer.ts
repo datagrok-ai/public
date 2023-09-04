@@ -28,7 +28,8 @@ import {
   getSeriesStatistics,
   getCurve,
   getColumnChartOptions,
-  LogOptions
+  LogOptions,
+  getDataFrameChartOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -91,14 +92,18 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
     JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
 
   const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
+  const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
 
   cellChartData.series ??= [];
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
 
   // merge cell options with column options
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
-  for (const series of cellChartData.series)
+  mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
+  for (const series of cellChartData.series) {
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
+    mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
+  }
 
   return cellChartData;
 }
