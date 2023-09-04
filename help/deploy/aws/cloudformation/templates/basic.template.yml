@@ -14,9 +14,6 @@ Mappings:
     JKG:
       domain: "docker.io"
       repo: "datagrok/jupyter_kernel_gateway"
-    JN:
-      domain: "docker.io"
-      repo: "datagrok/jupyter_notebook"
     GrokCompute:
       domain: "docker.io"
       repo: "datagrok/grok_compute"
