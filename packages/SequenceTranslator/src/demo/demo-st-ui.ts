@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
-import {_package, oligoTranslatorApp, oligoPatternApp} from '../package';
+import {_package, oligoTranslatorApp, oligoPatternApp, oligoStructureApp} from '../package';
 import {tryCatch} from '../model/helpers';
 
 export async function demoOligoTranslatorUI() {
@@ -42,10 +42,22 @@ export async function demoOligoPatternUI() {
   })
 }
 
-// export async function demoVisualizeDuplexUI() {
-//   try {
-//     await openSequenceTranslatorOnPane(2);
-//   } catch (err: any) {
-//     handleError(err);
-//   }
-// }
+export async function demoOligoStructureUI() {
+  await tryCatch(async () => {
+    async function setInputValue(idx: number, sequence: string): Promise<void> {
+      await delay(500);
+      console.log('before quiering inputs')
+      const textInputs: NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('.colored-text-input > textarea');
+      const textarea = textInputs[idx];
+      textarea.value = sequence;
+      const event = new Event('input');
+      textarea.dispatchEvent(event);
+    }
+    await oligoStructureApp();
+    console.log('after oligostructure')
+    const inputSequences = ['Afcgacsu', 'Afcgacsu', 'Afcgacsu'];
+    inputSequences.forEach(async (sequence, idx) => {
+      await setInputValue(idx, sequence);
+    })
+  });
+}

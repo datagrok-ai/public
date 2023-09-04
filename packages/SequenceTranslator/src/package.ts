@@ -13,7 +13,7 @@ import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transfor
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
-import {demoOligoTranslatorUI, demoOligoPatternUI} from './demo/demo-st-ui';
+import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
 import {COMBINED_APP_NAME, PATTERN_APP_NAME, STRUCTRE_APP_NAME, TRANSLATOR_APP_NAME} from './view/const/view';
 
@@ -135,16 +135,16 @@ export async function demoTranslateSequence(): Promise<void> {
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
 //description: Design a modification pattern for an oligonucleotide sequence
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoDesignPattern(): Promise<void> {
+export async function demoOligoPattern(): Promise<void> {
   await demoOligoPatternUI();
 }
 
-//name: demoVisualizeDuplex
-//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Visualize duplex
+//name: demoOligoStructure
+//meta.demoPath: Bioinformatics | Oligo Toolkit | Structure
 //description: Visualize duplex and save SDF
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoVisualizeDuplex(): Promise<void> {
-  // await demoVisualizeDuplexUI();
+export async function demoOligoStructure(): Promise<void> {
+  await demoOligoStructureUI();
 }
 
 //name: translateOligonucleotideSequence
