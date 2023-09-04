@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TranslateSequenceUI, AxolabsUI, DuplexUI, AppUI, AppMultiView} from './view/view';
+import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, AppUI, AppMultiView} from './view/view';
 import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
@@ -15,6 +15,7 @@ import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 // import {demoDesignPatternUI, demoVisualizeDuplexUI, demoTranslateSequenceUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
+import {COMBINED_APP_NAME, PATTERN_APP_NAME, STRUCTRE_APP_NAME, TRANSLATOR_APP_NAME} from './view/const/view';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
@@ -30,7 +31,7 @@ class StPackage extends DG.Package {
       return;
 
     const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
-      'Initializing Sequence Translator monomer library ...');
+      'Initializing Oligo Toolkit monomer library ...');
     await tryCatch(async () => {
       const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
       this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
@@ -40,10 +41,10 @@ class StPackage extends DG.Package {
 
 export const _package: StPackage = new StPackage();
 
-//name: Sequence Translator
+//name: Oligo Toolkit
 //tags: app
-export async function sequenceTranslatorApp(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator...');
+export async function oligoToolkitApp(): Promise<void> {
+  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${COMBINED_APP_NAME}...`);
 
   await tryCatch(async () => {
     await initSequenceTranslatorLibData();
@@ -52,8 +53,8 @@ export async function sequenceTranslatorApp(): Promise<void> {
   }, () => pi.close());
 }
 
-async function createAppLayout(appUI: AppUI): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading...');
+async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
+  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${appName}...`);
 
   await tryCatch(async () => {
     await initSequenceTranslatorLibData();
@@ -61,26 +62,26 @@ async function createAppLayout(appUI: AppUI): Promise<void> {
   }, () => pi.close());
 }
 
-//name: Translate Sequence
+//name: Oligo Translator
 //tags: app
-export async function translateSequenceApp(): Promise<void> {
-  const appUI = new TranslateSequenceUI(DG.View.create());
-  createAppLayout(appUI);
+export async function oligoTranslatorApp(): Promise<void> {
+  const appUI = new OligoTranslatorUI(DG.View.create());
+  createAppLayout(appUI, TRANSLATOR_APP_NAME);
 }
 
-//name: Sequence Design
+//name: Oligo Pattern
 //tags: app
-export async function sequenceDesignApp(): Promise<void> {
-  const appUI = new AxolabsUI(DG.View.create());
-  createAppLayout(appUI);
+export async function oligoPatternApp(): Promise<void> {
+  const appUI = new OligoPatternUI(DG.View.create());
+  createAppLayout(appUI, PATTERN_APP_NAME);
 
 }
 
-//name: Visualize Duplex
+//name: Oligo Structure
 //tags: app
-export async function visualizeDuplex(): Promise<void> {
-  const appUI = new DuplexUI(DG.View.create());
-  createAppLayout(appUI);
+export async function oligoStructureApp(): Promise<void> {
+  const appUI = new OligoStructureUI(DG.View.create());
+  createAppLayout(appUI, STRUCTRE_APP_NAME);
 }
 
 //name: initSequenceTranslatorLibData

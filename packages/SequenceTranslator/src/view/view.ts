@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TRANSLATION_TAB, AXOLABS_TAB, DUPLEX_TAB} from './const/view';
+import {TRANSLATION_TAB, AXOLABS_TAB, DUPLEX_TAB, STRUCTRE_APP_NAME, PATTERN_APP_NAME, TRANSLATOR_APP_NAME} from './const/view';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
@@ -26,9 +26,9 @@ export class AppMultiView {
     }
 
     return {
-      [TRANSLATION_TAB]: viewFactory(TranslateSequenceUI),
-      [AXOLABS_TAB]: viewFactory(AxolabsUI),
-      [DUPLEX_TAB]: viewFactory(DuplexUI),
+      [TRANSLATION_TAB]: viewFactory(OligoTranslatorUI),
+      [AXOLABS_TAB]: viewFactory(OligoPatternUI),
+      [DUPLEX_TAB]: viewFactory(OligoStructureUI),
     }
   }
 
@@ -64,9 +64,9 @@ export abstract class AppUI {
   }
 }
 
-export class TranslateSequenceUI extends AppUI {
+export class OligoTranslatorUI extends AppUI {
   constructor(view: DG.View) {
-    super(view,  'Translate Sequence');
+    super(view, TRANSLATOR_APP_NAME);
 
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
@@ -84,9 +84,9 @@ export class TranslateSequenceUI extends AppUI {
   };
 }
 
-export class AxolabsUI extends AppUI {
+export class OligoPatternUI extends AppUI {
   constructor(view: DG.View) {
-    super(view, 'Sequence Design');
+    super(view, PATTERN_APP_NAME);
     this.ui = new AxolabsTabUI();
   }
   private readonly ui: AxolabsTabUI;
@@ -95,9 +95,9 @@ export class AxolabsUI extends AppUI {
   }
 }
 
-export class DuplexUI extends AppUI {
+export class OligoStructureUI extends AppUI {
   constructor(view: DG.View) {
-    super(view,  'Visualize Structure')
+    super(view,  STRUCTRE_APP_NAME)
     this.ui = new SdfTabUI();
   }
   private readonly ui: SdfTabUI;

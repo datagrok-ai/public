@@ -7,4 +7,9 @@ export const TRANSLATION_TAB = 'SEQUENCE';
 export const AXOLABS_TAB = 'PATTERN';
 export const DUPLEX_TAB = 'SDF';
 
+export const COMBINED_APP_NAME = 'Oligo Toolkit';
+export const TRANSLATOR_APP_NAME = 'Oligo Translator';
+export const PATTERN_APP_NAME = 'Oligo Pattern';
+export const STRUCTRE_APP_NAME = 'Oligo Structure';
+
 export const DEFAULT_AXOLABS_INPUT = 'Afcgacsu';
