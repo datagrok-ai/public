@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TRANSLATION_TAB, AXOLABS_TAB, DUPLEX_TAB, STRUCTRE_APP_NAME, PATTERN_APP_NAME, TRANSLATOR_APP_NAME} from './const/view';
+import {TRANSLATOR_TAB, PATTERN_TAB, STRUCTRE_TAB, STRUCTRE_APP_NAME, PATTERN_APP_NAME, TRANSLATOR_APP_NAME} from './const/view';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
@@ -26,9 +26,9 @@ export class AppMultiView {
     }
 
     return {
-      [TRANSLATION_TAB]: viewFactory(OligoTranslatorUI),
-      [AXOLABS_TAB]: viewFactory(OligoPatternUI),
-      [DUPLEX_TAB]: viewFactory(OligoStructureUI),
+      [TRANSLATOR_TAB]: viewFactory(OligoTranslatorUI),
+      [PATTERN_TAB]: viewFactory(OligoPatternUI),
+      [STRUCTRE_TAB]: viewFactory(OligoStructureUI),
     }
   }
 
@@ -121,22 +121,22 @@ class TabLayout {
     if (this.control)
       return this.control;
     const control = ui.tabControl({
-      [TRANSLATION_TAB]: await this.mainTab.getHtmlElement(),
-      [AXOLABS_TAB]: this.axolabsTab.htmlDivElement,
-      [DUPLEX_TAB]: await this.sdfTab.getHtmlDivElement(),
+      [TRANSLATOR_TAB]: await this.mainTab.getHtmlElement(),
+      [PATTERN_TAB]: this.axolabsTab.htmlDivElement,
+      [STRUCTRE_TAB]: await this.sdfTab.getHtmlDivElement(),
     });
 
-    const sdfPane = control.getPane(DUPLEX_TAB);
+    const sdfPane = control.getPane(STRUCTRE_TAB);
     ui.tooltip.bind(sdfPane.header, 'Get atomic-level structure for SS + AS/AS2 and save SDF');
 
-    const mainPane = control.getPane(TRANSLATION_TAB);
+    const mainPane = control.getPane(TRANSLATOR_TAB);
     ui.tooltip.bind(mainPane.header, 'Translate across formats');
 
-    const axolabsPane = control.getPane(AXOLABS_TAB);
+    const axolabsPane = control.getPane(PATTERN_TAB);
     ui.tooltip.bind(axolabsPane.header, 'Create modification pattern for SS and AS');
 
     control.onTabChanged.subscribe(() => {
-      if (control.currentPane.name !== TRANSLATION_TAB)
+      if (control.currentPane.name !== TRANSLATOR_TAB)
         this.urlRouter.searchParams.delete('seq');
       else {
         this.urlRouter.searchParams.set('seq', this.mainTab.sequence);

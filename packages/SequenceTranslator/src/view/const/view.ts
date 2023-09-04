@@ -3,9 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export const TRANSLATION_TAB = 'SEQUENCE';
-export const AXOLABS_TAB = 'PATTERN';
-export const DUPLEX_TAB = 'SDF';
+export const TRANSLATOR_TAB = 'TRANSLATOR';
+export const PATTERN_TAB = 'PATTERN';
+export const STRUCTRE_TAB = 'STRUCTURE';
 
 export const COMBINED_APP_NAME = 'Oligo Toolkit';
 export const TRANSLATOR_APP_NAME = 'Oligo Translator';
