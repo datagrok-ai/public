@@ -7,7 +7,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 export async function demoBio03UI(): Promise<void> {
-  const dataFn: string = 'samples/sample_HELM.csv';
+  const dataFn: string = 'samples/HELM.csv';
   const seqColName = 'HELM';
 
   let df: DG.DataFrame;

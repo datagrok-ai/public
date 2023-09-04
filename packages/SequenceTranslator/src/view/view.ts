@@ -139,9 +139,7 @@ class TabLayout {
       if (control.currentPane.name !== TRANSLATION_TAB)
         this.urlRouter.searchParams.delete('seq');
       else {
-        console.log('sequence:', this.mainTab.sequence);
         this.urlRouter.searchParams.set('seq', this.mainTab.sequence);
-        console.log('searchParams:', Object.entries(this.urlRouter.searchParams));
       }
       this.urlRouter.updatePath(control);
     });

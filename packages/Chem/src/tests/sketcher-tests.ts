@@ -48,7 +48,7 @@ category('sketcher testing', () => {
 
   test('inchi', async () => {
     await testInchi(rdkitModule, funcs);
-  }, {skipReason: 'GROK-12588'});
+  }, {timeout: 90000, skipReason: 'GROK-13815'});
 
   after(async () => {
     grok.shell.closeAll();

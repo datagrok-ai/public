@@ -103,7 +103,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     const customLST = DG.DataFrame.create(customClustColList.length);
     const customLSTCols = customLST.columns;
-    const customLSTClustCol = customLSTCols.addNewString(clustersColName);
+    const customLSTClustCol = customLSTCols.addNewString(C.LST_COLUMN_NAMES.CLUSTER);
 
     const customMembersColData = customLSTCols.addNewInt(C.LST_COLUMN_NAMES.MEMBERS).getRawData();
     const customWebLogoCol = customLSTCols.addNewString(C.LST_COLUMN_NAMES.WEB_LOGO);
@@ -141,7 +141,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       customMembersColData[rowIdx] = stats.count;
       customBitsets[rowIdx] = bsMask;
       customMDColData[rowIdx] = stats.meanDifference;
-      customPValColData[rowIdx] = stats.pValue;
+      customPValColData[rowIdx] = stats.pValue ?? DG.FLOAT_NULL;
       customRatioColData[rowIdx] = stats.ratio;
 
       for (let aggColIdx = 0; aggColIdx < aggColNames.length; ++aggColIdx) {
@@ -160,6 +160,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const origLSTLen = origLST.rowCount;
     const origLSTCols = origLST.columns;
     const origLSTClustCol: DG.Column<string> = origLST.getCol(clustersColName);
+    origLSTClustCol.name = C.LST_COLUMN_NAMES.CLUSTER;
 
     const origLSTClustColCat = origLSTClustCol.categories;
 
@@ -190,7 +191,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       origMembersColData[rowIdx] = stats.count;
       origBitsets[rowIdx] = bsMask;
       origMDColData[rowIdx] = stats.meanDifference;
-      origPValColData[rowIdx] = stats.pValue;
+      origPValColData[rowIdx] = stats.pValue ?? DG.FLOAT_NULL;
       origRatioColData[rowIdx] = stats.ratio;
     }
 
@@ -205,8 +206,8 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.viewerGrid = summaryTable.plot.grid();
     this.viewerGrid.sort([C.LST_COLUMN_NAMES.MEMBERS], [false]);
     this.updateFilter();
-    const gridClustersCol = this.viewerGrid.col(clustersColName)!;
-    gridClustersCol.column!.name = C.LST_COLUMN_NAMES.CLUSTER;
+    const gridClustersCol = this.viewerGrid.col(C.LST_COLUMN_NAMES.CLUSTER)!;
+    // gridClustersCol.column!.name = C.LST_COLUMN_NAMES.CLUSTER;
     gridClustersCol.visible = true;
     this.viewerGrid.columns.setOrder([C.LST_COLUMN_NAMES.CLUSTER, C.LST_COLUMN_NAMES.MEMBERS,
       C.LST_COLUMN_NAMES.WEB_LOGO, C.LST_COLUMN_NAMES.DISTRIBUTION, C.LST_COLUMN_NAMES.MEAN_DIFFERENCE,
@@ -296,7 +297,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     });
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const cell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (!cell || !cell.isTableCell || cell.tableColumn?.name !== clustersColName)
+      if (!cell || !cell.isTableCell || cell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
         return;
 
       summaryTable.currentRowIdx = -1;
@@ -307,7 +308,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCellTooltip((cell, x, y) => {
-      if (!cell.isColHeader && cell.tableColumn?.name === clustersColName) {
+      if (!cell.isColHeader && cell.tableColumn?.name === C.LST_COLUMN_NAMES.CLUSTER) {
         const clustName = cell.cell.value;
         const clustColCat = this.dataFrame.getCol(this.model.settings.clustersColumnName!).categories;
         const clustType = clustColCat.includes(clustName) ? CLUSTER_TYPE.ORIGINAL : CLUSTER_TYPE.CUSTOM;
@@ -440,10 +441,10 @@ export class LogoSummaryTable extends DG.JsViewer {
     const distributionTable = this.createDistributionDf(activityCol, mask);
     const labels = getDistributionLegend(`Cluster: ${clustName}`, 'Other');
     const hist = getActivityDistribution(distributionTable, true);
-    const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
-    const aggregatedColMap = this.model.getAggregatedColumnValues({filterDf: true, mask: mask, fractionDigits: 2});
+    const tableMap = getStatsTableMap(stats);
+    const aggregatedColMap = this.model.getAggregatedColumnValues({filterDf: true, mask: mask});
     const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
-    const tooltip = getStatsSummary(labels, hist, resultMap, true);
+    const tooltip = getStatsSummary(labels, hist, resultMap);
 
     ui.tooltip.show(tooltip, x, y);
 

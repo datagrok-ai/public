@@ -3,19 +3,19 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, EMPTY, Observable, Subject, from} from 'rxjs';
-import {catchError, finalize, shareReplay, switchMap, tap, takeUntil} from 'rxjs/operators';
+import {catchError, finalize, shareReplay, switchMap, tap} from 'rxjs/operators';
 import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import '../css/history-input.css';
 
 class DatabaseService {
-  static getHistoryRuns(funcName: string): Observable<DG.FuncCall[]> {
+  static getHistoryRuns(funcName: string, includeParams = true): Observable<DG.FuncCall[]> {
     return from((async () => {
       const res = await historyUtils.pullRunsByName(
         funcName, [
           {isShared: true}, {author: grok.shell.user},
           // EXPLAIN WHY FUNC.PARAMS
-        ], {order: 'started'}, ['func.params', 'session.user', 'options'],
+        ], {order: 'started'}, [...(includeParams ? ['func.params']: []), 'session.user', 'options'],
       );
       return res;
     })());
@@ -42,6 +42,8 @@ export class HistoryInput {
   private _historyFilters = DG.Viewer.filters(this.store.experimentRunsDf.value, {title: 'Filters'});
 
   private _visibleInput = ui.stringInput(this.label, '', null);
+  private _visibleIcon = ui.iconFA('bars', () => this.showSelectionDialog(), this.label);
+  private _chosenRun?: DG.FuncCall;
 
   constructor(
     // Label placed before next to the input
@@ -54,6 +56,8 @@ export class HistoryInput {
     private _visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
     // Array of grid columns visible in the filter viever
     private _visibleColumnsForFilter: string[] = [],
+    // Load input/output dataframes
+    private includeParams = true,
   ) {
     this._historyGrid.columns.byName('Pick')!.cellType = 'html';
     this._historyGrid.columns.byName('Pick')!.width = 30;
@@ -66,84 +70,23 @@ export class HistoryInput {
       }
     }
 
-    this._visibleInput.input.addEventListener('click', () => {
-      const _historyDialog = ui.dialog();
-
-      $(_historyDialog.root).addClass('hi-arrow-box');
-
-      _historyDialog.onOK(() => { });
-      _historyDialog.onCancel(() => {
-        this.onHistoricalRunChosen.next(null);
-        this.historyGrid.dataFrame.currentRowIdx = -1;
-      });
-
-      $(_historyDialog.root).find('.d4-dialog-header').hide();
-      _historyDialog.root.style.boxShadow = '';
-      $(_historyDialog.root).removeClass('ui-form');
-
-      const newHistoryFilters = DG.Viewer.filters(this.store.experimentRunsDf.value, {title: 'Filters'});
-      this._historyFilters.root.replaceWith(newHistoryFilters.root);
-      this._historyFilters = newHistoryFilters;
-
-      const newHistoryGrid = DG.Viewer.grid(this.store.experimentRunsDf.value, {showRowHeader: false, showColumnGridlines: false, allowEdit: false});
-      this._historyGrid.root.replaceWith(newHistoryGrid.root);
-      this._historyGrid = newHistoryGrid;
-
-      this._historyGrid.columns.byName('Pick')!.cellType = 'html';
-      this._historyGrid.columns.byName('Pick')!.width = 30;
-      this._historyGrid.root.style.height = '100%';
-      for (let i = 0; i < this._historyGrid.columns.length; i++) {
-        const col = this._historyGrid.columns.byIndex(i)?.column;
-        if (col && col.type === DG.TYPE.DATE_TIME) {
-          this._historyGrid.columns.byIndex(i)!.format = 'MMM d, yyyy';
-          this._historyGrid.columns.byIndex(i)!.width = 100;
-        }
-      }
-
-      this._historyGrid.onCellPrepare((cell) => {
-        if (cell.tableColumn?.name === 'Pick') {
-          if (cell.isColHeader)
-            cell.customText = '';
-
-          if (cell.cell.value === true)
-            cell.element = ui.div([ui.iconFA('check', null, 'Confirm outliers group')], {style: {'text-align': 'center', 'margin': '6px'}});
-          else
-            cell.element = ui.div();
-        }
-      });
-
-      this._historyGrid.columns.setVisible(['Pick', ...Object.keys(this._visibleColumnsForGrid).map((colName) => colName)]);
-      this._historyFilters.setOptions({columnNames: this._visibleColumnsForFilter});
-      this._historyFilters.root.style.height = '100%';
-      $(this._historyFilters.root).find('.d4-filter-group-header').hide();
-
-      if (!this._visibleColumnsForFilter.length) $(this._historyFilters.root.parentElement).hide();
-
-      _historyDialog.add(
-        ui.divH([
-          ui.block([this._historyGrid.root]),
-          ui.block([this._historyFilters.root], {style: {'margin-left': '10px', 'width': '225px', 'height': '100%'}}),
-        ]),
-      );
-
-      _historyDialog.show({
-        x: this._visibleInput.input.getBoundingClientRect().x + this._visibleInput.input.clientWidth + 10,
-        y: this._visibleInput.input.getBoundingClientRect().y - 30,
-        width: Math.max(this._historyGrid.root.clientWidth + this._historyFilters.root.clientWidth + 30, 600),
-      });
-    });
+    this._visibleInput.input.addEventListener('click', () => this.showSelectionDialog());
     this._visibleInput.readOnly = true;
+    this._visibleIcon.style.display = 'none';
 
     this.store.experimentRuns = this.experimentRunsUpdate.pipe(
       tap(() => this.toggleLoaderExpRuns(true)),
-      switchMap(() => DatabaseService.getHistoryRuns(this._funcName).pipe(
-        catchError(() => EMPTY),
+      switchMap(() => DatabaseService.getHistoryRuns(this._funcName, this.includeParams).pipe(
+        catchError((e) => {
+          console.error(e);
+          return EMPTY;
+        }),
         finalize(() => this.toggleLoaderExpRuns(false)),
       )),
       shareReplay(1),
     );
 
-    this.store.experimentRuns.pipe(takeUntil(from(new Subject<boolean>()))).subscribe((newRuns) => {
+    this.store.experimentRuns.subscribe((newRuns) => {
       const newRunsGridDf = DG.DataFrame.fromColumns([
         DG.Column.bool('Pick', newRuns.length).init(false),
         ...Object.entries(this._visibleColumnsForGrid).map((entry) => DG.Column.fromStrings(entry[0], newRuns.map(entry[1]))),
@@ -153,11 +96,10 @@ export class HistoryInput {
         newRunsGridDf.getCol('Pick').init(false);
         newRunsGridDf.set('Pick', newRunsGridDf.currentRow.idx, true);
         const newId = newRunsGridDf.getCol('ID').get(newRunsGridDf.currentRow.idx);
-        const chosenRun = newRuns.find((run) => run.id === newId);
-        if (chosenRun)
-          this.onHistoricalRunChosen.next(chosenRun);
+        this._chosenRun = newRuns.find((run) => run.id === newId);
       });
       this.store.experimentRunsDf.next(newRunsGridDf);
+      this._visibleIcon.style.display = 'inherit';
     });
 
     this.store.experimentRunsDf.subscribe((newDf) => {
@@ -177,6 +119,74 @@ export class HistoryInput {
     });
   }
 
+  public showSelectionDialog() {
+    const _historyDialog = ui.dialog();
+
+    _historyDialog.onOK(async () => {
+      if (this._chosenRun) {
+        let funcCall = this._chosenRun;
+        if (!this.includeParams)
+          funcCall = await historyUtils.loadRun(funcCall.id);
+        this.onHistoricalRunChosen.next(funcCall);
+      }
+    });
+    _historyDialog.onCancel(() => {
+      this.onHistoricalRunChosen.next(null);
+      this.historyGrid.dataFrame.currentRowIdx = -1;
+    });
+
+    const newHistoryFilters = DG.Viewer.filters(this.store.experimentRunsDf.value, {title: 'Filters'});
+    this._historyFilters.root.replaceWith(newHistoryFilters.root);
+    this._historyFilters = newHistoryFilters;
+
+    const newHistoryGrid = DG.Viewer.grid(this.store.experimentRunsDf.value, {showRowHeader: false, showColumnGridlines: false, allowEdit: false});
+    this._historyGrid.root.replaceWith(newHistoryGrid.root);
+    this._historyGrid = newHistoryGrid;
+
+    this._historyGrid.columns.byName('Pick')!.cellType = 'html';
+    this._historyGrid.columns.byName('Pick')!.width = 30;
+    this._historyGrid.root.style.height = '100%';
+    for (let i = 0; i < this._historyGrid.columns.length; i++) {
+      const col = this._historyGrid.columns.byIndex(i)?.column;
+      if (col && col.type === DG.TYPE.DATE_TIME)
+        this._historyGrid.columns.byIndex(i)!.format = 'MMM d yyyy HH:mm';
+    }
+
+    this._historyGrid.onCellPrepare((cell) => {
+      if (cell.tableColumn?.name === 'Pick') {
+        if (cell.isColHeader)
+          cell.customText = '';
+
+        if (cell.cell.value === true)
+          cell.element = ui.div([ui.iconFA('check', null, 'Selected')], {style: {'text-align': 'center', 'margin': '6px'}});
+        else
+          cell.element = ui.div();
+      }
+    });
+
+    this._historyGrid.columns.setVisible(['Pick', ...Object.keys(this._visibleColumnsForGrid).map((colName) => colName)]);
+    this._historyFilters.setOptions({columnNames: this._visibleColumnsForFilter});
+    this._historyFilters.root.style.height = '100%';
+    $(this._historyFilters.root).find('.d4-filter-group-header').hide();
+
+    if (!this._visibleColumnsForFilter.length) $(this._historyFilters.root.parentElement).hide();
+
+    _historyDialog.add(
+      ui.divH([
+        ui.block([this._historyGrid.root]),
+        ui.block([this._historyFilters.root], {style: {'margin-left': '10px', 'width': '300px', 'height': '100%'}}),
+      ], {style: {'height': '100%'}}),
+    );
+
+    _historyDialog.show({
+      modal: true,
+      fullScreen: true,
+      center: true,
+      width: Math.max(400, window.screen.width - 200),
+      height: Math.max(200, window.screen.height - 200),
+    });
+  }
+
   // Viever object of grid
   get historyGrid() {
     return this._historyGrid;
@@ -190,6 +200,10 @@ export class HistoryInput {
   // HTML root of component
   get root() {
     return this._visibleInput.root;
+  }
+
+  get iconRoot() {
+    return this._visibleIcon;
   }
 
   set value(val: DG.FuncCall | null) {

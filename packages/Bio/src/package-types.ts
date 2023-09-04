@@ -14,7 +14,6 @@ export const enum BioPackagePropertiesNames {
 
 
 export class BioPackageProperties extends Map<string, any> {
-
   private _onPropertyChanged: Subject<string> = new Subject<string>();
   public get onPropertyChanged(): Observable<string> { return this._onPropertyChanged; }
 

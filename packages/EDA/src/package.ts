@@ -6,10 +6,10 @@ import * as DG from 'datagrok-api/dg';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
-import {computePCA, computePLS} from './EDAtools';
-import {renamePCAcolumns, addPLSvisualization, regressionCoefficientsBarChart, 
-  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './EDAui';
-import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
+import {computePCA, computePLS, computeUMAP, computeTSNE, computeSPE} from './eda-tools';
+import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
+  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
+import {carsDataframe, testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
@@ -25,28 +25,80 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: Tools | Data Science | Principal Component Analysis...
+//top-menu: ML | Dimension Reduction | PCA...
 //name: PCA
 //description: Principal component analysis (PCA).
-//input: dataframe table
-//input: column_list features
-//input: int components = 2
-//input: bool center = true
-//input: bool scale = true
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int components = 2 {caption: Components; category: Hyperparameters} [Number of components.]
+//input: bool center = false {category: Hyperparameters} [Indicating whether the variables should be shifted to be zero centered.]
+//input: bool scale = false {category: Hyperparameters} [Indicating whether the variables should be scaled to have unit variance.]
 //output: dataframe result {action:join(table)}
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
 {
-  return renamePCAcolumns(await computePCA(table, features, components, center, scale));
+  const pcaTable = await computePCA(table, features, components, center, scale);
+  addPrefixToEachColumnName('PCA', pcaTable.columns);
+  return pcaTable;
 }
 
-//top-menu: Tools | Data Science | Multivariate Analysis (PLS)...
+//top-menu: ML | Dimension Reduction | UMAP...
+//name: UMAP
+//description: Uniform Manifold Approximation and Projection (UMAP).
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int components = 2 {caption: Components; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
+//input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
+//input: int neighbors = 15 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
+//input: double minDist = 0.1 {caption: Minimum distance; category: Hyperparameters} [The effective minimum distance between embedded points.]
+//input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
+//output: dataframe result {action:join(table)}
+export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
+  epochs: number, neighbors: number, minDist: number, spread: number): Promise<DG.DataFrame> 
+{
+  return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
+}
+
+//top-menu: ML | Dimension Reduction | t-SNE...
+//name: t-SNE
+//description: t-distributed stochastic neighbor embedding (t-SNE).
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int components = 2 {caption: Components; category: Hyperparameters} [Dimension of the embedded space.]
+//input: double learningRate = 10 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter. Should be in the range 10...1000.]
+//input: int perplexity = 30 {caption: Perplexity; category: Hyperparameters} [The number of nearest neighbors. Should be less than the number of samples.]
+//input: int iterations = 500 {caption: Iterations; category: Hyperparameters} [Maximum number of iterations for the optimization. Should be at least 250.]
+//output: dataframe result {action:join(table)}
+export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, components: number,
+  learningRate: number, perplexity: number, iterations: number): Promise<DG.DataFrame> 
+{
+  return await computeTSNE(features, components, learningRate, perplexity, iterations);
+}
+
+//top-menu: ML | Dimension Reduction | SPE...
+//name: SPE
+//description: Stochastic proximity embedding (SPE).
+//input: dataframe table {category: Data}
+//input: column_list features {type: numerical; category: Data}
+//input: int dimension = 2 {caption: Dimension; category: Hyperparameters} [Dimension of the embedded space.]
+//input: int steps = 0 {caption: Steps; category: Hyperparameters} [Number of random selections of point pairs and distance computations between them.]
+//input: int cycles = 1000000 {caption: Cycles; category: Hyperparameters} [Number of the method cycles.]
+//input: double cutoff = 0.0 {caption: Cutoff; category: Hyperparameters} [Cutoff distance between points.]
+//input: double lambda = 2.0 {caption: Learning rate; category: Hyperparameters} [Optimization tuning parameter.]
+//output: dataframe result {action:join(table)}
+export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimension: number,
+  steps: number, cycles: number, cutoff: number, lambda: number): Promise<DG.DataFrame> 
+{
+  return await computeSPE(features, dimension, steps, cycles, cutoff, lambda);
+}
+
+//top-menu: ML | Multivariate Analysis (PLS)...
 //name: Multivariate Analysis (PLS)
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //input: dataframe table
 //input: column names
-//input: column_list features
-//input: column predict
+//input: column_list features {type: numerical}
+//input: column predict {type: numerical}
 //input: int components = 3
 export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList, 
   predict: DG.Column, components: number): Promise<void> 

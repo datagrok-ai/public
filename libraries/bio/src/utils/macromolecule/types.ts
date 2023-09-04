@@ -5,8 +5,13 @@ import * as DG from 'datagrok-api/dg';
 import {ALPHABET} from './consts';
 import {UnitsHandler} from '../units-handler';
 
+export interface ISeqSplitted extends Iterable<string> {
+  [jPos: number]: string;
+  length: number;
+}
+
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
-export type SplitterFunc = (seq: string) => string[];
+export type SplitterFunc = (seq: string) => ISeqSplitted;
 export type MonomerFreqs = { [m: string]: number };
 
 /** Alphabet candidate type */

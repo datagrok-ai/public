@@ -266,7 +266,7 @@ Tesla, Model S,  ,          1.6,    120000`);
 
   test('column list toList', async () => {
     const df1 = createDf();
-    return df1.columns.toList();
+    expect(df1.columns.toList().length, 2);
   });
 
   test('column list toString', async () => {
@@ -294,6 +294,14 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('row list match', async () => {
     const df5 = createDf();
     return df5.rows.match('countries = USA').highlight();
+  });
+
+  test('row list removeWhere', async () => {
+    const df = createDf2();
+    df.rows.removeWhere((r) => {
+      return r.get('population') < 3;
+    });
+    expect(df.rowCount, 2);
   });
 
   test('datetime column', async () => {

@@ -1,31 +1,66 @@
 # Peptides changelog
 
-## 1.10.3 (2023-07-31)
+## 1.12.1 (WIP)
 
-This release focuses on improving package stability and usability.
+### Features
 
-*Dependency: datgarok-api >= 1.15.4*
+* Monomer-Position and Most Potent Residues: Circle size is now based on absolute value of mean difference.
+* Scaling default colors (blue for low values and red for high) in Monomer-Position viewer.
 
 ### Bug Fixes
 
-* Fixed number of sequences had wrong values sometimes.
+* Logo Summary Table: Fixed interaction.
+
+## 1.12.0 (2023-08-30)
+
+### Features
+
+* Added sequence identity and similairty functionality.
+* Peptides moved to Bio > Analyze > SAR.
+* Added tooltips for all inputs and buttons.
+* Added Selection panel which shows the current selection as a separate table.
+* UI/UX improvements.
+
+### Bug Fixes
+
+* Fixed table view tooltips.
+* Fixed selection with WebLogo in the column header.
+* Fixed table view couldn't be filtered by monomer position columns.
+
+## 1.11.0 (2023-08-03)
+
+This release introduces sequence identity functionality and some stability and usability improvements.
+
+### Features
+
+* Added sequence identity functionality.
+* UI/UX improvements.
+* Added activity column choice in settings.
+
+## 1.10.4 (2023-08-01)
+
+### Features
+
+* UI/UX improvements.
+
+### Bug Fixes
+
+* Fixed Monomer-Position viewer not responding to selection correctly.
+
+## 1.10.3 (2023-07-31)
+
+### Bug Fixes
+
+* Fixed wrong values in the invariant map.
 * Fixed Mutation Cliffs pair selection would still result in wrong sequences sometimes.
 
 ## 1.10.2 (2023-07-24)
-
-This release focuses on improving the Mutation Cliffs pairs panel.
-
-*Dependency: datgarok-api >= 1.15.4*
 
 ### Bug Fixes
 
 * Made invisible Mutation Cliffs pairs columns, containing sequence indexes in the original table view.
 
 ## 1.10.1 (2023-07-24)
-
-This release focuses on improving analysis stability and usability.
-
-*Dependency: datgarok-api >= 1.15.4*
 
 ### Features
 
@@ -40,8 +75,6 @@ This release focuses on improving analysis stability and usability.
 ## 1.10.0 (2023-07-19)
 
 This release focuses on improving analysis stability and usability.
-
-*Dependency: datgarok-api >= 1.15.4*
 
 ### Features
 

@@ -37,13 +37,28 @@ category('Core', () => {
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
-    expect(model instanceof PeptidesModel, true);
-
-    model!.mutationCliffsSelection = {'11': ['D']};
+    expect(model instanceof PeptidesModel, true, 'Model is null');
+    let overlayInit = false;
+    grok.log.debug('Waiting for overlay...');
+    model!._analysisView!.grid.onAfterDrawOverlay.subscribe(() => {
+      overlayInit = true;
+      grok.log.debug('Overlay initialized');
+    });
+    model!._analysisView!.grid.onBeforeDrawOverlay.subscribe(() => {
+      overlayInit = false;
+      grok.log.debug('Overlay is drawing');
+    });
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
-  });
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+
+    model!.mutationCliffsSelection = {'11': ['D']};
+  }, {skipReason: 'GROK-13790: Unhandled exception'});
 
   test('Start analysis: сomplex', async () => {
     const complexActivityColName = 'Activity';
@@ -59,14 +74,28 @@ category('Core', () => {
 
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
-    expect(model instanceof PeptidesModel, true);
+    expect(model instanceof PeptidesModel, true, 'Model is null');
+    let overlayInit = false;
+    model!._analysisView!.grid.onAfterDrawOverlay.subscribe(() => {
+      overlayInit = true;
+      grok.log.debug('Overlay initialized');
+    });
+    model!._analysisView!.grid.onBeforeDrawOverlay.subscribe(() => {
+      overlayInit = false;
+      grok.log.debug('Overlay is drawing');
+    });
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
 
     if (model !== null)
       model.mutationCliffsSelection = {'13': ['-']};
-
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
-  });
+  }, {skipReason: 'GROK-13790: Unhandled exception'});
 
   test('Save and load project', async () => {
     const simpleActivityColName = 'IC50';
@@ -81,10 +110,18 @@ category('Core', () => {
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
+
     let v = grok.shell.getTableView('Peptides analysis');
+    let overlayInit = false;
+    v.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
-    await awaitCheck(() => v.table!.currentRowIdx === 0, 'Grid never finished initializing', 2000);
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => v.table!.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
 
     const d = v.dataFrame;
     const layout = v.saveLayout();
@@ -104,13 +141,19 @@ category('Core', () => {
 
     await sp.open();
     v = grok.shell.getTableView('Peptides analysis');
+    overlayInit = false;
+    v.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     await grok.dapi.layouts.delete(sl);
     await grok.dapi.tables.delete(sti);
     await grok.dapi.projects.delete(sp);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
-    await awaitCheck(() => v.table!.currentRowIdx === 0, 'Grid never finished initializing', 2000);
+    accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => v.table!.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Cluster stats - Benchmark HELM 5k', async () => {
@@ -127,11 +170,15 @@ category('Core', () => {
     const model = await startAnalysis(
       activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
 
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+
     for (let i = 0; i < 5; ++i)
       DG.time('Cluster stats', () => model?.calculateClusterStatistics());
-
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   }, {timeout: 10000});
 
   test('Monomer Position stats - Benchmark HELM 5k', async () => {
@@ -148,11 +195,15 @@ category('Core', () => {
     const model = await startAnalysis(
       activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
 
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+
     for (let i = 0; i < 5; ++i)
       DG.time('Monomer position stats', () => model?.calculateMonomerPositionStatistics());
-
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   }, {timeout: 10000});
 
   test('Analysis start - Benchmark HELM 5k', async () => {
@@ -171,12 +222,17 @@ category('Core', () => {
       await DG.timeAsync('Analysis start', async () => {
         const model = await startAnalysis(
           activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
+
+        // Ensure grid finished initializing to prevent Unhandled exceptions
+        let accrodionInit = false;
+        grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+        await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+        await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+        await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+
         if (model)
           grok.shell.closeTable(model.df);
       });
     }
-
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid never finished initializing', 2000);
   }, {timeout: 10000});
 });

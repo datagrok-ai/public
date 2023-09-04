@@ -332,8 +332,8 @@ export async function runTests(options?: {category?: string, test?: string, test
 }
 
 async function execTest(t: Test, predicate: string | undefined, categoryTimeout?: number, packageName?: string) {
-  let r: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean };
-  const filter = predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase()));
+  let r: { category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean };
+  const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   const skip = t.options?.skipReason || filter;
   const skipReason = filter ? 'skipped' : t.options?.skipReason;
   if (!skip)
@@ -354,16 +354,19 @@ async function execTest(t: Test, predicate: string | undefined, categoryTimeout?
   const stop = new Date();
   // @ts-ignore
   r.ms = stop - start;
-
   if (!skip)
     console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
   r.category = t.category;
   r.name = t.name;
   if (!filter) {
+    let params = {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
+      'type': 'package', packageName, 'category': t.category, 'test': t.name};
+    if (r.result.constructor == Object) {
+      const res = Object.keys(r.result).reduce((acc, k) => ({...acc, ['result.' + k]: r.result[k]}), {});
+      params = {...params, ...res};
+    }
     grok.log.usage(`${packageName}: ${t.category}: ${t.name}`,
-      {'success': r.success, 'result': r.result, 'ms': r.ms, 'skipped': r.skipped,
-        'type': 'package', packageName, 'category': t.category, 'test': t.name},
-      `test-package ${packageName}: ${t.category}: ${t.name}`);
+      params, `test-package ${packageName}: ${t.category}: ${t.name}`);
   }
   return r;
 }

@@ -1,10 +1,58 @@
 # statistics changelog
 
+## 1.2.6 (2023-09-01)
+
+### Features
+
+* T-Test now throws an error if sample size is less than or equal to 1.
+
+## 1.2.5 (2023-08-25)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added lineStyle to the IFitSeriesOptions interface
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Added code comments about line style
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed the curve fitting algorithm
+  * Fixed axes scales
+
+## 1.2.4 (2023-08-23)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added standard deviation to the IFitPoint interface
+  * Added marker size to the IFitPoint interface
+
+## 1.2.3 (2023-08-12)
+
+### Features
+
+* [#2105](https://github.com/datagrok-ai/public/issues/2105): Removed point and fit line color default values
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added title parameter to IFitChartOptions
+
+## 1.2.2 (2023-08-04)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Changed minBound and maxBound to min and max in parameterBounds
+
+## 1.2.1 (2023-08-02)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added points log in fit
+  * Added droplines calculation for IC50
+  * Don't render confidence intervals by default
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Wrote TS docs for the code
+
 ## 1.2.0 (2023-07-21)
 
 This release focuses on adding new functionality and improving stability.
-
-*Dependency: datagarok-api >= 1.16.0*
 
 ### Features
 
@@ -25,10 +73,6 @@ This release focuses on adding new functionality and improving stability.
 * Fixed fit function creation.
 
 ## 1.1.8 (2023-05-21)
-
-This release focuses on adding new functionality.
-
-*Dependency: datagarok-api >= 1.13.11*
 
 ### Features
 

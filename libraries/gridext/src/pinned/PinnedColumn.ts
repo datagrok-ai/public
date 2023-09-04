@@ -218,7 +218,8 @@ export class PinnedColumn {
     eCanvasThis.style.top = grid.canvas.offsetTop + "px";
     eCanvasThis.style.width = nW + "px";
     eCanvasThis.style.height = Math.round(nHeight/window.devicePixelRatio) + "px";
-    eCanvasThis.style.zIndex = "1";
+    eCanvasThis.style.zIndex = '1';
+    grid.horzScroll.root.style.zIndex = '2';
 
     //console.log("h " + grid.canvas.height + " offset " + grid.canvas.offsetHeight);
 
@@ -339,20 +340,26 @@ export class PinnedColumn {
     });
 
     this.m_handlerCurrRow = dframe.onCurrentRowChanged.subscribe(() => {
-          const g = eCanvasThis.getContext('2d');
-          headerThis.paint(g, grid);
+          setTimeout(() => {
+            const g = eCanvasThis.getContext('2d');
+            headerThis.paint(g, grid);
+          }, 20);
         }
     );
 
     this.m_handlerMouseOverRow = dframe.onMouseOverRowChanged.subscribe(() => {
-        const g = eCanvasThis.getContext('2d');
-        headerThis.paint(g, grid);
+        setTimeout(() => {
+          const g = eCanvasThis.getContext('2d');
+          headerThis.paint(g, grid);
+        }, 20);
       }
     );
 
     this.m_handlerMouseOverGroup = dframe.onMouseOverRowGroupChanged.subscribe(() =>{
-      const g = eCanvasThis.getContext('2d');
-      headerThis.paint(g, grid);
+      setTimeout(() => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+      }, 20);
     });
 
     this.m_handlerData = dframe.onDataChanged.subscribe(() => {
@@ -366,8 +373,10 @@ export class PinnedColumn {
     });
 
     this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
-          const g = eCanvasThis.getContext('2d');
-          headerThis.paint(g, grid);
+          setTimeout(() => {
+            const g = eCanvasThis.getContext('2d');
+            headerThis.paint(g, grid);
+          }, 20);
         }
     );
 

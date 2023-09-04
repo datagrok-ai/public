@@ -120,7 +120,7 @@ export function test(args: TestArgs): boolean {
     }
 
     function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
-      report?: boolean, record?: boolean} = {}): Promise<resultObject> {
+      report?: boolean, record?: boolean, verbose?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         let consoleLog: string = '';
         if (options.record) {
@@ -174,6 +174,8 @@ export function test(args: TestArgs): boolean {
                   failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
                 }
               }
+              // if (!options.verbose)
+              //   df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
               resolve({failReport, skipReport, passReport, failed, csv, countReport});
             }).catch((e: any) => reject(e));
@@ -197,7 +199,7 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000, { category: args.category,
+      const r = await runTest(7200000, { category: args.category, verbose: args.verbose,
         catchUnhandled: args.catchUnhandled, report: args.report, record: args.record });
 
       if (r.csv && args.csv) {

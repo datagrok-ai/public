@@ -1,8 +1,11 @@
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {TAGS as bioTags} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -68,11 +71,9 @@ export function extractColInfo(col: DG.Column<string>): type.RawColumn {
 }
 
 export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHistogramLookSettings>,
-  statsMap: StringDictionary, isTooltip: boolean = false): HTMLDivElement {
+  statsMap: StringDictionary): HTMLDivElement {
   const result = ui.divV([legend, hist.root, ui.tableFromMap(statsMap)]);
-  result.style.minWidth = '200px';
-  if (isTooltip)
-    hist.root.style.maxHeight = '150px';
+  hist.root.style.maxHeight = '75px';
   return result;
 }
 

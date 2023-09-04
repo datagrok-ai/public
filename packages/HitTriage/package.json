@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "HitTriage",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": {
-    "name": "Andrew Skalkin",
-    "email": "askalkin@datagrok.ai"
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
   },
   "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does it in a managed, reproducible manner, with the triage template consisting of separate steps. Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that contains the the `HitTriage` application.",
   "sources": [
@@ -16,16 +16,19 @@
     "directory": "packages/HitTriage"
   },
   "dependencies": {
-    "datagrok-api": "^1.15.3",
     "@datagrok-libraries/compute-utils": "1.8.3",
-    "ts-loader": "latest",
-    "typescript": "latest",
+    "@datagrok-libraries/utils": "4.1.10",
     "cash-dom": "latest",
+    "css-loader": "^6.5.1",
+    "datagrok-api": "^1.16.2",
     "source-map-loader": "^4.0.1",
     "style-loader": "^3.3.1",
-    "css-loader": "^6.5.1"
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",

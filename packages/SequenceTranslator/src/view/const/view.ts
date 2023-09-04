@@ -5,6 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 export const TRANSLATION_TAB = 'SEQUENCE';
 export const AXOLABS_TAB = 'PATTERN';
-export const DUPLEX_TAB = 'DUPLEX';
+export const DUPLEX_TAB = 'SDF';
 
 export const DEFAULT_AXOLABS_INPUT = 'Afcgacsu';

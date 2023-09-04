@@ -7,15 +7,18 @@ import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 import * as uuid from 'uuid';
+import $ from 'cash-dom';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
@@ -23,15 +26,14 @@ import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepa
 import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
-import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap,
-} from './widgets/distribution';
+import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap} from './widgets/distribution';
 import {getAggregatedValue, getStats, Stats} from './utils/statistics';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {getSelectionWidget} from './widgets/selection';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -93,9 +95,10 @@ export class PeptidesModel {
   _matrixDf?: DG.DataFrame;
   _splitSeqDf?: DG.DataFrame;
   _distanceMatrix!: DistanceMatrix;
-  _treeHelper!: ITreeHelper;
   _dm!: DistanceMatrix;
   _layoutEventInitialized = false;
+
+  subs: rxjs.Subscription[] = [];
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -113,11 +116,6 @@ export class PeptidesModel {
       throw new Error('PeptidesError: UUID is not defined');
 
     return id;
-  }
-
-  get treeHelper(): ITreeHelper {
-    this._treeHelper ??= getTreeHelperInstance();
-    return this._treeHelper;
   }
 
   get monomerPositionDf(): DG.DataFrame {
@@ -301,6 +299,7 @@ export class PeptidesModel {
     for (const [key, value] of newSettingsEntries) {
       this._settings[key as keyof type.PeptidesSettings] = value as any;
       switch (key) {
+      case 'activityColumnName':
       case 'scaling':
         updateVars.add('activity');
         updateVars.add('mutationCliffs');
@@ -374,6 +373,14 @@ export class PeptidesModel {
     lstViewer?.render();
   }
 
+  get identityTemplate(): string {
+    return this.df.getTag(C.TAGS.IDENTITY_TEMPLATE) ?? '';
+  }
+
+  set identityTemplate(template: string) {
+    this.df.setTag(C.TAGS.IDENTITY_TEMPLATE, template);
+  }
+
   updateMutationCliffs(notify: boolean = true): void {
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: set categories ordering the same to share compare indexes instead of strings
@@ -433,36 +440,46 @@ export class PeptidesModel {
     acc.addTitle(ui.h1(`${filterAndSelectionBs.trueCount} selected rows${filteredTitlePart}`));
     if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
-        const newViewButton = ui.button('New view', () => trueModel.createNewView(),
-          'Creates a new view from current selection');
-        const newCluster = ui.button('New cluster', () => {
+        const newView = ui.label('New view');
+        $(newView).addClass('d4-link-action');
+        newView.onclick = (): string => trueModel.createNewView();
+        newView.onmouseover =
+          (ev): void => ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
+        const newCluster = ui.label('New cluster');
+        $(newCluster).addClass('d4-link-action');
+        newCluster.onclick = (): void => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.clusterFromSelection();
-        }, 'Creates a new cluster from selection');
-        const removeCluster = ui.button('Remove cluster', () => {
+        };
+        newCluster.onmouseover =
+          (ev): void => ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
+        const removeCluster = ui.label('Remove cluster');
+        $(removeCluster).addClass('d4-link-action');
+        removeCluster.onclick = (): void => {
           const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
           if (lstViewer === null)
             throw new Error('Logo summary table viewer is not found');
           lstViewer.removeCluster();
-        }, 'Removes currently selected custom cluster');
-        removeCluster.disabled = trueModel.clusterSelection.length === 0 ||
-          !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name));
-        return ui.divV([newViewButton, newCluster, removeCluster]);
+        };
+        removeCluster.onmouseover =
+          (ev): void => ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
+        removeCluster.style.visibility = trueModel.clusterSelection.length === 0 ||
+          !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name)) ? 'hidden' : 'visible';
+        return ui.divV([newView, newCluster, removeCluster]);
       });
     }
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
+    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel).root);
 
     return acc;
   }
 
   updateGrid(): void {
     this.joinDataFrames();
-
-    this.sortSourceGrid();
 
     this.createScaledCol();
 
@@ -521,37 +538,17 @@ export class PeptidesModel {
     const cols = this.df.columns;
     const positionColumns = this.splitSeqDf.columns.names();
     for (const colName of positionColumns) {
-      const col = this.df.col(colName);
+      let col = this.df.col(colName);
       const newCol = this.splitSeqDf.getCol(colName);
-      if (col === null)
-        cols.add(newCol);
-      else {
+      if (col !== null)
         cols.remove(colName);
-        cols.add(newCol);
-      }
-      CR.setAARRenderer(newCol, this.alphabet);
+
+      const newColCat = newCol.categories;
+      const newColData = newCol.getRawData();
+      col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
+      CR.setAARRenderer(col, this.alphabet);
     }
     this.df.name = name;
-  }
-
-  sortSourceGrid(): void {
-    const colNames: DG.GridColumn[] = [];
-    const sourceGridCols = this.analysisView.grid.columns;
-    const sourceGridColsCount = sourceGridCols.length;
-    for (let i = 1; i < sourceGridColsCount; i++)
-      colNames.push(sourceGridCols.byIndex(i)!);
-
-    colNames.sort((a, b) => {
-      if (a.column!.semType === C.SEM_TYPES.MONOMER) {
-        if (b.column!.semType === C.SEM_TYPES.MONOMER)
-          return 0;
-        return -1;
-      }
-      if (b.column!.semType === C.SEM_TYPES.MONOMER)
-        return 1;
-      return 0;
-    });
-    sourceGridCols.setOrder(colNames.map((v) => v.name));
   }
 
   createScaledCol(): void {
@@ -619,15 +616,17 @@ export class PeptidesModel {
     if (genObj.minMeanDifference > possibleMinMeanDifference)
       genObj.minMeanDifference = possibleMinMeanDifference;
 
-    const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
-    genObj.maxPValue ??= possibleMaxPValue;
-    if (genObj.maxPValue < possibleMaxPValue)
-      genObj.maxPValue = possibleMaxPValue;
+    if (!isNaN(stats?.pValue ?? NaN)) {
+      const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
+      genObj.maxPValue ??= possibleMaxPValue;
+      if (genObj.maxPValue < possibleMaxPValue)
+        genObj.maxPValue = possibleMaxPValue;
 
-    const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
-    genObj.minPValue ??= possibleMinPValue;
-    if (genObj.minPValue > possibleMinPValue)
-      genObj.minPValue = possibleMinPValue;
+      const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
+      genObj.minPValue ??= possibleMinPValue;
+      if (genObj.minPValue > possibleMinPValue)
+        genObj.minPValue = possibleMinPValue;
+    }
 
     const possibleMaxRatio = stats?.ratio ?? summaryStats!.maxRatio;
     genObj.maxRatio ??= possibleMaxRatio;
@@ -776,9 +775,9 @@ export class PeptidesModel {
     const position = barPart.position;
     if (ev.type === 'click') {
       if (!ev.shiftKey)
-        this.initMutationCliffsSelection({cleanInit: true, notify: false});
+        this.initInvariantMapSelection({cleanInit: true, notify: false});
 
-      this.modifyMonomerPositionSelection(monomer, position, false);
+      this.modifyMonomerPositionSelection(monomer, position, true);
     } else {
       const bar = `${position} = ${monomer}`;
       if (this.cachedWebLogoTooltip.bar === bar)
@@ -844,10 +843,12 @@ export class PeptidesModel {
 
   setTooltips(): void {
     this.analysisView.grid.onCellTooltip((cell, x, y) => {
-      const col = cell.tableColumn;
-      const cellValue = cell.cell.value;
-      if (cellValue && col && col.semType === C.SEM_TYPES.MONOMER)
-        this.showMonomerTooltip(cellValue, x, y);
+      if (cell.isColHeader && cell.tableColumn!.semType === C.SEM_TYPES.MONOMER)
+        return true;
+      if (!(cell.isTableCell && cell.tableColumn!.semType === C.SEM_TYPES.MONOMER))
+        return false;
+
+      this.showMonomerTooltip(cell.cell.value, x, y);
       return true;
     });
   }
@@ -857,18 +858,21 @@ export class PeptidesModel {
     const monomerName = aar.toLowerCase();
 
     const mw = getMonomerWorksInstance();
-    const mol = mw.getCappedRotatedMonomer('PEPTIDE', aar);
+    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
 
     if (mol) {
       tooltipElements.push(ui.div(monomerName));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
-    } else
+    } else if (aar !== '')
       tooltipElements.push(ui.div(aar));
+    else
+      return true;
+
 
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
 
-    return mol !== null;
+    return true;
   }
 
   //TODO: move out to viewer code
@@ -888,11 +892,11 @@ export class PeptidesModel {
       [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
     const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
     const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
-    const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
-    const aggregatedColMap = this.getAggregatedColumnValues({mask: mask, fractionDigits: 2});
+    const tableMap = getStatsTableMap(stats);
+    const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
 
     const resultMap = {...tableMap, ...aggregatedColMap};
-    const distroStatsElem = getStatsSummary(labels, hist, resultMap, true);
+    const distroStatsElem = getStatsSummary(labels, hist, resultMap);
 
     ui.tooltip.show(distroStatsElem, x, y);
 
@@ -902,6 +906,7 @@ export class PeptidesModel {
   getAggregatedColumnValues(options: {filterDf?: boolean, mask?: DG.BitSet, fractionDigits?: number} = {},
   ): StringDictionary {
     options.filterDf ??= false;
+    options.fractionDigits ??= 3;
 
     const filteredDf = options.filterDf && this.df.filter.anyFalse ? this.df.clone(this.df.filter) : this.df;
 
@@ -915,7 +920,7 @@ export class PeptidesModel {
   }
 
   modifyMonomerPositionSelection(aar: string, position: string, isInvariantMap: boolean): void {
-    if (!isInvariantMap && !(this.mutationCliffs?.get(aar)?.get(position) ?? false))
+    if (this.df.getCol(position).categories.indexOf(aar) === -1)
       return;
 
     const tempSelection = isInvariantMap ? this.invariantMapSelection : this.mutationCliffsSelection;
@@ -1065,10 +1070,11 @@ export class PeptidesModel {
       const pepColValues: string[] = this.df.getCol(this.settings.sequenceColumnName!).toList();
       this._dm ??= new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
       const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
-      const treeNode = await this.treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
+      const treeHelper: ITreeHelper = getTreeHelperInstance()!;
+      const treeNode = await treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
 
-      this.df.setTag(treeTAGS.NEWICK, this.treeHelper.toNewick(treeNode));
-      const leafOrdering = this.treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
+      this.df.setTag(treeTAGS.NEWICK, treeHelper.toNewick(treeNode));
+      const leafOrdering = treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
       this.analysisView.grid.setRowOrder(leafOrdering);
       const dendrogramViewer = await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
 
@@ -1106,6 +1112,48 @@ export class PeptidesModel {
       this.isRibbonSet = true;
       this.updateGrid();
     }
+
+    this.subs.push(grok.events.onAccordionConstructed.subscribe((acc) => {
+      if (!(grok.shell.o instanceof DG.SemanticValue || (grok.shell.o instanceof DG.Column && this.df.columns.toList().includes(grok.shell.o))))
+        return;
+
+      const actionsPane = acc.getPane('Actions');
+
+      const actionsHost = $(actionsPane.root).find('.d4-flex-col');
+      const calculateIdentity = ui.label('Calculate identity');
+      calculateIdentity.classList.add('d4-link-action');
+      ui.tooltip.bind(calculateIdentity, 'Adds a column with fractions of matching monomers against sequence in the current row');
+      calculateIdentity.onclick = (): void => {
+        const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.IDENTITY);
+      };
+      actionsHost.append(ui.span([calculateIdentity], 'd4-markdown-row'));
+
+      const calculateSimilarity = ui.label('Calculate similarity');
+      calculateSimilarity.classList.add('d4-link-action');
+      ui.tooltip.bind(calculateSimilarity, 'Adds a column with sequence similarity scores against sequence in the current row');
+      calculateSimilarity.onclick = (): void => {
+        const seqCol = this.df.getCol(this.settings.sequenceColumnName!);
+        calculateScores(this.df, seqCol, seqCol.get(this.df.currentRowIdx), SCORE.SIMILARITY);
+      };
+      actionsHost.append(ui.span([calculateSimilarity], 'd4-markdown-row'));
+    }));
+
+    this.subs.push(grok.events.onViewRemoved.subscribe((view) => {
+      if (view.id === this.analysisView.id)
+        this.subs.forEach((v) => v.unsubscribe());
+      grok.log.debug(`Peptides: view ${view.name} removed`);
+    }));
+    this.subs.push(grok.events.onTableRemoved.subscribe((table: DG.DataFrame) => {
+      if (table.id === this.df.id)
+        this.subs.forEach((v) => v.unsubscribe());
+      grok.log.debug(`Peptides: table ${table.name} removed`);
+    }));
+    this.subs.push(grok.events.onProjectClosed.subscribe((project: DG.Project) => {
+      if (project.id === grok.shell.project.id)
+        this.subs.forEach((v) => v.unsubscribe());
+      grok.log.debug(`Peptides: project ${project.name} closed`);
+    }));
 
     this.fireBitsetChanged(true);
     if (typeof this.settings.targetColumnName === 'undefined')

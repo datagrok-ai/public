@@ -1,16 +1,17 @@
 {
   "name": "@datagrok/ui-tests",
   "friendlyName": "UI Tests",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": {
     "name": "Anna Muzychyna",
     "email": "amuzychyna@datagrok.ai"
   },
-  "description": "Automated UI tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
+  "servicePackage": true,
+  "description": "Automated UI tests",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.0.16",
     "cash-dom": "latest",
-    "datagrok-api": "latest",
+    "datagrok-api": "^1.16.3",
     "dayjs": "latest"
   },
   "devDependencies": {

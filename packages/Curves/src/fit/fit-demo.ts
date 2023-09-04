@@ -71,6 +71,7 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
           showStatistics: charts === 1 ? ['auc'] : [],
           xAxisName: 'Conc.',
           yAxisName: 'Activity',
+          title: 'Dose-Response curves'
         }
       };
 

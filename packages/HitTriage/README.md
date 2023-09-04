@@ -5,7 +5,7 @@ it in a managed, reproducible manner, with the triage template consisting of sep
 
 ![hit-triage-workflow](images/hit-triage-workflow.gif)
 
-Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages)
+Technically, HitTriage is a [package](https://datagrok.ai/help/develop/#packages)
 for the [Datagrok](https://datagrok.ai) platform that contains the the `HitTriage` application. There are multiple ways
 to start it:
 
@@ -96,7 +96,7 @@ gets shown in the context panel on the right.
 
 ## Visualization and Reporting Outcomes
 
-* Built-in [viewers](../../help/visualize/viewers.md)
+* Built-in [viewers](../../help/visualize/viewers/viewers.md)
 * Export to Excel / PDF
 * Share outcomes as URLs
 

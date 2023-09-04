@@ -143,23 +143,22 @@ export class TestManager extends DG.ViewBase {
           let subcatsFromUrl = [];
           if (testFromUrl && testFromUrl.catName)
             subcatsFromUrl = testFromUrl.catName.split(':');
-
           let previousCat = packageTestsFinal;
           for (let i = 0; i < subcats.length; i++) {
-            if (!packageTestsFinal[subcats[i]]) {
+            if (!previousCat[subcats[i]]) {
               previousCat[subcats[i]] = {
                 tests: [],
                 subcategories: {},
                 packageName: f.package.name,
                 name: subcats[i],
-                fullName: subcats.slice(0, i+1).join(':'),
+                fullName: subcats.slice(0, i + 1).join(':'),
                 subCatsNames: [cat],
                 resultDiv: null,
                 expand: subcats[i] === subcatsFromUrl[i],
-                totalTests: 0};
+                totalTests: 0,
+              };
             } else
               previousCat[subcats[i]].subCatsNames.push(cat);
-            ;
             if (i === subcats.length - 1) {
               previousCat[subcats[i]].tests = previousCat[subcats[i]].tests ?
                 previousCat[subcats[i]].tests.concat(tests) : tests;

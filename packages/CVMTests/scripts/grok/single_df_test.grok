@@ -1,0 +1,7 @@
+#name: Grok Single Df
+#description: df performance
+#language: grok
+#input: dataframe df
+#output: dataframe result
+
+result = df

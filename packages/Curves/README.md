@@ -13,7 +13,7 @@ including in-grid rendering, storing charts in cells, interactivity, and automat
 - Deep integration with the Datagrok grid
   - Either fitting on the fly or using the supplied function + parameters
   - Multiple series in one cell
-  - Candlesticks, confidence intervals, and droplines drawing
+  - Candlesticks, confidence intervals, standard deviation and droplines drawing
   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
       on the column level, with the ability to override it on a grid cell or point level
   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
@@ -34,23 +34,24 @@ To render a fitted curve based on series points, you need to write it in the fol
       "fitLineColor": "#2ca02c",
       "confidenceIntervalColor": "#fbec5d",
       "markerType": "circle",
+      "lineStyle": "dashed",
       "showFitLine": true,
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
       "parameters": [1.7391934768969721, -0.9451759934029763, 4.846020678949615, 0.15841886339211816],
       "parameterBounds": [
-        {"minBound": 1.739193476892, "maxBound": 1.739193476898},
-        {"maxBound": -0.9451759934029},
+        {"min": 1.739193476892, "max": 1.739193476898},
+        {"max": -0.9451759934029},
         {},
-        {"minBound": 0.158418863392114}
+        {"min": 0.158418863392114}
       ],
       "showPoints": "points",
       "clickToToggle": true,
       "droplines": ["IC50"],
       "points": [
-        { "x": 0.10000000149011612, "y": 0.04152340441942215 },
+        { "x": 0.10000000149011612, "y": 0.04152340441942215, "stdev": 0.031523404876, "marker": "square" },
         { "x": 0.6000000238418579, "y": 0.11901605129241943, "outlier": true },
-        { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false },
+        { "x": 1.100000023841858, "y": 0.11143334954977036, "outlier": false, "color": "#2ca02c", "size": 5 },
         // ...
       ]
     }
@@ -61,6 +62,7 @@ To render a fitted curve based on series points, you need to write it in the fol
     "minY": 0.04152340441942215,
     "maxX": 7.099999904632568,
     "maxY": 1.7591952085494995,
+    "title": "Dose-Response curves",
     "xAxisName": "Concentration",
     "yAxisName": "Activity",
     "logX": true,
@@ -76,20 +78,28 @@ Each series has its own parameters, such as:
 - `fitLineColor` - overrides the standardized series fit line color
 - `confidenceIntervalColor` - overrides the standardized series confidence interval color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
+- `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a
 [custom-defined function](/README.md#creating-custom-fit-function).
-- `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed
-- `parameterBounds` - defines the series parameter bounds during the fit
+- `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed. The parameter order of the
+sigmoid function is: `max, tan, IC50, min`.
+- `parameterBounds` - defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`
 - `showPoints` - defines the data display mode, which could be either `points`, `candlesticks`, `both`, or none
 - `clickToToggle` - defines whether clicking on the point toggles its outlier status and causes curve refitting or not
 - `droplines` - defines the droplines that would be shown on the plot (for instance, IC50)
-- `points` - an array of objects with each object containing x and y coordinates and a boolean outlier value
+- `points` - an array of objects with each object containing `x` and `y` coordinates and its own parameters:
+  - `outlier` - if true, renders as 'x' and gets ignored for curve fitting
+  - `color` - overrides the marker color defined in series `pointColor`
+  - `marker` - overrides the marker type defined in series `markerType`
+  - `size` - overrides the default marker size
+  - `stdev` - when defined, renders an error bar candlestick
 
 Each chart has its own parameters as well, such as:
 
 - `minX`, `minY`, `maxX`, `maxY` - controls the minimum x and y values of the plot
+- `title` - defines the plot title. If the plot size is enough, will render it
 - `xAxisName`, `yAxisName` - defines the x and y axis names. If the plot size is enough, will render it
 - `logX`, `logY` - defines whether the x and y data should be logarithmic or not
 - `showStatistics` - defines the statistics that would be shown on the plot (such as the area under the curve
@@ -122,4 +132,4 @@ returns the result of the fit function. These functions are written as JavaScrip
 See also:
 
 - [Packages](../../help/develop/develop.md#packages)
-- [JavaScript API](../../help/develop/js-api.md)
+- [JavaScript API](../../help/develop/packages/js-api.md)

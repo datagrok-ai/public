@@ -84,13 +84,14 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     else
       pairsTable.filter.setAll(true);
   });
+  aminoToInput.setTooltip('Monomer to which the mutation was made');
 
   const pairsGrid = pairsTable.plot.grid();
   pairsGrid.props.allowEdit = false;
   pairsGrid.props.allowRowSelection = false;
   pairsGrid.props.allowBlockSelection = false;
   pairsGrid.props.allowColSelection = false;
-  pairsGrid.root.style.width = 'auto';
+  pairsGrid.root.style.width = '100%';
   pairsGrid.root.style.height = '150px';
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
@@ -146,7 +147,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   uniqueSequencesGrid.props.allowBlockSelection = false;
   uniqueSequencesGrid.props.allowColSelection = false;
   uniqueSequencesGrid.props.rowHeight = 20;
-  uniqueSequencesGrid.root.style.width = 'auto';
+  uniqueSequencesGrid.root.style.width = '100%';
   uniqueSequencesGrid.root.style.height = '250px';
   uniqueSequencesTable.filter.onChanged.subscribe(() => {
     const uniqueSelectedIndexes: number[] = [];
@@ -158,5 +159,5 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
       (idx) => pairsSelectedIndexes.length === 0 || uniqueSelectedIndexes.includes(seqIdxColData[idx]), false);
   });
 
-  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root]));
+  return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root], {style: {width: '100%'}}));
 }

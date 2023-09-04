@@ -13,17 +13,15 @@ import {scaleActivity} from '../utils/misc';
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 /** Peptide analysis widget.
- *
  * @param {DG.DataFrame} df Working table
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
-export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
-  { host: HTMLElement, callback: () => Promise<boolean> } {
+export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {host: HTMLElement, callback: () => Promise<boolean>} {
   const logoHost = ui.div();
-  // logoHost.style.alignContent = 'center';
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
-    const sequenceColumns = df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE);
+    const sequenceColumns = df.columns.toList()
+      .filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE && dfCol.stats.missingValueCount === 0);
     const potentialCol = DG.Utils.firstOrNull(sequenceColumns);
     if (potentialCol === null)
       throw new Error('Peptides Error: table doesn\'t contain sequence columns');
@@ -40,7 +38,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         return viewer.root;
       }));
       //TODO: add when new version of datagrok-api is available
-    }); //, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions);
+    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE && col.stats.missingValueCount === 0});
+    seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
   } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
     col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
@@ -66,10 +65,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   }
 
   let scaledCol: DG.Column<number>;
-
-  const defaultActivityColumn: DG.Column<number> | null =
-    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical);
-  ;
+  const defaultActivityColumn: DG.Column<number> | null = df.col('activity') || df.col('IC50') ||
+    DG.Utils.firstOrNull(df.columns.numerical);
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
@@ -89,26 +86,26 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
       histogramHost.lastChild?.remove();
       histogramHost.appendChild(hist.root);
     }) as DG.InputBase<C.SCALING_METHODS | null>;
-  activityScalingMethod.setTooltip('Function to apply for each value in activity column');
+  activityScalingMethod.setTooltip('Activity column transformation method');
 
   const activityScalingMethodState = (): void => {
-    activityScalingMethod.enabled = (activityColumnChoice.value ?? false) &&
-      DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
-    activityScalingMethod.fireChanged();
+    activityScalingMethod.enabled = (activityColumnChoice.value ?? false) && DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
+    activityScalingMethod.value = C.SCALING_METHODS.NONE;
   };
   //TODO: add when new version of datagrok-api is available
-  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState); //, {filter: (col: DG.Column) => col.type === DG.TYPE.INT} as ColumnInputOptions);
-  const clustersColumnChoice = ui.columnInput('Clusters', df, null);
+  const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState,
+    {filter: (col: DG.Column) => (col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT) && col.stats.missingValueCount === 0});
+  activityColumnChoice.setTooltip('Numerical activity column');
+  const clustersColumnChoice = ui.columnInput('Clusters', df, null, null, {filter: (col: DG.Column) => col.stats.missingValueCount === 0});
+  clustersColumnChoice.setTooltip('Optional. Clusters column is used to create Logo Summary Table');
   clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
-  const targetColumnChoice = ui.columnInput('Target', df, null, () => {
-    if (targetColumnChoice.value?.type !== DG.COLUMN_TYPE.STRING) {
-      grok.shell.warning('Target column should be of string type');
-      targetColumnChoice.value = null;
-    }
-  });
+  const targetColumnChoice = ui.columnInput('Target', df, null, null,
+    {filter: (col: DG.Column) => col.type === DG.TYPE.STRING && col.stats.missingValueCount === 0});
+  targetColumnChoice.setTooltip('Optional. Target represents a unique binding construct for every peptide in the data. ' +
+    'Target can be used to split mutation cliff analysis for peptides specific to a certain set of targets');
   targetColumnChoice.nullable = true;
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice, targetColumnChoice];
@@ -132,7 +129,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   const inputElements: HTMLElement[] = [ui.inputs(inputsList)];
   $(inputElements[0]).find('label').css('width', 'unset');
   if (typeof col !== 'undefined') {
-    const startBtn = ui.button('Launch SAR', startAnalysisCallback);
+    const startBtn = ui.button('Launch SAR', startAnalysisCallback, '');
     startBtn.style.alignSelf = 'center';
     inputElements.push(startBtn);
     bottomHeight = '215px';

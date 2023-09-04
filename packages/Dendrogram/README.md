@@ -1,6 +1,6 @@
 # Dendrogram
 
-_Dendrogram_ is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+_Dendrogram_ is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
 platform for phylogenetic trees visualization.
 
 ## Notations

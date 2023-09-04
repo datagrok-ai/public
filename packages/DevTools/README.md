@@ -1,8 +1,8 @@
 # DevTools
 
-DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+DevTools is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
 platform. Its purpose is to simplify and assist in the development of platform extensions. This is achieved through
-familiarizing developers with Datagrok's [object](https://datagrok.ai/help/datagrok/objects) model and providing them
+familiarizing developers with Datagrok's [object](https://datagrok.ai/help/datagrok/concepts/objects) model and providing them
 with reproducible code snippets that fit their data. This approach allows to explore the key functionality from the
 interface, learn by example, jump to the [documentation](https://datagrok.ai/help/)
 or [API](https://datagrok.ai/js-api/) reference in one click, and much more. It also helps focus on the problem you are
@@ -11,7 +11,7 @@ generated for you.
 
 ## Components
 
-  1. `Dev` [info panel](https://datagrok.ai/help/discover/info-panels).
+  1. `Dev` [info panel](https://datagrok.ai/help/explore/data-augmentation/info-panels).
      It appears in the context panel whenever an entity becomes the current object. Under `Dev`, you will find links to the documentation and the object's class reference, a set of examples dynamically loaded from the [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples) package, and an editor with a template script with most common actions for this type of entity.
 
      ![Scripting](./gif/dev-tools-info-panel.gif)
@@ -64,10 +64,10 @@ In case category/package contain multiple tests results are shown as a grid whic
 
 See also:
 
-- [JavaScript Development](https://datagrok.ai/help/develop/develop)
+- [JavaScript Development](https://datagrok.ai/help/develop)
 - [JavaScript API Samples](https://public.datagrok.ai/js)
-- [Entities](https://datagrok.ai/help/datagrok/objects)
-- [Info Panels](https://datagrok.ai/help/discover/info-panels)
+- [Entities](https://datagrok.ai/help/datagrok/concepts/objects)
+- [Info Panels](https://datagrok.ai/help/explore/data-augmentation/info-panels)
 - [How to add an info panel](https://datagrok.ai/help/develop/how-to/add-info-panel)
 - [Viewers](https://datagrok.ai/help/visualize/viewers)
 - [How to manipulate viewers](https://datagrok.ai/help/develop/how-to/manipulate-viewers)

@@ -1,0 +1,1 @@
+{"name":"Demo template","key":"DMT","campaignFields":[{"name":"Chemist","type":"String","required":true},{"name":"Someone else","type":"String","required":false}],"stages":["Stage 1","Stage 2","Stage 3","Stage 4"],"compute":{"descriptors":{"enabled":true,"args":["MolWt"]},"functions":[]},"submit":{"fName":"demoFileSubmit1","package":"HitTriage"}}

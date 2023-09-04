@@ -21,7 +21,7 @@ import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-uti
 
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
-import {substructureSearchDialog} from './substructure-search/substructure-search';
+import {SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
@@ -40,10 +40,11 @@ import {
   getLibFileNameList,
   getLibraryPanelUI
 } from './utils/monomer-lib';
-import {getMacromoleculeColumn} from './utils/ui-utils';
+import {getMacromoleculeColumns} from './utils/ui-utils';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
+import {SCORE, calculateScores} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
@@ -167,7 +168,7 @@ export async function libraryPanel(_seqColumn: DG.Column): Promise<DG.Widget> {
 export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
   const widget = new PackageSettingsEditorWidget(propList);
   widget.init().then(); // Ignore promise returned
-  return widget;
+  return widget as DG.Widget;
 }
 
 // -- Cell renderers --
@@ -246,7 +247,7 @@ export function webLogoViewer() {
 //tags: viewer, panel
 //meta.icon: files/icons/vdregions-viewer.svg
 //output: viewer result
-export function vdRegionViewer() {
+export function vdRegionsViewer() {
   return new VdRegionsViewer();
 }
 
@@ -602,7 +603,7 @@ export function importBam(fileContent: string): DG.DataFrame [] {
 //top-menu: Bio | Convert | Notation...
 //name: convertDialog
 export function convertDialog() {
-  const col = getMacromoleculeColumn();
+  const col = getMacromoleculeColumns()[0];
   convert(col);
 }
 
@@ -734,12 +735,52 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//top-menu: Bio | Search | Substructure...
-//name: bioSubstructureSearch
-//description: Finds sequence with the given subsequence
-export function bioSubstructureSearch(): void {
-  const col = getMacromoleculeColumn();
-  substructureSearchDialog(col);
+//name: SearchSubsequenceEditor
+//tags: editor
+//input: funccall call
+export function searchSubsequenceEditor(call: DG.FuncCall) {
+  const columns = getMacromoleculeColumns();
+  if (columns.length === 1)
+    call.func.prepare({macromolecules: columns[0]}).call(true);
+  else
+    new SubstructureSearchDialog(columns);
+}
+
+//top-menu: Bio | Search | Subsequence...
+//name: Subsequence Search
+//input: column macromolecules
+//editor: Bio:SearchSubsequenceEditor
+export function SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
+  grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+    type: 'Bio:bioSubstructureFilter',
+    column: macromolecules.name,
+    columnName: macromolecules.name,
+  });
+  grok.shell.tv.grid.scrollToCell(macromolecules, 0);
+}
+
+//top-menu: Bio | Caclulate | Identity...
+//name: Identity Scoring
+//description: Adds a column with fraction of matching monomers
+//input: dataframe table [Table containing Macromolecule column]
+//input: column macromolecules {semType: Macromolecule} [Sequences to score]
+//input: string reference [Sequence, matching column format]
+//output: column scores
+export async function sequenceIdentityScoring(table: DG.DataFrame, macromolecule: DG.Column, reference: string): Promise<DG.Column<number>> {
+  const scores = calculateScores(table, macromolecule, reference, SCORE.IDENTITY);
+  return scores;
+}
+
+//top-menu: Bio | Caclulate | Similarity...
+//name: Similarity Scoring
+//description: Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities
+//input: dataframe table [Table containing Macromolecule column]
+//input: column macromolecules {semType: Macromolecule} [Sequences to score]
+//input: string reference [Sequence, matching column format]
+//output: column scores
+export async function sequenceSimilarityScoring(table: DG.DataFrame, macromolecule: DG.Column, reference: string): Promise<DG.Column<number>> {
+  const scores = calculateScores(table, macromolecule, reference, SCORE.SIMILARITY);
+  return scores;
 }
 
 //name: saveAsFasta
@@ -764,7 +805,8 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
 export async function webLogoLargeApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('WebLogo');
   try {
-    const app = new WebLogoApp();
+    const urlParams = new URLSearchParams(window.location.search);
+    const app = new WebLogoApp(urlParams);
     const df: DG.DataFrame = await _package.files.readCsv('data/sample_PT_100000x5.csv');
     await grok.data.detectSemanticTypes(df);
     await app.init(df, 'webLogoLargeApp');

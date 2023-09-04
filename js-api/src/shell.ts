@@ -23,6 +23,12 @@ export class Shell {
   windows: Windows = new Windows();
   settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
 
+
+
+  testError(s: String): void {
+    return api.grok_Test_Error(s);
+  }
+
   /** Current table, or null. */
   get t(): DataFrame {
     return toJs(api.grok_CurrentTable());

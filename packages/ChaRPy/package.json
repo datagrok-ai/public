@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/charpy",
   "fullName": "ChaRPy",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
   },
-  "description": "ChaRPy package extends Datagrok viewers with two commands 'To Python script' and 'To R script', which translate a selected viewer to Python or R code, respectively, along with executing this code for displaying the resulting plot. The two commands are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in Datagrok.",
+  "description": "ChaRPy translates viewers into Python or R scripts, executes them and displays the resulting plots.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -36,7 +36,7 @@
     "upload-debug-local": "webpack && grok publish http://localhost:8082 ",
     "upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",
     "upload-deploy": "webpack && grok publish https://dev.datagrok.ai/api --release",
-    "build": "webpack"
+    "build": "NODE_OPTIONS=--openssl-legacy-provider webpack"
   },
   "canEdit": [
     "Developers"

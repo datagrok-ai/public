@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, test as _test, category} from '@datagrok-libraries/utils/src/test';
 import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
 import './connections/queries-test';
 import './sync/data-sync-test';
@@ -99,4 +99,20 @@ export async function testConnections(): Promise<DG.DataFrame> {
   }
   grok.shell.addTableView(df);
   return df;
+}
+
+const skip = ['Redshift', 'Athena'];
+
+//tags: init
+export async function initTests() {
+  const connections = await grok.dapi.connections.list();
+  for (const c of connections) {
+    category(('Providers:' + c.dart.z), () => {
+      _test(c.friendlyName, async () => {
+        const res = await c.test();
+        if (res !== 'ok')
+          throw new Error(res);
+      }, skip.includes(c.dart.z) ? {skipReason: 'SKIP'} : undefined);
+    });
+  }
 }

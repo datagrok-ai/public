@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+
 import {category, expect, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
@@ -47,12 +49,16 @@ category('renderers', () => {
     await _selectRendererBySemType();
   });
 
-  test('setRendererManually', async () => {
-    await _setRendererManually();
+  test('setRendererManuallyBeforeAddColumn', async () => {
+    await _setRendererManuallyBeforeAddColumn();
+  }, {skipReason: 'GROK-11212'});
+
+  test('setRendererManuallyAfterAddColumn', async () => {
+    await _setRendererManuallyAfterAddColumn();
   }, {skipReason: 'GROK-11212'});
 
   async function _rendererMacromoleculeFasta() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/FASTA.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const seqCol = df.getCol('Sequence');
@@ -204,7 +210,7 @@ category('renderers', () => {
 
   /** GROK-11212 Do not overwrite / recalculate 'cell.renderer' tag that has been set programmatically
    * https://reddata.atlassian.net/browse/GROK-11212 */
-  async function _setRendererManually() {
+  async function _setRendererManuallyBeforeAddColumn() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
     seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
@@ -219,6 +225,34 @@ category('renderers', () => {
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+
+    const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
+    if (resCellRenderer !== tgtCellRenderer) { // this is value of MacromoleculeDifferenceCR.cellType
+      throw new Error(`Tag 'cell.renderer' has been manually set to '${tgtCellRenderer}' for column ` +
+        `but after df was added as table, tag 'cell.renderer' has reset to '${resCellRenderer}' ` +
+        `instead of manual '${tgtCellRenderer}'.`);
+    }
+  }
+
+  /** GROK-11212 Do not overwrite / recalculate 'cell.renderer' tag that has been set programmatically
+   * https://reddata.atlassian.net/browse/GROK-11212 */
+  async function _setRendererManuallyAfterAddColumn() {
+    const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
+      ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
+    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.setTag(bioTAGS.separator, '/');
+    seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
+    seqDiffCol.setTag(bioTAGS.alphabet, 'UN');
+    seqDiffCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
+    seqDiffCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    const tgtCellRenderer = 'MacromoleculeDifference';
+    const df = DG.DataFrame.fromColumns([seqDiffCol]);
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    await awaitCheck(() => $(tv.root).find('.d4-grid canvas').length > 0, 'View grid canvas not found', 200);
+
+    seqDiffCol.setTag(DG.TAGS.CELL_RENDERER, tgtCellRenderer);
+    await awaitCheck(() => $(tv.root).find('.d4-grid canvas').length > 0, 'View grid canvas not found', 200);
 
     const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
     if (resCellRenderer !== tgtCellRenderer) { // this is value of MacromoleculeDifferenceCR.cellType

@@ -41,25 +41,25 @@ category('UnitsHandler', () => {
   });
 
   test('Seq-Fasta-units', async () => {
-    const [_df, uh] = await loadCsvWithTag(seqDna, DG.TAGS.UNITS, NOTATION.FASTA);
+    const [_df, uh] = await loadCsvWithDetection(seqDna);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), false);
   });
 
   test('Seq-Fasta-MSA-units', async () => {
-    const [_df, uh] = await loadCsvWithTag(seqDnaMsa, DG.TAGS.UNITS, NOTATION.FASTA);
+    const [_df, uh] = await loadCsvWithDetection(seqDnaMsa);
     expect(uh.notation, NOTATION.FASTA);
     expect(uh.isMsa(), true);
   });
 
   test('Seq-Helm', async () => {
-    const [_df, uh] = await loadCsvWithTag(seqHelm, DG.TAGS.UNITS, NOTATION.HELM);
+    const [_df, uh] = await loadCsvWithDetection(seqHelm);
     expect(uh.notation, NOTATION.HELM);
     expect(uh.isHelm(), true);
   });
 
   test('Seq-UN', async () => {
-    const [_df, uh] = await loadCsvWithTag(seqUn, DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    const [_df, uh] = await loadCsvWithDetection(seqUn);
     expect(uh.notation, NOTATION.SEPARATOR);
     expect(uh.separator, '-');
     expect(uh.alphabet, ALPHABET.UN);
@@ -79,15 +79,15 @@ category('UnitsHandler', () => {
     return [df, uh];
   }
 
-  async function loadCsvWithTag(csv: string, tag: string, value: string):
-    Promise<[df: DG.DataFrame, uh: UnitsHandler]> {
-    const df = DG.DataFrame.fromCsv(csv);
-    const col = df.getCol('seq');
-    col.setTag(tag, value);
-    col.semType = DG.SEMTYPE.MACROMOLECULE;
-    if (value === NOTATION.SEPARATOR)
-      col.setTag(TAGS.separator, '-');
-    const uh = UnitsHandler.getOrCreate(df.getCol('seq'));
-    return [df, uh];
-  }
+  // async function loadCsvWithTag(csv: string, tag: string, value: string):
+  //   Promise<[df: DG.DataFrame, uh: UnitsHandler]> {
+  //   const df = DG.DataFrame.fromCsv(csv);
+  //   const col = df.getCol('seq');
+  //   col.setTag(tag, value);
+  //   col.semType = DG.SEMTYPE.MACROMOLECULE;
+  //   if (value === NOTATION.SEPARATOR)
+  //     col.setTag(TAGS.separator, '-');
+  //   const uh = UnitsHandler.getOrCreate(df.getCol('seq'));
+  //   return [df, uh];
+  // }
 });

@@ -1,10 +1,71 @@
 # Curves changelog
 
+## 1.2.6 (2023-08-25)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added different line styles rendering
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Added documnetation about line styles
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed the curve fitting algorithm
+  * Fixed axes scales
+
+## 1.2.5 (2023-08-23)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added standard deviation rendering for points
+  * Added custom point color coding
+  * Added custom point marker
+  * Added custom marker size rendering
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Updated the documentation regarding the standard deviation, the point color, marker type and size
+
+## 1.2.4 (2023-08-12)
+
+### Features
+
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Updated the documentation about parameter order and plot title
+* [#2105](https://github.com/datagrok-ai/public/issues/2105): Made Curves by default as a DG categorical color
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added x- and y-axes labels rendering
+  * Added title rendering if the cell size is enough
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Fixed log curves rendering
+  * Fixed sizes for axes rendering
+
+## 1.2.3 (2023-08-07)
+
+### Bug Fixes
+
+* [#2104](https://github.com/datagrok-ai/public/issues/2104): Fixed fit detector
+
+## 1.2.2 (2023-08-04)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Changed minBound and maxBound to min and max in parameterBounds
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Updated the documentation about parameterBounds
+
+## 1.2.1 (2023-08-02)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added dropline rendering for IC50
+  * Added empty cell value handling
+* [#2106](https://github.com/datagrok-ai/public/issues/2106): Wrote TS docs and extended the documentation
+* Added error handling in the JnJ parser
+
 ## 1.2.0 (2023-07-21)
 
 This release focuses on adding new functionality and improving the existing one.
-
-*Dependency: datagarok-api >= 1.16.0*
 
 ### Features
 
@@ -33,8 +94,6 @@ This release focuses on adding new functionality and improving the existing one.
 ## 1.1.0 (2023-05-19)
 
 This release focuses on improving the analysis stability and usability.
-
-*Dependency: datagarok-api >= 1.15.0*
 
 ### Features
 

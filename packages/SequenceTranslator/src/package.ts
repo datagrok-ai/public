@@ -13,7 +13,7 @@ import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transfor
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
-import {demoDesignPatternUI, demoVisualizeDuplexUI, demoTranslateSequenceUI} from './demo/demo-st-ui';
+// import {demoDesignPatternUI, demoVisualizeDuplexUI, demoTranslateSequenceUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
 
 class StPackage extends DG.Package {
@@ -125,7 +125,7 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
 export async function demoTranslateSequence(): Promise<void> {
-  await demoTranslateSequenceUI();
+  // await demoTranslateSequenceUI();
 }
 
 //name: demoDesignPattern
@@ -133,7 +133,7 @@ export async function demoTranslateSequence(): Promise<void> {
 //description: Design a modification pattern for an oligonucleotide sequence
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
 export async function demoDesignPattern(): Promise<void> {
-  await demoDesignPatternUI();
+  // await demoDesignPatternUI();
 }
 
 //name: demoVisualizeDuplex
@@ -141,7 +141,7 @@ export async function demoDesignPattern(): Promise<void> {
 //description: Visualize duplex and save SDF
 //meta.path:%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
 export async function demoVisualizeDuplex(): Promise<void> {
-  await demoVisualizeDuplexUI();
+  // await demoVisualizeDuplexUI();
 }
 
 //name: translateOligonucleotideSequence

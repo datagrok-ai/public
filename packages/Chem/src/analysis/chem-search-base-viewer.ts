@@ -76,8 +76,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
         .subscribe(async (_: any) => await this.render(false)));
-      this.moleculeColumn ??= this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      this.moleculeColumnName ??= this.moleculeColumn?.name!;
+      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      this.moleculeColumnName = this.moleculeColumn?.name ?? '';
     }
     await this.render(true);
   }
@@ -89,8 +89,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (this.metricsProperties.includes(property.name))
       this.updateMetricsLink(this, {});
     if (property.name === 'moleculeColumnName') {
-      const col = this.dataFrame.col(property.get(this))!;
-      if (col.semType === DG.SEMTYPE.MOLECULE)
+      const col = this.dataFrame.col(property.get(this));
+      if (col?.semType === DG.SEMTYPE.MOLECULE)
         this.moleculeColumn = col;
     }
     if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
@@ -114,7 +114,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.metricsDiv!.appendChild(metricsButton);
   }
 
-  async render(computeData = true) {
+  async render(compute = true) {
 
   }
 
@@ -122,8 +122,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (!this.initialized)
       return false;
     if (this.dataFrame && this.moleculeColumnName &&
-          this.dataFrame.col(this.moleculeColumnName)!.semType !== DG.SEMTYPE.MOLECULE) {
-      grok.shell.error(`${this.moleculeColumnName} is not Molecule type`);
+          this.dataFrame.col(this.moleculeColumnName)?.semType !== DG.SEMTYPE.MOLECULE) {
+      grok.shell.error(`${this.moleculeColumnName} is not Molecule type or missing`);
       return false;
     }
     return true;

@@ -28,24 +28,6 @@ export class ModelHandler extends DG.ObjectHandler {
     return x instanceof DG.Func && x.hasTag('model');
   }
 
-  getVideoBackgroundUrl(x: DG.Func): string {
-    let url = x.options['video-preview'];
-    if (url == null)
-      return '';
-    if (url.startsWith('http://') || url.startsWith('https://'))
-      return url;
-    if (x instanceof DG.Script) {
-      if (x.options['icon'] != null) {
-        let iconPath = x.options['icon'].substring(0, x.options['icon'].lastIndexOf('/'));
-        return `${iconPath}/${url}`;
-      }
-      return '';
-    }
-    let iconPath = x.package.getIconUrl();
-    iconPath = iconPath.substring(0, iconPath.lastIndexOf('/'));
-    return `${iconPath}/${url}`;
-  }
-
   renderIcon(x: DG.Func, context: any = null): HTMLElement {
     if (x.options['icon'] != null && (x.options['icon'].startsWith('http://') || x.options['icon'].startsWith('https://'))) {
       return ui.iconImage('model-icon', x.options['icon']);
@@ -67,14 +49,14 @@ export class ModelHandler extends DG.ObjectHandler {
   renderMarkup(x: DG.Func): HTMLElement {
     let markup = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
     markup.ondblclick = (e) => { ModelHandler.openModel(x); }
+    markup.onclick = (e) => { ModelHandler.openHelp(x); }
     return markup;
   }
 
   async renderPreview(x: DG.Func) {
-    const editorName = x.options.editor ?? 'Compute:RichFunctionEditor';
+    const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
     const editor = await grok.functions.find(editorName);
     if (editor !== null && editor instanceof DG.Func) {
-      console.log(editor);
       const viewCall = editor.prepare({'call': x.prepare()});
       await viewCall.call(false, undefined, {processed: true});
       const view = viewCall.getOutputParamValue();
@@ -85,46 +67,21 @@ export class ModelHandler extends DG.ObjectHandler {
     return super.renderPreview(x);
   }
 
-  renderProperties(x: DG.Func) {
+  renderProperties(func: DG.Func) {
     const a = ui.accordion('ComputeModel');
-    a.context = x;
+    a.context = func;
     let titleDiv = ui.div([
-      ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)])]);
+      ui.span([this.renderIcon(func), ui.label(func.friendlyName), ui.contextActions(func), ui.star(func.id)])]);
     a.addTitle(titleDiv);
 
-    if (x.description != null)
-      titleDiv.appendChild(ui.div([ui.markdown(x.description)], 'model-catalog-description'));
-    titleDiv.appendChild(ui.tags(x));
-    if ( x.options['dev.status'] != null)
-      titleDiv.appendChild(ui.tableFromMap({Status: x.options['dev.status']}));
+    if (func.description != null)
+      titleDiv.appendChild(ui.div([ui.markdown(func.description)], 'model-catalog-description'));
+    titleDiv.appendChild(ui.tags(func));
+    if ( func.options['dev.status'] != null)
+      titleDiv.appendChild(ui.tableFromMap({Status: func.options['dev.status']}));
 
-    if (x.options['video'] != null || x.options['education'] != null) {
-      let educationLink = ui.link('Education materials', x.options['education']);
-      ui.setDisplay(educationLink, x.options['education'] != null);
-      let video = ui.div(ui.icons.play(() => {window.open(x.options['video'], '_blank')}), 'model-catalog-video');
-      ui.setDisplay(video, x.options['video'] != null);
-      video.style.backgroundImage = `url('${this.getVideoBackgroundUrl(x)}')`;
-
-      a.addPane('Documentation', () => {
-        return ui.divV([
-          educationLink,
-          video], {style: {lineHeight: '150%'}});
-      }, true);
-    }
     a.end();
     return a.root;
-  }
-
-  renderDetails(x: DG.Func) {
-    let status = ui.markdown(`**Status:** ${x.options['dev.status']}`);
-    ui.setDisplay(status, x.options['dev.status'] != null);
-    return ui.divV([
-      ui.markdown(`**Description: ** ${x.description}`),
-      status,
-      ui.markdown('**Tags:**'),
-      ui.tags(x),
-      ui.markdown('**Documentation:**'),
-    ], {style: {lineHeight: '150%'}});
   }
 
   renderTooltip(x: DG.Func) {
@@ -143,7 +100,18 @@ export class ModelHandler extends DG.ObjectHandler {
     h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.h2(h));
     card.ondblclick = (e) => { ModelHandler.openModel(x); }
+    card.onclick = (e) => { ModelHandler.openHelp(x); }
     return card;
+  }
+
+  static async openHelp(func: DG.Func) {
+    if (func.options['readme'] != null) {
+      const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
+      const readmeText = await grok.dapi.files.readAsText(path);
+
+      grok.shell.windows.help.showHelp(ui.markdown(readmeText));
+      grok.shell.windows.showHelp = true;
+    }
   }
 
   static getModelCatalogView(): ModelCatalogView {

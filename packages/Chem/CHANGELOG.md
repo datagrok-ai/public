@@ -1,5 +1,51 @@
 # Chem changelog
 
+## 1.7.1 (2023-08-31)
+
+### Features
+
+* GROK-13571: Chem | Ability to terminate substructure search if substructure has been changed
+
+### Bug Fixes
+
+* GROK-13327: Chem | Substructure Search: two identical panels open on the Filter Panel
+* GROK-13791: Chem | Chemical space (using t-SNE) fails on smiles dataset
+* [#2135](https://github.com/datagrok-ai/public/issues/2135):
+  * The structure rendering is too small.
+* [#2322](https://github.com/datagrok-ai/public/issues/2322): Properties panel is unexpectedly reset on changing viewer properties if there is a scaffold tree filter in filters panel 
+* GROK-13848: Chem: Substructure search results flickering
+
+## 1.7.0 (2023-08-09)
+
+### Features
+
+* GROK-13172: Chem | implement substructure search using JSSubstructLibrary
+
+## 1.6.22 (2023-08-07)
+
+### Bug Fixes
+
+* GROK-13713: Chem | Incorrect molecule rendering
+
+## 1.6.21 (2023-08-02)
+
+*Dependency: datagarok-api >= 1.16.0*
+
+### Features
+
+* Calculate drug likeness, toxicity and alerts for whole table from widgets
+* Color Coding for toxicity
+* Scaffold Tree improvements:
+  * [#2154](https://github.com/datagrok-ai/public/issues/2154): Scaffold Tree: harmonization.
+
+### Bug Fixes
+
+* GROK-13586: _chemFindSimilar fails with 'Cannot read properties of null (reading 'rows')'
+* [#2135](https://github.com/datagrok-ai/public/issues/2135):
+  * The counts and controls are partially hidden
+  * When change the drawing of a scaffold, then selection (checkbox) of all other scaffolds gets reset (to unchecked)
+* [#2139](https://github.com/datagrok-ai/public/issues/2139): Scaffold tree stops working after adding an invalid structure
+
 ## 1.6.20 (2023-07-21)
 
 This release focuses on improvements and bug fixes.
@@ -25,7 +71,7 @@ This release focuses on improvements and bug fixes.
   * [#1730](https://github.com/datagrok-ai/public/issues/1730): Implemented Scaffold Tree integration to the **Filters Panel**.
   * [#1998](https://github.com/datagrok-ai/public/issues/1998): Now a scaffold tree shows a confirmation dialog before dropping all trees on the **Clear** icon click.
   * Added the **Allow Generate** property for the viewer in order to control autogeneration.
-         
+
 ### Bug Fixes
 
 * GROK-13105: Substructure search doesn't work after similarity search.

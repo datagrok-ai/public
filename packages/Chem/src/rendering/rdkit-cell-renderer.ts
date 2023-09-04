@@ -5,7 +5,7 @@
 import * as DG from 'datagrok-api/dg';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
-import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 interface IMolInfo {
   //mol: RDMol | null; // null when molString is invalid?
@@ -76,7 +76,7 @@ M  END
   get defaultWidth() {return 200;}
   get defaultHeight() {return 100;}
 
-  getDefaultSize(gridColumn: DG.GridColumn): {width: number, height: number} {
+  getDefaultSize(): {width: number, height: number} {
     return {width: this.defaultWidth, height: this.defaultHeight};
   }
 

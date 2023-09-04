@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findRGroups} from '../scripts-api';
-import {convertMolNotation, getRdKitModule} from '../package';
+import {getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 
 export function convertToRDKit(smiles: string): string {
@@ -87,12 +88,14 @@ export function rGroupAnalysis(col: DG.Column): void {
             const molsArray = new Array<string>(resCol.length);
             for (let i = 0; i < resCol.length; i++) {
               const molStr = resCol.get(i);
+              let mol: RDMol | null = null;
               try {
-                const mol = module.get_mol(molStr);
+                mol = module.get_mol(molStr);
                 molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-                mol.delete();
               } catch (e) {
-                console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+                //do nothing here, molsArray[i] is empty for invalid molecules
+              } finally {
+                mol?.delete();
               }
             }
             const rCol = DG.Column.fromStrings(resCol.name, molsArray);

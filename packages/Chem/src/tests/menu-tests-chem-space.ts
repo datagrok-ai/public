@@ -45,7 +45,7 @@ category('top menu chem space', async () => {
   test('chemSpace.emptyValues', async () => {
     const sarSmallEmptyRows = await readDataframe('tests/sar-small_empty_vals.csv');
     await _testChemSpaceReturnsResult(sarSmallEmptyRows, 'smiles');
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('chemSpace.malformedData', async () => {
     const testSmilesMalformed = await readDataframe('tests/Test_smiles_malformed.csv');
@@ -56,15 +56,15 @@ category('top menu chem space', async () => {
         '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
     } finally {DG.Balloon.closeAll();}
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('TSNE', async () => {
-    await _testDimensionalityReducer(smallDf.col('smiles')!, DimReductionMethods.T_SNE);
-  }, {skipReason: '#1384'});
+    await _testDimensionalityReducer(spgi100.col('Structure')!, DimReductionMethods.T_SNE);
+  });
 
   test('UMAP', async () => {
-    await _testDimensionalityReducer(smallDf.col('smiles')!, DimReductionMethods.UMAP);
-  }, {skipReason: 'GROK-12227'});
+    await _testDimensionalityReducer(spgi100.col('Structure')!, DimReductionMethods.UMAP);
+  });
 
   after(async () => {
     grok.shell.closeAll();

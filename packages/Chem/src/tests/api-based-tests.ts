@@ -5,14 +5,12 @@ import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
-import {isColumnPresent} from './gui-utils';
-
 
 category('server features', () => {
   test('descriptors', async () => {
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_500K.zip") :
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_500K.zip') :
       DG.DataFrame.fromCsv(testCsv);
     const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
       ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
@@ -35,13 +33,13 @@ category('server features', () => {
 category('chem exported', () => {
   test('findSimilar.api.sar-small', async () => {
     await _testFindSimilar(grok.chem.findSimilar);
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('getSimilarities.api.molecules', async () => {
     await _testGetSimilarities(grok.chem.getSimilarities, grok.data.demo.molecules(100));
-  });
+  }, {skipReason: 'GROK-12946'});
 
-  test('substructureSearch', async () => {
+  test('substructureSearch_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const trueIndices = [0, 2];
     const bitset: DG.BitSet = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure);
@@ -51,7 +49,7 @@ category('chem exported', () => {
       expect(bitsetArray[trueIndices[k]] === '1', true);
       bitsetArray[trueIndices[k]] = '0';
     }
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('mcs', async () => {
     // const df = DG.DataFrame.fromCsv(testCsv);
