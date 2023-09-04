@@ -47,6 +47,11 @@ export function createDefaultChartData(): IFitChartData {
   };
 }
 
+/** Returns existing, or creates new dataframe default chart options. */
+export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
+  return JSON.parse(df.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
+}
+
 /** Returns existing, or creates new column default chart options. */
 export function getColumnChartOptions(column: DG.Column): IFitChartData {
   return JSON.parse(column.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
