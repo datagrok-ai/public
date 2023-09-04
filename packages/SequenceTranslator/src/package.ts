@@ -13,7 +13,8 @@ import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transfor
 import {MonomerLibWrapper} from './model/monomer-lib/lib-wrapper';
 import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
-// import {demoDesignPatternUI, demoVisualizeDuplexUI, demoTranslateSequenceUI} from './demo/demo-st-ui';
+// import {demoDesignPatternUI, demoVisualizeDuplexUI, demoOligoTranslatorUI} from './demo/demo-st-ui';
+import {demoOligoTranslatorUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
 import {COMBINED_APP_NAME, PATTERN_APP_NAME, STRUCTRE_APP_NAME, TRANSLATOR_APP_NAME} from './view/const/view';
 
@@ -31,7 +32,7 @@ class StPackage extends DG.Package {
       return;
 
     const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
-      'Initializing Oligo Toolkit monomer library ...');
+      `Initializing ${COMBINED_APP_NAME} monomer library ...`);
     await tryCatch(async () => {
       const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
       this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
@@ -65,21 +66,23 @@ async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
 //name: Oligo Translator
 //tags: app
 export async function oligoTranslatorApp(): Promise<void> {
+  await initSequenceTranslatorLibData();
   const appUI = new OligoTranslatorUI(DG.View.create());
-  createAppLayout(appUI, TRANSLATOR_APP_NAME);
+  await createAppLayout(appUI, TRANSLATOR_APP_NAME);
 }
 
 //name: Oligo Pattern
 //tags: app
 export async function oligoPatternApp(): Promise<void> {
+  await initSequenceTranslatorLibData();
   const appUI = new OligoPatternUI(DG.View.create());
   createAppLayout(appUI, PATTERN_APP_NAME);
-
 }
 
 //name: Oligo Structure
 //tags: app
 export async function oligoStructureApp(): Promise<void> {
+  await initSequenceTranslatorLibData();
   const appUI = new OligoStructureUI(DG.View.create());
   createAppLayout(appUI, STRUCTRE_APP_NAME);
 }
@@ -122,11 +125,11 @@ export function linkStrands(strands: { senseStrands: string[], antiStrands: stri
 }
 
 //name: demoTranslateSequence
-//meta.demoPath: Bioinformatics | Oligonucleotide Sequence: Translate
+//meta.demoPath: Bioinformatics | Oligo Toolkit: Translator
 //description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
 export async function demoTranslateSequence(): Promise<void> {
-  // await demoTranslateSequenceUI();
+  await demoOligoTranslatorUI();
 }
 
 //name: demoDesignPattern

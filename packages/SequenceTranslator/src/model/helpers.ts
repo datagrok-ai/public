@@ -14,12 +14,12 @@ export function download(name: string, href: string): void {
   element.click();
 }
 
-export async function tryCatch<T>(func: () => Promise<T>, finallyFunc?: () => any): Promise<T> {
+export async function tryCatch<T>(func: () => Promise<T>, finallyFunc?: () => any, callbackName: string = 'Oligo app'): Promise<T> {
   try {
     return await func();
   } catch (err: any) {
     const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-    grok.shell.error(`Sequence Translator application error: ` + errMsg);
+    grok.shell.error(`${callbackName} error: ` + errMsg);
     throw err;
   } finally {
     if (finallyFunc)

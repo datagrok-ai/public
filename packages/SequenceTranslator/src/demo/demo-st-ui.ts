@@ -2,20 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {handleError} from './handle-error';
-
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
-// import {UnifiedUI} from '../view/view';
-import {_package} from '../package';
+import {_package, oligoTranslatorApp} from '../package';
+import {tryCatch} from '../model/helpers';
 
-// export async function demoTranslateSequenceUI() {
-//   try {
-//     openSequenceTranslatorOnPane(0);
-//   } catch (err: any) {
-//     handleError(err);
-//   }
-// }
+export async function demoOligoTranslatorUI() {
+  await tryCatch(async () => oligoTranslatorApp());
+}
 
 // export async function demoDesignPatternUI() {
 //   try {
