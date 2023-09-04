@@ -1,6 +1,6 @@
 # utils changelog
 
-## 4.2.0 (WIP)
+## 4.2.0 (2023-09-04)
 
 This release focuses on improving performance.
 

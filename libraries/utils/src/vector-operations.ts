@@ -23,7 +23,7 @@ export function assert(condition: boolean = false, message: string = 'Assertion 
  * @return {Coordinates} A two-dimensional filled with the value given.
  * @todo Might be slow since used Array.map. Probably needs performance revision.
  */
-function initCoordinates(dimension1: number, dimension2: number, fill: number = 0): Coordinates {
+export function initCoordinates(dimension1: number, dimension2: number, fill: number = 0): Coordinates {
   return new Array(dimension1).fill(fill).map(() => (new Vector(dimension2).fill(fill)));
 }
 
@@ -271,31 +271,26 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
 }
 
 /**
- * Returns normalized vector
+ * Returns normalized vector.
+ * 
+ * @export
  * @param {Vector} data numerical array
  */
 export function normalize(data: Vector): Vector {
   const len = data.length;
+  let sum = 0;
+  let sumOfSquares = 0;
 
-  let mean = 0;   
+  for (let i = 0; i < len; ++i) {
+    sum += data[i];
+    sumOfSquares += data[i] ** 2;
+  }
 
-  for (let i = 0; i < len; ++i)
-    mean += data[i];
-
-  mean /= len;
-  
-  let std = 0;
-
-  for (let i = 0; i < len; ++i)
-    std += (data[i] - mean) ** 2;
-
-  if (std === 0)
-    throw new Error('Normalization cannot be performed, since variance is zero');
-
-  const stdInverse = Math.sqrt(len / std);
+  const mean = sum / len;
+  const stdDevInverse = 1.0 / Math.sqrt(sumOfSquares / len - mean ** 2);
 
   for (let i = 0; i < len; ++i)
-    data[i] = (data[i] - mean) * stdInverse;
+    data[i] = (data[i] - mean) * stdDevInverse;
 
   return data;
 }
