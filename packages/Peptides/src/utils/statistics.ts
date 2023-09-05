@@ -8,6 +8,7 @@ export type Stats = {
   pValue: number | null,
   meanDifference: number,
   ratio: number,
+  mask: BitArray,
 };
 
 export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
@@ -36,6 +37,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
       pValue: null,
       meanDifference: selectedMean - restMean,
       ratio: selected.length / (bitArray.length),
+      mask: bitArray,
     };
   }
 
@@ -46,6 +48,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
     meanDifference: currentMeanDiff,
     ratio: selected.length / (bitArray.length),
+    mask: bitArray,
   };
 }
 

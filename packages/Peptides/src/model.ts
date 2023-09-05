@@ -41,8 +41,8 @@ export type SummaryStats = {
   minPValue: number, maxPValue: number,
   minRatio: number, maxRatio: number,
 };
-export type PositionStats = {[monomer: string]: Stats} & {general: SummaryStats};
-export type MonomerPositionStats = {[position: string]: PositionStats} & {general: SummaryStats};
+export type PositionStats = {[monomer: string]: Stats | undefined} & {general: SummaryStats};
+export type MonomerPositionStats = {[position: string]: PositionStats | undefined} & {general: SummaryStats};
 export type ClusterStats = {[cluster: string]: Stats};
 export enum CLUSTER_TYPE {
   ORIGINAL = 'original',
@@ -569,7 +569,7 @@ export class PeptidesModel {
     for (const posCol of positionColumns) {
       const posColData = posCol.getRawData();
       const posColCateogries = posCol.categories;
-      const currentPositionObject = {general: {}} as PositionStats & { general: SummaryStats };
+      const currentPositionObject = {general: {}} as PositionStats & {general: SummaryStats};
 
       for (let categoryIndex = 0; categoryIndex < posColCateogries.length; ++categoryIndex) {
         const monomer = posColCateogries[categoryIndex];
@@ -583,7 +583,8 @@ export class PeptidesModel {
         }
         const bitArray = BitArray.fromValues(boolArray);
         const stats = bitArray.allFalse || bitArray.allTrue ?
-          {count: sourceDfLen, meanDifference: 0, ratio: 1.0, pValue: null} : getStats(activityColData, bitArray);
+          {count: sourceDfLen, meanDifference: 0, ratio: 1.0, pValue: null, mask: bitArray} :
+          getStats(activityColData, bitArray);
         currentPositionObject[monomer] = stats;
         this.getSummaryStats(currentPositionObject.general, stats);
       }
@@ -667,7 +668,7 @@ export class PeptidesModel {
       const resultStats = clustType === 0 ? origClustStats : customClustStats;
       for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
         const mask = masks[maskIdx];
-        const stats = mask.allTrue || mask.allFalse ? {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null} :
+        const stats = mask.allTrue || mask.allFalse ? {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask} :
           getStats(activityColData, mask);
         resultStats[clustNames[maskIdx]] = stats;
       }
@@ -829,6 +830,8 @@ export class PeptidesModel {
         //TODO: optimize
         if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
           const stats = this.monomerPositionStats[col.name];
+          if (!stats)
+            return;
           //TODO: precalc on stats creation
           const sortedStatsOrder = Object.keys(stats).sort((a, b) => {
             if (a === '' || a === '-')
@@ -899,7 +902,7 @@ export class PeptidesModel {
 
   //TODO: move out to viewer code
   showTooltipAt(aar: string, position: string, x: number, y: number): HTMLDivElement | null {
-    const stats = this.monomerPositionStats[position][aar];
+    const stats = this.monomerPositionStats[position]![aar];
     if (!stats?.count)
       return null;
 

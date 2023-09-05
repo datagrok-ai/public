@@ -63,7 +63,8 @@ category('Viewers: Monomer-Position', () => {
   test('Tooltip', async () => {
     const cellCoordinates = {col: '9', row: 6};
     const gc = mpViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
-    expect(showTooltip(gc, 0, 0, model), true,
+    const mp = mpViewer.getMonomerPosition(gc);
+    expect(showTooltip(mp, 0, 0, model), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 
@@ -123,7 +124,8 @@ category('Viewers: Most Potent Residues', () => {
   test('Tooltip', async () => {
     const cellCoordinates = {col: 'Diff', row: 6};
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
-    expect(showTooltip(gc, 0, 0, model), true,
+    const mp = mprViewer.getMonomerPosition(gc);
+    expect(showTooltip(mp, 0, 0, model), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 });

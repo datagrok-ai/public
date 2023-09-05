@@ -10,6 +10,7 @@ export type MutationCliffs = Map<string, Map<string, Map<number, number[] | UTyp
 export type PositionToAARList = {[postiton: string]: string[]};
 
 export type MonomerSelectionStats = {[position: string]: {[monomer: string]: number}};
+export type MonomerPositionPair = {monomer: string, position: string};
 
 export type PeptidesSettings = {
   sequenceColumnName?: string,

@@ -6,6 +6,7 @@
 
 * Monomer-Position and Most Potent Residues: Circle size is now based on absolute value of mean difference.
 * Scaling default colors (blue for low values and red for high) in Monomer-Position viewer.
+* Highlight rows on mouse over Monomer-Position and Most Potent Residues viewers.
 
 ### Bug Fixes
 

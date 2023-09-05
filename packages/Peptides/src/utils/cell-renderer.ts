@@ -24,12 +24,12 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs | null = null,
   twoColorMode: boolean = false, renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
-  const pVal = positionStats[currentAAR].pValue;
-  const currentMeanDifference = positionStats[currentAAR].meanDifference;
+  const pVal = positionStats![currentAAR]!.pValue;
+  const currentMeanDifference = positionStats![currentAAR]!.meanDifference;
 
   // Transform p-value to increase intensity for smaller values and decrease for larger values
-  const maxPValComplement = 1 - positionStats.general.maxPValue;
-  const minPValComplement = 1 - positionStats.general.minPValue;
+  const maxPValComplement = 1 - positionStats!.general.maxPValue;
+  const minPValComplement = 1 - positionStats!.general.minPValue;
   const pValCentering = Math.min(maxPValComplement, minPValComplement);
   const centeredMaxPValComplement = maxPValComplement - pValCentering;
   const centeredMinPValComplement = minPValComplement - pValCentering;
@@ -130,7 +130,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
 
   const monomerBounds: { [monomer: string]: DG.Rect } = {};
   for (const monomer of sortedOrder) {
-    const monomerHeight = barHeight * (stats[monomer].count / rowCount);
+    const monomerHeight = barHeight * (stats[monomer]!.count / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
     const currentBound = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
     monomerBounds[monomer] = currentBound;
