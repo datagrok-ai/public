@@ -112,7 +112,7 @@ export function loadingScatterPlot(features: DG.ColumnList, xLoadings: Array<DG.
 // Add PLS visualization
 export function addPLSvisualization(table: DG.DataFrame, samplesNames: DG.Column, features: DG.ColumnList, predict: DG.Column, plsOutput: any): void {
 
-  let view = grok.shell.getTableView(table.name);
+  const view = grok.shell.getTableView(table.name);
  
   // 1. Predicted vs Reference scatter plot
   view.addViewer(predictedVersusReferenceScatterPlot(samplesNames, predict, plsOutput[0]));
@@ -125,4 +125,11 @@ export function addPLSvisualization(table: DG.DataFrame, samplesNames: DG.Column
 
   // 4. Scores Scatter Plot
   view.addViewer(scoresScatterPlot(samplesNames, plsOutput[2], plsOutput[3]));
+}
+
+// Add one-way ANOVA results
+export function addOneWayAnovaVizualization(table: DG.DataFrame, factors: DG.Column, values: DG.Column, anova: DG.DataFrame) {
+  const view = grok.shell.getTableView(table.name);
+  view.addViewer(DG.Viewer.boxPlot(table, {'category': factors.name, 'values': values.name}));
+  view.addViewer(DG.Viewer.grid(anova));
 }

@@ -1,5 +1,13 @@
 # EDA changelog
 
+## 1.1.4 (WIP)
+
+This release concentrates on new statistical features.
+
+### Features
+
+* Analysis of variance is added (see Top Menu > ML > Analysis of Variances (ANOVA)...)
+
 ## 1.1.3 (2023-08-24)
 
 This release is centered around enhancing user-friendliness and addressing concerns.

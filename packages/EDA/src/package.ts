@@ -8,10 +8,12 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS, computeUMAP, computeTSNE, computeSPE} from './eda-tools';
 import {addPrefixToEachColumnName, addPLSvisualization, regressionCoefficientsBarChart, 
-  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './eda-ui';
+  scoresScatterPlot, predictedVersusReferenceScatterPlot, addOneWayAnovaVizualization} from './eda-ui';
 import {carsDataframe, testDataForBinaryClassification} from './data-generators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
+
+import {getFactorizedData, getLevelsStat, computeOneWayAnovaTable, oneWayAnova} from './stat-tools';
 
 export const _package = new DG.Package();
 
@@ -317,4 +319,20 @@ export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: st
 //output: dataframe table
 export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
   return await getPrediction(df, model); 
+}
+
+//top-menu: ML | Analysis of variances (ANOVA)...
+//name: One-way ANOVA
+//description: One-way analysis of variances (ANOVA) is the parametric procedure for determining whether significant differences occur in an experiment containing two or more conditions.
+//input: dataframe table {category: Data}
+//input: column factors {category: Data}
+//input: column values {type: numerical; category: Data}
+//input: bool toCheckNormality = false {caption: Normality; category: Checks} [Indicating whether the normality of distribution should be checked.]
+//input: bool toCheckVariances = false {caption: Variances; category: Checks} [Indicating whether an eqaulity of varainces should be checked.]
+export function anova(table: DG.DataFrame, factors: DG.Column, values: DG.Column, toCheckNormality: boolean, toCheckVariances: boolean) {
+  const start = new Date().getTime();
+  const anova = oneWayAnova(factors, values, toCheckNormality, toCheckVariances);
+  const finish = new Date().getTime();
+  console.log(`Time is ${finish - start} ms.`);
+  addOneWayAnovaVizualization(table, factors, values, anova);
 }
