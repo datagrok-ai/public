@@ -12,6 +12,8 @@ export {
   NOTATION,
   ALPHABET,
   ALIGNMENT,
+  candidateAlphabets,
+  positionSeparator
 } from './consts';
 
 export {

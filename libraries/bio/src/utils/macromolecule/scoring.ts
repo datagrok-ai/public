@@ -1,9 +1,9 @@
+import * as DG from 'datagrok-api/dg';
 
 import {sequenceChemSimilarity} from '../../monomer-works/monomer-utils';
 import {ISeqSplitted} from '../../utils/macromolecule/types';
-import * as DG from 'datagrok-api/dg';
-import { splitAlignedSequences } from '../splitter';
-import { getSplitter } from './utils';
+import {splitAlignedSequences} from '../splitter';
+import {getSplitter} from './utils';
 import {TAGS as bioTAGS} from '../../utils/macromolecule';
 
 export enum SCORE {
@@ -17,7 +17,9 @@ export enum SCORE {
  * @param {string} ref Reference sequence to score against.
  * @param {SCORE} scoring Scoring method.
  * @returns {DG.Column<number>} Scores column. */
-export async function calculateScores(table: DG.DataFrame, col: DG.Column<string>, ref: string, scoring: SCORE): Promise<DG.Column<number>> {
+export async function calculateScores(
+  table: DG.DataFrame, col: DG.Column<string>, ref: string, scoring: SCORE
+): Promise<DG.Column<number>> {
   const splitSeqDf = splitAlignedSequences(col);
   const splitter = getSplitter(col.getTag(DG.TAGS.UNITS), col.getTag(bioTAGS.separator));
   const refSplitted = splitter(ref);
@@ -67,7 +69,9 @@ export function calculateIdentity(reference: ISeqSplitted, positionsDf: DG.DataF
  * @param {ISeqSplitted} reference Splitted reference sequence.
  * @param {DG.DataFrame} positionsDf Table which only contains position columns with semantic type Monomer.
  * @returns {DG.Column<number>} Scores column. */
-export async function calculateSimilarity(reference: ISeqSplitted, positionsDf: DG.DataFrame): Promise<DG.Column<number>> {
+export async function calculateSimilarity(
+  reference: ISeqSplitted, positionsDf: DG.DataFrame
+): Promise<DG.Column<number>> {
   const monomerColumns = positionsDf.columns.toList() as DG.Column<string>[];
   const scoresCol = await sequenceChemSimilarity(monomerColumns, reference);
   return scoresCol;

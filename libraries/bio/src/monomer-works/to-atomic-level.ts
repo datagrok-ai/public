@@ -145,9 +145,10 @@ export async function getMonomersDictFromLib(
         addMonomerToDict(monomersDict, sym, formattedMonomerLib,
           moduleRdkit, polymerType, pointerToBranchAngle);
       } catch (err: any) {
-        const errTxt = errorToConsole(err);
-        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n` + errTxt);
-        const errMsg = `Сan't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
+        const errTxt = err instanceof Error ? err.message : err.toString();
+        const errStack = err instanceof Error ? err.stack : undefined;
+        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n${errTxt}\n${errStack}`);
+        const errMsg = `Can't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
         throw new Error(errMsg);
       }
     }
