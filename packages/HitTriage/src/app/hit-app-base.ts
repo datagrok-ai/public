@@ -6,8 +6,12 @@ import {_package} from '../package';
 export class HitAppBase<T> {
   public dataFrame?: DG.DataFrame;
   public template?: T;
-  public baseUrl: string;
+  public baseUrl!: string;
   constructor() {
+    this.resetBaseUrl();
+  }
+
+  public resetBaseUrl() {
     const href = window.location.href;
     const urlObj = new URL(href);
     this.baseUrl = urlObj.origin + urlObj.pathname;
