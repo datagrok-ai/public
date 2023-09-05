@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, AppUI, AppMultiView} from './view/view';
+import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, AppUI, AppMultiView, ExternalPluginUI} from './view/view';
 import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
@@ -46,9 +46,32 @@ export const _package: StPackage = new StPackage();
 export async function oligoToolkitApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${COMBINED_APP_NAME}...`);
 
+  async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View}>  {
+
+    /** key: plugin name, value: tab name  */
+    const externalPlugins = {
+      'Mermadesynthesis:merMadeSynthesis': 'SYNTHESIS'
+    }
+
+    const result: {[tabName: string]: () => DG.View} = {};
+
+    for (const [pluginName, tabName] of Object.entries(externalPlugins)) {
+      const layout: HTMLDivElement = await grok.functions.call(pluginName);
+      const view = DG.View.create();
+      const appUI = new ExternalPluginUI(view, tabName, layout);
+
+      // intentonally don't await for the promise
+      appUI.initView();
+
+      result[tabName] = () => view;
+    }
+    return result;
+  }
+
   await tryCatch(async () => {
     await initSequenceTranslatorLibData();
-    const multiView = new AppMultiView();
+    const externalViewFactories = await getMerMadeViewFactories();
+    const multiView = new AppMultiView(externalViewFactories);
     multiView.createLayout();
   }, () => pi.close());
 }

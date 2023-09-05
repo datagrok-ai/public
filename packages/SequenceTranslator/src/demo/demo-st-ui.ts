@@ -46,7 +46,6 @@ export async function demoOligoStructureUI() {
   await tryCatch(async () => {
     async function setInputValue(idx: number, sequence: string): Promise<void> {
       await delay(500);
-      console.log('before quiering inputs')
       const textInputs: NodeListOf<HTMLTextAreaElement> = document.querySelectorAll('.colored-text-input > textarea');
       const textarea = textInputs[idx];
       textarea.value = sequence;
@@ -54,7 +53,6 @@ export async function demoOligoStructureUI() {
       textarea.dispatchEvent(event);
     }
     await oligoStructureApp();
-    console.log('after oligostructure')
     const inputSequences = ['Afcgacsu', 'Afcgacsu', 'Afcgacsu'];
     inputSequences.forEach(async (sequence, idx) => {
       await setInputValue(idx, sequence);
