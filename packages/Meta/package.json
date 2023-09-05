@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.42",
+  "version": "3.5.43",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -3060,6 +3060,9 @@
         },
         "1.0.5": {
           "datagrok-api": "latest"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.16.3"
         }
       },
       "description": "Automated UI tests",
