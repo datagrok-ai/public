@@ -11,9 +11,9 @@ Mappings:
     GrokSpawner:
       domain: "docker.io"
       repo: "datagrok/grok_spawner"
-    JKG:
+    Jupyter:
       domain: "docker.io"
-      repo: "datagrok/jupyter_kernel_gateway"
+      repo: "datagrok/jupyter"
     GrokCompute:
       domain: "docker.io"
       repo: "datagrok/grok_compute"

@@ -41,9 +41,9 @@ Parameters:
     Default: 1.4.4
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Grok Spawner docker image version.
-  JKGVersion:
+  JupyterVersion:
     Type: String
-    Default: 1.6.1
+    Default: "bleeding-edge"
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
   GrokComputeVersion:

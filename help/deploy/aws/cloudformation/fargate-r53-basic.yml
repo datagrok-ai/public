@@ -32,9 +32,9 @@ Mappings:
     H2o:
       domain: docker.io
       repo: datagrok/h2o
-    JKG:
+    Jupyter:
       domain: docker.io
-      repo: datagrok/jupyter_kernel_gateway
+      repo: datagrok/jupyter
     Kaniko:
       domain: gcr.io
       repo: kaniko-project/executor
@@ -174,9 +174,9 @@ Parameters:
     Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0
       to allow all IP addresses access, or another CIDR range.
     Type: String
-  JKGVersion:
+  JupyterVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.6.1
+    Default: bleeding-edge
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
 Resources:
@@ -185,7 +185,7 @@ Resources:
       CidrIp:
         Ref: InternetSubnetAllow
       Description:
-        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for Jupyter, GC
       FromPort: 443
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -201,7 +201,7 @@ Resources:
         - ip:
             Ref: DatagrokNatGatewayEIP
       Description:
-        Fn::Sub: ${AWS::StackName} NatGW 443/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} NatGW 443/tcp on CVM ALB for Jupyter, GC
       FromPort: 443
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -213,7 +213,7 @@ Resources:
       CidrIp:
         Ref: CIDR
       Description:
-        Fn::Sub: ${AWS::StackName} VPC 443/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} VPC 443/tcp on CVM ALB for Jupyter, GC
       FromPort: 443
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -305,7 +305,7 @@ Resources:
       CidrIp:
         Ref: InternetSubnetAllow
       Description:
-        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for Jupyter, GC
       FromPort: 80
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -321,7 +321,7 @@ Resources:
         - ip:
             Ref: DatagrokNatGatewayEIP
       Description:
-        Fn::Sub: ${AWS::StackName} NatGW 80/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} NatGW 80/tcp on CVM ALB for Jupyter, GC
       FromPort: 80
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -333,7 +333,7 @@ Resources:
       CidrIp:
         Ref: CIDR
       Description:
-        Fn::Sub: ${AWS::StackName} VPC 80/tcp on CVM ALB for JKG, JN, GC
+        Fn::Sub: ${AWS::StackName} VPC 80/tcp on CVM ALB for Jupyter, GC
       FromPort: 80
       GroupId:
         Ref: CvmALBSecurityGroup
@@ -1441,17 +1441,17 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::EC2::VPCGatewayAttachment
-  DatagrokJupyterKernelGatewayService:
+  DatagrokJupyterService:
     DependsOn:
     - CvmTCP80Listener
     - CvmTCP443Listener
     - CvmTCP8090IntListener
-    - DatagrokJupyterKernelGatewayTCP5005ListenerRule
-    - DatagrokJupyterKernelGatewayTCP5005IntListenerRule
-    - DatagrokJupyterKernelGatewayTCP8888ListenerRule
-    - DatagrokJupyterKernelGatewayTCP8888IntListenerRule
-    - DatagrokJupyterKernelGatewayTCP8889ListenerRule
-    - DatagrokJupyterKernelGatewayTCP8889IntListenerRule
+    - DatagrokJupyterTCP5005ListenerRule
+    - DatagrokJupyterTCP5005IntListenerRule
+    - DatagrokJupyterTCP8888ListenerRule
+    - DatagrokJupyterTCP8888IntListenerRule
+    - DatagrokJupyterTCP8889ListenerRule
+    - DatagrokJupyterTCP8889IntListenerRule
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -1465,30 +1465,30 @@ Resources:
       DesiredCount: 1
       LaunchType: FARGATE
       LoadBalancers:
-      - ContainerName: jupyter_kernel_gateway
+      - ContainerName: jupyter
         ContainerPort: 5005
         TargetGroupArn:
-          Ref: DatagrokJupyterKernelGatewayTCP5005TargetGroup
-      - ContainerName: jupyter_kernel_gateway
+          Ref: DatagrokJupyterTCP5005TargetGroup
+      - ContainerName: jupyter
         ContainerPort: 8888
         TargetGroupArn:
-          Ref: DatagrokJupyterKernelGatewayTCP8888TargetGroup
-      - ContainerName: jupyter_kernel_gateway
+          Ref: DatagrokJupyterTCP8888TargetGroup
+      - ContainerName: jupyter
         ContainerPort: 8889
         TargetGroupArn:
-          Ref: DatagrokJupyterKernelGatewayTCP8889TargetGroup
-      - ContainerName: jupyter_kernel_gateway
+          Ref: DatagrokJupyterTCP8889TargetGroup
+      - ContainerName: jupyter
         ContainerPort: 5005
         TargetGroupArn:
-          Ref: DatagrokJupyterKernelGatewayTCP5005IntTargetGroup
-      - ContainerName: jupyter_kernel_gateway
+          Ref: DatagrokJupyterTCP5005IntTargetGroup
+      - ContainerName: jupyter
         ContainerPort: 8888
         TargetGroupArn:
-          Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
-      - ContainerName: jupyter_kernel_gateway
+          Ref: DatagrokJupyterTCP8888IntTargetGroup
+      - ContainerName: jupyter
         ContainerPort: 8889
         TargetGroupArn:
-          Ref: DatagrokJupyterKernelGatewayTCP8889IntTargetGroup
+          Ref: DatagrokJupyterTCP8889IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -1503,21 +1503,21 @@ Resources:
       ServiceRegistries:
       - RegistryArn:
           Fn::GetAtt:
-          - DatagrokJupyterKernelGatewayServiceDiscoveryEntry
+          - DatagrokJupyterServiceDiscoveryEntry
           - Arn
       Tags:
       - Key: datagrok.component
         Value: cvm
       - Key: datagrok.service
-        Value: jupyter_kernel_gateway
+        Value: jupyter
       TaskDefinition:
-        Ref: DatagrokJupyterKernelGatewayTaskDefinition
+        Ref: DatagrokJupyterTaskDefinition
     Type: AWS::ECS::Service
-  DatagrokJupyterKernelGatewayServiceDiscoveryEntry:
+  DatagrokJupyterServiceDiscoveryEntry:
     Properties:
       Description:
-        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter_kernel_gateway' service discovery
-          entry in Cloud Map
+        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter' service discovery entry
+          in Cloud Map
       DnsConfig:
         DnsRecords:
         - TTL: 60
@@ -1525,17 +1525,17 @@ Resources:
         RoutingPolicy: MULTIVALUE
       HealthCheckCustomConfig:
         FailureThreshold: 1
-      Name: jupyter_kernel_gateway
+      Name: jupyter
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
-  DatagrokJupyterKernelGatewayTCP5005IntListenerRule:
+  DatagrokJupyterTCP5005IntListenerRule:
     Properties:
       Actions:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: DatagrokJupyterKernelGatewayTCP5005IntTargetGroup
+              Ref: DatagrokJupyterTCP5005IntTargetGroup
         Type: forward
       Conditions:
       - Field: path-pattern
@@ -1546,13 +1546,13 @@ Resources:
         Ref: CvmTCP8090IntListener
       Priority: 3
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP5005IntTargetGroup:
+  DatagrokJupyterTCP5005IntTargetGroup:
     Properties:
       HealthCheckPath: /jupyter/helper/info
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg-gh-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh-i
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1569,13 +1569,13 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterKernelGatewayTCP5005ListenerRule:
+  DatagrokJupyterTCP5005ListenerRule:
     Properties:
       Actions:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: DatagrokJupyterKernelGatewayTCP5005TargetGroup
+              Ref: DatagrokJupyterTCP5005TargetGroup
         Type: forward
       Conditions:
       - Field: path-pattern
@@ -1586,13 +1586,13 @@ Resources:
         Ref: CvmTCP443Listener
       Priority: 3
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP5005TargetGroup:
+  DatagrokJupyterTCP5005TargetGroup:
     Properties:
       HealthCheckPath: /jupyter/helper/info
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg-gh
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1609,13 +1609,13 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterKernelGatewayTCP8888IntListenerRule:
+  DatagrokJupyterTCP8888IntListenerRule:
     Properties:
       Actions:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
+              Ref: DatagrokJupyterTCP8888IntTargetGroup
         Type: forward
       Conditions:
       - Field: path-pattern
@@ -1626,13 +1626,13 @@ Resources:
         Ref: CvmTCP8090IntListener
       Priority: 4
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP8888IntTargetGroup:
+  DatagrokJupyterTCP8888IntTargetGroup:
     Properties:
       HealthCheckPath: /jupyter/api/swagger.yaml
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-i
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1649,13 +1649,13 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterKernelGatewayTCP8888ListenerRule:
+  DatagrokJupyterTCP8888ListenerRule:
     Properties:
       Actions:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: DatagrokJupyterKernelGatewayTCP8888TargetGroup
+              Ref: DatagrokJupyterTCP8888TargetGroup
         Type: forward
       Conditions:
       - Field: path-pattern
@@ -1666,13 +1666,13 @@ Resources:
         Ref: CvmTCP443Listener
       Priority: 4
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP8888TargetGroup:
+  DatagrokJupyterTCP8888TargetGroup:
     Properties:
       HealthCheckPath: /jupyter/api/swagger.yaml
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1689,13 +1689,13 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterKernelGatewayTCP8889IntListenerRule:
+  DatagrokJupyterTCP8889IntListenerRule:
     Properties:
       Actions:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: DatagrokJupyterKernelGatewayTCP8889IntTargetGroup
+              Ref: DatagrokJupyterTCP8889IntTargetGroup
         Type: forward
       Conditions:
       - Field: path-pattern
@@ -1706,13 +1706,13 @@ Resources:
         Ref: CvmTCP8090IntListener
       Priority: 6
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP8889IntTargetGroup:
+  DatagrokJupyterTCP8889IntTargetGroup:
     Properties:
       HealthCheckPath: /jupyter/api/swagger.yaml
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-i
       Port: 8889
       Protocol: HTTP
       Tags:
@@ -1729,13 +1729,13 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterKernelGatewayTCP8889ListenerRule:
+  DatagrokJupyterTCP8889ListenerRule:
     Properties:
       Actions:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: DatagrokJupyterKernelGatewayTCP8889TargetGroup
+              Ref: DatagrokJupyterTCP8889TargetGroup
         Type: forward
       Conditions:
       - Field: path-pattern
@@ -1746,13 +1746,13 @@ Resources:
         Ref: CvmTCP443Listener
       Priority: 6
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterKernelGatewayTCP8889TargetGroup:
+  DatagrokJupyterTCP8889TargetGroup:
     Properties:
       HealthCheckPath: /jupyter/api/swagger.yaml
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jkg
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter
       Port: 8889
       Protocol: HTTP
       Tags:
@@ -1769,7 +1769,7 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterKernelGatewayTaskDefinition:
+  DatagrokJupyterTaskDefinition:
     Properties:
       ContainerDefinitions:
       - Command:
@@ -1802,7 +1802,7 @@ Resources:
               Ref: DatagrokLogGroup
             awslogs-region:
               Ref: AWS::Region
-            awslogs-stream-prefix: jkg
+            awslogs-stream-prefix: jupyter
         MemoryReservation: 100
         Name: ResolvConf
       - DependsOn:
@@ -1815,15 +1815,15 @@ Resources:
           - domain:
               Fn::FindInMap:
               - Images
-              - JKG
+              - Jupyter
               - domain
             repo:
               Fn::FindInMap:
               - Images
-              - JKG
+              - Jupyter
               - repo
             tag:
-              Ref: JKGVersion
+              Ref: JupyterVersion
         LinuxParameters: {}
         LogConfiguration:
           LogDriver: awslogs
@@ -1832,9 +1832,9 @@ Resources:
               Ref: DatagrokLogGroup
             awslogs-region:
               Ref: AWS::Region
-            awslogs-stream-prefix: jkg
+            awslogs-stream-prefix: jupyter
         MemoryReservation: 2048
-        Name: jupyter_kernel_gateway
+        Name: jupyter
         PortMappings:
         - ContainerPort: 5005
           HostPort: 5005
@@ -1853,7 +1853,7 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter_kernel_gateway
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter
       Memory: '3072'
       NetworkMode: awsvpc
       RequiresCompatibilities:
