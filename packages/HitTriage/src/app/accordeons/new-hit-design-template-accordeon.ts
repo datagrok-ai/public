@@ -77,14 +77,14 @@ export async function newHitDesignTemplateAccordeon(): Promise<INewTemplateResul
   const detailsDiv = ui.divV(
     [ui.divV([templateNameInput, errorDiv]), ui.divV([templateKeyInput, keyErrorDiv]), fieldsEditor.fieldsDiv]);
 
-  const form = ui.divV(
-    [ui.h3('Details'),
+  const form = ui.div(
+    [ui.h2('Details'),
       detailsDiv,
-      ui.h3('Stages'),
+      ui.h2('Stages'),
       tileCategoriesEditor.fieldsDiv,
-      ui.h3('Compute'),
+      ui.h2('Compute'),
       funcInput.root,
-      ui.h3('Submit'),
+      ui.h2('Submit'),
       submitFunctionInput.root,
     ], 'ui-form');
   const buttonsDiv = ui.buttonsInput([]);

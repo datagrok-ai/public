@@ -37,8 +37,8 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
   const campaignPropsObject: {[key: string]: any} = {};
   const campaignPropsForm = ui.input.form(campaignPropsObject, campaignProps);
 
-  const form = ui.divV([
-    ...(template.campaignFields?.length > 0 ? [ui.h2('Campaign details')]: []),
+  const form = ui.div([
+    ...(template.campaignFields?.length > 0 ? []: []),
     campaignPropsForm,
   ], 'ui-form');
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons

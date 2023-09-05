@@ -28,34 +28,33 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   async init(presetTemplate?: HitTriageTemplate): Promise<void> {
-    this.root.style.flexDirection = 'column';
-    const wikiLink = ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage');
-    const textLink = ui.inlineText([wikiLink, '.']);
+
     const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-    const appDescription = ui.divV([
+    var description = '- Configure your own workflow using the template editor.\n'+
+    '- Calculate different molecular properties.\n'+
+    '- Filter molecules using different criteria.\n'+
+    '- Submit processed dataframe to the function of your choice.\n'+
+    '- Save campaigns and continue any time from where you left off.\n ';
+    const appDescription = ui.div([
       ui.h1('Process, analyse and filter molecules for your needs using Hit Triage:'),
-      ui.list([
-        '-  Configure your own workflow using the template editor.',
-        '-  Calculate different molecular properties.',
-        '-  Filter molecules using different criteria.',
-        '-  Submit processed dataframe to the function of your choice.',
-        '-  Save campaigns and continue any time from where you left off.',
-      ]), textLink, continueCampaignsHeader,
-    ], {style: {marginLeft: '10px'}});
+      ui.div(ui.markdown(description), {style:{color:'var(--grey-5)'},classes:'mb-small'}),
+      ui.link('Read more', 'https://github.com/datagrok-ai/public/tree/master/packages/HitTriage')
+    ]);
 
     const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([], {classes: 'ui-form'});
+    const templatesDiv = ui.div([], {classes: 'ui-form'});
 
     const campaignsTable = await this.getCampaignsTable();
     $(this.root).empty();
-    this.root.appendChild(ui.divV([
+    this.root.appendChild(ui.div([
       appDescription,
+      ui.h1('Continue campaign'),
       campaignsTable,
-      createNewCampaignHeader,
+      ui.h1('New campaign'),
       templatesDiv,
       campaignAccordionDiv,
-    ], {style: {maxWidth: '800px'}}));
+    ]));
     this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(this.app.resetBaseUrl);
   }
 
@@ -73,6 +72,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
         JSON.parse(await _package.files.readAsText('Hit Triage/templates/' + templateName + '.json'));
       const newCampaignAccordeon = await this.getNewCampaignAccordeon(template);
       $(containerDiv).empty();
+      containerDiv.className = 'ui-form';
       containerDiv.appendChild(newCampaignAccordeon);
     };
 
@@ -84,8 +84,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       this.createNewTemplate();
     }, i18n.createNewTemplate);
     templatesInput.addOptions(createNewtemplateButton);
-    createNewtemplateButton.style.color = '#2083d5';
-    templatesInput.root.style.width = '100%';
+    
     await onTemmplateChange();
     $(templateInputDiv).empty();
     templateInputDiv.appendChild(templatesInput.root);
@@ -128,11 +127,11 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
       ({name: campaign.name, createDate: campaign.createDate,
         rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
     const table = ui.table(campaignsInfo, (info) =>
-      ([ui.link(info.name, () => this.setCampaign(info.name)),
+      ([ui.link(info.name, () => this.setCampaign(info.name),'',''),
         info.createDate, info.rowCount, info.filtered, info.status]),
-    ['Campaign', 'Created', 'Total', 'Selected', 'Status']);
-    table.classList.add('hit-triage-table');
-    return ui.div(table, {classes: 'hit-triage-table-container'});
+    ['Name', 'Created', 'Total', 'Selected', 'Status']);
+    table.style.color = 'var(--grey-5)';
+    return table;
   }
 
   private async setCampaign(campaignName: string) {
@@ -167,7 +166,8 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     newView.name = 'New Template';
     newView.root.appendChild(newTemplateAccordeon.root);
     grok.shell.addView(newView);
-    newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
+    newView.path = '/hit-triage/new-template';
+    newView.parentView = curView;
     const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Triage', i18n.createNewTemplate, () => {
       grok.shell.v = curView;
       newView.close();

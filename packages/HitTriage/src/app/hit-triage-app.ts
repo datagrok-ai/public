@@ -6,7 +6,7 @@ import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
 import {InfoView} from './hit-triage-views/info-view';
 import {SubmitView} from './hit-triage-views/submit-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName, HitSelectionColName, i18n} from './consts';
-import {modifyUrl, toFormatedDateString} from './utils';
+import {addBreadCrumbsToRibbons, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
@@ -40,6 +40,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
     grok.shell.addView(this.multiView);
+
     grok.events.onCurrentViewChanged.subscribe(() => {
       try {
         if (grok.shell.v?.name === this.currentPickViewId) {
@@ -101,8 +102,16 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const pickV = grok.shell.addView(this.pickView);
     this.currentPickViewId = pickV.name;
     this._submitView ??= new SubmitView(this);
-    this.setBaseUrl();
+    //this.setBaseUrl();
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
+
+    const newView = this.pickView;
+    const curView = grok.shell.v;
+    const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Triage', "Pick", () => {
+      grok.shell.v = curView;
+      newView.close();
+    });
+    pickV.path = '/hit-triage/pick'
     // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
@@ -158,11 +167,16 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const view = DG.TableView.create(this.dataFrame!, false);
     const ribbons = view.getRibbonPanels();
     const calculateRibbon = ui.icons.add(getComputeDialog, 'Calculate additional properties');
-    const submitButton = ui.div(ui.bigButton('Submit', () => {
+    const submitButton = ui.bigButton('Submit', () => {
       const dialogContent = this._submitView?.render();
-      if (dialogContent)
-        ui.dialog('Submit').add(dialogContent).show();
-    }));
+      if (dialogContent) {
+        let dlg = ui.dialog('Submit');
+        dlg.add(dialogContent)
+        dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();})
+        dlg.addButton('Submit',()=>{SubmitView.submit; dlg.close();})
+        dlg.show();
+      }
+    });
 
     ribbons.push([calculateRibbon, submitButton]);
     view.setRibbonPanels(ribbons);

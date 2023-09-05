@@ -95,22 +95,27 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
 
   const fieldsEditor = getCampaignFieldEditors();
 
-  const form = ui.divV([
-    ui.h3('Details'),
-    ui.divV([templateNameInput, errorDiv]),
-    ui.divV([templateKeyInput, keyErrorDiv]),
+  const form = ui.div([
+    ui.h2('Details'),
+    ui.div([templateNameInput, errorDiv]),
+    ui.div([templateKeyInput, keyErrorDiv]),
     ingestTypeInput.root,
     dataSourceFunctionInput.root,
     fieldsEditor.fieldsDiv,
-    ui.h3('Compute'),
+    ui.h2('Compute'),
     funcInput.root,
-    ui.h3('Submit'),
+    ui.h2('Submit'),
     submitFunctionInput.root,
   ], 'ui-form');
 
   const buttonsDiv = ui.buttonsInput([]);
   const buttonsContainerDiv = buttonsDiv.getElementsByClassName('ui-input-editor')?.[0] ?? buttonsDiv;
   form.appendChild(buttonsDiv);
+  const cancelPromise = new Promise<void>((resolve) => {
+    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
+    buttonsContainerDiv.appendChild(cancelButton);
+  });
+
   const promise = new Promise<HitTriageTemplate>((resolve) => {
     async function onOkProxy() {
       funcInput.okProxy();
@@ -149,10 +154,7 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
     buttonsContainerDiv.appendChild(createTemplateButton);
   });
 
-  const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
-    buttonsContainerDiv.appendChild(cancelButton);
-  });
+  
   return {root: form, template: promise, cancelPromise};
 }
 
@@ -169,11 +171,16 @@ export function getCampaignFieldEditors() {
       required: f.Required ?? false,
     }));
   }
-  const fieldsContainer = ui.divV([ui.h3('Additional fields'),
-    itemsGrid.root]);
+  //itemsGrid.root.style.cssText = '';
+  //itemsGrid.root.className = 'd4-flex-c';
+
+  const fieldsContainer = ui.div([
+    ui.h2('Additional fields'),
+    itemsGrid.root
+  ]);
   return {
     getFields: getFieldParams,
-    fieldsDiv: ui.divV([fieldsContainer]),
+    fieldsDiv: ui.div([fieldsContainer]),
   };
 }
 
