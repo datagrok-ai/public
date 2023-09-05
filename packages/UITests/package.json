@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/ui-tests",
   "friendlyName": "UI Tests",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": {
     "name": "Anna Muzychyna",
     "email": "amuzychyna@datagrok.ai"

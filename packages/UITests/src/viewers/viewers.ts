@@ -12,7 +12,7 @@ category('Viewers: Core Viewers', () => {
     'Heat map': 'GROK-11705', 'Network diagram': 'GROK-11707'};
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
-    v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud');
+    v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' && v !== 'Scatter plot');
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
   coreViewers.push('distributionProfiler');
