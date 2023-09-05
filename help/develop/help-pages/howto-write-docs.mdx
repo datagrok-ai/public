@@ -1,0 +1,448 @@
+---
+title: "How to write docs"
+
+sidebar_position: 1
+keywords:
+ - docs
+ - wiki
+ - contribution
+ - guide
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
+This page describes how to write Datagrok documentation.
+
+## Before you start
+
+We write our technical documentation using
+[GitHub-flavored Markdown](https://github.github.com/gfm/) syntax.
+For our wiki, we use [Docusaurus](https://docusaurus.io/),
+which converts GitHub-flavored Markdown into HTML.
+For basic information about writing in Docusaurus Markdown,
+see our [Markdown writing guide](markdown.md).
+
+To help you write clearly and concisely, we've created a [writing style guide](writing-style.md).
+
+Read more in our [guidelines for help docs contribution](help-pages.md).
+
+## Prepare local environment
+
+This section describes how to install all tools and data
+to start work with the Datagrok documentation
+
+### 1. Install latest stable NodeJS
+
+Use instruction from the official
+[Node JS](https://nodejs.org/en/download) installation page.
+After installation check that npm version is at least `v9.x.x`:
+
+```shell
+npm --version
+```
+
+_Note for Ubuntu Linux users_ : The version installed from SNAP package manager has some issues with
+packages location. Please use a binary from NodeJS site instead.
+
+### 2. Install hyperlink checker and commit linting tools
+
+To check for incorrect hyperlinks, we use hyperlink checker:
+
+```shell
+npm install --global @untitaker/hyperlink
+```
+
+To ensure consistent style of commit messages, we use several commit linting tools:
+
+```shell
+npm install --global @commitlint/config-conventional @commitlint/cli
+pip install pre-commit
+pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg
+```
+
+To lint and flag style issues in markdown files
+we use [markdownlint](https://github.com/DavidAnson/markdownlint).
+
+```mdx-code-block
+<Tabs>
+<TabItem value="vscode" label="VSCode" default>
+```
+
+1. Install [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2#install)
+
+   ```bash
+   npm install --global markdownlint-cli2
+   ```
+
+2. [Install](https://github.com/DavidAnson/vscode-markdownlint#install)
+   Markdownlint [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
+
+3. [Configure autofix for issues](https://github.com/DavidAnson/vscode-markdownlint#fix)
+4. Show markdownlint warnings using shortcut: `Ctrl+Shift+M`/`Ctrl+Shift+M`/`⇧⌘M`
+
+```mdx-code-block
+</TabItem>
+<TabItem value="idea" label="JetBrains IDE">
+```
+
+1. Install [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2#install)
+
+   ```bash
+   npm install --global markdownlint-cli2
+   ```
+
+2. Add MarkdownLint as [External Tool](https://www.jetbrains.com/help/idea/configuring-third-party-tools.html#local-ext-tools). `Preferences > Tools > External Tools > + (Add)`
+   1. Name: `MarkdownLint`
+   2. Description: `MarkdownLint CLI with enabled fix`
+   3. Program: `markdownlint-cli2-fix`
+   4. Arguments: `$FilePath$`
+   5. Working Directory: `$Projectpath$`
+   6. Output filters: `$FILE_PATH$:$LINE$:$COLUMN$ .*`
+   7. Enable `Make console active on message in stderr`
+
+   ![idea-markdownlint.png](idea-markdownlint.png)
+
+3. Now, to run MarkdownLint on the current file, you can click `Tools > External Tools > MarkdownLint`.
+
+4. _(Optional)_ To run MarkdownLint easier you can [add an icon to the toolbar](https://www.jetbrains.com/help/idea/customize-actions-menus-and-toolbars.html#customize-menus-and-toolbars). `Preferences > Appearance & Behavior > Menus and Toolbars > Main Toolbar > Toolbar Run Actions > + > Add Action... > External Tools > External Tools > MarkdownLint > OK`. Now, you can run Markdownlint from toolbar using icon.
+
+5. _(Optional)_ To run MarkdownLint easier you can [add a shortcut](https://www.jetbrains.com/help/idea/configuring-keyboard-and-mouse-shortcuts.html). `Preferences > Keymap > External Tools > MarkdownLint > Right click > Add Keyboard Shortcut > Set the shortcut you like, for example, Ctrl+Shift+M/⌘⇧M`. Now, you can run Markdownlint using shortcut.
+
+```mdx-code-block
+</TabItem>
+<TabItem value="cli" label="CLI">
+```
+
+1. Install [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2#install)
+
+   ```bash
+   npm install --global markdownlint-cli2
+   ```
+
+2. Run MarkdownLint using the following command
+
+   ```bash
+   markdownlint-cli2-fix "help/**/*.{md,mdx}"
+   ```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="branch" label="Docker">
+```
+
+1. Pull the Docker image
+
+   ```bash
+   docker pull davidanson/markdownlint-cli2:v0.6.0
+   ```
+
+2. Run MarkdownLint using Docker
+
+   ```mdx-code-block
+   <Tabs>
+   <TabItem value="win" label="Windows">
+   ```
+
+   ```cmd
+   docker run -v %cd%:/workdir --entrypoint="markdownlint-cli2-fix" davidanson/markdownlint-cli2:v0.6.0 "help/**/*.{md,mdx}"
+   ```
+
+   ```mdx-code-block
+   </TabItem>
+   <TabItem value="bash" label="Linux/MacOS" default>
+   ```
+
+   ```bash
+   docker run -v "$(pwd):/workdir" --entrypoint="markdownlint-cli2-fix" davidanson/markdownlint-cli2:v0.6.0 "help/**/*.{md,mdx}"
+   ```
+
+   ```mdx-code-block
+   </TabItem>
+   </Tabs>
+   ```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### 3. Prepare Datagrok repository and Docusaurus
+
+The source code and READMEs are located in our
+[public repository on GitHub](https://github.com/datagrok-ai/public/tree/master).
+This section helps you to set up this repository and install all required packages.
+
+1. Clone Datagrok public repository
+
+    ```shell
+    git clone https://github.com/datagrok-ai/public.git
+    ```
+
+1. Open the terminal and change the current directory to the directory with Datagrok docusaurus code:
+
+    ```shell
+    cd public/docusaurus
+    ```
+
+1. Install package dependencies:
+
+    ```shell
+    npm install
+    ```
+
+1. As we use Docusaurus to generate the API documentation,
+you need to repeat npm installation steps in the `js-api` folder:
+
+```mdx-code-block
+<Tabs>
+<TabItem value="win" label="Windows">
+```
+
+```cmd
+cd ..\js-api
+npm install
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="bash" label="Linux/MacOS" default>
+```
+
+```shell
+cd ../js-api
+npm install
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+## Make changes
+
+This section describes how to perform documentation update.
+
+### 1. Pull the latest changes from the repository
+
+Change current directory to the Datagrok public repository and pull latest changes.
+
+```shell
+git checkout master
+git pull
+```
+
+### 2. Create a git branch
+
+Name it according to the task; the name must be meaningful.
+Use the agreed standard: `<first letter of your name><your surname>/<task ID>-<short description>`.
+Task ID should be a full ID from any task tracking system.
+If you don't have the task ID assigned, use the simplified naming pattern:
+`<first letter of your name><your surname>/<short description>`
+
+```bash
+# git checkout -b <first letter of your name><you surname>/<task ID>-<short description>
+git checkout -b jdoe/GROK-123-description
+
+# git push –set-upstream origin <first letter of your name><you surname>/<task ID>-<short description>
+git push --set-upstream origin jdoe/GROK-123-description
+```
+
+### 3. Run Docusaurus locally
+
+```mdx-code-block
+<Tabs>
+<TabItem value="win" label="Windows">
+```
+
+```cmd
+cd ..\docusaurus
+npm run start-debug
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="bash" label="Linux/MacOS" default>
+```
+
+```shell
+cd ../docusaurus
+npm run start-debug
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+If the command does not work use `docusaurus start --config docusaurus-debug.config.js`.
+Docusaurus will be available at [http://localhost:3000](http://localhost:3000).
+
+### 4. Make changes
+
+Now you can proceed with the documentation editing.
+Docusaurus will recompile the documentation on every change you make,
+so you will instantly see all the improvements you have made to the documentation.
+If you don't see your changes immediately, reload the page.
+
+### 5. Lint your changes
+
+When you think the work reached a milestone you are ready to commit changes to your branch.
+
+Before it, you need to check that the documentation builds without errors.
+
+1. Run the markdown linter for all changed files from your IDE or from command line:
+
+    ```shell
+    markdownlint-cli2-fix changed-documentation-file.md
+    ```
+
+1. Internal links and anchors are checked after the help package convert to HTML.
+To test it locally you should convert markdown to HTML using [Docusaurus](https://docusaurus.io/)
+and then check all links using [hyperlink](https://github.com/untitaker/hyperlink).
+Stop Docusaurus by pressing `Ctrl+C` and run the following commands to build and check your documentation.
+Note that the build step will take some time.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="win" label="Windows">
+```
+
+```cmd
+cd docusaurus
+npm run build
+
+hyperlink --check-anchors build --sources ..\help
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="bash" label="Linux/MacOS" default>
+```
+
+```bash
+cd docusaurus
+npm run build
+
+hyperlink --check-anchors build/ --sources ../help/
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+If the command `npm run build` does not work use `docusaurus build`.
+
+### 7. Commit and push your changes
+
+Before making a comment, review the [Commit message policy](../advanced/git-policy#commit-message-policy)
+to choose correct commit naming.
+Briefly, commit messages should contain task ID, short task description and short description of your changes.
+
+```shell
+git pull
+git add <changed-files>
+git commit -m "GROK-123: Update scripting help page: Reorganised first two sections"
+```
+
+Push your version to the repository:
+
+```shell
+git push
+```
+
+After this point, you can return to the documentation editing,
+or make a pull request to merge your changes to the master branch.
+
+### 8. Create a pull request
+
+When you completed your task,
+you are ready to make a pull request to the master branch.
+Review the
+[Github documentation](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
+for the details of pull request creation.
+
+The pull request name should follow the same template as the commit message. For example:
+
+`GROK-13754: Help docs contribution: Reworked help page for documentation contribution`
+
+### How to fix my pull request
+
+GitHub performs a set of automated checks for every pull request.
+This section describes most common issues revealed by these checks and tips to resolve it.
+
+* **Incorrect pull request name**. Just correct the pull request name via GitHub UI
+  according to the [naming convention](#8-create-a-pull-request).
+* **Incorrect commit message for the latest commit**.
+  * Run `git commit --amend` and provide a new commit message.
+  * Run `git push --force-with-lease` to overwrite comments in your branch
+
+   :::warning Never overwrite commits in the master branch.
+   Changing comment in the master branch can be very tricky and dangerous.
+   Never do it unless you're absolutely sure what are you doing.
+   In most cases if you have accidentally published commit with failed checks in the master branch,
+   the best solution would be leave it as is. And do not repeat this mistake.
+   :::
+
+* **Errors in documentation files**. Incorrect links, linting errors. etc.
+  * Fix all revealed errors in the documentation files
+  * Run `git add` to add all changed files
+  * Run `git commit --amend --no-edit`. This action changes files in the last commit.
+  * Run `git push --force-with-lease` to overwrite comments in your branch. 
+    **Never overwrite** commits in the master branch.  
+
+* **Incorrect commit messages in several commits**. This could be tricky.  
+  * Use `git rebase -i` set for picking all commits and provide a correct commit message for each of them.
+    Please be careful, review the [git rebase documentaion](https://git-scm.com/docs/git-rebase).
+    If you are not familiar with `git rebase`, make a backup of your files, or even a whole repository.
+  * Run `git push --force-with-lease` to overwrite comments in your branch. 
+    **Never overwrite** commits in the master branch.
+
+## Workflow for documentation owners
+
+The documentation owners are a small group of people with excellent writing skills,
+good knowledge of the Datagrok writing styles,
+and attention to detail.
+They have a right to push documentation to the master branch skipping the creation of development branches,
+pull requests, documentation review, and all other steps.
+
+However, with great power comes great responsibility.
+The documentation owners are responsible for the overall documentation quality and should
+maintain the good quality of their work.
+
+The workflow for the documentation owners in general are the same.
+The only difference is that they can skip creation of separate branches and making pull requests.
+
+## Additional information
+
+### GitHub Actions Docusaurus workflow
+
+This section describes actions which GitHup performes for each commit pushed to the repository.
+
+[GitHub Actions Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml) includes:
+
+* Lint checks using [markdownlint](https://github.com/DavidAnson/markdownlint-cli2) linter.
+* If the checks are finished successfully, GitHub will convert the markdown files to HTML
+  using [Docusaurus](https://docusaurus.io/)
+  * The result HTML help pages are also available as GitHub Actions artifact: `docusaurus`
+* Then [Hyperlink](https://github.com/untitaker/hyperlink) checks the result HTML files.
+* If the checks are finished successfully and the changes are in the master branch,  GitHub Actions will deploy the documentation to the server.
+  * 'Deploy to server' step contains detailed information about changes that are made on the server.
+* Finally, GitHub Actions performs Typesense DocSearch Scrape to update indexes for search in the wiki
+
+If any error occurs during checks, the deployment to the server will be canceled.
+Check for errors in the GitHub Actions log or in GitHub Actions run summary.
+
+More information about flow can be found on Docusaurus Help tab
+in [public repository CI/CD flows](../../deploy/releases/ci-flow.mdx#public-repository-cicd-flows).
+
+### Trigger GitHub Actions manually
+
+If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
+
+1. Use [Docusaurus workflow](https://github.com/datagrok-ai/public/actions/workflows/docusaurus.yaml).
+2. Press `run workflow`. Choose the target branch. Then `Run workflow`. Note that deployment to the server is executed for the master branch only.
+3. Check that the GitHub Actions workflow finished successfully.

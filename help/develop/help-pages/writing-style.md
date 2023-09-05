@@ -13,7 +13,9 @@ keywords:
 
 ---
 
-Use fewer words, better. Don't overwhelm users with information. [Use concise and clear language](#language-and-grammar). Rather than repeating information from another topic,
+Use fewer words, better. Don't overwhelm users with information.
+[Use concise and clear language](#language-and-grammar).
+Rather than repeating information from another topic,
 link to it instead.
 
 For topics not covered in this guide,
@@ -37,8 +39,8 @@ Datagrok documentation should be clear and easy to understand:
 
 ### Conciseness
 
-Conciseness is about using the fewest words while retaining completeness in meaning. You can achieve conciseness in
-several ways:
+Conciseness is about using the fewest words while retaining completeness in meaning.
+You can achieve conciseness in several ways:
 
 * Shorten words and phrases.
 
@@ -56,7 +58,8 @@ several ways:
   | demonstrate       | show          |
   | employ / utilize  | use           |
 
-* Avoid the words ending in _-sion_ or _-tion_ (nominalizations). Replace them with active words.
+* Avoid the words ending in _-sion_ or _-tion_ (nominalizations).
+* Replace them with active words.
 
   | Nominalization          | Active word       |
   |:------------------------|:------------------|
@@ -79,7 +82,8 @@ several ways:
   | the reason why   | why                   |
   | past experience  | experience            |
 
-* Avoid sentences starting with _there is_, _here is_, _it is_, and similar (that is, sentences with no true subjects).
+* Avoid sentences starting with _there is_, _here is_, _it is_,
+* and similar (that is, sentences with no true subjects).
   Use this tips:
 
   1. First, identify an actor.
@@ -98,7 +102,8 @@ several ways:
   | It is necessary for you to do A. | You must do A.          |
   | Follow all of the steps below.   | Follow the steps below. |
 
-  _Tip:_ If a step is optional, start with the word _optional_ followed by a period. For example: _Step 3._ Optional.
+  _Tip:_ If a step is optional, start with the word _optional_ followed by a period.
+* For example: _Step 3._ Optional.
   Change the size by dragging the bottom right corner.
 
 * Simplify long, complicated sentences.
@@ -138,15 +143,19 @@ _Note_: Avoid using words that explicitly favor one gender, such as _guys_ or _b
 
 ### Words that minimize the difficulty
 
-Avoid using words that minimize the difficulty involved in a task or operation, such as _just_ or _simply_. People may
-become frustrated when they do not find a step as straightforward or simple as it is implied to be.
+Avoid using words that minimize the difficulty involved in a task or operation,
+such as _just_ or _simply_. People may
+become frustrated when they do not find a step
+as straightforward or simple as it is implied to be.
 
 ### Capitalization
 
-Use sentence case. Sentence case refers to a capitalization style in which only the first word and proper nouns or
+Use sentence case. Sentence case refers to a capitalization style
+in which only the first word and proper nouns or
 acronyms are uppercased:
 
-* Capitalize names of third party organizations and products (such as _Slack_), methods, or methodologies (such as
+* Capitalize names of third party organizations and products (such as _Slack_),
+  methods, or methodologies (such as
   _Agile_).
 * For headings, capitalize the first word only.
 * When referring to specific user interface text, like a menu item, use the same capitalization that the user interface
@@ -160,14 +169,18 @@ acronyms are uppercased:
 
 ### Compound words and words with prefixes
 
-We tend to use the closed form of compound words and words with prefixes; that is, write these words without a space or
-a hyphen (for example, a _dataset_ or an _open source_ plugin). For the list of commonly used terms,
+We tend to use the closed form of compound words and words with prefixes;
+that is, write these words without a space or
+a hyphen (for example, a _dataset_ or an _open source_ plugin).
+For the list of commonly used terms,
 see [Word list](word-list.md).
 
 ### Contractions
 
-You can use most types of contractions. Negation contractions (such as _isn't_ or _don't_) are even helpful because it's
-harder to misread _don't_ compared to _do not_. However, avoid contractions formed from nouns and verbs:
+You can use most types of contractions.
+Negation contractions (such as _isn't_ or _don't_) are even helpful because it's
+harder to misread _don't_ compared to _do not_.
+However, avoid contractions formed from nouns and verbs:
 
 | Instead of                           | Use                                   |
 |:-------------------------------------|:--------------------------------------|
@@ -175,10 +188,12 @@ harder to misread _don't_ compared to _do not_. However, avoid contractions form
 
 ### Acronyms and numbers
 
-If you use an acronym, spell it out on the first use on a page. You don't need to spell it out more than once on a page.
+If you use an acronym, spell it out on the first use on a page.
+You don't need to spell it out more than once on a page.
 If you can, avoid using acronyms in headings.
 
-When using numbers in the text, spell out zero through nine, and use numbers for 10 and greater. For more guidance, see
+When using numbers in the text, spell out zero through nine,
+and use numbers for 10 and greater. For more guidance, see
 [Google Developer Documentation Style Guide](https://developers.google.com/style/numbers?hl=en).
 
 ### Clause order
@@ -197,14 +212,21 @@ Mentioning the goal or circumstance first lets the user skip the instruction if 
 
 ### Paragraphs
 
-The first sentence of a paragraph is a topic sentence describing that paragraph's central idea. State that idea upfront,
-then build on it. When reading technical documentation, users often look for a specific piece of information. When they
-know the topic, users can skip the paragraph if that paragraph's information is irrelevant to their needs.
+The first sentence of a paragraph is a topic sentence
+describing that paragraph's central idea. State that idea upfront,
+then build on it. When reading technical documentation,
+users often look for a specific piece of information. When they
+know the topic, users can skip the paragraph
+if that paragraph's information is irrelevant to their needs.
 
-Never assume users have read every word in the preceding paragraph. Don't start a paragraph with a pronoun or words like
-_but_ or _however_. Every paragraph should encapsulate an idea that can stand on its own.
+Never assume users have read every word in the preceding paragraph.
+Don't start a paragraph with a pronoun or words like
+_but_ or _however_. Every paragraph should encapsulate
+an idea that can stand on its own.
 
-Try to limit paragraphs to 4-5 sentences. Follow the 1:1 rule: one paragraph, one idea. Remove any sentences that neither clarify the idea in that paragraph, nor
+Try to limit paragraphs to 4-5 sentences.
+Follow the 1:1 rule: one paragraph, one idea.
+Remove any sentences that neither clarify the idea in that paragraph, nor
 logically connect this paragraph and the next.
 
 ## Punctuation
@@ -231,8 +253,10 @@ Follow these guidelines for punctuation:
 
 ### Commas and appositives
 
-An appositive is a noun or a phrase placed next to another noun or a phrase to modify it. Appositives can be restrictive
-and nonrestrictive. The following table summarises the use of commas with appositives:
+An appositive is a noun or a phrase placed next to another noun or a phrase to modify it.
+Appositives can be restrictive
+and nonrestrictive.
+The following table summarises the use of commas with appositives:
 
 |              | Restrictive                                                             | Nonrestrictive                                                                               |
 |:-------------|:------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------|
