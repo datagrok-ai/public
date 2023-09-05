@@ -58,10 +58,9 @@ function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, op
 function changeColumnsCurvesOptions(columns: DG.Column[], inputBase: DG.InputBase, options: string): void {
   for (let i = 0; i < columns.length; i++) {
     for (let j = 0; j < columns[i].length; j++) {
-      const value = columns[i].get(j);
-      if (value === '') continue;
+      if (columns[i].get(j) === '') continue;
       const chartData: IFitChartData = columns[i].getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
-        convertXMLToIFitChartData(value) : JSON.parse(value ?? '{}') ?? {};
+        convertXMLToIFitChartData(columns[i].get(j)) : JSON.parse(columns[i].get(j) ?? '{}') ?? {};
       changePlotOptions(chartData, inputBase, options);
       columns[i].set(j, JSON.stringify(chartData));
     }
