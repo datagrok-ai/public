@@ -1,5 +1,12 @@
 # Chem changelog
 
+## 1.7.2 (2023-09-05)
+
+### Bug Fixes
+
+* Chem: Scaffold Tree: Checkbox shouldn't be set, when group is expanded
+* Chem: Scaffold Tree: Fix the behaviour of allowGenerate property
+
 ## 1.7.1 (2023-08-31)
 
 ### Features
