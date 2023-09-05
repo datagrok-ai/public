@@ -94,25 +94,16 @@ export class MonomerPosition extends DG.JsViewer {
       this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol),
       this.aggregation as DG.AggregationType));
 
-    let isHighlighting = false;
-    const unhighlight = (): void => {
-      if (!isHighlighting)
-        return;
-      this.model.df.rows.highlight(null);
-      isHighlighting = false;
-    };
-
     this.viewerGrid.onCellTooltip((gridCell: DG.GridCell, x: number, y: number) => {
       if (!gridCell.isTableCell) {
-        unhighlight();
+        this.model.unhighlight();
         return true;
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
-      highlight(monomerPosition, this.model);
-      isHighlighting = true;
+      this.model.highlight(monomerPosition);
       return showTooltip(monomerPosition, x, y, this.model);
     });
-    this.viewerGrid.root.addEventListener('mouseleave', (_ev) => unhighlight());
+    this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
       if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
@@ -236,29 +227,20 @@ export class MostPotentResidues extends DG.JsViewer {
     this.viewerGrid.onCellRender.subscribe(
       (args: DG.GridCellRenderArgs) => renderCell(args, this.model, false, undefined, undefined, false));
 
-    let isHighlighting = false;
-    const unhighlight = (): void => {
-      if (!isHighlighting)
-        return;
-      this.model.df.rows.highlight(null);
-      isHighlighting = false;
-    };
-
     this.viewerGrid.onCellTooltip((gridCell: DG.GridCell, x: number, y: number) => {
       if (!gridCell.isTableCell) {
-        unhighlight();
+        this.model.unhighlight();
         return true;
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
-      highlight(monomerPosition, this.model);
-      isHighlighting = true;
+      this.model.highlight(monomerPosition);
       if (gridCell.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
         monomerPosition.position = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return false;
       return showTooltip(monomerPosition, x, y, this.model);
     });
-    this.viewerGrid.root.addEventListener('mouseleave', (_ev) => unhighlight());
+    this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
       if (!gridCell?.isTableCell || gridCell!.tableColumn!.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
@@ -415,22 +397,4 @@ function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): v
     col.width = isMostPotentResiduesGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.MONOMER ? 50 :
       gridProps.rowHeight + 10;
   }
-}
-
-function highlight(monomerPosition: MonomerPositionPair, model: PeptidesModel): void {
-  const bitArray = new BitArray(model.df.rowCount);
-  if (monomerPosition.position === C.COLUMNS_NAMES.MONOMER) {
-    const positionStats = Object.values(model.monomerPositionStats);
-    for (const posStat of positionStats) {
-      const monomerPositionStats = (posStat as PositionStats)[monomerPosition.monomer];
-      if (monomerPositionStats ?? false)
-        bitArray.or(monomerPositionStats!.mask);
-    }
-  } else {
-    const monomerPositionStats = model.monomerPositionStats[monomerPosition.position]![monomerPosition.monomer];
-    if (monomerPositionStats ?? false)
-      bitArray.or(monomerPositionStats!.mask);
-  }
-
-  model.df.rows.highlight((i) => bitArray.getBit(i));
 }

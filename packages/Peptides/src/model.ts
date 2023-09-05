@@ -99,6 +99,7 @@ export class PeptidesModel {
   _layoutEventInitialized = false;
 
   subs: rxjs.Subscription[] = [];
+  isHighlighting: boolean = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -767,8 +768,13 @@ export class PeptidesModel {
     const eventAction = (ev: MouseEvent): void => {
       const cell = sourceView.hitTest(ev.offsetX, ev.offsetY);
       if (cell?.isColHeader && cell.tableColumn?.semType === C.SEM_TYPES.MONOMER) {
-        const newBarPart = this.findAARandPosition(cell, ev);
-        this.requestBarchartAction(ev, newBarPart);
+        const monomerPosition = this.findWebLogoMonomerPosition(cell, ev);
+        if (monomerPosition === null) {
+          this.unhighlight();
+          return;
+        }
+        this.requestBarchartAction(ev, monomerPosition);
+        this.highlight(monomerPosition);
       }
     };
 
@@ -779,7 +785,33 @@ export class PeptidesModel {
       .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   }
 
-  findAARandPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
+  highlight(monomerPosition: type.MonomerPositionPair): void {
+    const bitArray = new BitArray(this.df.rowCount);
+    if (monomerPosition.position === C.COLUMNS_NAMES.MONOMER) {
+      const positionStats = Object.values(this.monomerPositionStats);
+      for (const posStat of positionStats) {
+        const monomerPositionStats = (posStat as PositionStats)[monomerPosition.monomer];
+        if (monomerPositionStats ?? false)
+          bitArray.or(monomerPositionStats!.mask);
+      }
+    } else {
+      const monomerPositionStats = this.monomerPositionStats[monomerPosition.position]![monomerPosition.monomer];
+      if (monomerPositionStats ?? false)
+        bitArray.or(monomerPositionStats!.mask);
+    }
+
+    this.df.rows.highlight((i) => bitArray.getBit(i));
+    this.isHighlighting = true;
+  }
+
+  unhighlight(): void {
+    if (!this.isHighlighting)
+      return;
+    this.df.rows.highlight(null);
+    this.isHighlighting = false;
+  };
+
+  findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
     const barCoords = this.webLogoBounds[cell.tableColumn!.name];
     for (const [monomer, coords] of Object.entries(barCoords)) {
       const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
@@ -791,25 +823,20 @@ export class PeptidesModel {
     return null;
   }
 
-  requestBarchartAction(ev: MouseEvent, barPart: {position: string, monomer: string} | null): void {
-    if (!barPart)
-      return;
-    const monomer = barPart.monomer;
-    const position = barPart.position;
+  requestBarchartAction(ev: MouseEvent, monomerPosition: {position: string, monomer: string}): void {
     if (ev.type === 'click') {
       if (!ev.shiftKey)
         this.initInvariantMapSelection({cleanInit: true, notify: false});
 
-      this.modifyMonomerPositionSelection(monomer, position, true);
+      this.modifyMonomerPositionSelection(monomerPosition.monomer, monomerPosition.position, true);
     } else {
-      const bar = `${position} = ${monomer}`;
+      const bar = `${monomerPosition.position} = ${monomerPosition.monomer}`;
       if (this.cachedWebLogoTooltip.bar === bar)
         ui.tooltip.show(this.cachedWebLogoTooltip.tooltip!, ev.clientX, ev.clientY);
-      else
-        this.cachedWebLogoTooltip = {bar: bar, tooltip: this.showTooltipAt(monomer, position, ev.clientX, ev.clientY)};
-
-      //TODO: how to unghighlight?
-      // this.df.rows.match(bar).highlight();
+      else {
+        this.cachedWebLogoTooltip = {bar: bar,
+          tooltip: this.showTooltipAt(monomerPosition.monomer, monomerPosition.position, ev.clientX, ev.clientY)};
+      }
     }
   }
 
@@ -857,10 +884,8 @@ export class PeptidesModel {
 
     if (!this._layoutEventInitialized) {
       grok.events.onViewLayoutApplied.subscribe((layout) => {
-        if (layout.view.id === this.analysisView.id) {
-          // this.analysisView.grid.onCellRender.subscribe((gcArgs) => headerRenderer(gcArgs));
+        if (layout.view.id === this.analysisView.id)
           this.updateGrid();
-        }
       });
       this._layoutEventInitialized = true;
     }
@@ -907,20 +932,16 @@ export class PeptidesModel {
       return null;
 
     const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    const posCol = this.df.getCol(position);
-    const posColCategories = posCol.categories;
-    const aarCategoryIndex = posColCategories.indexOf(aar);
-    const posColData = posCol.getRawData();
-    const mask = DG.BitSet.create(activityCol.length, (i) => posColData[i] === aarCategoryIndex);
-
+    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
     const distributionTable = DG.DataFrame.fromColumns(
       [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
-    const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
     const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
+
     const tableMap = getStatsTableMap(stats);
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
-
     const resultMap = {...tableMap, ...aggregatedColMap};
+
+    const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
     const distroStatsElem = getStatsSummary(labels, hist, resultMap);
 
     ui.tooltip.show(distroStatsElem, x, y);
