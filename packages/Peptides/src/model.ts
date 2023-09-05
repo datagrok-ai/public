@@ -774,7 +774,7 @@ export class PeptidesModel {
           return;
         }
         this.requestBarchartAction(ev, monomerPosition);
-        this.highlight(monomerPosition);
+        this.highlightMonomerPosition(monomerPosition);
       }
     };
 
@@ -785,7 +785,7 @@ export class PeptidesModel {
       .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   }
 
-  highlight(monomerPosition: type.MonomerPositionPair): void {
+  highlightMonomerPosition(monomerPosition: type.MonomerPositionPair): void {
     const bitArray = new BitArray(this.df.rowCount);
     if (monomerPosition.position === C.COLUMNS_NAMES.MONOMER) {
       const positionStats = Object.values(this.monomerPositionStats);
@@ -804,12 +804,18 @@ export class PeptidesModel {
     this.isHighlighting = true;
   }
 
+  highlightCluster(cluster: type.Cluster): void {
+    const bitArray = this.clusterStats[cluster.type][cluster.name].mask;
+    this.df.rows.highlight((i) => bitArray.getBit(i));
+    this.isHighlighting = true;
+  }
+
   unhighlight(): void {
     if (!this.isHighlighting)
       return;
     this.df.rows.highlight(null);
     this.isHighlighting = false;
-  };
+  }
 
   findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
     const barCoords = this.webLogoBounds[cell.tableColumn!.name];

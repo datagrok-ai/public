@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {awaitCheck, before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
@@ -185,7 +185,7 @@ category('Viewers: Logo Summary Table', () => {
 
   test('Tooltip', async () => {
     const cluster = '0';
-    const tooltipElement = lstViewer.showTooltip(cluster, 0, 0);
+    const tooltipElement = lstViewer.showTooltip({name: cluster, type: CLUSTER_TYPE.ORIGINAL}, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
 }, {clear: false});

@@ -5,9 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {PeptidesModel, PositionStats, VIEWER_TYPE} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import wu from 'wu';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {MonomerPositionPair} from '../utils/types';
 
 export enum MONOMER_POSITION_MODE {
@@ -100,7 +99,7 @@ export class MonomerPosition extends DG.JsViewer {
         return true;
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
-      this.model.highlight(monomerPosition);
+      this.model.highlightMonomerPosition(monomerPosition);
       return showTooltip(monomerPosition, x, y, this.model);
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
@@ -233,7 +232,7 @@ export class MostPotentResidues extends DG.JsViewer {
         return true;
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
-      this.model.highlight(monomerPosition);
+      this.model.highlightMonomerPosition(monomerPosition);
       if (gridCell.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
         monomerPosition.position = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
