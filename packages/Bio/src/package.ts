@@ -656,13 +656,6 @@ export async function compositionAnalysis(): Promise<void> {
   await handler(col);
 }
 
-//top-menu: Bio | Convert | SDF to JSON Library...
-//name: SDF to JSON Library
-//input: dataframe table
-export async function sdfToJsonLib(table: DG.DataFrame) {
-  const _jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
-}
-
 // 2023-05-17 Representations does not work at BioIT
 // //name: Representations
 // //tags: panel, widgets
