@@ -6,7 +6,7 @@ pagination_prev: null
 
 ## Markdown and GitActions
 
-We write our technical documentation using [GitHub-flavored Markdown](https://github.github.com/gfm/) syntax. The source code and READMEs are in our [public repository on GitHub](https://github.com/datagrok-ai/public/tree/master). For our wiki, we use [Docusaurus](https://docusaurus.io/), which converts [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) into HTML. For basic information about writing in Docusaurus Markdown, see our [Markdown writing guide](markdown.md). To set up the environment and learn about our GitHub policy, see the [GitHub workflow page](howto-write-docs.mdx).
+We write our technical documentation using [GitHub-flavored Markdown](https://github.github.com/gfm/) syntax. The source code and READMEs are in our [public repository on GitHub](https://github.com/datagrok-ai/public/tree/master). For our wiki, we use [Docusaurus](https://docusaurus.io/), which converts [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) into HTML. For basic information about writing in Docusaurus Markdown, see our [Markdown writing guide](markdown.md). To set up the environment and learn about our GitHub policy, see the [GitHub workflow page](github-workflow.mdx).
 
 ## How we think about documentation
 
