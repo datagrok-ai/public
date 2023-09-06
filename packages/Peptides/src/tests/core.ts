@@ -58,7 +58,7 @@ category('Core', () => {
     await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
 
     model!.mutationCliffsSelection = {'11': ['D']};
-  }, {skipReason: 'GROK-13790: Unhandled exception'});
+  });
 
   test('Start analysis: сomplex', async () => {
     const complexActivityColName = 'Activity';
@@ -95,7 +95,7 @@ category('Core', () => {
 
     if (model !== null)
       model.mutationCliffsSelection = {'13': ['-']};
-  }, {skipReason: 'GROK-13790: Unhandled exception'});
+  });
 
   test('Save and load project', async () => {
     const simpleActivityColName = 'IC50';

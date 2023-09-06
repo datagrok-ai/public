@@ -41,9 +41,9 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
 }
 
 //TODO: optimize
-export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
+export function calculateSelected(df: DG.DataFrame): type.SelectionStats {
   const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
-  const selectedObj: type.MonomerSelectionStats = {};
+  const selectedObj: type.SelectionStats = {};
   for (const idx of df.selection.getSelectedIndexes()) {
     for (const col of monomerColumns) {
       const monomer = col.get(idx);

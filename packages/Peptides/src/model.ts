@@ -62,18 +62,16 @@ export const getAggregatedColName = (aggF: string, colName: string): string => `
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
-  _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
-  isCellChanging = false;
   isUserChangedSelection = true;
 
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
   _monomerPositionStats?: MonomerPositionStats;
   _clusterStats?: ClusterTypeStats;
-  _mutationCliffsSelection!: type.PositionToAARList;
-  _invariantMapSelection!: type.PositionToAARList;
-  _clusterSelection!: string[];
+  _mutationCliffsSelection!: type.Selection;
+  _invariantMapSelection!: type.Selection;
+  _clusterSelection!: type.Selection;
   _mutationCliffs: type.MutationCliffs | null = null;
   isInitialized = false;
   _analysisView?: DG.TableView;
@@ -86,7 +84,7 @@ export class PeptidesModel {
   isRibbonSet = false;
 
   _cp?: SeqPalette;
-  headerSelectedMonomers: type.MonomerSelectionStats = {};
+  headerSelectedMonomers: type.SelectionStats = {};
   webLogoBounds: {[positon: string]: {[monomer: string]: DG.Rect}} = {};
   cachedWebLogoTooltip: {bar: string, tooltip: HTMLDivElement | null} = {bar: '', tooltip: null};
   _monomerPositionDf?: DG.DataFrame;
@@ -208,14 +206,19 @@ export class PeptidesModel {
     return this._analysisView;
   }
 
-  get mutationCliffsSelection(): type.PositionToAARList {
-    this._mutationCliffsSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
+  get mutationCliffsSelection(): type.Selection {
+    const tagSelection = this.df.getTag(C.TAGS.MUTATION_CLIFFS_SELECTION) ?? this.df.getTag(C.TAGS.SELECTION);
+    if (tagSelection === null)
+      this.initMutationCliffsSelection({notify: false});
+    this._mutationCliffsSelection ??= JSON.parse(tagSelection ?? this.df.getTag(C.TAGS.MUTATION_CLIFFS_SELECTION) ?? this.df.getTag(C.TAGS.SELECTION)!);
     return this._mutationCliffsSelection;
   }
 
-  set mutationCliffsSelection(selection: type.PositionToAARList) {
+  set mutationCliffsSelection(selection: type.Selection) {
     this._mutationCliffsSelection = selection;
-    this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
+    // TODO: Remove in 1.14.0
+    this.df.setTag(C.TAGS.SELECTION, JSON.stringify(selection));
+    this.df.setTag(C.TAGS.MUTATION_CLIFFS_SELECTION, JSON.stringify(selection));
     this.fireBitsetChanged();
 
     const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
@@ -226,25 +229,45 @@ export class PeptidesModel {
     this.analysisView.grid.invalidate();
   }
 
-  get invariantMapSelection(): type.PositionToAARList {
-    this._invariantMapSelection ??=
-      JSON.parse(this.df.tags[C.TAGS.INVARIANT_MAP_SELECTION] || this.df.tags[C.TAGS.FILTER] || '{}');
+  get invariantMapSelection(): type.Selection {
+    const tagSelection = this.df.getTag(C.TAGS.INVARIANT_MAP_SELECTION) ?? this.df.getTag(C.TAGS.FILTER);
+    if (tagSelection === null)
+      this.initInvariantMapSelection({notify: false});
+    this._invariantMapSelection ??= JSON.parse(tagSelection ?? this.df.getTag(C.TAGS.INVARIANT_MAP_SELECTION) ?? this.df.getTag(C.TAGS.FILTER)!);
     return this._invariantMapSelection;
   }
 
-  set invariantMapSelection(selection: type.PositionToAARList) {
+  set invariantMapSelection(selection: type.Selection) {
     this._invariantMapSelection = selection;
-    this.df.tags[C.TAGS.INVARIANT_MAP_SELECTION] = JSON.stringify(selection);
+    this.df.setTag(C.TAGS.INVARIANT_MAP_SELECTION, JSON.stringify(selection));
+    // TODO: Remove in 1.14.0
+    this.df.setTag(C.TAGS.FILTER, JSON.stringify(selection));
     this.fireBitsetChanged();
     this.analysisView.grid.invalidate();
   }
 
-  get clusterSelection(): string[] {
-    this._clusterSelection ??= JSON.parse(this.df.tags[C.TAGS.CLUSTER_SELECTION] || '[]');
+  get clusterSelection(): type.Selection {
+    const tagSelection = this.df.getTag(C.TAGS.CLUSTER_SELECTION);
+    if (tagSelection === null)
+      this.initClusterSelection({notify: false});
+    this._clusterSelection ??= JSON.parse(tagSelection ?? this.df.getTag(C.TAGS.CLUSTER_SELECTION)!);
+    // TODO: Remove in 1.14.0
+    if (Array.isArray(this._clusterSelection)) {
+      const newSelection: type.Selection = {};
+      newSelection[CLUSTER_TYPE.ORIGINAL] = [];
+      newSelection[CLUSTER_TYPE.CUSTOM] = [];
+      for (const cluster of this._clusterSelection) {
+        if (wu(this.customClusters).some((col) => col.name === cluster))
+          newSelection[CLUSTER_TYPE.CUSTOM].push(cluster);
+        else
+          newSelection[CLUSTER_TYPE.ORIGINAL].push(cluster);
+      }
+      this._clusterSelection = newSelection;
+    }
     return this._clusterSelection;
   }
 
-  set clusterSelection(selection: string[]) {
+  set clusterSelection(selection: type.Selection) {
     this._clusterSelection = selection;
     this.df.tags[C.TAGS.CLUSTER_SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
@@ -280,7 +303,7 @@ export class PeptidesModel {
   }
 
   get isClusterSelectionEmpty(): boolean {
-    return this.clusterSelection.length === 0;
+    return (this.clusterSelection[CLUSTER_TYPE.ORIGINAL].length + this.clusterSelection[CLUSTER_TYPE.CUSTOM].length) === 0;
   }
 
   get customClusters(): Iterable<DG.Column<boolean>> {
@@ -466,8 +489,7 @@ export class PeptidesModel {
         };
         removeCluster.onmouseover =
           (ev): void => ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
-        removeCluster.style.visibility = trueModel.clusterSelection.length === 0 ||
-          !wu(this.customClusters).some((c) => trueModel.clusterSelection.includes(c.name)) ? 'hidden' : 'visible';
+        removeCluster.style.visibility = trueModel.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' : 'visible';
         return ui.divV([newView, newCluster, removeCluster]);
       });
     }
@@ -486,6 +508,7 @@ export class PeptidesModel {
 
     this.initInvariantMapSelection({notify: false});
     this.initMutationCliffsSelection({notify: false});
+    this.initClusterSelection({notify: false});
 
     this.setWebLogoInteraction();
     this.webLogoBounds = {};
@@ -499,33 +522,27 @@ export class PeptidesModel {
     this.setGridProperties();
   }
 
-  initInvariantMapSelection(options: {cleanInit?: boolean, notify?: boolean} = {}): void {
-    options.cleanInit ??= false;
+  initInvariantMapSelection(options: {notify?: boolean} = {}): void {
     options.notify ??= true;
 
-    const tempFilter: type.PositionToAARList = this.invariantMapSelection;
+    const tempSelection: type.Selection = {};
     const positionColumns = this.splitSeqDf.columns.names();
-    for (const pos of positionColumns) {
-      if (options.cleanInit || !tempFilter.hasOwnProperty(pos))
-        tempFilter[pos] = [];
-    }
+    for (const pos of positionColumns)
+      tempSelection[pos] = [];
 
     if (options.notify)
-      this.invariantMapSelection = tempFilter;
+      this.invariantMapSelection = tempSelection;
     else
-      this._invariantMapSelection = tempFilter;
+      this._invariantMapSelection = tempSelection;
   }
 
-  initMutationCliffsSelection(options: {cleanInit?: boolean, notify?: boolean} = {}): void {
-    options.cleanInit ??= false;
+  initMutationCliffsSelection(options: {notify?: boolean} = {}): void {
     options.notify ??= true;
 
-    const tempSelection: type.PositionToAARList = this.mutationCliffsSelection;
+    const tempSelection: type.Selection = {};
     const positionColumns = this.splitSeqDf.columns.names();
-    for (const pos of positionColumns) {
-      if (options.cleanInit || !tempSelection.hasOwnProperty(pos))
-        tempSelection[pos] = [];
-    }
+    for (const pos of positionColumns)
+      tempSelection[pos] = [];
 
     if (options.notify)
       this.mutationCliffsSelection = tempSelection;
@@ -743,24 +760,16 @@ export class PeptidesModel {
     return mprDf;
   }
 
-  modifyClusterSelection(cluster: string): void {
-    const tempSelection = this.clusterSelection;
-    const idx = tempSelection.indexOf(cluster);
-    if (idx !== -1)
-      tempSelection.splice(idx, 1);
-    else
-      tempSelection.push(cluster);
-
-    this.clusterSelection = tempSelection;
-  }
-
   initClusterSelection(options: {notify?: boolean} = {}): void {
     options.notify ??= true;
 
+    const newClusterSelection = {} as type.Selection;
+    newClusterSelection[CLUSTER_TYPE.ORIGINAL] = [];
+    newClusterSelection[CLUSTER_TYPE.CUSTOM] = [];
     if (options.notify)
-      this.clusterSelection = [];
+      this.clusterSelection = newClusterSelection;
     else
-      this._clusterSelection = [];
+      this._clusterSelection = newClusterSelection;
   }
 
   setWebLogoInteraction(): void {
@@ -785,17 +794,17 @@ export class PeptidesModel {
       .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   }
 
-  highlightMonomerPosition(monomerPosition: type.MonomerPositionPair): void {
+  highlightMonomerPosition(monomerPosition: type.SelectionItem): void {
     const bitArray = new BitArray(this.df.rowCount);
-    if (monomerPosition.position === C.COLUMNS_NAMES.MONOMER) {
+    if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER) {
       const positionStats = Object.values(this.monomerPositionStats);
       for (const posStat of positionStats) {
-        const monomerPositionStats = (posStat as PositionStats)[monomerPosition.monomer];
+        const monomerPositionStats = (posStat as PositionStats)[monomerPosition.monomerOrCluster];
         if (monomerPositionStats ?? false)
           bitArray.or(monomerPositionStats!.mask);
       }
     } else {
-      const monomerPositionStats = this.monomerPositionStats[monomerPosition.position]![monomerPosition.monomer];
+      const monomerPositionStats = this.monomerPositionStats[monomerPosition.positionOrClusterType]![monomerPosition.monomerOrCluster];
       if (monomerPositionStats ?? false)
         bitArray.or(monomerPositionStats!.mask);
     }
@@ -804,8 +813,8 @@ export class PeptidesModel {
     this.isHighlighting = true;
   }
 
-  highlightCluster(cluster: type.Cluster): void {
-    const bitArray = this.clusterStats[cluster.type][cluster.name].mask;
+  highlightCluster(cluster: type.SelectionItem): void {
+    const bitArray = this.clusterStats[cluster.positionOrClusterType as ClusterType][cluster.monomerOrCluster].mask;
     this.df.rows.highlight((i) => bitArray.getBit(i));
     this.isHighlighting = true;
   }
@@ -817,31 +826,28 @@ export class PeptidesModel {
     this.isHighlighting = false;
   }
 
-  findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
+  findWebLogoMonomerPosition(cell: DG.GridCell, ev: MouseEvent): type.SelectionItem | null {
     const barCoords = this.webLogoBounds[cell.tableColumn!.name];
     for (const [monomer, coords] of Object.entries(barCoords)) {
       const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
       const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
       if (isIntersectingX && isIntersectingY)
-        return {monomer: monomer, position: cell.tableColumn!.name};
+        return {monomerOrCluster: monomer, positionOrClusterType: cell.tableColumn!.name};
     }
 
     return null;
   }
 
-  requestBarchartAction(ev: MouseEvent, monomerPosition: {position: string, monomer: string}): void {
+  requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionItem): void {
     if (ev.type === 'click') {
-      if (!ev.shiftKey)
-        this.initInvariantMapSelection({cleanInit: true, notify: false});
-
-      this.modifyMonomerPositionSelection(monomerPosition.monomer, monomerPosition.position, true);
+      this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
     } else {
-      const bar = `${monomerPosition.position} = ${monomerPosition.monomer}`;
+      const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
       if (this.cachedWebLogoTooltip.bar === bar)
         ui.tooltip.show(this.cachedWebLogoTooltip.tooltip!, ev.clientX, ev.clientY);
       else {
         this.cachedWebLogoTooltip = {bar: bar,
-          tooltip: this.showTooltipAt(monomerPosition.monomer, monomerPosition.position, ev.clientX, ev.clientY)};
+          tooltip: this.showTooltipAt(monomerPosition, ev.clientX, ev.clientY)};
       }
     }
   }
@@ -932,8 +938,8 @@ export class PeptidesModel {
   }
 
   //TODO: move out to viewer code
-  showTooltipAt(aar: string, position: string, x: number, y: number): HTMLDivElement | null {
-    const stats = this.monomerPositionStats[position]![aar];
+  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number): HTMLDivElement | null {
+    const stats = this.monomerPositionStats[monomerPosition.positionOrClusterType]![monomerPosition.monomerOrCluster];
     if (!stats?.count)
       return null;
 
@@ -947,7 +953,7 @@ export class PeptidesModel {
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
     const resultMap = {...tableMap, ...aggregatedColMap};
 
-    const labels = getDistributionLegend(`${position} : ${aar}`, 'Other');
+    const labels = getDistributionLegend(`${monomerPosition.positionOrClusterType} : ${monomerPosition.monomerOrCluster}`, 'Other');
     const distroStatsElem = getStatsSummary(labels, hist, resultMap);
 
     ui.tooltip.show(distroStatsElem, x, y);
@@ -969,24 +975,6 @@ export class PeptidesModel {
       colResults[newColName] = value.toFixed(options.fractionDigits);
     }
     return colResults;
-  }
-
-  modifyMonomerPositionSelection(aar: string, position: string, isInvariantMap: boolean): void {
-    if (this.df.getCol(position).categories.indexOf(aar) === -1)
-      return;
-
-    const tempSelection = isInvariantMap ? this.invariantMapSelection : this.mutationCliffsSelection;
-    const tempSelectionAt = tempSelection[position];
-    const aarIndex = tempSelectionAt.indexOf(aar);
-    if (aarIndex === -1)
-      tempSelectionAt.push(aar);
-    else
-      tempSelectionAt.splice(aarIndex, 1);
-
-    if (isInvariantMap)
-      this.invariantMapSelection = tempSelection;
-    else
-      this.mutationCliffsSelection = tempSelection;
   }
 
   setBitsetCallback(): void {
@@ -1039,12 +1027,14 @@ export class PeptidesModel {
         if (typeof currentOrigClust === undefined)
           return false;
 
-        for (const clust of this.clusterSelection) {
-          if (clust === currentOrigClust)
-            return true;
+        for (const clustType of Object.keys(this.clusterSelection)) {
+          for (const clust of this.clusterSelection[clustType]) {
+            if (clust === currentOrigClust)
+              return true;
 
-          if (Object.hasOwn(customClust, clust) && customClust[clust].getBit(i))
-            return true;
+            if (Object.hasOwn(customClust, clust) && customClust[clust].getBit(i))
+              return true;
+          }
         }
 
         return false;
@@ -1277,5 +1267,52 @@ export class PeptidesModel {
     view.addViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
 
     return newDfId;
+  }
+
+  modifyInvariantMapSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = { shiftPressed: false, ctrlPressed: false }, notify: boolean = true): void {
+    if (notify)
+      this.invariantMapSelection = this.modifySelection(this.invariantMapSelection, monomerPosition, options);
+    else
+      this._invariantMapSelection = this.modifySelection(this._invariantMapSelection, monomerPosition, options);
+  }
+
+  modifyMutationCliffsSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = { shiftPressed: false, ctrlPressed: false }, notify: boolean = true): void {
+    if (notify)
+      this.mutationCliffsSelection = this.modifySelection(this.mutationCliffsSelection, monomerPosition, options);
+    else
+      this._mutationCliffsSelection = this.modifySelection(this._mutationCliffsSelection, monomerPosition, options);
+  }
+
+  modifyClusterSelection(cluster: type.SelectionItem, options: type.SelectionOptions = {shiftPressed: false, ctrlPressed: false}, notify: boolean = true): void {
+    if (notify)
+      this.clusterSelection = this.modifySelection(this.clusterSelection, cluster, options);
+    else
+      this._clusterSelection = this.modifySelection(this._clusterSelection, cluster, options);
+  }
+
+  modifySelection(selection: type.Selection, clusterOrMonomerPosition: type.SelectionItem, options: type.SelectionOptions): type.Selection {
+    const monomerList = selection[clusterOrMonomerPosition.positionOrClusterType];
+    const monomerIndex = monomerList.indexOf(clusterOrMonomerPosition.monomerOrCluster);
+    if (options.shiftPressed && options.ctrlPressed) {
+      if (monomerIndex !== -1)
+        monomerList.splice(monomerIndex, 1);
+    } else if (options.ctrlPressed) {
+      if (monomerIndex === -1)
+        monomerList.push(clusterOrMonomerPosition.monomerOrCluster);
+      else
+        monomerList.splice(monomerIndex, 1);
+    } else if (options.shiftPressed) {
+      if (monomerIndex === -1)
+        monomerList.push(clusterOrMonomerPosition.monomerOrCluster);
+    } else {
+      const selectionKeys = Object.keys(selection);
+      selection = {};
+      for (const posOrClustType of selectionKeys) {
+        selection[posOrClustType] = [];
+        if (posOrClustType === clusterOrMonomerPosition.positionOrClusterType)
+          selection[posOrClustType].push(clusterOrMonomerPosition.monomerOrCluster);
+      }
+    }
+    return selection;
   }
 }

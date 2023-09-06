@@ -8,7 +8,7 @@ import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResidues, showTooltip} from '../viewers/sar-viewer';
+import {SELECTION_MODE, MonomerPosition, MostPotentResidues, showTooltip} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
 import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -72,16 +72,16 @@ category('Viewers: Monomer-Position', () => {
     if (mpViewer === null)
       throw new Error('Monomer-Position viewer doesn\'t exist');
 
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
-      `Default Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS}`);
+    expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
+      `Default Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS}`);
 
-    mpViewer.mode = MONOMER_POSITION_MODE.INVARIANT_MAP;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.INVARIANT_MAP,
-      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.INVARIANT_MAP} after switching`);
+    mpViewer.mode = SELECTION_MODE.INVARIANT_MAP;
+    expect(mpViewer.mode, SELECTION_MODE.INVARIANT_MAP,
+      `Monomer-Position mode is not ${SELECTION_MODE.INVARIANT_MAP} after switching`);
 
-    mpViewer.mode = MONOMER_POSITION_MODE.MUTATION_CLIFFS;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
-      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
+    mpViewer.mode = SELECTION_MODE.MUTATION_CLIFFS;
+    expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
+      `Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS} after switching`);
   });
 }, {clear: false});
 
@@ -185,7 +185,7 @@ category('Viewers: Logo Summary Table', () => {
 
   test('Tooltip', async () => {
     const cluster = '0';
-    const tooltipElement = lstViewer.showTooltip({name: cluster, type: CLUSTER_TYPE.ORIGINAL}, 0, 0);
+    const tooltipElement = lstViewer.showTooltip({monomerOrCluster: cluster, positionOrClusterType: CLUSTER_TYPE.ORIGINAL}, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
 }, {clear: false});

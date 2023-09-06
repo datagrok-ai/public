@@ -4,9 +4,10 @@
 
 ### Features
 
-* Monomer-Position and Most Potent Residues: Circle size is now based on absolute value of mean difference.
+* Monomer-Position and Most Potent Residues: Circle size is now based on the absolute value of mean difference.
 * Scaling default colors (blue for low values and red for high) in Monomer-Position viewer.
-* Highlight rows on mouse over Monomer-Position, Most Potent Residues, Logo Summary Table and WebLogo in header.
+* Highlight rows on mouse over Monomer-Position, Most Potent Residues, Logo Summary Table and WebLogo in the header.
+* Changed viewer interactivity to match the platform defaults. Learn more about viewer hotkeys [here](https://datagrok.ai/help/visualize/viewers/#selection).
 
 ### Bug Fixes
 

@@ -7,9 +7,9 @@ import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import wu from 'wu';
-import {MonomerPositionPair} from '../utils/types';
+import {SelectionItem} from '../utils/types';
 
-export enum MONOMER_POSITION_MODE {
+export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
   INVARIANT_MAP = 'Invariant Map',
 }
@@ -22,7 +22,7 @@ export enum MONOMER_POSITION_PROPERTIES {
 
 /** Structure-activity relationship viewer */
 export class MonomerPosition extends DG.JsViewer {
-  _titleHost = ui.divText(MONOMER_POSITION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
+  _titleHost = ui.divText(SELECTION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
   colorCol: string;
@@ -32,12 +32,12 @@ export class MonomerPosition extends DG.JsViewer {
   constructor() {
     super();
     this.target = this.string(MONOMER_POSITION_PROPERTIES.TARGET, null,
-      {category: MONOMER_POSITION_MODE.MUTATION_CLIFFS, choices: []});
+      {category: SELECTION_MODE.MUTATION_CLIFFS, choices: []});
     this.colorCol = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
-      {category: MONOMER_POSITION_MODE.INVARIANT_MAP,
+      {category: SELECTION_MODE.INVARIANT_MAP,
         choices: wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name)});
     this.aggregation = this.string(MONOMER_POSITION_PROPERTIES.AGGREGATION, DG.AGG.AVG,
-      {category: MONOMER_POSITION_MODE.INVARIANT_MAP,
+      {category: SELECTION_MODE.INVARIANT_MAP,
         choices: Object.values(DG.AGG)
           .filter((agg) => ![DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.SELECTED_ROWS_COUNT].includes(agg))});
   }
@@ -53,11 +53,11 @@ export class MonomerPosition extends DG.JsViewer {
     this._viewerGrid = grid;
   }
 
-  get mode(): MONOMER_POSITION_MODE {
-    return this.dataFrame.getTag(C.TAGS.MONOMER_POSITION_MODE) as MONOMER_POSITION_MODE ??
-      MONOMER_POSITION_MODE.MUTATION_CLIFFS;
+  get mode(): SELECTION_MODE {
+    return this.dataFrame.getTag(C.TAGS.MONOMER_POSITION_MODE) as SELECTION_MODE ??
+      SELECTION_MODE.MUTATION_CLIFFS;
   }
-  set mode(mode: MONOMER_POSITION_MODE) {
+  set mode(mode: SELECTION_MODE) {
     this.dataFrame.setTag(C.TAGS.MONOMER_POSITION_MODE, mode);
     this.viewerGrid.invalidate();
   }
@@ -90,7 +90,7 @@ export class MonomerPosition extends DG.JsViewer {
     const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setAARRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
-      this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol),
+      this.mode === SELECTION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol),
       this.aggregation as DG.AggregationType));
 
     this.viewerGrid.onCellTooltip((gridCell: DG.GridCell, x: number, y: number) => {
@@ -109,20 +109,19 @@ export class MonomerPosition extends DG.JsViewer {
         return;
 
       const monomerPosition = this.getMonomerPosition(gridCell);
-      chooseAction(monomerPosition, ev.shiftKey, this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.model);
-      this.viewerGrid.invalidate();
-    });
-    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => {
-      cellChanged(this.model.monomerPositionDf, this.model);
+      if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+        this.model.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+      else if (this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
+        this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       this.viewerGrid.invalidate();
     });
 
     setViewerGridProps(this.viewerGrid, false);
   }
 
-  getMonomerPosition(gridCell: DG.GridCell): MonomerPositionPair {
-    return {monomer: gridCell.cell.dataFrame.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!) as string,
-      position: gridCell!.tableColumn!.name};
+  getMonomerPosition(gridCell: DG.GridCell): SelectionItem {
+    return {monomerOrCluster: gridCell.cell.dataFrame.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!) as string,
+      positionOrClusterType: gridCell!.tableColumn!.name};
   }
 
   render(refreshOnly = false): void {
@@ -130,22 +129,22 @@ export class MonomerPosition extends DG.JsViewer {
       $(this.root).empty();
       let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
       if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
-        const mutationCliffsMode = ui.boolInput('', this.mode === MONOMER_POSITION_MODE.MUTATION_CLIFFS);
+        const mutationCliffsMode = ui.boolInput('', this.mode === SELECTION_MODE.MUTATION_CLIFFS);
         mutationCliffsMode.root.addEventListener('click', () => {
           invariantMapMode.value = false;
           mutationCliffsMode.value = true;
-          this.mode = MONOMER_POSITION_MODE.MUTATION_CLIFFS;
+          this.mode = SELECTION_MODE.MUTATION_CLIFFS;
         });
         mutationCliffsMode.setTooltip('Statistically significant changes in activity');
-        mutationCliffsMode.addPostfix(MONOMER_POSITION_MODE.MUTATION_CLIFFS);
-        const invariantMapMode = ui.boolInput('', this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP);
+        mutationCliffsMode.addPostfix(SELECTION_MODE.MUTATION_CLIFFS);
+        const invariantMapMode = ui.boolInput('', this.mode === SELECTION_MODE.INVARIANT_MAP);
         invariantMapMode.root.addEventListener('click', () => {
           mutationCliffsMode.value = false;
           invariantMapMode.value = true;
-          this.mode = MONOMER_POSITION_MODE.INVARIANT_MAP;
+          this.mode = SELECTION_MODE.INVARIANT_MAP;
         });
         invariantMapMode.setTooltip('Number of sequences having monomer-position');
-        invariantMapMode.addPostfix(MONOMER_POSITION_MODE.INVARIANT_MAP);
+        invariantMapMode.addPostfix(SELECTION_MODE.INVARIANT_MAP);
         const setDefaultProperties = (input: DG.InputBase): void => {
           $(input.root).find('.ui-input-editor').css('margin', '0px').attr('type', 'radio');
           $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-right', '16px');
@@ -224,7 +223,7 @@ export class MostPotentResidues extends DG.JsViewer {
     // Setting Monomer column renderer
     CR.setAARRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe(
-      (args: DG.GridCellRenderArgs) => renderCell(args, this.model, false, undefined, undefined, false));
+      (args: DG.GridCellRenderArgs) => renderCell(args, this.model, false, undefined, undefined));
 
     this.viewerGrid.onCellTooltip((gridCell: DG.GridCell, x: number, y: number) => {
       if (!gridCell.isTableCell) {
@@ -234,7 +233,7 @@ export class MostPotentResidues extends DG.JsViewer {
       const monomerPosition = this.getMonomerPosition(gridCell);
       this.model.highlightMonomerPosition(monomerPosition);
       if (gridCell.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
-        monomerPosition.position = C.COLUMNS_NAMES.MONOMER;
+        monomerPosition.positionOrClusterType = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return false;
       return showTooltip(monomerPosition, x, y, this.model);
@@ -246,12 +245,9 @@ export class MostPotentResidues extends DG.JsViewer {
         return;
 
       const monomerPosition = this.getMonomerPosition(gridCell);
-      chooseAction(monomerPosition, ev.shiftKey, false, this.model);
-      this.viewerGrid.invalidate();
-      // this.model.fireBitsetChanged();
-    });
-    this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => {
-      cellChanged(this.model.mostPotentResiduesDf, this.model);
+      if (!this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
+        return;
+      this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       this.viewerGrid.invalidate();
     });
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
@@ -259,9 +255,9 @@ export class MostPotentResidues extends DG.JsViewer {
     setViewerGridProps(this.viewerGrid, true);
   }
 
-  getMonomerPosition(gridCell: DG.GridCell): MonomerPositionPair {
-    return {monomer: gridCell.cell.dataFrame.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!),
-      position: `${gridCell.cell.dataFrame.get(C.COLUMNS_NAMES.POSITION, gridCell!.tableRowIndex!)}`};
+  getMonomerPosition(gridCell: DG.GridCell): SelectionItem {
+    return {monomerOrCluster: gridCell.cell.dataFrame.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!),
+      positionOrClusterType: `${gridCell.cell.dataFrame.get(C.COLUMNS_NAMES.POSITION, gridCell!.tableRowIndex!)}`};
   }
 
   render(refreshOnly = false): void {
@@ -352,32 +348,12 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   canvasContext.restore();
 }
 
-export function showTooltip(monomerPosition: MonomerPositionPair, x: number, y: number, model: PeptidesModel): boolean {
-  if (monomerPosition.position === C.COLUMNS_NAMES.MONOMER)
-    model.showMonomerTooltip(monomerPosition.monomer, x, y);
+export function showTooltip(monomerPosition: SelectionItem, x: number, y: number, model: PeptidesModel): boolean {
+  if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
+    model.showMonomerTooltip(monomerPosition.monomerOrCluster, x, y);
   else
-    model.showTooltipAt(monomerPosition.monomer, monomerPosition.position, x, y);
+    model.showTooltipAt(monomerPosition, x, y);
   return true;
-}
-
-function chooseAction(monomerPosition: MonomerPositionPair, isShiftPressed: boolean, isInvariantMap: boolean,
-  model: PeptidesModel): void {
-  if (!isShiftPressed) {
-    if (isInvariantMap)
-      model.initInvariantMapSelection({cleanInit: true, notify: false});
-    else
-      model.initMutationCliffsSelection({cleanInit: true, notify: false});
-  }
-
-  model.modifyMonomerPositionSelection(monomerPosition.monomer, monomerPosition.position, isInvariantMap);
-}
-
-function cellChanged(table: DG.DataFrame, model: PeptidesModel): void {
-  if (model.isCellChanging)
-    return;
-  model.isCellChanging = true;
-  table.currentRowIdx = -1;
-  model.isCellChanging = false;
 }
 
 function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): void {
@@ -386,6 +362,8 @@ function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): v
   gridProps.allowRowSelection = false;
   gridProps.allowBlockSelection = false;
   gridProps.allowColSelection = false;
+  gridProps.showCurrentCellOutline = false;
+  gridProps.showCurrentRowIndicator = false;
 
   gridProps.rowHeight = 20;
   const girdCols = grid.columns;
