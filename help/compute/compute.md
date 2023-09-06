@@ -309,16 +309,15 @@ with that in a declarative manner.
 
 ## Integration
 
-Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the box
+Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the-box,
 we get many platform integration capabilities such as authentication, data access, and many others. In addition to that,
 there are some capabilities specific to models: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
 
 ### REST API
 
-Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
-input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
+Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the input parameters along with the authentication token. This allows instantaneous deployment of scientific methods for
+external consumption. To learn how to use it, click on the function and expand the `REST` pane on the context panel
 on the right. Both JavaScript and Curl samples are provided.
 
 ![rest-api](rest-api.png)
@@ -332,8 +331,8 @@ JavaScript-based apps have access to the whole Datagrok platform via the
 
 Sometimes, an app has to be included in the external web page. The simplest way to achieve it is via
 the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
-element. To embed a model, click on the hamburger icon in the top left corner, and choose `Embed...`
-. You will see a dialog with the HTML code on top that you can use to embed this into external site. Note that you can
+element. To embed a model, click on the hamburger icon in the top left corner and choose `Embed...`
+. You will see a dialog with the HTML code on top that you can use to embed this into an external site. Note that you can
 change parameter values right in the URL.
 
 On the bottom, you see a preview of the result ()
@@ -349,7 +348,7 @@ The computation engine utilizes the power of the Datagrok platform, which brings
 
 ### Logging, audit, and traceability
 
-Out-of-the box, the platform provides audit and logging capabilities, and when the model is [deployed](#deployment), we
+Out-of-the-box, the platform provides audit and logging capabilities, and when the model is [deployed](#deployment), we
 get the following automatically:
 
 * See who created, edited, deployed, and used the model
@@ -363,21 +362,21 @@ in a structured, machine-readable way. We can also tune what needs to be persist
 
 ### Privileges and visibility
 
-Datagrok has the built-in [role-based privileges system](../govern/authorization.md)
+Datagrok has a built-in [role-based privileges system](../govern/authorization.md)
 that is used to define who can see, execute, or edit models. The same mechanism is used for the data access control.
 
 ### Exploratory data analysis
 
 Perhaps the most commonly used data structure in computing is [dataframe](../develop/advanced/data-frame.md). To analyze
-either input or output dataframe, click on the `+` ("Add to workspace")
-icon. This will open the dataframe in the [exploratory data analysis](../datagrok/solutions/domains/use-cases/eda.md)
+either input or output dataframe, click the `+`` ("Add to workspace")
+icon. This action opens the dataframe in the [exploratory data analysis](../datagrok/solutions/domains/use-cases/eda.md)
 mode, allowing to [visualize](../visualize/viewers/viewers.md) the data,
 [transform](../transform/query-transformations.md)
 or perform more in-depth exploration, such as multivariate analysis.
 
 In the picture below, we are exploring the result of the model execution. While the default output is visualized via the
-line chart, once we added the dataframe to the workspace we can explore it in different other ways, such as visualizing
-it on scatter plot, histogram, or correlation plot.
+line chart, once we add the dataframe to the workspace, we can explore it in different ways, such as visualizing
+it on a scatter plot, histogram, or correlation plot.
 
 ![add-to-workspace](add-to-workspace.gif)
 
