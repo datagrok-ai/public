@@ -1,5 +1,16 @@
 # bio changelog
 
+## 5.38.0 (2023-09-06)
+
+### Features
+
+* Add UnitsHandler `maxLength`, `posList`, `splitter` properties.
+* Add UnitsHandler `getJoiner`, `getConverter` methods, granulate joiners and converters methods.
+
+### Breaking changes
+
+* Remove NotationConverter class, merge functionality into UnitsHandler.
+
 ## 5.37.0 (2023-08-30)
 
 ### Features
