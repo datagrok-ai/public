@@ -171,8 +171,8 @@ export function oneWayAnova(
   const Fcritical = jStat.centralF.inv(1 - alpha, anovaTable.DFbn, anovaTable.DFwn);
 
   const conclusion = (anovaTable.Fstat > Fcritical)
-    ? `The null hypothesis is rejected. The "${factorsCol.name}"-factor produces a significant difference in mean "${valuesCol.name}"-values.`
-    : `The null hypothesis is not rejected. The "${factorsCol.name}"-factor does not produce a significant difference in mean "${valuesCol.name}"-values.`;
+    ? `The null hypothesis is rejected. The "${factorsCol.name}"-factor produces a significant difference in "${valuesCol.name}"-values.`
+    : `Failed to reject the null hypothesis. The "${factorsCol.name}"-factor does not produce a significant difference in "${valuesCol.name}"-values.`;
 
   return {
     summaryTable: getOneWayAnovaDataframe(anovaTable, alpha, Fcritical),
