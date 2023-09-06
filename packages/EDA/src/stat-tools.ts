@@ -9,6 +9,7 @@ import * as jStat from 'jstat';
 
 enum ERROR_MSGS {
   NON_EQUAL_FACTORS_VALUES_SIZE = 'non-equal sizes of factor and values arrays.',
+  INCORRECT_SIGNIFICANCE_LEVEL = 'incorrect significance level. It must be from the interval (0, 1).',
 };
 
 export type FactorLevelData = {
@@ -32,6 +33,11 @@ export type OneWayAnovaTable = {
 };
 
 type ValuesType = number[] | Float32Array | Int32Array;
+
+export type AnovaResults = {
+  summaryTable: DG.DataFrame,
+  conclusion: string;
+};
 
 export function getFactorizedData(factors: any[], values: ValuesType): Map<any, FactorLevelData> {
   const size = factors.length;
@@ -118,23 +124,32 @@ export function computeOneWayAnovaTable(factorizedData: Map<any, FactorLevelData
   };
 } // computeOneWayAnovaTable
 
-function getOneWayAnovaDataframe(anovaTable: OneWayAnovaTable): DG.DataFrame {
+function getOneWayAnovaDataframe(anovaTable: OneWayAnovaTable, alpha: number, Fcritical: number): DG.DataFrame {
   return DG.DataFrame.fromColumns([
     DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total']),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Sum of squares', [anovaTable.SSbn, anovaTable.SSwn, anovaTable.SStot]),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Degrees of freedom', [anovaTable.DFbn, anovaTable.DFwn, anovaTable.DFtot]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Mean square', [anovaTable.MSbn, anovaTable.MSwn, null]),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-statistics', [anovaTable.Fstat, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anovaTable.pValue, null, null])
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anovaTable.pValue, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${alpha}-critical value`, [Fcritical, null, null]),
   ]);
 } // getOneWayAnovaDataframe
 
+function checkSignificanceLevel(alpha: number) {
+  if ((alpha <= 0) || (alpha >= 1))
+    throw new Error(ERROR_MSGS.INCORRECT_SIGNIFICANCE_LEVEL);
+}
+
 export function oneWayAnova(
   factorsCol: DG.Column, 
-  valuesCol: DG.Column, 
+  valuesCol: DG.Column,
+  alpha: number  = 0.05,
   toCheckNormality: boolean = false, 
-  toCheckVariancesEqaulity: boolean = false): DG.DataFrame
+  toCheckVariancesEqaulity: boolean = false): AnovaResults
 {
+  checkSignificanceLevel(alpha);
+
   const values = ((valuesCol.type === DG.COLUMN_TYPE.FLOAT) || (valuesCol.type === DG.COLUMN_TYPE.INT)) 
     ? valuesCol.getRawData() 
     : valuesCol.toList();
@@ -153,5 +168,14 @@ export function oneWayAnova(
 
   const anovaTable = computeOneWayAnovaTable(factorizedData);
 
-  return getOneWayAnovaDataframe(anovaTable);
+  const Fcritical = jStat.centralF.inv(1 - alpha, anovaTable.DFbn, anovaTable.DFwn);
+
+  const conclusion = (anovaTable.Fstat > Fcritical)
+    ? `The null hypothesis is rejected. The "${factorsCol.name}"-factor produces a significant difference in mean "${valuesCol.name}"-values.`
+    : `The null hypothesis is not rejected. The "${factorsCol.name}"-factor does not produce a significant difference in mean "${valuesCol.name}"-values.`;
+
+  return {
+    summaryTable: getOneWayAnovaDataframe(anovaTable, alpha, Fcritical),
+    conclusion: conclusion
+  };
 } // oneWayAnova

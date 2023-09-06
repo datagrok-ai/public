@@ -327,12 +327,10 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //input: dataframe table {category: Data}
 //input: column factors {category: Data}
 //input: column values {type: numerical; category: Data}
+//input: double alpha = 0.05 {category: Significance level} [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
 //input: bool toCheckNormality = false {caption: Normality; category: Checks} [Indicating whether the normality of distribution should be checked.]
 //input: bool toCheckVariances = false {caption: Variances; category: Checks} [Indicating whether an eqaulity of varainces should be checked.]
-export function anova(table: DG.DataFrame, factors: DG.Column, values: DG.Column, toCheckNormality: boolean, toCheckVariances: boolean) {
-  const start = new Date().getTime();
-  const anova = oneWayAnova(factors, values, toCheckNormality, toCheckVariances);
-  const finish = new Date().getTime();
-  console.log(`Time is ${finish - start} ms.`);
-  addOneWayAnovaVizualization(table, factors, values, anova);
+export function anova(table: DG.DataFrame, factors: DG.Column, values: DG.Column, alpha: number, toCheckNormality: boolean, toCheckVariances: boolean) {  
+  const anovaResults = oneWayAnova(factors, values, alpha, toCheckNormality, toCheckVariances);  
+  addOneWayAnovaVizualization(table, factors, values, anovaResults);
 }
