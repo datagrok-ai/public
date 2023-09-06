@@ -1,5 +1,20 @@
 # Bio changelog
 
+## 2.10.0 (2023-09-06)
+
+### Features
+
+* GetRegion for Macromolecule.
+* Top menu Bio | Convert | GetRegion dialog.
+* Add tests for UnitsHandler.getRegion.
+* Maintain `.positionNames` tag for GetRegion derived column.
+* Use `.regions` tag annotation for GetRegion dialog.
+* Fix mistyping top menu path for Identity scoring.
+
+### Bug fixes
+
+* Fixed UnitsHandler.posList length.
+
 ## 2.9.0 (2023-08-30)
 
 ### Features
@@ -76,7 +91,7 @@ This release focuses on improvements and bug fixes.
 * Added separator support for **Sequence Space** and **Activity Cliffs**.
 * Tooltip: shows monomer atomic structure for macromolecules.
 * For macromolecule cells, added the ability to show composition ratios in the property panel.
-* **Top menu**: organized the items into groups **SAR**, **Structure**, **Atomic level**, and **Search**. 
+* **Top menu**: organized the items into groups **SAR**, **Structure**, **Atomic level**, and **Search**.
 
 ### Bug Fixes
 

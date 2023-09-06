@@ -26,13 +26,17 @@ category('Scoring', () => {
 
   test('Identity', async () => {
     const scoresCol = await sequenceIdentityScoring(table, seqCol, reference);
-    for (let i = 0; i < scoresCol.length; i++)
-      expectFloat(scoresCol.get(i)!, table.get(expectedIdentity, i), 0.01, `Wrong identity score for sequence at position ${i}`);
+    for (let i = 0; i < scoresCol.length; i++) {
+      expectFloat(scoresCol.get(i)!, table.get(expectedIdentity, i), 0.01,
+        `Wrong identity score for sequence at position ${i}`);
+    }
   });
 
   test('Similarity', async () => {
     const scoresCol = await sequenceSimilarityScoring(table, seqCol, reference);
-    for (let i = 0; i < scoresCol.length; i++)
-      expectFloat(scoresCol.get(i)!, table.get(expectedSimilarity, i), 0.01, `Wrong similarity score for sequence at position ${i}`);
+    for (let i = 0; i < scoresCol.length; i++) {
+      expectFloat(scoresCol.get(i)!, table.get(expectedSimilarity, i), 0.01,
+        `Wrong similarity score for sequence at position ${i}`);
+    }
   });
 });
