@@ -86,14 +86,14 @@ services:
     restart: unless-stopped
     profiles: [ "all", "cvm", "chem", "grok_compute" ]
 
-  jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+  jupyter:
+    image: datagrok/jupyter:${JUPYTER_VERSION:-bleeding-edge}
     networks:
       datagrok:
         aliases:
           - jupyter_kernel_gateway
     restart: unless-stopped
-    profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg", "jupyter_notebook", "notebook" ]
+    profiles: [ "all", "cvm", "scripting", "jupyter" ]
 
   h2o:
     image: datagrok/h2o:latest

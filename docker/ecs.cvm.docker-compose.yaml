@@ -28,8 +28,8 @@ services:
           cpus: '0.25'
           memory: 200M
 
-  jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:latest
+  jupyter:
+    image: datagrok/jupyter:bleeding-edge
     networks:
       - cvm
     ports:
@@ -179,15 +179,15 @@ x-aws-cloudformation:
             AssignPublicIp: DISABLED
 
 
-    JupyterkernelgatewayTCP5005Listener:
-    JupyterkernelgatewayTCP5005ListenerRule:
+    JupyterTCP5005Listener:
+    JupyterTCP5005ListenerRule:
       Properties:
         Priority: 3
         Actions:
           - ForwardConfig:
               TargetGroups:
                 - TargetGroupArn:
-                    Ref: JupyterkernelgatewayTCP5005TargetGroup
+                    Ref: JupyterTCP5005TargetGroup
             Type: forward
         Conditions:
           - Field: path-pattern
@@ -197,7 +197,7 @@ x-aws-cloudformation:
         ListenerArn:
           Ref: GrokcomputeTCP80Listener
       Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    JupyterkernelgatewayTCP5005TargetGroup:
+    JupyterTCP5005TargetGroup:
       Properties:
         HealthCheckPath: /jupyter/helper/info
         Matcher:
@@ -209,7 +209,7 @@ x-aws-cloudformation:
             Value: lb_cookie
           - Key: stickiness.lb_cookie.duration_seconds
             Value: 86400
-    JupyterkernelgatewayTCP8888TargetGroup:
+    JupyterTCP8888TargetGroup:
       Properties:
         HealthCheckPath: /jupyter/api/swagger.yaml
         Matcher:
@@ -221,23 +221,23 @@ x-aws-cloudformation:
             Value: lb_cookie
           - Key: stickiness.lb_cookie.duration_seconds
             Value: 86400
-    JupyterkernelgatewayTCP8888Listener:
+    JupyterTCP8888Listener:
       Properties:
         DefaultActions:
           - ForwardConfig:
               TargetGroups:
                 - TargetGroupArn:
-                    Ref: JupyterkernelgatewayTCP8888TargetGroup
+                    Ref: JupyterTCP8888TargetGroup
             Type: forward
         Protocol: "HTTP"
-    JupyterkernelgatewayTCP8888ListenerRule:
+    JupyterTCP8888ListenerRule:
       Properties:
         Priority: 4
         Actions:
           - ForwardConfig:
               TargetGroups:
                 - TargetGroupArn:
-                    Ref: JupyterkernelgatewayTCP8888TargetGroup
+                    Ref: JupyterTCP8888TargetGroup
             Type: forward
         Conditions:
           - Field: path-pattern
@@ -247,7 +247,7 @@ x-aws-cloudformation:
         ListenerArn:
           Ref: GrokcomputeTCP80Listener
       Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    JupyterkernelgatewayTCP8889TargetGroup:
+    JupyterTCP8889TargetGroup:
       Properties:
         HealthCheckPath: /notebook/api
         Matcher:
@@ -259,23 +259,23 @@ x-aws-cloudformation:
             Value: lb_cookie
           - Key: stickiness.lb_cookie.duration_seconds
             Value: 86400
-    JupyterkernelgatewayTCP8889Listener:
+    JupyterTCP8889Listener:
       Properties:
         DefaultActions:
           - ForwardConfig:
               TargetGroups:
                 - TargetGroupArn:
-                    Ref: JupyterkernelgatewayTCP8889TargetGroup
+                    Ref: JupyterTCP8889TargetGroup
             Type: forward
         Protocol: "HTTP"
-    JupyterkernelgatewayTCP8889ListenerRule:
+    JupyterTCP8889ListenerRule:
       Properties:
         Priority: 6
         Actions:
           - ForwardConfig:
               TargetGroups:
                 - TargetGroupArn:
-                    Ref: JupyterkernelgatewayTCP8889TargetGroup
+                    Ref: JupyterTCP8889TargetGroup
             Type: forward
         Conditions:
           - Field: path-pattern
@@ -285,19 +285,19 @@ x-aws-cloudformation:
         ListenerArn:
           Ref: GrokcomputeTCP80Listener
       Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    JupyterkernelgatewayService:
+    JupyterService:
       DependsOn:
-        - JupyterkernelgatewayTCP5005ListenerRule
-        - JupyterkernelgatewayTCP8888Listener
-        - JupyterkernelgatewayTCP8888ListenerRule
-        - JupyterkernelgatewayTCP8889Listener
-        - JupyterkernelgatewayTCP8889ListenerRule
+        - JupyterTCP5005ListenerRule
+        - JupyterTCP8888Listener
+        - JupyterTCP8888ListenerRule
+        - JupyterTCP8889Listener
+        - JupyterTCP8889ListenerRule
       Properties:
         NetworkConfiguration:
           AwsvpcConfiguration:
             AssignPublicIp: DISABLED
 
-    JupyterkernelgatewayTaskDefinition:
+    JupyterTaskDefinition:
       Properties:
         EphemeralStorage:
           SizeInGiB: 50

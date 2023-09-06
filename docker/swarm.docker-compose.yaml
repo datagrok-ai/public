@@ -286,7 +286,7 @@ services:
           - grok_compute
     logging: *default-logging
 
-  jupyter_kernel_gateway:
+  jupyter:
     image: datagrok/jupyter_kernel_gateway:latest
     stop_grace_period: 2m
     deploy:
@@ -312,7 +312,7 @@ services:
     networks:
       datagrok:
         aliases:
-          - jupyter_kernel_gateway
+          - jupyter
     logging: *default-logging
 
   h2o:
