@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike} from '../../shared-components/src/FuncCallInput';
+import { FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated } from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -54,6 +54,7 @@ const syncParams = {
   [SYNC_FIELD.INPUTS]: 'inputParams',
   [SYNC_FIELD.OUTPUTS]: 'outputParams',
 } as const;
+
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
   private checkDisability = new Subject();
@@ -63,8 +64,13 @@ export class RichFunctionView extends FunctionView {
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
-  private inputsOverride: Record<string, FuncCallInput> = {};
-  private inputsMap: Record<string, FuncCallInput> = {};
+
+  private inputsOverride: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+  private inputsMap: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+
+  // validors
+  private validators: Record<string, Validator> = {};
+  private validationState: Record<string, ValidationResult> = {};
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -84,6 +90,7 @@ export class RichFunctionView extends FunctionView {
 
   protected async onFuncCallReady() {
     await this.loadInputsOverrides();
+    await this.loadInputsValidators();
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
@@ -147,6 +154,18 @@ export class RichFunctionView extends FunctionView {
         const call = func.prepare({params: JSON.parse(param.property.options.inputOptions || '{}')});
         await call.call();
         this.inputsOverride[param.name] = call.outputs.input;
+      }
+    }));
+  }
+
+  public async loadInputsValidators() {
+    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    await Promise.all(inputParams.map(async (param) => {
+      if (param.property.options.validator) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.validator);
+        const call = func.prepare({params: JSON.parse(param.property.options.validatorOptions || '{}')});
+        await call.call();
+        this.validators[param.name] = call.outputs.validator;
       }
     }));
   }
@@ -760,8 +779,10 @@ export class RichFunctionView extends FunctionView {
     if (this.foldedCategories.includes(prop.category))
       this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), t];
 
-    if (isInputBase(t))
+    if (isInputBase(t)) {
       this.inputBaseAdditionalRenderHandler(val, t);
+      this.injectInputBaseValidation(t);
+    }
 
     inputsDiv.append(t.root);
   }
@@ -778,6 +799,19 @@ export class RichFunctionView extends FunctionView {
     t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
     if (prop.options['units']) t.addPostfix(prop.options['units']);
+  }
+
+  private injectInputBaseValidation(t: DG.InputBase) {
+    // just simple error/warn classes
+    function setValidation(messages: ValidationResult | undefined) {
+      t.input.classList.remove('d4-invalid');
+      t.input.classList.remove('d4-partially-invalid');
+      if (messages?.errors)
+        t.input.classList.add('d4-invalid');
+      else if (messages?.warnings)
+        t.input.classList.add('d4-partially-invalid');
+    }
+    (t as any).setValidation = setValidation;
   }
 
   private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
@@ -845,24 +879,69 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    DG.debounce(getObservable(t.onInput.bind(t)), 350).subscribe(() => {
+    DG.debounce(getObservable(t.onInput.bind(t)), this.runningOnInput ? 350 : 0).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
 
       this.funcCall[field][val.name] = t.value;
-      if (isInputBase(t)) {
-        if (t.value === null)
-          setTimeout(() => t.input.classList.add('d4-invalid'), 100);
-        else
-          t.input.classList.remove('d4-invalid');
-      }
       this.checkDisability.next();
       this.hideOutdatedOutput();
     });
   }
 
-  private isRunnable() {
-    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning.value;
+  public isRunnable() {
+    if (this.isRunning.value)
+      return false;
+
+    this.runValidation();
+    return this.isValid();
+  }
+
+  public isValid() {
+    for (const [_, v] of Object.entries(this.validationState)) {
+      if (!isValidationPassed(v))
+        return false;
+    }
+    return true;
+  }
+
+  public getValidationState() {
+    return this.validationState;
+  }
+
+  private runValidation() {
+    this.clearValidation();
+    for (const [k, v] of this.funcCall.inputs.entries()) {
+      const standardMsgs = nonNullValidator(v, this._funcCall!);
+      if (standardMsgs) {
+        this.syncValidationState(k, standardMsgs);
+        continue;
+      }
+      const customValidator = this.validators[k];
+      if (customValidator) {
+        const customMsgs = customValidator(v, this._funcCall!);
+        this.syncValidationState(k, customMsgs);
+      }
+    }
+    console.log(this.validationState);
+  }
+
+  private clearValidation() {
+    this.validationState = {};
+    for (const input of Object.values(this.inputsMap)) {
+      if (isFuncCallInputValidated(input)) {
+        input.setValidation();
+      }
+    }
+  }
+
+  private syncValidationState(param: string, validationMessages?: ValidationResult | void) {
+    if (validationMessages) {
+      this.validationState[param] = validationMessages;
+      const input = this.inputsMap[param];
+      if (isFuncCallInputValidated(input))
+        input.setValidation(validationMessages);
+    }
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {

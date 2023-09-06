@@ -227,3 +227,16 @@ export function modelCatalog() {
     }
   } else grok.shell.v = modelsView;
 }
+
+//name: RangeValidatorFactory
+//input: object params
+//output: object validator
+export function RangeValidatorFactory(params: any) {
+  return (val: number) => {
+    const { min, max } = params;
+    if (val < min || val > max) {
+      // TODO: format results
+      return { errors: [`Out of range [${min}, ${max}] value: ${val}`] };
+    }
+  }
+}
