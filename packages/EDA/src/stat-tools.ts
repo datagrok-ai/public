@@ -6,13 +6,14 @@ import * as DG from 'datagrok-api/dg';
 
 //@ts-ignore: no types
 import * as jStat from 'jstat';
+import { FalseLiteral } from 'typescript';
 
 enum ERROR_MSGS {
   NON_EQUAL_FACTORS_VALUES_SIZE = 'non-equal sizes of factor and values arrays.',
   INCORRECT_SIGNIFICANCE_LEVEL = 'incorrect significance level. It must be from the interval (0, 1).',
 };
 
-export type FactorLevelData = {
+export type SampleData = {
   sum: number,
   sumOfSquares: number,
   size: number,
@@ -39,13 +40,13 @@ export type AnovaResults = {
   conclusion: string;
 };
 
-export function getFactorizedData(factors: any[], values: ValuesType): Map<any, FactorLevelData> {
+export function getFactorizedData(factors: any[], values: ValuesType): Map<any, SampleData> {
   const size = factors.length;
   
   if (size !== values.length)
     throw new Error(ERROR_MSGS.NON_EQUAL_FACTORS_VALUES_SIZE);
   
-  const factorized = new Map<any, FactorLevelData>();  
+  const factorized = new Map<any, SampleData>();  
   
   for (let i = 0; i < size; ++i) {
     const cur = factorized.get(factors[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: []};
@@ -61,13 +62,13 @@ export function getFactorizedData(factors: any[], values: ValuesType): Map<any, 
   return factorized;
 } // getFactorizedData
   
-export function getLevelsStat(factors: any[], values: ValuesType): Map<any, FactorLevelData> {
+export function getLevelsStat(factors: any[], values: ValuesType): Map<any, SampleData> {
   const size = factors.length;
     
   if (size !== values.length)
     throw new Error(ERROR_MSGS.NON_EQUAL_FACTORS_VALUES_SIZE);
     
-  const factorized = new Map<any, FactorLevelData>();  
+  const factorized = new Map<any, SampleData>();  
     
   for (let i = 0; i < size; ++i) {
     const cur = factorized.get(factors[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: null};
@@ -82,7 +83,7 @@ export function getLevelsStat(factors: any[], values: ValuesType): Map<any, Fact
   return factorized;
  } // getLevelsStat
   
-export function computeOneWayAnovaTable(factorizedData: Map<any, FactorLevelData>): OneWayAnovaTable {
+export function computeOneWayAnovaTable(factorizedData: Map<any, SampleData>): OneWayAnovaTable {
   const K = factorizedData.size;
   
   let sum = 0;
@@ -141,6 +142,42 @@ function checkSignificanceLevel(alpha: number) {
     throw new Error(ERROR_MSGS.INCORRECT_SIGNIFICANCE_LEVEL);
 }
 
+function getVariance(sampleData: SampleData): number {
+  const size = sampleData.size;
+  return (sampleData.sumOfSquares / size - (sampleData.sum / size) ** 2) / (size - 1);
+}
+
+function areVariancesOfTwoSamplesEqual(
+  xSampleData: SampleData,
+  ySampleData: SampleData, 
+  alpha: number  = 0.05): boolean 
+{
+  const Fstat = getVariance(xSampleData) / getVariance(ySampleData);
+  const Fcritical = jStat.centralF.inv(1 - alpha, xSampleData.size - 1, ySampleData.size - 1);
+
+  console.log(`Fstst: ${Fstat}; Fcrit: ${Fcritical}; Test: ${Fstat < Fcritical}`);
+
+  return (Fstat < Fcritical);
+}
+
+function areVariancesOfFactorizedDataEqual(factorizedData: Map<any, SampleData>): boolean {
+  const iter = factorizedData.keys();
+  let key = iter.next();
+  const xSampleData = factorizedData.get(key.value);
+
+  while (true) {
+    key = iter.next();
+
+    if (key.done)
+      break;
+
+    if(!areVariancesOfTwoSamplesEqual(xSampleData!, factorizedData.get(key.value)!))
+      return false;
+  }
+
+  return true;
+}
+
 export function oneWayAnova(
   factorsCol: DG.Column, 
   valuesCol: DG.Column,
@@ -159,13 +196,13 @@ export function oneWayAnova(
   const factorizedData = getLevelsStat(factors, values as ValuesType);
 
   if (toCheckNormality) {
-    // TODO: to add normality test    
+    // TODO: add this
   }
 
-  if (toCheckVariancesEqaulity) {
-    // TODO: to equality of variances test
-  }
-
+  if (toCheckVariancesEqaulity)
+    if(!areVariancesOfFactorizedDataEqual(factorizedData))    
+      throw new Error('Variances are not equal!');
+  
   const anovaTable = computeOneWayAnovaTable(factorizedData);
 
   const Fcritical = jStat.centralF.inv(1 - alpha, anovaTable.DFbn, anovaTable.DFwn);
@@ -179,3 +216,4 @@ export function oneWayAnova(
     conclusion: conclusion
   };
 } // oneWayAnova
+ 

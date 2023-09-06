@@ -1,4 +1,4 @@
-import {FactorLevelData, OneWayAnovaTable, 
+import {SampleData, OneWayAnovaTable, 
   getFactorizedData, getLevelsStat, computeOneWayAnovaTable} from './stat-tools';
 
 const factors = ['m', 'c', 'm', 'c', 'm', 'f', 'f', 'm', 'f', 'c', 'm', 'c', 'f']; // m - 5; f - 4; c - 4
