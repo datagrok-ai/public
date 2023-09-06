@@ -7,9 +7,6 @@ import {Observable} from 'rxjs';
 import {IViewer} from './viewer';
 
 export enum TAGS {
-  positionNames = '.wl.positionNames',
-  positionLabels = '.wl.positionLabels',
-
   /** Controls displaying WebLogo in a Macromolecule column's header tooltip */
   tooltipWebLogo = '.tooltipWebLogo',
 }
@@ -84,7 +81,6 @@ export interface IWebLogoViewer extends WebLogoProps, IViewer {
   setOptions(options: Partial<WebLogoProps>): void;
 }
 
-export const positionSeparator: string = ', ';
 export const positionRe: RegExp = /(\d+)([A-Z]?)/;
 
 declare module 'datagrok-api/dg' {
