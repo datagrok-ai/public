@@ -613,7 +613,29 @@ in cycles etc. Structure at atomic level could be saved in available notations.
 <summary>How to use</summary>
 
 1. In the **Top Menu**, select **Bio** > **Convert** > **To Atomic Level**. A dialog opens.
-1. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+2. In the dialog, select the sequence column and click **OK** to execute. A new column containing atomic structures of sequences is added to the table. In addition, a menu **Chem** appears in the **Top Menu**. Clicking the atomic-level structures displays cheminformatics-related information in the **Context Panel**.
+
+</details>
+
+### Get region
+
+With Datagrok you can extract a region of sequences in a Macromolecule column.
+The Get Region function maintains `.positionNames` and `.positionLabels` for extracted region.
+The Get Region input form shows Region input if a Macromolecule column is annotated with `.regions` tag (JSON format),
+to easy selection region of interest to extract.
+
+![Get region for Macromolecule](./img/sequence-GetRegion.gif)
+
+<details>
+<summary>How to use</summary>
+
+1. To call Get Region:
+
+    * Select **Bio** > **Convert** > **GetRegion**. A dialog opens. In the dialog select a table and a sequence column.
+    * Click on the **Hamburger** icon of a Macromolecule column. Expand section **Get Region**.
+
+2. Fill in start and end positions of the region of interest, and name of
+   a column. A new column containing sequences of the region of interest is added to the table.
 
 </details>
 
