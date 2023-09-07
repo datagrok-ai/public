@@ -167,10 +167,11 @@ export function fitSeries(series: IFitSeries, fitFunc: FitFunction, logOptions?:
 
 /** Returns series confidence interval functions */
 export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction,
-  userParamsFlag: boolean): FitConfidenceIntervals {
-  const data = userParamsFlag ? {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)} :
-    {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
-      y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  userParamsFlag: boolean, logOptions?: LogOptions): FitConfidenceIntervals {
+  const data = userParamsFlag ? {x: series.points.map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+    y: series.points.map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)} :
+    {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+      y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (!series.parameters)
     series.parameters = fitSeries(series, fitFunc).parameters;
   return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05, FitErrorModel.Constant);
