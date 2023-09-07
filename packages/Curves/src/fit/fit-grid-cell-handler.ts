@@ -133,7 +133,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   // TODO: decrease the sizes for hte plot title rendering
 
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
-    const acc = ui.accordion('Curves property panel');
+    const acc = ui.accordion(`Curves ${gridCell.cell.dataFrame.name}`);
     // TODO: make just the base ui.choiceInput after nullable option is added
     const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Switch manipulation level',
       defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
