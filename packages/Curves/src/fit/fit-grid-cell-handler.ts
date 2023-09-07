@@ -22,7 +22,7 @@ const SERIES_OPTIONS = 'seriesOptions';
 enum MANIPULATION_LEVEL {
   DATAFRAME = 'Dataframe',
   COLUMN = 'Column',
-  PLOT = 'Plot'
+  CELL = 'Cell'
 };
 
 
@@ -55,11 +55,18 @@ function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, op
   }
 }
 
+// TODO: add detectSettings() method which will go thorugh cells initially and tell if there is a custom property value or not
+// TODO: render confidence intervals
+// TODO: fix the margins if small cell sizes
+// TODO: don't allow clickToToggle if small size
+// TODO: shpw tooltip if 30x30 or smth like this - small but can see
+
 function changeColumnsCurvesOptions(columns: DG.Column[], inputBase: DG.InputBase, options: string): void {
+  let chartData: IFitChartData;
   for (let i = 0; i < columns.length; i++) {
     for (let j = 0; j < columns[i].length; j++) {
       if (columns[i].get(j) === '') continue;
-      const chartData: IFitChartData = columns[i].getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+      chartData = columns[i].getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
         convertXMLToIFitChartData(columns[i].get(j)) : JSON.parse(columns[i].get(j) ?? '{}') ?? {};
       changePlotOptions(chartData, inputBase, options);
       columns[i].set(j, JSON.stringify(chartData));
@@ -117,13 +124,21 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   isApplicable(x: any): boolean {
     return x instanceof DG.GridCell && x.cellType === FIT_CELL_TYPE;
   }
+  
+  // TODO: add aspect ratio for the cell
+  // TODO: add legend
+  // TODO: add tooltip
+  // TODO: add the table for the values on the cell or don't render it at all
+  // TODO: fix the curves demo app
+  // TODO: decrease the sizes for hte plot title rendering
 
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
-    const acc = ui.accordion();
+    const acc = ui.accordion('Curves property panel');
     // TODO: make just the base ui.choiceInput after nullable option is added
     const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Switch manipulation level',
-      defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Plot'], nullable: false});
+      defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
     const switchLevelInput = DG.InputBase.forProperty(switchProperty);
+
     const chartData = getChartData(gridCell);
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
     const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
