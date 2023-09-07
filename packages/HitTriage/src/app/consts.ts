@@ -23,6 +23,6 @@ export const i18n = {
   download: 'Download',
   cancel: 'Cancel',
   continueCampaigns: 'Continue a campaign',
-  createNewCampaignHeader: 'Or create a new one',
+  createNewCampaignHeader: 'New campaign',
   selectTemplate: 'Template',
 } as const;

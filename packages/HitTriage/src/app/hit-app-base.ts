@@ -8,8 +8,7 @@ export class HitAppBase<T> {
   public template?: T;
   public baseUrl!: string;
   constructor() {
-    this.baseUrl = '/hit-triage'
-    //this.resetBaseUrl();
+    this.resetBaseUrl();
   }
 
   public resetBaseUrl() {

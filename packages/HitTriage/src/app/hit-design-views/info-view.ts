@@ -42,7 +42,8 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       ]), textLink,
     ]);
     const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([], {classes: 'ui-form'});
+    const templatesDiv = ui.divH([]);
+    const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');
 
     const campaignsTable = await this.getCampaignsTable();
     $(this.root).empty();
@@ -50,10 +51,9 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       ui.divV([appDescription, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
       campaignsTable,
       createNewCampaignHeader,
-      templatesDiv,
-      campaignAccordionDiv,
+      contentDiv,
     ], {style: {maxWidth: '800px'}}));
-    this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(this.app.resetBaseUrl);
+    this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(() => this.app.resetBaseUrl());
   }
 
   private async startNewCampaign(

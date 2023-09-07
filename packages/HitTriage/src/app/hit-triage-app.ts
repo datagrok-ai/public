@@ -6,7 +6,7 @@ import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
 import {InfoView} from './hit-triage-views/info-view';
 import {SubmitView} from './hit-triage-views/submit-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName, HitSelectionColName, i18n} from './consts';
-import {addBreadCrumbsToRibbons, modifyUrl, toFormatedDateString} from './utils';
+import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
@@ -98,20 +98,19 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         externals: funcs,
       });
     };
-
+    const curView = grok.shell.v;
     const pickV = grok.shell.addView(this.pickView);
     this.currentPickViewId = pickV.name;
-    this._submitView ??= new SubmitView(this);
-    //this.setBaseUrl();
+    this._submitView = new SubmitView(this);
+    this.setBaseUrl();
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
 
-    const newView = this.pickView;
-    const curView = grok.shell.v;
-    const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Triage', "Pick", () => {
+    const newView = pickV;
+    const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', 'Pick', () => {
       grok.shell.v = curView;
       newView.close();
+      sub.unsubscribe();
     });
-    pickV.path = '/hit-triage/pick'
     // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
@@ -120,7 +119,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
   get campaignId(): string | undefined {return this._campaignId;}
 
-  get pickView(): DG.TableView {return this._pickView ??= this.getFilterView();}
+  get pickView(): DG.TableView {return this._pickView = this.getFilterView();}
 
   get molColName() {return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;}
 
@@ -170,15 +169,16 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const submitButton = ui.bigButton('Submit', () => {
       const dialogContent = this._submitView?.render();
       if (dialogContent) {
-        let dlg = ui.dialog('Submit');
-        dlg.add(dialogContent)
-        dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();})
-        dlg.addButton('Submit',()=>{SubmitView.submit; dlg.close();})
+        const dlg = ui.dialog('Submit');
+        dlg.add(dialogContent);
+        dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();});
+        dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
         dlg.show();
       }
     });
-
-    ribbons.push([calculateRibbon, submitButton]);
+    submitButton.classList.add('hit-design-submit-button');
+    const hasSubmit = checkRibbonsHaveSubmit(ribbons);
+    ribbons.push([calculateRibbon, ...(hasSubmit ? [] : [submitButton])]);
     view.setRibbonPanels(ribbons);
     view.name = this._filterViewName;
     setTimeout(async () => {

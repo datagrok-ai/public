@@ -7,7 +7,6 @@ import {HitTriageTemplate} from '../types';
 import {HitBaseView} from '../base-view';
 
 export class SubmitView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
-  static submit: any;
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Submit';
@@ -15,17 +14,11 @@ export class SubmitView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
 
   render(): HTMLDivElement {
     ui.empty(this.root);
-    // const submitDiv = ui.divH([], {style: {gap: '10px'}});
-    //if (this.app.template?.submit && this.app.template.submit.fName)
-    //  submitDiv.appendChild(ui.bigButton('SUBMIT', () => this.submit()));
 
-    //submitDiv.appendChild(ui.bigButton('Save Campaign', () => this.app.saveCampaign()));
     const content = ui.divV([
       ui.h1('Summary'),
       ui.div([ui.tableFromMap(this.app.getSummary())]),
-      //submitDiv,
     ]);
-    SubmitView.submit = this.submit();
     return content;
   }
 

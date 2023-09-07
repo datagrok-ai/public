@@ -47,7 +47,7 @@ export function addBreadCrumbsToRibbons(view: DG.ViewBase, firstPath: string, se
     viewNameRoot.textContent = '';
     viewNameRoot.appendChild(breadcrumbs.root);
   }
-/*
+  /*
   let ribbons = view.getRibbonPanels();
   if (!ribbons?.length)
     ribbons = [];
@@ -68,3 +68,11 @@ export function popRibbonPannels(view: DG.ViewBase) {
   ribbons.pop();
   view.setRibbonPanels(ribbons);
 };
+
+export function checkRibbonsHaveSubmit(ribbons: HTMLElement[][]): boolean {
+  return ribbons.reduce((prev, cur) => {
+    return prev || cur.reduce((p, c) =>
+      p || c.classList.contains('hit-design-submit-button') ||
+        Array.from(c.children).some((child) =>child.classList.contains('hit-design-submit-button')), false);
+  }, false);
+}

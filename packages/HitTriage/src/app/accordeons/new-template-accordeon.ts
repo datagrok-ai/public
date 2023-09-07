@@ -154,7 +154,6 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
     buttonsContainerDiv.appendChild(createTemplateButton);
   });
 
-  
   return {root: form, template: promise, cancelPromise};
 }
 
@@ -176,7 +175,7 @@ export function getCampaignFieldEditors() {
 
   const fieldsContainer = ui.div([
     ui.h2('Additional fields'),
-    itemsGrid.root
+    itemsGrid.root,
   ]);
   return {
     getFields: getFieldParams,

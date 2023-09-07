@@ -66,7 +66,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     funcEditorDiv.innerHTML = '';
     funcEditorDiv.appendChild(editor);
   };
-  const funcEditorDiv = ui.div([],'ui-form');
+  const funcEditorDiv = ui.div([]);
   const dataSourceFunctionInput = ui.choiceInput(
     C.i18n.dataSourceFunction, template.queryFunctionName ?? Object.keys(dataSourceFunctionsMap)[0],
     Object.keys(dataSourceFunctionsMap), onDataFunctionChange);
@@ -74,10 +74,10 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
   onDataFunctionChange();
   if (template.queryFunctionName)
     dataSourceFunctionInput.root.getElementsByTagName('select').item(0)?.setAttribute('disabled', 'true');
-  const functionInputDiv = ui.div([dataSourceFunctionInput, funcEditorDiv],'ui-form');
+  const functionInputDiv = ui.div([dataSourceFunctionInput, funcEditorDiv]);
   // if the file source is selected as 'File', no other inputs are needed so we hide the function editor
   functionInputDiv.style.display = 'none';
-  const dataInputsDiv = ui.div([fileInputDiv, functionInputDiv], 'ui-form');
+  const dataInputsDiv = ui.div([fileInputDiv, functionInputDiv]);
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form
@@ -85,6 +85,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
     DG.Property.fromOptions({name: field.name, type: CampaignFieldTypes[field.type], nullable: !field.required}));
   const campaignPropsObject: {[key: string]: any} = {};
   const campaignPropsForm = campaignProps.length ? ui.input.form(campaignPropsObject, campaignProps) : ui.div();
+  campaignPropsForm.classList.remove('ui-form');
   // displaying function editor or file input depending on the data source type
   if (template.dataSourceType === 'File') {
     fileInputDiv.style.display = 'inherit';
@@ -96,7 +97,7 @@ export function newCampaignAccordeon(template: HitTriageTemplate): HitTriageCamp
 
   const form = ui.div([
     dataInputsDiv,
-    ...(campaignProps.length ? [campaignPropsForm] : [])], 'ui-form');
+    ...(campaignProps.length ? [campaignPropsForm] : [])]);
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
   form.appendChild(buttonsDiv);
   const promise = new Promise<INewCampaignResult>((resolve) => {
