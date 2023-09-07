@@ -107,6 +107,9 @@ export class RichFunctionView extends FunctionView {
    */
   public override onAfterRun(): Promise<void> {
     this.showOutputTabsElem();
+    this.outputsTabsElem.panes.forEach((tab) => {
+      $(tab.header).show();
+    });
 
     if (this.prevOpenedTab) {
       this.outputsTabsElem.currentPane = this.prevOpenedTab;
@@ -394,7 +397,6 @@ export class RichFunctionView extends FunctionView {
               const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
               this.showOutputTabsElem();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParam.value;
