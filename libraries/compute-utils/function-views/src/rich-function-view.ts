@@ -489,9 +489,7 @@ export class RichFunctionView extends FunctionView {
             ];
           },
         ).root;
-        $(table).css({
-          'max-width': '400px',
-        });
+        $(table).addClass('rfv-scalar-table');
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -525,7 +523,7 @@ export class RichFunctionView extends FunctionView {
       });
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
       });
     });
 
