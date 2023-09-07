@@ -206,15 +206,15 @@ export const fitChartDataProperties: Property[] = [
   Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
   Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
   Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
-  Property.js('title', TYPE.STRING, {description: 'Plot title. If not specified, doesn\'t renders', nullable: true}),
+  Property.js('title', TYPE.STRING, {nullable: true}),
   Property.js('xAxisName', TYPE.STRING, {description:
     'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('yAxisName', TYPE.STRING, {description:
     'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
-  Property.js('logX', TYPE.BOOL, {defaultValue: false}),
-  Property.js('logY', TYPE.BOOL, {defaultValue: false}),
-  Property.js('showStatistics', TYPE.STRING_LIST, {choices: statisticsProperties.map((frp) => frp.name),
-    inputType: 'MultiChoice'}),
+  Property.js('logX', TYPE.BOOL, {description: 'Whether the X axis should be logarithmic', defaultValue: false}),
+  Property.js('logY', TYPE.BOOL, {description: 'Whether the Y axis should be logarithmic', defaultValue: false}),
+  Property.js('showStatistics', TYPE.STRING_LIST, {description: 'Whether specific statistics should be rendered',
+    choices: statisticsProperties.map((frp) => frp.name), inputType: 'MultiChoice'}),
 ];
 
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
@@ -228,19 +228,19 @@ export const fitSeriesProperties: Property[] = [
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
-  Property.js('showFitLine', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
+  Property.js('showFitLine', TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
   Property.js('showPoints', TYPE.STRING,
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   Property.js('showCurveConfidenceInterval', TYPE.BOOL,
     {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false}),
-  Property.js('markerType', TYPE.STRING, {category: 'Rendering', description: 'Marker type used when rendering',
-    defaultValue: 'circle', choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+  Property.js('markerType', TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
+    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
-  Property.js('lineStyle', TYPE.STRING, {category: 'Rendering', description: 'Line style used when rendering',
-    defaultValue: 'solid', choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
-  Property.js('droplines', TYPE.STRING_LIST, {choices: DROPLINES, inputType: 'MultiChoice'}),
+  Property.js('lineStyle', TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
+    choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
+  Property.js('droplines', TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
+    choices: DROPLINES, inputType: 'MultiChoice'}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';
