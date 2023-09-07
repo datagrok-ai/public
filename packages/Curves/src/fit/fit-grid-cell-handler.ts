@@ -135,9 +135,12 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
     const acc = ui.accordion(`Curves ${gridCell.cell.dataFrame.name}`);
     // TODO: make just the base ui.choiceInput after nullable option is added
-    const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Switch manipulation level',
+    const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Controls the level at which properties will be switched',
       defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
-    const switchLevelInput = DG.InputBase.forProperty(switchProperty);
+    const switchLevelInput = ui.input.forProperty(switchProperty);
+
+    // temporarily because input doesn't show the tooltip
+    ui.tooltip.bind(switchLevelInput.captionLabel, 'Controls the level at which properties will be switched');
 
     const chartData = getChartData(gridCell);
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
