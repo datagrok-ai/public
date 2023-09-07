@@ -46,13 +46,13 @@ Grok Connect. Since it's available on [Maven](https://mvnrepository.com/artifact
       cd public/connectors/grok_connect/src/main/java/grok_connect/providers
       ```
 
-    * Create a `.java` file and name using the standard naming convention. For example:
+   * Create a `.java` file and name using the standard naming convention. For example:
     
      ```
      OrientDbJdbcProvider.java
      ```
 
-    * In your code editor, open this JAVA file and create a Java class with the same name. 
+   * In your code editor, open this JAVA file and create a Java class with the same name. 
 Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java), which provides basic functionality for all JDBC providers.
 
  For our example, paste this code to your file:
@@ -70,7 +70,7 @@ Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/mas
   
   :::
 
-    * Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
+* Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
 
     ```
       driverClassName = "com.orientechnologies.orient.jdbc.OrientJdbcDriver";
@@ -82,7 +82,7 @@ Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/mas
 
     :::
 
-    * In the constructor, configure the connection:
+  * In the constructor, configure the connection:
   
       ```
         descriptor = new DataSource();
