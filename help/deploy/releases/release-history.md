@@ -19,6 +19,16 @@ slug: develop/admin/releases/release-history
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.mdx)
+
+## 2023-09-06 1.16.5
+
+### Addressed Issues
+
+* (Bug) GROK-13874: Box plot: incorrectly displays values on the X axis 
+* (Bug) [#2329](https://github.com/datagrok-ai/public/issues/2329): Histogram 'normalise to filter' option: Y axis values are not updated on zooming 
+* (Bug) [#2328](https://github.com/datagrok-ai/public/issues/2328): Viewer docked at the left or at the top is sometimes unexpectedly hidden 
+* (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
+
 ## 2023-08-30 1.16.4
 
 ### Addressed Issues
