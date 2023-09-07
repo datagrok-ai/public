@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -221,13 +221,12 @@ category('Widgets: Actions', () => {
     const customClusterList = wu(model.customClusters).toArray();
     expect(customClusterList.length, 1, 'Expected to have 1 custom cluster');
     const clustName = customClusterList[0].name;
-    expect(model.df.col(clustName) !== null, true,
-      'Expected to have custom cluster column in the table');
+    expect(model.df.col(clustName) !== null, true, 'Expected to have custom cluster column in the table');
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) !== -1, true,
       'Expected to have custom cluster in the Logo Summary Table');
 
     // Remove custom cluster
-    model.modifyClusterSelection(clustName);
+    model.modifyClusterSelection({monomerOrCluster: clustName, positionOrClusterType: CLUSTER_TYPE.CUSTOM});
     lstViewer.removeCluster();
     expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
     expect(model.df.col(clustName) === null, true,

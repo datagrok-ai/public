@@ -8,7 +8,7 @@ import {CampaignIdKey, CampaignJsonName, CampaignTableName, EmptyStageCellValue,
 import {calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
 import {_package} from '../package';
-import {modifyUrl, toFormatedDateString} from './utils';
+import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
 import {HitDesignTilesView} from './hit-design-views/tiles-view';
 import {HitAppBase} from './hit-app-base';
@@ -32,6 +32,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
   private currentDesignViewId?: string;
   private currentTilesViewId?: string;
+  public mainView: DG.ViewBase;
   constructor() {
     super();
     this._infoView = new HitDesignInfoView(this);
@@ -40,8 +41,8 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<HitDesignTemplate, HitDesignApp>).onActivated();
     });
-    grok.shell.addView(this.multiView);
-    grok.events.onCurrentViewChanged.subscribe(() => {
+    this.mainView = grok.shell.addView(this.multiView);
+    grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
         if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {
           grok.shell.windows.showHelp = false;
@@ -49,7 +50,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           this.setBaseUrl();
           modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
           if (grok.shell.v?.name === this.currentTilesViewId)
-            this._tilesView?.onActivated();
+            await this._tilesView?.render();
+          const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', grok.shell.v?.name, () => {
+            grok.shell.v = this.mainView;
+            this._tilesView?.close();
+            this._designView?.close();
+            sub.unsubscribe();
+          });
         }
       } catch (e) {
         console.error(e);
@@ -105,13 +112,9 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     this.dataFrame.rows.filter((r) => r[ViDColName] !== EmptyStageCellValue);
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
 
-    //this.multiView.addView(this._designViewName, () => this.designView, true);
-    //this.multiView.addView(this._tilesView.name, () => this._tilesView!, false);
-
     const designV = grok.shell.addView(this.designView);
     this.currentDesignViewId = designV.name;
-
-    this._tilesView ??= new HitDesignTilesView(this);
+    this._tilesView = new HitDesignTilesView(this);
     const tilesV = grok.shell.addView(this._tilesView);
     grok.shell.v = designV;
     this.currentTilesViewId = tilesV.name;
@@ -122,7 +125,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
   get campaignId(): string | undefined {return this._campaignId;}
 
-  get designView(): DG.TableView {return this._designView ??= this.getDesignView();}
+  get designView(): DG.TableView {return this._designView = this.getDesignView();}
 
   get molColName() {
     return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? HitDesignMolColName;
@@ -200,13 +203,22 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     }, 300);
     const ribbons = view?.getRibbonPanels();
     if (ribbons) {
-      const submitButton = ui.div(ui.bigButton('Submit', () => {
-        const dialogContent = this._submitView?.render();
-        if (dialogContent)
-          ui.dialog('Submit').add(dialogContent).show().getButton('Cancel').textContent = 'Ok';
-      }), 'hit-design-submit-button');
-      ribbons.push([submitButton]);
-      view.setRibbonPanels(ribbons);
+      const hasSubmit = checkRibbonsHaveSubmit(ribbons);
+      if (!hasSubmit) {
+        const submitButton = ui.bigButton('Submit', () => {
+          const dialogContent = this._submitView?.render();
+          if (dialogContent) {
+            const dlg = ui.dialog('Submit');
+            dlg.add(dialogContent);
+            dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();});
+            dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
+            dlg.show();
+          }
+        });
+        submitButton.classList.add('hit-design-submit-button');
+        ribbons.push([submitButton]);
+        view.setRibbonPanels(ribbons);
+      }
     }
     return view;
   }

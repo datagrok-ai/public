@@ -7,7 +7,7 @@ slug: develop/admin/releases/release-history
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.4](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.5](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.8](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.4](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.3](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -18,7 +18,7 @@ slug: develop/admin/releases/release-history
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../docker-compose.mdx)
+- [Docker-Compose](../docker-compose/docker-compose.mdx)
 ## 2023-08-30 1.16.4
 
 ### Addressed Issues

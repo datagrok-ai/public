@@ -76,3 +76,23 @@ table.hit-triage-table {
 .oy-scroll {
     overflow-y: scroll;
 }
+
+.d4-ribbon-name .ui-breadcrumbs {
+	overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+	flex-wrap: nowrap;
+    padding: 0;
+}
+
+.d4-ribbon-name .ui-breadcrumbs i {
+	padding: 0 6px;
+	font-size: 10px;
+	font-weight: bold;
+}
+
+.d4-ribbon-name .ui-breadcrumbs-element:first-child {
+	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

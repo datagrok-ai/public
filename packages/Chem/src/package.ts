@@ -1225,6 +1225,7 @@ export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Col
 //name: addScaffoldTree
 //description: Generates a hierarchical tree based on the scaffolds presented in dataset
 export function addScaffoldTree(): void {
+  DG.ObjectPropertyBag.setDefaultProperty('Scaffold Tree', 'allowGenerate', true);
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 

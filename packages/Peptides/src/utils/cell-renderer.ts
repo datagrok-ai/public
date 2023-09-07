@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as types from './types';
-import {PositionStats, MonomerPositionStats} from '../model';
+import {PositionStats, MonomerPositionStats, CLUSTER_TYPE} from '../model';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -21,23 +21,23 @@ export function setAARRenderer(col: DG.Column, alphabet: string): void {
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
-  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs | null = null,
-  twoColorMode: boolean = false, renderNums: boolean = true): void {
+  mutationCliffsSelection: types.Selection, substitutionsInfo: types.MutationCliffs | null = null,
+  _twoColorMode: boolean = false, renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
-  const pVal = positionStats[currentAAR].pValue;
-  const currentMeanDifference = positionStats[currentAAR].meanDifference;
+  const pVal = positionStats![currentAAR]!.pValue;
+  const currentMeanDifference = positionStats![currentAAR]!.meanDifference;
 
   // Transform p-value to increase intensity for smaller values and decrease for larger values
-  const maxPValComplement = 1 - positionStats.general.maxPValue;
-  const minPValComplement = 1 - positionStats.general.minPValue;
+  const maxPValComplement = 1 - positionStats!.general.maxPValue;
+  const minPValComplement = 1 - positionStats!.general.minPValue;
   const pValCentering = Math.min(maxPValComplement, minPValComplement);
   const centeredMaxPValComplement = maxPValComplement - pValCentering;
   const centeredMinPValComplement = minPValComplement - pValCentering;
-  const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement)
+  const centeredPValLimit = Math.max(centeredMaxPValComplement, centeredMinPValComplement);
   const pValComplement = pVal === null ? 0 : 1 - pVal - pValCentering;
 
-  let coef: string = DG.Color.toHtml(DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement,
-    -centeredPValLimit, centeredPValLimit));
+  const coef = DG.Color.toHtml(pVal === null ? DG.Color.lightLightGray :
+    DG.Color.scaleColor(currentMeanDifference >= 0 ? pValComplement : -pValComplement, -centeredPValLimit, centeredPValLimit));
 
   const maxMeanDifference = Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference);
   const rCoef = Math.abs(currentMeanDifference) / maxMeanDifference;
@@ -79,7 +79,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 }
 
 export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
-  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect,
+  currentPosition: string, invariantMapSelection: types.Selection, cellValue: number, bound: DG.Rect,
   color: number): void {
   canvasContext.fillStyle = DG.Color.toHtml(color);
   canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
@@ -95,14 +95,14 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
 }
 
 export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string,
-  clusterSelection: string[], bound: DG.Rect): void {
+  clusterSelection: types.Selection, bound: DG.Rect): void {
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  if (clusterSelection.includes(cellValue))
+  if (clusterSelection[CLUSTER_TYPE.CUSTOM].includes(cellValue) || clusterSelection[CLUSTER_TYPE.ORIGINAL].includes(cellValue))
     renderCellSelection(canvasContext, bound);
 }
 
@@ -130,7 +130,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
 
   const monomerBounds: { [monomer: string]: DG.Rect } = {};
   for (const monomer of sortedOrder) {
-    const monomerHeight = barHeight * (stats[monomer].count / rowCount);
+    const monomerHeight = barHeight * (stats[monomer]!.count / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
     const currentBound = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
     monomerBounds[monomer] = currentBound;

@@ -26,6 +26,7 @@ const STRANDS = ['ss', 'as', 'as2'] as const;
 export class SdfTabUI {
   constructor() {
     this.onInput = new rxjs.Subject<string>();
+    this.onInvalidInput = new rxjs.Subject<string>();
     this.inputBase = Object.fromEntries(
       STRANDS.map(
         (key) => [key, ui.textInput('', '', () => { this.onInput.next(); })]
@@ -43,9 +44,14 @@ export class SdfTabUI {
     DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       await this.updateMoleculeImg();
     });
+
+    DG.debounce<string>(this.onInvalidInput, 500).subscribe(async () => {
+      grok.shell.warning('Insert Sense strand');
+    });
   }
 
   private onInput: rxjs.Subject<string>;
+  private onInvalidInput: rxjs.Subject<string>;
   private useChiralInput: DG.InputBase<boolean | null>;
   private saveAllStrandsInput: DG.InputBase<boolean | null>;
   private inputBase: {[key: string]: DG.InputBase<string>};
@@ -90,9 +96,12 @@ export class SdfTabUI {
 
     const directionChoiceInput = Object.fromEntries(
       STRANDS.map(
-        (key) => [key, ui.choiceInput(
-          `${key.toUpperCase()} direction`, DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
-        )]
+        (key, idx) => {
+          const selected = (idx === 0) ? DIRECTION.STRAIGHT : DIRECTION.INVERSE;
+          return [key, ui.choiceInput(
+            `${key.toUpperCase()} direction`, selected, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
+          )]
+        }
       )
     );
 
@@ -150,6 +159,14 @@ export class SdfTabUI {
   }
 
   private getMolfile(ss: StrandData, as: StrandData, as2: StrandData): string {
+    if (ss.strand === '' && (as.strand !== '' || as2.strand !== '')) {
+      this.onInvalidInput.next();
+      return '';
+    }
+
+    // warning: the next line is necessary until the legacy molfile generation is improved
+    [as, as2].forEach((strand) => strand.invert = !strand.invert);
+
     return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!);
   }
 

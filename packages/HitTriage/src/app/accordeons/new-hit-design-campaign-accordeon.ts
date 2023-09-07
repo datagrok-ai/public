@@ -36,11 +36,11 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate): HitD
     DG.Property.fromOptions({name: field.name, type: CampaignFieldTypes[field.type], nullable: !field.required}));
   const campaignPropsObject: {[key: string]: any} = {};
   const campaignPropsForm = ui.input.form(campaignPropsObject, campaignProps);
-
-  const form = ui.divV([
-    ...(template.campaignFields?.length > 0 ? [ui.h2('Campaign details')]: []),
+  campaignPropsForm.classList.remove('ui-form');
+  const form = ui.div([
+    ...(template.campaignFields?.length > 0 ? []: []),
     campaignPropsForm,
-  ], 'ui-form');
+  ]);
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
   form.appendChild(buttonsDiv);
   const okPromise = new Promise<NewHitDesignCampaignRes>((resolve) => {

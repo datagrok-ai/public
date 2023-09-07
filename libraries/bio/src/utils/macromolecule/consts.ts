@@ -32,7 +32,12 @@ export const enum TAGS {
   alphabetIsMultichar = '.alphabetIsMultichar',
   separator = 'separator',
   isHelmCompatible = '.isHelmCompatible',
+  positionNames = '.positionNames',
+  positionLabels = '.positionLabels',
+  regions = '.regions',
 }
+
+export const positionSeparator: string = ', ';
 
 export const monomerRe: RegExp = /(?:\[([A-Za-z0-9_\-,()]+)\])|([A-Za-z\-])/g;
 

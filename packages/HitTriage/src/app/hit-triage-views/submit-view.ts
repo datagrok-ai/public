@@ -14,15 +14,10 @@ export class SubmitView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
 
   render(): HTMLDivElement {
     ui.empty(this.root);
-    const submitDiv = ui.divH([], {style: {gap: '10px'}});
-    if (this.app.template?.submit && this.app.template.submit.fName)
-      submitDiv.appendChild(ui.bigButton('SUBMIT', () => this.submit()));
 
-    submitDiv.appendChild(ui.bigButton('Save Campaign', () => this.app.saveCampaign()));
     const content = ui.divV([
       ui.h1('Summary'),
       ui.div([ui.tableFromMap(this.app.getSummary())]),
-      submitDiv,
     ]);
     return content;
   }
@@ -31,7 +26,7 @@ export class SubmitView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     this.render();
   }
 
-  async submit(): Promise<any> {
+  public async submit(): Promise<any> {
     const submitParams= this.app.template?.submit;
     if (!submitParams)
       return;

@@ -143,8 +143,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     // Cell renderer settings
     const tempMonomerWidth: string | null = tableColTemp[tempTAGS.monomerWidth];
     const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
-    if (monomerWidth === 'short')
-      maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties.MaxMonomerLength;
+    if (monomerWidth === 'short') {
+      // Renderer can start to work before Bio package initialized, in that time _package.properties is null.
+      // TODO: Render function is available but package init method is not completed
+      maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties?.MaxMonomerLength ?? 4;
+    }
 
 
     let seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
@@ -205,36 +208,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const referenceSequence: ISeqSplitted = splitterFunc(
         ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
           tempReferenceSequence : tempCurrentWord ?? '');
-
-      // let maxLengthWords: { [pos: number]: number } = {};
-      // if (tableCol.getTag(rndrTAGS.calculatedCellRender) !== splitLimit.toString()) {
-      //   let sampleCount = 0;
-      //   while (sampleCount < Math.min(tableCol.length, 100)) {
-      //     const rowIdx: number = sampleCount;
-      //     const column = tableCol.get(rowIdx);
-      //     const subParts: string[] = splitterFunc(column);
-      //     for (const [index, amino] of subParts.entries()) {
-      //       const textSize = monomerToShortFunction(amino, maxLengthOfMonomer).length * 7 + gapRenderer;
-      //       if (textSize > (maxLengthWords[index] ?? 0))
-      //         maxLengthWords[index] = textSize;
-      //       if (index > maxIndex) maxIndex = index;
-      //     }
-      //     sampleCount += 1;
-      //   }
-      //   const minLength = 3 * 7;
-      //   for (let i = 0; i <= maxIndex; i++) {
-      //     if (maxLengthWords[i] < minLength) maxLengthWords[i] = minLength;
-      //     const maxLengthWordSum: { [pos: number]: number } = {};
-      //     maxLengthWordSum[0] = maxLengthWords[0];
-      //     for (let i = 1; i <= maxIndex; i++) maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
-      //     colTemp[tempTAGS.bioSumMaxLengthWords] = maxLengthWordSum;
-      //     colTemp[tempTAGS.bioMaxIndex] = maxIndex;
-      //     colTemp[tempTAGS.bioMaxLengthWords] = maxLengthWords;
-      //     tableCol.setTag(rndrTAGS.calculatedCellRender, splitLimit.toString());
-      //   }
-      // } else {
-      //   maxLengthWords = colTemp[tempTAGS.bioMaxLengthWords];
-      // }
 
       const subParts: ISeqSplitted = splitterFunc(value);
       /* let x1 = x; */

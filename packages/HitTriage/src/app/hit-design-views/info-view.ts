@@ -6,7 +6,7 @@ import {_package} from '../../package';
 import $ from 'cash-dom';
 import {CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
-import {addBreadCrumbsToRibbons, hideComponents, modifyUrl, popRibbonPannels} from '../utils';
+import {addBreadCrumbsToRibbons, modifyUrl, popRibbonPannels} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
 import {HitBaseView} from '../base-view';
@@ -42,7 +42,8 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       ]), textLink,
     ]);
     const campaignAccordionDiv = ui.div();
-    const templatesDiv = ui.divH([], {classes: 'ui-form'});
+    const templatesDiv = ui.divH([]);
+    const contentDiv = ui.div([templatesDiv, campaignAccordionDiv], 'ui-form');
 
     const campaignsTable = await this.getCampaignsTable();
     $(this.root).empty();
@@ -50,18 +51,14 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       ui.divV([appDescription, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
       campaignsTable,
       createNewCampaignHeader,
-      templatesDiv,
-      campaignAccordionDiv,
+      contentDiv,
     ], {style: {maxWidth: '800px'}}));
-    this.startNewCampaign(campaignAccordionDiv, templatesDiv,
-      [campaignsTable.style, continueCampaignsHeader.style, createNewCampaignHeader.style, appDescription.style],
-      presetTemplate);
+    this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(() => this.app.resetBaseUrl());
   }
 
   private async startNewCampaign(
-    containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[],
-    presetTemplate?: HitDesignTemplate) {
-    // hideComponents(toRemove);
+    containerDiv: HTMLElement, templateInputDiv: HTMLElement, presetTemplate?: HitDesignTemplate,
+  ) {
     const templates = (await _package.files.list('Hit Design/templates')).map((file) => file.name.slice(0, -5));
     // if the template is just created and saved, it may not be in the list of templates
     if (presetTemplate && !templates.includes(presetTemplate.name))
@@ -82,7 +79,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       });
     templatesInput.root.style.width = '100%';
     const createNewtemplateButton = ui.icons.add(() => {
-      this.createNewTemplate(containerDiv, templateInputDiv, toRemove);
+      this.createNewTemplate();
     }, i18n.createNewTemplate);
     createNewtemplateButton.style.color = '#2083d5';
     templatesInput.addOptions(createNewtemplateButton);
@@ -155,24 +152,34 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     return root;
   }
 
-  private async createNewTemplate(
-    containerDiv: HTMLElement, templateInputDiv: HTMLElement, toRemove: CSSStyleDeclaration[]) {
+  private async createNewTemplate() {
     const newTemplateAccordeon = await newHitDesignTemplateAccordeon();
-    hideComponents(toRemove);
-    $(containerDiv).empty();
-    $(templateInputDiv).empty();
-    const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', i18n.createNewTemplate, () => {
-      this.init();
+    // hideComponents(toRemove);
+    // $(containerDiv).empty();
+    // $(templateInputDiv).empty();
+
+    const newView = new DG.ViewBase();
+    const curView = grok.shell.v;
+    newView.name = 'New Template';
+    newView.root.appendChild(newTemplateAccordeon.root);
+    grok.shell.addView(newView);
+    newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
+    const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Design', i18n.createNewTemplate, async () => {
+      grok.shell.v = curView;
+      newView.close();
     });
-    containerDiv.appendChild(newTemplateAccordeon.root);
-    newTemplateAccordeon.template.then((t) => {
-      popRibbonPannels(grok.shell.v);
+    //containerDiv.appendChild(newTemplateAccordeon.root);
+    newTemplateAccordeon.template.then(async (t) => {
+      await this.init(t);
+      newView.close();
+      popRibbonPannels(newView);
+      grok.shell.v = curView;
       sub.unsubscribe();
-      this.init(t);
     });
-    newTemplateAccordeon.cancelPromise.then(() => {
+    newTemplateAccordeon.cancelPromise.then(async () => {
       sub.unsubscribe();
-      this.init();
+      newView.close();
+      grok.shell.v = curView;
     });
   }
 }

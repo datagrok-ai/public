@@ -40,7 +40,7 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
     model.analysisView.addViewer('WebLogo');
   }, {description: 'Run SAR analysis on aligned sequences from top menu: Bio -> SAR -> Peptides...', delay: 2000});
 
-  demo.step('Browse Mutation Cliffs', async () => {model.modifyMonomerPositionSelection('D', '13', false);},
+  demo.step('Browse Mutation Cliffs', async () => {model.modifyMutationCliffsSelection({positionOrClusterType: 'D', monomerOrCluster: '13'});},
     {description: 'Browse Mutation Cliffs by selecting corresponding cells in Mutation Cliffs viewer in the bottom',
       delay: 2000});
   await demo.start();

@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.14.1 (2023-09-06)
+
+### Fixed bugs
+
+- Fixed color and numeric values parsing in RFV
+
 ## 1.13.12 (2023-08-25)
 
 ### Fixed bugs
