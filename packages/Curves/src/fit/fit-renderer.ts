@@ -503,7 +503,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    if (gridCell.bounds.width < 50) {
+    if (gridCell.bounds.width < MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH || gridCell.bounds.height < MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
       const canvas = ui.canvas(300, 200);
       this.render(canvas.getContext('2d')!, 0, 0, 300, 200, gridCell, null as any);
       const content = ui.divV([canvas]);
