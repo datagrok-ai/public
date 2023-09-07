@@ -1,16 +1,28 @@
 // Statistic tools
 
+/* REFERENCES
+   
+     [1] One-way analysis of variance, https://en.wikipedia.org/wiki/One-way_analysis_of_variance
+
+     [2] G.W. Heiman. Basic Statistics for the Behavioral Sciences, 6th ed. Wadsworth Publishing, 2010
+     
+     [3] F-test of equality of variances, https://en.wikipedia.org/wiki/F-test_of_equality_of_variances
+
+     [4] S. McKillup. Statistics Explained, Cambridge University Press, 2005
+
+*/
+
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 //@ts-ignore: no types
 import * as jStat from 'jstat';
-import { FalseLiteral } from 'typescript';
 
-enum ERROR_MSGS {
-  NON_EQUAL_FACTORS_VALUES_SIZE = 'non-equal sizes of factor and values arrays.',
-  INCORRECT_SIGNIFICANCE_LEVEL = 'incorrect significance level. It must be from the interval (0, 1).',
+enum ERROR_MSG {
+  NON_EQUAL_FACTORS_VALUES_SIZE = 'non-equal sizes of factor and values arrays. INPUT ERROR.',
+  INCORRECT_SIGNIFICANCE_LEVEL = 'incorrect significance level. It must be from the interval (0, 1). INPUT ERROR.',
+  INCORRECT_SAMPLE_SIZE = 'incorrect size of sample. DATA FACTORIZAING ERROR.',
 };
 
 export type SampleData = {
@@ -19,18 +31,29 @@ export type SampleData = {
   size: number,
   data: number[] | undefined | null,
 };
- 
+
+/** One-way ANOVA computation results. The classic notations are used (see [2], p. 290). */
 export type OneWayAnovaTable = {
-  SSbn: number, // sum of squares between groups
-  SSwn: number, // sum of squares within groups
-  SStot: number, // total sum of squares
-  DFbn: number, // degrees of freedom between groups
-  DFwn: number, // degrees of freedom within groups
-  DFtot: number, // total degrees of freedom
-  MSbn: number, // mean square between groups
-  MSwn: number, // mean square within groups
-  Fstat: number, // Fobt, value of F-statistics
-  pValue: number, // p-value corresponding to F-statistics
+  /** sum of squares between groups */
+  SSbn: number,
+  /** sum of squares within groups */ 
+  SSwn: number,
+  /** total sum of squares */ 
+  SStot: number,
+  /** degrees of freedom between groups */
+  DFbn: number,
+  /** degrees of freedom within groups */
+  DFwn: number,
+  /** total degrees of freedom */
+  DFtot: number,
+  /** mean square between groups */
+  MSbn: number,
+  /** mean square within groups */
+  MSwn: number,
+  /** Fobt, value of F-statistics */
+  Fstat: number,
+  /** p-value corresponding to F-statistics */
+  pValue: number,
 };
 
 type ValuesType = number[] | Float32Array | Int32Array;
@@ -40,11 +63,12 @@ export type AnovaResults = {
   conclusion: string;
 };
 
+/** Split values by factor levels and compute sums & sums of squares. */
 export function getFactorizedData(factors: any[], values: ValuesType): Map<any, SampleData> {
   const size = factors.length;
   
   if (size !== values.length)
-    throw new Error(ERROR_MSGS.NON_EQUAL_FACTORS_VALUES_SIZE);
+    throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);
   
   const factorized = new Map<any, SampleData>();  
   
@@ -61,12 +85,13 @@ export function getFactorizedData(factors: any[], values: ValuesType): Map<any, 
   
   return factorized;
 } // getFactorizedData
-  
+
+/** Compute sum & sums of squares with respect to factor levels. */
 export function getLevelsStat(factors: any[], values: ValuesType): Map<any, SampleData> {
   const size = factors.length;
     
   if (size !== values.length)
-    throw new Error(ERROR_MSGS.NON_EQUAL_FACTORS_VALUES_SIZE);
+    throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);
     
   const factorized = new Map<any, SampleData>();  
     
@@ -82,8 +107,11 @@ export function getLevelsStat(factors: any[], values: ValuesType): Map<any, Samp
     
   return factorized;
  } // getLevelsStat
-  
+
+/** Perform one-way ANOVA computations using factorized data. */
 export function computeOneWayAnovaTable(factorizedData: Map<any, SampleData>): OneWayAnovaTable {
+  // Further, notations and formulas from (see [2], p. 290) are used.
+
   const K = factorizedData.size;
   
   let sum = 0;
@@ -125,6 +153,7 @@ export function computeOneWayAnovaTable(factorizedData: Map<any, SampleData>): O
   };
 } // computeOneWayAnovaTable
 
+/** Create dataframe with one-way ANOVA results. */
 function getOneWayAnovaDataframe(anovaTable: OneWayAnovaTable, alpha: number, Fcritical: number): DG.DataFrame {
   return DG.DataFrame.fromColumns([
     DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total']),
@@ -137,30 +166,43 @@ function getOneWayAnovaDataframe(anovaTable: OneWayAnovaTable, alpha: number, Fc
   ]);
 } // getOneWayAnovaDataframe
 
+/** Check correctness of significance level. */
 function checkSignificanceLevel(alpha: number) {
   if ((alpha <= 0) || (alpha >= 1))
-    throw new Error(ERROR_MSGS.INCORRECT_SIGNIFICANCE_LEVEL);
+    throw new Error(ERROR_MSG.INCORRECT_SIGNIFICANCE_LEVEL);
 }
 
-function getVariance(sampleData: SampleData): number {
+/** Compute unbiased variance.*/
+export function getVariance(sampleData: SampleData): number {
+  // The applied formulas can be found in [4] (see p. 63)
   const size = sampleData.size;
-  return (sampleData.sumOfSquares / size - (sampleData.sum / size) ** 2) / (size - 1);
-}
 
-function areVariancesOfTwoSamplesEqual(
-  xSampleData: SampleData,
-  ySampleData: SampleData, 
-  alpha: number  = 0.05): boolean 
-{
-  const Fstat = getVariance(xSampleData) / getVariance(ySampleData);
+  if (size <= 0)
+    throw new Error(ERROR_MSG.INCORRECT_SAMPLE_SIZE);
+
+  if (size === 1)
+    return 0;
+  
+  return (sampleData.sumOfSquares - (sampleData.sum) ** 2 / size) / (size - 1);
+} // getVariance
+
+/** Checks equality of variances of 2 samples. F-test is performed.*/
+export function areVariancesOfTwoSamplesEqual(xSampleData: SampleData, ySampleData: SampleData, alpha: number  = 0.05): boolean {
+  // The applied approach can be found in [3]
+  const xSampleVariance = getVariance(xSampleData);
+  const ySampleVariance = getVariance(ySampleData);
+
+  if (ySampleVariance === 0)
+    return (xSampleVariance === ySampleVariance);
+
+  const Fstat = xSampleVariance / ySampleVariance;
   const Fcritical = jStat.centralF.inv(1 - alpha, xSampleData.size - 1, ySampleData.size - 1);
 
-  console.log(`Fstst: ${Fstat}; Fcrit: ${Fcritical}; Test: ${Fstat < Fcritical}`);
-
   return (Fstat < Fcritical);
-}
+} // areVariancesOfTwoSamplesEqual
 
-function areVariancesOfFactorizedDataEqual(factorizedData: Map<any, SampleData>): boolean {
+/** Checks equality of variances of factorized data. */
+export function areVariancesOfFactorizedDataEqual(factorizedData: Map<any, SampleData>): boolean {
   const iter = factorizedData.keys();
   let key = iter.next();
   const xSampleData = factorizedData.get(key.value);
@@ -176,8 +218,9 @@ function areVariancesOfFactorizedDataEqual(factorizedData: Map<any, SampleData>)
   }
 
   return true;
-}
+} // areVariancesOfFactorizedDataEqual
 
+/** Perform one-way analysis of variances. */
 export function oneWayAnova(
   factorsCol: DG.Column, 
   valuesCol: DG.Column,
@@ -216,4 +259,3 @@ export function oneWayAnova(
     conclusion: conclusion
   };
 } // oneWayAnova
- 
