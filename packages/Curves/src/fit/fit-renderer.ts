@@ -199,15 +199,16 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
 }
 
 /** Performs a curve confidence interval drawing */
-function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
-  screenBounds: DG.Rect, transform: Viewport, confidenceType: string, showAxes: boolean): void {
+function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals, screenBounds: DG.Rect,
+  transform: Viewport, confidenceType: string, showAxes: boolean, logOptions: LogOptions): void {
   g.beginPath();
   const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
+  const confIntervalFunc = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
+    confIntervals.confidenceTop : confIntervals.confidenceBottom;
   for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
     const x = screenBounds.x + i;
-    const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
-      transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x))) :
-      transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
+    const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
+    const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervalFunc(xForY))) : transform.yToScreen(confIntervalFunc(xForY));
     if (i === axesLeftPxMargin)
       g.moveTo(x, y);
     else
@@ -217,13 +218,15 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
 }
 
 /** Performs a curve confidence interval color filling */
-function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals,
-  screenBounds: DG.Rect, transform: Viewport, showAxes: boolean): void {
+function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals, screenBounds: DG.Rect,
+  transform: Viewport, showAxes: boolean, logOptions: LogOptions): void {
   g.beginPath();
   const axesLeftPxMargin = showAxes ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
   for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
     const x = screenBounds.x + i;
-    const y = transform.yToScreen(confIntervals.confidenceTop(transform.xToWorld(x)));
+    const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
+    const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervals.confidenceTop(xForY))) :
+      transform.yToScreen(confIntervals.confidenceTop(xForY));
     if (i === axesLeftPxMargin)
       g.moveTo(x, y);
     else
@@ -233,7 +236,9 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   // reverse traverse to make a shape of confidence interval to fill it
   for (let i = screenBounds.width - AXES_RIGHT_PX_MARGIN; i >= axesLeftPxMargin; i--) {
     const x = screenBounds.x + i;
-    const y = transform.yToScreen(confIntervals.confidenceBottom(transform.xToWorld(x)));
+    const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
+    const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervals.confidenceBottom(xForY))) :
+      transform.yToScreen(confIntervals.confidenceBottom(xForY));
     g.lineTo(x, y);
   }
   g.closePath();
@@ -410,7 +415,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           const x = screenBounds.x + j;
           const xForY = data.chartOptions?.logX ? Math.log10(viewport.xToWorld(x)) : viewport.xToWorld(x);
           const y = data.chartOptions?.logY ? viewport.yToScreen(Math.pow(10, curve(xForY))) : viewport.yToScreen(curve(xForY));
-            viewport.yToScreen(curve(viewport.xToWorld(x)));
           if (j === axesLeftPxMargin)
             g.moveTo(x, y);
           else
@@ -424,10 +428,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
   
-        const confidenceIntervals = getSeriesConfidenceInterval(series, fitFunc, userParamsFlag);
-        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, showAxes);
-        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, showAxes);
-        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes);
+        const confidenceIntervals = getSeriesConfidenceInterval(series, fitFunc, userParamsFlag, chartLogOptions);
+        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport,
+          CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, showAxes, chartLogOptions);
+        drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport,
+          CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, showAxes, chartLogOptions);
+        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes, chartLogOptions);
       }
   
       if (series.droplines) {
