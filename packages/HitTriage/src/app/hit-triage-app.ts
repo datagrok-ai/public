@@ -31,14 +31,15 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   protected _filterDescriptions: string[] = [];
   public campaignProps: {[key: string]: any} = {};
   private currentPickViewId?: string;
-  constructor() {
-    super();
+  constructor(c: DG.FuncCall) {
+    super(c);
     this._infoView = new InfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
+    this.multiView.parentCall = c;
     grok.shell.addView(this.multiView);
 
     grok.events.onCurrentViewChanged.subscribe(() => {
@@ -202,6 +203,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         this._campaignFilters = f.getOptions().look.filters;
       }, 300);
     }, 300);
+    view.parentCall = this.parentCall;
     return view;
   }
 

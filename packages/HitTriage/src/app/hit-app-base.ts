@@ -7,7 +7,7 @@ export class HitAppBase<T> {
   public dataFrame?: DG.DataFrame;
   public template?: T;
   public baseUrl!: string;
-  constructor() {
+  constructor(public parentCall: DG.FuncCall) {
     this.resetBaseUrl();
   }
 

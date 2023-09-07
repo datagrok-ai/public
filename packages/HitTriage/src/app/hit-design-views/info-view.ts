@@ -32,14 +32,15 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
     const appDescription = ui.divV([
       ui.h1('Hit Design: Tailored Molecule Workflow Design Made Simple'),
-      ui.list([
-        '-  Configure your own workflow using the template editor.',
-        '-  Calculate differnet molecular properties.',
-        '-  User-friendly grid interface to sketch molecules.',
-        '-  Transition molecules between stages using drag and drop in tile viewer.',
-        '-  Submit processed dataframe to the function of your choice.',
-        '-  Initiate campaigns and continue any time from where you left off.',
-      ]), textLink,
+      ui.div(ui.markdown(
+        '-  Configure your own workflow using the template editor.\n' +
+        '-  Calculate differnet molecular properties.\n' +
+        '-  User-friendly grid interface to sketch molecules.\n' +
+        '-  Transition molecules between stages using drag and drop in tile viewer.\n' +
+        '-  Submit processed dataframe to the function of your choice.\n' +
+        '-  Initiate campaigns and continue any time from where you left off.\n',
+      ), {style: {color: 'var(--grey-5)'}, classes: 'mb-small'}),
+      textLink,
     ]);
     const campaignAccordionDiv = ui.div();
     const templatesDiv = ui.divH([]);
@@ -47,12 +48,12 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
 
     const campaignsTable = await this.getCampaignsTable();
     $(this.root).empty();
-    this.root.appendChild(ui.divV([
+    this.root.appendChild(ui.div([
       ui.divV([appDescription, continueCampaignsHeader], {style: {marginLeft: '10px'}}),
       campaignsTable,
       createNewCampaignHeader,
       contentDiv,
-    ], {style: {maxWidth: '800px'}}));
+    ]));
     this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate).then(() => this.app.resetBaseUrl());
   }
 
@@ -126,11 +127,11 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
       ({name: campaign.name, createDate: campaign.createDate,
         rowCount: campaign.rowCount, filtered: campaign.filteredRowCount, status: campaign.status}));
     const table = ui.table(campaignsInfo, (info) =>
-      ([ui.link(info.name, () => this.setCampaign(info.name)),
+      ([ui.link(info.name, () => this.setCampaign(info.name), '', ''),
         info.createDate, info.rowCount, info.filtered, info.status]),
-    ['Campaign', 'Created', 'Total', 'Selected', 'Status']);
-    table.classList.add('hit-triage-table');
-    return ui.div(table, {classes: 'hit-triage-table-container'});
+    ['Name', 'Created', 'Total', 'Selected', 'Status']);
+    table.style.color = 'var(--grey-5)';
+    return table;
   }
 
   private async setCampaign(campaignName: string) {
@@ -162,6 +163,7 @@ export class HitDesignInfoView extends HitBaseView<HitDesignTemplate, HitDesignA
     const curView = grok.shell.v;
     newView.name = 'New Template';
     newView.root.appendChild(newTemplateAccordeon.root);
+    newView.parentCall = this.app.parentCall;
     grok.shell.addView(newView);
     newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
     const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Design', i18n.createNewTemplate, async () => {

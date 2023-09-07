@@ -164,6 +164,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     const curView = grok.shell.v;
     newView.name = 'New Template';
     newView.root.appendChild(newTemplateAccordeon.root);
+    newView.parentCall = this.app.parentCall;
     grok.shell.addView(newView);
     newView.path = new URL(this.app.baseUrl).pathname + '/new-template';
     newView.parentView = curView;
