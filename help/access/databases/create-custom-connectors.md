@@ -64,25 +64,17 @@ Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/mas
     }
   ```
 
-  :::note
-  
-  For simplicity, we omit all imports.
-  
-  :::
+  >Note: For simplicity, we omit all imports.
 
-* Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
+    * Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
 
     ```
       driverClassName = "com.orientechnologies.orient.jdbc.OrientJdbcDriver";
     ```
   
-    :::note
+    >Note: To get the driver class name, use the documentation for your chosen JDBC driver.
 
-    To get the driver class name, use the documentation for your chosen JDBC driver. 
-
-    :::
-
-  * In the constructor, configure the connection:
+    * In the constructor, configure the connection:
   
       ```
         descriptor = new DataSource();
@@ -145,8 +137,4 @@ Testing options:
     * In the **Database Manager**, right-click your new connector and select **Add connection...** A parameter dialog opens.
     * In the parameter dialog, [fill in the connection parameters](databases.mdx#connecting-to-database) and click **TEST**. Upon successful connection, the database appears in the **Database Manager** under the respective data source. 
 
-  :::note
-  
-  It may take Datagrok some time to recognize a running Grok Connect. To speed up the process, reload the container.
-
-  :::
+  >Note: It may take Datagrok some time to recognize a running Grok Connect. To speed up the process, reload the container.
