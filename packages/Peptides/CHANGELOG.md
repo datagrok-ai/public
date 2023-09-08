@@ -9,6 +9,7 @@
 * Highlight rows on mouse over Monomer-Position, Most Potent Residues, Logo Summary Table and WebLogo in the header.
 * Changed viewer interactivity to match the platform defaults. Learn more about viewer hotkeys [here](https://datagrok.ai/help/visualize/viewers/#selection).
 * Accordion with actions, mutation cliffs pairs, distribution and selection panels now shows on any selection.
+* Removed steps from tutorial.
 
 ### Bug Fixes
 
