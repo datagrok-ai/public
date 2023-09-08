@@ -26,7 +26,7 @@ export function isFuncCallInput<T = any>(arg: any): arg is FuncCallInput<T> {
 }
 
 export function isFuncCallInputValidated<T = any>(arg: any): arg is FuncCallInputValidated<T> {
-  return arg.setValidation && isFuncCallInput(arg);
+  return arg?.setValidation && isFuncCallInput(arg);
 }
 
 // validation

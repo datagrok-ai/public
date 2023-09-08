@@ -7,16 +7,17 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable} from 'rxjs';
+import {Subject, BehaviorSubject, Observable, merge, from} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import {startWith} from 'rxjs/operators';
+import {debounceTime, filter, mapTo, startWith, switchMap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import { FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated } from '../../shared-components/src/FuncCallInput';
+import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
+const INTERACTIVE_DEBOUNCE_TIME = 350;
 
 export type InputVariants = DG.InputBase | FuncCallInput;
 
@@ -103,7 +104,8 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onBeforeRun(): Promise<void> {
-    this.prevOpenedTab = Object.keys(this.categoryToDfParamMap.inputs).includes(this.outputsTabsElem.currentPane.name) ? null: this.outputsTabsElem.currentPane;
+    if (this.outputsTabsElem.currentPane)
+      this.prevOpenedTab = Object.keys(this.categoryToDfParamMap.inputs).includes(this.outputsTabsElem.currentPane.name) ? null: this.outputsTabsElem.currentPane;
 
     return Promise.resolve();
   }
@@ -138,6 +140,7 @@ export class RichFunctionView extends FunctionView {
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
     const disabilitySub = this.checkDisability.subscribe(() => {
+      this.runValidation();
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
@@ -173,7 +176,7 @@ export class RichFunctionView extends FunctionView {
   private getSaveButton(name = 'Save') {
     const saveButton = ui.bigButton(name, async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
 
-    this.isUploadMode.subscribe((newValue) => {
+    const uploadSub = this.isUploadMode.subscribe((newValue) => {
       this.buildRibbonPanels();
       if (this.runningOnInput) return;
 
@@ -182,6 +185,8 @@ export class RichFunctionView extends FunctionView {
       else
         $(saveButton).hide();
     });
+    this.subs.push(uploadSub);
+
     if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
 
     return saveButton;
@@ -292,11 +297,16 @@ export class RichFunctionView extends FunctionView {
     });
 
     const experimentalDataSwitch = ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v));
-    this.isUploadMode.subscribe((newValue) => {
+    const uploadSub = this.isUploadMode.subscribe((newValue) => {
       experimentalDataSwitch.notify = false;
       experimentalDataSwitch.value = newValue,
       experimentalDataSwitch.notify = true;
+      if (newValue)
+        $(outputFormDiv).show();
+      else
+        $(outputFormDiv).hide();
     });
+    this.subs.push(uploadSub);
 
     const form = ui.divV([
       inputFormDiv,
@@ -306,13 +316,6 @@ export class RichFunctionView extends FunctionView {
       ]: [],
       controlsForm,
     ], 'ui-box rfv-form');
-
-    this.isUploadMode.subscribe((newValue) => {
-      if (newValue)
-        $(outputFormDiv).show();
-      else
-        $(outputFormDiv).hide();
-    });
 
     return {
       inputBlock: form,
@@ -413,7 +416,6 @@ export class RichFunctionView extends FunctionView {
               const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
               this.showOutputTabsElem();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParam.value;
@@ -508,9 +510,7 @@ export class RichFunctionView extends FunctionView {
             ];
           },
         ).root;
-        $(table).css({
-          'max-width': '400px',
-        });
+        $(table).addClass('rfv-scalar-table');
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -544,7 +544,7 @@ export class RichFunctionView extends FunctionView {
       });
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
       });
     });
 
@@ -679,7 +679,7 @@ export class RichFunctionView extends FunctionView {
           return;
         }
         this.inputsMap[val.property.name] = input;
-        this.syncInput(val, input, field);
+        this.bindInputToParam(val.property.name, input, field);
         this.disableInputsOnRun(input);
         if (field === SYNC_FIELD.INPUTS)
           this.bindOnHotkey(input);
@@ -718,8 +718,7 @@ export class RichFunctionView extends FunctionView {
     if (this.inputsOverride[val.property.name])
       return this.inputsOverride[val.property.name];
 
-    if (
-      prop.propertyType === DG.TYPE.STRING && prop.options.choices)
+    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices)
       return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
@@ -814,86 +813,97 @@ export class RichFunctionView extends FunctionView {
     (t as any).setValidation = setValidation;
   }
 
-  private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
-    this.syncFuncCallReplaced(t, val, fields);
-    this.syncOnInput(t, val, fields);
-  }
+  private bindInputToParam(name: string, t: InputVariants, field: SyncFields) {
+    let blockNotifications = false;
 
-  private syncFuncCallReplaced(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    const prop = val.property;
-    const name = val.name;
-    // don't use val directly, get a fresh one, since it will be replaced with fc
-    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      const newValue = this.funcCall[field][name] ?? prop.defaultValue ?? null;
-      t.notify = false;
-      t.value = newValue;
-      t.notify = true;
-      this.funcCall[field][name] = newValue;
-      const newParam = this.funcCall[syncParams[field]][name];
-      this.syncValOnChanged(t, newParam, field);
-      this.setInputState(t, this.funcCall.options['editState']?.[name]);
-    });
-    this.subs.push(sub);
-  }
+    const setInput = (input: InputVariants, val: any) => {
+      blockNotifications = true;
+      input.value = val;
+      blockNotifications = false;
+    }
 
-  private syncValOnChanged(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    const sub = val.onChanged.subscribe(() => {
-      const newValue = this.funcCall[field][val.name];
-      // there is no notify for DG.FuncCallParam, so we need to
-      // check if the value is not the same for floats, otherwise we
-      // will overwrite a user input with a lower precicsion decimal
-      // representation
-      if (
-        ((val.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
-          val.property.propertyType !== DG.TYPE.FLOAT
-      ) {
-        t.notify = false;
-        t.value = newValue;
-        t.notify = true;
-      }
+    const setParam = (field: SyncFields, name: string, val: any) => {
+      blockNotifications = true;
+      this.funcCall[field][name] = val;
+      blockNotifications = false;
+    }
+
+    // initial fc sync
+    const sub1 = this.funcCallReplaced.pipe(
+      startWith(null)
+    ).subscribe(() => {
+      const param = this.funcCall[syncParams[field]][name];
+      const newValue = this.funcCall[field][name] ?? param.property.defaultValue ?? null;
+      setInput(t, newValue);
+      setParam(field, name, newValue);
       if (field === SYNC_FIELD.INPUTS) {
         this.hideOutdatedOutput();
         this.checkDisability.next();
+      }
+      this.setInputState(t, this.funcCall.options['editState']?.[name]);
+    });
+    this.subs.push(sub1);
 
-        if (this.runningOnInput && this.isRunnable()) this.doRun();
+    const paramChanges$ = this.funcCallReplaced.pipe(
+      startWith(null),
+      switchMap(() => {
+        const param = this.funcCall[syncParams[field]][name];
+        return param.onChanged.pipe(mapTo(param));
+      }),
+      filter(() => !blockNotifications));
+
+    const inputChanges$ = getObservable(t.onInput.bind(t)).pipe(
+      filter(() => !blockNotifications),
+    );
+
+    // sync new params or values with the view ui
+    const sub2 = paramChanges$.subscribe((param) => {
+      setInput(t, param.value);
+      if (field === SYNC_FIELD.INPUTS) {
+        this.hideOutdatedOutput();
+        this.checkDisability.next();
       }
     });
+    this.subs.push(sub2);
 
-    this.subs.push(sub);
-
-    if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
-      const subscribeForInteriorMut = () => {
-        if (!val.value) return;
-        const sub = val.value.onDataChanged.subscribe(async () => {
-          if (this.runningOnInput && this.isRunnable()) this.doRun();
-        });
-        this.subs.push(sub);
-      };
-
-      val.onChanged.subscribe(() => {
-        subscribeForInteriorMut();
+    // intercative mode handling
+    if  (this.runningOnInput) {
+      // param changes interactive mode running
+      const sub3 = paramChanges$.pipe(debounceTime(INTERACTIVE_DEBOUNCE_TIME)).subscribe(() => {
+        if (this.isRunnable())
+          this.doRun();
       });
+      this.subs.push(sub3);
 
-      subscribeForInteriorMut();
+      // dataframe mutations interactive mode running
+      const param = this.funcCall[syncParams[field]][name];
+      if (param.property.propertyType === DG.TYPE.DATA_FRAME) {
+        const sub4 = paramChanges$.pipe(
+          filter((param) => param.value),
+          switchMap((param) => (param.value.onDataChanged as Observable<any>)),
+          debounceTime(INTERACTIVE_DEBOUNCE_TIME)
+        ).subscribe(() => {
+          if (this.isRunnable())
+            this.doRun();
+        });
+        this.subs.push(sub4);
+      }
     }
-  }
 
-  private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    DG.debounce(getObservable(t.onInput.bind(t)), this.runningOnInput ? 350 : 0).subscribe(() => {
+    // input handling, sync with the current funcall
+    const sub5 = inputChanges$.subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
 
-      this.funcCall[field][val.name] = t.value;
-      this.checkDisability.next();
-      this.hideOutdatedOutput();
+      setParam(field, name, t.value);
     });
+    this.subs.push(sub5);
   }
 
   public isRunnable() {
     if (this.isRunning.value)
       return false;
 
-    this.runValidation();
     return this.isValid();
   }
 
