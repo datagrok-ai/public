@@ -5,9 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {PeptidesModel, PositionStats, VIEWER_TYPE} from '../model';
 import wu from 'wu';
 import {SelectionItem} from '../utils/types';
+import {Stats} from '../utils/statistics';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -83,12 +84,34 @@ export class MonomerPosition extends DG.JsViewer {
     this.render();
   }
 
+  createMonomerPositionDf(): DG.DataFrame {
+    const uniqueMonomers = new Set<string>();
+    const splitSeqCols = this.model.splitSeqDf.columns;
+    for (const col of splitSeqCols) {
+      const colCat = col.categories;
+      for (const cat of colCat) {
+        if (cat !== '')
+          uniqueMonomers.add(cat);
+      }
+    }
+
+    const monomerCol = DG.Column.fromStrings(C.COLUMNS_NAMES.MONOMER, Array.from(uniqueMonomers));
+    const monomerPositionDf = DG.DataFrame.fromColumns([monomerCol]);
+    monomerPositionDf.name = 'SAR';
+    for (const col of splitSeqCols)
+      monomerPositionDf.columns.addNewBool(col.name);
+
+    return monomerPositionDf;
+  }
+
+
   createMonomerPositionGrid(): void {
-    this.viewerGrid = this.model.monomerPositionDf.plot.grid();
+    const monomerPositionDf = this.createMonomerPositionDf();
+    this.viewerGrid = monomerPositionDf.plot.grid();
     this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
     this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
-    const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    CR.setAARRenderer(monomerCol, this.model.alphabet);
+    const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    CR.setMonomerRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
       this.mode === SELECTION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol),
       this.aggregation as DG.AggregationType));
@@ -212,16 +235,79 @@ export class MostPotentResidues extends DG.JsViewer {
     this.render();
   }
 
+  createMostPotentResiduesDf(): DG.DataFrame {
+    const monomerPositionStatsEntries = Object.entries(this.model.monomerPositionStats) as [string, PositionStats][];
+    const posData: number[] = new Array(monomerPositionStatsEntries.length - 1);
+    const monomerData: string[] = new Array(posData.length);
+    const mdData: number[] = new Array(posData.length);
+    const pValData: (number | null)[] = new Array(posData.length);
+    const countData: number[] = new Array(posData.length);
+    const ratioData: number[] = new Array(posData.length);
+
+    let i = 0;
+    for (const [position, positionStats] of monomerPositionStatsEntries) {
+      const generalPositionStats = positionStats.general;
+      if (!generalPositionStats)
+        continue;
+      if (Object.entries(positionStats).length === 1)
+        continue;
+
+      const filteredMonomerStats: [string, Stats][] = [];
+      for (const [monomer, monomerStats] of Object.entries(positionStats)) {
+        if (monomer === 'general')
+          continue;
+        if ((monomerStats as Stats).count > 1 && (monomerStats as Stats).pValue === null)
+          filteredMonomerStats.push([monomer, monomerStats as Stats]);
+
+        if ((monomerStats as Stats).pValue === generalPositionStats.minPValue)
+          filteredMonomerStats.push([monomer, monomerStats as Stats]);
+      }
+
+      let maxEntry: [string, Stats];
+      for (const [monomer, monomerStats] of filteredMonomerStats) {
+        if (typeof maxEntry! === 'undefined' || maxEntry[1].meanDifference < monomerStats.meanDifference)
+          maxEntry = [monomer, monomerStats];
+      }
+
+      posData[i] = parseInt(position);
+      monomerData[i] = maxEntry![0];
+      mdData[i] = maxEntry![1].meanDifference;
+      pValData[i] = maxEntry![1].pValue;
+      countData[i] = maxEntry![1].count;
+      ratioData[i] = maxEntry![1].ratio;
+      ++i;
+    }
+
+    posData.length = i;
+    monomerData.length = i;
+    mdData.length = i;
+    pValData.length = i;
+    countData.length = i;
+    ratioData.length = i;
+
+    const mprDf = DG.DataFrame.create(i); // Subtract 'general' entry from mp-stats
+    const mprDfCols = mprDf.columns;
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.POSITION, posData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.STRING, C.COLUMNS_NAMES.MONOMER, monomerData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.MEAN_DIFFERENCE, mdData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.P_VALUE, pValData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.COUNT, countData));
+    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.RATIO, ratioData));
+
+    return mprDf;
+  }
+
   createMostPotentResiduesGrid(): void {
-    this.viewerGrid = this.model.mostPotentResiduesDf.plot.grid();
+    const mostPotentResiduesDf = this.createMostPotentResiduesDf();
+    this.viewerGrid = mostPotentResiduesDf.plot.grid();
     this.viewerGrid.sort([C.COLUMNS_NAMES.POSITION]);
     const pValGridCol = this.viewerGrid.col(C.COLUMNS_NAMES.P_VALUE)!;
     pValGridCol.format = '#.000';
     pValGridCol.name = 'P-value';
-    const monomerCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    const monomerCol = mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER);
 
     // Setting Monomer column renderer
-    CR.setAARRenderer(monomerCol, this.model.alphabet);
+    CR.setMonomerRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe(
       (args: DG.GridCellRenderArgs) => renderCell(args, this.model, false, undefined, undefined));
 

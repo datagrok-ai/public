@@ -13,19 +13,19 @@ export function renderCellSelection(canvasContext: CanvasRenderingContext2D, bou
 }
 
 /** A function that sets amino acid residue cell renderer to the specified column */
-export function setAARRenderer(col: DG.Column, alphabet: string): void {
+export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
 }
 
-export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
+export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
   mutationCliffsSelection: types.Selection, substitutionsInfo: types.MutationCliffs | null = null,
   _twoColorMode: boolean = false, renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
-  const pVal = positionStats![currentAAR]!.pValue;
-  const currentMeanDifference = positionStats![currentAAR]!.meanDifference;
+  const pVal = positionStats![currentMonomer]!.pValue;
+  const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;
 
   // Transform p-value to increase intensity for smaller values and decrease for larger values
   const maxPValComplement = 1 - positionStats!.general.maxPValue;
@@ -53,7 +53,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   canvasContext.fill();
 
   if (renderNums) {
-    const substitutions = substitutionsInfo?.get(currentAAR)?.get(currentPosition)?.entries() ?? null;
+    const substitutions = substitutionsInfo?.get(currentMonomer)?.get(currentPosition)?.entries() ?? null;
     if (substitutions !== null) {
       canvasContext.textBaseline = 'middle';
       canvasContext.textAlign = 'center';
@@ -73,12 +73,12 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
     }
   }
 
-  const aarSelection = mutationCliffsSelection[currentPosition];
-  if (aarSelection && aarSelection.includes(currentAAR))
+  const monomerSelection = mutationCliffsSelection[currentPosition];
+  if (monomerSelection && monomerSelection.includes(currentMonomer))
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
+export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, invariantMapSelection: types.Selection, cellValue: number, bound: DG.Rect,
   color: number): void {
   canvasContext.fillStyle = DG.Color.toHtml(color);
@@ -89,8 +89,8 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  const aarSelection = invariantMapSelection[currentPosition];
-  if (aarSelection && aarSelection.includes(currentAAR))
+  const monomerSelection = invariantMapSelection[currentPosition];
+  if (monomerSelection && monomerSelection.includes(currentMonomer))
     renderCellSelection(canvasContext, bound);
 }
 
