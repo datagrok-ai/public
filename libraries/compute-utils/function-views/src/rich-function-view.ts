@@ -7,14 +7,14 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable, merge, from} from 'rxjs';
+import { Subject, BehaviorSubject, Observable, merge, from, Subscription } from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import {debounceTime, filter, mapTo, startWith, switchMap} from 'rxjs/operators';
+import { debounceTime, filter, map, mapTo, startWith, switchMap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated} from '../../shared-components/src/FuncCallInput';
+import { FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage } from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 const INTERACTIVE_DEBOUNCE_TIME = 350;
@@ -198,7 +198,9 @@ export class RichFunctionView extends FunctionView {
   private getStandardButtons(): HTMLElement[] {
     const runButton = this.getRunButton();
     const runButtonWrapper = ui.div([runButton]);
-    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    ui.tooltip.bind(
+      runButtonWrapper,
+      () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : this.getValidationMessage()) : '');
     const saveButton = this.getSaveButton();
 
     if (this.runningOnInput) $(runButtonWrapper).hide();
@@ -682,7 +684,7 @@ export class RichFunctionView extends FunctionView {
           return;
         }
         this.inputsMap[val.property.name] = input;
-        this.bindInputToParam(val.property.name, input, field);
+        this.syncInput(val, input, field);
         this.disableInputsOnRun(input);
         if (field === SYNC_FIELD.INPUTS)
           this.bindOnHotkey(input);
@@ -816,91 +818,72 @@ export class RichFunctionView extends FunctionView {
     (t as any).setValidation = setValidation;
   }
 
-  private bindInputToParam(name: string, t: InputVariants, field: SyncFields) {
-    let blockNotifications = false;
+  private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
+    this.syncFuncCallReplaced(t, val.name, fields);
+    this.syncOnInput(t, val, fields);
+  }
 
-    const setInput = (input: InputVariants, val: any) => {
-      blockNotifications = true;
-      input.value = val;
-      blockNotifications = false;
-    }
-
-    const setParam = (field: SyncFields, name: string, val: any) => {
-      blockNotifications = true;
-      this.funcCall[field][name] = val;
-      blockNotifications = false;
-    }
-
-    // initial fc sync
-    const sub1 = this.funcCallReplaced.pipe(
-      startWith(null)
-    ).subscribe(() => {
-      const param = this.funcCall[syncParams[field]][name];
-      const newValue = this.funcCall[field][name] ?? param.property.defaultValue ?? null;
-      setInput(t, newValue);
-      setParam(field, name, newValue);
-      if (field === SYNC_FIELD.INPUTS) {
-        this.hideOutdatedOutput();
-        this.checkDisability.next();
-      }
+  private syncFuncCallReplaced(t: InputVariants, name: string, field: SyncFields) {
+    const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
+      const newParam = this.funcCall[syncParams[field]][name];
+      const newValue = this.funcCall[field][name] ?? newParam.property.defaultValue ?? null;
+      t.notify = false;
+      t.value = newValue;
+      t.notify = true;
+      this.funcCall[field][name] = newValue;
       this.setInputState(t, this.funcCall.options['editState']?.[name]);
     });
     this.subs.push(sub1);
 
-    const paramChanges$ = this.funcCallReplaced.pipe(
-      startWith(null),
+    const param$ = this.funcCallReplaced.pipe(
+      startWith(true),
       switchMap(() => {
-        const param = this.funcCall[syncParams[field]][name];
-        return param.onChanged.pipe(mapTo(param));
-      }),
-      filter(() => !blockNotifications));
+        const newParam = this.funcCall[syncParams[field]][name];
+        return newParam.onChanged.pipe(mapTo(newParam));
+      }));
 
-    const inputChanges$ = getObservable(t.onInput.bind(t)).pipe(
-      filter(() => !blockNotifications),
-    );
-
-    // sync new params or values with the view ui
-    const sub2 = paramChanges$.subscribe((param) => {
-      setInput(t, param.value);
+    const sub2 = param$.subscribe((newParam) => {
+      const newValue = this.funcCall[field][newParam.name];
+      // we need to check if the value is not the same for floats,
+      // otherwise we will overwrite a user input with a lower
+      // precicsion decimal representation
+      if (
+        ((newParam.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
+          newParam.property.propertyType !== DG.TYPE.FLOAT
+      ) {
+        t.notify = false;
+        t.value = newValue;
+        t.notify = true;
+      }
       if (field === SYNC_FIELD.INPUTS) {
         this.hideOutdatedOutput();
         this.checkDisability.next();
+
+        if (this.runningOnInput && this.isRunnable()) this.doRun();
       }
     });
     this.subs.push(sub2);
 
-    // intercative mode handling
-    if  (this.runningOnInput) {
-      // param changes interactive mode running
-      const sub3 = paramChanges$.pipe(debounceTime(INTERACTIVE_DEBOUNCE_TIME)).subscribe(() => {
-        if (this.isRunnable())
-          this.doRun();
-      });
-      this.subs.push(sub3);
+    // handling mutations of dataframes
+    const sub3 = param$.pipe(
+      filter(param => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
+      switchMap(param => param.value.onDataChanged),
+    ).subscribe(() => {
+      if (this.runningOnInput && this.isRunnable()) this.doRun();
+    });
+    this.subs.push(sub3);
+  }
 
-      // dataframe mutations interactive mode running
-      const param = this.funcCall[syncParams[field]][name];
-      if (param.property.propertyType === DG.TYPE.DATA_FRAME) {
-        const sub4 = paramChanges$.pipe(
-          filter((param) => param.value),
-          switchMap((param) => (param.value.onDataChanged as Observable<any>)),
-          debounceTime(INTERACTIVE_DEBOUNCE_TIME)
-        ).subscribe(() => {
-          if (this.isRunnable())
-            this.doRun();
-        });
-        this.subs.push(sub4);
-      }
-    }
-
-    // input handling, sync with the current funcall
-    const sub5 = inputChanges$.subscribe(() => {
+  private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
+    const sub = DG.debounce(getObservable(t.onInput.bind(t)), this.runningOnInput ? 350 : 0).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
 
-      setParam(field, name, t.value);
+      this.funcCall[field][val.name] = t.value;
+      this.checkDisability.next();
+      this.hideOutdatedOutput();
     });
-    this.subs.push(sub5);
+    this.subs.push(sub);
   }
 
   public isRunnable() {
@@ -922,6 +905,16 @@ export class RichFunctionView extends FunctionView {
     return this.validationState;
   }
 
+  public getValidationMessage() {
+    let msgs: string[] = [];
+    for (const [name, v] of Object.entries(this.validationState)) {
+      if (!isValidationPassed(v)) {
+        msgs.push(`${name}: ${getErrorMessage(v)}`);
+      }
+    }
+    return msgs.join('\n')
+  }
+
   private runValidation() {
     this.clearValidation();
     for (const [k, v] of this.funcCall.inputs.entries()) {
@@ -936,7 +929,6 @@ export class RichFunctionView extends FunctionView {
         this.syncValidationState(k, customMsgs);
       }
     }
-    console.log(this.validationState);
   }
 
   private clearValidation() {
