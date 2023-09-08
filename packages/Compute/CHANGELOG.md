@@ -1,5 +1,15 @@
 # Compute changelog
 
+## 1.14.3 (2023-09-08)
+
+### Fixed bugs
+
+- PLV: Fixed options logic on funcCall copy
+
+### Features
+
+- Compute: OutliersViewer's balloon has now proper buttons type
+
 ## 1.14.2 (2023-09-07)
 
 ### Fixed bugs
