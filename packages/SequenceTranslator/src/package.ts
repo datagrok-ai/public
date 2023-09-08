@@ -42,6 +42,7 @@ class StPackage extends DG.Package {
 export const _package: StPackage = new StPackage();
 
 //name: Oligo Toolkit
+//meta.icon: img/icons/toolkit.png
 //tags: app
 export async function oligoToolkitApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${COMBINED_APP_NAME}...`);
@@ -86,6 +87,7 @@ async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
 }
 
 //name: Oligo Translator
+//meta.icon: img/icons/translator.png
 //tags: app
 export async function oligoTranslatorApp(): Promise<void> {
   await initSequenceTranslatorLibData();
@@ -94,6 +96,7 @@ export async function oligoTranslatorApp(): Promise<void> {
 }
 
 //name: Oligo Pattern
+//meta.icon: img/icons/pattern.png
 //tags: app
 export async function oligoPatternApp(): Promise<void> {
   await initSequenceTranslatorLibData();
@@ -102,6 +105,7 @@ export async function oligoPatternApp(): Promise<void> {
 }
 
 //name: Oligo Structure
+//meta.icon: img/icons/structure.png
 //tags: app
 export async function oligoStructureApp(): Promise<void> {
   await initSequenceTranslatorLibData();
