@@ -23,10 +23,10 @@ type Likelihood = {
 type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number,
   data: {x: number[], y: number[]}, params: number[]) => Likelihood;
 
-export enum FitErrorModel {
-  Constant,
-  Proportional
-}
+export const FitErrorModel = {
+  CONSTANT: 'constant',
+  PROPORTIONAL: 'proportional',
+};
 
 export type FitParamBounds = {
   min?: number;
@@ -109,6 +109,8 @@ export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' |
 
 export type FitLineStyle = 'solid' | 'dotted' | 'dashed' | 'dashdotted';
 
+export type FitErrorModelType = 'constant' | 'proportional';
+
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
   x: number;
@@ -181,6 +183,7 @@ export interface IFitSeriesOptions {
   showFitLine?: boolean;                // defines whether to show the fit line or not
   showPoints?: string;                  // defines the data display mode
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
+  errorModel?: FitErrorModelType;
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
   droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
@@ -226,6 +229,8 @@ export const fitSeriesProperties: Property[] = [
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   Property.js('fitLineColor', TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  Property.js('errorModel', TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
+    choices: ['constant', 'proportional'], nullable: false}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
     'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
   Property.js('showFitLine', TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
@@ -352,20 +357,20 @@ export const fitFunctions: {[index: string]: FitFunction} = {
 };
 
 export interface IFitOptions {
-  errorModel: FitErrorModel;
+  errorModel: FitErrorModelType;
   confidenceLevel: number;
   statistics: boolean;
 }
 
 
-function createObjectiveFunction(errorModel: FitErrorModel): ObjectiveFunction {
+function createObjectiveFunction(errorModel: FitErrorModelType): ObjectiveFunction {
   let of: ObjectiveFunction;
 
   switch (errorModel) {
-  case FitErrorModel.Constant:
+  case FitErrorModel.CONSTANT:
     of = objectiveNormalConstant;
     break;
-  case FitErrorModel.Proportional:
+  case FitErrorModel.PROPORTIONAL:
     of = objectiveNormalProportional;
     break;
   default:
@@ -411,7 +416,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   return fitFunctions[seriesFitFunc.name];
 }
 
-export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModel,
+export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction, errorModel: FitErrorModelType,
   parameterBounds?: FitParamBounds[]): FitCurve {
   const curveFunction = fitFunction.y;
   const paramValues = fitFunction.getInitialParameters(data.x, data.y);
@@ -461,11 +466,11 @@ export function getFittedCurve(curveFunction: (params: number[], x: number) => n
 }
 
 export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: number[],
-  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModel):
+  curveFunction: (params: number[], x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModelType):
   FitConfidenceIntervals {
   const of = createObjectiveFunction(errorModel);
 
-  const error = errorModel === FitErrorModel.Proportional ?
+  const error = errorModel === FitErrorModel.PROPORTIONAL ?
     of(curveFunction, data, paramValues).mult :
     of(curveFunction, data, paramValues).const;
 
@@ -473,7 +478,7 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 
   const top = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.Constant)
+    if (errorModel === FitErrorModel.CONSTANT)
       return value + quantile * error;
     else
       return value + quantile * Math.abs(value) * error;
@@ -481,7 +486,7 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 
   const bottom = (x: number) => {
     const value = curveFunction(paramValues, x);
-    if (errorModel === FitErrorModel.Constant)
+    if (errorModel === FitErrorModel.CONSTANT)
       return value - quantile * error;
     else
       return value - quantile * Math.abs(value) * error;

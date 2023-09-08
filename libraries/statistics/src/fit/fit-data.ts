@@ -20,6 +20,7 @@ import {
   TAG_FIT,
   FitParamBounds,
   IFitChartOptions,
+  FitErrorModelType,
 } from './fit-curve';
 
 export type LogOptions = {
@@ -162,7 +163,8 @@ export function fitSeries(series: IFitSeries, fitFunc: FitFunction, logOptions?:
     y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (series.parameterBounds && logOptions?.logX)
     series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
-  return fitData(getMedianPoints(data), fitFunc, FitErrorModel.Constant, series.parameterBounds);
+  return fitData(getMedianPoints(data), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
+    series.parameterBounds);
 }
 
 /** Returns series confidence interval functions */
@@ -174,7 +176,8 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
       y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (!series.parameters)
     series.parameters = fitSeries(series, fitFunc).parameters;
-  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05, FitErrorModel.Constant);
+  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05,
+    series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
 /** Returns series statistics */
