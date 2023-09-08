@@ -1,128 +1,140 @@
 # Create custom connectors
 
-Datagrok server uses a separate service called [Grok Connect](https://github.com/datagrok-ai/public/blob/master/connectors/README.md) to connect and retrieve data from databases. It's easily 
-extendable and the only thing you need is a basic knowledge of any popular [JVM language](https://www.oracle.com/technical-resources/articles/java/architect-languages.html) and familiarity with [JDBC](https://download.oracle.com/otndocs/jcp/jdbc-4_2-mrel2-spec/) specification (not required, but nice to have).
+The Datagrok server uses the [Grok Connect](https://github.com/datagrok-ai/public/blob/master/connectors/README.md) service to connect and retrieve database data. You can extend Grok Connect using a [JVM language](https://www.oracle.com/technical-resources/articles/java/architect-languages.html).
 
 ## Adding a new connector
 
-For all other languages except Java, you need to add the appropriate [Maven](https://maven.apache.org/) plugin to 
-pom.xml and configure it according to the documentation. The example here is focused on using Java programming language.
-You need next tools to follow examples:
+:::info prerequisites
+
+The example on this page uses Java. To follow the instructions, you need the following:
 
 * [Git](https://git-scm.com/) to fetch repository with code
 * [Java 8](https://www.java.com/download/ie_manual.jsp) to run and compile code
-* [Maven](https://maven.apache.org/download.cgi) to build project
+* [Maven](https://maven.apache.org/download.cgi) to build a project. For languages other than Java, add the appropriate [Maven](https://maven.apache.org/) plugin to 
+pom.xml and configure it according to the documentation.
 * Code editor of your choice.
+
+:::
 
 To add a new connector:
 
-* Clone [public](https://github.com/datagrok-ai/public) repository from gitHub:
+1. Clone the [Datagrok's public repository](https://github.com/datagrok-ai/public) from GitHub:
 
-```bash
-git clone https://github.com/datagrok-ai/public.git
-```
+  ```bash
+  git clone https://github.com/datagrok-ai/public.git
+  ```
 
-* Add JDBC driver. You can add driver as a [jar file](https://docs.oracle.com/javase/8/docs/technotes/guides/jar/jarGuide.html) to 
-_public/connectors/grok_connect/src/main/java/grok_connect/lib_ folder or by using pom.xml if the driver is available 
-on public repositories. For our example, let's say we want to add the [OrientDB](http://orientdb.org/) connector to 
-Grok Connect. In our case driver is available on [Maven](https://mvnrepository.com/artifact/com.orientechnologies/orientdb-jdbc), and we can add it to the pom.xml of grok_connect package in the dependency section as follows:
-
-```
-<dependency>
-    <groupId>com.orientechnologies</groupId>
-    <artifactId>orientdb-jdbc</artifactId>
-    <version>3.2.21</version>
-</dependency>
-```
-
-* Navigate to the providers package in grok connect folder:
-
-```bash
-cd public/connectors/grok_connect/src/main/java/grok_connect/providers
-```
-
-* Create a new file with a .java extension and name it using the standard naming convention used for other providers.
-For our example let's call it:
-
-```
- OrientDbJdbcProvider.java
-```
-
-* Open created java file in your code editor and create Java class with the same name as the file. 
-First, You need to extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java) - it provides basic functionality for all JDBC providers.
-If you follow example is this tutorial just paste the next block of code to your file:
-
-```
-  public class OrientDbJdbcProvider extends JdbcDataProvider {
-      public OrientDbJdbcProvider() {
-      }
-  }
-```
-
->Note: All imports here and in the next blocks of code are omitted for simplicity.
-
-* Override [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java) field called **driverClassName** and assign it full driver class name.
-You can get the name from the appropriate documentation for the JDBC driver of your choice. For our example add the next line to the constructor of the previously created class:
-
-```
-  driverClassName = "com.orientechnologies.orient.jdbc.OrientJdbcDriver";
-```
-
-Also, paste the next block of code to the constructor. What it does is basically the configuration of the connection form.
+1. Add a JDBC driver:
+   * As a [jar file](https://docs.oracle.com/javase/8/docs/technotes/guides/jar/jarGuide.html) to _public/connectors/grok_connect/src/main/java/grok_connect/lib_ folder.
+   * Using `pom.xml` if the driver is available on public repositories. 
   
-```
-  descriptor = new DataSource();
-  descriptor.type = "OrientDb";
-  descriptor.description = "Query OrientDb";
-  descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-  descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-  descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
-```
+  For example, let's add the [OrientDB](http://orientdb.org/) connector to 
+Grok Connect. Since it's available on [Maven](https://mvnrepository.com/artifact/com.orientechnologies/orientdb-jdbc), insert the following dependency in the `pom.xml` of the `grok_connect` package:
 
-* Override [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java) method called **getConnectionStringImpl**.
-You need to know how JDBC connection string is built for your database. Use appropriate documentation for this.
-For our example add the following code to the class:
+  ```
+  <dependency>
+      <groupId>com.orientechnologies</groupId>
+      <artifactId>orientdb-jdbc</artifactId>
+      <version>3.2.21</version>
+  </dependency>
+  ```
 
-```
-  @Override
-    public String getConnectionStringImpl(DataConnection conn) {
-        return String.format("jdbc:orient:remote:%s/%s", conn.getServer(), conn.getDb());
+1. Implement the provider:
+   * Go to the _providers_ package in the _grok connect_ folder:
+
+      ```bash
+      cd public/connectors/grok_connect/src/main/java/grok_connect/providers
+      ```
+
+   * Create a `.java` file and name using the standard naming convention. For example:
+    
+     ```
+     OrientDbJdbcProvider.java
+     ```
+
+   * In your code editor, open this JAVA file and create a Java class with the same name. 
+Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java), which provides basic functionality for all JDBC providers.
+
+ For our example, paste this code to your file:
+
+  ```
+    public class OrientDbJdbcProvider extends JdbcDataProvider {
+        public OrientDbJdbcProvider() {
+        }
     }
-```
+  ```
 
-* Register you provider class in [ProviderManager](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/utils/ProviderManager.java). Add it in providersList in the constructor.
+  >Note: For simplicity, we omit all imports.
 
-* Build Grok Connect. Navigate to _connectors_ folder where parent pom.xml is located and run following command:
+    * Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
 
-```bash
-mvn package -DskipTests
-```
+    ```
+      driverClassName = "com.orientechnologies.orient.jdbc.OrientJdbcDriver";
+    ```
+  
+    >Note: To get the driver class name, use the documentation for your chosen JDBC driver.
 
-## Testing added connector
+    * In the constructor, configure the connection:
+  
+      ```
+        descriptor = new DataSource();
+        descriptor.type = "OrientDb";
+        descriptor.description = "Query OrientDb";
+        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
+        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+      ```
 
-To test your database connector use GrokConnectShell or local build of Datagrok and Grok Connect.
+    * Override the `getConnectionStringImpl` method for your database.
+    For our example, add the following code to the class:
 
->Note: You need a running instance of the database of your choice to test your newly created connector.
+    ```
+      @Override
+        public String getConnectionStringImpl(DataConnection conn) {
+            return String.format("jdbc:orient:remote:%s/%s", conn.getServer(), conn.getDb());
+        }
+    ```
+    
+    To complete this step, you need to know how the JDBC connection string is built for your database. Refer to the appropriate documentation.
 
-To test with GrokConnectShell:
+    * Register your provider class in [ProviderManager](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/utils/ProviderManager.java) by adding it to the `providersList`` in the constructor.
 
-* Open _connectors/examples/query.json_ and fill it with necessary information
-* Navigate to _/public/connectors/grok_connect_ folder and run following command:
+1. Build Grok Connect: 
+    * Go to the _connectors_ folder with the parent `pom.xml` and run the following command:
 
-```bash
-java -cp ./target/<NAME OF GROK CONNECT JAR>.jar grok_connect.GrokConnectShell --q <ABSOLUTE PATH TO query.json>
-```
+      ```bash
+      mvn package -DskipTests
+      ```
 
-To test with the locally running Datagrok:
+## Testing your connector
 
-* Run from _/public/connectors_ folder:
+:::info prerequisites
 
-```bash
- java -jar ./target/<NAME OF GROK CONNECT JAR>.jar grok_connect.GrokConnect
-```
+A live instance of your chosen database.
 
->Note: Datagrok needs some time to recognize running Grok Connect or you can reload the container.
+:::
 
-* Open platform on the browser and go to **Data** > **Databases** and find connector you have created.
-* Right-click the connector, choose **Add connection** and fill the form.
-* Test it!
+Testing options: 
+
+1. Using `GrokConnectShell`:
+
+    * Open `connectors/examples/query.json` and add the necessary details.
+    * Go to the `/public/connectors/grok_connect` folder and run the following command:
+
+      ```bash
+      java -cp ./target/<NAME OF GROK CONNECT JAR>.jar grok_connect.GrokConnectShell --q <ABSOLUTE PATH TO query.json>
+      ```
+
+2. Using Datagrok running locally:
+
+    * From the `/public/connectors` folder, run:
+
+      ```bash
+       java -jar ./target/<NAME OF GROK CONNECT JAR>.jar grok_connect.GrokConnect
+      ```
+ 
+    * Open the platform in a browser and go to **Data** > **Databases**.
+    * In the **Database Manager**, right-click your new connector and select **Add connection...** A parameter dialog opens.
+    * In the parameter dialog, [fill in the connection parameters](databases.mdx#connecting-to-database) and click **TEST**. Upon successful connection, the database appears in the **Database Manager** under the respective data source. 
+
+  >Note: It may take Datagrok some time to recognize a running Grok Connect. To speed up the process, reload the container.

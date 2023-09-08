@@ -6,8 +6,9 @@ import {
   getColumnChartOptions,
   getSeriesStatistics,
   getSeriesFitFunction,
+  getDataFrameChartOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, mergeProperties} from './fit-renderer';
 import {MultiCurveViewer} from './multi-curve-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -18,6 +19,11 @@ const SERIES_NUMBER_TAG = '.seriesNumber';
 const STATISTICS_TAG = '.statistics';
 const CHART_OPTIONS = 'chartOptions';
 const SERIES_OPTIONS = 'seriesOptions';
+enum MANIPULATION_LEVEL {
+  DATAFRAME = 'Dataframe',
+  COLUMN = 'Column',
+  CELL = 'Cell'
+};
 
 
 function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesNumber: number): void {
@@ -37,28 +43,75 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesN
   grid.dataFrame.columns.add(column);
 }
 
-function changeCurvesOptions(gridCell: DG.GridCell, columnChartOptions: IFitChartData,
-  inputBase: DG.InputBase, options: string): void {
-  gridCell.cell.column.tags[TAG_FIT] = JSON.stringify(columnChartOptions);
-  for (let i = 0; i < gridCell.cell.column.length; i++) {
-    const value = gridCell.cell.column.get(i);
-    if (value === '') continue;
-    const chartData: IFitChartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
-      convertXMLToIFitChartData(value) : JSON.parse(value ?? '{}') ?? {};
-
-    if (options === CHART_OPTIONS) {
-      if (chartData.chartOptions === undefined) continue;
-      (chartData.chartOptions[inputBase.property.caption as keyof IFitChartOptions] as any) = inputBase.value;
-    }
-    else if (options === SERIES_OPTIONS) {
-      if (chartData.series === undefined) continue;
-      for (let j = 0; j < chartData.series.length; j++)
-        (chartData.series[j][inputBase.property.caption as keyof IFitSeries] as any) = inputBase.value;
-    }
-    gridCell.cell.column.set(i, JSON.stringify(chartData));
+function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, options: string): void {
+  if (options === CHART_OPTIONS) {
+    if (chartData.chartOptions === undefined) return;
+    (chartData.chartOptions[inputBase.property.caption as keyof IFitChartOptions] as any) = inputBase.value;
   }
-  if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX)
-    gridCell.cell.column.setTag(TAG_FIT_CHART_FORMAT, '');
+  else if (options === SERIES_OPTIONS) {
+    if (chartData.series === undefined) return;
+    for (let i = 0; i < chartData.series.length; i++)
+      (chartData.series[i][inputBase.property.caption as keyof IFitSeries] as any) = inputBase.value;
+  }
+}
+
+// TODO: add detectSettings() method which will go thorugh cells initially and tell if there is a custom property value or not
+// TODO: render confidence intervals
+// TODO: fix the margins if small cell sizes
+// TODO: don't allow clickToToggle if small size
+// TODO: shpw tooltip if 30x30 or smth like this - small but can see
+
+function changeColumnsCurvesOptions(columns: DG.Column[], inputBase: DG.InputBase, options: string): void {
+  let chartData: IFitChartData;
+  for (let i = 0; i < columns.length; i++) {
+    for (let j = 0; j < columns[i].length; j++) {
+      if (columns[i].get(j) === '') continue;
+      chartData = columns[i].getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+        convertXMLToIFitChartData(columns[i].get(j)) : JSON.parse(columns[i].get(j) ?? '{}') ?? {};
+      changePlotOptions(chartData, inputBase, options);
+      columns[i].set(j, JSON.stringify(chartData));
+    }
+    if (columns[i].getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX)
+      columns[i].setTag(TAG_FIT_CHART_FORMAT, '');
+  }
+}
+
+function convertJnJColumnToJSON(column: DG.Column) {
+  for (let i = 0; i < column.length; i++) {
+    const value = column.get(i);
+    if (value === '') continue;
+    const chartData: IFitChartData = convertXMLToIFitChartData(value);
+    column.set(i, JSON.stringify(chartData));
+  }
+  column.setTag(TAG_FIT_CHART_FORMAT, '');
+}
+
+function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, options: string, manipulationLevel: string): void {
+  const chartOptions = manipulationLevel === MANIPULATION_LEVEL.DATAFRAME ?
+    getDataFrameChartOptions(gridCell.cell.dataFrame) : getColumnChartOptions(gridCell.cell.column);
+  if (options === CHART_OPTIONS)
+    (chartOptions.chartOptions![inputBase.property.caption as keyof IFitChartOptions] as any) = inputBase.value;
+  else if (options === SERIES_OPTIONS)
+    (chartOptions.seriesOptions![inputBase.property.caption as keyof IFitSeriesOptions] as any) = inputBase.value;
+
+  if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
+    gridCell.cell.dataFrame.tags[TAG_FIT] = JSON.stringify(chartOptions);
+    const fitColumns = gridCell.cell.dataFrame.columns.bySemTypeAll(FIT_SEM_TYPE);
+    changeColumnsCurvesOptions(fitColumns, inputBase, options);
+  }
+  else if (manipulationLevel === MANIPULATION_LEVEL.COLUMN) {
+    gridCell.cell.column.tags[TAG_FIT] = JSON.stringify(chartOptions);
+    changeColumnsCurvesOptions([gridCell.cell.column], inputBase, options);
+  }
+  else {
+    const value = gridCell.cell.value;
+    if (value === '') return;
+    if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX)
+      convertJnJColumnToJSON(gridCell.cell.column);
+    const chartData: IFitChartData = JSON.parse(value ?? '{}') ?? {};
+    changePlotOptions(chartData, inputBase, options);
+    gridCell.cell.value = JSON.stringify(chartData);
+  }
   gridCell.grid.invalidate();
 }
 
@@ -71,22 +124,44 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   isApplicable(x: any): boolean {
     return x instanceof DG.GridCell && x.cellType === FIT_CELL_TYPE;
   }
+  
+  // TODO: add aspect ratio for the cell
+  // TODO: add legend
+  // TODO: add tooltip
+  // TODO: add the table for the values on the cell or don't render it at all
+  // TODO: fix the curves demo app
+  // TODO: decrease the sizes for hte plot title rendering
 
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
-    const acc = ui.accordion();
+    const acc = ui.accordion(`Curves ${gridCell.cell.dataFrame.name}`);
+    // TODO: make just the base ui.choiceInput after nullable option is added
+    const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Controls the level at which properties will be switched',
+      defaultValue: 'Column', choices: ['Dataframe', 'Column', 'Cell'], nullable: false});
+    const switchLevelInput = ui.input.forProperty(switchProperty);
+
+    // temporarily because input doesn't show the tooltip
+    ui.tooltip.bind(switchLevelInput.captionLabel, 'Controls the level at which properties will be switched');
+
     const chartData = getChartData(gridCell);
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
+    const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
+
     const seriesOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) => 
-      changeCurvesOptions(gridCell, columnChartOptions, inputBase, SERIES_OPTIONS)};
+      changeCurvesOptions(gridCell, inputBase, SERIES_OPTIONS, switchLevelInput.value)};
     const chartOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) =>
-      changeCurvesOptions(gridCell, columnChartOptions, inputBase, CHART_OPTIONS)};
+      changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
 
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
+    mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
+      chartData.series ? chartData.series[0] ?? {} : {});
     mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions,
+      chartData.chartOptions ? chartData.chartOptions : {});
+    mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions,
       chartData.chartOptions ? chartData.chartOptions : {});
 
     acc.addPane('Options', () => ui.divV([
+      switchLevelInput.root,
       ui.h3('Series options'),
       ui.input.form(chartData.seriesOptions ? chartData.seriesOptions : chartData.series![0], fitSeriesProperties, seriesOptionsRefresh),
       ui.h3('Chart options'),

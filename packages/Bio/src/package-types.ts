@@ -57,4 +57,17 @@ export class BioPackage extends DG.Package {
   public get properties(): BioPackageProperties { return this._properties; };
 
   public set properties(value: BioPackageProperties) { this._properties = value; }
+
+  private _initialized: boolean = false;
+
+  public get initialized(): boolean { return this._initialized;}
+
+  public completeInit(): void { this._initialized = true;}
+
+  handleErrorUI(err: any) {
+    const errMsg = err instanceof Error ? err.message : err.toString();
+    const errStack = err instanceof Error ? err.stack : undefined;
+    grok.shell.error(errMsg);
+    this.logger.error(errMsg, undefined, errStack);
+  }
 }

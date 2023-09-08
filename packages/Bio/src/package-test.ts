@@ -24,6 +24,7 @@ import './tests/pepsea-tests';
 import './tests/viewers';
 import './tests/units-handler-tests';
 import './tests/units-handler-splitted-tests';
+import './tests/units-handler-get-region';
 import './tests/to-atomic-level-tests';
 import './tests/mm-distance-tests';
 import './tests/activity-cliffs-tests';

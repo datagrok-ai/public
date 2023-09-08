@@ -89,11 +89,19 @@ function datagrok_start() {
         datagrok_install
     fi
     message "Starting Datagrok containers"
-    docker compose -f "${compose_config_path}" --project-name datagrok --profile all up -d
+    update_installation=false
+    if [ ! -z "$1" ] && [ "$1"=="update" ]; then
+        update_installation=true
+    fi
+    # Checking do we need tu run update
+    if [ "$update_installation" = true ] ; then
+        message "Updating Datagrok to the latest version"
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all pull
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all  up -d --force-recreate
+    else
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all up -d
+    fi
     message "Waiting while the Datagrok server is starting"
-    count_down ${timeout}
-    message "Running browser"
-    xdg-open ${datagrok_local_url}
     echo "When the browser opens, use the following credentials to log in:"
     echo "------------------------------"
     echo -ne "${GREEN}"
@@ -101,9 +109,16 @@ function datagrok_start() {
     echo "Password: admin"
     echo -ne "${RESET}"
     echo "------------------------------"
+    echo "If you see the message 'Datagrok server is unavaliable' just wait for a while and reload the web page "
+    count_down ${timeout}
+    message "Running browser"
+    xdg-open ${datagrok_local_url}
     message "If the browser hasn't open, use the following link: $datagrok_local_url"
-    message "If you see the message 'Datagrok server is unavaliable' just wait for a while and reload the web page "
     message "To extend Datagrok fucntionality, install extension packages on the 'Manage -> Packages' page"
+    if [ "$update_installation" = true ] ; then
+        message "Removing old images"
+        docker image prune -f
+    fi
 }
 
 function datagrok_stop() {
@@ -133,7 +148,7 @@ function datagrok_purge() {
     fi
     if user_query_yn "This action will stop Datagrok and COMPLETELY remove Datagrok installation. Are you sure?"; then
         docker compose -f "${compose_config_path}" --project-name datagrok --profile all down --volumes
-        docker rmi $(docker images -q datagrok/*)
+        #docker rmi $(docker images -q datagrok/*)
     fi
 }
 
@@ -146,9 +161,10 @@ install) datagrok_install ;;
 start) datagrok_start ;;
 stop) datagrok_stop ;;
 reset) datagrok_reset ;;
+update) datagrok_start update ;;
 purge) datagrok_purge ;;
 help | "-h" | "--help")
-    echo "usage: $script_name install|start|stop|reset" >&2
+    echo "usage: $script_name install|start|stop|update|reset|purge" >&2
     exit 1
     ;;
 *) datagrok_start ;;

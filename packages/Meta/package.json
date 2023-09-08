@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.42",
+  "version": "3.5.49",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -609,6 +609,9 @@
           "datagrok-api": "^1.16.0"
         },
         "1.7.1": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.7.2": {
           "datagrok-api": "^1.16.0"
         }
       },
@@ -1608,6 +1611,15 @@
         },
         "1.14.0": {
           "datagrok-api": "^1.16.3"
+        },
+        "1.14.1": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.14.2": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.14.3": {
+          "datagrok-api": "^1.16.3"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
@@ -2314,6 +2326,9 @@
         },
         "2.9.0": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.10.0": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2890,6 +2905,9 @@
         },
         "1.2.18": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.19": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -3060,6 +3078,9 @@
         },
         "1.0.5": {
           "datagrok-api": "latest"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.16.3"
         }
       },
       "description": "Automated UI tests",

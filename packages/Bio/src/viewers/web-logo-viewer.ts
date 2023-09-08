@@ -8,14 +8,15 @@ import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
-  monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS
+  monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
-  FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates, positionSeparator,
-  TAGS as wlTAGS, VerticalAlignments, WebLogoProps, WebLogoPropsDefault
+  FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates,
+  VerticalAlignments, WebLogoProps, WebLogoPropsDefault
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
+import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 import {_package} from '../package';
@@ -560,8 +561,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }).reduce((max, l) => Math.max(max, l), 0);
 
     /** positionNames and positionLabel can be set up through the column's tags only */
-    const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
-    const positionLabelsTxt = this.seqCol.getTag(wlTAGS.positionLabels);
+    const positionNamesTxt = this.seqCol.getTag(TAGS.positionNames);
+    const positionLabelsTxt = this.seqCol.getTag(TAGS.positionLabels);
     this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
       [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
     this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :
@@ -1034,7 +1035,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         min: this.slider.min, max: this.slider.max,
         maxRange: this.slider.maxRange
       };
-      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
+      _package.logger.debug(
+        `Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
       this.render(WlRenderLevel.Layout, 'sliderOnValuesChanged').then(() => {});
     } catch (err: any) {
       const errMsg = errorToConsole(err);

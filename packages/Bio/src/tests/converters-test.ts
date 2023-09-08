@@ -5,7 +5,6 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src
 
 import {ConverterFunc} from './types';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 // import {mmSemType} from '../const';
@@ -134,8 +133,8 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$`,
       throw new Error(`Argument 'separator' is mandatory for target notation '${tgtNotation.toString()}'.`);
 
     return function(srcCol: DG.Column): DG.Column {
-      const converter = new NotationConverter(srcCol);
-      const resCol = converter.convert(tgtNotation, tgtSeparator);
+      const converterUH = UnitsHandler.getOrCreate(srcCol);
+      const resCol = converterUH.convert(tgtNotation, tgtSeparator);
       expect(resCol.getTag(DG.TAGS.UNITS), tgtNotation);
       return resCol;
     };
