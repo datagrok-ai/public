@@ -8,7 +8,7 @@ import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {SELECTION_MODE, MonomerPosition, MostPotentResidues, showTooltip} from '../viewers/sar-viewer';
+import {SELECTION_MODE, MonomerPosition, MostPotentResidues} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
 import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -64,7 +64,7 @@ category('Viewers: Monomer-Position', () => {
     const cellCoordinates = {col: '9', row: 6};
     const gc = mpViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     const mp = mpViewer.getMonomerPosition(gc);
-    expect(showTooltip(mp, 0, 0, model), true,
+    expect(model.showTooltip(mp, 0, 0), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 
@@ -125,7 +125,7 @@ category('Viewers: Most Potent Residues', () => {
     const cellCoordinates = {col: 'Diff', row: 6};
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
     const mp = mprViewer.getMonomerPosition(gc);
-    expect(showTooltip(mp, 0, 0, model), true,
+    expect(model.showTooltip(mp, 0, 0), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 });

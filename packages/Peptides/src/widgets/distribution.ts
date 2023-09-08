@@ -14,6 +14,9 @@ const allConst = 'All';
 const otherConst = 'Other';
 
 export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
+  if (!table.selection.anyTrue)
+    return new DG.Widget(ui.divText('No distribution'));
+
   const activityCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const activityColData = activityCol.getRawData();
   const rowCount = activityCol.length;
@@ -140,8 +143,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         res.push(distributionRoot);
       }
     } else {
-      const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
-      if (!splitCol)
+      if (!table.selection.anyTrue)
         res.push(ui.divText('No distribution'));
       else {
         otherStr = '';
@@ -158,9 +160,10 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           otherStr = otherConst;
         }
         const labels = getDistributionLegend(monomerStr, otherStr);
-        const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+
+        const distributionTable = DG.DataFrame.fromColumns([activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, table.selection)]);
         const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
-        const bitArray = BitArray.fromUint32Array(rowCount, splitCol.getRawData() as Uint32Array);
+        const bitArray = BitArray.fromString(table.selection.toBinaryString());
         const mask = DG.BitSet.create(rowCount,
           bitArray.allFalse ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
         const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});

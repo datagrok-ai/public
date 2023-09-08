@@ -949,11 +949,19 @@ export class PeptidesModel {
       throw new Error(`Unknown selection kind: ${this.latestSelectionItem.kind}`);
     };
 
-    selection.onChanged.subscribe(() => {
-      if (this.isUserChangedSelection)
-        return;
+    const showAccordion = (): void => {
+      const acc = this.createAccordion();
+      if (acc !== null) {
+        grok.shell.o = acc.root;
+        for (const pane of acc.panes)
+          pane.expanded = true;
+      }
+    };
 
-      selection.copyFrom(getLatestSelection(), false);
+    selection.onChanged.subscribe(() => {
+      if (!this.isUserChangedSelection)
+        selection.copyFrom(getLatestSelection(), false);
+      showAccordion();
     });
 
     filter.onChanged.subscribe(() => {
@@ -962,6 +970,7 @@ export class PeptidesModel {
         lstViewer.createLogoSummaryTableGrid();
         lstViewer.render();
       }
+      showAccordion();
     });
     this.isBitsetChangedInitialized = true;
   }
@@ -972,13 +981,6 @@ export class PeptidesModel {
     if (fireFilterChanged)
       this.df.filter.fireChanged();
     this.headerSelectedMonomers = calculateSelected(this.df);
-
-    const acc = this.createAccordion();
-    if (acc !== null) {
-      grok.shell.o = acc.root;
-      for (const pane of acc.panes)
-        pane.expanded = true;
-    }
     this.isUserChangedSelection = true;
   }
 
