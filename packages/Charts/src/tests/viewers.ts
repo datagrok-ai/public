@@ -1,8 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
-
+import {category, test, testViewer, before, delay} from '@datagrok-libraries/utils/src/test';
 
 category('Viewers', () => {
   const df = grok.data.demo.demog(100);
@@ -22,5 +21,24 @@ category('Viewers', () => {
         return df.clone();
       })(), {detectSemanticTypes: true});
     }, v in viewersToSkip ? {skipReason: viewersToSkip[v]} : {});
+  }
+});
+
+category('Demo', () => {
+  before(async () => {
+    grok.shell.lastError = '';
+  });
+
+  const demos = DG.Func.find({package: 'Charts', meta: {'demoPath': null}});
+  for (const demo of demos) {
+    test(demo.friendlyName, async () => {
+      await demo.apply();
+      await delay(demo.friendlyName === 'sunburstViewerDemo' ? 2000 : 500);
+      if (grok.shell.lastError) {
+        const err = grok.shell.lastError;
+        grok.shell.lastError = '';
+        throw new Error(err);
+      }
+    });
   }
 });

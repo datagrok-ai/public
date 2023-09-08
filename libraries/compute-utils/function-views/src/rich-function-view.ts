@@ -107,6 +107,9 @@ export class RichFunctionView extends FunctionView {
    */
   public override onAfterRun(): Promise<void> {
     this.showOutputTabsElem();
+    this.outputsTabsElem.panes.forEach((tab) => {
+      $(tab.header).show();
+    });
 
     if (this.prevOpenedTab) {
       this.outputsTabsElem.currentPane = this.prevOpenedTab;
@@ -394,7 +397,6 @@ export class RichFunctionView extends FunctionView {
               const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
               this.showOutputTabsElem();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParam.value;
@@ -489,9 +491,7 @@ export class RichFunctionView extends FunctionView {
             ];
           },
         ).root;
-        $(table).css({
-          'max-width': '400px',
-        });
+        $(table).addClass('rfv-scalar-table');
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -525,7 +525,7 @@ export class RichFunctionView extends FunctionView {
       });
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
       });
     });
 

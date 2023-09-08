@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## 1.1.4 (2023-09-07)
+
+### Bug fixes
+
+* Fixed molfile direction for AS and AS2 on SDF tab
+
 ## 1.1.3 (2023-09-07)
 
 ### Bug fixes

@@ -46,13 +46,13 @@ Grok Connect. Since it's available on [Maven](https://mvnrepository.com/artifact
       cd public/connectors/grok_connect/src/main/java/grok_connect/providers
       ```
 
-    * Create a `.java` file and name using the standard naming convention. For example:
+   * Create a `.java` file and name using the standard naming convention. For example:
     
      ```
      OrientDbJdbcProvider.java
      ```
 
-    * In your code editor, open this JAVA file and create a Java class with the same name. 
+   * In your code editor, open this JAVA file and create a Java class with the same name. 
 Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/master/connectors/grok_connect/src/main/java/grok_connect/providers/JdbcDataProvider.java), which provides basic functionality for all JDBC providers.
 
  For our example, paste this code to your file:
@@ -64,11 +64,7 @@ Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/mas
     }
   ```
 
-  :::note
-  
-  For simplicity, we omit all imports.
-  
-  :::
+  >Note: For simplicity, we omit all imports.
 
     * Set the `driverClassName` field using the full driver class name. For our example, within the class constructor:
 
@@ -76,11 +72,7 @@ Extend it from [JdbcDataProvider](https://github.com/datagrok-ai/public/blob/mas
       driverClassName = "com.orientechnologies.orient.jdbc.OrientJdbcDriver";
     ```
   
-    :::note
-
-    To get the driver class name, use the documentation for your chosen JDBC driver. 
-
-    :::
+    >Note: To get the driver class name, use the documentation for your chosen JDBC driver.
 
     * In the constructor, configure the connection:
   
@@ -145,8 +137,4 @@ Testing options:
     * In the **Database Manager**, right-click your new connector and select **Add connection...** A parameter dialog opens.
     * In the parameter dialog, [fill in the connection parameters](databases.mdx#connecting-to-database) and click **TEST**. Upon successful connection, the database appears in the **Database Manager** under the respective data source. 
 
-  :::note
-  
-  It may take Datagrok some time to recognize a running Grok Connect. To speed up the process, reload the container.
-
-  :::
+  >Note: It may take Datagrok some time to recognize a running Grok Connect. To speed up the process, reload the container.

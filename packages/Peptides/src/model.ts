@@ -3,9 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
@@ -23,7 +21,7 @@ import $ from 'cash-dom';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary, prepareTableForHistogram} from './utils/misc';
-import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
+import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResidues, SELECTION_MODE} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap} from './widgets/distribution';
@@ -66,7 +64,6 @@ export class PeptidesModel {
   isUserChangedSelection = true;
 
   df: DG.DataFrame;
-  splitCol!: DG.Column<boolean>;
   _monomerPositionStats?: MonomerPositionStats;
   _clusterStats?: ClusterTypeStats;
   _mutationCliffsSelection!: type.Selection;
@@ -76,10 +73,6 @@ export class PeptidesModel {
   isInitialized = false;
   _analysisView?: DG.TableView;
 
-  monomerMap: {[key: string]: {molfile: string, fullName: string}} = {};
-  monomerLib: IMonomerLib | null = null; // To get monomers from lib(s)
-  monomerWorks: MonomerWorks | null = null; // To get processed monomers
-
   _settings!: type.PeptidesSettings;
   isRibbonSet = false;
 
@@ -87,17 +80,14 @@ export class PeptidesModel {
   headerSelectedMonomers: type.SelectionStats = {};
   webLogoBounds: {[positon: string]: {[monomer: string]: DG.Rect}} = {};
   cachedWebLogoTooltip: {bar: string, tooltip: HTMLDivElement | null} = {bar: '', tooltip: null};
-  _monomerPositionDf?: DG.DataFrame;
   _alphabet?: string;
-  _mostPotentResiduesDf?: DG.DataFrame;
-  _matrixDf?: DG.DataFrame;
   _splitSeqDf?: DG.DataFrame;
-  _distanceMatrix!: DistanceMatrix;
   _dm!: DistanceMatrix;
   _layoutEventInitialized = false;
 
   subs: rxjs.Subscription[] = [];
   isHighlighting: boolean = false;
+  latestSelectionItem: (type.SelectionItem & {kind: SELECTION_MODE | 'Cluster'}) | null = null;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -117,15 +107,6 @@ export class PeptidesModel {
     return id;
   }
 
-  get monomerPositionDf(): DG.DataFrame {
-    this._monomerPositionDf ??= this.createMonomerPositionDf();
-    return this._monomerPositionDf;
-  }
-
-  set monomerPositionDf(df: DG.DataFrame) {
-    this._monomerPositionDf = df;
-  }
-
   get monomerPositionStats(): MonomerPositionStats {
     this._monomerPositionStats ??= this.calculateMonomerPositionStatistics();
     return this._monomerPositionStats;
@@ -142,15 +123,6 @@ export class PeptidesModel {
 
   set splitSeqDf(df: DG.DataFrame) {
     this._splitSeqDf = df;
-  }
-
-  get mostPotentResiduesDf(): DG.DataFrame {
-    this._mostPotentResiduesDf ??= this.createMostPotentResiduesDf();
-    return this._mostPotentResiduesDf;
-  }
-
-  set mostPotentResiduesDf(df: DG.DataFrame) {
-    this._mostPotentResiduesDf = df;
   }
 
   get alphabet(): string {
@@ -280,23 +252,23 @@ export class PeptidesModel {
   }
 
   set splitByPos(flag: boolean) {
-    const splitByAARFlag = (this.df.tags['distributionSplit'] || '00')[1];
-    this.df.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByAARFlag}`;
+    const splitByMonomerFlag = (this.df.tags['distributionSplit'] || '00')[1];
+    this.df.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByMonomerFlag}`;
   }
 
-  get splitByAAR(): boolean {
+  get splitByMonomer(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] || '00')[1];
     return splitByPosFlag === '1' ? true : false;
   }
 
-  set splitByAAR(flag: boolean) {
-    const splitByAARFlag = (this.df.tags['distributionSplit'] || '00')[0];
-    this.df.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
+  set splitByMonomer(flag: boolean) {
+    const splitByMonomerFlag = (this.df.tags['distributionSplit'] || '00')[0];
+    this.df.tags['distributionSplit'] = `${splitByMonomerFlag}${flag ? 1 : 0}`;
   }
 
   get isMonomerPositionSelectionEmpty(): boolean {
-    for (const aarList of Object.values(this.mutationCliffsSelection)) {
-      if (aarList.length !== 0)
+    for (const monomerList of Object.values(this.mutationCliffsSelection)) {
+      if (monomerList.length !== 0)
         return false;
     }
     return true;
@@ -361,8 +333,13 @@ export class PeptidesModel {
         break;
       case 'stats':
         this.monomerPositionStats = this.calculateMonomerPositionStatistics();
-        this.mostPotentResiduesDf = this.createMostPotentResiduesDf();
         this.clusterStats = this.calculateClusterStatistics();
+        const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+        mpViewer.createMonomerPositionGrid();
+        mpViewer.render();
+        const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
+        mprViewer.createMostPotentResiduesGrid();
+        mprViewer.render();
         break;
       case 'grid':
         this.setGridProperties();
@@ -419,26 +396,6 @@ export class PeptidesModel {
       this.mutationCliffs = mutationCliffs;
     else
       this._mutationCliffs = mutationCliffs;
-  }
-
-  createMonomerPositionDf(): DG.DataFrame {
-    const uniqueMonomers = new Set<string>();
-    const splitSeqCols = this.splitSeqDf.columns;
-    for (const col of splitSeqCols) {
-      const colCat = col.categories;
-      for (const cat of colCat) {
-        if (cat !== '')
-          uniqueMonomers.add(cat);
-      }
-    }
-
-    const monomerCol = DG.Column.fromStrings(C.COLUMNS_NAMES.MONOMER, Array.from(uniqueMonomers));
-    const monomerPositionDf = DG.DataFrame.fromColumns([monomerCol]);
-    monomerPositionDf.name = 'SAR';
-    for (const col of splitSeqCols)
-      monomerPositionDf.columns.addNewBool(col.name);
-
-    return monomerPositionDf;
   }
 
   buildSplitSeqDf(): DG.DataFrame {
@@ -564,7 +521,7 @@ export class PeptidesModel {
       const newColCat = newCol.categories;
       const newColData = newCol.getRawData();
       col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
-      CR.setAARRenderer(col, this.alphabet);
+      CR.setMonomerRenderer(col, this.alphabet);
     }
     this.df.name = name;
   }
@@ -680,10 +637,10 @@ export class PeptidesModel {
     const origClustStats: ClusterStats = {};
     const customClustStats: ClusterStats = {};
 
-    for (let clustType = 0; clustType < 2; ++clustType) {
-      const masks = clustType === 0 ? origClustMasks : customClustMasks;
-      const clustNames = clustType === 0 ? origClustColCat : customClustColNamesList;
-      const resultStats = clustType === 0 ? origClustStats : customClustStats;
+    for (const clustType of Object.values(CLUSTER_TYPE)) {
+      const masks = clustType === CLUSTER_TYPE.ORIGINAL ? origClustMasks : customClustMasks;
+      const clustNames = clustType === CLUSTER_TYPE.ORIGINAL ? origClustColCat : customClustColNamesList;
+      const resultStats = clustType === CLUSTER_TYPE.ORIGINAL ? origClustStats : customClustStats;
       for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
         const mask = masks[maskIdx];
         const stats = mask.allTrue || mask.allFalse ? {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask} :
@@ -696,68 +653,6 @@ export class PeptidesModel {
     resultStats[CLUSTER_TYPE.ORIGINAL] = origClustStats;
     resultStats[CLUSTER_TYPE.CUSTOM] = customClustStats;
     return resultStats;
-  }
-
-  createMostPotentResiduesDf(): DG.DataFrame {
-    const monomerPositionStatsEntries = Object.entries(this.monomerPositionStats) as [string, PositionStats][];
-    const posData: number[] = new Array(monomerPositionStatsEntries.length - 1);
-    const monomerData: string[] = new Array(posData.length);
-    const mdData: number[] = new Array(posData.length);
-    const pValData: (number | null)[] = new Array(posData.length);
-    const countData: number[] = new Array(posData.length);
-    const ratioData: number[] = new Array(posData.length);
-
-    let i = 0;
-    for (const [position, positionStats] of monomerPositionStatsEntries) {
-      const generalPositionStats = positionStats.general;
-      if (!generalPositionStats)
-        continue;
-      if (Object.entries(positionStats).length === 1)
-        continue;
-
-      const filteredMonomerStats: [string, Stats][] = [];
-      for (const [monomer, monomerStats] of Object.entries(positionStats)) {
-        if (monomer === 'general')
-          continue;
-        if ((monomerStats as Stats).count > 1 && (monomerStats as Stats).pValue === null)
-          filteredMonomerStats.push([monomer, monomerStats as Stats]);
-
-        if ((monomerStats as Stats).pValue === generalPositionStats.minPValue)
-          filteredMonomerStats.push([monomer, monomerStats as Stats]);
-      }
-
-      let maxEntry: [string, Stats];
-      for (const [monomer, monomerStats] of filteredMonomerStats) {
-        if (typeof maxEntry! === 'undefined' || maxEntry[1].meanDifference < monomerStats.meanDifference)
-          maxEntry = [monomer, monomerStats];
-      }
-
-      posData[i] = parseInt(position);
-      monomerData[i] = maxEntry![0];
-      mdData[i] = maxEntry![1].meanDifference;
-      pValData[i] = maxEntry![1].pValue;
-      countData[i] = maxEntry![1].count;
-      ratioData[i] = maxEntry![1].ratio;
-      ++i;
-    }
-
-    posData.length = i;
-    monomerData.length = i;
-    mdData.length = i;
-    pValData.length = i;
-    countData.length = i;
-    ratioData.length = i;
-
-    const mprDf = DG.DataFrame.create(i); // Subtract 'general' entry from mp-stats
-    const mprDfCols = mprDf.columns;
-    mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.POSITION, posData));
-    mprDfCols.add(DG.Column.fromList(DG.TYPE.STRING, C.COLUMNS_NAMES.MONOMER, monomerData));
-    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.MEAN_DIFFERENCE, mdData));
-    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.P_VALUE, pValData));
-    mprDfCols.add(DG.Column.fromList(DG.TYPE.INT, C.COLUMNS_NAMES.COUNT, countData));
-    mprDfCols.add(DG.Column.fromList(DG.TYPE.FLOAT, C.COLUMNS_NAMES.RATIO, ratioData));
-
-    return mprDf;
   }
 
   initClusterSelection(options: {notify?: boolean} = {}): void {
@@ -839,9 +734,9 @@ export class PeptidesModel {
   }
 
   requestBarchartAction(ev: MouseEvent, monomerPosition: type.SelectionItem): void {
-    if (ev.type === 'click') {
+    if (ev.type === 'click')
       this.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
-    } else {
+    else {
       const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
       if (this.cachedWebLogoTooltip.bar === bar)
         ui.tooltip.show(this.cachedWebLogoTooltip.tooltip!, ev.clientX, ev.clientY);
@@ -915,19 +810,19 @@ export class PeptidesModel {
     });
   }
 
-  showMonomerTooltip(aar: string, x: number, y: number): boolean {
+  showMonomerTooltip(monomer: string, x: number, y: number): boolean {
     const tooltipElements: HTMLDivElement[] = [];
-    const monomerName = aar.toLowerCase();
+    const monomerName = monomer.toLowerCase();
 
     const mw = getMonomerWorksInstance();
-    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
+    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', monomer);
 
     if (mol) {
       tooltipElements.push(ui.div(monomerName));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
-    } else if (aar !== '')
-      tooltipElements.push(ui.div(aar));
+    } else if (monomer !== '')
+      tooltipElements.push(ui.div(monomer));
     else
       return true;
 
@@ -937,8 +832,15 @@ export class PeptidesModel {
     return true;
   }
 
+  showTooltip(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): boolean {
+    if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
+      this.showMonomerTooltip(monomerPosition.monomerOrCluster, x, y);
+    else
+      this.showTooltipAt(monomerPosition, x, y, fromViewer);
+    return true;
+  }
   //TODO: move out to viewer code
-  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number): HTMLDivElement | null {
+  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): HTMLDivElement | null {
     const stats = this.monomerPositionStats[monomerPosition.positionOrClusterType]![monomerPosition.monomerOrCluster];
     if (!stats?.count)
       return null;
@@ -950,6 +852,11 @@ export class PeptidesModel {
     const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
 
     const tableMap = getStatsTableMap(stats);
+    if (fromViewer) {
+      tableMap['Mean difference'] = `${tableMap['Mean difference']} (size)`;
+      if (tableMap['p-value'])
+        tableMap['p-value'] = `${tableMap['p-value']} (color)`;
+    }
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
     const resultMap = {...tableMap, ...aggregatedColMap};
 
@@ -982,78 +889,79 @@ export class PeptidesModel {
       return;
     const selection = this.df.selection;
     const filter = this.df.filter;
-    const clusterCol = this.df.col(this.settings.clustersColumnName!);
 
-    const changeSelectionBitset = (currentBitset: DG.BitSet, clustColCat: string[],
-      clustColData: type.RawData, customClust: {[key: string]: BitArray}): void => {
-      const indexes = new Set<number>();
+    const getCombinedSelection = (): DG.BitSet => {
+      const combinedSelection = new BitArray(this.df.rowCount, false);
+      // Invariant map selection
+      for (const [position, monomerList] of Object.entries(this.invariantMapSelection)) {
+        for (const monomer of monomerList) {
+          const monomerPositionStats = this.monomerPositionStats[position]![monomer]!;
+          combinedSelection.or(monomerPositionStats.mask);
+        }
+      }
+
+      // Mutation cliffs selection
       for (const [position, monomerList] of Object.entries(this.mutationCliffsSelection)) {
         for (const monomer of monomerList) {
           const substitutions = this.mutationCliffs?.get(monomer)?.get(position) ?? null;
           if (substitutions === null)
             continue;
           for (const [key, value] of substitutions.entries()) {
-            indexes.add(key);
+            combinedSelection.setTrue(key);
             for (const v of value)
-              indexes.add(v);
+              combinedSelection.setTrue(v);
           }
         }
       }
 
-      const positionList = Object.keys(this.invariantMapSelection);
-      const rowCount = this.df.rowCount;
-      for (const position of positionList) {
-        const positionCol: DG.Column<string> = this.df.getCol(position);
-        const positionColData = positionCol.getRawData();
-        const positionColCat = positionCol.categories;
-        const aarList = this.invariantMapSelection[position];
-        for (const aar of aarList) {
-          const aarIndex = positionColCat.indexOf(aar);
-          if (aarIndex === -1)
-            continue;
-          for (let i = 0; i < rowCount; ++i) {
-            if (positionColData[i] === aarIndex)
-              indexes.add(i);
-          }
+      // Cluster selection
+      for (const clustType of Object.keys(this.clusterSelection)) {
+        for (const clust of this.clusterSelection[clustType]) {
+          const clusterStats = this.clusterStats[clustType as CLUSTER_TYPE][clust]!;
+          combinedSelection.or(clusterStats.mask);
         }
       }
 
-      const getBitAt = (i: number): boolean => {
-        if (indexes.has(i))
-          return true;
+      return DG.BitSet.fromBytes(combinedSelection.buffer.buffer, combinedSelection.length);
+    };
 
-        //TODO: preprocess
-        const currentOrigClust = clustColCat[clustColData[i]];
-        if (typeof currentOrigClust === undefined)
-          return false;
-
-        for (const clustType of Object.keys(this.clusterSelection)) {
-          for (const clust of this.clusterSelection[clustType]) {
-            if (clust === currentOrigClust)
-              return true;
-
-            if (Object.hasOwn(customClust, clust) && customClust[clust].getBit(i))
-              return true;
-          }
+    const getLatestSelection = (): DG.BitSet => {
+      if (this.latestSelectionItem === null)
+        return getCombinedSelection();
+      if (this.latestSelectionItem.kind === SELECTION_MODE.INVARIANT_MAP) {
+        const monomerPositionStats = this.monomerPositionStats[this.latestSelectionItem.positionOrClusterType]![this.latestSelectionItem.monomerOrCluster]!;
+        return DG.BitSet.fromBytes(monomerPositionStats.mask.buffer.buffer, monomerPositionStats.mask.length);
+      } else if (this.latestSelectionItem.kind === SELECTION_MODE.MUTATION_CLIFFS) {
+        const substitutions = this.mutationCliffs?.get(this.latestSelectionItem.monomerOrCluster)?.get(this.latestSelectionItem.positionOrClusterType) ?? null;
+        if (substitutions === null)
+          throw new Error(`Couldn't find substitutions for ${this.latestSelectionItem.monomerOrCluster} at ${this.latestSelectionItem.positionOrClusterType}`);
+        const latestSelection = new BitArray(this.df.rowCount, false);
+        for (const [key, value] of substitutions.entries()) {
+          latestSelection.setTrue(key);
+          for (const v of value)
+            latestSelection.setTrue(v);
         }
+        return DG.BitSet.fromBytes(latestSelection.buffer.buffer, latestSelection.length);
+      } else if (this.latestSelectionItem.kind === 'Cluster') {
+        const clusterStats = this.clusterStats[this.latestSelectionItem.positionOrClusterType as CLUSTER_TYPE][this.latestSelectionItem.monomerOrCluster]!;
+        return DG.BitSet.fromBytes(clusterStats.mask.buffer.buffer, clusterStats.mask.length);
+      }
+      throw new Error(`Unknown selection kind: ${this.latestSelectionItem.kind}`);
+    };
 
-        return false;
-      };
-      currentBitset.init((i) => getBitAt(i), false);
+    const showAccordion = (): void => {
+      const acc = this.createAccordion();
+      if (acc !== null) {
+        grok.shell.o = acc.root;
+        for (const pane of acc.panes)
+          pane.expanded = true;
+      }
     };
 
     selection.onChanged.subscribe(() => {
-      if (this.isUserChangedSelection)
-        return;
-
-      const clustColCat = clusterCol?.categories ?? [];
-      const clustColData = clusterCol?.getRawData() ?? new Int32Array(0);
-      const customClust: {[key: string]: BitArray} = {};
-      const rowCount = this.df.rowCount;
-      for (const clust of this.customClusters)
-        customClust[clust.name] = BitArray.fromUint32Array(rowCount, clust.getRawData() as Uint32Array);
-
-      changeSelectionBitset(selection, clustColCat, clustColData, customClust);
+      if (!this.isUserChangedSelection)
+        selection.copyFrom(getLatestSelection(), false);
+      showAccordion();
     });
 
     filter.onChanged.subscribe(() => {
@@ -1062,6 +970,7 @@ export class PeptidesModel {
         lstViewer.createLogoSummaryTableGrid();
         lstViewer.render();
       }
+      showAccordion();
     });
     this.isBitsetChangedInitialized = true;
   }
@@ -1071,15 +980,7 @@ export class PeptidesModel {
     this.df.selection.fireChanged();
     if (fireFilterChanged)
       this.df.filter.fireChanged();
-    this.modifyOrCreateSplitCol();
     this.headerSelectedMonomers = calculateSelected(this.df);
-
-    const acc = this.createAccordion();
-    if (acc !== null) {
-      grok.shell.o = acc.root;
-      for (const pane of acc.panes)
-        pane.expanded = true;
-    }
     this.isUserChangedSelection = true;
   }
 
@@ -1126,19 +1027,6 @@ export class PeptidesModel {
     } finally {
       pi.close();
     }
-  }
-
-  getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
-    const currentAAR = this.df.get(position, index) as string;
-    return currentAAR === aar ? aarLabel : C.CATEGORIES.OTHER;
-  }
-
-  modifyOrCreateSplitCol(): void {
-    const bs = this.df.selection;
-    this.splitCol = this.df.col(C.COLUMNS_NAMES.SPLIT_COL) ??
-      this.df.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
-    this.splitCol.init((i) => bs.get(i));
-    this.splitCol.compact();
   }
 
   /** Class initializer */
@@ -1269,14 +1157,14 @@ export class PeptidesModel {
     return newDfId;
   }
 
-  modifyInvariantMapSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = { shiftPressed: false, ctrlPressed: false }, notify: boolean = true): void {
+  modifyInvariantMapSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = {shiftPressed: false, ctrlPressed: false}, notify: boolean = true): void {
     if (notify)
       this.invariantMapSelection = this.modifySelection(this.invariantMapSelection, monomerPosition, options);
     else
       this._invariantMapSelection = this.modifySelection(this._invariantMapSelection, monomerPosition, options);
   }
 
-  modifyMutationCliffsSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = { shiftPressed: false, ctrlPressed: false }, notify: boolean = true): void {
+  modifyMutationCliffsSelection(monomerPosition: type.SelectionItem, options: type.SelectionOptions = {shiftPressed: false, ctrlPressed: false}, notify: boolean = true): void {
     if (notify)
       this.mutationCliffsSelection = this.modifySelection(this.mutationCliffsSelection, monomerPosition, options);
     else

@@ -45,7 +45,7 @@ export class SdfTabUI {
       await this.updateMoleculeImg();
     });
 
-    DG.debounce<string>(this.onInvalidInput, 500).subscribe(async () => {
+    DG.debounce<string>(this.onInvalidInput, 1000).subscribe(async () => {
       grok.shell.warning('Insert Sense strand');
     });
   }
@@ -105,9 +105,12 @@ export class SdfTabUI {
       )
     );
 
-    STRANDS.forEach((strand) => {
+    STRANDS.forEach((strand, idx) => {
       directionChoiceInput[strand].onChanged(() => {
-        this.directionInversion[strand] = directionChoiceInput[strand].value === DIRECTION.INVERSE;
+        let value = directionChoiceInput[strand].value === DIRECTION.INVERSE;
+        // warning: the next line is necessary until the legacy notion of direction used in the molfile generation gets fixed
+        if (idx > 0) { value = !value; }
+        this.directionInversion[strand] = value;
         this.onInput.next();
       });
     });
@@ -151,10 +154,13 @@ export class SdfTabUI {
 
   private getStrandData() {
     return Object.fromEntries(
-      STRANDS.map((strand) => [strand, {
-        strand: this.inputBase[strand].value.replace(/\s*/g, ''),
-        invert: this.directionInversion[strand]
-      }])
+      STRANDS.map((strand, idx) => {
+        let invert = this.directionInversion[strand];
+        return [strand, {
+          strand: this.inputBase[strand].value.replace(/\s*/g, ''),
+          invert: invert
+        }]
+      })
     );
   }
 
@@ -163,9 +169,6 @@ export class SdfTabUI {
       this.onInvalidInput.next();
       return '';
     }
-
-    // warning: the next line is necessary until the legacy molfile generation is improved
-    [as, as2].forEach((strand) => strand.invert = !strand.invert);
 
     return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!);
   }

@@ -44,10 +44,6 @@ category('Core', () => {
       overlayInit = true;
       grok.log.debug('Overlay initialized');
     });
-    model!._analysisView!.grid.onBeforeDrawOverlay.subscribe(() => {
-      overlayInit = false;
-      grok.log.debug('Overlay is drawing');
-    });
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -79,10 +75,6 @@ category('Core', () => {
     model!._analysisView!.grid.onAfterDrawOverlay.subscribe(() => {
       overlayInit = true;
       grok.log.debug('Overlay initialized');
-    });
-    model!._analysisView!.grid.onBeforeDrawOverlay.subscribe(() => {
-      overlayInit = false;
-      grok.log.debug('Overlay is drawing');
     });
 
     // Ensure grid finished initializing to prevent Unhandled exceptions

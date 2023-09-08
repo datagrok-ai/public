@@ -33,14 +33,15 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
   private currentDesignViewId?: string;
   private currentTilesViewId?: string;
   public mainView: DG.ViewBase;
-  constructor() {
-    super();
+  constructor(c: DG.FuncCall) {
+    super(c);
     this._infoView = new HitDesignInfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<HitDesignTemplate, HitDesignApp>).onActivated();
     });
+    this.multiView.parentCall = c;
     this.mainView = grok.shell.addView(this.multiView);
     grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
@@ -92,7 +93,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     this.template = template;
 
     this._submitView ??= new HitDesignSubmitView(this);
-    // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
     //add empty rows to define stages, used for tile categories;
     const stagesRow = this.dataFrame.getCol(TileCategoriesColName);
@@ -111,10 +111,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     }
     this.dataFrame.rows.filter((r) => r[ViDColName] !== EmptyStageCellValue);
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
-
     const designV = grok.shell.addView(this.designView);
     this.currentDesignViewId = designV.name;
     this._tilesView = new HitDesignTilesView(this);
+    this._tilesView.parentCall = this.parentCall;
     const tilesV = grok.shell.addView(this._tilesView);
     grok.shell.v = designV;
     this.currentTilesViewId = tilesV.name;
@@ -220,6 +220,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
         view.setRibbonPanels(ribbons);
       }
     }
+    view.parentCall = this.parentCall;
     return view;
   }
 

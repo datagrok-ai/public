@@ -350,34 +350,30 @@ export class LogoSummaryTable extends DG.JsViewer {
   }
 
   clusterFromSelection(): void {
-    const filteredDf = this.dataFrame.filter.anyFalse ? this.dataFrame.clone(this.dataFrame.filter, null, true) :
-      this.dataFrame;
-    const selection = filteredDf.selection;
+    const currentSelection = this.model.getCompoundBitset();
     const viewerDf = this.viewerGrid.dataFrame;
     const viewerDfCols = viewerDf.columns;
     const viewerDfColsLength = viewerDfCols.length;
     const newClusterVals = new Array(viewerDfCols.length);
-
-    const activityScaledCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    const bitArray = BitArray.fromString(selection.toBinaryString());
+    const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const bitArray = BitArray.fromString(currentSelection.toBinaryString());
     const stats = getStats(activityScaledCol.getRawData(), bitArray);
 
-    this.bitsets.push(selection.clone());
+    this.bitsets.push(currentSelection.clone());
 
     const newClusterName = viewerDfCols.getUnusedName('New Cluster');
-
     const aggregatedValues: {[colName: string]: number} = {};
     const aggColsEntries = Object.entries(this.model.settings.columns ?? {});
     for (const [colName, aggFn] of aggColsEntries) {
       const newColName = getAggregatedColName(aggFn, colName);
-      const col = filteredDf.getCol(colName);
-      aggregatedValues[newColName] = getAggregatedValue(col, aggFn, selection);
+      const col = this.dataFrame.getCol(colName);
+      aggregatedValues[newColName] = getAggregatedValue(col, aggFn, currentSelection);
     }
 
     for (let i = 0; i < viewerDfColsLength; ++i) {
       const col = viewerDfCols.byIndex(i);
       newClusterVals[i] = col.name === C.LST_COLUMN_NAMES.CLUSTER ? newClusterName :
-        col.name === C.LST_COLUMN_NAMES.MEMBERS ? selection.trueCount :
+        col.name === C.LST_COLUMN_NAMES.MEMBERS ? currentSelection.trueCount :
           col.name === C.LST_COLUMN_NAMES.WEB_LOGO ? null :
             col.name === C.LST_COLUMN_NAMES.DISTRIBUTION ? null :
               col.name === C.LST_COLUMN_NAMES.MEAN_DIFFERENCE ? stats.meanDifference:

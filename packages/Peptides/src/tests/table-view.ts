@@ -21,7 +21,7 @@ category('Table view', () => {
 
   const firstPair = {monomerOrCluster: 'Aze', positionOrClusterType: '10', mcCount: 3, imCount: 1};
   const secondPair = {monomerOrCluster: 'meI', positionOrClusterType: '1', mcCount: 2, imCount: 10};
-  const firstCluster = {monomerOrCluster: '0', positionOrClusterType: CLUSTER_TYPE.ORIGINAL,  count: 3};
+  const firstCluster = {monomerOrCluster: '0', positionOrClusterType: CLUSTER_TYPE.ORIGINAL, count: 3};
   const secondCluster = {monomerOrCluster: '1', positionOrClusterType: CLUSTER_TYPE.ORIGINAL, count: 3};
 
   before(async () => {

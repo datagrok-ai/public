@@ -11,14 +11,16 @@ export const _package = new DG.Package();
 //tags: app
 //name: Hit Triage
 export async function hitTriageApp() {
-  new HitTriageApp();
+  const c = grok.functions.getCurrentCall();
+  new HitTriageApp(c);
 }
 
 //tags: app
 //name: Hit Design
 //meta.icon: images/icons/hit-design-icon.png
 export async function hitDesignApp() {
-  new HitDesignApp();
+  const c = grok.functions.getCurrentCall();
+  new HitDesignApp(c);
 }
 //name: Demo Molecules 100
 //tags: HitTriageDataSource

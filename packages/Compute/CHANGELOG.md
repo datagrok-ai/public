@@ -1,5 +1,26 @@
 # Compute changelog
 
+## 1.14.3 (2023-09-08)
+
+### Fixed bugs
+
+- PLV: Fixed options logic on funcCall copy
+
+### Features
+
+- Compute: OutliersViewer's balloon has now proper buttons type
+
+## 1.14.2 (2023-09-07)
+
+### Fixed bugs
+
+- RFV: Fixed tabs reappearance after recalculation
+
+### Features
+
+- RFV: Added styling for scalar tables
+- OultiersSelection viewer now supports actionable balloon
+
 ## 1.14.1 (2023-09-06)
 
 ### Fixed bugs

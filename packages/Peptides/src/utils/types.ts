@@ -6,7 +6,7 @@ export type DataFrameDict = {[key: string]: DG.DataFrame};
 
 export type RawData = Int32Array | Uint32Array | Float32Array | Float64Array;
 export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
-//AAR: (Position: (index: indexList))
+//Monomer: (Position: (index: indexList))
 export type MutationCliffs = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
 export type Selection = {[positionOrClusterType: string | ClusterType]: string[]};
 export type SelectionItem = {positionOrClusterType: string | ClusterType, monomerOrCluster: string};
