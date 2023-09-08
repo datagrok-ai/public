@@ -832,8 +832,15 @@ export class PeptidesModel {
     return true;
   }
 
+  showTooltip(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): boolean {
+    if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
+      this.showMonomerTooltip(monomerPosition.monomerOrCluster, x, y);
+    else
+      this.showTooltipAt(monomerPosition, x, y, fromViewer);
+    return true;
+  }
   //TODO: move out to viewer code
-  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number): HTMLDivElement | null {
+  showTooltipAt(monomerPosition: type.SelectionItem, x: number, y: number, fromViewer: boolean = false): HTMLDivElement | null {
     const stats = this.monomerPositionStats[monomerPosition.positionOrClusterType]![monomerPosition.monomerOrCluster];
     if (!stats?.count)
       return null;
@@ -845,6 +852,11 @@ export class PeptidesModel {
     const hist = getActivityDistribution(prepareTableForHistogram(distributionTable), true);
 
     const tableMap = getStatsTableMap(stats);
+    if (fromViewer) {
+      tableMap['Mean difference'] = `${tableMap['Mean difference']} (size)`;
+      if (tableMap['p-value'])
+        tableMap['p-value'] = `${tableMap['p-value']} (color)`;
+    }
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask});
     const resultMap = {...tableMap, ...aggregatedColMap};
 

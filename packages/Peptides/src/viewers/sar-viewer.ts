@@ -123,7 +123,7 @@ export class MonomerPosition extends DG.JsViewer {
       }
       const monomerPosition = this.getMonomerPosition(gridCell);
       this.model.highlightMonomerPosition(monomerPosition);
-      return showTooltip(monomerPosition, x, y, this.model);
+      return this.model.showTooltip(monomerPosition, x, y, true);
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -178,18 +178,9 @@ export class MonomerPosition extends DG.JsViewer {
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
         $(switchHost).css('width', 'auto').css('align-self', 'center');
       }
-      const tips: HTMLElement = ui.iconFA('question');
-      ui.tooltip.bind(tips, () => ui.divV([
-        ui.divText('Color intensity - p-value'),
-        ui.divText('Circle size - Mean difference'),
-        ui.divText('Number - # of unique sequences that form mutation cliffs pairs'),
-      ]));
-
-      $(tips).addClass('pep-help-icon');
-
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      const header = ui.divH([switchHost, tips], {style: {alignSelf: 'center', lineHeight: 'normal'}});
+      const header = ui.divH([switchHost], {style: {alignSelf: 'center', lineHeight: 'normal'}});
       this.root.appendChild(ui.divV([header, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
@@ -322,7 +313,7 @@ export class MostPotentResidues extends DG.JsViewer {
         monomerPosition.positionOrClusterType = C.COLUMNS_NAMES.MONOMER;
       else if (gridCell.tableColumn?.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return false;
-      return showTooltip(monomerPosition, x, y, this.model);
+      return this.model.showTooltip(monomerPosition, x, y, true);
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -350,18 +341,9 @@ export class MostPotentResidues extends DG.JsViewer {
     if (!refreshOnly) {
       $(this.root).empty();
       const switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
-      const tips: HTMLElement = ui.iconFA('question');
-      ui.tooltip.bind(tips, () => ui.divV([
-        ui.divText('Color intensity - p-value'),
-        ui.divText('Circle size - Mean difference'),
-        ui.divText('Number - # of unique sequences that form mutation cliffs pairs'),
-      ]));
-
-      $(tips).addClass('pep-help-icon');
-
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      const header = ui.divH([switchHost, tips], {style: {alignSelf: 'center', lineHeight: 'normal'}});
+      const header = ui.divH([switchHost], {style: {alignSelf: 'center', lineHeight: 'normal'}});
       this.root.appendChild(ui.divV([header, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
@@ -432,14 +414,6 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   }
   args.preventDefault();
   canvasContext.restore();
-}
-
-export function showTooltip(monomerPosition: SelectionItem, x: number, y: number, model: PeptidesModel): boolean {
-  if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER)
-    model.showMonomerTooltip(monomerPosition.monomerOrCluster, x, y);
-  else
-    model.showTooltipAt(monomerPosition, x, y);
-  return true;
 }
 
 function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): void {
