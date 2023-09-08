@@ -197,7 +197,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
         grok.shell.info(ui.div([
           ui.divText('Confirm selected points as outliers?'),
           ui.divH([
-            ui.button('Confirm', confirmOutliers),
+            ui.bigButton('Confirm', confirmOutliers),
             ui.button('Cancel', cancelOutliers)
           ])
         ]))
