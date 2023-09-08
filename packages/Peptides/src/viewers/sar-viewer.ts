@@ -152,25 +152,24 @@ export class MonomerPosition extends DG.JsViewer {
       $(this.root).empty();
       let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
       if (this.name === VIEWER_TYPE.MONOMER_POSITION) {
-        const mutationCliffsMode = ui.boolInput('', this.mode === SELECTION_MODE.MUTATION_CLIFFS);
+        const mutationCliffsMode = ui.boolInput(SELECTION_MODE.MUTATION_CLIFFS, this.mode === SELECTION_MODE.MUTATION_CLIFFS);
         mutationCliffsMode.root.addEventListener('click', () => {
           invariantMapMode.value = false;
           mutationCliffsMode.value = true;
           this.mode = SELECTION_MODE.MUTATION_CLIFFS;
         });
         mutationCliffsMode.setTooltip('Statistically significant changes in activity');
-        mutationCliffsMode.addPostfix(SELECTION_MODE.MUTATION_CLIFFS);
-        const invariantMapMode = ui.boolInput('', this.mode === SELECTION_MODE.INVARIANT_MAP);
+        const invariantMapMode = ui.boolInput(SELECTION_MODE.INVARIANT_MAP, this.mode === SELECTION_MODE.INVARIANT_MAP);
         invariantMapMode.root.addEventListener('click', () => {
           mutationCliffsMode.value = false;
           invariantMapMode.value = true;
           this.mode = SELECTION_MODE.INVARIANT_MAP;
         });
         invariantMapMode.setTooltip('Number of sequences having monomer-position');
-        invariantMapMode.addPostfix(SELECTION_MODE.INVARIANT_MAP);
         const setDefaultProperties = (input: DG.InputBase): void => {
           $(input.root).find('.ui-input-editor').css('margin', '0px').attr('type', 'radio');
           $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-right', '16px');
+          $(input.captionLabel).addClass('ui-label-right');
         };
         setDefaultProperties(mutationCliffsMode);
         setDefaultProperties(invariantMapMode);
