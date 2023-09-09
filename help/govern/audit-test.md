@@ -149,7 +149,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 2. Use **Tools | Data science | Missing Values Imputation** for impute data to null rows
 
-3. Open "Train Model" view from **Tools | Predictive Modeling | Train**
+3. Open "Train Model" view from **ML | Predictive Modeling | Train**
 
     * "Predictive model" view was open
 
@@ -161,7 +161,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 7. Leave other parameters with default values and train new model
 
-8. Open "Model Browser" from **Tools | Predictive Modeling | Browse Models**
+8. Open "Model Browser" from **ML | Predictive Modeling | Browse Models**
 
 9. Open "Edit model" dialog for *"audit-test-model"*
 
