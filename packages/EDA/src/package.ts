@@ -25,7 +25,7 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: ML | Dimension Reduction | PCA...
+//top-menu: ML | Dimensionality Reduction | PCA...
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table {category: Data}
@@ -42,7 +42,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return pcaTable;
 }
 
-//top-menu: ML | Dimension Reduction | UMAP...
+//top-menu: ML | Dimensionality Reduction | UMAP...
 //name: UMAP
 //description: Uniform Manifold Approximation and Projection (UMAP).
 //input: dataframe table {category: Data}
@@ -59,7 +59,7 @@ export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, compone
   return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
 }
 
-//top-menu: ML | Dimension Reduction | t-SNE...
+//top-menu: ML | Dimensionality Reduction | t-SNE...
 //name: t-SNE
 //description: t-distributed stochastic neighbor embedding (t-SNE).
 //input: dataframe table {category: Data}
@@ -75,7 +75,7 @@ export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, compone
   return await computeTSNE(features, components, learningRate, perplexity, iterations);
 }
 
-//top-menu: ML | Dimension Reduction | SPE...
+//top-menu: ML | Dimensionality Reduction | SPE...
 //name: SPE
 //description: Stochastic proximity embedding (SPE).
 //input: dataframe table {category: Data}
@@ -92,7 +92,7 @@ export async function SPE(table: DG.DataFrame, features: DG.ColumnList, dimensio
   return await computeSPE(features, dimension, steps, cycles, cutoff, lambda);
 }
 
-//top-menu: ML | Multivariate Analysis (PLS)...
+//top-menu: ML | Analyze | Multivariate Analysis...
 //name: Multivariate Analysis (PLS)
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
 //input: dataframe table

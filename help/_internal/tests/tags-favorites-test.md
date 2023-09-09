@@ -104,7 +104,7 @@ Platform provides ability to add custom tags for entities.
 * "ACF" script added to dropdown menu "Favorites" on toolbar
 * When adding object to "Favorites" "star" icon flashes
 
-1. Open **ML | Predictive Modeling | Browse Models**
+1. Open **ML | Models | Browse Models**
 
 1. Open "Predict country" model on [Context Panel](../../datagrok/navigation.md#context-panel)
 
