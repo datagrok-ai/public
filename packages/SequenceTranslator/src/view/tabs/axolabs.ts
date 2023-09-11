@@ -79,11 +79,12 @@ export class AxolabsTabUI {
         updateInputExamples();
         updateOutputExamples();
       } else {
-        ui.dialog('Sequence length is out of range')
+        ui.dialog('Out of range')
           .add(ui.divText('Sequence length should be less than ' +
             MAX_SEQUENCE_LENGTH.toString() + ' due to UI constrains.'))
-          .add(ui.divText('Please change sequence length in order to define new pattern.'))
-          .show();
+          .onOK(()=> {Object.values(strandLengthInput).every((input)=> input.value = 34)})
+          .onCancel(()=> {Object.values(strandLengthInput).every((input)=> input.value = 34)})
+          .showModal(false);
       }
     }
 
@@ -294,7 +295,8 @@ export class AxolabsTabUI {
           loadPattern.root.append(patternListChoiceInput.input);
           loadPattern.root.append(loadPattern.input);
           // @ts-ignore
-          loadPattern.input.style.maxWidth = '100px';
+          loadPattern.input.style.maxWidth = '120px';
+          loadPattern.input.style.marginLeft = '12px';
           loadPattern.setTooltip('Apply Existing Pattern');
 
           loadPatternDiv.innerHTML = '';
@@ -315,6 +317,7 @@ export class AxolabsTabUI {
             ], 'ui-input-options'),
           );
         });
+        patternListChoiceInput.input.style.maxWidth = '142px';
         loadPattern.root.append(patternListChoiceInput.input);
         loadPattern.root.append(loadPattern.input);
         // @ts-ignore
@@ -400,6 +403,12 @@ export class AxolabsTabUI {
       updatePto(v);
       updateOutputExamples();
     });
+    fullyPto.captionLabel.classList.add('ui-label-right');
+    fullyPto.captionLabel.style.textAlign = 'left';
+    fullyPto.captionLabel.style.maxWidth = '100px';
+    fullyPto.captionLabel.style.maxWidth = '100px';
+    fullyPto.captionLabel.style.minWidth = '40px';
+    fullyPto.captionLabel.style.width = 'auto';
 
     const maxStrandLength = Object.fromEntries(STRANDS.map(
       (strand) => [strand, DEFAULT_SEQUENCE_LENGTH]
@@ -432,7 +441,7 @@ export class AxolabsTabUI {
     ));
     const inputExample = Object.fromEntries(STRANDS.map(
       (strand) => [strand, ui.textInput(
-        `${STRAND_NAME[strand]}`, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
+        ``, generateExample(strandLengthInput[strand].value!, sequenceBase.value!))
       ]));
 
     // todo: rename to strandColumnInput
@@ -442,12 +451,22 @@ export class AxolabsTabUI {
         strandVar[strand] = colName;
       });
       inputStrandColumnDiv[strand].append(input.root);
+      //input.addPostfix(``);
       return [strand, input];
     }));
 
     const firstPto = Object.fromEntries(STRANDS.map((strand) => {
       const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, () => updateSvgScheme());
       input.setTooltip(`ps linkage before first nucleotide of ${STRAND_NAME[strand].toLowerCase()}`);
+
+      input.captionLabel.classList.add('ui-label-right');
+      input.captionLabel.style.textAlign = 'left';
+      input.captionLabel.style.maxWidth = '100px';
+      input.captionLabel.style.minWidth = '40px';
+      input.captionLabel.style.width = 'auto';
+      
+    
+
       return [strand, input];
     }));
 
@@ -464,14 +483,17 @@ export class AxolabsTabUI {
       }));
 
     const outputExample = Object.fromEntries(STRANDS.map((strand) => {
-      const input = ui.textInput(' ', translateSequence(
+      const input = ui.textInput('', translateSequence(
         inputExample[strand].value, baseInputsObject[strand], ptoLinkages[strand], terminalModification[strand][THREE_PRIME],terminalModification[strand][FIVE_PRIME], firstPto[strand].value!
       ));
+      input.input.style.minWidth = 'none';
+      input.input.style.flexGrow = '1';
+      $(input.root.lastChild).css('height', 'auto');
       return [strand, input];
     }));
 
     const modificationSection = Object.fromEntries(STRANDS.map((strand) => {
-      const panel = ui.panel([
+      const panel = ui.block([
         ui.h1(`${STRAND_NAME[strand]}`),
         ui.divH([
           ui.div([ui.divText('#')], {style: {width: '20px'}})!,
@@ -484,13 +506,15 @@ export class AxolabsTabUI {
     }));
 
     STRANDS.forEach((s) => {
+      
       inputExample[s].input.style.resize = 'none';
-      inputExample[s].input.style.minWidth = EXAMPLE_MIN_WIDTH;
+      //inputExample[s].input.style.minWidth = EXAMPLE_MIN_WIDTH;
       outputExample[s].input.style.resize = 'none';
-      outputExample[s].input.style.minWidth = EXAMPLE_MIN_WIDTH;
-      // todo: remove ts-ignore
-      // @ts-ignore
-      outputExample[s].input.disabled = 'true';
+      //outputExample[s].input.styl
+      inputExample[s].input.style.minWidth = 'none';
+      inputExample[s].input.style.flexGrow = '1';
+      outputExample[s].input.style.minWidth = 'none';
+      outputExample[s].input.style.flexGrow = '1';
       let options = ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
           navigator.clipboard.writeText(outputExample[s].value).then(() =>
@@ -508,7 +532,7 @@ export class AxolabsTabUI {
     const asExampleDiv = ui.div([], 'ui-form ui-form-wide');
     const appAxolabsDescription = ui.div([]);
     const loadPatternDiv = ui.div([]);
-    const asModificationDiv = ui.div([]);
+    const asModificationDiv = ui.form([]);
     const isEnumerateModificationsDiv = ui.divH([
       ui.boolInput(defaultBase, true, (v: boolean) => {
         if (v) {
@@ -591,6 +615,7 @@ export class AxolabsTabUI {
           .show();
       }
     });
+    saveAs.addOptions(savePatternButton);
 
     const convertSequenceButton = ui.bigButton('Convert', () => {
       const condition = [true, createAsStrand.value];
@@ -649,8 +674,26 @@ export class AxolabsTabUI {
     ]);
     inputsSection.classList.add('ui-form');
 
-    const downloadButton = ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value,
-      {backgroundColor: 'white'}));
+    const downloadButton = ui.link('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value,
+      {backgroundColor: 'white'}), 'Download pattern as PNG image', '');
+     
+    const editPattern = ui.link('Edit pattern', ()=>{
+      ui.dialog('Edit patter')
+      .add(ui.divV([
+        ui.h1('PTO'),
+        ui.divH([
+          fullyPto.root,
+          firstPto[SS].root,
+          firstPto[AS].root,
+        ], {style:{gap:'12px'}})
+      ]))
+      .add(ui.divH([
+        modificationSection[SS],
+        modificationSection[AS],
+      ], {style:{gap:'24px'}}))
+      .onOK(()=>{grok.shell.info('Saved')})
+      .show()
+    }, 'Edit pattern', '');  
 
     const mainSection = ui.panel([
       ui.block([
@@ -672,7 +715,7 @@ export class AxolabsTabUI {
               loadPatternDiv,
               saveAs.root,
               ui.buttonsInput([
-                savePatternButton,
+                //savePatternButton,
               ]),
             ], 'ui-form'),
             ui.block([
@@ -702,7 +745,57 @@ export class AxolabsTabUI {
         ui.divText('This will add the result column(s) to the right of the table'),
       ], 'Create and apply Axolabs translation patterns.',
     );
+    strandLengthInput[SS].addCaption('Length');
 
+    return ui.splitH([
+      ui.box(
+        ui.div([
+          ui.h1('Pattern'),
+          createAsStrand.root,
+          strandLengthInput[SS],
+          strandLengthInput[AS],
+          sequenceBase.root,
+          comment.root,
+          loadPatternDiv,
+          saveAs.root,
+          ui.h1('Convert'),
+          tables.root,
+          inputStrandColumn[SS],
+          inputStrandColumn[AS],
+          inputIdColumn.root,
+          ui.buttonsInput([
+            convertSequenceButton,
+          ]),
+        ], 'ui-form')
+      , {style:{maxWidth:'450px'}}),
+      ui.panel([
+        svgDiv,
+        isEnumerateModificationsDiv,
+        ui.divH([
+          downloadButton,
+          editPattern
+        ], {style:{gap:'12px', marginTop:'12px'}}),
+        ui.divH([
+          ui.divV([
+            ui.h1('Sense strand'),
+            inputExample[SS].root,
+            outputExample[SS].root,
+          ], 'ui-block'),
+          ui.divV([
+            ui.h1('Anti sense'),
+            inputExample[AS],
+            outputExample[AS]
+          ], 'ui-block'),
+        ], {style:{gap:'24px', marginTop:'24px'}}),
+        ui.h1('Additional modifications'),
+            ui.form([
+              terminalModification[SS][FIVE_PRIME],
+              terminalModification[SS][THREE_PRIME],
+            ]),
+            asModificationDiv,
+      ], {style: {overflowX: 'scroll', padding:'12px 24px'}})
+    ], {}, true)
+    /*
     return ui.splitH([
       ui.div([
         appAxolabsDescription,
@@ -714,6 +807,6 @@ export class AxolabsTabUI {
           modificationSection[AS],
         ]), {style: {maxWidth: '360px'}},
       ),
-    ]);
+    ]);*/
   }
 }

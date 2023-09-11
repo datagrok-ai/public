@@ -47,6 +47,9 @@ export const _package: StPackage = new StPackage();
 export async function oligoToolkitApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${COMBINED_APP_NAME}...`);
 
+  let currentView = grok.shell.v.root;
+  ui.setUpdateIndicator(currentView, true);
+
   async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View}>  {
 
     /** key: plugin name, value: tab name  */
@@ -75,6 +78,7 @@ export async function oligoToolkitApp(): Promise<void> {
     const multiView = new AppMultiView(externalViewFactories);
     multiView.createLayout();
   }, () => pi.close());
+  ui.setUpdateIndicator(currentView, false);
 }
 
 async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
