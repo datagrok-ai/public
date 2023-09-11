@@ -1,6 +1,10 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
+  AccessFromNatGW:
+    Fn::And:
+    - Condition: InternetIngressAccess
+    - Condition: InternetEgressAccess
   CreatePublicSubnets:
     Fn::Or:
     - Condition: InternetIngressAccess
@@ -251,9 +255,7 @@ Resources:
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
   Cvm443IngressNatGW:
-    Condition:
-    - InternetEgressAccess
-    - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -293,9 +295,7 @@ Resources:
       ToPort: 5005
     Type: AWS::EC2::SecurityGroupIngress
   Cvm5005IngressNatGW:
-    Condition:
-    - InternetEgressAccess
-    - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -335,9 +335,7 @@ Resources:
       ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
   Cvm54321IngressNatGW:
-    Condition:
-    - InternetEgressAccess
-    - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -377,9 +375,7 @@ Resources:
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
   Cvm80IngressNatGW:
-    Condition:
-    - InternetEgressAccess
-    - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -677,9 +673,7 @@ Resources:
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
   Datagrok443IngressNatGW:
-    Condition:
-    - InternetEgressAccess
-    - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -719,9 +713,7 @@ Resources:
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
   Datagrok80IngressNatGW:
-    Condition:
-    - InternetEgressAccess
-    - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:

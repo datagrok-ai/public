@@ -17,6 +17,11 @@ Parameters:
     Type: String
     AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
     Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
+Conditions:
+  AccessFromNatGW:
+    Fn::And:
+      - Condition: InternetIngressAccess
+      - Condition: InternetEgressAccess
 Resources:
   DatagrokDBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -278,9 +283,7 @@ Resources:
       ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
   Cvm80IngressNatGW:
-    Condition:
-      - InternetEgressAccess
-      - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -296,9 +299,7 @@ Resources:
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
   Cvm443IngressNatGW:
-    Condition:
-      - InternetEgressAccess
-      - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -314,9 +315,7 @@ Resources:
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
   Cvm5005IngressNatGW:
-    Condition:
-      - InternetEgressAccess
-      - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -332,9 +331,7 @@ Resources:
       ToPort: 5005
     Type: AWS::EC2::SecurityGroupIngress
   Cvm54321IngressNatGW:
-    Condition:
-      - InternetEgressAccess
-      - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -476,9 +473,7 @@ Resources:
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
   Datagrok80IngressNatGW:
-    Condition:
-      - InternetEgressAccess
-      - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -494,9 +489,7 @@ Resources:
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
   Datagrok443IngressNatGW:
-    Condition:
-      - InternetEgressAccess
-      - InternetIngressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
