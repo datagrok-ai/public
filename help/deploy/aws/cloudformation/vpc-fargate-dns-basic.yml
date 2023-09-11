@@ -5,10 +5,10 @@ Conditions:
     Fn::And:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
-  CreatePublicSubnets:
-    Fn::Or:
-    - Condition: InternetIngressAccess
-    - Condition: InternetEgressAccess
+  DatagrokS3VPCEndpoint:
+    Fn::Equals:
+    - choose
+    - create
   InternetEgressAccess:
     Fn::Equals:
     - 'true'
@@ -68,7 +68,7 @@ Metadata:
       - DatagrokPrivateSubnet2
       - DatagrokDataSubnet1
       - DatagrokDataSubnet2
-      - DatagrokNatGateway
+      - DatagrokNatGatewayEIP
       - InternetIngressAccess
     - Label:
         default: Access configuration
@@ -97,7 +97,7 @@ Metadata:
         default: Data Subnet 1
       DatagrokDataSubnet2:
         default: Data Subnet 2
-      DatagrokNatGateway:
+      DatagrokNatGatewayEIP:
         default: Nat Gateway EIP
       DatagrokPrivateSubnet1:
         default: Private Subnet 1
@@ -169,7 +169,7 @@ Parameters:
   DatagrokDataSubnet2:
     Description: Private subnet to deploy Datagrok DB.
     Type: AWS::EC2::Subnet::Id
-  DatagrokNatGateway:
+  DatagrokNatGatewayEIP:
     Description: Private subnet Nat Gateway IP to allow access inside network to public
       load balancer. Omit if you disable access from internet (InternetIngressAccess).
     Type: String
@@ -2321,29 +2321,32 @@ Resources:
         Ref: DatagrokS3
       PolicyDocument:
         Statement:
-        - Action:
-          - s3:PutObject
-          - s3:GetObject
-          - s3:DeleteObject
-          Condition:
-            StringNotEquals:
-              aws:PrincipalArn:
-              - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
-              - Ref: DatagrokS3EmptyLambdaRole
-              aws:SourceVpce:
-                Ref: DatagrokS3VPCEndpoint
-          Effect: Deny
-          Principal: '*'
-          Resource:
-          - Fn::GetAtt:
-            - DatagrokS3
-            - Arn
-          - Fn::Sub:
-            - ${bucket}/*
-            - bucket:
-                Fn::GetAtt:
-                - DatagrokS3
-                - Arn
+        - Fn::If:
+          - DatagrokS3VPCEndpoint
+          - Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+            Condition:
+              StringNotEquals:
+                aws:PrincipalArn:
+                - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+                - Ref: DatagrokS3EmptyLambdaRole
+                aws:SourceVpce:
+                  Ref: DatagrokS3VPCEndpoint
+            Effect: Deny
+            Principal: '*'
+            Resource:
+            - Fn::GetAtt:
+              - DatagrokS3
+              - Arn
+            - Fn::Sub:
+              - ${bucket}/*
+              - bucket:
+                  Fn::GetAtt:
+                  - DatagrokS3
+                  - Arn
+          - Ref: AWS::NoValue
         - Action: '*'
           Condition:
             Bool:
@@ -2362,63 +2365,6 @@ Resources:
                 - Arn
         Version: '2012-10-17'
     Type: AWS::S3::BucketPolicy
-  DatagrokS3VPCEndpoint:
-    Properties:
-      PolicyDocument:
-        Statement:
-        - Action:
-          - s3:PutObject
-          - s3:GetObject
-          - s3:DeleteObject
-          - s3:ListBucket
-          Condition: {}
-          Effect: Allow
-          Principal: '*'
-          Resource:
-          - Fn::GetAtt:
-            - DatagrokS3
-            - Arn
-          - Fn::Sub:
-            - ${bucket}/*
-            - bucket:
-                Fn::GetAtt:
-                - DatagrokS3
-                - Arn
-          - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com
-          - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com/*
-          - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}
-          - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}/*
-          - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket
-          - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
-          - arn:aws:s3:::docker-images-prod
-          - arn:aws:s3:::docker-images-prod/*
-          - arn:aws:s3:::datagrok-data
-          - arn:aws:s3:::datagrok-data/*
-          - Fn::Sub:
-            - arn:aws:s3:::cloudformation-custom-resource-response-${region}
-            - region:
-                Fn::Join:
-                - ''
-                - Fn::Split:
-                  - '-'
-                  - Ref: AWS::Region
-          - Fn::Sub:
-            - arn:aws:s3:::cloudformation-custom-resource-response-${region}/*
-            - region:
-                Fn::Join:
-                - ''
-                - Fn::Split:
-                  - '-'
-                  - Ref: AWS::Region
-        Version: '2012-10-17'
-      RouteTableIds:
-      - Ref: DatagrokPrivateSubnetRouteTable
-      ServiceName:
-        Fn::Sub: com.amazonaws.${AWS::Region}.s3
-      VpcEndpointType: Gateway
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::VPCEndpoint
   DatagrokSecurityGroup:
     Properties:
       GroupDescription:
@@ -3667,5 +3613,5 @@ Rules:
           - Fn::ValueOf:
             - DatagrokDataSubnet2
             - VpcId
-        - Ref: VpcId
+        - Ref: DatagrokVPC
       AssertDescription: All subnets must in the VPC

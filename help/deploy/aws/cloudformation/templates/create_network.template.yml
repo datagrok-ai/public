@@ -10,7 +10,7 @@ Metadata:
         Parameters:
           - CIDR
           - InternetIngressAccess
-#          - InternetEgressAccess
+    #          - InternetEgressAccess
     ParameterLabels:
       CIDR:
         default: "CIDR: VPC CIDR"
@@ -52,6 +52,10 @@ Conditions:
     Fn::Or:
       - Condition: InternetIngressAccess
       - Condition: InternetEgressAccess
+  DatagrokS3VPCEndpoint:
+    Fn::Equals:
+      - 'create'
+      - 'create'
 Resources:
   DatagrokVPC:
     Properties:
@@ -367,3 +371,60 @@ Resources:
         Ref: DatagrokDataSubnetRouteTable
       SubnetId:
         Ref: DatagrokDataSubnet2
+  DatagrokS3VPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:ListBucket
+            Effect: Allow
+            Principal: "*"
+            Condition: { }
+            Resource:
+              - Fn::GetAtt:
+                  - DatagrokS3
+                  - Arn
+              - Fn::Sub:
+                  - "${bucket}/*"
+                  - bucket:
+                      Fn::GetAtt:
+                        - DatagrokS3
+                        - Arn
+              - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com
+              - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com/*
+              - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}
+              - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}/*
+              - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket
+              - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
+              - "arn:aws:s3:::docker-images-prod"
+              - "arn:aws:s3:::docker-images-prod/*"
+              - "arn:aws:s3:::datagrok-data"
+              - "arn:aws:s3:::datagrok-data/*"
+              - Fn::Sub:
+                  - "arn:aws:s3:::cloudformation-custom-resource-response-${region}"
+                  - region:
+                      Fn::Join:
+                        - ''
+                        - Fn::Split:
+                            - '-'
+                            - Ref: AWS::Region
+              - Fn::Sub:
+                  - "arn:aws:s3:::cloudformation-custom-resource-response-${region}/*"
+                  - region:
+                      Fn::Join:
+                        - ''
+                        - Fn::Split:
+                            - '-'
+                            - Ref: AWS::Region
+      RouteTableIds:
+        - Ref: DatagrokPrivateSubnetRouteTable
+      ServiceName:
+        Fn::Sub: com.amazonaws.${AWS::Region}.s3
+      VpcEndpointType: Gateway
+      VpcId:
+        Ref: DatagrokVPC

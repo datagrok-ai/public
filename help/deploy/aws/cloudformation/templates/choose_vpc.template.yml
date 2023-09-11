@@ -16,7 +16,7 @@ Metadata:
           - DatagrokPrivateSubnet2
           - DatagrokDataSubnet1
           - DatagrokDataSubnet2
-          - DatagrokNatGateway
+          - DatagrokNatGatewayEIP
           - InternetIngressAccess
     ParameterLabels:
       DatagrokVPC:
@@ -35,7 +35,7 @@ Metadata:
         default: "Data Subnet 1"
       DatagrokDataSubnet2:
         default: "Data Subnet 2"
-      DatagrokNatGateway:
+      DatagrokNatGatewayEIP:
         default: "Nat Gateway EIP"
       InternetIngressAccess:
         default: "InternetIngressAccess: Access from internet"
@@ -65,7 +65,7 @@ Parameters:
   DatagrokDataSubnet2:
     Type: AWS::EC2::Subnet::Id
     Description: Private subnet to deploy Datagrok DB.
-  DatagrokNatGateway:
+  DatagrokNatGatewayEIP:
     Type: String
     Description: Private subnet Nat Gateway IP to allow access inside network to public load balancer. Omit if you disable access from internet (InternetIngressAccess).
   CIDR:
@@ -97,10 +97,10 @@ Conditions:
       #      - Ref: InternetEgressAccess
       - 'true'
       - 'true'
-  CreatePublicSubnets:
-    Fn::Or:
-      - Condition: InternetIngressAccess
-      - Condition: InternetEgressAccess
+  DatagrokS3VPCEndpoint:
+    Fn::Equals:
+      - 'choose'
+      - 'create'
 Rules:
   SubnetsInVPC:
     Assertions:
@@ -124,5 +124,5 @@ Rules:
               - 'Fn::ValueOf':
                   - DatagrokDataSubnet2
                   - VpcId
-            - Ref: VpcId
+            - Ref: DatagrokVPC
         AssertDescription: All subnets must in the VPC

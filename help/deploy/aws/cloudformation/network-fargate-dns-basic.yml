@@ -9,6 +9,10 @@ Conditions:
     Fn::Or:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
+  DatagrokS3VPCEndpoint:
+    Fn::Equals:
+    - create
+    - create
   InternetEgressAccess:
     Fn::Equals:
     - 'true'
@@ -2568,29 +2572,32 @@ Resources:
         Ref: DatagrokS3
       PolicyDocument:
         Statement:
-        - Action:
-          - s3:PutObject
-          - s3:GetObject
-          - s3:DeleteObject
-          Condition:
-            StringNotEquals:
-              aws:PrincipalArn:
-              - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
-              - Ref: DatagrokS3EmptyLambdaRole
-              aws:SourceVpce:
-                Ref: DatagrokS3VPCEndpoint
-          Effect: Deny
-          Principal: '*'
-          Resource:
-          - Fn::GetAtt:
-            - DatagrokS3
-            - Arn
-          - Fn::Sub:
-            - ${bucket}/*
-            - bucket:
-                Fn::GetAtt:
-                - DatagrokS3
-                - Arn
+        - Fn::If:
+          - DatagrokS3VPCEndpoint
+          - Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+            Condition:
+              StringNotEquals:
+                aws:PrincipalArn:
+                - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+                - Ref: DatagrokS3EmptyLambdaRole
+                aws:SourceVpce:
+                  Ref: DatagrokS3VPCEndpoint
+            Effect: Deny
+            Principal: '*'
+            Resource:
+            - Fn::GetAtt:
+              - DatagrokS3
+              - Arn
+            - Fn::Sub:
+              - ${bucket}/*
+              - bucket:
+                  Fn::GetAtt:
+                  - DatagrokS3
+                  - Arn
+          - Ref: AWS::NoValue
         - Action: '*'
           Condition:
             Bool:

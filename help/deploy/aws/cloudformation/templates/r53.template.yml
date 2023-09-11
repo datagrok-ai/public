@@ -332,9 +332,18 @@ Resources:
     DependsOn:
       - DatagrokService
       - DatagrokSettingsSetLambdaFunctionLogGroup
-      - DatagrokS3VPCEndpoint
-      - DatagrokPrivateSubnetRouteAssos1
-      - DatagrokPrivateSubnetRouteAssos2
+      - Fn::If:
+          - DatagrokS3VPCEndpoint
+          - DatagrokS3VPCEndpoint
+          - Ref: "AWS::NoValue"
+      - Fn::If:
+          - DatagrokS3VPCEndpoint
+          - DatagrokPrivateSubnetRouteAssos1
+          - Ref: "AWS::NoValue"
+      - Fn::If:
+          - DatagrokS3VPCEndpoint
+          - DatagrokPrivateSubnetRouteAssos2
+          - Ref: "AWS::NoValue"
     Properties:
       DevKey:
         Ref: DatagrokAdminDevKey
