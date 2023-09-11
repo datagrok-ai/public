@@ -326,7 +326,7 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //description: One-way analysis of variances (ANOVA) is the parametric procedure for determining whether significant differences occur in an experiment containing two or more conditions.
 //input: dataframe table {category: Data}
 //input: column factors {category: Data}
-//input: column values {type: numerical; category: Data}
+//input: column features {type: numerical; category: Data}
 //input: double alpha = 0.05 {category: Significance level} [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
 //input: bool checkNormality = false {caption: Normality; category: Checks} [Indicating whether the normality of distribution should be checked.]
 //input: bool checkVars = false {caption: Variances; category: Checks} [Indicating whether an eqaulity of varainces should be checked.]
