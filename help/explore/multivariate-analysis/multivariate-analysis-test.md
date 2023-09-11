@@ -9,7 +9,7 @@
 
 1. Open table "demog"
 
-2. Open "Partial Least Squares (PLS)" from **Tools | Data Science | Multivariate Analysis (PLS)...**
+2. Open "Partial Least Squares (PLS)" from **ML | Analyze | Multivariate Analysis...**
 
 3. Set value of the field "Outcome" as a column which have empty rows (HEIGHT)
 

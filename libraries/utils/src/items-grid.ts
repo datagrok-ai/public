@@ -65,7 +65,7 @@ export class ItemsGrid {
     ui.empty(this._root);
     if (!this.options.horizontalInputNames) {
       for (const prop of this.properties) {
-        const header = ui.divText(prop.name);
+        const header = ui.divText(prop.caption ?? prop.name);
         header.style.fontWeight = 'bold';
         this._root.appendChild(header);
       }
