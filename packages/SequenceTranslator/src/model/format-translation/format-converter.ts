@@ -103,5 +103,6 @@ function formatToHelm(sequence: string, sourceFormat: string): string {
   if (helm[helm.length - 1] === PHOSPHATE_SYMBOL)
     helm = helm.slice(0, -1);
   helm = helm.replace(phosphateRegExp, (match, group) => group);
+  helm = helm.replace('<empty>', '');
   return `${HELM_WRAPPER.LEFT + helm + HELM_WRAPPER.RIGHT}`;
 }

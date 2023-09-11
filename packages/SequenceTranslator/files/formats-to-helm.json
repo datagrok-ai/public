@@ -57,7 +57,7 @@
       "G": "[25r](G)p"
     },
     "phosphateBackbone": {
-      "": "[sp]"
+      "<empty>": "[sp]"
     }
   }
 }
