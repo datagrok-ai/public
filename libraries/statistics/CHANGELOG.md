@@ -1,10 +1,30 @@
 # statistics changelog
 
+## 1.2.7 (2023-09-11)
+
+### Features
+
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Property panel changes:
+  * Added tags on the dataframe level
+  * Added proper tooltips on properties
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added errorModel property
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Added check for logarithm in the changeBounds method
+  * Fixed confidence intervals for logarithmic modes
+
 ## 1.2.6 (2023-09-01)
 
 ### Features
 
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Stored the chart options in the dataframe tags
 * T-Test now throws an error if sample size is less than or equal to 1.
+
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Added checks for axes values
 
 ## 1.2.5 (2023-08-25)
 
