@@ -16,8 +16,8 @@ or come up with your own solution.
 
 ## Datagrok JS API
 
-For convenience, some of the commonly used functions are exposed via the [JS API](../packages/js-api.md). Use `grok.chem`
-instance to invoke the methods below. Note that most of them are asynchronous, since behind the scenes they either use a
+We expose some commonly used functions via [JS API](../packages/js-api.md). To invoke the methods, use `grok.chem`. 
+Most of the methods are asynchronous. Behind the scenes they either use a
 server-side assist, or a browser's separate Web Worker to call [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h) functions.
 
 ```
@@ -30,28 +30,26 @@ mcs(column);
 descriptors(table, column, descriptors);
 ```
 
-The three first functions, `searchSubstructure`, `getSimilarities` and `findSimilar`, are currently made client-based,
-using [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h). We are planning to support both server-side and browser-side
-modes for these functions in the future, while the API remains as described below.
+`searchSubstructure`, `getSimilarities` and `findSimilar` are client-based functions and
+use [RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h). We plan to support both server-side and broser-side modes. The API remains the same.
 
 ### Substructure search
 
 `searchSubstructure(column, pattern = null, settings = { substructLibrary: true })`
 
 This function performs substructure search using RDKit JS. It returns a [BitSet](../packages/js-api.md#bitset).
-If i-th element of the input `column` contains a substructure given by a `pattern` the i-th bit set to 1, otherwise the bit is set to 0.
+If the i-th element in the input `column` has the pattern's substructure, the i-th bit is set to 1; otherwise, it is set to 0.
 
-`column` is a column of type String. It contains molecules in any notation [supported by RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h): smiles, cxsmiles, molblock, v3Kmolblock, and inchi. Same applies to a `pattern`: this is a string representation of a molecule in any of the previous notations.
+`column` stands for [column](https://datagrok.ai/js-api/classes/dg.Column) that contains molecules in any
+notation [supported by RDKit JS](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h): smiles, cxsmiles, molblock, v3Kmolblock, and inchi. Same applies to a `pattern`: this is a string representation of a molecule in any of the previous notations.
 
 The `settings` object allows passing the following parameters:
 
 * `molBlockFailover`: smarts which used as a substructure if `pattern` is invalid
 
-To make search maximum efficient substructure search function maintains a cache of
-pre-computed Pattern fingerprints (a topological fingerprint optimized for substructure screening) and specific RDKit *Mol objects*. Fingerprints are used for preliminary filtration while *Mol objects* are used for graph-based search method [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html). Fingerprints are pre-calculated for the whole column while *Mol objects* are cached only for defined number of first molecules. One the one hand it allows to decrease memory consumption and on the other hand speeds up the search. Once the function `searchSubstructure` meets the `column` previously unmet, it builds the cache of fingerprints and *Mol objects* for the molecules in `column`. Later it is used for substructure search as long as the function is invoked for the same `column`.
+To optimize the substructure search we uses a cache of pre-computed [Pattern fingerprints](https://www.rdkit.org/docs/RDKit_Book.html#additional-information-about-the-fingerprints) and specific RDKit *Mol objects*. Fingerprints are used for preliminary filtration while *Mol objects* are used for graph-based search method [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html). Fingerprints are calculated for each molecule in `column` and *Mol objects* are created only for defined number of first molecules. It allows to decrease memory consumpution and speed up the search. When the substructure search function encounters a new `column`, it creates a cache of fingerprints and *Mol objects* for the molecules in it. Substructure search uses this cache when the function is called for the same column.
 
-Sometimes it happens that the molecule strings are invalid or not supported by RDKit JS. These inputs are skipped when indexing. For such unsupported molecule, the corresponding bit in the bitset remains as 0. Thus, the bitset is *always* of the
-input `column`'s length.
+Molecule strings may be invalid or not supported by RDKit JS. During indexing we skip these inputs. The corresponding bit in the bitset remains 0.. Thus, the bitset is *always* of the input `column`'s length.
 
 ### Similarity scoring
 
@@ -74,10 +72,10 @@ similarity.
 Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.DataFrame) of three
 columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
 
-* The 1-st column, named `molecule`, contains the original molecules from the input `column`
-* The 2-nd column, named `score`, contains the corresponding similarity scores of the range from 0.0 to 1.0. The
-  DataFrame is sorted descending by this column
-* The 3-rd column, named `index`, contains indices of the molecules in the original input `column`
+* `molecule` column contains the original molecules from the input `column`.
+* `score` column contains the corresponding similarity scores of the range from 0.0 to 1.0. The
+  DataFrame is sorted descending by this column.
+* `index` column contains indices of the molecules in the original input `column`.
 
 #### Scoring each molecule against a given molecule
 
@@ -89,17 +87,12 @@ the i-th element of the
 input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores)).
 
 Similarly to the `searchSubstructure` function, these functions maintain a cache of
-pre-computed fingerprints. Once the function `findSimilar` or `getSimilarities` meets the `column` previously unmet, it
-builds the cache of computed fingerprints for the molecules in `column`. Later it is used to compute similarity
-scores as long as the function is invoked for the same `column`.
+pre-computed fingerprints. If `findSimilar` or `getSimilarities` function encounters a new `column`, it creates a cache of fingerprints for the molecules in it. And uses this cache to compute similarity scores for the same column.
 
 To only build (aka prime) this cache without performing an actual search, e.g. in case of pre-computing the fingerprints
 in the UI, call the function passing `molecule` as an empty string `''`.
 
-In case molecule strings are not supported by RDKit JS they are skipped when indexing. For
-such unsupported molecules, null is returned instead of a fingerprint. Thus, the output Column (or
-DataFrame) is *always* of the input `column`'s length.
-.
+If molecules are not supported by RDKit JS, we skip them durring indexing. Null is returned instead of a fingerprint. Thus, the output Column (or DataFrame) is *always* of the input `column`'s length.
 
 Examples (see on [GitHub](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem))
 
@@ -113,7 +106,7 @@ Examples (see on [GitHub](https://github.com/datagrok-ai/public/tree/master/pack
 
 #### SVG rendering with OpenChemLib
 
-Use `grok.chem.svgMol` to render a molecule into a `div` as an SVG, using [OpenChemLib](https://github.com/cheminfo/openchemlib-js) library:
+To render a molecule into a `div` as an SVG, use `grok.chem.svgMol`. This method uses [OpenChemLib](https://github.com/cheminfo/openchemlib-js) library.
 
 ```
 ui.dialog()
@@ -123,9 +116,9 @@ ui.dialog()
 
 #### Rendering to canvas with RdKit and scaffolds
 
-Use `grok.chem.canvasMol` to render a molecule, aligned to bonds, using RdKit. To highlight a scaffold
-specify it as [SMARTS](https://en.wikipedia.org/wiki/SMILES_arbitrary_target_specification). 
-The molecule string can be specified in any format supported by RdKit. Here is a complete example:
+To render a molecule, aligned to bonds, use `grok.chem.canvasMol`. This method uses RDKit library.
+To highlight a scaffold specify it as [SMARTS](https://en.wikipedia.org/wiki/SMILES_arbitrary_target_specification).
+You can specify the molecule string in any format supported by RdKit. Here is a complete example:
 
 ```
 let root = ui.div();
