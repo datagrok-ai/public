@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import './tests/formats-to-helm';
 import './tests/helm-to-nucleotides';
-import './tests/all-formats-supported';
+import './tests/formats-support';
 
 export const _package = new DG.Package();
 export {tests};
