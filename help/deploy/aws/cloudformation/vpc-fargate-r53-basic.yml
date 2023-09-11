@@ -2505,7 +2505,10 @@ Resources:
                 - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
                 - Ref: DatagrokS3EmptyLambdaRole
                 aws:SourceVpce:
-                  Ref: DatagrokS3VPCEndpoint
+                  Fn::If:
+                  - DatagrokS3VPCEndpoint
+                  - Ref: DatagrokS3VPCEndpoint
+                  - Ref: AWS::NoValue
             Effect: Deny
             Principal: '*'
             Resource:
