@@ -1644,7 +1644,7 @@ Resources:
       TargetType: 'ip'
       VpcId:
         Ref: DatagrokVPC
-      HealthCheckPath: "/jupyter/api/swagger.yaml"
+      HealthCheckPath: "/jupyter/api"
       Matcher:
         HttpCode: 200
       TargetGroupAttributes:
@@ -1690,7 +1690,7 @@ Resources:
       TargetType: 'ip'
       VpcId:
         Ref: DatagrokVPC
-      HealthCheckPath: "/jupyter/api/swagger.yaml"
+      HealthCheckPath: "/jupyter/api"
       Matcher:
         HttpCode: 200
       TargetGroupAttributes:
@@ -1890,7 +1890,7 @@ Resources:
         - Field: path-pattern
           PathPatternConfig:
             Values:
-              - "/notebook/*"
+              - "/jupyter/*"
       ListenerArn:
         Ref: CvmTCP443Listener
       Priority: 6
@@ -1907,7 +1907,7 @@ Resources:
         - Field: path-pattern
           PathPatternConfig:
             Values:
-              - "/notebook/*"
+              - "/jupyter/*"
       ListenerArn:
         Ref: CvmTCP8090IntListener
       Priority: 6
