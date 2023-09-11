@@ -27,7 +27,8 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
       return [format, translation];
     }).filter(([format, translation]) => translation)
   )
-  const nucleotides = getNucleotidesSequence(result[DEFAULT_FORMATS.HELM], MonomerLibWrapper.getInstance());
+  const helm = (sourceFormat === DEFAULT_FORMATS.HELM) ? sequence : result[DEFAULT_FORMATS.HELM];
+  const nucleotides = getNucleotidesSequence(helm, MonomerLibWrapper.getInstance());
   if (nucleotides)
     result['Nucleotides'] = nucleotides;
   return result;
