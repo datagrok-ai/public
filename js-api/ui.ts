@@ -1700,7 +1700,7 @@ export namespace css {
   export enum margin {
     none = 'm-none',
     small = 'm-small',
-    medium = 'm-meidum',
+    medium = 'm-medium',
     large = 'm-large',
     auto = 'm-auto'
   }
@@ -1708,7 +1708,7 @@ export namespace css {
   export enum marginX {
     none = 'mx-none',
     small = 'mx-small',
-    medium = 'mx-meidum',
+    medium = 'mx-medium',
     large = 'mx-large',
     auto = 'mx-auto'
   }
@@ -1716,7 +1716,7 @@ export namespace css {
   export enum marginY {
     none = 'my-none',
     small = 'my-small',
-    medium = 'my-meidum',
+    medium = 'my-medium',
     large = 'my-large',
     auto = 'my-auto'
   }
@@ -1724,7 +1724,7 @@ export namespace css {
   export enum marginLeft {
     none = 'ml-none',
     small = 'ml-small',
-    medium = 'ml-meidum',
+    medium = 'ml-medium',
     large = 'ml-large',
     auto = 'ml-auto'
   }
@@ -1732,7 +1732,7 @@ export namespace css {
   export enum marginRight {
     none = 'mr-none',
     small = 'mr-small',
-    medium = 'mr-meidum',
+    medium = 'mr-medium',
     large = 'mr-large',
     auto = 'mr-auto'
   }
@@ -1740,7 +1740,7 @@ export namespace css {
   export enum marginTop {
     none = 'mt-none',
     small = 'mt-small',
-    medium = 'mt-meidum',
+    medium = 'mt-medium',
     large = 'mt-large',
     auto = 'mt-auto'
   }
@@ -1748,7 +1748,7 @@ export namespace css {
   export enum marginBottom {
     none = 'mb-none',
     small = 'mb-small',
-    medium = 'mb-meidum',
+    medium = 'mb-medium',
     large = 'mb-large',
     auto = 'mb-auto'
   }
@@ -1756,55 +1756,55 @@ export namespace css {
   export enum padding {
     none = 'p-none',
     small = 'p-small',
-    medium = 'p-meidum',
+    medium = 'p-medium',
     large = 'p-large',
   }
 
   export enum paddingX {
     none = 'px-none',
     small = 'px-small',
-    medium = 'px-meidum',
+    medium = 'px-medium',
     large = 'px-large',
   }
 
   export enum paddingY {
     none = 'py-none',
     small = 'py-small',
-    medium = 'py-meidum',
+    medium = 'py-medium',
     large = 'py-large',
   }
 
   export enum paddingLeft {
     none = 'pl-none',
     small = 'pl-small',
-    medium = 'pl-meidum',
+    medium = 'pl-medium',
     large = 'pl-large',
   }
 
   export enum paddingRight {
     none = 'pr-none',
     small = 'pr-small',
-    medium = 'pr-meidum',
+    medium = 'pr-medium',
     large = 'pr-large',
   }
 
   export enum paddingTop {
     none = 'pt-none',
     small = 'pt-small',
-    medium = 'pt-meidum',
+    medium = 'pt-medium',
     large = 'pt-large',
   }
 
   export enum paddingBottom {
     none = 'pb-none',
     small = 'pb-small',
-    medium = 'pb-meidum',
+    medium = 'pb-medium',
     large = 'pb-large',
   }
 
   export enum textSize {
     small = 'text-small',
-    medium = 'text-meidum',
+    medium = 'text-medium',
     large = 'text-large',
   }
 
@@ -1844,6 +1844,34 @@ export namespace css {
     small = 'shadow-small',
     medium = 'shado-medium',
     large = 'shadow-large',
+  }
+
+  export enum table {
+    noraml = 'table',
+    wide = 'table-wide'
+  }
+
+  export enum tableSize {
+    small = 'table-small',
+    medium = 'table-medium',
+    large = 'table-large'
+  }
+
+  export enum tableStyle {
+    border = 'table-border',
+    linesRow = 'table-row-lines',
+    linesCol = 'table-col-lines',
+    striped = 'table-striped'
+  }
+  
+  export enum border {
+    all = 'border',
+    right = 'border-right',
+    left = 'border-left',
+    top = 'border-top',
+    bottom = 'border-bottom',
+    leftRight = 'border-left-right',
+    topBottom = 'border-top-bottom'
   }
 
 }
