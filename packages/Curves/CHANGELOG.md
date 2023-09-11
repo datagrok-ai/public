@@ -6,12 +6,12 @@
 
 * [#2103](https://github.com/datagrok-ai/public/issues/2103): Property panel changes:
   * Added color for the series in the property panel
-  * Added capability to store charts options on the dataframe level in tags
+  * Added capability to store chart options on the dataframe level in tags
   * Restructured the property panel
   * Added dataframe and plot-only switch modes in the property panel
   * Made the accordion to restore the property panel state
   * Added proper tooltips on properties
-  * Implemented the capability to switch the plots state on the property panel
+  * Implemented the capability to switch the plot state on the property panel
 * [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
   * Decreased the sizes for the plot title rendering
   * Changed the min axes cell width
