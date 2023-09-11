@@ -1118,5 +1118,25 @@
     "meta": {
       "molecularWeight": 306.17
     }
+  },
+  {
+    "monomerType": "Branch",
+    "smiles": "[H:1]n1cc(C)c(N)nc1=O",
+    "name": "5-Methylcytosine",
+    "author": "Pistoia Alliance HELM project",
+    "molfile": "HELM Core Monomer library\nHELMMonomers071816.sdf \n\n 10 10  0  0  0  0  0  0  0  0999 V2000\n   23.0624   -3.8327    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   23.0624   -5.3327    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   21.7674   -6.0827    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   20.4624   -5.3327    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   20.4624   -3.8327    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   21.7674   -3.0827    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   21.7674   -1.5827    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   21.7674   -7.5827    0.0000 R1  0  0  0  0  0  0  0  0  0  0  0  0\n   24.3614   -6.0827    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   19.1634   -3.0827    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0        0\n  2  3  1  0        0\n  3  4  1  0        0\n  4  5  2  0        0\n  5  6  1  0        0\n  1  6  2  0        0\n  6  7  1  0        0\n  3  8  1  0        0\n  2  9  2  0        0\n  5 10  1  0        0\nA    8\nR1\nM  END\n",
+    "naturalAnalog": "C",
+    "rgroups": [
+      {
+        "capGroupSMILES": "[*:1][H]",
+        "alternateId": "R1-H",
+        "capGroupName": "H",
+        "label": "R1"
+      }
+    ],
+    "symbol": "m5C",
+    "createDate": null,
+    "polymerType": "RNA",
+    "id": 0
   }
 ]
