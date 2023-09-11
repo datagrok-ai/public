@@ -50,7 +50,7 @@ export async function oligoToolkitApp(): Promise<void> {
   let currentView = grok.shell.v.root;
   ui.setUpdateIndicator(currentView, true);
 
-  async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View}>  {
+  async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
 
     /** key: plugin name, value: tab name  */
     const externalPlugins = {
@@ -60,7 +60,13 @@ export async function oligoToolkitApp(): Promise<void> {
     const result: {[tabName: string]: () => DG.View} = {};
 
     for (const [pluginName, tabName] of Object.entries(externalPlugins)) {
-      const layout: HTMLDivElement = await grok.functions.call(pluginName);
+      let layout: HTMLDivElement;
+      try {
+        layout = await grok.functions.call(pluginName);
+      } catch (err) {
+        console.log(`Plugin ${pluginName} not loaded`)
+        return undefined;
+      }
       const view = DG.View.create();
       const appUI = new ExternalPluginUI(view, tabName, layout);
 
