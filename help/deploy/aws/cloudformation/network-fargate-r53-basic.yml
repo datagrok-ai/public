@@ -13,41 +13,41 @@ Conditions:
     Fn::Equals:
     - Ref: InternetIngressAccess
     - 'true'
-Description: Datagrok template to deploy all components to ECS Fargate in new VPC.
-  Template also creates ACM and DNS records.
+Description: Datagrok template to deploy all components to ECS Fargate. Template also
+  creates ACM and DNS records.
 Mappings:
   Images:
     Datagrok:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/datagrok
     GrokCompute:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/grok_compute
     GrokConnect:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/grok_connect
     GrokSpawner:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/grok_spawner
     H2o:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/h2o
     JKG:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/jupyter_kernel_gateway
     JN:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/jupyter_notebook
     Kaniko:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/kaniko
+      domain: gcr.io
+      repo: kaniko-project/executor
       version: v1.12.1
     Searchdomain:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/ecs-searchdomain-sidecar
+      domain: docker.io
+      repo: docker/ecs-searchdomain-sidecar
       version: '1.0'
     Smtp:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/smtp
       version: 1.0.0
 Metadata:
@@ -58,8 +58,10 @@ Metadata:
       Parameters:
       - CIDR
       - InternetIngressAccess
+    - Label:
+        default: Access configuration
+      Parameters:
       - InternetSubnetAllow
-      - InternetEgressAccess
     - Label:
         default: Client Endpoint configuration
       Parameters:
@@ -193,7 +195,9 @@ Resources:
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
   Cvm443IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition:
+    - InternetEgressAccess
+    - InternetIngressAccess
     Properties:
       CidrIp:
         Fn::Sub:
@@ -233,7 +237,9 @@ Resources:
       ToPort: 5005
     Type: AWS::EC2::SecurityGroupIngress
   Cvm5005IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition:
+    - InternetEgressAccess
+    - InternetIngressAccess
     Properties:
       CidrIp:
         Fn::Sub:
@@ -273,7 +279,9 @@ Resources:
       ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
   Cvm54321IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition:
+    - InternetEgressAccess
+    - InternetIngressAccess
     Properties:
       CidrIp:
         Fn::Sub:
@@ -313,7 +321,9 @@ Resources:
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
   Cvm80IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition:
+    - InternetEgressAccess
+    - InternetIngressAccess
     Properties:
       CidrIp:
         Fn::Sub:
@@ -633,7 +643,9 @@ Resources:
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
   Datagrok443IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition:
+    - InternetEgressAccess
+    - InternetIngressAccess
     Properties:
       CidrIp:
         Fn::Sub:
@@ -673,7 +685,9 @@ Resources:
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
   Datagrok80IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition:
+    - InternetEgressAccess
+    - InternetIngressAccess
     Properties:
       CidrIp:
         Fn::Sub:
@@ -2909,7 +2923,7 @@ Resources:
       - ContainerName: datagrok
         ContainerPort: 8080
         TargetGroupArn:
-          Ref: TCP8080TargetGroup
+          Ref: DatagrokTCP8080TargetGroup
       - ContainerName: datagrok
         ContainerPort: 8080
         TargetGroupArn:
@@ -3146,7 +3160,7 @@ Resources:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: TCP8080TargetGroup
+              Ref: DatagrokTCP8080TargetGroup
         Type: forward
       LoadBalancerArn:
         Ref: DatagrokLoadBalancer
@@ -3205,6 +3219,24 @@ Resources:
         HttpCode: 200
       Name:
         Fn::Sub: ${AWS::StackName}-datagrok-i
+      Port: 8080
+      Protocol: HTTP
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      TargetType: ip
+      UnhealthyThresholdCount: 5
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  DatagrokTCP8080TargetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 60
+      HealthCheckPath: /api/admin/health
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-datagrok
       Port: 8080
       Protocol: HTTP
       Tags:
@@ -4236,21 +4268,3 @@ Resources:
       - Key: datagrok.service
         Value: grok_spawner
     Type: AWS::IAM::Role
-  TCP8080TargetGroup:
-    Properties:
-      HealthCheckIntervalSeconds: 60
-      HealthCheckPath: /api/admin/health
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-datagrok
-      Port: 8080
-      Protocol: HTTP
-      Tags:
-      - Key: datagrok.component
-        Value: datagrok
-      TargetType: ip
-      UnhealthyThresholdCount: 5
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup

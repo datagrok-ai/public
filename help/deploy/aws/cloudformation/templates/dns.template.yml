@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "Datagrok template to deploy all components to ECS Fargate in new VPC. DNS and ACM should be configured manually."
+Description: "Datagrok template to deploy all components to ECS Fargate. DNS and ACM should be configured manually."
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

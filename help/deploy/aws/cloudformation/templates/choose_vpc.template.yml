@@ -1,0 +1,128 @@
+#file: noinspection YAMLIncompatibleTypes
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Datagrok template to deploy all components to ECS Fargate in existing VPC"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Network configuration"
+        Parameters:
+          - DatagrokVPC
+          - CIDR
+          - DatagrokPublicSubnet1
+          - DatagrokPublicSubnet2
+          - DatagrokPrivateSubnet1
+          - DatagrokPrivateSubnet2
+          - DatagrokDataSubnet1
+          - DatagrokDataSubnet2
+          - DatagrokNatGateway
+          - InternetIngressAccess
+    ParameterLabels:
+      DatagrokVPC:
+        default: "VPC"
+      CIDR:
+        default: "CIDR: VPC CIDR"
+      DatagrokPublicSubnet1:
+        default: "Public Subnet 1"
+      DatagrokPublicSubnet2:
+        default: "Public Subnet 2"
+      DatagrokPrivateSubnet1:
+        default: "Private Subnet 1"
+      DatagrokPrivateSubnet2:
+        default: "Private Subnet 2"
+      DatagrokDataSubnet1:
+        default: "Data Subnet 1"
+      DatagrokDataSubnet2:
+        default: "Data Subnet 2"
+      DatagrokNatGateway:
+        default: "Nat Gateway EIP"
+      InternetIngressAccess:
+        default: "InternetIngressAccess: Access from internet"
+      #      InternetEgressAccess:
+      #        default: "InternetEgressAccess: Access to internet"
+Parameters:
+  DatagrokVPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC to deploy Datagrok stack
+  DatagrokPublicSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Default: ''
+    Description: Public subnet to deploy Datagrok Load Balancer. Omit if you disable access from internet (InternetIngressAccess).
+  DatagrokPublicSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Default: ''
+    Description: Public subnet to deploy Datagrok Load Balancer. Omit if you disable access from internet (InternetIngressAccess).
+  DatagrokPrivateSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private subnet to deploy Datagrok components.
+  DatagrokPrivateSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private subnet to deploy Datagrok components.
+  DatagrokDataSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: Data subnet to deploy Datagrok DB.
+  DatagrokDataSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private subnet to deploy Datagrok DB.
+  DatagrokNatGateway:
+    Type: String
+    Description: Private subnet Nat Gateway IP to allow access inside network to public load balancer. Omit if you disable access from internet (InternetIngressAccess).
+  CIDR:
+    Type: String
+    Default: '10.0.0.0/17'
+    AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
+    Description: VPC CIDR block to allow communication inside VPC
+  InternetIngressAccess:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: "Do you want Datagrok to be available from internet? The exact subnet from which Datagrok will be available can be specified in 'InternetSubnetAllow: Allow connect to Datagrok from CIDR' parameter."
+  #  InternetEgressAccess:
+  #    Type: String
+  #    Default: 'true'
+  #    AllowedValues:
+  #      - 'true'
+  #      - 'false'
+  #    Description: Do you want Datagrok to be able to access internet? The access will be created using NAT Gateway. Either access to the internet from Datagrok or configured proxy are required to install Datagrok packages (https://datagrok.ai/help/develop#packages).
+Conditions:
+  InternetIngressAccess:
+    Fn::Equals:
+      - Ref: InternetIngressAccess
+      - 'true'
+  InternetEgressAccess:
+    Fn::Equals:
+      #      - Ref: InternetEgressAccess
+      - 'true'
+      - 'true'
+  CreatePublicSubnets:
+    Fn::Or:
+      - Condition: InternetIngressAccess
+      - Condition: InternetEgressAccess
+Rules:
+  SubnetsInVPC:
+    Assertions:
+      - Assert:
+          'Fn::EachMemberEquals':
+            - - 'Fn::ValueOf':
+                  - DatagrokPublicSubnet1
+                  - VpcId
+              - 'Fn::ValueOf':
+                  - DatagrokPublicSubnet2
+                  - VpcId
+              - 'Fn::ValueOf':
+                  - DatagrokPrivateSubnet1
+                  - VpcId
+              - 'Fn::ValueOf':
+                  - DatagrokPrivateSubnet2
+                  - VpcId
+              - 'Fn::ValueOf':
+                  - DatagrokDataSubnet1
+                  - VpcId
+              - 'Fn::ValueOf':
+                  - DatagrokDataSubnet2
+                  - VpcId
+            - Ref: VpcId
+        AssertDescription: All subnets must in the VPC
