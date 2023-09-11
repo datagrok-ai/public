@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import './tests/formats-to-helm';
+import './tests/helm-to-nucleotides';
 
 export const _package = new DG.Package();
 export {tests};

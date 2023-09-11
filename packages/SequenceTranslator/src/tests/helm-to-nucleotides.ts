@@ -6,27 +6,23 @@ import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {DEFAULT_FORMATS} from '../model/const';
 import {FormatConverter} from '../model/format-translation/format-converter';
+import {getNucleotidesSequence} from '../model/format-translation/conversion-utils';
 import {getJsonData} from '../model/data-loading-utils/json-loader';
-import {formatsToHelm} from './const';
+import {helmToNucleotides} from './const';
 import {_package} from '../package';
+import {MonomerLibWrapper} from '../model/monomer-lib/lib-wrapper';
 
-function getHelm(strand: string, format: string): string {
-  return (new FormatConverter(strand, format).convertTo(DEFAULT_FORMATS.HELM));
-}
-
-category('HELM to formats', () => {
+category('HELM to Nucleotides', () => {
   before(async () => {
     await getJsonData();
     await _package.initMonomerLib();
   });
 
-  for (const format of Object.keys(formatsToHelm)) {
-    for (const [strand, helm] of Object.entries(formatsToHelm[format])) {
-      test(`${format} to HELM`, async () => {
-        const expected = helm;
-        const result = getHelm(strand, format);
-        expect(result, expected);
-      });
-    }
-  }
+  Object.entries(helmToNucleotides).forEach(([helm, nucleotide], idx) => {
+    test(`Sequence ${idx + 1} to nucleotides`, async () => {
+      const expected = nucleotide;
+      const result = getNucleotidesSequence(helm, MonomerLibWrapper.getInstance());
+      expect(result, expected);
+    });
+  })
 });

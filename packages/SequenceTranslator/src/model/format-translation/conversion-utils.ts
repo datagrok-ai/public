@@ -33,7 +33,7 @@ export function getTranslatedSequences(sequence: string, indexOfFirstInvalidChar
   return result;
 }
 
-function getNucleotidesSequence(helmString: string, monomerLib: MonomerLibWrapper): string | null {
+export function getNucleotidesSequence(helmString: string, monomerLib: MonomerLibWrapper): string | null {
   const re = new RegExp('\\([^()]*\\)', 'g');
   const branches = helmString.match(re);
   if (!branches)
