@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/cvm-tests",
   "friendlyName": "CVM Tests",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": {
     "name": "Anna Muzychyna",
     "email": "amuzychyna@datagrok.ai"
@@ -12,7 +12,7 @@
     "datagrok-api": "latest",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "^4.0.17"
+    "@datagrok-libraries/utils": "^4.1.9"
   },
   "devDependencies": {
     "webpack": "latest",

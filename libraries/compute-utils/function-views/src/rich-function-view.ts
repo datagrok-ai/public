@@ -107,6 +107,9 @@ export class RichFunctionView extends FunctionView {
    */
   public override onAfterRun(): Promise<void> {
     this.showOutputTabsElem();
+    this.outputsTabsElem.panes.forEach((tab) => {
+      $(tab.header).show();
+    });
 
     if (this.prevOpenedTab) {
       this.outputsTabsElem.currentPane = this.prevOpenedTab;
@@ -394,7 +397,6 @@ export class RichFunctionView extends FunctionView {
               const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
               this.showOutputTabsElem();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParam.value;
@@ -489,9 +491,7 @@ export class RichFunctionView extends FunctionView {
             ];
           },
         ).root;
-        $(table).css({
-          'max-width': '400px',
-        });
+        $(table).addClass('rfv-scalar-table');
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -525,7 +525,7 @@ export class RichFunctionView extends FunctionView {
       });
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
       });
     });
 
@@ -670,6 +670,11 @@ export class RichFunctionView extends FunctionView {
         prevCategory = prop.category;
       });
 
+    Object.keys(this.foldedCategoryInputs)
+      .forEach((key) =>
+        this.foldedCategoryInputs[key].forEach((t) => $(t.root).hide()),
+      );
+
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
     inputs.style.paddingLeft = '0px';
@@ -694,7 +699,8 @@ export class RichFunctionView extends FunctionView {
     if (this.inputsOverride[val.property.name])
       return this.inputsOverride[val.property.name];
 
-    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices)
+    if (
+      prop.propertyType === DG.TYPE.STRING && prop.options.choices)
       return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
@@ -720,11 +726,39 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  private get foldedCategories(): string[] {
+    return JSON.parse(this.func.options['foldedCategories'] ?? '[]');
+  }
+
+  private foldedCategoryInputs = {} as Record<string, InputVariants[]>;
+
   private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants, prevCategory: string) {
     const prop = val.property;
 
-    if (prop.category !== prevCategory)
-      inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+    if (prop.category !== prevCategory) {
+      if (this.foldedCategories.includes(prop.category)) {
+        const chevronToOpen = ui.iconFA('chevron-right', () => {
+          $(chevronToClose).show();
+          $(chevronToOpen).hide();
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).show());
+        }, 'Open category');
+        $(chevronToOpen).css('padding-right', '5px');
+        const chevronToClose = ui.iconFA('chevron-down', () => {
+          $(chevronToClose).hide();
+          $(chevronToOpen).show();
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).hide());
+        }, 'Close category');
+        $(chevronToClose).css('padding-right', '5px');
+
+        //@ts-ignore
+        inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(prop.category, {style: {'display': 'inline'}})], {style: {'width': '100%'}}));
+        $(chevronToClose).hide();
+      } else
+        inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+    }
+
+    if (this.foldedCategories.includes(prop.category))
+      this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), t];
 
     if (isInputBase(t))
       this.inputBaseAdditionalRenderHandler(val, t);

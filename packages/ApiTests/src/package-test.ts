@@ -38,6 +38,7 @@ import './widgets/legend';
 import './widgets/tree-view';
 import './utils/color';
 // import './package/upload';
+import './package/docker';
 import './grid/grid';
 import './grid/color-coding';
 import './grid/multi-value-column';

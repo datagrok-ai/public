@@ -1,10 +1,28 @@
 # bio changelog
 
-## 5.37.0 (WIP)
+## 5.38.0 (2023-09-06)
+
+### Features
+
+* Add UnitsHandler `maxLength`, `posList`, `splitter` properties.
+* Add UnitsHandler `getJoiner`, `getConverter` methods, granulate joiners and converters methods.
+
+### Breaking changes
+
+* Remove NotationConverter class, merge functionality into UnitsHandler.
+
+## 5.37.0 (2023-08-30)
+
+### Features
+
+* Added `calculateSimilarity` and `calculateIdentity` functions.
+* Added `calculateScores` function.
+
+## 5.36.1 (2023-08-18)
 
 ### Bug fixes
 
-* Restore utils getSplitter method, it is required for MacromoleculeDifference column
+* Restore utils `getSplitter` method, it is required for MacromoleculeDifference column.
 
 ## 5.36.0 (2023-08-10)
 

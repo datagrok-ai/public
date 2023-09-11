@@ -20,6 +20,7 @@ import {
   TAG_FIT,
   FitParamBounds,
   IFitChartOptions,
+  FitErrorModelType,
 } from './fit-curve';
 
 export type LogOptions = {
@@ -47,9 +48,14 @@ export function createDefaultChartData(): IFitChartData {
   };
 }
 
+/** Returns existing, or creates new dataframe default chart options. */
+export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
+  return JSON.parse(df.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
+}
+
 /** Returns existing, or creates new column default chart options. */
-export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData {
-  return gridColumn.temp[TAG_FIT] ??= createDefaultChartData();
+export function getColumnChartOptions(column: DG.Column): IFitChartData {
+  return JSON.parse(column.tags[TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
 }
 
 /** Returns points arrays from {@link IFitPoint} array */
@@ -105,17 +111,21 @@ function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect 
   let width = bounds.width;
   let height = bounds.height;
 
-  if (chartOptions.minX !== undefined && chartOptions.minX > 0) {
+  if (chartOptions.minX !== undefined && chartOptions.minX !== null &&
+    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.minX > 0))) {
     width += x - chartOptions.minX;
     x = chartOptions.minX;
   }
-  if (chartOptions.maxX !== undefined && chartOptions.maxX > 0)
+  if (chartOptions.maxX !== undefined && chartOptions.maxX !== null &&
+    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.maxX > 0)))
     width += chartOptions.maxX - (x + width);
-  if (chartOptions.minY !== undefined && chartOptions.minY > 0) {
+  if (chartOptions.minY !== undefined && chartOptions.minY !== null &&
+    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.minY > 0))) {
     height += y - chartOptions.minY;
     y = chartOptions.minY;
   }
-  if (chartOptions.maxY !== undefined && chartOptions.maxY > 0)
+  if (chartOptions.maxY !== undefined && chartOptions.maxY !== null &&
+    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.maxY > 0)))
     height += chartOptions.maxY - (y + height);
 
   return new DG.Rect(x, y, width, height);
@@ -153,18 +163,21 @@ export function fitSeries(series: IFitSeries, fitFunc: FitFunction, logOptions?:
     y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (series.parameterBounds && logOptions?.logX)
     series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
-  return fitData(getMedianPoints(data), fitFunc, FitErrorModel.Constant, series.parameterBounds);
+  return fitData(getMedianPoints(data), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
+    series.parameterBounds);
 }
 
 /** Returns series confidence interval functions */
 export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction,
-  userParamsFlag: boolean): FitConfidenceIntervals {
-  const data = userParamsFlag ? {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)} :
-    {x: series.points.filter((p) => !p.outlier).map((p) => p.x),
-      y: series.points.filter((p) => !p.outlier).map((p) => p.y)};
+  userParamsFlag: boolean, logOptions?: LogOptions): FitConfidenceIntervals {
+  const data = userParamsFlag ? {x: series.points.map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+    y: series.points.map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)} :
+    {x: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
+      y: series.points.filter((p) => !p.outlier).map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
   if (!series.parameters)
     series.parameters = fitSeries(series, fitFunc).parameters;
-  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05, FitErrorModel.Constant);
+  return getCurveConfidenceIntervals(data, series.parameters, fitFunc.y, 0.05,
+    series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
 /** Returns series statistics */

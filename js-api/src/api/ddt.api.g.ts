@@ -205,6 +205,10 @@ export class Tags {
   /// Specifies the behavior of link click (open in new tab, open in context panel, custom)
   static LinkClickBehavior = '.linkClickBehavior';
 
+  /// Pipe-separated path that defines where this column is within the hierarchy
+  /// Used for dynamic forms construction, etc
+  static Hierarchy = 'hierarchy';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls

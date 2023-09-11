@@ -8209,7 +8209,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * "Open file" file scripting feature
 * Public version: AddressToCoordinates does not work
 * Scripting: Custom meta parameters do not work
-* Help: "pca.md" not found when open Tools | Data Science | Principal Component Analysis...
+* Help: "pca.md" not found when open ML | Principal Component Analysis...
 * Admin | View Layouts does not open
 * Class 'ColumnInfo' has no instance getter 'tagsKeys'. Receiver: Instance of 'ColumnInfo' error in suggestions section
 * Help: "query-buider.md" not found when open "Build Query..."

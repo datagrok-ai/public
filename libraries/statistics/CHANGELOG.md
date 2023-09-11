@@ -1,5 +1,11 @@
 # statistics changelog
 
+## 1.2.6 (2023-09-01)
+
+### Features
+
+* T-Test now throws an error if sample size is less than or equal to 1.
+
 ## 1.2.5 (2023-08-25)
 
 ### Features

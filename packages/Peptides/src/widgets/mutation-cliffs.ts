@@ -33,8 +33,8 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     const posColCategories = posCol.categories;
     const posColData = posCol.getRawData();
 
-    for (const aar of currentCell[pos]) {
-      const substitutionsMap = substInfo.get(aar)?.get(pos) as Map<number, type.UTypedArray> | undefined;
+    for (const monomer of currentCell[pos]) {
+      const substitutionsMap = substInfo.get(monomer)?.get(pos) as Map<number, type.UTypedArray> | undefined;
       if (typeof substitutionsMap === 'undefined')
         continue;
 

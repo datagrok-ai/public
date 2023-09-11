@@ -9,13 +9,13 @@ import {historyUtils} from '../../history-utils';
 import '../css/history-input.css';
 
 class DatabaseService {
-  static getHistoryRuns(funcName: string): Observable<DG.FuncCall[]> {
+  static getHistoryRuns(funcName: string, includeParams = true): Observable<DG.FuncCall[]> {
     return from((async () => {
       const res = await historyUtils.pullRunsByName(
         funcName, [
           {isShared: true}, {author: grok.shell.user},
           // EXPLAIN WHY FUNC.PARAMS
-        ], {order: 'started'}, ['func.params', 'session.user', 'options'],
+        ], {order: 'started'}, [...(includeParams ? ['func.params']: []), 'session.user', 'options'],
       );
       return res;
     })());
@@ -56,6 +56,8 @@ export class HistoryInput {
     private _visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
     // Array of grid columns visible in the filter viever
     private _visibleColumnsForFilter: string[] = [],
+    // Load input/output dataframes
+    private includeParams = true,
   ) {
     this._historyGrid.columns.byName('Pick')!.cellType = 'html';
     this._historyGrid.columns.byName('Pick')!.width = 30;
@@ -74,7 +76,7 @@ export class HistoryInput {
 
     this.store.experimentRuns = this.experimentRunsUpdate.pipe(
       tap(() => this.toggleLoaderExpRuns(true)),
-      switchMap(() => DatabaseService.getHistoryRuns(this._funcName).pipe(
+      switchMap(() => DatabaseService.getHistoryRuns(this._funcName, this.includeParams).pipe(
         catchError((e) => {
           console.error(e);
           return EMPTY;
@@ -120,9 +122,13 @@ export class HistoryInput {
   public showSelectionDialog() {
     const _historyDialog = ui.dialog();
 
-    _historyDialog.onOK(() => {
-      if (this._chosenRun)
-        this.onHistoricalRunChosen.next(this._chosenRun);
+    _historyDialog.onOK(async () => {
+      if (this._chosenRun) {
+        let funcCall = this._chosenRun;
+        if (!this.includeParams)
+          funcCall = await historyUtils.loadRun(funcCall.id);
+        this.onHistoricalRunChosen.next(funcCall);
+      }
     });
     _historyDialog.onCancel(() => {
       this.onHistoricalRunChosen.next(null);

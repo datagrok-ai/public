@@ -340,9 +340,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
   dataFrameSwitchgInProgress: boolean = false;
-  allowGenerate: boolean = true;
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
+  allowGenerate: boolean;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -425,7 +425,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
 
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
-    this.allowGenerate = this.bool('allowGenerate', true);
+    this.allowGenerate = this.bool('allowGenerate');
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
   }
@@ -1256,7 +1256,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           return;
 
         thisViewer.checkBoxesUpdateInProgress = true;
-        this.selectGroup(node);
+        this.selectGroup();
         thisViewer.checkBoxesUpdateInProgress = false;
         thisViewer.resetFilters();
         thisViewer.updateFilters();
@@ -1342,12 +1342,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     super.detach();
   }
 
-  selectGroup(group: TreeViewNode) : void {
+  selectGroup() : void {
     const items = this.tree.items;
     for (let n = 0; n < items.length; ++n)
       items[n].checked = false;
-
-    group.checked = true;
   }
 
   updateSizes() {

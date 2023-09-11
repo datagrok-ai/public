@@ -13,16 +13,16 @@ export const ViDColName = 'V-iD';
 export const ViDColFormat = 'V######';
 
 export const i18n = {
-  startNewCampaign: 'New Campaign',
-  createNewCampaign: 'New Campaign',
+  startNewCampaign: 'New campaign',
+  createNewCampaign: 'New campaign',
   dataSourceFunction: 'Source',
-  createNewTemplate: 'New Template',
+  createNewTemplate: 'New template',
   StartCampaign: 'Start',
   createTemplate: 'Create',
   createCampaign: 'Create',
   download: 'Download',
   cancel: 'Cancel',
-  continueCampaigns: 'Continue Campaigns',
-  createNewCampaignHeader: 'Or create new one',
+  continueCampaigns: 'Continue a campaign',
+  createNewCampaignHeader: 'New campaign',
   selectTemplate: 'Template',
 } as const;

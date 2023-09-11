@@ -44,10 +44,6 @@ category('Core', () => {
       overlayInit = true;
       grok.log.debug('Overlay initialized');
     });
-    model!._analysisView!.grid.onBeforeDrawOverlay.subscribe(() => {
-      overlayInit = false;
-      grok.log.debug('Overlay is drawing');
-    });
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -58,7 +54,7 @@ category('Core', () => {
     await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
 
     model!.mutationCliffsSelection = {'11': ['D']};
-  }, {skipReason: 'GROK-13790: Unhandled exception'});
+  });
 
   test('Start analysis: сomplex', async () => {
     const complexActivityColName = 'Activity';
@@ -80,10 +76,6 @@ category('Core', () => {
       overlayInit = true;
       grok.log.debug('Overlay initialized');
     });
-    model!._analysisView!.grid.onBeforeDrawOverlay.subscribe(() => {
-      overlayInit = false;
-      grok.log.debug('Overlay is drawing');
-    });
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -95,7 +87,7 @@ category('Core', () => {
 
     if (model !== null)
       model.mutationCliffsSelection = {'13': ['-']};
-  }, {skipReason: 'GROK-13790: Unhandled exception'});
+  });
 
   test('Save and load project', async () => {
     const simpleActivityColName = 'IC50';

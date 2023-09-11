@@ -1,11 +1,8 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {TAGS as bioTags} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -44,9 +41,9 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
 }
 
 //TODO: optimize
-export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
+export function calculateSelected(df: DG.DataFrame): type.SelectionStats {
   const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
-  const selectedObj: type.MonomerSelectionStats = {};
+  const selectedObj: type.SelectionStats = {};
   for (const idx of df.selection.getSelectedIndexes()) {
     for (const col of monomerColumns) {
       const monomer = col.get(idx);
@@ -100,15 +97,4 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
     DG.Column.fromList(DG.TYPE.FLOAT, activityCol.name, expandedData),
     DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
   ]);
-}
-
-export async function getTemplate(sequence: string, seqCol?: DG.Column<string>): Promise<string[]> {
-  if (typeof seqCol === 'undefined') {
-    const tempDf = DG.DataFrame.fromCsv(`sequence\n${new Array(10).fill(sequence).join('\n')}`);
-    await grok.data.detectSemanticTypes(tempDf);
-    seqCol = tempDf.getCol('sequence');
-  }
-  // const splitter = getSplitterForColumn(seqCol);
-  const splitter = getSplitter(seqCol.getTag(DG.TAGS.UNITS), seqCol.getTag(bioTags.separator));
-  return splitter(sequence) as string[];
 }

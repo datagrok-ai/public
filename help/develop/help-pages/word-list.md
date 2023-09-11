@@ -48,6 +48,8 @@ noun, not a count noun. For example, say _less data_ rather than _fewer data_.
 
 ## data cleaning (not data cleansing)
 
+## dataframe (not data frame)
+
 ## data flow (noun); dataflow (noun)
 
 If you can replace the noun with the phrase _flow of data_, then use two words: _data flow_. If you can't, use one word:

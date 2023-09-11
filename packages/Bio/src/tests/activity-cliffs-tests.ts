@@ -47,5 +47,5 @@ category('activityCliffs', async () => {
     viewList.push(actCliffsTableViewWithEmptyRows);
 
     await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 3, DimReductionMethods.UMAP, 'sequence');
-  });
+  }, {skipReason: 'GROK-13851: Unhandled exceptions'});
 });

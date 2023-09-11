@@ -5,12 +5,30 @@ on:
   workflow_dispatch: { }
   push:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
   pull_request:
     paths:
-      - 'help/**'
+      - 'help/**/*.md'
+      - 'help/**/*.mdx'
+      - 'help/**/_category_.yml'
+      - 'help/**/*.gif'
+      - 'help/**/*.jpg'
+      - 'help/**/*.JPG'
+      - 'help/**/*.jpeg'
+      - 'help/**/*.png'
+      - 'help/**/*.svg'
+      - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
 
@@ -73,11 +91,13 @@ jobs:
             js-api/package-lock.json
       - name: Cache Docusaurus
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/.docusaurus
           key: ${{ github.ref }}-docusaurus
       - name: Cache Docusaurus build
         uses: actions/cache@v3
+        if: github.ref == 'refs/heads/master'
         with:
           path: docusaurus/build
           key: ${{ github.ref }}-docusaurus-build

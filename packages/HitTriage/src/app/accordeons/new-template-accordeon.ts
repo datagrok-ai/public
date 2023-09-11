@@ -7,6 +7,7 @@ import {CampaignFieldTypes, HitTriageCampaignField, HitTriageCampaignFieldType,
 import * as C from '../consts';
 import '../../../css/hit-triage.css';
 import {chemFunctionsDialog} from '../dialogs/functions-dialog';
+import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 
 
 export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitTriageTemplate>> {
@@ -94,10 +95,10 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
 
   const fieldsEditor = getCampaignFieldEditors();
 
-  const form = ui.divV([
+  const form = ui.div([
     ui.h2('Details'),
-    ui.divV([templateNameInput, errorDiv]),
-    ui.divV([templateKeyInput, keyErrorDiv]),
+    ui.div([templateNameInput, errorDiv]),
+    ui.div([templateKeyInput, keyErrorDiv]),
     ingestTypeInput.root,
     dataSourceFunctionInput.root,
     fieldsEditor.fieldsDiv,
@@ -107,9 +108,14 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
     submitFunctionInput.root,
   ], 'ui-form');
 
-  const content = ui.div(form);
-  const buttonsDiv = ui.divH([]);
+  const buttonsDiv = ui.buttonsInput([]);
+  const buttonsContainerDiv = buttonsDiv.getElementsByClassName('ui-input-editor')?.[0] ?? buttonsDiv;
   form.appendChild(buttonsDiv);
+  const cancelPromise = new Promise<void>((resolve) => {
+    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
+    buttonsContainerDiv.appendChild(cancelButton);
+  });
+
   const promise = new Promise<HitTriageTemplate>((resolve) => {
     async function onOkProxy() {
       funcInput.okProxy();
@@ -145,69 +151,35 @@ export async function createTemplateAccordeon(): Promise<INewTemplateResult<HitT
       resolve(out);
     }
     const createTemplateButton = ui.bigButton(C.i18n.createTemplate, () => onOkProxy());
-    buttonsDiv.appendChild(createTemplateButton);
+    buttonsContainerDiv.appendChild(createTemplateButton);
   });
 
-  const cancelPromise = new Promise<void>((resolve) => {
-    const cancelButton = ui.button(C.i18n.cancel, () => resolve());
-    cancelButton.classList.add('hit-triage-accordeon-cancel-button');
-    //buttonsDiv.appendChild(cancelButton);
-  });
-  return {root: content, template: promise, cancelPromise};
+  return {root: form, template: promise, cancelPromise};
 }
 
 export function getCampaignFieldEditors() {
-  const getNewFieldEditor = () => {
-    const nameInput = ui.stringInput('Name', '', () => out.changed = true);
-    const typeInput = ui.choiceInput('Type', 'String', Object.keys(CampaignFieldTypes), () => out.changed = true);
-    const requiredInput = ui.boolInput('Required', false, () => out.changed = true);
-    requiredInput.classList.add('mx-5');
-    const addFieldButton = ui.icons.add(() => {
-      if (!fields.length || fields[fields.length - 1].changed) {
-        const newField = getNewFieldEditor();
-        fields.push(newField);
-        fieldsContainer.appendChild(getFieldDiv(newField));
-      }
-    }, 'Add field');
-    addFieldButton.classList.add('hit-triage-add-campaign-field-button');
-    const out = {changed: false, nameInput, typeInput, requiredInput, addFieldButton};
-    return out;
-  };
-
-  const fields: ReturnType<typeof getNewFieldEditor>[] = [getNewFieldEditor()];
+  const props = [DG.Property.fromOptions({name: 'Name', type: DG.TYPE.STRING}),
+    DG.Property.fromOptions({name: 'Type', type: DG.TYPE.STRING, choices: Object.keys(CampaignFieldTypes)}),
+    DG.Property.fromOptions({name: 'Required', type: DG.TYPE.BOOL})];
+  const itemsGrid = new ItemsGrid(props, undefined, {horizontalInputNames: true});
 
   function getFieldParams(): HitTriageCampaignField[] {
-    return fields.filter((f) => f.changed && f.nameInput.value).map((f) => ({
-      name: f.nameInput.value,
-      type: f.typeInput.value as HitTriageCampaignFieldType,
-      required: f.requiredInput.value ?? false,
+    return itemsGrid.items.filter((f) => f.Name).map((f) => ({
+      name: f.Name,
+      type: f.Type as HitTriageCampaignFieldType,
+      required: f.Required ?? false,
     }));
-  };
-
-  function getFieldDiv(field: ReturnType<typeof getNewFieldEditor>) {
-    const removeButton = ui.icons.delete(() => {
-      if (fields.length <= 1)
-        return;
-      fieldDiv.remove();
-      fields.splice(fields.indexOf(field), 1);
-    }, 'Remove Field');
-    removeButton.classList.add('hit-triage-remove-campaign-field-button');
-    field.requiredInput.addOptions(removeButton);
-    field.requiredInput.addOptions(field.addFieldButton);
-    const fieldDiv = ui.divH([
-      field.nameInput.root,
-      field.typeInput.root,
-      field.requiredInput.root,
-      // removeButton,
-      // field.addFieldButton,
-    ], {classes: 'hit-triage-campaign-field-div ui-input-row ui-input-root'});
-    return fieldDiv;
   }
-  const fieldsContainer = ui.divV([ui.divText('Additional Fields', {classes: 'hit-triage-additional-fields-title'}),
-    getFieldDiv(fields[0])]);
+  //itemsGrid.root.style.cssText = '';
+  //itemsGrid.root.className = 'd4-flex-c';
+
+  const fieldsContainer = ui.div([
+    ui.h2('Additional fields'),
+    itemsGrid.root,
+  ]);
   return {
     getFields: getFieldParams,
-    fieldsDiv: ui.divV([fieldsContainer]),
+    fieldsDiv: ui.div([fieldsContainer]),
   };
 }
 

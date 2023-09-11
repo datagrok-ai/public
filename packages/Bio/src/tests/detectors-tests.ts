@@ -274,13 +274,13 @@ MWRSWY-CKHP`;
     await _testDf(readSamples(Samples.fastaCsv), {
       'Sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
     });
-  });
+  }, {skipReason: 'GROK-13851: Unhandled exceptions'});
 
   test('samplesFastaFasta', async () => {
     await _testDf(readSamples(Samples.fastaFasta), {
       'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
     });
-  });
+  }, {skipReason: 'GROK-13851: Unhandled exceptions'});
 
   // peptidesComplex contains monomers with spaces in AlignedSequence columns, which are forbidden
   // test('samplesPeptidesComplexPositiveAlignedSequence', async () => {

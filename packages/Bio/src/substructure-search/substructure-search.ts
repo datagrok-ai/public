@@ -39,7 +39,7 @@ export class SubstructureSearchDialog {
     ui.tools.waitForElementInDom(this.grid.root).then(() => {
       setTimeout(() => {
         this.grid.cell(SUBSTR_HELM_COL_NAME, 0).element.children[0].dispatchEvent(
-          new KeyboardEvent('keydown', { key: 'Enter' })
+          new KeyboardEvent('keydown', {key: 'Enter'})
         );
       }, 100);
     });
