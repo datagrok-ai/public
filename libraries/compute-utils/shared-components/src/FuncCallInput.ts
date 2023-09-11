@@ -40,25 +40,23 @@ export function isValidationPassed(result?: ValidationResult) {
 }
 
 export function getErrorMessage(result?: ValidationResult) {
-  if (result?.errors) {
+  if (result?.errors)
     return result.errors.join('; ');
-  }
 }
 
 export function getWarningMessage(result?: ValidationResult) {
-  if (result?.warnings) {
+  if (result?.warnings)
     return result.warnings.join('; ');
-  }
 }
 
 export function makeValidationResult(errors?: string[], warnings?: string[]) {
-  return { errors, warnings };
+  return {errors, warnings};
 }
 
 export function mergeValidationResults(results: ValidationResult[] = []) {
-  const errors = results.flatMap(res => res.errors);
-  const warnings = results.flatMap(res => res.warnings);
-  return { errors, warnings };
+  const errors = results.flatMap((res) => res.errors);
+  const warnings = results.flatMap((res) => res.warnings);
+  return {errors, warnings};
 }
 
 export type Validator = (val: any, context?: any) => ValidationResult | void;
@@ -66,7 +64,6 @@ export type Validator = (val: any, context?: any) => ValidationResult | void;
 export type ValidatorFactory = (params: any) => { validator: Validator };
 
 export const nonNullValidator: Validator = (value: any) => {
-  if (value == null) {
+  if (value == null)
     return makeValidationResult(['Missing value']);
-  }
-}
+};

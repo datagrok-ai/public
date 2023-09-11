@@ -7,14 +7,14 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import { Subject, BehaviorSubject, Observable, merge, from, Subscription } from 'rxjs';
+import {Subject, BehaviorSubject, Observable, merge, from, Subscription} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import { debounceTime, filter, map, mapTo, startWith, switchMap} from 'rxjs/operators';
+import {debounceTime, filter, map, mapTo, startWith, switchMap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import { FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage } from '../../shared-components/src/FuncCallInput';
+import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 const INTERACTIVE_DEBOUNCE_TIME = 350;
@@ -866,8 +866,8 @@ export class RichFunctionView extends FunctionView {
 
     // handling mutations of dataframes
     const sub3 = param$.pipe(
-      filter(param => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
-      switchMap(param => param.value.onDataChanged),
+      filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
+      switchMap((param) => param.value.onDataChanged),
     ).subscribe(() => {
       if (this.runningOnInput && this.isRunnable()) this.doRun();
     });
@@ -906,13 +906,12 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getValidationMessage() {
-    let msgs: string[] = [];
+    const msgs: string[] = [];
     for (const [name, v] of Object.entries(this.validationState)) {
-      if (!isValidationPassed(v)) {
+      if (!isValidationPassed(v))
         msgs.push(`${name}: ${getErrorMessage(v)}`);
-      }
     }
-    return msgs.join('\n')
+    return msgs.join('\n');
   }
 
   private runValidation() {
@@ -934,9 +933,8 @@ export class RichFunctionView extends FunctionView {
   private clearValidation() {
     this.validationState = {};
     for (const input of Object.values(this.inputsMap)) {
-      if (isFuncCallInputValidated(input)) {
+      if (isFuncCallInputValidated(input))
         input.setValidation();
-      }
     }
   }
 
