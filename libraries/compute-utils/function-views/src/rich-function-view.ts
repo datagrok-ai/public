@@ -7,11 +7,11 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable, merge, from, Subscription} from 'rxjs';
+import {Subject, BehaviorSubject, Observable, identity, merge} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import {debounceTime, filter, map, mapTo, startWith, switchMap} from 'rxjs/operators';
+import {debounceTime, filter, map, mapTo, skip, startWith, switchMap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage} from '../../shared-components/src/FuncCallInput';
@@ -414,42 +414,33 @@ export class RichFunctionView extends FunctionView {
         });
 
         const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then((loadedViewer) => {
-          const subscribeOnFcChanges = () => {
+          const updateViewerSource = async () => {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
-            const updateViewerSource = async () => {
-              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+            this.showOutputTabsElem();
 
-              this.showOutputTabsElem();
-
-              if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
-                loadedViewer.dataFrame = currentParam.value;
-                loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-              } else {
-                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
-                const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
-                newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-                loadedViewer.root.replaceWith(newViewer.root);
-                loadedViewer = newViewer;
-              }
-              this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
-            };
-
-            const paramSub = currentParam.onChanged.subscribe(async () => {
-              await updateViewerSource();
-            });
-
-            this.funcCallReplaced.subscribe(async () => {
-              await updateViewerSource();
-            });
-
-            this.subs.push(paramSub);
+            if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
+              loadedViewer.dataFrame = currentParam.value;
+              loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
+            } else {
+              // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
+              const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
+              newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
+              loadedViewer.root.replaceWith(newViewer.root);
+              loadedViewer = newViewer;
+            }
+            this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
           };
 
-          subscribeOnFcChanges();
-          this.subs.push(
-            this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-          );
+          const paramSub = this.funcCallReplaced.pipe(
+            startWith(null),
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged.pipe(startWith(null));
+            }),
+            skip(1),
+          ).subscribe(updateViewerSource);
+          this.subs.push(paramSub);
 
           return loadedViewer;
         }));
@@ -458,23 +449,18 @@ export class RichFunctionView extends FunctionView {
         prevDfBlockTitle = dfBlockTitle;
 
         if (isInputTab) {
-          const subscribeOnFcChanges = () => {
-            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
-
-            const paramSub = currentParam.onChanged.subscribe(() => {
-              this.showOutputTabsElem();
-              Object.keys(this.categoryToDfParamMap.inputs).forEach((inputTabName) => {
-                $(this.outputsTabsElem.getPane(inputTabName).header).show();
-              });
+          const inputTabSub = this.funcCallReplaced.pipe(
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged;
+            }),
+          ).subscribe(() => {
+            this.showOutputTabsElem();
+            Object.keys(this.categoryToDfParamMap.inputs).forEach((inputTabName) => {
+              $(this.outputsTabsElem.getPane(inputTabName).header).show();
             });
-
-            this.subs.push(paramSub);
-          };
-
-          subscribeOnFcChanges();
-          this.subs.push(
-            this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-          );
+          });
+          this.subs.push(inputTabSub);
         }
 
         const wrappedViewers = reactiveViewers.map((promisedViewer, viewerIndex) => {
@@ -522,31 +508,17 @@ export class RichFunctionView extends FunctionView {
 
       let scalarsTable = generateScalarsTable();
 
-      tabScalarProps.forEach((tabScalarProp) => {
-        const subscribeOnFcChanges = () => {
-          const paramSub = this.funcCall.outputParams[tabScalarProp.name].onChanged.subscribe(() => {
-            const newScalarsTable = generateScalarsTable();
-            scalarsTable.replaceWith(newScalarsTable);
-            scalarsTable = newScalarsTable;
-
-
-            $(this.outputsTabsElem.getPane(tabLabel).header).show();
-          });
-
-          this.funcCallReplaced.subscribe(() => {
-            const newScalarsTable = generateScalarsTable();
-            scalarsTable.replaceWith(newScalarsTable);
-            scalarsTable = newScalarsTable;
-          });
-
-          this.subs.push(paramSub);
-        };
-
-        subscribeOnFcChanges();
-        this.subs.push(
-          this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-        );
+      const tableSub = this.funcCallReplaced.pipe(
+        switchMap(() => merge(tabScalarProps.map((tabScalarProp) => this.funcCall.outputParams[tabScalarProp.name].onChanged))),
+        startWith(null),
+        debounceTime(0),
+      ).subscribe(() => {
+        const newScalarsTable = generateScalarsTable();
+        scalarsTable.replaceWith(newScalarsTable);
+        scalarsTable = newScalarsTable;
+        $(this.outputsTabsElem.getPane(tabLabel).header).show();
       });
+      this.subs.push(tableSub);
 
       this.outputsTabsElem.addPane(tabLabel, () => {
         return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
@@ -875,7 +847,9 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    const sub = DG.debounce(getObservable(t.onInput.bind(t)), this.runningOnInput ? 350 : 0).subscribe(() => {
+    const sub = getObservable(t.onInput.bind(t)).pipe(
+      this.runningOnInput ? debounceTime(INTERACTIVE_DEBOUNCE_TIME) : identity,
+    ).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
 
