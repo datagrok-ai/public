@@ -23,159 +23,72 @@ enum ERROR_MSG {
   NON_EQUAL_FACTORS_VALUES_SIZE = 'non-equal sizes of factor and values arrays. INPUT ERROR.',
   INCORRECT_SIGNIFICANCE_LEVEL = 'incorrect significance level. It must be from the interval (0, 1). INPUT ERROR.',
   INCORRECT_SAMPLE_SIZE = 'incorrect size of sample. DATA FACTORIZAING ERROR.',
+  NON_EQUAL_VARIANCES = 'variances are not equal.',
+  NON_NORMAL_DISTRIB = 'non-normal distribution.',
+  UNSUPPORTED_COLUMN_TYPE = 'unsupported column type.',
 };
 
 export type SampleData = {
   sum: number,
   sumOfSquares: number,
   size: number,
-  data: number[] | undefined | null,
+  data: number[] | undefined,
 };
 
 /** One-way ANOVA computation results. The classic notations are used (see [2], p. 290). */
-export type OneWayAnovaTable = {
-  /** sum of squares between groups */
-  SSbn: number,
-  /** sum of squares within groups */ 
-  SSwn: number,
-  /** total sum of squares */ 
-  SStot: number,
-  /** degrees of freedom between groups */
-  DFbn: number,
-  /** degrees of freedom within groups */
-  DFwn: number,
-  /** total degrees of freedom */
-  DFtot: number,
-  /** mean square between groups */
-  MSbn: number,
-  /** mean square within groups */
-  MSwn: number,
-  /** Fobt, value of F-statistics */
-  Fstat: number,
-  /** p-value corresponding to F-statistics */
+export type OneWayAnova = {
+  /** sum of squares between groups, SSbn */
+  ssBn: number,
+  /** sum of squares within groups, SSnn */ 
+  ssWn: number,
+  /** total sum of squares, SStot */ 
+  ssTot: number,
+  /** degrees of freedom between groups, DFbn */
+  dfBn: number,
+  /** degrees of freedom within groups, DFwn */
+  dfWn: number,
+  /** total degrees of freedom, DFtot */
+  dfTot: number,
+  /** mean square between groups, MSbn */
+  msBn: number,
+  /** mean square within groups, MSwn */
+  msWn: number,
+  /** Fobt, value of F-statistics, Fstat */
+  fStat: number,
+  /** p-value corresponding to F-statistics, pValue */
   pValue: number,
 };
 
-type ValuesType = number[] | Float32Array | Int32Array;
+type ValuesType = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
 
-export type AnovaResults = {
-  summaryTable: DG.DataFrame,
-  conclusion: string;
+export type AnovaReport = {
+  table: DG.DataFrame,
+  summary: string;
 };
 
-/** Split values by factor levels and compute sums & sums of squares. */
-export function getFactorizedData(factors: any[], values: ValuesType): Map<any, SampleData> {
-  const size = factors.length;
-  
-  if (size !== values.length)
-    throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);
-  
-  const factorized = new Map<any, SampleData>();  
-  
-  for (let i = 0; i < size; ++i) {
-    const cur = factorized.get(factors[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: []};
-  
-    cur.sum += values[i];
-    cur.sumOfSquares += values[i] ** 2;
-    ++cur.size;
-    cur.data?.push(values[i]);
-  
-    factorized.set(factors[i], cur);
-  }
-  
-  return factorized;
-} // getFactorizedData
-
-/** Compute sum & sums of squares with respect to factor levels. */
-export function getLevelsStat(factors: any[], values: ValuesType): Map<any, SampleData> {
-  const size = factors.length;
-    
-  if (size !== values.length)
-    throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);
-    
-  const factorized = new Map<any, SampleData>();  
-    
-  for (let i = 0; i < size; ++i) {
-    const cur = factorized.get(factors[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: null};
-    
-    cur.sum += values[i];
-    cur.sumOfSquares += values[i] ** 2;
-    ++cur.size;
-    
-    factorized.set(factors[i], cur);
-  }
-    
-  return factorized;
- } // getLevelsStat
-
-/** Perform one-way ANOVA computations using factorized data. */
-export function computeOneWayAnovaTable(factorizedData: Map<any, SampleData>): OneWayAnovaTable {
-  // Further, notations and formulas from (see [2], p. 290) are used.
-
-  const K = factorizedData.size;
-  
-  let sum = 0;
-  let sumOfSquares = 0;
-  let N = 0;
-  let buf = 0; 
-  
-  factorizedData.forEach((levelData, key, map) => {
-    sum += levelData.sum;
-    sumOfSquares += levelData.sumOfSquares;
-    N += levelData.size;
-    buf += (levelData.sum) ** 2 / levelData.size;
-  });
-  
-  const SStot = sumOfSquares - sum ** 2 / N;  
-  const SSbn = buf - sum ** 2 / N;
-  const SSwn = SStot - SSbn;
- 
-  const DFbn = K - 1;
-  const DFwn = N - K;
-  const DFtot = N - 1;
-  
-  const MSbn = SSbn / DFbn;
-  const MSwn = SSwn / DFwn;
-  
-  const Fstat = MSbn / MSwn;
-  
-  return {
-    SSbn: SSbn,
-    SSwn: SSwn,
-    SStot: SStot,
-    DFbn: DFbn,
-    DFwn: DFwn,
-    DFtot: DFtot,
-    MSbn: MSbn,
-    MSwn: MSwn,
-    Fstat: Fstat,
-    pValue: 1 - jStat.centralF.cdf(Fstat, DFbn, DFwn)
-  };
-} // computeOneWayAnovaTable
-
 /** Create dataframe with one-way ANOVA results. */
-function getOneWayAnovaDataframe(anovaTable: OneWayAnovaTable, alpha: number, Fcritical: number): DG.DataFrame {
+export function getOneWayAnovaDF(anova: OneWayAnova, alpha: number, fCritical: number): DG.DataFrame {
   return DG.DataFrame.fromColumns([
     DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total']),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Sum of squares', [anovaTable.SSbn, anovaTable.SSwn, anovaTable.SStot]),
-    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Degrees of freedom', [anovaTable.DFbn, anovaTable.DFwn, anovaTable.DFtot]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Mean square', [anovaTable.MSbn, anovaTable.MSwn, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-statistics', [anovaTable.Fstat, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anovaTable.pValue, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${alpha}-critical value`, [Fcritical, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Sum of squares', [anova.ssBn, anova.ssWn, anova.ssTot]),
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Degrees of freedom', [anova.dfBn, anova.dfWn, anova.dfTot]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Mean square', [anova.msBn, anova.msWn, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-statistics', [anova.fStat, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${alpha}-critical value`, [fCritical, null, null]),
   ]);
-} // getOneWayAnovaDataframe
+} // getOneWayAnovaDF
 
 /** Check correctness of significance level. */
-function checkSignificanceLevel(alpha: number) {
+export function checkSignificanceLevel(alpha: number) {
   if ((alpha <= 0) || (alpha >= 1))
     throw new Error(ERROR_MSG.INCORRECT_SIGNIFICANCE_LEVEL);
 }
 
 /** Compute unbiased variance.*/
-export function getVariance(sampleData: SampleData): number {
+export function getVariance(data: SampleData): number {
   // The applied formulas can be found in [4] (see p. 63)
-  const size = sampleData.size;
+  const size = data.size;
 
   if (size <= 0)
     throw new Error(ERROR_MSG.INCORRECT_SAMPLE_SIZE);
@@ -183,79 +96,195 @@ export function getVariance(sampleData: SampleData): number {
   if (size === 1)
     return 0;
   
-  return (sampleData.sumOfSquares - (sampleData.sum) ** 2 / size) / (size - 1);
+  return (data.sumOfSquares - (data.sum) ** 2 / size) / (size - 1);
 } // getVariance
 
-/** Checks equality of variances of 2 samples. F-test is performed.*/
-export function areVariancesOfTwoSamplesEqual(xSampleData: SampleData, ySampleData: SampleData, alpha: number  = 0.05): boolean {
+/** Check equality of variances of 2 samples. F-test is performed.*/
+export function areVarsEqual(xData: SampleData, yData: SampleData, alpha: number = 0.05): boolean {
   // The applied approach can be found in [3]
-  const xSampleVariance = getVariance(xSampleData);
-  const ySampleVariance = getVariance(ySampleData);
+  checkSignificanceLevel(alpha);
+  
+  const xVar = getVariance(xData);
+  const yVar = getVariance(yData);
 
-  if (ySampleVariance === 0)
-    return (xSampleVariance === ySampleVariance);
+  if (yVar === 0)
+    return (xVar === yVar);
 
-  const Fstat = xSampleVariance / ySampleVariance;
-  const Fcritical = jStat.centralF.inv(1 - alpha, xSampleData.size - 1, ySampleData.size - 1);
+  const fStat = xVar / yVar;
+  const fCrit = jStat.centralF.inv(1 - alpha, xData.size - 1, yData.size - 1);
 
-  return (Fstat < Fcritical);
-} // areVariancesOfTwoSamplesEqual
+  return (fStat < fCrit);
+} // areVarsEqual
 
-/** Checks equality of variances of factorized data. */
-export function areVariancesOfFactorizedDataEqual(factorizedData: Map<any, SampleData>): boolean {
-  const iter = factorizedData.keys();
-  let key = iter.next();
-  const xSampleData = factorizedData.get(key.value);
+export class FactorizedData extends Map<any, SampleData> {
+  private isNormDistrib: boolean | undefined = undefined;
 
-  while (true) {
-    key = iter.next();
+  constructor(factors: DG.Column, values: ValuesType, extractData: boolean = false, checkNormality: boolean = false, alpha: number = 0.05) { 
+    super();
 
-    if (key.done)
-      break;
+    if (factors.length !== values.length)
+      throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);      
 
-    if(!areVariancesOfTwoSamplesEqual(xSampleData!, factorizedData.get(key.value)!))
-      return false;
+    if (extractData)
+      this.setData(factors, values, checkNormality, alpha) // factorized data is stored & statistics are computed
+    else
+      this.setStats(factors, values, checkNormality, alpha); // just statistics are computed
   }
 
-  return true;
-} // areVariancesOfFactorizedDataEqual
+  public isNormal(): boolean | undefined {return this.isNormDistrib;}
+
+  /** Check equality of variances of factorized data. */
+  public areVarsEqual(alpha: number = 0.05): boolean {
+    const iter = this.keys();
+    let key = iter.next();
+    const xData = this.get(key.value);
+    
+    while (true) {
+      key = iter.next();
+      
+      if (key.done)
+        break;
+      
+      if(!areVarsEqual(xData!, this.get(key.value)!, alpha))
+        return false;
+    }
+
+    return true;    
+  } // areVarsEqual
+
+  /** Perform one-way ANOVA computations. */
+  public getOneWayAnova(): OneWayAnova {
+    // Further, notations and formulas from (see [2], p. 290) are used.
+
+    const K = this.size;
+  
+    let sum = 0;
+    let sumOfSquares = 0;
+    let N = 0;
+    let buf = 0; 
+  
+    this.forEach((levelData, key, map) => {
+      sum += levelData.sum;
+      sumOfSquares += levelData.sumOfSquares;
+      N += levelData.size;
+      buf += (levelData.sum) ** 2 / levelData.size;
+    });
+  
+    const ssTot = sumOfSquares - sum ** 2 / N;
+    const ssBn = buf - sum ** 2 / N;
+    const ssWn = ssTot - ssBn;
+
+    const dfBn = K - 1;
+    const dfWn = N - K;
+    const dfTot = N - 1;
+    
+    const msBn = ssBn / dfBn;
+    const msWn = ssWn / dfWn;
+
+    const fStat = msBn / msWn;
+  
+    return {
+      ssBn: ssBn,
+      ssWn: ssWn,
+      ssTot: ssTot,
+      dfBn: dfBn,
+      dfWn: dfWn,
+      dfTot: dfTot,
+      msBn: msBn,
+      msWn: msWn,
+     fStat: fStat,
+      pValue: 1 - jStat.centralF.cdf(fStat, dfBn, dfWn)
+    };
+  } // getOneWayAnova
+
+  /** Compute sum & sums of squares with respect to factor levels. */
+  private setStats(factors: DG.Column, values: ValuesType, checkNormality: boolean = false, alpha: number = 0.05): void {
+    // TODO: provide check normality feature
+    const size = factors.length;
+
+    const fact = factors.toList(); // making this copy improves performance 
+
+    switch (values.type) {
+      case DG.COLUMN_TYPE.INT:
+      case DG.COLUMN_TYPE.FLOAT:
+        const buf = values.getRawData();
+
+        for (let i = 0; i < size; ++i) {
+          const cur = this.get(fact[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: undefined};
+    
+          cur.sum += buf[i];
+          cur.sumOfSquares += buf[i] ** 2;
+          ++cur.size;
+    
+          this.set(fact[i], cur);
+        }        
+        break;
+
+      default:
+        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+    }    
+  } // setStats
+
+  /** Compute sum & sums of squares with respect to factor levels & store factorized data. */
+  private setData(factors: DG.Column, values: ValuesType, checkNormality: boolean = false, alpha: number = 0.05): void {
+    // TODO: provide check normality feature
+    const size = factors.length;
+
+    const fact = factors.toList(); // making this copy improves performance
+
+    switch (values.type) {
+      case DG.COLUMN_TYPE.INT:
+      case DG.COLUMN_TYPE.FLOAT:
+        const buf = values.getRawData();
+
+        for (let i = 0; i < size; ++i) {
+          const cur = this.get(fact[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: []};
+    
+          cur.sum += buf[i];
+          cur.sumOfSquares += buf[i] ** 2;
+          ++cur.size;
+          cur.data?.push(buf[i]);
+    
+          this.set(fact[i], cur);
+        }        
+        break;
+
+      default:
+        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+    }    
+  } // setData
+
+} // FactorizedData
 
 /** Perform one-way analysis of variances. */
 export function oneWayAnova(
-  factorsCol: DG.Column, 
-  valuesCol: DG.Column,
-  alpha: number  = 0.05,
-  toCheckNormality: boolean = false, 
-  toCheckVariancesEqaulity: boolean = false): AnovaResults
+  factors: DG.Column, 
+  values: DG.Column,
+  alpha: number = 0.05,
+  checkNormality: boolean = false, 
+  checkVars: boolean = false): AnovaReport
 {
-  checkSignificanceLevel(alpha);
+  checkSignificanceLevel(alpha);  
 
-  const values = ((valuesCol.type === DG.COLUMN_TYPE.FLOAT) || (valuesCol.type === DG.COLUMN_TYPE.INT)) 
-    ? valuesCol.getRawData() 
-    : valuesCol.toList();
+  const factorized = new FactorizedData(factors, values, false, checkNormality, alpha);
 
-  const factors = factorsCol.toList();
+  if (checkVars)
+    if(!factorized.areVarsEqual(alpha))
+      throw new Error(ERROR_MSG.NON_EQUAL_VARIANCES);
 
-  const factorizedData = getLevelsStat(factors, values as ValuesType);
+  if (checkNormality)
+    if (!factorized.isNormal())
+      throw new Error(ERROR_MSG.NON_NORMAL_DISTRIB);
 
-  if (toCheckNormality) {
-    // TODO: add this
-  }
+  const anova = factorized.getOneWayAnova();
+  const fCrit = jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn);
 
-  if (toCheckVariancesEqaulity)
-    if(!areVariancesOfFactorizedDataEqual(factorizedData))    
-      throw new Error('Variances are not equal!');
-  
-  const anovaTable = computeOneWayAnovaTable(factorizedData);
-
-  const Fcritical = jStat.centralF.inv(1 - alpha, anovaTable.DFbn, anovaTable.DFwn);
-
-  const conclusion = (anovaTable.Fstat > Fcritical)
-    ? `The null hypothesis is rejected. The "${factorsCol.name}"-factor produces a significant difference in "${valuesCol.name}"-values.`
-    : `Failed to reject the null hypothesis. The "${factorsCol.name}"-factor does not produce a significant difference in "${valuesCol.name}"-values.`;
+  const summary = (anova.fStat > fCrit)
+    ? `The null hypothesis is rejected. The "${factors.name}"-factor produces a significant difference in "${values.name}"-values.`
+    : `Failed to reject the null hypothesis. The "${factors.name}"-factor does not produce a significant difference in "${values.name}"-values.`;
 
   return {
-    summaryTable: getOneWayAnovaDataframe(anovaTable, alpha, Fcritical),
-    conclusion: conclusion
-  };
+    table: getOneWayAnovaDF(anova, alpha, fCrit),
+    summary: summary
+  };  
 } // oneWayAnova

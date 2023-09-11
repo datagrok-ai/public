@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {AnovaResults} from './stat-tools';
+import {AnovaReport} from './stat-tools';
 
 // Rename PCA columns
 export function renamePCAcolumns(pcaTable: DG.DataFrame): DG.DataFrame {  
@@ -130,11 +130,11 @@ export function addPLSvisualization(table: DG.DataFrame, samplesNames: DG.Column
 }
 
 // Add one-way ANOVA results
-export function addOneWayAnovaVizualization(table: DG.DataFrame, factors: DG.Column, values: DG.Column, anova: AnovaResults) {
+export function addOneWayAnovaVizualization(table: DG.DataFrame, factors: DG.Column, values: DG.Column, anova: AnovaReport) {
   const view = grok.shell.getTableView(table.name);
   view.addViewer(DG.Viewer.boxPlot(DG.DataFrame.fromColumns([factors, values])));
-  view.addViewer(DG.Viewer.grid(anova.summaryTable));  
+  view.addViewer(DG.Viewer.grid(anova.table));  
   ui.dialog({title:'Summary'})
-  .add(ui.span([anova.conclusion]))
+  .add(ui.span([anova.summary]))
   .show();
 }

@@ -13,7 +13,7 @@ import {carsDataframe, testDataForBinaryClassification} from './data-generators'
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
-import {getFactorizedData, getLevelsStat, computeOneWayAnovaTable, oneWayAnova} from './stat-tools';
+import {oneWayAnova} from './stat-tools';
 
 export const _package = new DG.Package();
 
@@ -27,14 +27,14 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: ML | Dimension Reduction | PCA...
+//top-menu: ML | Dimensionality Reduction | PCA...
 //name: PCA
 //description: Principal component analysis (PCA).
-//input: dataframe table {category: Data}
-//input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [Number of components.]
-//input: bool center = false {category: Hyperparameters} [Indicating whether the variables should be shifted to be zero centered.]
-//input: bool scale = false {category: Hyperparameters} [Indicating whether the variables should be scaled to have unit variance.]
+//input: dataframe table
+//input: column_list features {type: numerical}
+//input: int components = 2 {caption: Components} [Number of components.]
+//input: bool center = false [Indicating whether the variables should be shifted to be zero centered.]
+//input: bool scale = false [Indicating whether the variables should be scaled to have unit variance.]
 //output: dataframe result {action:join(table)}
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
   center: boolean, scale: boolean): Promise<DG.DataFrame> 
@@ -44,7 +44,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return pcaTable;
 }
 
-//top-menu: ML | Dimension Reduction | UMAP...
+//top-menu: ML | Dimensionality Reduction | UMAP...
 //name: UMAP
 //description: Uniform Manifold Approximation and Projection (UMAP).
 //input: dataframe table {category: Data}
@@ -61,7 +61,7 @@ export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, compone
   return await computeUMAP(features, components, epochs, neighbors, minDist, spread);  
 }
 
-//top-menu: ML | Dimension Reduction | t-SNE...
+//top-menu: ML | Dimensionality Reduction | t-SNE...
 //name: t-SNE
 //description: t-distributed stochastic neighbor embedding (t-SNE).
 //input: dataframe table {category: Data}
@@ -77,7 +77,7 @@ export async function tSNE(table: DG.DataFrame, features: DG.ColumnList, compone
   return await computeTSNE(features, components, learningRate, perplexity, iterations);
 }
 
-//top-menu: ML | Dimension Reduction | SPE...
+//top-menu: ML | Dimensionality Reduction | SPE...
 //name: SPE
 //description: Stochastic proximity embedding (SPE).
 //input: dataframe table {category: Data}
@@ -321,16 +321,16 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
   return await getPrediction(df, model); 
 }
 
-//top-menu: ML | Analysis of variances (ANOVA)...
+//top-menu: ML | Analysis of Variances (ANOVA)...
 //name: One-way ANOVA
 //description: One-way analysis of variances (ANOVA) is the parametric procedure for determining whether significant differences occur in an experiment containing two or more conditions.
 //input: dataframe table {category: Data}
 //input: column factors {category: Data}
 //input: column values {type: numerical; category: Data}
 //input: double alpha = 0.05 {category: Significance level} [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
-//input: bool toCheckNormality = false {caption: Normality; category: Checks} [Indicating whether the normality of distribution should be checked.]
-//input: bool toCheckVariances = false {caption: Variances; category: Checks} [Indicating whether an eqaulity of varainces should be checked.]
-export function anova(table: DG.DataFrame, factors: DG.Column, values: DG.Column, alpha: number, toCheckNormality: boolean, toCheckVariances: boolean) {  
-  const anovaResults = oneWayAnova(factors, values, alpha, toCheckNormality, toCheckVariances);  
-  addOneWayAnovaVizualization(table, factors, values, anovaResults);
+//input: bool checkNormality = false {caption: Normality; category: Checks} [Indicating whether the normality of distribution should be checked.]
+//input: bool checkVars = false {caption: Variances; category: Checks} [Indicating whether an eqaulity of varainces should be checked.]
+export function anova(table: DG.DataFrame, factors: DG.Column, values: DG.Column, alpha: number, checkNormality: boolean, checkVars: boolean) {  
+  const res = oneWayAnova(factors, values, alpha, false, checkVars); // TODO: replace 'false' with 'checkNormality' after the feature is implemented  
+  addOneWayAnovaVizualization(table, factors, values, res);
 }

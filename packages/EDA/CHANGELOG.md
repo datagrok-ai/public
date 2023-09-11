@@ -2,11 +2,11 @@
 
 ## 1.1.4 (WIP)
 
-This release concentrates on new statistical features. Analysis of variance (ANOVA) is provided.
+Implemented ANOVA.
 
 ### Features
 
-* One-way ANOVA is added (see Top Menu > ML > Analysis of Variances (ANOVA)...)
+* One-way ANOVA (see Top Menu > ML > Analysis of Variances (ANOVA)...)
 
 ## 1.1.3 (2023-08-24)
 
