@@ -19,7 +19,7 @@ Conditions:
     - 'true'
   UseVPCEndpoint:
     Fn::Not:
-      Fn::Equals:
+    - Fn::Equals:
       - Ref: DatagrokS3VPCEndpoint
       - ''
 Description: Datagrok template to deploy all components to ECS Fargate. Template also

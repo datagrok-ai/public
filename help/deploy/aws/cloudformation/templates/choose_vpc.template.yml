@@ -110,9 +110,9 @@ Conditions:
       - 'create'
   UseVPCEndpoint:
     Fn::Not:
-      Fn::Equals:
-        - Ref: DatagrokS3VPCEndpoint
-        - ''
+      - Fn::Equals:
+          - Ref: DatagrokS3VPCEndpoint
+          - ''
 Rules:
   SubnetsInVPC:
     Assertions:
