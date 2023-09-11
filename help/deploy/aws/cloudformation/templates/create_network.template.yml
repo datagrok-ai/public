@@ -52,7 +52,11 @@ Conditions:
     Fn::Or:
       - Condition: InternetIngressAccess
       - Condition: InternetEgressAccess
-  DatagrokS3VPCEndpoint:
+  UseVPCEndpoint:
+    Fn::Equals:
+      - 'true'
+      - 'true'
+  CreateVPC:
     Fn::Equals:
       - 'create'
       - 'create'

@@ -16,6 +16,7 @@ Metadata:
           - DatagrokPrivateSubnet2
           - DatagrokDataSubnet1
           - DatagrokDataSubnet2
+          - DatagrokS3VPCEndpoint
           - DatagrokNatGatewayEIP
           - InternetIngressAccess
     ParameterLabels:
@@ -37,6 +38,8 @@ Metadata:
         default: "Data Subnet 2"
       DatagrokNatGatewayEIP:
         default: "Nat Gateway EIP"
+      DatagrokS3VPCEndpoint:
+        default: "S3 VPC Endpoint"
       InternetIngressAccess:
         default: "InternetIngressAccess: Access from internet"
       #      InternetEgressAccess:
@@ -73,6 +76,10 @@ Parameters:
     Default: '10.0.0.0/17'
     AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
     Description: VPC CIDR block to allow communication inside VPC
+  DatagrokS3VPCEndpoint:
+    Type: String
+    Default: ''
+    Description: VPC Endpoint to access Datagrok S3 bucket. Omit if you do not use VPC endpoints
   InternetIngressAccess:
     Type: String
     Default: 'true'
@@ -97,10 +104,15 @@ Conditions:
       #      - Ref: InternetEgressAccess
       - 'true'
       - 'true'
-  DatagrokS3VPCEndpoint:
+  CreateVPC:
     Fn::Equals:
       - 'choose'
       - 'create'
+  UseVPCEndpoint:
+    Fn::Not:
+      Fn::Equals:
+        - Ref: DatagrokS3VPCEndpoint
+        - ''
 Rules:
   SubnetsInVPC:
     Assertions:
@@ -126,3 +138,13 @@ Rules:
                   - VpcId
             - Ref: DatagrokVPC
         AssertDescription: All subnets must in the VPC
+Resources:
+  DatagrokPrivateSubnetRouteAssos1:
+    Type: Custom::NonResource
+    Condition: CreateVPC
+  DatagrokPrivateSubnetRouteAssos2:
+    Type: Custom::NonResource
+    Condition: CreateVPC
+  DatagrokPrivateSubnetRouteTable:
+    Type: Custom::NonResource
+    Condition: CreateVPC

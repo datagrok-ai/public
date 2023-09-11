@@ -9,7 +9,7 @@ Conditions:
     Fn::Or:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
-  DatagrokS3VPCEndpoint:
+  CreateVPC:
     Fn::Equals:
     - create
     - create
@@ -20,6 +20,10 @@ Conditions:
   InternetIngressAccess:
     Fn::Equals:
     - Ref: InternetIngressAccess
+    - 'true'
+  UseVPCEndpoint:
+    Fn::Equals:
+    - 'true'
     - 'true'
 Description: Datagrok template to deploy all components to ECS Fargate. DNS and ACM
   should be configured manually.
@@ -2573,7 +2577,7 @@ Resources:
       PolicyDocument:
         Statement:
         - Fn::If:
-          - DatagrokS3VPCEndpoint
+          - UseVPCEndpoint
           - Action:
             - s3:PutObject
             - s3:GetObject
@@ -2584,10 +2588,7 @@ Resources:
                 - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
                 - Ref: DatagrokS3EmptyLambdaRole
                 aws:SourceVpce:
-                  Fn::If:
-                  - DatagrokS3VPCEndpoint
-                  - Ref: DatagrokS3VPCEndpoint
-                  - Ref: AWS::NoValue
+                  Ref: DatagrokS3VPCEndpoint
             Effect: Deny
             Principal: '*'
             Resource:

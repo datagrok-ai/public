@@ -9,7 +9,7 @@ Conditions:
     Fn::Or:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
-  DatagrokS3VPCEndpoint:
+  CreateVPC:
     Fn::Equals:
     - create
     - create
@@ -20,6 +20,10 @@ Conditions:
   InternetIngressAccess:
     Fn::Equals:
     - Ref: InternetIngressAccess
+    - 'true'
+  UseVPCEndpoint:
+    Fn::Equals:
+    - 'true'
     - 'true'
 Description: Datagrok template to deploy all components to ECS Fargate. Template also
   creates ACM and DNS records.
@@ -2745,7 +2749,7 @@ Resources:
       PolicyDocument:
         Statement:
         - Fn::If:
-          - DatagrokS3VPCEndpoint
+          - UseVPCEndpoint
           - Action:
             - s3:PutObject
             - s3:GetObject
@@ -2756,10 +2760,7 @@ Resources:
                 - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
                 - Ref: DatagrokS3EmptyLambdaRole
                 aws:SourceVpce:
-                  Fn::If:
-                  - DatagrokS3VPCEndpoint
-                  - Ref: DatagrokS3VPCEndpoint
-                  - Ref: AWS::NoValue
+                  Ref: DatagrokS3VPCEndpoint
             Effect: Deny
             Principal: '*'
             Resource:
@@ -2974,19 +2975,17 @@ Resources:
     DependsOn:
     - DatagrokService
     - DatagrokSettingsSetLambdaFunctionLogGroup
-    - Fn::If:
-      - DatagrokS3VPCEndpoint
-      - DatagrokS3VPCEndpoint
-      - Ref: AWS::NoValue
-    - Fn::If:
-      - DatagrokS3VPCEndpoint
-      - DatagrokPrivateSubnetRouteAssos1
-      - Ref: AWS::NoValue
-    - Fn::If:
-      - DatagrokS3VPCEndpoint
-      - DatagrokPrivateSubnetRouteAssos2
-      - Ref: AWS::NoValue
     Properties:
+      DatagrokPrivateSubnetRouteAssos1:
+      - Fn::If:
+        - CreateVPC
+        - Ref: DatagrokPrivateSubnetRouteAssos1
+        - Ref: AWS::NoValue
+      DatagrokPrivateSubnetRouteAssos2:
+      - Fn::If:
+        - CreateVPC
+        - Ref: DatagrokPrivateSubnetRouteAssos2
+        - Ref: AWS::NoValue
       DevKey:
         Ref: DatagrokAdminDevKey
       Host:
@@ -3000,6 +2999,11 @@ Resources:
         Fn::GetAtt:
         - DatagrokSettingsSetLambdaFunction
         - Arn
+      VpcEndpoint:
+      - Fn::If:
+        - CreateVPC
+        - Ref: DatagrokS3VPCEndpoint
+        - Ref: AWS::NoValue
       cvmClient:
         Ref: CvmDNS
     Type: AWS::CloudFormation::CustomResource

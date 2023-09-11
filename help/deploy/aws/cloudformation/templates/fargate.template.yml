@@ -2244,7 +2244,7 @@ Resources:
         Version: '2012-10-17'
         Statement:
           - Fn::If:
-              - DatagrokS3VPCEndpoint
+              - UseVPCEndpoint
               - Action:
                   - s3:PutObject
                   - s3:GetObject
@@ -2252,10 +2252,7 @@ Resources:
                 Condition:
                   StringNotEquals:
                     aws:SourceVpce:
-                      Fn::If:
-                        - DatagrokS3VPCEndpoint
-                        - Ref: DatagrokS3VPCEndpoint
-                        - Ref: "AWS::NoValue"
+                      Ref: DatagrokS3VPCEndpoint
                     "aws:PrincipalArn":
                       - Fn::Sub: "arn:aws:iam::${AWS::AccountId}:root"
                       - Ref: DatagrokS3EmptyLambdaRole

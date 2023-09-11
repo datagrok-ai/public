@@ -332,18 +332,6 @@ Resources:
     DependsOn:
       - DatagrokService
       - DatagrokSettingsSetLambdaFunctionLogGroup
-      - Fn::If:
-          - DatagrokS3VPCEndpoint
-          - DatagrokS3VPCEndpoint
-          - Ref: "AWS::NoValue"
-      - Fn::If:
-          - DatagrokS3VPCEndpoint
-          - DatagrokPrivateSubnetRouteAssos1
-          - Ref: "AWS::NoValue"
-      - Fn::If:
-          - DatagrokS3VPCEndpoint
-          - DatagrokPrivateSubnetRouteAssos2
-          - Ref: "AWS::NoValue"
     Properties:
       DevKey:
         Ref: DatagrokAdminDevKey
@@ -356,6 +344,21 @@ Resources:
                 - DNSName
       cvmClient:
         Ref: CvmDNS
+      VpcEndpoint:
+        - Fn::If:
+            - CreateVPC
+            - Ref: DatagrokS3VPCEndpoint
+            - Ref: "AWS::NoValue"
+      DatagrokPrivateSubnetRouteAssos1:
+        - Fn::If:
+            - CreateVPC
+            - Ref: DatagrokPrivateSubnetRouteAssos1
+            - Ref: "AWS::NoValue"
+      DatagrokPrivateSubnetRouteAssos2:
+        - Fn::If:
+            - CreateVPC
+            - Ref: DatagrokPrivateSubnetRouteAssos2
+            - Ref: "AWS::NoValue"
       ServiceToken:
         Fn::GetAtt:
           - DatagrokSettingsSetLambdaFunction

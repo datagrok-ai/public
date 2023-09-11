@@ -5,7 +5,7 @@ Conditions:
     Fn::And:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
-  DatagrokS3VPCEndpoint:
+  CreateVPC:
     Fn::Equals:
     - choose
     - create
@@ -17,6 +17,11 @@ Conditions:
     Fn::Equals:
     - Ref: InternetIngressAccess
     - 'true'
+  UseVPCEndpoint:
+    Fn::Not:
+      Fn::Equals:
+      - Ref: DatagrokS3VPCEndpoint
+      - ''
 Description: Datagrok template to deploy all components to ECS Fargate. DNS and ACM
   should be configured manually.
 Mappings:
@@ -68,6 +73,7 @@ Metadata:
       - DatagrokPrivateSubnet2
       - DatagrokDataSubnet1
       - DatagrokDataSubnet2
+      - DatagrokS3VPCEndpoint
       - DatagrokNatGatewayEIP
       - InternetIngressAccess
     - Label:
@@ -107,6 +113,8 @@ Metadata:
         default: Public Subnet 1
       DatagrokPublicSubnet2:
         default: Public Subnet 2
+      DatagrokS3VPCEndpoint:
+        default: S3 VPC Endpoint
       DatagrokVPC:
         default: VPC
       DatagrokVersion:
@@ -189,6 +197,11 @@ Parameters:
     Description: Public subnet to deploy Datagrok Load Balancer. Omit if you disable
       access from internet (InternetIngressAccess).
     Type: AWS::EC2::Subnet::Id
+  DatagrokS3VPCEndpoint:
+    Default: ''
+    Description: VPC Endpoint to access Datagrok S3 bucket. Omit if you do not use
+      VPC endpoints
+    Type: String
   DatagrokVPC:
     Description: VPC to deploy Datagrok stack
     Type: AWS::EC2::VPC::Id
@@ -2205,6 +2218,15 @@ Resources:
         VPCRegion:
           Ref: AWS::Region
     Type: AWS::Route53::HostedZone
+  DatagrokPrivateSubnetRouteAssos1:
+    Condition: CreateVPC
+    Type: Custom::NonResource
+  DatagrokPrivateSubnetRouteAssos2:
+    Condition: CreateVPC
+    Type: Custom::NonResource
+  DatagrokPrivateSubnetRouteTable:
+    Condition: CreateVPC
+    Type: Custom::NonResource
   DatagrokS3:
     Properties:
       BucketEncryption:
@@ -2322,7 +2344,7 @@ Resources:
       PolicyDocument:
         Statement:
         - Fn::If:
-          - DatagrokS3VPCEndpoint
+          - UseVPCEndpoint
           - Action:
             - s3:PutObject
             - s3:GetObject
@@ -2333,10 +2355,7 @@ Resources:
                 - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
                 - Ref: DatagrokS3EmptyLambdaRole
                 aws:SourceVpce:
-                  Fn::If:
-                  - DatagrokS3VPCEndpoint
-                  - Ref: DatagrokS3VPCEndpoint
-                  - Ref: AWS::NoValue
+                  Ref: DatagrokS3VPCEndpoint
             Effect: Deny
             Principal: '*'
             Resource:
