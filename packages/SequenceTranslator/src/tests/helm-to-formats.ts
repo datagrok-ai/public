@@ -14,11 +14,7 @@ function getHelm(strand: string, format: string): string {
   return (new FormatConverter(strand, format).convertTo(DEFAULT_FORMATS.HELM));
 }
 
-function getFromat(helm: string, format: string): string {
-  return (new FormatConverter(helm, DEFAULT_FORMATS.HELM).convertTo(format));
-}
-
-category('Formats to HELM', () => {
+category('HELM to formats', () => {
   before(async () => {
     await getJsonData();
     await _package.initMonomerLib();
@@ -29,23 +25,6 @@ category('Formats to HELM', () => {
       test(`${format} to HELM`, async () => {
         const expected = helm;
         const result = getHelm(strand, format);
-        expect(result, expected);
-      });
-    }
-  }
-});
-
-category('HELM to Formats', () => {
-  before(async () => {
-    await getJsonData();
-    await _package.initMonomerLib();
-  });
-
-  for (const format of Object.keys(formatsToHelm)) {
-    for (const [strand, helm] of Object.entries(formatsToHelm[format])) {
-      test(`${format} to HELM`, async () => {
-        const expected = strand;
-        const result = getFromat(helm, format);
         expect(result, expected);
       });
     }

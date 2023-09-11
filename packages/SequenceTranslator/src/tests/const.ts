@@ -8,7 +8,7 @@ export const formatsToHelm: {[key: string]: Dict} = {
     'AT*GC*123456789': 'RNA1{r(A)p.r(T)[sp].r(G)p.r(C)[sp].[fR](U)p.[fR](A)p.[fR](C)p.[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)p.d([m5C])}$$$$'
   },
   'Mermade12': {
-    'hefglijkLIJKHEFG': 'RNA1{[25r](U)[s.[25r](A)[s.[25r](C)[s.[25r](G)[s.[fR](U)[s.[fR](A)[s.[fR](C)[s.[fR](G)[s.[fR](U)[fR](A)[fR](C)[fR](G)[25r](U)[25r](A)[25r](C)[25r](G)}$$$$'
+    'hefglijkLIJKHEFG': 'RNA1{[25r](U)[sp].[25r](A)[sp].[25r](C)[sp].[25r](G)[sp].[fR](U)[sp].[fR](A)[sp].[fR](C)[sp].[fR](G)[sp].[fR](U)p.[fR](A)p.[fR](C)p.[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)[sp]}$$$$'
   }
 }
 
