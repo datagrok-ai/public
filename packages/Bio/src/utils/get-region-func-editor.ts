@@ -29,7 +29,7 @@ export class GetRegionFuncEditor {
     region: DG.InputBase<SeqRegion>;
     start: DG.InputBase<string>;
     end: DG.InputBase<string>;
-    name: DG.InputBase;
+    name: DG.InputBase<string>;
   }();
 
   constructor(
@@ -54,8 +54,9 @@ export class GetRegionFuncEditor {
     this.inputs.region = ui.choiceInput<SeqRegion>('Region', null as unknown as SeqRegion, [],
       this.regionInputChanged.bind(this)) as DG.InputBase<SeqRegion>;
 
-    this.inputs.name = ui.stringInput('Name', '', () => {},
-      {placeholder: this.getDefaultName()});
+    this.inputs.name = ui.stringInput('Column name', this.getDefaultName(),
+      this.nameInputChanged.bind(this), {clearIcon: true});
+    this.inputs.name.onInput(this.nameInputInput.bind(this)); // To catch clear event
 
     // tooltips
     for (const paramName in this.call.inputParams) {
@@ -73,7 +74,7 @@ export class GetRegionFuncEditor {
     this.updateRegionItems();
     this.updateStartEndInputItems();
     this.updateRegion(true);
-    this.updateNameInputPlaceholder();
+    this.updateNameInput();
   }
 
   private fixRegion: boolean = false;
@@ -99,12 +100,24 @@ export class GetRegionFuncEditor {
 
   private startInputChanged(): void {
     this.updateRegion(false);
-    this.updateNameInputPlaceholder();
+    this.updateNameInput();
   }
 
   private endInputChanged(): void {
     this.updateRegion(false);
-    this.updateNameInputPlaceholder();
+    this.updateNameInput();
+  }
+
+  private nameInputChanged(): void {
+    if (!this.defaultNameUpdating)
+      this.defaultName = false;
+  }
+
+  private nameInputInput(): void {
+    if (!this.inputs.name.value) {
+      this.defaultName = true;
+      this.inputs.name.input.focus();
+    }
   }
 
   private updateStartEndInputItems(): void {
@@ -168,9 +181,16 @@ export class GetRegionFuncEditor {
     }
   }
 
-  private updateNameInputPlaceholder(): void {
-    // @ts-ignore
-    this.inputs.name.input.attributes['placeholder'].value = this.getDefaultName();
+  private defaultName: boolean = true;
+  private defaultNameUpdating: boolean = false;
+
+  private updateNameInput(): void {
+    this.defaultNameUpdating = true;
+    try {
+      if (this.defaultName) this.inputs.name.value = this.getDefaultName();
+    } finally {
+      this.defaultNameUpdating = false;
+    }
   }
 
   private getDefaultName(): string {
@@ -192,7 +212,7 @@ export class GetRegionFuncEditor {
       sequence: this.inputs.sequence.value!,
       start: this.getStart(),
       end: this.getEnd(),
-      name: this.getName() ?? this.getDefaultName(),
+      name: this.getName(),
     };
   }
 

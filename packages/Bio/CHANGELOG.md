@@ -1,5 +1,13 @@
 # Bio changelog
 
+## 2.11.0 (WIP)
+
+### Bug fixes
+
+* Fix GetRegion to detect semantic type and renderer for created column.
+* Fix GetRegion dialog column name field for default value.
+* Fix WebLogo viewer for gaps with Helm.
+
 ## 2.10.0 (2023-09-06)
 
 ### Features
