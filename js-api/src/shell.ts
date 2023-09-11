@@ -405,12 +405,12 @@ export class Settings {
 
   /** Jupyter Notebook URL */
   get jupyterNotebook(): string {
-    return api.grok_Settings_Get_JupyterNotebook();
+    return api.grok_Settings_Get_JupyterPath();
   }
 
   /** Jupyter Notebook Token */
   get jupyterNotebookToken(): string {
-    return api.grok_Settings_Get_JupyterNotebookToken();
+    return api.grok_Settings_Get_JupyterToken();
   }
 }
 
