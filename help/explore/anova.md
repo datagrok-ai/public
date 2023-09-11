@@ -34,7 +34,7 @@ The ANOVA summary table presents results of computations:
 
 The decision regarding the significance of the factor's influence on the studied feature is ensured:
 
-![anova-conclusion-table.png](anova-summary-table.png)
+![anova-conclusion.png](anova-conclusion.png)
 
 See also:
 
