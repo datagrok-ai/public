@@ -1701,14 +1701,14 @@ Resources:
       - Field: path-pattern
         PathPatternConfig:
           Values:
-          - /notebook/*
+          - /jupyter/*
       ListenerArn:
         Ref: CvmTCP8090IntListener
       Priority: 6
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
   DatagrokJupyterTCP8889IntTargetGroup:
     Properties:
-      HealthCheckPath: /jupyter/api/swagger.yaml
+      HealthCheckPath: /jupyter/api
       Matcher:
         HttpCode: 200
       Name:
@@ -1741,14 +1741,14 @@ Resources:
       - Field: path-pattern
         PathPatternConfig:
           Values:
-          - /notebook/*
+          - /jupyter/*
       ListenerArn:
         Ref: CvmTCP443Listener
       Priority: 6
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
   DatagrokJupyterTCP8889TargetGroup:
     Properties:
-      HealthCheckPath: /jupyter/api/swagger.yaml
+      HealthCheckPath: /jupyter/api
       Matcher:
         HttpCode: 200
       Name:
