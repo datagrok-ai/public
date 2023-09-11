@@ -60,11 +60,11 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
           if (argsX >= sumLengths[mid] && argsX <= sumLengths[mid + 1]) {
             left = mid;
             found = true;
-          } else if (argsX < sumLengths[mid]) {
+          } else if (argsX < sumLengths[mid])
             right = mid - 1;
-          } else if (argsX > sumLengths[mid + 1]) {
+          else if (argsX > sumLengths[mid + 1])
             left = mid + 1;
-          }
+
           if (left == right)
             found = true;
 
@@ -73,7 +73,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       }
       left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
 
-      const seq: string = gridCell.cell.value;
+      const seq: string = !gridCell.cell.value ? '' : gridCell.cell.value
+        .replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.').replaceAll(helmGapEndRe, '}')
+        .replace('{*}', '{}');
       const monomerList = parseHelm(seq);
       const monomers = new Set<string>(monomerList);
       const missedMonomers = findMonomers(monomerList);
@@ -121,15 +123,19 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const monomerColor: string = '#404040';
       const frameColor: string = '#C0C0C0';
 
-      const seq = gridCell.cell.value;
+      const seq: string = !gridCell.cell.value ? '' : gridCell.cell.value
+        .replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.').replaceAll(helmGapEndRe, '}')
+        .replace('{*}', '{}');
       const monomerList = parseHelm(seq);
       const monomers: Set<string> = new Set<string>(monomerList);
       const missedMonomers: Set<string> = findMonomers(monomerList);
+      const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
 
       if (missedMonomers.size == 0) {
+        helmPlacer.skipCell(gridCell.tableRowIndex!);
         const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
         host.setAttribute('dataformat', 'helm');
-        host.setAttribute('data', gridCell.cell.value);
+        host.setAttribute('data', seq /* gaps skipped */);
         gridCell.element = host;
         //@ts-ignore
         const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
@@ -152,7 +158,6 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
         g.transform(1, 0, 0, 1, x, y);
         g.font = '12px monospace';
         g.textBaseline = 'top';
-        const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
         const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
 
         for (let i = 0; i < allParts.length; ++i) {

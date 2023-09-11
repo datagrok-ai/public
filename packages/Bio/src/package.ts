@@ -365,13 +365,13 @@ export function getRegion(
 //input: string end       {optional: true}         [Region end position name]
 //input: string name      {optional: true}         [Region column name]
 //editor: Bio:GetRegionEditor
-export function getRegionTopMenu(
+export async function getRegionTopMenu(
   table: DG.DataFrame, sequence: DG.Column,
   start: string | undefined, end: string | undefined, name: string | undefined
-): void {
+): Promise<void> {
   const regCol = getRegionDo(sequence, start ?? null, end ?? null, name ?? null);
   sequence.dataFrame.columns.add(regCol);
-  regCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
+  await grok.data.detectSemanticTypes(sequence.dataFrame); // to set renderer
 }
 
 //top-menu: Bio | Analyze | Activity Cliffs...
@@ -903,6 +903,19 @@ export async function getRegionApp(): Promise<void> {
     const urlParams = new URLSearchParams(window.location.search);
     const app = new GetRegionApp(urlParams, 'getRegionApp');
     await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: getRegionHelmApp
+export async function getRegionHelmApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('getRegion ...');
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const df = await _package.files.readCsv('data/sample_HELM_empty_vals.csv');
+    const app = new GetRegionApp(urlParams, 'getRegionHelmApp');
+    await app.init({df: df, colName: 'HELM'});
   } finally {
     pi.close();
   }

@@ -284,7 +284,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points')
+      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points' || screenBounds.width < MIN_AXES_CELL_PX_WIDTH ||
+        screenBounds.height < MIN_AXES_CELL_PX_HEIGHT)
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
@@ -529,7 +530,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 
     for (let i = 0; i < data.series?.length!; i++) {
-      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points')
+      if (!data.series![i].clickToToggle || data.series![i].showPoints !== 'points' || screenBounds.width < MIN_AXES_CELL_PX_WIDTH ||
+        screenBounds.height < MIN_AXES_CELL_PX_HEIGHT)
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];

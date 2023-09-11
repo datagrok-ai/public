@@ -1,5 +1,12 @@
 # bio changelog
 
+## 5.39.0 (WIP)
+
+### Bug fixes
+
+* Fix getSplitterWithSeparator for empty seq.
+* Fix MonomerPlacer getPosition for empty seq.
+
 ## 5.38.0 (2023-09-06)
 
 ### Features

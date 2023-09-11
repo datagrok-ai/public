@@ -55,7 +55,7 @@ export const WebLogoPropsDefault = new class {
 
   // -- Style --
   backgroundColor: number = 0xFFFFFFFF;
-  positionHeight: string = PositionHeight.full;
+  positionHeight: string = PositionHeight.Entropy; // that is the way in the bioinformatics domain
   positionWidth: number = 16;
 
   // -- Layout --
