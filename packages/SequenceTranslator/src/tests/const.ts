@@ -1,17 +1,20 @@
-export const axolabsToSmiles: {[key: string]: string} = {
-  'usCfCfUfGfAf': 'CO[C@@H]1[C@H](OP(=O)(S)OC[C@H]2O[C@@H](n3ccc(N)nc3=O)[C@H](F)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3ccc(N)nc3=O)[C@H](F)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3ccc(=O)[nH]c3=O)[C@H](F)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](F)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(N)ncnc43)[C@H](F)[C@@H]2O)[C@@H](CO)O[C@H]1n1ccc(=O)[nH]c1=O',
+type Dict = {[key: string]: string};
 
-  'usAfsusgsgsg': 'CO[C@@H]1[C@H](OP(=O)(S)OC[C@H]2O[C@@H](n3cnc4c(N)ncnc43)[C@H](F)[C@@H]2OP(=O)(S)OC[C@H]2O[C@@H](n3ccc(=O)[nH]c3=O)[C@H](OC)[C@@H]2OP(=O)(S)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2OP(=O)(S)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2OP(=O)(S)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2O)[C@@H](CO)O[C@H]1n1ccc(=O)[nH]c1=O',
+export const formatsToHelm: {[key: string]: Dict} = {
+  'Axolabs': {
+    'UfAfsCfsGfuacg': 'RNA1{[fR](U)p.[fR](A)[sp].[fR](C)[sp].[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)}$$$$'
+  },
+  'BioSpring': {
+    'AT*GC*123456789': 'RNA1{r(A)p.r(T)[sp].r(G)p.r(C)[sp].[fR](U)p.[fR](A)p.[fR](C)p.[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)p.d([m5C])}$$$$'
+  },
+  'Mermade12': {
+    'hefglijkLIJKHEFG': 'RNA1{[25r](U)[s.[25r](A)[s.[25r](C)[s.[25r](G)[s.[fR](U)[s.[fR](A)[s.[fR](C)[s.[fR](G)[s.[fR](U)[fR](A)[fR](C)[fR](G)[25r](U)[25r](A)[25r](C)[25r](G)}$$$$'
+  }
+}
 
-  'UfUfUfsCfsuacg': 'CO[C@@H]1[C@H](OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2O)[C@@H](COP(=O)(O)O[C@@H]2[C@@H](COP(=O)(O)O[C@@H]3[C@@H](COP(=O)(S)O[C@@H]4[C@@H](COP(=O)(S)O[C@@H]5[C@@H](COP(=O)(O)O[C@@H]6[C@@H](COP(=O)(O)O[C@@H]7[C@@H](CO)O[C@@H](n8ccc(=O)[nH]c8=O)[C@@H]7F)O[C@@H](n7ccc(=O)[nH]c7=O)[C@@H]6F)O[C@@H](n6ccc(=O)[nH]c6=O)[C@@H]5F)O[C@@H](n5ccc(N)nc5=O)[C@@H]4F)O[C@@H](n4ccc(=O)[nH]c4=O)[C@@H]3OC)O[C@@H](n3cnc4c(N)ncnc43)[C@@H]2OC)O[C@H]1n1ccc(N)nc1=O',
+export const helmToNucleotides: Dict = {
+  'RNA1{r(A)p.r(T)[sp].r(G)p.r(C)[sp].[fR](U)p.[fR](A)p.[fR](C)p.[fR](G)p.[25r](U)p.[25r](A)p.[25r](C)p.[25r](G)p.d([m5C])}$$$$': 'ATGCUACGUACGC'
+}
 
-  'susususauasu': 'CO[C@@H]1[C@H](O)[C@@H](COP(=O)(S)O[C@@H]2[C@@H](COP(=O)(O)O[C@@H]3[C@@H](COP(=O)(O)O[C@@H]4[C@@H](COP(=O)(S)O[C@@H]5[C@@H](COP(=O)(S)O[C@@H]6[C@@H](COP(=O)(S)O[C@@H]7[C@@H](COP(=O)(O)S)O[C@@H](n8ccc(=O)[nH]c8=O)[C@@H]7OC)O[C@@H](n7ccc(=O)[nH]c7=O)[C@@H]6OC)O[C@@H](n6ccc(=O)[nH]c6=O)[C@@H]5OC)O[C@@H](n5cnc6c(N)ncnc65)[C@@H]4OC)O[C@@H](n4ccc(=O)[nH]c4=O)[C@@H]3OC)O[C@@H](n3cnc4c(N)ncnc43)[C@@H]2OC)O[C@H]1n1ccc(=O)[nH]c1=O',
-
-  'CfGfCfsGfsCf': 'Nc1ccn([C@@H]2O[C@H](COP(=O)(S)O[C@@H]3[C@@H](COP(=O)(S)O[C@@H]4[C@@H](COP(=O)(O)O[C@@H]5[C@@H](COP(=O)(O)O[C@@H]6[C@@H](CO)O[C@@H](n7ccc(N)nc7=O)[C@@H]6F)O[C@@H](n6cnc7c(=O)[nH]c(N)nc76)[C@@H]5F)O[C@@H](n5ccc(N)nc5=O)[C@@H]4F)O[C@@H](n4cnc5c(=O)[nH]c(N)nc54)[C@@H]3F)[C@@H](O)[C@H]2F)c(=O)n1',
-
-  'acacacsacsac': 'CO[C@@H]1[C@H](O)[C@@H](COP(=O)(O)O[C@@H]2[C@@H](COP(=O)(S)O[C@@H]3[C@@H](COP(=O)(O)O[C@@H]4[C@@H](COP(=O)(S)O[C@@H]5[C@@H](COP(=O)(O)O[C@@H]6[C@@H](COP(=O)(O)O[C@@H]7[C@@H](COP(=O)(O)O[C@@H]8[C@@H](COP(=O)(O)O[C@@H]9[C@@H](COP(=O)(O)O[C@@H]%10[C@@H](CO)O[C@@H](n%11cnc%12c(N)ncnc%12%11)[C@@H]%10OC)O[C@@H](n%10ccc(N)nc%10=O)[C@@H]9OC)O[C@@H](n9cnc%10c(N)ncnc%109)[C@@H]8OC)O[C@@H](n8ccc(N)nc8=O)[C@@H]7OC)O[C@@H](n7cnc8c(N)ncnc87)[C@@H]6OC)O[C@@H](n6ccc(N)nc6=O)[C@@H]5OC)O[C@@H](n5cnc6c(N)ncnc65)[C@@H]4OC)O[C@@H](n4ccc(N)nc4=O)[C@@H]3OC)O[C@@H](n3cnc4c(N)ncnc43)[C@@H]2OC)O[C@H]1n1ccc(N)nc1=O',
-
-  'cccgggusug': 'CO[C@@H]1[C@H](OP(=O)(O)OC[C@H]2O[C@@H](n3ccc(N)nc3=O)[C@H](OC)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3ccc(N)nc3=O)[C@H](OC)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3ccc(=O)[nH]c3=O)[C@H](OC)[C@@H]2OP(=O)(S)OC[C@H]2O[C@@H](n3ccc(=O)[nH]c3=O)[C@H](OC)[C@@H]2OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(=O)[nH]c(N)nc43)[C@H](OC)[C@@H]2O)[C@@H](CO)O[C@H]1n1ccc(N)nc1=O',
-
-  'UfAfCfGfGfCfAfUf': 'Nc1ccn([C@@H]2O[C@H](COP(=O)(O)O[C@@H]3[C@@H](COP(=O)(O)O[C@@H]4[C@@H](CO)O[C@@H](n5ccc(=O)[nH]c5=O)[C@@H]4F)O[C@@H](n4cnc5c(N)ncnc54)[C@@H]3F)[C@@H](OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(=O)[nH]c(N)nc54)[C@H](F)[C@@H]3OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(=O)[nH]c(N)nc54)[C@H](F)[C@@H]3OP(=O)(O)OC[C@H]3O[C@@H](n4ccc(N)nc4=O)[C@H](F)[C@@H]3OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](F)[C@@H]3OP(=O)(O)OC[C@H]3O[C@@H](n4ccc(=O)[nH]c4=O)[C@H](F)[C@@H]3O)[C@H]2F)c(=O)n1'
+export const helmToMolfile: Dict = {
 }
