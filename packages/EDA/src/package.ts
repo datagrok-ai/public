@@ -324,13 +324,12 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //top-menu: ML | Analysis of Variances (ANOVA)...
 //name: One-way ANOVA
 //description: One-way analysis of variances (ANOVA) is the parametric procedure for determining whether significant differences occur in an experiment containing two or more conditions.
-//input: dataframe table {category: Data}
-//input: column factors {category: Data}
-//input: column features {type: numerical; category: Data}
-//input: double alpha = 0.05 {category: Significance level} [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
-//input: bool checkNormality = false {caption: Normality; category: Checks} [Indicating whether the normality of distribution should be checked.]
-//input: bool checkVars = false {caption: Variances; category: Checks} [Indicating whether an eqaulity of varainces should be checked.]
-export function anova(table: DG.DataFrame, factors: DG.Column, values: DG.Column, alpha: number, checkNormality: boolean, checkVars: boolean) {  
-  const res = oneWayAnova(factors, values, alpha, false, checkVars); // TODO: replace 'false' with 'checkNormality' after the feature is implemented  
-  addOneWayAnovaVizualization(table, factors, values, res);
+//input: dataframe table
+//input: column factors
+//input: column features {type: numerical}
+//input: double significance = 0.05 [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
+//input: bool validate = false [Indicates whether the normality of distribution and an eqaulity of varainces should be checked.]
+export function anova(table: DG.DataFrame, factors: DG.Column, features: DG.Column, significance: number, validate: boolean) {  
+  const res = oneWayAnova(factors, features, significance, validate);
+  addOneWayAnovaVizualization(table, factors, features, res);
 }

@@ -61,21 +61,16 @@ export type OneWayAnova = {
 
 type ValuesType = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
 
-export type AnovaReport = {
-  table: DG.DataFrame,
-  summary: string;
-};
-
 /** Create dataframe with one-way ANOVA results. */
-export function getOneWayAnovaDF(anova: OneWayAnova, alpha: number, fCritical: number): DG.DataFrame {
+export function getOneWayAnovaDF(anova: OneWayAnova, alpha: number, fCritical: number, hypTest: string, sense: string): DG.DataFrame {
   return DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total']),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Sum of squares', [anova.ssBn, anova.ssWn, anova.ssTot]),
-    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Degrees of freedom', [anova.dfBn, anova.dfWn, anova.dfTot]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Mean square', [anova.msBn, anova.msWn, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-statistics', [anova.fStat, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${alpha}-critical value`, [fCritical, null, null]),
+    DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total', hypTest, sense]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Sum of squares', [anova.ssBn, anova.ssWn, anova.ssTot, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Degrees of freedom', [anova.dfBn, anova.dfWn, anova.dfTot, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Mean square', [anova.msBn, anova.msWn, null, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-statistics', [anova.fStat, null, null, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null, null, null]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${alpha}-critical value`, [fCritical, null, null, null, null]),
   ]);
 } // getOneWayAnovaDF
 
@@ -131,7 +126,10 @@ export class FactorizedData extends Map<any, SampleData> {
       this.setStats(factors, values, checkNormality, alpha); // just statistics are computed
   }
 
-  public isNormal(): boolean | undefined {return this.isNormDistrib;}
+  public isNormal(): boolean | undefined {
+    return true; // TODO: after check normality feature will be implemented, replace with the following:
+    //return this.isNormDistrib;
+  }
 
   /** Check equality of variances of factorized data. */
   public areVarsEqual(alpha: number = 0.05): boolean {
@@ -257,34 +255,33 @@ export class FactorizedData extends Map<any, SampleData> {
 } // FactorizedData
 
 /** Perform one-way analysis of variances. */
-export function oneWayAnova(
-  factors: DG.Column, 
-  values: DG.Column,
-  alpha: number = 0.05,
-  checkNormality: boolean = false, 
-  checkVars: boolean = false): AnovaReport
-{
+export function oneWayAnova(factors: DG.Column, values: DG.Column, alpha: number = 0.05, validate: boolean = false): DG.DataFrame {
   checkSignificanceLevel(alpha);  
 
-  const factorized = new FactorizedData(factors, values, false, checkNormality, alpha);
+  const factorized = new FactorizedData(factors, values, false, validate, alpha);
 
-  if (checkVars)
+  if (validate) {
     if(!factorized.areVarsEqual(alpha))
       throw new Error(ERROR_MSG.NON_EQUAL_VARIANCES);
-
-  if (checkNormality)
+  
     if (!factorized.isNormal())
       throw new Error(ERROR_MSG.NON_NORMAL_DISTRIB);
+  }
 
   const anova = factorized.getOneWayAnova();
   const fCrit = jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn);
 
-  const summary = (anova.fStat > fCrit)
-    ? `The null hypothesis is rejected. The "${factors.name}"-factor produces a significant difference in "${values.name}"-values.`
-    : `Failed to reject the null hypothesis. The "${factors.name}"-factor does not produce a significant difference in "${values.name}"-values.`;
+  let hypTest: string;
+  let sense: string;
 
-  return {
-    table: getOneWayAnovaDF(anova, alpha, fCrit),
-    summary: summary
-  };  
+  if (anova.fStat > fCrit) {
+    hypTest = 'The null hypothesis: REJECTED.';
+    sense = `SENSE: the "${factors.name}"-factor produces a significant difference in the "${values.name}" feature.`; 
+  }
+  else {
+    hypTest = 'The null hypothesis: FAILED TO REJECT.';
+    sense = `SENSE: the "${factors.name}"-factor produces a significant difference in the "${values.name}" feature.`;
+  }
+
+  return getOneWayAnovaDF(anova, alpha, fCrit, hypTest, sense);
 } // oneWayAnova
