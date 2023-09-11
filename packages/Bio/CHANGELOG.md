@@ -7,6 +7,8 @@
 * Fix GetRegion to detect semantic type and renderer for created column.
 * Fix GetRegion dialog column name field for default value.
 * Fix WebLogo viewer for gaps with Helm.
+* Fix cell renderer for empty values MSA.
+* Fix detectMacromolecule to ignore empty seqs.
 
 ## 2.10.0 (2023-09-06)
 
