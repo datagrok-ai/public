@@ -44,7 +44,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -69,7 +69,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -87,7 +87,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('structure3D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -106,7 +106,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('properties', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -115,7 +115,7 @@ category('UI info panel', () => {
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Chemistry');
     (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
-    await awaitPanel(pp, 'Properties');
+    await awaitPanel(pp, 'Properties', 10000);
     const p = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Properties') as HTMLElement;
     if (!p.classList.contains('expanded')) p.click();
@@ -125,7 +125,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('toxicity', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -134,7 +134,7 @@ category('UI info panel', () => {
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology');
     (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
-    await awaitPanel(pp, 'Toxicity', 3000);
+    await awaitPanel(pp, 'Toxicity', 10000);
     const t = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Toxicity') as HTMLElement;
     if (!t.classList.contains('expanded')) t.click();
@@ -144,7 +144,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('drug likeness', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -163,7 +163,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules();
@@ -189,7 +189,7 @@ category('UI info panel', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('descriptors', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -205,7 +205,7 @@ category('UI info panel', () => {
     await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
       'descriptors table hasn\'t been created', 10000);
     desc.click(); await delay(100);
-  }, {skipReason: 'GROK-12946'});
+  });
 
   after(async () => {
     grok.shell.closeAll();
