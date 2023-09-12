@@ -2,7 +2,7 @@
 title: "Analysis of variances"
 ---
 
-Analysis of variance ([ANOVA](https://en.wikipedia.org/wiki/Analysis_of_variance)) is a technique that can be used to determine whether the examined factor has a significant impact on the studied feature.
+Analysis of variance ([ANOVA](https://en.wikipedia.org/wiki/Analysis_of_variance)) determines whether the examined factor has a significant impact on the studied feature.
 
 ## Perform ANOVA
 
@@ -10,11 +10,10 @@ Analysis of variance ([ANOVA](https://en.wikipedia.org/wiki/Analysis_of_variance
 * Run **Top Menu > ML > Analysis of Variances (ANOVA)...**
 * Select the source table
 * Select `Factor` and `Feature` columns
-* Set the significance level `Alpha`
-* Set `Normality` and/or `Variances` checks options
+* Set `Significance` and `Validate` check option
 * Press **OK**
 
-Datagrok provides blazingly fast results:
+The following analysis appears:
 
 ![add-to-workspace](anova.gif)
 
@@ -32,9 +31,7 @@ The ANOVA summary table presents results of computations:
 
 ![anova-summary-table.png](anova-summary-table.png)
 
-The decision regarding the significance of the factor's influence on the studied feature is ensured:
-
-![anova-conclusion.png](anova-conclusion.png)
+The null hypothesis test result is shown. The decision regarding the significance of the factor's influence on the studied feature is ensured.
 
 See also:
 
