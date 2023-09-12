@@ -11,6 +11,7 @@ import {_package} from '../package';
 
 const LEFT_HELM_WRAPPER = 'PEPTIDE1{';
 const RIGHT_HELM_WRAPPER = '}$$$$';
+const ALL_MONOMERS = '<All>';
 
 function addCommonTags(col: DG.Column):void {
   col.setTag('quality', DG.SEMTYPE.MACROMOLECULE);
@@ -27,6 +28,8 @@ export function _setPeptideColumn(col: DG.Column): void {
 
 async function enumerator(molColumn: DG.Column, leftTerminal: string, rightTerminal: string): Promise<void> {
   function hasSpecifiedTerminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
+    if (leftTerminal === ALL_MONOMERS || rightTerminal === ALL_MONOMERS)
+      return true;
     return helm.includes(LEFT_HELM_WRAPPER + leftTerminal) && helm.includes(rightTerminal + RIGHT_HELM_WRAPPER);
   }
   function getCyclicHelm(helm: string): string {
@@ -45,7 +48,8 @@ async function enumerator(molColumn: DG.Column, leftTerminal: string, rightTermi
   const sourceHelmCol = nc.convert(NOTATION.HELM);
   // df.columns.add(sourceHelmCol);
   const targetList = sourceHelmCol.toList().map((helm) => getCyclicHelm(helm));
-  const targetHelmCol = DG.Column.fromList('string', 'Enumerator(helm)', targetList);
+  const colName = df.columns.getUnusedName('Enumerator(' + molColumn.name + ')');
+  const targetHelmCol = DG.Column.fromList('string', colName, targetList);
   addCommonTags(targetHelmCol);
   targetHelmCol.setTag('units', NOTATION.HELM);
   targetHelmCol.setTag('cell.renderer', 'helm');
@@ -55,17 +59,26 @@ async function enumerator(molColumn: DG.Column, leftTerminal: string, rightTermi
 
 export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   const monomerLib = MonomerLibHelper.instance.getBioLib();
-  const peptideList: string[] = monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE);
-  const leftTerminalChoice = ui.choiceInput('Left terminal:', peptideList[0], peptideList);
-  const rightTerminalChoice = ui.choiceInput('Right terminal:', peptideList[0], peptideList);
+  const peptideList: string[] = [ALL_MONOMERS].concat(monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE));
+  const leftTerminalChoice = ui.choiceInput('', peptideList[0], peptideList);
+  const rightTerminalChoice = ui.choiceInput('', peptideList[0], peptideList);
+
+  const rGroups = ['term N', 'term O'];
+  const r1groupChoice = ui.choiceInput('R1', rGroups[0], rGroups);
+  const r2groupChoice = ui.choiceInput('R2', rGroups[1], rGroups);
+
+  const modifications = ['Cyclization'];
+
+  const modificationChoice = ui.choiceInput('Modification', modifications[0], modifications);
 
   const btn = ui.bigButton('Run', async () =>
     enumerator(molColumn, leftTerminalChoice.value!, rightTerminalChoice.value!)
   );
 
   const div = ui.div([
-    leftTerminalChoice,
-    rightTerminalChoice,
+    modificationChoice,
+    ui.divH([r1groupChoice.root, leftTerminalChoice.root]),
+    ui.divH([r2groupChoice.root, rightTerminalChoice.root]),
     btn
   ]);
 
