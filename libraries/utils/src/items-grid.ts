@@ -10,7 +10,16 @@ export type ItemsGridOptions = {
     allowAdd?: boolean,
     horizontalInputNames?: boolean,
     newItemFunction?: () => ItemType,
+    customInputs?: {[key: string]: (item: ItemType) => InputType}
 };
+
+export type InputType = {
+    input?: HTMLElement,
+    root: HTMLElement,
+    value: any,
+    onChanged: (action: () => void) => void,
+    addOptions?: (el: HTMLElement) => void
+}
 
 /** Editor for predefined properties in a grid form. Supports adding, removing and editing of props. */
 export class ItemsGrid {
@@ -88,17 +97,19 @@ export class ItemsGrid {
   private getItemDiv(item: ItemType = {}, isAdding?: boolean): HTMLElement[] {
     const editors: HTMLElement[] = [];
 
-    const inputsMap: {[_: string]: DG.InputBase} = {};
-    let lastInput: DG.InputBase | null = null;
+    const inputsMap: {[_: string]: InputType} = {};
+    let lastInput: InputType | null = null;
     for (const prop of this.properties) {
       if (item[prop.name] === undefined)
         item[prop.name] = null; // needed for date editor, it can not handle undefined
-      const input = ui.input.forProperty(prop, item);
+      const input = this.options.customInputs?.[prop.name] ? this.options.customInputs[prop.name](item) :
+        ui.input.forProperty(prop, item);
       editors.push(this.options.horizontalInputNames ? input.root : this.hideLabel(input.root));
       if (prop.propertyType !== DG.TYPE.BOOL)
-        input.input.style.width = '100%';
+        input.input && (input.input.style.width = '100%');
       inputsMap[prop.name] = input;
       input.onChanged(() => {
+        item[prop.name] = input.value;
         isAdding ? this.onAddingItemChanged.next({item, fieldName: prop.name}) :
           this.onItemChanged.next({item, fieldName: prop.name});
       });
@@ -129,7 +140,8 @@ export class ItemsGrid {
     }
 
     //editors.push(companionButton);
-    lastInput && lastInput.addOptions(companionButton);
+    lastInput && lastInput.addOptions ? lastInput.addOptions(companionButton) :
+      lastInput?.root.appendChild(companionButton);
     companionButton.style.color = '#2083d5';
     return editors;
   }
