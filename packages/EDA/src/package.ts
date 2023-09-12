@@ -325,11 +325,11 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 //name: One-way ANOVA
 //description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
 //input: dataframe table
-//input: column factors
-//input: column features {type: numerical}
+//input: column factor
+//input: column feature {type: numerical}
 //input: double significance = 0.05 [The significance level is a value from the interval (0, 1) specifying the criterion used for rejecting the null hypothesis.]
 //input: bool validate = false [Indicates whether the normality of distribution and an eqaulity of varainces should be checked.]
-export function anova(table: DG.DataFrame, factors: DG.Column, features: DG.Column, significance: number, validate: boolean) {  
-  const res = oneWayAnova(factors, features, significance, validate);
-  addOneWayAnovaVizualization(table, factors, features, res);
+export function anova(table: DG.DataFrame, factor: DG.Column, feature: DG.Column, significance: number, validate: boolean) {  
+  const res = oneWayAnova(factor, feature, significance, validate);
+  addOneWayAnovaVizualization(table, factor, feature, res);
 }

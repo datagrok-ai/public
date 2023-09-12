@@ -271,7 +271,7 @@ export function oneWayAnova(factors: DG.Column, values: DG.Column, alpha: number
   const anova = factorized.getOneWayAnova();
   const fCrit = jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn);
 
-  const hypothesis = `THE NULL HYPOTHESIS: the "${factors.name}"-factor does not produce a significant difference in the "${values.name}" feature.`;
+  const hypothesis = `THE NULL HYPOTHESIS: the "${factors.name}" factor does not produce a significant difference in the "${values.name}" feature.`;
   const testResult = `Test result: ${(anova.fStat > fCrit) ? 'REJECTED.' : 'FAILED TO REJECT.'}`;
 
   return getOneWayAnovaDF(anova, alpha, fCrit, hypothesis, testResult);
