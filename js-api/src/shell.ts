@@ -405,7 +405,7 @@ export class Settings {
 
   /** Jupyter Notebook URL */
   get jupyterNotebook(): string {
-    return api.grok_Settings_Get_JupyterPath();
+    return api.grok_Settings_Get_JupyterNotebookPath();
   }
 
   /** Jupyter Notebook Token */
