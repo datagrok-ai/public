@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 
 import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
-  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, helmFieldsToEnumeratorInputFields, rGroupsDummy, dummyMonomer
+  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, 
+  helmFieldsToEnumeratorInputFields, rGroupsDummy, dummyMonomer
 } from '../utils/const';
 import {IMonomerLib, Monomer} from '../types/index';
 import {ISeqSplitted, SplitterFunc} from '../utils/macromolecule/types';

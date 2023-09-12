@@ -5,13 +5,16 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, Subject} from 'rxjs';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {
   createJsonMonomerLibFromSdf,
   getJsonMonomerLibForEnumerator,
   IMonomerLibHelper,
   isValidEnumeratorLib,
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+import {
+  HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT, HELM_POLYMER_TYPE
+} from '@datagrok-libraries/bio/src/utils/const';
 
 import {_package} from '../package';
 
@@ -135,6 +138,27 @@ export class MonomerLib implements IMonomerLib {
 
   getMonomerSymbolsByType(polymerType: string): string[] {
     return Object.keys(this._monomers[polymerType]);
+  }
+
+  /** Get a list of monomers with specified element attached to specified
+   * R-group  */
+  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: string, element?: string): string[] {
+    const monomerSymbols = this.getMonomerSymbolsByType(polymerType);
+    let monomers = monomerSymbols.map((sym) => this.getMonomer(polymerType, sym));
+    monomers = monomers.filter((el) => el !== null);
+    if (monomers.length === 0)
+      return [];
+    monomers = monomers.filter((monomer) => {
+      if (!monomer?.rgroups)
+        return false;
+      let criterion = monomer?.rgroups.length >= rGroupNumber;
+      const molfileHandler = MolfileHandler.getInstance(monomer.molfile);
+      console.log(molfileHandler.atomTypes);
+      console.log(molfileHandler.pairsOfBondedAtoms);
+      criterion &&= true;
+      return criterion;
+    });
+    return monomers.map((monomer) => monomer?.symbol!);
   }
 
   get onChanged(): Observable<any> {
@@ -279,7 +303,6 @@ export class MonomerLibHelper implements IMonomerLibHelper {
       monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomer as Monomer;
     });
 
-    console.log('monomers', monomers);
     return new MonomerLib(monomers);
   }
 
