@@ -7,9 +7,6 @@ import {Observable} from 'rxjs';
 import {IViewer} from './viewer';
 
 export enum TAGS {
-  positionNames = '.wl.positionNames',
-  positionLabels = '.wl.positionLabels',
-
   /** Controls displaying WebLogo in a Macromolecule column's header tooltip */
   tooltipWebLogo = '.tooltipWebLogo',
 }
@@ -58,7 +55,7 @@ export const WebLogoPropsDefault = new class {
 
   // -- Style --
   backgroundColor: number = 0xFFFFFFFF;
-  positionHeight: string = PositionHeight.full;
+  positionHeight: string = PositionHeight.Entropy; // that is the way in the bioinformatics domain
   positionWidth: number = 16;
 
   // -- Layout --
@@ -84,7 +81,6 @@ export interface IWebLogoViewer extends WebLogoProps, IViewer {
   setOptions(options: Partial<WebLogoProps>): void;
 }
 
-export const positionSeparator: string = ', ';
 export const positionRe: RegExp = /(\d+)([A-Z]?)/;
 
 declare module 'datagrok-api/dg' {

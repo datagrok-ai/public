@@ -72,8 +72,8 @@ function isPlainObject(value: any) {
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
-  // if (x instanceof dayjs.Dayjs)
-  //   return x.valueOf();
+  if (x instanceof dayjs)
+    return (<any>window).grok_DayJs_To_DateTime(x.valueOf());
   if (typeof x.toDart === 'function')
     return x.toDart();
   if (typeof x.dart !== 'undefined')

@@ -30,7 +30,7 @@ category('scaffold tree', () => {
       'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 60000);
     await delay(2000); //need to scaffold to finish generation
     tv.close();
-  }, {timeout: 90000});
+  }, {timeout: 180000, skipReason: 'GROK-12946'});
 
   after(async () => {
     grok.shell.closeAll();

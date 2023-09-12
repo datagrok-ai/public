@@ -14,3 +14,26 @@
 div.ui-box > div.ui-box.rfv-form > div.ui-div {
     overflow: visible!important;
 }
+
+.rfv-scalar-table {
+    border-collapse: collapse;
+    margin: 10px;
+}
+
+.rfv-scalar-table td {
+    width: max-content;
+    white-space: nowrap;
+}
+
+.rfv-scalar-table tr{
+    min-height: 30px;
+    border-bottom: 1pt solid var(--grey-12);
+}
+
+.rfv-scalar-table tr:nth-child(odd) {
+    background-color: var(--grey-1);
+}
+
+.rfv-scalar-table td:last-child {
+    width: 100%;
+}

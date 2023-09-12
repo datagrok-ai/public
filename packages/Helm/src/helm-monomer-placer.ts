@@ -25,13 +25,23 @@ export class HelmMonomerPlacer {
   constructor(public readonly col: DG.Column<string>) {
     this.col.dataFrame.onDataChanged.subscribe();
     this.monomerLib = getMonomerLib();
+    this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this));
+  }
+
+  public skipCell(rowIdx: number): void {
+    if (this._allPartsList === null)
+      this._allPartsList = new Array<string[] | null>(this.col.length).fill(null);
+    if (this._lengthsList === null)
+      this._lengthsList = new Array<number[] | null>(this.col.length).fill(null);
+
+    this._allPartsList[rowIdx] = [];
+    this._lengthsList[rowIdx] = [];
   }
 
   /** @param rowIdx Row index of the table {@link DG.DataFrame}, HelmMonomerPlacer is {@link DG.Column} based */
   public getCellAllPartsLengths(rowIdx: number): [string[], number[], number[]] {
     if (this._allPartsList === null)
       this._allPartsList = new Array<string[] | null>(this.col.length).fill(null);
-
     if (this._lengthsList === null)
       this._lengthsList = new Array<number[] | null>(this.col.length).fill(null);
 
@@ -45,12 +55,17 @@ export class HelmMonomerPlacer {
   }
 
   private getCellMonomerLengthsForSeq(rowIdx: number): [string[], number[]] {
-    const allParts: string[] = this._allPartsList![rowIdx] = this.getAllParts(rowIdx);
-    const lengths: number[] = this._lengthsList![rowIdx] = new Array<number>(allParts.length);
+    let allParts: string[] | null = this._allPartsList![rowIdx];
+    if (allParts === null)
+      allParts = this._allPartsList![rowIdx] = this.getAllParts(rowIdx);
 
-    for (const [part, partI] of wu.enumerate(allParts)) {
-      const partWidth: number = part.length * this.monomerCharWidth;
-      lengths[partI] = partWidth;
+    let lengths: number[] | null = this._lengthsList![rowIdx];
+    if (lengths === null) {
+      lengths = this._lengthsList![rowIdx] = new Array<number>(allParts.length);
+      for (const [part, partI] of wu.enumerate(allParts)) {
+        const partWidth: number = part.length * this.monomerCharWidth;
+        lengths[partI] = partWidth;
+      }
     }
 
     return [allParts, lengths];
@@ -69,6 +84,14 @@ export class HelmMonomerPlacer {
       if (res) break;
     }
     return res;
+  }
+
+  // -- Handle events --
+
+  private monomerLibOnChanged(_value: any): void {
+    this._lengthsList = null;
+    this._allPartsList = null;
+    // TODO: Invalidate all grids of this.col.dataFrame
   }
 
   public static getOrCreate(col: DG.Column<string>): HelmMonomerPlacer {

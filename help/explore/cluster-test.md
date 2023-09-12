@@ -10,7 +10,7 @@
 
 1. Open "demog" dataset
 
-2. Open "Cluster..." from  **Tools | Data Science**
+2. Open "Cluster..." from  **ML | Cluster**
 
 3. Add "Age", "Height" and "Weight" columns to field "Features"
 

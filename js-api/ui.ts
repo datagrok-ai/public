@@ -37,6 +37,7 @@ import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
+import {ItemsGrid} from "./src/ui/items-grid";
 
 
 let api = <any>window;
@@ -665,10 +666,19 @@ export namespace input {
     return input;
   }
 
+  export function grid(items: any[], properties: Property[]): ItemsGrid {
+    return new ItemsGrid(items, properties);
+  }
+
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
+
+  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
+    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+  }
+
 
   // export function bySemType(semType: string) {
   //
@@ -1324,6 +1334,7 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
   }
   _options(d, options);
   $(d).addClass('ui-form');
+  
   return d;
 }
 
@@ -1652,4 +1663,215 @@ interface HintPage {
   /** Returns error message (and stops wizard from proceeding to the next page),
    * or null if validated */
   validate?: () => string | null;
+}
+
+export namespace css {
+
+  export enum flex {
+    row = 'd4-flex-row',
+    col = 'd4-flex-col',
+    wrap = 'd4-flex-wrap',
+    nowrap = 'd4-flex-nowrap',
+    grow = 'd4-flex-grow',
+  }
+
+  export enum alignItems {
+    start = 'align-items-start',
+    end = 'align-items-end',
+    center = 'align-items-center',
+    baseline = 'align-items-baseline',
+    stretch = 'align-items-stretch',
+  }
+
+  export enum justifyContent {
+    start = 'justify-content-start',
+    end = 'justify-content-end',
+    center = 'justify-content-center',
+    between = 'justify-content-between',
+    around = 'justify-content-around',
+  }
+
+  export enum gap {
+    small = 'gap-small',
+    medium = 'gap-medium',
+    large = 'gap-large',
+  }
+
+  export enum margin {
+    none = 'm-none',
+    small = 'm-small',
+    medium = 'm-medium',
+    large = 'm-large',
+    auto = 'm-auto'
+  }
+
+  export enum marginX {
+    none = 'mx-none',
+    small = 'mx-small',
+    medium = 'mx-medium',
+    large = 'mx-large',
+    auto = 'mx-auto'
+  }
+
+  export enum marginY {
+    none = 'my-none',
+    small = 'my-small',
+    medium = 'my-medium',
+    large = 'my-large',
+    auto = 'my-auto'
+  }
+
+  export enum marginLeft {
+    none = 'ml-none',
+    small = 'ml-small',
+    medium = 'ml-medium',
+    large = 'ml-large',
+    auto = 'ml-auto'
+  }
+
+  export enum marginRight {
+    none = 'mr-none',
+    small = 'mr-small',
+    medium = 'mr-medium',
+    large = 'mr-large',
+    auto = 'mr-auto'
+  }
+
+  export enum marginTop {
+    none = 'mt-none',
+    small = 'mt-small',
+    medium = 'mt-medium',
+    large = 'mt-large',
+    auto = 'mt-auto'
+  }
+
+  export enum marginBottom {
+    none = 'mb-none',
+    small = 'mb-small',
+    medium = 'mb-medium',
+    large = 'mb-large',
+    auto = 'mb-auto'
+  }
+
+  export enum padding {
+    none = 'p-none',
+    small = 'p-small',
+    medium = 'p-medium',
+    large = 'p-large',
+  }
+
+  export enum paddingX {
+    none = 'px-none',
+    small = 'px-small',
+    medium = 'px-medium',
+    large = 'px-large',
+  }
+
+  export enum paddingY {
+    none = 'py-none',
+    small = 'py-small',
+    medium = 'py-medium',
+    large = 'py-large',
+  }
+
+  export enum paddingLeft {
+    none = 'pl-none',
+    small = 'pl-small',
+    medium = 'pl-medium',
+    large = 'pl-large',
+  }
+
+  export enum paddingRight {
+    none = 'pr-none',
+    small = 'pr-small',
+    medium = 'pr-medium',
+    large = 'pr-large',
+  }
+
+  export enum paddingTop {
+    none = 'pt-none',
+    small = 'pt-small',
+    medium = 'pt-medium',
+    large = 'pt-large',
+  }
+
+  export enum paddingBottom {
+    none = 'pb-none',
+    small = 'pb-small',
+    medium = 'pb-medium',
+    large = 'pb-large',
+  }
+
+  export enum textSize {
+    small = 'text-small',
+    medium = 'text-medium',
+    large = 'text-large',
+  }
+
+  export enum textAlign {
+    left = 'text-left',
+    right = 'text-right',
+    center = 'text-center',
+  }
+
+  export enum textWeight {
+    light = 'text-light',
+    normal = 'text-normal',
+    bolder = 'text-bolder',
+    bold = 'text-bold',
+  }
+
+  export enum textTransform {
+    lowercase = 'text-lowercase',
+    uppercase = 'text-uppercase',
+    capitalize = 'text-capitalize',
+  }
+
+  export enum lineHeight {
+    small = 'lh-small',
+    medium = 'lh-medium',
+    large = 'lh-large',
+  }
+
+  export enum background {
+    none = 'bg-none',
+    white = 'bg-white',
+    light = 'bg-light',
+  }
+
+  export enum shadow {
+    none = 'shadow-none',
+    small = 'shadow-small',
+    medium = 'shado-medium',
+    large = 'shadow-large',
+  }
+
+  export enum table {
+    noraml = 'table',
+    wide = 'table-wide'
+  }
+
+  export enum tableSize {
+    small = 'table-small',
+    medium = 'table-medium',
+    large = 'table-large'
+  }
+
+  export enum tableStyle {
+    border = 'table-border',
+    linesRow = 'table-row-lines',
+    linesCol = 'table-col-lines',
+    striped = 'table-striped'
+  }
+  
+  export enum border {
+    all = 'border',
+    right = 'border-right',
+    left = 'border-left',
+    top = 'border-top',
+    bottom = 'border-bottom',
+    leftRight = 'border-left-right',
+    topBottom = 'border-top-bottom'
+  }
+
 }

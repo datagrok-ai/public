@@ -1,0 +1,10 @@
+{
+  "name": "DMT-1",
+  "templateName": "Demo template",
+  "status": "In Progress",
+  "createDate": "2023/9/1",
+  "campaignFields": { "Chemist": "Davit", "Someone else": "someone" },
+  "columnSemTypes": { "Molecule": "Molecule", "MolWt": null },
+  "rowCount": 3,
+  "filteredRowCount": 3
+}

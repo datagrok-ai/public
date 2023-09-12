@@ -11,7 +11,7 @@ Partial least squares regression (PLS regression) is a particular type of MVA. P
 ## Regress and analyse
 
 * Open a table
-* Run from the top menu: `ML | Multivariate Analysis (PLS)...`
+* Run from the top menu: `ML | Analyze | Multivariate Analysis...`
 * Select a table that contains features
 * Select feature columns
 * Select column with sample names

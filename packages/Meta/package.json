@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.27",
+  "version": "3.5.52",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -178,6 +178,9 @@
         },
         "1.3.38": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.3.39": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
@@ -298,6 +301,15 @@
           "datagrok-api": "^1.16.0"
         },
         "1.3.10": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.3.11": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.3.12": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.3.13": {
           "datagrok-api": "^1.16.0"
         }
       },
@@ -595,6 +607,12 @@
         },
         "1.7.0": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.7.1": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.7.2": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -745,9 +763,12 @@
         },
         "1.1.0": {
           "datagrok-api": "^1.10.2"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.15.2"
         }
       },
-      "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
+      "description": "SequenceTranslator translates [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1053,6 +1074,12 @@
         },
         "1.9.3": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.11.3": {
+          "datagrok-api": "^1.16.1"
+        },
+        "1.12.0": {
+          "datagrok-api": "^1.16.1"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1300,6 +1327,9 @@
         },
         "1.7.9": {
           "datagrok-api": "1.15.4"
+        },
+        "1.7.10": {
+          "datagrok-api": "^1.15.4"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1578,6 +1608,21 @@
         },
         "1.13.11": {
           "datagrok-api": "^1.16.3"
+        },
+        "1.13.12": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.14.0": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.14.1": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.14.2": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.14.3": {
+          "datagrok-api": "^1.16.3"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](https://datagrok.ai/help/compute/).",
@@ -1761,6 +1806,9 @@
           "datagrok-api": "^1.16.0"
         },
         "1.2.0": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.2.1": {
           "datagrok-api": "^1.16.0"
         }
       },
@@ -2278,6 +2326,15 @@
         },
         "2.8.6": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.9.0": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.0": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.2": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2664,6 +2721,9 @@
         },
         "2.1.16": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.17": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
@@ -2854,6 +2914,9 @@
         },
         "1.2.18": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.19": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -2943,6 +3006,9 @@
         },
         "1.1.2": {
           "datagrok-api": "latest"
+        },
+        "1.1.3": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -2989,6 +3055,9 @@
         },
         "1.0.5": {
           "datagrok-api": "^1.16.3"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.16.3"
         }
       },
       "description": "Automated tests for JDBC Providers",
@@ -3018,6 +3087,9 @@
         },
         "1.0.5": {
           "datagrok-api": "latest"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.16.3"
         }
       },
       "description": "Automated UI tests",
@@ -3052,6 +3124,12 @@
           "datagrok-api": "^1.16.0"
         },
         "1.2.5": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.2.6": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.2.7": {
           "datagrok-api": "^1.16.0"
         }
       },
@@ -3105,6 +3183,9 @@
           "datagrok-api": "latest"
         },
         "1.0.3": {
+          "datagrok-api": "latest"
+        },
+        "1.0.4": {
           "datagrok-api": "latest"
         }
       },

@@ -4,6 +4,5 @@
 
 grok.chem.diversitySearch(grok.data.testData('molecules', 100).col('smiles'))
   .then(function (mols) {
-    let col = DG.Column.fromStrings('smiles', mols);
-    grok.shell.addTableView(DG.DataFrame.fromColumns([col]));
+    grok.shell.addTableView(mols);
   });

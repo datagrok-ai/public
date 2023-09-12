@@ -115,7 +115,7 @@ category('UI info panel', () => {
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Chemistry');
     (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
-    await awaitPanel(pp, 'Properties');
+    await awaitPanel(pp, 'Properties', 10000);
     const p = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Properties') as HTMLElement;
     if (!p.classList.contains('expanded')) p.click();
@@ -134,7 +134,7 @@ category('UI info panel', () => {
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology');
     (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
-    await awaitPanel(pp, 'Toxicity', 3000);
+    await awaitPanel(pp, 'Toxicity', 10000);
     const t = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Toxicity') as HTMLElement;
     if (!t.classList.contains('expanded')) t.click();

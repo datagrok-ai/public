@@ -8,7 +8,7 @@ them.
 
 ## Testing scenarios
 
-1. Open "Browse Models" from **Tools | Predictive Modeling**
+1. Open "Browse Models" from **ML | Models**
 
 * Model browser is open
 * You can change the view, use sort and search

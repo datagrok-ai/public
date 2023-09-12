@@ -35,6 +35,8 @@ category('Model: Settings', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -42,6 +44,7 @@ category('Model: Settings', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Activity scaling', async () => {

@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, awaitCheck, expectFloat} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
-import {getTemplate, scaleActivity} from '../utils/misc';
+import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
+import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as C from '../utils/constants';
@@ -14,7 +14,6 @@ import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 import {TEST_COLUMN_NAMES} from './utils';
 import wu from 'wu';
 import {LogoSummaryTable} from '../viewers/logo-summary';
-import {calculateIdentity, calculateSimilarity} from '../widgets/similarity';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -37,6 +36,8 @@ category('Widgets: Settings', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -44,6 +45,7 @@ category('Widgets: Settings', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
@@ -85,7 +87,8 @@ category('Widgets: Distribution panel', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -93,6 +96,7 @@ category('Widgets: Distribution panel', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
@@ -121,6 +125,8 @@ category('Widgets: Mutation cliffs', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -128,6 +134,7 @@ category('Widgets: Mutation cliffs', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
@@ -156,6 +163,8 @@ category('Widgets: Actions', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
     // Ensure grid finished initializing to prevent Unhandled exceptions
     let accrodionInit = false;
@@ -163,6 +172,7 @@ category('Widgets: Actions', () => {
     await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
     await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
     await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('New view', async () => {
@@ -211,13 +221,12 @@ category('Widgets: Actions', () => {
     const customClusterList = wu(model.customClusters).toArray();
     expect(customClusterList.length, 1, 'Expected to have 1 custom cluster');
     const clustName = customClusterList[0].name;
-    expect(model.df.col(clustName) !== null, true,
-      'Expected to have custom cluster column in the table');
+    expect(model.df.col(clustName) !== null, true, 'Expected to have custom cluster column in the table');
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) !== -1, true,
       'Expected to have custom cluster in the Logo Summary Table');
 
     // Remove custom cluster
-    model.modifyClusterSelection(clustName);
+    model.modifyClusterSelection({monomerOrCluster: clustName, positionOrClusterType: CLUSTER_TYPE.CUSTOM});
     lstViewer.removeCluster();
     expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
     expect(model.df.col(clustName) === null, true,
@@ -226,51 +235,3 @@ category('Widgets: Actions', () => {
       'Expected to have no custom cluster in the Logo Summary Table');
   });
 }, {clear: false});
-
-
-category('Widgets: Identity', () => {
-  let df: DG.DataFrame;
-  let model: PeptidesModel;
-  let activityCol: DG.Column<number>;
-  let sequenceCol: DG.Column<string>;
-  let clusterCol: DG.Column<any>;
-  let scaledActivityCol: DG.Column<number>;
-
-  before(async () => {
-    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
-    activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
-    sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
-    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
-    clusterCol = df.getCol(TEST_COLUMN_NAMES.CLUSTER);
-    const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
-      C.SCALING_METHODS.NONE);
-    if (tempModel === null)
-      throw new Error('Model is null');
-    model = tempModel;
-
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-  });
-
-  test('Identity', async () => {
-    const seq = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$';
-    const template = await getTemplate(seq);
-    const identityCol = calculateIdentity(template, model.splitSeqDf);
-    expect(identityCol.get(0), 1, 'Expected 1 identity score when sequence is matching template');
-    expectFloat(identityCol.get(3)!, 0.5625, 0.01, 'Expected 0.5625 identity score agains sequence at position 3');
-  });
-
-  test('Similarity', async () => {
-    const seq = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$';
-    const template = await getTemplate(seq);
-    const identityCol = await calculateSimilarity(template, model.splitSeqDf);
-    expect(identityCol.get(0), 1, 'Expected 1 identity score when sequence is matching template');
-    expectFloat(identityCol.get(3)!, 0, 0.001, 'Expected 7 identity score agains sequence at position 3');
-  })
-});

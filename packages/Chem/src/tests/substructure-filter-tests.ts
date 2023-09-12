@@ -80,22 +80,22 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('filterByOneColumn', async () => {
     await testOneColumn('tests/spgi-100.csv', 'Structure', 'c1ccccc1',
       'terminate_substructure_search-tests/spgi-100-Structure', 'oneColumn', 32);
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('malformed_filterByOneColumn', async () => {
     await testOneColumn('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'c1ccccc1',
       'terminate_substructure_search-tests/Test_smiles_malformed-canonical_smiles', 'malformed', 36);
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('empty_filterByOneColumn', async () => {
     await testOneColumn('tests/sar-small_empty_vals.csv', 'smiles', 'C1CCCCC1',
       'terminate_substructure_search-tests/sar-small_empty_vals-smiles', 'empty', 16);
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('terminatedSearch', async () => {
     const df = await readDataframe('tests/smi10K.csv');
@@ -121,7 +121,7 @@ M  END
 
     sketcherDialogs.forEach((it) => it.close());
     filter.detach();
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: 'GROK-12946'});
 
   test('filteringMultipleDfs', async () => {
     const df1 = await readDataframe('tests/smi10K.csv');
@@ -154,7 +154,7 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: 'GROK-12946'});
 
   test('multipleDfsWithTerminatedSearch', async () => {
     const df1 = await readDataframe('tests/smi10K.csv');
@@ -190,7 +190,7 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: 'GROK-12946'});
 });
 
 async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[]):

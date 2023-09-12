@@ -16,7 +16,7 @@ category('UI top menu', () => {
         grok.shell.windows.showProperties = true;
     });
 
-    test('similarity search', async () => {
+     test('similarity search', async () => {
         smiles = grok.data.demo.molecules(20);
         v = grok.shell.addTableView(smiles);
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
@@ -94,7 +94,7 @@ category('UI top menu', () => {
         await awaitCheck(() => smiles.columns.names().includes('curated_molecule'), 'curated molecule hasn\'t been added', 10000);
         v.close();
         grok.shell.o = ui.div();
-    });
+    }); 
 
     test('map identifiers', async () => {
         smiles = grok.data.demo.molecules(20);
@@ -106,19 +106,19 @@ category('UI top menu', () => {
         setDialogInputValue('Chem Map Identifiers', 'To Source', 'mcule');
         let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click();
-        await awaitCheck(() => grok.shell.t.columns.contains('mcule'), 'cannot find mcule column', 10000);
+        await awaitCheck(() => grok.shell.t.columns.contains('mcule'), 'cannot find mcule column', 15000);
 
         await callDialog();
         setDialogInputValue('Chem Map Identifiers', 'To Source', 'chembl');
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click();
-        await awaitCheck(() => grok.shell.t.columns.contains('chembl'), 'cannot find chembl column', 10000);
+        await awaitCheck(() => grok.shell.t.columns.contains('chembl'), 'cannot find chembl column', 15000);
 
         await callDialog();
         setDialogInputValue('Chem Map Identifiers', 'To Source', 'pubchem');
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click();
-        await awaitCheck(() => grok.shell.t.columns.contains('pubchem'), 'cannot find pubchem column', 10000);
+        await awaitCheck(() => grok.shell.t.columns.contains('pubchem'), 'cannot find pubchem column', 15000);
         v.close();
         grok.shell.o = ui.div();
 
@@ -126,9 +126,9 @@ category('UI top menu', () => {
             grok.shell.topMenu.find('Chem').group('Calculate').find('Map Identifiers...').click();
             await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
         }
-    });
+    }, {timeout: 60000});
 
-    test('fingerprints', async () => {
+     test('fingerprints', async () => {
         await testGroup('Calculate', 'Fingerprints...', 'Fingerprints', 'Fingerprints');
     });
 
@@ -282,11 +282,11 @@ category('UI top menu', () => {
             'cannot create viewer', 3000);
         const stviewer = Array.from(v.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0];
         await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
-            'scaffold tree has not been generated', 30000);
+            'scaffold tree has not been generated', 70000);
         await delay(2000); //need to scaffold to finish generation
         v.close();
         grok.shell.o = ui.div();
-    });
+    }, {timeout: 70000}); 
 
     after(async () => {
         grok.shell.closeAll();

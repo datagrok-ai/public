@@ -16,6 +16,8 @@ let data = ui.tableInput('Data', null);
 let tags = ui.tagsInput('Skills', ['HTML', 'CSS', 'JS'], true);
 let memo = ui.textInput('Memo', '');
 
+name.addValidator(s => s.length < 15 ? 'Too short' : null);
+
 let form = ui.form([search, data, name, age, date, alien, friends,bestFriend, active, color, country, tags, memo]);
 
 form.append(ui.buttonsInput([ui.bigButton('Submit', ()=>{grok.shell.info('Submit')})]));

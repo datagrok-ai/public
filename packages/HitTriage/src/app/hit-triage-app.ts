@@ -2,25 +2,25 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
-  HitTriageTemplate, HitTriageTemplateIngest, IngestType} from './types';
+  HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus} from './types';
 import {InfoView} from './hit-triage-views/info-view';
-import {HitTriageBaseView} from './hit-triage-views/base-view';
 import {SubmitView} from './hit-triage-views/submit-view';
-import {CampaignIdKey, HitSelectionColName, i18n} from './consts';
-import {modifyUrl} from './utils';
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, HitSelectionColName, i18n} from './consts';
+import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
-export class HitTriageApp {
-  template?: HitTriageTemplate;
-  dataFrame?: DG.DataFrame;
+import {HitAppBase} from './hit-app-base';
+import {HitBaseView} from './base-view';
+import {saveCampaignDialog} from './dialogs/save-campaign-dialog';
+export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   multiView: DG.MultiView;
 
   private _infoView: InfoView;
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
 
-  private _filterViewName = 'Pick';
+  private _filterViewName = 'Hit triage | Pick';
   private _campaignFilters?: {[key: string]: any}[];
   private _campaignId?: string;
   private _dfName?: string;
@@ -30,20 +30,37 @@ export class HitTriageApp {
   private _campaign?: HitTriageCampaign;
   protected _filterDescriptions: string[] = [];
   public campaignProps: {[key: string]: any} = {};
-  constructor() {
+  private currentPickViewId?: string;
+  constructor(c: DG.FuncCall) {
+    super(c);
     this._infoView = new InfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
-      if (this.multiView.currentView instanceof HitTriageBaseView)
-        (this.multiView.currentView as HitTriageBaseView).onActivated();
+      if (this.multiView.currentView instanceof HitBaseView)
+        (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
+    this.multiView.parentCall = c;
     grok.shell.addView(this.multiView);
+
+    grok.events.onCurrentViewChanged.subscribe(() => {
+      try {
+        if (grok.shell.v?.name === this.currentPickViewId) {
+          grok.shell.windows.showHelp = false;
+          this.setBaseUrl();
+          modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
   }
 
   public async setTemplate(template: HitTriageTemplate, presetFilters?: {[key: string]: any}[],
     campaignId?: string, ingestProps?: HitTriageTemplateIngest) {
+    this._pickView?.dataFrame && grok.shell.closeTable(this._pickView?.dataFrame);
+    this._pickView = undefined;
     if (!campaignId) {
-      campaignId = await this.getNewCampaignName(template.key);
+      campaignId = await this.getNewCampaignName('Hit Triage/campaigns', template.key);
       modifyUrl(CampaignIdKey, campaignId);
     } else if (ingestProps) {
       this._fileInputType = ingestProps.type;
@@ -55,6 +72,13 @@ export class HitTriageApp {
     if (!this.dataFrame) {
       console.error('Dataframe is empty.');
       return;
+    }
+    if (this._campaign?.columnSemTypes) {
+      Object.entries(this._campaign.columnSemTypes).forEach(([colName, semtype]) => {
+        const col = this.dataFrame!.columns.byName(colName);
+        if (col)
+          col.semType = semtype;
+      });
     }
     await this.dataFrame.meta.detectSemanticTypes();
     this._molColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? undefined;
@@ -75,10 +99,19 @@ export class HitTriageApp {
         externals: funcs,
       });
     };
+    const curView = grok.shell.v;
+    const pickV = grok.shell.addView(this.pickView);
+    this.currentPickViewId = pickV.name;
+    this._submitView = new SubmitView(this);
+    this.setBaseUrl();
+    modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
 
-    //this.currentView.root.appendChild(this.pickView.root);
-    this.multiView.addView(this._filterViewName, () => this.pickView, true);
-    this._submitView ??= new SubmitView(this);
+    const newView = pickV;
+    const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', 'Pick', () => {
+      grok.shell.v = curView;
+      newView.close();
+      sub.unsubscribe();
+    });
     // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
@@ -87,7 +120,7 @@ export class HitTriageApp {
 
   get campaignId(): string | undefined {return this._campaignId;}
 
-  get pickView(): DG.TableView {return this._pickView ??= this.getFilterView();}
+  get pickView(): DG.TableView {return this._pickView = this.getFilterView();}
 
   get molColName() {return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;}
 
@@ -96,18 +129,6 @@ export class HitTriageApp {
   get campaign(): HitTriageCampaign | undefined {return this._campaign;}
 
   set campaign(campaign: HitTriageCampaign | undefined) {this._campaign = campaign;}
-
-  private getFilterType(colName: string): DG.FILTER_TYPE {
-    const col = this.dataFrame!.col(colName);
-    if (col?.semType === DG.SEMTYPE.MOLECULE)
-      return DG.FILTER_TYPE.SUBSTRUCTURE;
-    if (col?.type === DG.COLUMN_TYPE.BOOL)
-      return DG.FILTER_TYPE.BOOL_COLUMNS;
-    if (col?.type === DG.COLUMN_TYPE.STRING)
-      return DG.FILTER_TYPE.CATEGORICAL;
-    return DG.FILTER_TYPE.HISTOGRAM;
-  }
-
 
   public async calculateColumns(resultMap: IComputeDialogResult, view?: DG.TableView) {
     const previousColumns = this.dataFrame!.columns.names();
@@ -146,13 +167,19 @@ export class HitTriageApp {
     const view = DG.TableView.create(this.dataFrame!, false);
     const ribbons = view.getRibbonPanels();
     const calculateRibbon = ui.icons.add(getComputeDialog, 'Calculate additional properties');
-    const submitButton = ui.div(ui.bigButton('Submit', () => {
+    const submitButton = ui.bigButton('Submit', () => {
       const dialogContent = this._submitView?.render();
-      if (dialogContent)
-        ui.dialog('Submit').add(dialogContent).show();
-    }));
-
-    ribbons.push([calculateRibbon, submitButton]);
+      if (dialogContent) {
+        const dlg = ui.dialog('Submit');
+        dlg.add(dialogContent);
+        dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();});
+        dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
+        dlg.show();
+      }
+    });
+    submitButton.classList.add('hit-design-submit-button');
+    const hasSubmit = checkRibbonsHaveSubmit(ribbons);
+    ribbons.push([calculateRibbon, ...(hasSubmit ? [] : [submitButton])]);
     view.setRibbonPanels(ribbons);
     view.name = this._filterViewName;
     setTimeout(async () => {
@@ -165,8 +192,7 @@ export class HitTriageApp {
 
       //const f = view.filters();
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
-      // view.getFiltersGroup().add()
-      // const group = view.getFiltersGroup();
+
       view.dataFrame.onFilterChanged
         .subscribe((_) => {
           this._filterDescriptions = Array.from(view.dataFrame.rows.filters);
@@ -177,6 +203,7 @@ export class HitTriageApp {
         this._campaignFilters = f.getOptions().look.filters;
       }, 300);
     }, 300);
+    view.parentCall = this.parentCall;
     return view;
   }
 
@@ -198,22 +225,38 @@ export class HitTriageApp {
     };
   }
 
-  download(df: DG.DataFrame, name: string, onlyFiltered = false): void {
-    const element = document.createElement('a');
-    const result = DG.DataFrame.fromColumns(df.columns.toList().filter((c) => !c.name.startsWith('~')))
-      .toCsv({filteredRowsOnly: onlyFiltered});
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-    element.setAttribute('download', name + '.csv');
-    element.click();
-  }
+  async saveCampaign(status?: HitTriageCampaignStatus, notify = true): Promise<any> {
+    const campaignId = this.campaignId!;
+    const filters = this.filterSettings!;
+    const templateName = this.template!.name;
+    const enrichedDf = this.dataFrame!;
+    const campaignPrefix = `System:AppData/HitTriage/Hit Triage/campaigns/${campaignId}/`;
+    const campaignName = campaignId ?? await saveCampaignDialog(campaignId);
+    const columnSemTypes: {[_: string]: string} = {};
+    enrichedDf.columns.toList().forEach((col) => columnSemTypes[col.name] = col.semType);
+    const campaign: HitTriageCampaign = {
+      name: campaignName,
+      templateName,
+      filters: filters ?? {},
+      ingest: {
+        type: 'File',
+        query: `${campaignPrefix}${CampaignTableName}`,
+        molColName: this.molColName!,
+      },
+      status: status ?? this.campaign?.status ?? 'In Progress',
+      createDate: this.campaign?.createDate ?? toFormatedDateString(new Date()),
+      campaignFields: this.campaign?.campaignFields ?? this.campaignProps,
+      columnSemTypes,
+      rowCount: enrichedDf.rowCount,
+      filteredRowCount: enrichedDf.filter.trueCount,
+    };
+    await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignJsonName}`,
+      JSON.stringify(campaign));
 
-  async getNewCampaignName(templateKey: string) {
-    const templateCampaigns = (await _package.files.list('Hit Triage/campaigns'))
-      .map((file) => file.name)
-      .filter((name) => name.startsWith(templateKey));
-    if (templateCampaigns.length === 0)
-      return templateKey + '-1';
-    const postFixes = templateCampaigns.map((c) => c.split('-')[1]).filter(Boolean).map((c) => parseInt(c, 10)).sort();
-    return templateKey + '-' + ((postFixes[postFixes.length - 1] + 1).toString());
+    const csvDf = DG.DataFrame.fromColumns(
+      enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
+    ).toCsv();
+    await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
+    notify && grok.shell.info('Campaign saved successfully.');
   }
 }

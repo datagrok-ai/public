@@ -32,7 +32,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     });
   scaffoldColumnChoice.setTooltip('Align structures to a scaffold defined in another column');
 
-  const highlightScaffoldsCheckbox = ui.boolInput('Highlight from column',
+  const highlightScaffoldsCheckbox = ui.boolInput('Highlight scaffold',
     col?.temp && col.temp['highlight-scaffold'] === 'true',
     (v: any) => {
       col.temp['highlight-scaffold'] = v.toString();
@@ -40,7 +40,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     });
   highlightScaffoldsCheckbox.setTooltip('Highlight scaffold defined above');
 
-  const regenerateCoordsCheckbox = ui.boolInput('Regenerate coords',
+  const regenerateCoordsCheckbox = ui.boolInput('Regen coords',
     col?.temp && col.temp['regenerate-coords'] === 'true',
     (v: any) => {
       col.temp['regenerate-coords'] = v.toString();
@@ -58,11 +58,11 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   );
   moleculeFilteringChoice.setTooltip('Sketch a molecule, or use them as categories in a filter');
 
-  const showStructures = ui.boolInput('Show structures',
+  const showStructures = ui.boolInput('Structures',
     col.tags['cell.renderer'] == DG.SEMTYPE.MOLECULE,
     (v: boolean) => col.tags['cell.renderer'] = v ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING);
 
-  const rdKitInputs = ui.inputs([
+  const rdKitInputs = ui.form([
     showStructures,
     scaffoldColumnChoice,
     highlightScaffoldsCheckbox,
@@ -88,6 +88,5 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   ]);
   scaffoldInput.className = 'ui-input-root';
   rdKitInputs.append(scaffoldInput);
-
-  return new DG.Widget(rdKitInputs);
+  return new DG.Widget(ui.box(rdKitInputs));
 }

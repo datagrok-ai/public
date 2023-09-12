@@ -8,14 +8,15 @@ import {fromEvent, Observable, Subject, Unsubscribable} from 'rxjs';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {
-  monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS
+  monomerToShort, pickUpPalette, pickUpSeqCol, TAGS as bioTAGS, positionSeparator
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
-  FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates, positionSeparator,
-  TAGS as wlTAGS, VerticalAlignments, WebLogoProps, WebLogoPropsDefault
+  FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates,
+  VerticalAlignments, WebLogoProps, WebLogoPropsDefault
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
+import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 import {_package} from '../package';
@@ -143,7 +144,7 @@ export class PositionInfo {
   }
 
   calcScreen(
-    posIdx: number, firstVisiblePosIdx: number,
+    isGap: (m: string) => boolean, posIdx: number, firstVisiblePosIdx: number,
     absoluteMaxHeight: number, heightMode: PositionHeight, alphabetSizeLog: number,
     positionWidthWithMargin: number, positionWidth: number, dpr: number, axisHeight: number
   ): void {
@@ -154,13 +155,13 @@ export class PositionInfo {
 
     const entries = Object.entries(this._freqs)
       .sort((a, b) => {
-        if (a[0] !== '-' && b[0] !== '-')
+        if (!isGap(a[0]) && !isGap(b[0]))
           return b[1].count - a[1].count;
-        else if (a[0] === '-' && b[0] === '-')
+        else if (isGap(a[0]) && isGap(b[0]))
           return 0;
-        else if (a[0] === '-')
+        else if (isGap(a[0]))
           return -1;
-        else /* (b[0] === '-') */
+        else /* (isGap(b[0])) */
           return +1;
       });
     for (const entry of entries) {
@@ -176,10 +177,11 @@ export class PositionInfo {
   }
 
   render(g: CanvasRenderingContext2D,
+    isGap: (m: string) => boolean,
     fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number, cp: SeqPalette
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
-      if (monomer !== '-') {
+      if (!isGap(monomer)) {
         const monomerTxt = monomerToShort(monomer, 5);
         const b = pmInfo.bounds!;
         const left = b.left;
@@ -415,21 +417,33 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   // -- Data --
 
   setData(): void {
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
+    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.setData() `);
 
-    this.updateSeqCol();
+    this.viewPromise = this.viewPromise.then(async () => { // setData
+      if (this.viewed) {
+        await this.destroyView();
+        this.viewed = false;
+      }
+    }).then(async () => {
+      await this.detachPromise;
 
-    if (!this.viewed) {
-      this.buildView();
-      this.viewed = true;
-    }
+      this.updateSeqCol();
+    }).then(async () => {
+      if (!this.viewed) {
+        await this.buildView();
+        this.viewed = true;
+      }
+    }).finally(() => {
+      this.setDataInProgress = false;
+    });
   }
 
   // -- View --
 
+  private viewPromise: Promise<void> = Promise.resolve();
+  private detachPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
   private viewSubs: Unsubscribable[] = [];
 
   private async destroyView(): Promise<void> {
@@ -438,7 +452,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView( dataFrame = ${dataFrameTxt} ) start`);
-    super.detach();
 
     this.viewSubs.forEach((sub) => sub.unsubscribe());
     this.host!.remove();
@@ -524,8 +537,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
       if (this.seqCol) {
         try {
-          const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
-          const separator: string = this.seqCol!.getTag(bioTAGS.separator);
           this.unitsHandler = UnitsHandler.getOrCreate(this.seqCol);
 
           this.cp = pickUpPalette(this.seqCol);
@@ -560,8 +571,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }).reduce((max, l) => Math.max(max, l), 0);
 
     /** positionNames and positionLabel can be set up through the column's tags only */
-    const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
-    const positionLabelsTxt = this.seqCol.getTag(wlTAGS.positionLabels);
+    const positionNamesTxt = this.seqCol.getTag(TAGS.positionNames);
+    const positionLabelsTxt = this.seqCol.getTag(TAGS.positionLabels);
     this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
       [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
     this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :
@@ -810,10 +821,18 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   /** Remove all handlers when table is a detach  */
   public override async detach() {
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
+    if (this.setDataInProgress) return;
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.detach(), `);
+
+    const superDetach = super.detach.bind(this);
+    this.detachPromise = this.detachPromise.then(async () => { // detach
+      await this.viewPromise;
+      if (this.viewed) {
+        await this.destroyView();
+        this.viewed = false;
+      }
+      superDetach();
+    });
   }
 
   private _onSizeChanged: Subject<void> = new Subject<void>();
@@ -860,8 +879,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
-      this.positions = wu(this.positions)
-        .filter((pi) => !pi.hasMonomer('-') || pi.getFreq('-').count !== pi.rowCount).toArray();
+      this.positions = wu(this.positions).filter((pi) => {
+        const gapSymbol: string = this.unitsHandler!.defaultGapSymbol;
+        return !pi.hasMonomer(gapSymbol) || pi.getFreq(gapSymbol).count !== pi.rowCount;
+      }).toArray();
     }
   }
 
@@ -898,7 +919,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         if (dfFilter.get(rowI)) {
           const seqMList: ISeqSplitted = splitted[rowI];
           for (let jPos = 0; jPos < length; ++jPos) {
-            const m: string = seqMList[this.startPosition + jPos] || '-';
+            const m: string = seqMList[this.startPosition + jPos] || this.unitsHandler.defaultGapSymbol;
             const pmInfo = this.positions[jPos].getFreq(m);
             pmInfo.count++;
           }
@@ -907,7 +928,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       //#region Polish freq counts
       for (let jPos = 0; jPos < length; jPos++) {
-        // delete this.positions[jPos].freq['-'];
+        // delete this.positions[jPos].freq[this.unitsHandler.defaultGapSymbol];
         this.positions[jPos].calcHeights(this.positionHeight as PositionHeight);
       }
       //#endregion
@@ -927,7 +948,13 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const alphabetSizeLog = Math.log2(alphabetSize);
 
       for (let jPos = Math.floor(this.slider.min); jPos <= Math.floor(this.slider.max); ++jPos) {
-        this.positions[jPos].calcScreen(jPos, this.slider.min, absoluteMaxHeight, this.positionHeight,
+        if (!(jPos in this.positions)) {
+          console.warn(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt() ` +
+            `this.positions.length = ${this.positions.length}, jPos = ${jPos}`);
+          continue;
+        }
+        this.positions[jPos].calcScreen((m) => { return this.unitsHandler!.isGap(m); },
+          jPos, this.slider.min, absoluteMaxHeight, this.positionHeight,
           alphabetSizeLog, this._positionWidthWithMargin, this._positionWidth, dpr, positionLabelsHeight);
       }
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), end `);
@@ -990,7 +1017,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
       for (let jPos = Math.floor(this.slider.min); jPos <= Math.floor(this.slider.max); jPos++) {
-        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight,
+        this.positions[jPos].render(g, (m) => { return this.unitsHandler!.isGap(m); },
+          fontStyle, uppercaseLetterAscent, uppercaseLetterHeight,
           /* this._positionWidthWithMargin, firstVisiblePosIdx,*/ this.cp);
       }
 
@@ -1034,36 +1062,37 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         min: this.slider.min, max: this.slider.max,
         maxRange: this.slider.maxRange
       };
-      _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
+      _package.logger.debug(
+        `Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
       this.render(WlRenderLevel.Layout, 'sliderOnValuesChanged').then(() => {});
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.sliderOnValuesChanged() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
   private dataFrameFilterOnChanged(_value: any): void {
-    _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()');
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterChanged()`);
     try {
       this.updatePositions();
       if (this.filterSource === FilterSources.Filtered)
         this.render(WlRenderLevel.Freqs, 'dataFrameFilterOnChanged').then(() => {});
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterOnChanged() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameFilterOnChanged() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
 
   private dataFrameSelectionOnChanged(_value: any): void {
-    _package.logger.debug('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged()');
+    _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged()`);
     try {
       if (this.filterSource === FilterSources.Selected)
         this.render(WlRenderLevel.Freqs, 'dataFrameSelectionOnChanged').then(() => {});
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.dataFrameSelectionOnChanged() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1097,7 +1126,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseMove() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseMove() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1120,7 +1149,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseDown() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnMouseDown() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1134,7 +1163,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.slider.scrollBy(this.slider.min + countOfScrollPositions);
     } catch (err: any) {
       const errMsg = errorToConsole(err);
-      _package.logger.error('Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n' + errMsg);
+      _package.logger.error(`Bio: WebLogoViewer<${this.viewerId}>.canvasOnWheel() error:\n` + errMsg);
       //throw err; // Do not throw to prevent disabling event handler
     }
   }
@@ -1159,7 +1188,7 @@ export function checkSeqForMonomerAtPos(
 ): boolean {
   const seqMList: ISeqSplitted = unitsHandler.splitted[rowI];
   const seqM = at.pos < seqMList.length ? seqMList[at.pos] : null;
-  return ((seqM === monomer) || (seqM === '' && monomer === '-'));
+  return ((seqM === monomer) || (seqM === '' && monomer === unitsHandler.defaultGapSymbol));
 }
 
 export function countForMonomerAtPosition(

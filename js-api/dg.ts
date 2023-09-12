@@ -54,7 +54,7 @@ $(function () {
   window.addEventListener("unhandledrejection", function(e) {
     e.preventDefault();
     e.stopPropagation();
-    (<any>window).grok_Unhandled_Error(e.reason ?? e, null);
+    (<any>window).grok_Unhandled_Error(e.reason ?? e, e.reason?.stack);
   });
 
 });
