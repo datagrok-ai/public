@@ -340,21 +340,27 @@ class NotebookView extends DG.ViewBase {
   }
 
   static getSettings() {
-    const _settings = {
-      baseUrl: grok.settings.jupyterNotebook,
-      token: grok.settings.jupyterNotebookToken,
-      mathjaxUrl: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js',
-      mathjaxConfig: 'TeX-AMS_CHTML-full,Safe'
-    };
-
-    for (let key in _settings) PageConfig.setOption(key, _settings[key]);
-
-    let settings = ServerConnection.defaultSettings;
-    settings.baseUrl = PageConfig.getBaseUrl();
-    settings.wsUrl = PageConfig.getWsUrl();
-    settings.token = PageConfig.getToken();
-
-    return settings;
+    try{
+      const _settings = {
+        baseUrl: grok.settings.jupyterNotebook,
+        token: grok.settings.jupyterToken,
+        mathjaxUrl: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js',
+        mathjaxConfig: 'TeX-AMS_CHTML-full,Safe'
+      };
+  
+      for (let key in _settings) PageConfig.setOption(key, _settings[key]);
+  
+      let settings = ServerConnection.defaultSettings;
+      settings.baseUrl = PageConfig.getBaseUrl();
+      settings.wsUrl = PageConfig.getWsUrl();
+      settings.token = PageConfig.getToken();
+  
+      return settings;   
+    } catch (e) {
+      grok.log.error(e);
+      console.log(e);
+    }
+    
   }
 }
 
