@@ -94,9 +94,8 @@ export function parseHelm(s: string): string[] {
 //   return new Set(helmPartList.filter((val) => !monomerNameList.includes(val)));
 // }
 
-/** Searches monomers of {@link helmString} for missed. */
+/** Searches monomers of helmString for missed. */
 export function findMonomers(monomerSymbolList: string[]): Set<string> {
-  //@ts-ignore
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
   const monomers: any = [];
   const monomerNames: any = [];

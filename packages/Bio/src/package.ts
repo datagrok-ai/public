@@ -65,7 +65,7 @@ import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-wid
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {getEnumeratorWidget, _runEnumerator} from './utils/enumerator-tools';
+import {_getEnumeratorWidget, _setPeptideColumn} from './utils/enumerator-tools';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
@@ -982,15 +982,18 @@ export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }
 
-//name: runEnumerator
-export async function runEnumerator(): Promise<void> {
-  _runEnumerator();
+//name: enumeratorColumnChoice
+//input: dataframe df [Input data table]
+//input: column macroMolecule
+export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
+  _setPeptideColumn(macroMolecule);
+  await grok.data.detectSemanticTypes(df);
 }
 
 //name: Enumerator
 //input: column molColumn {semType: Macromolecule}
 //tags: panel, exclude-actions-panel
 //output: widget result
-export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
-  return getEnumeratorWidget(molColumn);
+export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
+  return _getEnumeratorWidget(molColumn);
 }
