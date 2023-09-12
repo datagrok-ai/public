@@ -1644,7 +1644,7 @@ Resources:
       TargetType: 'ip'
       VpcId:
         Ref: DatagrokVPC
-      HealthCheckPath: "/jupyter/api"
+      HealthCheckPath: "/notebook/api"
       Matcher:
         HttpCode: 200
       TargetGroupAttributes:
