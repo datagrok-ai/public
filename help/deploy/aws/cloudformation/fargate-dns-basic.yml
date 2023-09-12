@@ -1673,7 +1673,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
   DatagrokJupyterTCP8889TargetGroup:
     Properties:
-      HealthCheckPath: /jupyter/api
+      HealthCheckPath: /notebook/api
       Matcher:
         HttpCode: 200
       Name:
