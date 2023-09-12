@@ -21,7 +21,7 @@ The following analysis appears:
 
 ### Box plot
 
-The box plot shows the distribution of the feature data splitted with respect to factor levels:
+The box plot shows the distribution of values by categories:
 
 ![anova-box-plot.png](anova-box-plot.png)
 
@@ -31,7 +31,7 @@ The ANOVA summary table presents results of computations:
 
 ![anova-summary-table.png](anova-summary-table.png)
 
-The null hypothesis test result is shown. The decision regarding the significance of the factor's influence on the studied feature is ensured.
+The null hypothesis is rejected if the p-value is smaller than the specified significance.
 
 See also:
 
