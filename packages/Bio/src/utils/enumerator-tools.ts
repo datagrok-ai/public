@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {NOTATION, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
+import {MonomerLibHelper} from '../utils/monomer-lib';
 import {_package} from '../package';
 
 const LEFT_HELM_WRAPPER = 'PEPTIDE1{';
@@ -47,9 +49,18 @@ async function enumerator(molColumn: DG.Column): Promise<void> {
 }
 
 export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
+  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  const peptideList: string[] = monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE);
+  const leftTerminalChoice = ui.choiceInput('Left terminal:', peptideList[0], peptideList);
+  const rightTerminalChoice = ui.choiceInput('Right terminal:', peptideList[0], peptideList);
+
   const btn = ui.bigButton('Run', async () => enumerator(molColumn));
 
-  const div = ui.div([btn]);
+  const div = ui.div([
+    leftTerminalChoice,
+    rightTerminalChoice,
+    btn
+  ]);
 
   return new DG.Widget(div);
 }
