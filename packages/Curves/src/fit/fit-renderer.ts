@@ -200,12 +200,13 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
 
 /** Performs a curve confidence interval drawing */
 function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals, screenBounds: DG.Rect,
-  transform: Viewport, confidenceType: string, showAxesLabels: boolean, logOptions: LogOptions): void {
+  transform: Viewport, confidenceType: string, showAxes: boolean, showAxesLabels: boolean, logOptions: LogOptions): void {
   g.beginPath();
-  const axesLeftPxMargin = showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
+  const axesLeftPxMargin = showAxes ? showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN : 0;
+  const axesRightPxMargin = showAxes ? AXES_RIGHT_PX_MARGIN : 0;
   const confIntervalFunc = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
     confIntervals.confidenceTop : confIntervals.confidenceBottom;
-  for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
+  for (let i = axesLeftPxMargin; i <= screenBounds.width - axesRightPxMargin; i++) {
     const x = screenBounds.x + i;
     const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
     const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervalFunc(xForY))) : transform.yToScreen(confIntervalFunc(xForY));
@@ -219,10 +220,11 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
 
 /** Performs a curve confidence interval color filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals, screenBounds: DG.Rect,
-  transform: Viewport, showAxesLabels: boolean, logOptions: LogOptions): void {
+  transform: Viewport, showAxes: boolean, showAxesLabels: boolean, logOptions: LogOptions): void {
   g.beginPath();
-  const axesLeftPxMargin = showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
-  for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
+  const axesLeftPxMargin = showAxes ? showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN : 0;
+  const axesRightPxMargin = showAxes ? AXES_RIGHT_PX_MARGIN : 0;
+  for (let i = axesLeftPxMargin; i <= screenBounds.width - axesRightPxMargin; i++) {
     const x = screenBounds.x + i;
     const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
     const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervals.confidenceTop(xForY))) :
@@ -234,7 +236,7 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   }
 
   // reverse traverse to make a shape of confidence interval to fill it
-  for (let i = screenBounds.width - AXES_RIGHT_PX_MARGIN; i >= axesLeftPxMargin; i--) {
+  for (let i = screenBounds.width - axesRightPxMargin; i >= axesLeftPxMargin; i--) {
     const x = screenBounds.x + i;
     const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
     const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervals.confidenceBottom(xForY))) :
@@ -348,6 +350,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.clip();
 
     const screenBounds = new DG.Rect(x, y, w, h).inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
+    const showAxes = screenBounds.width >= MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT;
     const showAxesLabels = w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT
       && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
     const showTitle = w >= MIN_TITLE_PX_WIDTH && h >= MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
@@ -411,8 +414,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.beginPath();
         if (series.lineStyle)
           g.setLineDash(LINE_STYLES[series.lineStyle]);
-        const axesLeftPxMargin = showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
-        for (let j = axesLeftPxMargin; j <= screenBounds.width - AXES_RIGHT_PX_MARGIN; j++) {
+        const axesLeftPxMargin = showAxes ? showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN : 0;
+        const axesRightPxMargin = showAxes ? AXES_RIGHT_PX_MARGIN : 0;
+        for (let j = axesLeftPxMargin; j <= screenBounds.width - axesRightPxMargin; j++) {
           const x = screenBounds.x + j;
           const xForY = data.chartOptions?.logX ? Math.log10(viewport.xToWorld(x)) : viewport.xToWorld(x);
           const y = data.chartOptions?.logY ? viewport.yToScreen(Math.pow(10, curve(xForY))) : viewport.yToScreen(curve(xForY));
@@ -431,10 +435,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   
         const confidenceIntervals = getSeriesConfidenceInterval(series, fitFunc, userParamsFlag, chartLogOptions);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport,
-          CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, showAxesLabels, chartLogOptions);
+          CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, showAxes, showAxesLabels, chartLogOptions);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport,
-          CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, showAxesLabels, chartLogOptions);
-        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxesLabels, chartLogOptions);
+          CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, showAxes, showAxesLabels, chartLogOptions);
+        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes, showAxesLabels, chartLogOptions);
       }
   
       if (series.droplines && showAxesLabels) {
