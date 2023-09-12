@@ -25,12 +25,17 @@ export function _setPeptideColumn(col: DG.Column): void {
   // col.setTag('cell.renderer', 'sequence');
 }
 
-async function enumerator(molColumn: DG.Column): Promise<void> {
-  function getCyclicHelm(inputHelm: string): string {
-    const seq = inputHelm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
+async function enumerator(molColumn: DG.Column, leftTerminal: string, rightTerminal: string): Promise<void> {
+  function hasSpecifiedTerminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
+    return helm.includes(LEFT_HELM_WRAPPER + leftTerminal) && helm.includes(rightTerminal + RIGHT_HELM_WRAPPER);
+  }
+  function getCyclicHelm(helm: string): string {
+    if (!hasSpecifiedTerminals(helm, leftTerminal, rightTerminal))
+      return helm;
+    const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
     const lastMonomerNumber = seq.split('.').length;
-    const result = inputHelm.replace(RIGHT_HELM_WRAPPER,
-      `}$PEPTIDE1,PEPTIDE1,${lastMonomerNumber}:R2-1:R1${'$'.repeat(6)}V2.0`);
+    const result = helm.replace(RIGHT_HELM_WRAPPER,
+      `}$PEPTIDE1,PEPTIDE1,${lastMonomerNumber}:R2-1:R1${'$'.repeat(6)}`);
     console.log('result:', result);
     return result;
   }
@@ -38,7 +43,7 @@ async function enumerator(molColumn: DG.Column): Promise<void> {
   const df = molColumn.dataFrame;
   const nc = new NotationConverter(molColumn);
   const sourceHelmCol = nc.convert(NOTATION.HELM);
-  df.columns.add(sourceHelmCol);
+  // df.columns.add(sourceHelmCol);
   const targetList = sourceHelmCol.toList().map((helm) => getCyclicHelm(helm));
   const targetHelmCol = DG.Column.fromList('string', 'Enumerator(helm)', targetList);
   addCommonTags(targetHelmCol);
@@ -54,7 +59,9 @@ export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   const leftTerminalChoice = ui.choiceInput('Left terminal:', peptideList[0], peptideList);
   const rightTerminalChoice = ui.choiceInput('Right terminal:', peptideList[0], peptideList);
 
-  const btn = ui.bigButton('Run', async () => enumerator(molColumn));
+  const btn = ui.bigButton('Run', async () =>
+    enumerator(molColumn, leftTerminalChoice.value!, rightTerminalChoice.value!)
+  );
 
   const div = ui.div([
     leftTerminalChoice,
