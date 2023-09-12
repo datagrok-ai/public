@@ -134,9 +134,9 @@ export class RdKitService {
         processedMolecules = lockedCounter.value;
         const end = Math.min(processedMolecules + workingIndexes[idx].increment, dataLength);
         workerIterationCounter[idx] += 1;
+        const updatePromises: Promise<void>[] = [];
         if (workerIterationCounter.every((it) => it >= iterationCheckPoint)) {
           // update all results:
-          const updatePromises: Promise<void>[] = [];
           for (let i = 0; i < this.workerCount; i++) {
             const updateResMap = updateResMapArray[i];
             for (const it of updateResMap.keys()) {
@@ -162,6 +162,8 @@ export class RdKitService {
         workingIndexes[idx].increment = Math.floor(workingIndexes[idx].increment * incrementMultiplier);
         lockedCounter.value = end;
         lockedCounter.release();
+        // after the locked counter is released, wait for all update promises to finish;
+        await Promise.all(updatePromises);
         await post();
       };
       return post();
