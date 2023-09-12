@@ -323,7 +323,7 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
 
 //top-menu: ML | Analysis of Variances (ANOVA)...
 //name: One-way ANOVA
-//description: One-way analysis of variances (ANOVA) is the parametric procedure for determining whether significant differences occur in an experiment containing two or more conditions.
+//description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
 //input: dataframe table
 //input: column factors
 //input: column features {type: numerical}
