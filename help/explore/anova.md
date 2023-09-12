@@ -1,5 +1,6 @@
 ---
 title: "Analysis of variances"
+sidebar_position: 6
 ---
 
 Analysis of variance ([ANOVA](https://en.wikipedia.org/wiki/Analysis_of_variance)) determines whether the examined factor has a significant impact on the studied feature.
