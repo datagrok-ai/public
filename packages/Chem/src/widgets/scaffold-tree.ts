@@ -10,6 +10,7 @@ import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {_package, getScaffoldTree} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { FILTER_SCAFFOLD_TAG } from '../constants';
 
 let attached = false;
 
@@ -833,7 +834,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.bitset = null;
     if (this.molColumn !== null)
-      delete this.molColumn.temp['chem-scaffold-filter'];
+      delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
 
     this.checkBoxesUpdateInProgress = true;
     const checkedNodes = this.tree.items.filter((v) => v.checked);
@@ -852,7 +853,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    delete this.molColumn.temp['chem-scaffold-filter'];
+    delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -889,13 +890,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           molArom = _rdKitModule.get_qmol(molStr);
           //@ts-ignore
           molArom.convert_to_aromatic_form();
-          this.molColumn.temp['chem-scaffold-filter'] = molArom.get_molblock();
+          this.molColumn.temp[FILTER_SCAFFOLD_TAG] = molArom.get_molblock();
         } catch (e) {
         } finally {
           molArom?.delete();
         }
       }
-    } else delete this.molColumn.temp['chem-scaffold-filter'];
+    } else delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
 
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
@@ -928,7 +929,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (mol !== null) {
         const molFile = mol.get_molblock();
         mol.delete();
-        this.molColumn.temp['chem-scaffold-filter'] = molFile;
+        this.molColumn.temp[FILTER_SCAFFOLD_TAG] = molFile;
       }
       const bitset = await handleMalformedStructures(this.molColumn, strMol);
       if (this.bitset === null)
