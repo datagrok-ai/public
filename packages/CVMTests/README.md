@@ -1,3 +1,3 @@
 # CVMTests
 
-`CVMTests` is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform
+`CVMTests` is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform to test CVM features

@@ -1,7 +1,7 @@
 {
   "name": "datagrok-api",
   "version": "1.16.5",
-  "description": "JS API",
+  "description": "",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.0.12",
     "@types/react": "latest",
