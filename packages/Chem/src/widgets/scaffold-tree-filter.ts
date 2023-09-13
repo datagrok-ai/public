@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {ScaffoldTreeViewer, BitwiseOp} from './scaffold-tree';
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
+import { FILTER_SCAFFOLD_TAG } from '../constants';
 
 const COLUMN_NAME_CHANGED = 'column-name-changed';
 
@@ -52,7 +53,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => !this.isFiltering), debounce((_) => interval(100)))
       .subscribe((_) => {
-        delete this.column!.temp['chem-scaffold-filter'];
+        delete this.column!.temp[FILTER_SCAFFOLD_TAG];
         this.viewer.updateFilters(this.isFiltering);
       }),
     );

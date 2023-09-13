@@ -2,14 +2,19 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import $ from 'cash-dom';
 // The file is imported from a WebWorker. Don't use Datagrok imports
 import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import { HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
+import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
+
 
 let alertsDf: DG.DataFrame | null = null;
 const _smartsMap: Map<string, RDMol> = new Map();
 let rdKitModule: RDModule | null = null;
+const NO_HIGHLIGHT = 0;
 
 export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   if (alertsDf == null)
@@ -50,6 +55,7 @@ async function loadSADataset(): Promise<void> {
 }
 
 export async function structuralAlertsWidget(molecule: string): Promise<DG.Widget> {
+  const colors = [NO_HIGHLIGHT].concat(DG.Color.categoricalPalette.slice(0, 10));
   rdKitModule ??= getRdKitModule();
   let alerts = [];
   try {
@@ -85,10 +91,45 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
     if (!DG.chem.isMolBlock(molecule))
       molecule = _convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdKitModule!);
     drawMoleculeToCanvas(0, 0, width, height, imageHost, molecule, smartsCol.get(i));
-    const host = ui.div([description, imageHost], 'd4-flex-col');
+    const moreBtn = ui.iconFA(
+      'ellipsis-v',
+      (e: MouseEvent) => {
+        e.stopImmediatePropagation();
+        const menu = DG.Menu.popup();
+        menu.group('Highlight fragment')
+          .items(colors.map((color) => ui.tools.click(getColoredDiv(color), () => {
+            const substr = smartsCol.get(i);
+            const col = grok.shell.tv.dataFrame.currentCol;
+            const array: IColoredScaffold[] = col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG) ?
+              JSON.parse(col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG)) : [];
+            const substrIdx = array.findIndex((it) => it.molecule === substr);
+            if (substrIdx !== -1) {
+              if (color !== NO_HIGHLIGHT)
+                array[substrIdx].color = DG.Color.toHtml(color)!;
+              else
+                array.splice(substrIdx, 1);
+            } else {
+              if (color !== NO_HIGHLIGHT)
+                array.push({molecule: smartsCol.get(i), color: DG.Color.toHtml(color)! });
+            }
+            col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(array));
+            grok.shell.tv.dataFrame.fireValuesChanged();
+          })), () => { })
+        menu.show();
+      },
+      'More',
+    );
+    $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
+    const host = ui.div([description, ui.divV([moreBtn, imageHost], 'chem-mol-box struct-alerts-mol-box')], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
   }), {classes: 'd4-flex-wrap', style: {'overflow': 'hidden', 'max-height': '400px'}});
 
   return new DG.Widget(ui.divV([calcForWholeButton, ui.box(list)]));
+}
+
+function getColoredDiv(color: number): HTMLDivElement {
+  return color === NO_HIGHLIGHT ? 
+    ui.div('None', {style: {width: '100%', minHeight: '20px', marginLeft: '2px'}}) :
+    ui.div('', {style: {width: '100%', minHeight: '20px', marginRight: '6px', backgroundColor: DG.Color.toHtml(color)}});
 }

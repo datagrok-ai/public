@@ -86,8 +86,10 @@ export class RadarViewer extends DG.JsViewer {
 
   initChartEventListeners() {
     this.dataFrame.onRowsFiltered.subscribe((_) => {
-      this.checkConditions();
-      this.render();
+      if (this.dataFrame) {
+        this.checkConditions();
+        this.render();
+      }
     });
   }
 

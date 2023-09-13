@@ -253,11 +253,17 @@ export class MostPotentResidues extends DG.JsViewer {
           filteredMonomerStats.push([monomer, monomerStats as Stats]);
       }
 
-      let maxEntry: [string, Stats];
+      if (filteredMonomerStats.length === 0)
+        continue;
+
+      let maxEntry: [string, Stats] | null = null;
       for (const [monomer, monomerStats] of filteredMonomerStats) {
-        if (typeof maxEntry! === 'undefined' || maxEntry[1].meanDifference < monomerStats.meanDifference)
+        if (maxEntry === null || maxEntry[1].meanDifference < monomerStats.meanDifference)
           maxEntry = [monomer, monomerStats];
       }
+
+      if (maxEntry === null)
+        continue;
 
       posData[i] = parseInt(position);
       monomerData[i] = maxEntry![0];
