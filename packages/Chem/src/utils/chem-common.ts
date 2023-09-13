@@ -52,6 +52,15 @@ export function rdKitFingerprintToBitArray(fp: Uint8Array): BitArray | null {
   return fp ? BitArray.fromBytes(fp) : fp;
 }
 
-export function isMolBlock(s: string) {
+export function isMolBlock(s: string): boolean {
   return s.includes('M  END');
+}
+
+export function hexToPercentRgb(hex: string): number[] | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+      parseInt(result[1], 16) / 256,
+      parseInt(result[2], 16) / 256,
+      parseInt(result[3], 16) / 256,
+  ] : null;
 }

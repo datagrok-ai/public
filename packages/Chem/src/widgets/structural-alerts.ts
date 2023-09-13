@@ -9,7 +9,7 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import { HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
 import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
-import { hexToPercentRgb } from './col-highlights';
+
 
 let alertsDf: DG.DataFrame | null = null;
 const _smartsMap: Map<string, RDMol> = new Map();
@@ -102,15 +102,15 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
             const col = grok.shell.tv.dataFrame.currentCol;
             const array: IColoredScaffold[] = col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG) ?
               JSON.parse(col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG)) : [];
-            const substrIdx = array.findIndex((it) => it.molString === substr);
+            const substrIdx = array.findIndex((it) => it.molecule === substr);
             if (substrIdx !== -1) {
               if (color !== NO_HIGHLIGHT)
-                array[substrIdx].color = hexToPercentRgb(DG.Color.toHtml(color))!;
+                array[substrIdx].color = DG.Color.toHtml(color)!;
               else
                 array.splice(substrIdx, 1);
             } else {
               if (color !== NO_HIGHLIGHT)
-                array.push({molString: smartsCol.get(i), color: hexToPercentRgb(DG.Color.toHtml(color))! });
+                array.push({molecule: smartsCol.get(i), color: DG.Color.toHtml(color)! });
             }
             col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(array));
             grok.shell.tv.dataFrame.fireValuesChanged();
@@ -128,7 +128,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   return new DG.Widget(ui.divV([calcForWholeButton, ui.box(list)]));
 }
 
-function getColoredDiv(color: number) {
+function getColoredDiv(color: number): HTMLDivElement {
   return color === NO_HIGHLIGHT ? 
     ui.div('None', {style: {width: '100%', minHeight: '20px', marginLeft: '2px'}}) :
     ui.div('', {style: {width: '100%', minHeight: '20px', marginRight: '6px', backgroundColor: DG.Color.toHtml(color)}});

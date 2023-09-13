@@ -410,6 +410,12 @@
     text-align: center;
 }
 
+.chem-col-highlight-sketcher-input {
+  width: 150px;
+  height: 100%;
+  position: relative;
+}
+
 .struct-alerts-mol-box {
   position: relative
 }

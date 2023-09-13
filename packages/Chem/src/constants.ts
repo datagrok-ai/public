@@ -32,4 +32,4 @@ export const getSearchProgressEventName =
   (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = 'chem-scaffold';
-export const HIGHLIGHT_BY_SCAFFOLD_TAG = 'chem-scaffold-highlight';
+export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
