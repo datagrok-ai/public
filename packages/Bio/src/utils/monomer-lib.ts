@@ -141,7 +141,8 @@ export class MonomerLib implements IMonomerLib {
   }
 
   /** Get a list of monomers with specified element attached to specified
-   * R-group  */
+   * R-group
+   * WARNING: RGroup numbering starts from 1, not 0*/
   getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: string, element?: string): string[] {
     const monomerSymbols = this.getMonomerSymbolsByType(polymerType);
     let monomers = monomerSymbols.map((sym) => this.getMonomer(polymerType, sym));
@@ -151,11 +152,14 @@ export class MonomerLib implements IMonomerLib {
     monomers = monomers.filter((monomer) => {
       if (!monomer?.rgroups)
         return false;
+      console.log('monomer symbol:', monomer.symbol);
       let criterion = monomer?.rgroups.length >= rGroupNumber;
+      console.log(`has rGroupNumber ${rGroupNumber}`, criterion);
       const molfileHandler = MolfileHandler.getInstance(monomer.molfile);
       console.log(molfileHandler.atomTypes);
       console.log(molfileHandler.pairsOfBondedAtoms);
       criterion &&= true;
+      console.log('criterion:', criterion);
       return criterion;
     });
     return monomers.map((monomer) => monomer?.symbol!);
