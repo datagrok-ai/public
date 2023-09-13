@@ -124,16 +124,16 @@ export class ItemsGrid {
         Object.keys(inputsMap).forEach((pName) => {
           newItem[pName] = inputsMap[pName].value;
         });
-        this.onItemAdded.next(newItem);
         this._items.push(newItem);
+        this.onItemAdded.next(newItem);
         this.render();
       }, this.options.addButtonTooltip);
       companionButton = addButton;
     } else {
       if (!this.options.allowRemove) return editors;
       const removeButton = ui.icons.delete(() => {
-        this.onItemRemoved.next(item);
         this._items.splice(this._items.indexOf(item), 1);
+        this.onItemRemoved.next(item);
         this.render();
       }, this.options.removeButtonTooltip);
       companionButton = removeButton;
