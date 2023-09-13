@@ -70,16 +70,16 @@ jobs:
               scripts="$(jq '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               dependencies="$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
 
-              job_name=''
+              job_name='Check'
               if [ ! -z "$(jq -r '. | select( has("build") == true )' <<< "$scripts")" ]; then
                 MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
-                job_name+='Build'
+                job_name='Build'
               fi
 
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
-                job_name+=',Test'
+                job_name='Build, test'
               fi
 
               name="$(jq -r .name "${DIR}/package.json")"
@@ -92,7 +92,7 @@ jobs:
                     if [[ $unpublished_deps == "" ]]; then
                       publish="publish"
                       MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
-                      job_name+=',Publish to NPM'
+                      job_name+=' and publish to NPM'
                     else
                       echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps"
                       echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies"
@@ -142,7 +142,7 @@ jobs:
           echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
 
   publish:
-    name: ${{ matrix.job_name || 'Deploy' }}
+    name: "${{ matrix.package }}: ${{ matrix.job_name }}"
     needs:
       - matrix
       - common-check
