@@ -147,7 +147,7 @@ export class ItemsGrid {
   }
   //needed for color input
   private hideLabel(el: HTMLElement): HTMLElement {
-    el.removeChild(el.getElementsByTagName('label')[0]);
+    el.getElementsByTagName('label')[0] && el.removeChild(el.getElementsByTagName('label')[0]);
     return el;
   }
 }
