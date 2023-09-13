@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.53",
+  "version": "3.5.54",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1080,6 +1080,9 @@
         },
         "1.12.0": {
           "datagrok-api": "^1.16.1"
+        },
+        "1.13.0": {
+          "datagrok-api": "^1.16.5"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
