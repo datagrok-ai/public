@@ -5,6 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
+import {getSearchResultsSplitted, getFullSearchResults, getClasses, getValidationResults} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -188,4 +189,105 @@ export async function initAWS() {
   });
   translate = new AWS.Translate();
   //comprehendMedical = new AWS.ComprehendMedical();
+}
+
+//name: Similar
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function similar(query: string): DG.Widget {
+  const MIN_CHAR_COUNT = 1;
+  const CLOSEST_COUNT = 3;
+
+  const df = grok.shell.t;
+  const baseCol = df.currentCol;
+
+  const searchResults = getSearchResultsSplitted(query, baseCol, CLOSEST_COUNT, MIN_CHAR_COUNT);  
+
+  const divElements = [] as HTMLDivElement[];
+
+  for (let i = 1; i < searchResults.closestIndeces.length; ++i) {
+    divElements.push(ui.divText('# ' + (searchResults.closestIndeces[i] + 1).toString()));
+    divElements.push(ui.divText(searchResults.closestStrings[i]));
+    divElements.push(ui.divText('------'));
+  }
+
+  const wgt = new DG.Widget(ui.divV(divElements));
+
+  ui.tooltip.bind(wgt.root, 'Stemming-based search results.');
+
+  return wgt;
+}
+
+//name: Stemming-based search
+//description: Find the closest sentences with respect to stemming-based similarity metric.
+//input: string query [The query string to be searched for.]
+//input: dataframe table [Source dataframe.]
+//input: column column [The column to be searched in.]
+//input: int closest = 5 [Number of the closest items to be shown in the report.]
+export function stemmingBasedSearch(query: string, table: DG.DataFrame, column: DG.Column, closest: number) { 
+  const results = getFullSearchResults(query, column, closest, 1);
+
+  results.absClosest.name = 'Search results (absolute metric)';
+  results.relClosest.name = 'Search results (relative metric)';
+
+  grok.shell.addTableView(results.absClosest);
+  grok.shell.addTableView(results.relClosest);
+}
+
+//name: Compare SBS-metrics 
+//description: Compare stemming-based similarity metrics. A query is the string specified from the target column.
+//input: int index [Index of the query string taken from the target column to be searched for.]
+//input: dataframe table [Source dataframe.]
+//input: column column {type: string} [The column to be searched in.]
+//input: column categories {type: string} [The column with validation classes.]
+//input: int closest = 5 [Number of the closest items to be shown in the report.]
+export function compareMetrics(index: number, table: DG.DataFrame, column: DG.Column, categories: DG.Column, closest: number) {
+  const query = column.get(((index >= 0 ) && (index < column.length))? index : 0) ?? '';
+  const results = getFullSearchResults(query, column, closest, 1);
+
+  results.absClosest.name = 'Search results (absolute metric)';
+  results.relClosest.name = 'Search results (relative metric)';
+
+  results.absClosest.columns.add(getClasses(results.absClosest, categories));
+  results.relClosest.columns.add(getClasses(results.relClosest, categories));
+
+  grok.shell.addTableView(results.absClosest);
+  grok.shell.addTableView(results.relClosest);
+}
+
+//name: Stemming-based search
+//description: Classes-based research of stemming-based similarity metric. A query is a random string from the column Questions.
+//input: dataframe df {caption: Table; category: Database} [Source dataframe.]
+//input: column questions {type: string; caption: Questions; category: Database} [The column to be searched in.]
+//input: column section {type: string; caption: section; category: Database} [The column with validation classes.]
+//input: int closestCount = 5 {caption: Closest count; category: Research parameters} [Number of the closest items to be shown in the report.]
+//input: int launchesCount = 10 {caption: Launches; category: Research parameters} [Number of launches of the search process.]
+//output: dataframe results {caption: Metrics comparison}
+export function sbsMetricCheckClasses(df: DG.DataFrame, questions: DG.Column, section: DG.Column, closestCount: number, launchesCount: number) 
+{
+  let absClassesSum = 0;
+  let relClassesSum = 0;
+  let absBestSum = 0;
+  let relBestSum = 0;
+
+  for (let i = 0; i < launchesCount; ++i) {
+    const idx = Math.floor(Math.random() * df.rowCount);
+    const res = getValidationResults(idx, questions, section, closestCount);
+
+    absClassesSum += res.absolute;
+    relClassesSum += res.relative;
+    absBestSum += res.absoluteBest ? 1 : 0;
+    relBestSum += res.relativeBest ? 1 : 0;
+  }
+
+  const coef1 = 100 / launchesCount;
+  const coef2 = coef1 / closestCount;
+
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('criteria', [`Coincide '${section.name}', overall`, `Coincide '${section.name}', the best item`]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'absolute, %', [absClassesSum * coef2, absBestSum * coef1]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'relative, %', [relClassesSum * coef2, relBestSum * coef1]),
+  ]);
 }

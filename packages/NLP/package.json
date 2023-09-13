@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/nlp",
   "fullName": "NLP",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -16,6 +16,7 @@
     "@datagrok-libraries/utils": "^1.15.5",
     "aws-sdk": "^2.762.0",
     "datagrok-api": "^1.0.0",
+    "stemmer": "^2.0.1",
     "util": "^0.12.3"
   },
   "devDependencies": {
