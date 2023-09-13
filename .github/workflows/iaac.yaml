@@ -61,7 +61,17 @@ jobs:
         id: changed-files
         with:
           files: help/deploy/**
-          files_ignore: '**/*.md'
+          files_ignore: |
+            help/deploy/**/*.md
+            help/deploy/**/*.mdx
+            help/deploy/**/_category_.yml
+            help/deploy/**/*.gif
+            help/deploy/**/*.jpg
+            help/deploy/**/*.JPG
+            help/deploy/**/*.jpeg
+            help/deploy/**/*.png
+            help/deploy/**/*.svg
+            help/deploy/**/*.bmp
       - name: Output
         run: echo ${{ steps.changed-files.outputs.all_changed_files }}
 
