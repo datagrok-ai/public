@@ -29,27 +29,30 @@ export function _setPeptideColumn(col: DG.Column): void {
 
 async function enumerator(
   molColumn: DG.Column, leftTerminal: string, rightTerminal: string): Promise<void> {
-  function isFullCycle(helm: string, leftTerminal: string, rightTerminal: string): boolean {
+  function hasTerminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
     if (leftTerminal === ALL_MONOMERS || rightTerminal === ALL_MONOMERS)
       return true;
-    return helm.includes(LEFT_HELM_WRAPPER + leftTerminal) && helm.includes(rightTerminal + RIGHT_HELM_WRAPPER);
+    const positions = getLinkedPositions(helm);
+    return positions.every((el) => el > 0);
   }
 
   function applyModification(helm: string): string {
-    if (isFullCycle(helm, leftTerminal, rightTerminal))
+    if (hasTerminals(helm, leftTerminal, rightTerminal))
       return getCycle(helm, getLinkedPositions(helm));
     return helm;
   }
 
   function getLinkedPositions(helm: string): [number, number] {
     const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
-    const lastMonomerNumber = seq.split('.').length;
-    return [1, lastMonomerNumber];
+    const monomers = seq.split('.');
+    const start = monomers.findIndex((el) => el === leftTerminal);
+    const end = monomers.findIndex((el, idx) => el === rightTerminal && idx > start);
+    return [start + 1, end + 1];
   }
 
   function getCycle(helm: string, position: [number, number]): string {
     const result = helm.replace(RIGHT_HELM_WRAPPER,
-      `}$PEPTIDE1,PEPTIDE1,${position[1]}:R2-${position[0]}:R1${'$'.repeat(6)}`);
+      `}$PEPTIDE1,PEPTIDE1,${position[0]}:R3-${position[1]}:R3${'$'.repeat(6)}`);
     // console.log('result:', result);
     return result;
   }
