@@ -1400,7 +1400,6 @@ Resources:
         - ContainerPort: 54321
           HostPort: 54321
           Protocol: tcp
-        ReadonlyRootFilesystem: true
       Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -1736,7 +1735,6 @@ Resources:
         - ContainerPort: 8888
           HostPort: 8888
           Protocol: tcp
-        ReadonlyRootFilesystem: true
       Cpu: '1024'
       EphemeralStorage:
         SizeInGiB: 50
@@ -2063,7 +2061,6 @@ Resources:
         - ContainerPort: 8889
           HostPort: 8889
           Protocol: tcp
-        ReadonlyRootFilesystem: true
       Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -3119,7 +3116,6 @@ Resources:
         - ContainerPort: 8080
           HostPort: 8080
           Protocol: tcp
-        ReadonlyRootFilesystem: true
       Cpu: '2048'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -3393,7 +3389,6 @@ Resources:
         - ContainerPort: 5005
           HostPort: 5005
           Protocol: tcp
-        ReadonlyRootFilesystem: true
       Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -3961,7 +3956,6 @@ Resources:
         - ContainerPort: 8000
           HostPort: 8000
           Protocol: tcp
-        ReadonlyRootFilesystem: true
       Cpu: '256'
       ExecutionRoleArn:
         Fn::GetAtt:

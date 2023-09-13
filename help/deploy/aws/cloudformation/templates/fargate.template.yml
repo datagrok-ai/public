@@ -812,7 +812,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_compute
           MemoryReservation: 1024
-          ReadonlyRootFilesystem: true
+#          ReadonlyRootFilesystem: true
           Name: grok_compute
           PortMappings:
             - ContainerPort: 5005
@@ -1108,7 +1108,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: h2o
           MemoryReservation: 1024
-          ReadonlyRootFilesystem: true
+#          ReadonlyRootFilesystem: true
           Name: h2o
           PortMappings:
             - ContainerPort: 5005
@@ -1349,7 +1349,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: jkg
           MemoryReservation: 2048
-          ReadonlyRootFilesystem: true
+#          ReadonlyRootFilesystem: true
           Name: jupyter_kernel_gateway
           PortMappings:
             - ContainerPort: 5005
@@ -1592,7 +1592,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: jn
           MemoryReservation: 1024
-          ReadonlyRootFilesystem: true
+#          ReadonlyRootFilesystem: true
           Name: jupyter_notebook
           PortMappings:
             - ContainerPort: 5005
@@ -2493,7 +2493,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: datagrok
           MemoryReservation: 1024
-          ReadonlyRootFilesystem: true
+#          ReadonlyRootFilesystem: true
           Name: datagrok
           PortMappings:
             - ContainerPort: 8080
@@ -3157,7 +3157,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_spawner
           MemoryReservation: 100
-          ReadonlyRootFilesystem: true
+#          ReadonlyRootFilesystem: true
           Name: grok_spawner
           PortMappings:
             - ContainerPort: 8000
