@@ -990,7 +990,7 @@ export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG
   await grok.data.detectSemanticTypes(df);
 }
 
-//name: Enumerator
+//name: PolyTool
 //input: column molColumn {semType: Macromolecule}
 //tags: panel, exclude-actions-panel
 //output: widget result

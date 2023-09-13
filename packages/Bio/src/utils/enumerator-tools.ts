@@ -14,6 +14,11 @@ const LEFT_HELM_WRAPPER = 'PEPTIDE1{';
 const RIGHT_HELM_WRAPPER = '}$$$$';
 const ALL_MONOMERS = '<All>';
 
+const enum CYCLIZATION_TYPE {
+  NO = 'N-O',
+  R3 = 'R3-R3',
+}
+
 function addCommonTags(col: DG.Column):void {
   col.setTag('quality', DG.SEMTYPE.MACROMOLECULE);
   col.setTag('aligned', ALIGNMENT.SEQ);
@@ -28,21 +33,41 @@ export function _setPeptideColumn(col: DG.Column): void {
 }
 
 async function enumerator(
-  molColumn: DG.Column, leftTerminal: string, rightTerminal: string): Promise<void> {
-  function hasTerminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
+  molColumn: DG.Column, cyclizationType: CYCLIZATION_TYPE, leftTerminal: string, rightTerminal: string
+): Promise<void> {
+  function hasR3Terminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
     if (leftTerminal === ALL_MONOMERS || rightTerminal === ALL_MONOMERS)
       return true;
-    const positions = getLinkedPositions(helm);
+    const positions = getLinkedR3Positions(helm);
     return positions.every((el) => el > 0);
   }
 
+  function hasNOTerminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
+    if (leftTerminal === ALL_MONOMERS || rightTerminal === ALL_MONOMERS)
+      return true;
+    return helm.includes(LEFT_HELM_WRAPPER + leftTerminal) && helm.includes(rightTerminal + RIGHT_HELM_WRAPPER);
+  }
+
   function applyModification(helm: string): string {
-    if (hasTerminals(helm, leftTerminal, rightTerminal))
-      return getCycle(helm, getLinkedPositions(helm));
+    if (cyclizationType === CYCLIZATION_TYPE.R3)
+      return applyR3Modification(helm);
+    else
+      return applyNOModification(helm);
+  }
+
+  function applyNOModification(helm: string): string {
+    if (hasNOTerminals(helm, leftTerminal, rightTerminal))
+      return getNOCycle(helm, getLinkedNOPositions(helm));
     return helm;
   }
 
-  function getLinkedPositions(helm: string): [number, number] {
+  function applyR3Modification(helm: string): string {
+    if (hasR3Terminals(helm, leftTerminal, rightTerminal))
+      return getR3Cycle(helm, getLinkedR3Positions(helm));
+    return helm;
+  }
+
+  function getLinkedR3Positions(helm: string): [number, number] {
     const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
     const monomers = seq.split('.');
     const start = monomers.findIndex((el) => el === leftTerminal);
@@ -50,9 +75,21 @@ async function enumerator(
     return [start + 1, end + 1];
   }
 
-  function getCycle(helm: string, position: [number, number]): string {
+  function getLinkedNOPositions(helm: string): [number, number] {
+    const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
+    const lastMonomerNumber = seq.split('.').length;
+    return [1, lastMonomerNumber];
+  }
+
+  function getR3Cycle(helm: string, position: [number, number]): string {
     const result = helm.replace(RIGHT_HELM_WRAPPER,
       `}$PEPTIDE1,PEPTIDE1,${position[0]}:R3-${position[1]}:R3${'$'.repeat(6)}`);
+    return result;
+  }
+
+  function getNOCycle(helm: string, position: [number, number]): string {
+    const result = helm.replace(RIGHT_HELM_WRAPPER,
+      `}$PEPTIDE1,PEPTIDE1,${position[1]}:R2-${position[0]}:R1${'$'.repeat(6)}`);
     return result;
   }
 
@@ -60,7 +97,7 @@ async function enumerator(
   const uh = UnitsHandler.getOrCreate(molColumn);
   const sourceHelmCol = uh.convert(NOTATION.HELM);
   const targetList = sourceHelmCol.toList().map((helm) => applyModification(helm));
-  const colName = df.columns.getUnusedName('Enumerator(' + molColumn.name + ')');
+  const colName = df.columns.getUnusedName('Cyclization(' + molColumn.name + ')');
   const targetHelmCol = DG.Column.fromList('string', colName, targetList);
 
   addCommonTags(targetHelmCol);
@@ -68,8 +105,6 @@ async function enumerator(
   targetHelmCol.setTag('cell.renderer', 'helm');
 
   df.columns.add(targetHelmCol);
-  // if (getAtomic)
-  //   toAtomicLevel(df, targetHelmCol);
   await grok.data.detectSemanticTypes(df);
 }
 
@@ -99,7 +134,7 @@ export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   const modifications = ['Cyclization'];
   const modificationChoice = ui.choiceInput('Modification', modifications[0], modifications);
 
-  const cyclizationTypes = ['N-O', 'R3-R3'];
+  const cyclizationTypes = [CYCLIZATION_TYPE.NO, CYCLIZATION_TYPE.R3];
   const cyclizationTypeChoice = ui.choiceInput(
     'Type', cyclizationTypes[0], cyclizationTypes, () => { onCyclizationChoice.next(); }
   );
@@ -113,7 +148,7 @@ export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   updateMonomerList();
 
   const btn = ui.bigButton('Run', async () =>
-    enumerator(molColumn, leftTerminalChoice.value!, rightTerminalChoice.value!)
+    enumerator(molColumn, cyclizationTypeChoice.value!, leftTerminalChoice.value!, rightTerminalChoice.value!)
   );
 
   const div = ui.div([
