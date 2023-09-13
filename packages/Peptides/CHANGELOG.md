@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.13.1 (WIP)
+
+### Bug Fixes
+
+* Most Potent Residues: Fixed issue when the viewer failed to construct in some cases.
+
 ## 1.13.0 (2023-09-13)
 
 ### Features
