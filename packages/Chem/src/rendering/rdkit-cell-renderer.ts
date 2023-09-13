@@ -157,15 +157,15 @@ M  END
             if (substructMol) {
               const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(substructMol!));
               if (matchedAtomsAndBonds.length) {
-                matchedAtomsAndBonds.forEach(((it: ISubstruct) => {
+                for (let j = 0; j < matchedAtomsAndBonds.length; j++) {
                   if (!substruct.atoms)
                     substruct.atoms = [];
                   if (!substruct.bonds)
                     substruct.bonds = [];
-                  this._addAtomsOrBonds(it.atoms!, substruct.atoms!);
-                  this._addAtomsOrBonds(it.bonds!, substruct.bonds!);
-                  this._addColorsToBondsAndAtoms(substruct, scaffolds[i].color, it);
-                }))
+                  this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
+                  this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
+                  this._addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
+                };
               }
             }
           }
@@ -199,24 +199,28 @@ M  END
   }
 
   _addAtomsOrBonds(fromAtomsOrBonds: number[], toAtomsOrBonds: number[]): void {
-    fromAtomsOrBonds?.forEach((it) => {
-      if (!toAtomsOrBonds?.includes(it))
-        toAtomsOrBonds?.push(it);
-    });
+    for (let j = 0; j < fromAtomsOrBonds.length; j++) {
+      if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
+      toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
+    };
   }
 
   _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
     if (color) {
       const colorArr = hexToPercentRgb(color);
       const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-      substrToTakeAtomsFrom.atoms?.forEach((atom: number) => {
-        mainSubstr.highlightAtomColors ??= {};
-        mainSubstr.highlightAtomColors[atom] = colorArr;
-      });
-      substrToTakeAtomsFrom.bonds?.forEach((bond: number) => {
-        mainSubstr.highlightBondColors ??= {};
-        mainSubstr.highlightBondColors[bond] = colorArr;
-      });
+      if (substrToTakeAtomsFrom.atoms) {
+        for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+          mainSubstr.highlightAtomColors ??= {};
+          mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+        };
+      }
+      if (substrToTakeAtomsFrom.bonds) {
+        for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+          mainSubstr.highlightBondColors ??= {};
+          mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+        };
+      }
     }
   }
 
