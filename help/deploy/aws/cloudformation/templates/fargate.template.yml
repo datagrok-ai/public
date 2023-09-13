@@ -784,6 +784,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_compute
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: ResolvConf
         - DependsOn:
             - Condition: SUCCESS
@@ -811,6 +812,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_compute
           MemoryReservation: 1024
+          ReadonlyRootFilesystem: true
           Name: grok_compute
           PortMappings:
             - ContainerPort: 5005
@@ -865,7 +867,7 @@ Resources:
             Ref: DatagrokH2oTCP54321IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
             - Ref: CvmSecurityGroup
           Subnets:
@@ -1081,6 +1083,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: h2o
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: ResolvConf
         - DependsOn:
             - Condition: SUCCESS
@@ -1105,6 +1108,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: h2o
           MemoryReservation: 1024
+          ReadonlyRootFilesystem: true
           Name: h2o
           PortMappings:
             - ContainerPort: 5005
@@ -1165,7 +1169,7 @@ Resources:
             Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
             - Ref: CvmSecurityGroup
           Subnets:
@@ -1320,6 +1324,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: jkg
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: ResolvConf
         - DependsOn:
             - Condition: SUCCESS
@@ -1344,6 +1349,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: jkg
           MemoryReservation: 2048
+          ReadonlyRootFilesystem: true
           Name: jupyter_kernel_gateway
           PortMappings:
             - ContainerPort: 5005
@@ -1406,7 +1412,7 @@ Resources:
             Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
             - Ref: CvmSecurityGroup
           Subnets:
@@ -1561,6 +1567,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: jn
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: ResolvConf
         - DependsOn:
             - Condition: SUCCESS
@@ -1585,6 +1592,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: jn
           MemoryReservation: 1024
+          ReadonlyRootFilesystem: true
           Name: jupyter_notebook
           PortMappings:
             - ContainerPort: 5005
@@ -1858,7 +1866,7 @@ Resources:
             Ref: DatagrokTCP8080IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
             - Ref: DatagrokSecurityGroup
           Subnets:
@@ -1995,7 +2003,7 @@ Resources:
             Ref: GrokConnectTCP1234IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
             - Ref: DatagrokSecurityGroup
           Subnets:
@@ -2058,6 +2066,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_connect
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: ResolvConf
         - DependsOn:
             - Condition: SUCCESS
@@ -2082,6 +2091,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_connect
           MemoryReservation: 1024
+          ReadonlyRootFilesystem: true
           Name: grok_connect
           PortMappings:
             - ContainerPort: 1234
@@ -2406,6 +2416,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: datagrok
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: ResolvConf
         - DependsOn:
             - Condition: SUCCESS
@@ -2482,6 +2493,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: datagrok
           MemoryReservation: 1024
+          ReadonlyRootFilesystem: true
           Name: datagrok
           PortMappings:
             - ContainerPort: 8080
@@ -3020,7 +3032,7 @@ Resources:
             Ref: DatagrokTCP8000IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
             - Ref: DatagrokSecurityGroup
           Subnets:
@@ -3083,6 +3095,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_spawner
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: ResolvConf
         - DependsOn:
             - Condition: SUCCESS
@@ -3144,6 +3157,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_spawner
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: grok_spawner
           PortMappings:
             - ContainerPort: 8000
@@ -3186,6 +3200,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_spawner_kaniko
           MemoryReservation: 100
+          ReadonlyRootFilesystem: true
           Name: grok_spawner_kaniko
       Cpu: '1024'
       ExecutionRoleArn:

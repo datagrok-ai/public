@@ -185,14 +185,13 @@ Parameters:
     Description: Private subnet to deploy Datagrok components.
     Type: AWS::EC2::Subnet::Id
   DatagrokPublicSubnet1:
-    Default: ''
-    Description: Public subnet to deploy Datagrok Load Balancer. Omit if you disable
-      access from internet (InternetIngressAccess).
+    Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet
+      here if you disable access from internet (InternetIngressAccess).
     Type: AWS::EC2::Subnet::Id
   DatagrokPublicSubnet2:
     Default: ''
-    Description: Public subnet to deploy Datagrok Load Balancer. Omit if you disable
-      access from internet (InternetIngressAccess).
+    Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet
+      here if you disable access from internet (InternetIngressAccess).
     Type: AWS::EC2::Subnet::Id
   DatagrokS3VPCEndpoint:
     Default: ''
@@ -1131,7 +1130,7 @@ Resources:
           Ref: DatagrokH2oTCP54321IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: CvmSecurityGroup
           Subnets:
@@ -1358,6 +1357,7 @@ Resources:
             awslogs-stream-prefix: h2o
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -1395,6 +1395,7 @@ Resources:
         - ContainerPort: 54321
           HostPort: 54321
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -1458,7 +1459,7 @@ Resources:
           Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: CvmSecurityGroup
           Subnets:
@@ -1692,6 +1693,7 @@ Resources:
             awslogs-stream-prefix: jkg
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -1729,6 +1731,7 @@ Resources:
         - ContainerPort: 8888
           HostPort: 8888
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '1024'
       EphemeralStorage:
         SizeInGiB: 50
@@ -1783,7 +1786,7 @@ Resources:
           Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: CvmSecurityGroup
           Subnets:
@@ -2017,6 +2020,7 @@ Resources:
             awslogs-stream-prefix: jn
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -2054,6 +2058,7 @@ Resources:
         - ContainerPort: 8889
           HostPort: 8889
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -2143,6 +2148,7 @@ Resources:
             awslogs-stream-prefix: grok_spawner_kaniko
         MemoryReservation: 100
         Name: grok_spawner_kaniko
+        ReadonlyRootFilesystem: true
       Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -2643,7 +2649,7 @@ Resources:
           Ref: DatagrokTCP8080IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: DatagrokSecurityGroup
           Subnets:
@@ -3021,6 +3027,7 @@ Resources:
             awslogs-stream-prefix: datagrok
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3107,6 +3114,7 @@ Resources:
         - ContainerPort: 8080
           HostPort: 8080
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '2048'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -3342,6 +3350,7 @@ Resources:
             awslogs-stream-prefix: grok_compute
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3379,6 +3388,7 @@ Resources:
         - ContainerPort: 5005
           HostPort: 5005
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -3433,7 +3443,7 @@ Resources:
           Ref: GrokConnectTCP1234IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: DatagrokSecurityGroup
           Subnets:
@@ -3538,6 +3548,7 @@ Resources:
             awslogs-stream-prefix: grok_connect
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3572,6 +3583,7 @@ Resources:
         - ContainerPort: 1234
           HostPort: 1234
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -3798,7 +3810,7 @@ Resources:
           Ref: DatagrokTCP8000IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: DatagrokSecurityGroup
           Subnets:
@@ -3872,6 +3884,7 @@ Resources:
             awslogs-stream-prefix: grok_spawner
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3943,6 +3956,7 @@ Resources:
         - ContainerPort: 8000
           HostPort: 8000
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '256'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -4004,3 +4018,39 @@ Rules:
             - VpcId
         - Ref: DatagrokVPC
       AssertDescription: All subnets must in the VPC
+    - Assert:
+        Fn::And:
+        - Fn::Not:
+          - Fn::Equals:
+            - Ref: DatagrokPublicSubnet1
+            - Ref: DatagrokPublicSubnet2
+        - Fn::Not:
+          - Fn::Equals:
+            - Ref: DatagrokPrivateSubnet1
+            - Ref: DatagrokPrivateSubnet2
+        - Fn::Not:
+          - Fn::Equals:
+            - Ref: DatagrokDataSubnet1
+            - Ref: DatagrokDataSubnet1
+      AssertDescription: Each subnet in public, private, data subnets must be unique
+    - Assert:
+        Fn::And:
+        - InternetIngressAccess
+        - Fn::Not:
+          - Fn::Equals:
+            - Ref: DatagrokPublicSubnet1
+            - Ref: DatagrokPrivateSubnet1
+        - Fn::Not:
+          - Fn::Equals:
+            - Ref: DatagrokPublicSubnet1
+            - Ref: DatagrokPrivateSubnet2
+        - Fn::Not:
+          - Fn::Equals:
+            - Ref: DatagrokPublicSubnet2
+            - Ref: DatagrokPrivateSubnet1
+        - Fn::Not:
+          - Fn::Equals:
+            - Ref: DatagrokPublicSubnet2
+            - Ref: DatagrokPrivateSubnet2
+      AssertDescription: Separate public and private subnets must be specified for
+        access from internet

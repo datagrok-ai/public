@@ -432,3 +432,7 @@ Resources:
       VpcEndpointType: Gateway
       VpcId:
         Ref: DatagrokVPC
+      Tags:
+        - Key: 'Name'
+          Value:
+            Fn::Sub: "${AWS::StackName} Datagrok VPC Endpoint"

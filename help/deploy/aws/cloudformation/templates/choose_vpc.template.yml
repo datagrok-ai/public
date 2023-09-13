@@ -50,12 +50,11 @@ Parameters:
     Description: VPC to deploy Datagrok stack
   DatagrokPublicSubnet1:
     Type: AWS::EC2::Subnet::Id
-    Default: ''
-    Description: Public subnet to deploy Datagrok Load Balancer. Omit if you disable access from internet (InternetIngressAccess).
+    Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet here if you disable access from internet (InternetIngressAccess).
   DatagrokPublicSubnet2:
     Type: AWS::EC2::Subnet::Id
     Default: ''
-    Description: Public subnet to deploy Datagrok Load Balancer. Omit if you disable access from internet (InternetIngressAccess).
+    Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet here if you disable access from internet (InternetIngressAccess).
   DatagrokPrivateSubnet1:
     Type: AWS::EC2::Subnet::Id
     Description: Private subnet to deploy Datagrok components.
@@ -138,6 +137,41 @@ Rules:
                   - VpcId
             - Ref: DatagrokVPC
         AssertDescription: All subnets must in the VPC
+      - Assert:
+          'Fn::And':
+            - Fn::Not:
+                - Fn::Equals:
+                    - Ref: DatagrokPublicSubnet1
+                    - Ref: DatagrokPublicSubnet2
+            - Fn::Not:
+                - Fn::Equals:
+                    - Ref: DatagrokPrivateSubnet1
+                    - Ref: DatagrokPrivateSubnet2
+            - Fn::Not:
+                - Fn::Equals:
+                    - Ref: DatagrokDataSubnet1
+                    - Ref: DatagrokDataSubnet1
+        AssertDescription: Each subnet in public, private, data subnets must be unique
+      - Assert:
+          'Fn::And':
+            - InternetIngressAccess
+            - Fn::Not:
+                - Fn::Equals:
+                    - Ref: DatagrokPublicSubnet1
+                    - Ref: DatagrokPrivateSubnet1
+            - Fn::Not:
+                - Fn::Equals:
+                    - Ref: DatagrokPublicSubnet1
+                    - Ref: DatagrokPrivateSubnet2
+            - Fn::Not:
+                - Fn::Equals:
+                    - Ref: DatagrokPublicSubnet2
+                    - Ref: DatagrokPrivateSubnet1
+            - Fn::Not:
+                - Fn::Equals:
+                    - Ref: DatagrokPublicSubnet2
+                    - Ref: DatagrokPrivateSubnet2
+        AssertDescription: Separate public and private subnets must be specified for access from internet
 Resources:
   DatagrokPrivateSubnetRouteAssos1:
     Type: Custom::NonResource
