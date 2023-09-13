@@ -4,9 +4,10 @@ import * as grok from 'datagrok-api/grok';
 
 import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
-  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
+  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, 
+  helmFieldsToEnumeratorInputFields, rGroupsDummy, dummyMonomer
 } from '../utils/const';
-import {IMonomerLib} from '../types/index';
+import {IMonomerLib, Monomer} from '../types/index';
 import {ISeqSplitted, SplitterFunc} from '../utils/macromolecule/types';
 import {UnitsHandler} from '../utils/units-handler';
 import {splitAlignedSequences} from '../utils/splitter';
@@ -94,6 +95,70 @@ export function createMomomersMolDict(lib: any[]): { [key: string]: string | any
   });
   return dict;
 }
+
+export function isValidEnumeratorLib(json: any[]): boolean {
+  return json.every((entry) => {
+    return typeof entry === 'object' &&
+      Object.values(helmFieldsToEnumeratorInputFields).every((field) => {
+        return field in entry &&
+          typeof entry[field] === 'string';
+      });
+  });
+}
+
+/** Specific to Enumerator for peptides */
+export function getJsonMonomerLibForEnumerator(rawLib: any[]): any {
+  // todo
+  function validateMonomerLibWithSmiles() {
+  }
+
+  function restoreRgroupsInSmiles(rawSmiles: string) {
+    const regex = new RegExp('\\[r\\]', 'g');
+    let i = 0;
+    return rawSmiles.replace(regex, (match) => { ++i; return `[${i}*]`; });
+  }
+
+  function prepareOutputSmilesColValue(smilesWithRestoredRgroups: string): string {
+    const result = smilesWithRestoredRgroups.replace('[1*]', '[H:1]');
+    return result.replace('[2*]', '[OH:2]');
+  }
+
+  function prepareMolblock(rawMolblock: string): string {
+    return rawMolblock.replace('M  ISO', 'M  RGP');
+  }
+
+  const resultLib: any[] = [];
+  validateMonomerLibWithSmiles();
+
+  rawLib.forEach((rawMonomer) => {
+    const monomer: Monomer = {...dummyMonomer};
+
+    Object.entries(helmFieldsToEnumeratorInputFields).forEach(([key, value]) => {
+      const monomerSymbol = rawMonomer[value] as string;
+      //@ts-ignore
+      monomer[key] = monomerSymbol;
+    });
+
+    let key = HELM_FIELDS.SMILES;
+    const rawSmiles = rawMonomer[helmFieldsToEnumeratorInputFields[key]];
+    const smilesWithRestoredRgroups = restoreRgroupsInSmiles(rawSmiles);
+    const smiles = prepareOutputSmilesColValue(smilesWithRestoredRgroups);
+    monomer[key] = smiles;
+
+    key = HELM_FIELDS.RGROUPS;
+    monomer[key] = rGroupsDummy;
+
+    key = HELM_FIELDS.MOLFILE;
+    const smilesWithRgroups = restoreRgroupsInSmiles(rawSmiles);
+    const rawMolfile = DG.chem.convert(smilesWithRgroups, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+    monomer[key] = prepareMolblock(rawMolfile);
+
+    resultLib.push(monomer);
+  });
+  console.log('resultLib:', resultLib);
+  return resultLib;
+}
+
 
 export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   const resultLib = [];

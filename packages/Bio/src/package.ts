@@ -65,6 +65,7 @@ import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-wid
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
+import {_getEnumeratorWidget, _setPeptideColumn} from './utils/enumerator-tools';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
@@ -97,10 +98,9 @@ export class SeqPaletteCustom implements SeqPalette {
 
 //tags: init
 export async function initBio() {
-  let module: RDModule;
+  const module = await grok.functions.call('Chem:getRdKitModule');
   await Promise.all([
     (async () => { await MonomerLibHelper.instance.loadLibraries(); })(),
-    (async () => { module = await grok.functions.call('Chem:getRdKitModule'); })(),
     (async () => {
       const pkgProps = await _package.getProperties();
       const bioPkgProps = new BioPackageProperties(pkgProps);
@@ -980,4 +980,20 @@ export async function demoBioAtomicLevel(): Promise<void> {
 //meta.isDemoScript: True
 export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
+}
+
+//name: enumeratorColumnChoice
+//input: dataframe df [Input data table]
+//input: column macroMolecule
+export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
+  _setPeptideColumn(macroMolecule);
+  await grok.data.detectSemanticTypes(df);
+}
+
+//name: PolyTool
+//input: column molColumn {semType: Macromolecule}
+//tags: panel, exclude-actions-panel
+//output: widget result
+export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
+  return _getEnumeratorWidget(molColumn);
 }

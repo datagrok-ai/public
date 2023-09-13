@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 
-import {errorToConsole} from '@datagrok-libraries/utils';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
 import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
