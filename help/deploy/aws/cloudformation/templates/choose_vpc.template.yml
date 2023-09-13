@@ -143,39 +143,34 @@ Rules:
             - Ref: DatagrokVPC
         AssertDescription: All subnets must in the VPC
       - Assert:
-          'Fn::And':
-            - Fn::Not:
-                - Fn::Equals:
-                    - Ref: DatagrokPublicSubnet1
-                    - Ref: DatagrokPublicSubnet2
-            - Fn::Not:
-                - Fn::Equals:
-                    - Ref: DatagrokPrivateSubnet1
-                    - Ref: DatagrokPrivateSubnet2
-            - Fn::Not:
-                - Fn::Equals:
-                    - Ref: DatagrokDataSubnet1
-                    - Ref: DatagrokDataSubnet1
-        AssertDescription: Each subnet in public, private, data subnets must be unique
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DatagrokDataSubnet1
+                - Ref: DatagrokDataSubnet2
+        AssertDescription: Data subnets must be unique
       - Assert:
-          'Fn::And':
-            - InternetIngressAccess
-            - Fn::Not:
-                - Fn::Equals:
-                    - Ref: DatagrokPublicSubnet1
-                    - Ref: DatagrokPrivateSubnet1
-            - Fn::Not:
-                - Fn::Equals:
-                    - Ref: DatagrokPublicSubnet1
-                    - Ref: DatagrokPrivateSubnet2
-            - Fn::Not:
-                - Fn::Equals:
-                    - Ref: DatagrokPublicSubnet2
-                    - Ref: DatagrokPrivateSubnet1
-            - Fn::Not:
-                - Fn::Equals:
-                    - Ref: DatagrokPublicSubnet2
-                    - Ref: DatagrokPrivateSubnet2
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DatagrokPrivateSubnet1
+                - Ref: DatagrokPrivateSubnet2
+        AssertDescription: Private subnets must be unique
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DatagrokPublicSubnet1
+                - Ref: DatagrokPublicSubnet2
+        AssertDescription: Public subnets must be unique
+  InternetIngressAccess:
+    RuleCondition:
+      Fn::Equals:
+        - Ref: InternetIngressAccess
+        - 'true'
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DatagrokPublicSubnet1
+                - Ref: DatagrokPrivateSubnet1
         AssertDescription: Separate public and private subnets must be specified for access from internet
 Resources:
   DatagrokPrivateSubnetRouteAssos1:
