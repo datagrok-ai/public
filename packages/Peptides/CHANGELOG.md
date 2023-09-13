@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.12.1 (WIP)
+## 1.13.0 (2023-09-13)
 
 ### Features
 
@@ -10,6 +10,7 @@
 * Changed viewer interactivity to match the platform defaults. Learn more about viewer hotkeys [here](https://datagrok.ai/help/visualize/viewers/#selection).
 * Accordion with actions, mutation cliffs pairs, distribution and selection panels now shows on any selection.
 * Removed steps from tutorial.
+* Ignore rows with missing values when starting the analysis.
 
 ### Bug Fixes
 
