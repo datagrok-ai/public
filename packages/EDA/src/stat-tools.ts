@@ -32,7 +32,6 @@ export type SampleData = {
   sum: number,
   sumOfSquares: number,
   size: number,
-  data: number[] | undefined,
 };
 
 /** One-way ANOVA computation results. The classic notations are used (see [2], p. 290). */
@@ -114,16 +113,13 @@ export function areVarsEqual(xData: SampleData, yData: SampleData, alpha: number
 export class FactorizedData extends Map<any, SampleData> {
   private isNormDistrib: boolean | undefined = undefined;
 
-  constructor(factors: DG.Column, values: ValuesType, extractData: boolean = false, checkNormality: boolean = false, alpha: number = 0.05) { 
+  constructor(factors: DG.Column, values: ValuesType, checkNormality: boolean = false, alpha: number = 0.05) { 
     super();
 
     if (factors.length !== values.length)
       throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);      
 
-    if (extractData)
-      this.setData(factors, values, checkNormality, alpha) // factorized data is stored & statistics are computed
-    else
-      this.setStats(factors, values, checkNormality, alpha); // just statistics are computed
+    this.setStats(factors, values, checkNormality, alpha);
   }
 
   public isNormal(): boolean | undefined {
@@ -200,21 +196,20 @@ export class FactorizedData extends Map<any, SampleData> {
     // TODO: provide check normality feature
     const size = factors.length;
 
-    const fact = factors.toList(); // making this copy improves performance 
-
     switch (values.type) {
       case DG.COLUMN_TYPE.INT:
       case DG.COLUMN_TYPE.FLOAT:
         const buf = values.getRawData();
 
         for (let i = 0; i < size; ++i) {
-          const cur = this.get(fact[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: undefined};
+          const fact = factors.get(i);
+          const cur = this.get(fact) ?? {sum: 0, sumOfSquares: 0, size: 0, data: undefined};
     
           cur.sum += buf[i];
           cur.sumOfSquares += buf[i] ** 2;
           ++cur.size;
     
-          this.set(fact[i], cur);
+          this.set(fact, cur);
         }        
         break;
 
@@ -222,43 +217,13 @@ export class FactorizedData extends Map<any, SampleData> {
         throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
     }    
   } // setStats
-
-  /** Compute sum & sums of squares with respect to factor levels & store factorized data. */
-  private setData(factors: DG.Column, values: ValuesType, checkNormality: boolean = false, alpha: number = 0.05): void {
-    // TODO: provide check normality feature
-    const size = factors.length;
-
-    const fact = factors.toList(); // making this copy improves performance
-
-    switch (values.type) {
-      case DG.COLUMN_TYPE.INT:
-      case DG.COLUMN_TYPE.FLOAT:
-        const buf = values.getRawData();
-
-        for (let i = 0; i < size; ++i) {
-          const cur = this.get(fact[i]) ?? {sum: 0, sumOfSquares: 0, size: 0, data: []};
-    
-          cur.sum += buf[i];
-          cur.sumOfSquares += buf[i] ** 2;
-          ++cur.size;
-          cur.data?.push(buf[i]);
-    
-          this.set(fact[i], cur);
-        }        
-        break;
-
-      default:
-        throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
-    }    
-  } // setData
-
 } // FactorizedData
 
 /** Perform one-way analysis of variances. */
 export function oneWayAnova(factors: DG.Column, values: DG.Column, alpha: number = 0.05, validate: boolean = false): DG.DataFrame {
   checkSignificanceLevel(alpha);  
 
-  const factorized = new FactorizedData(factors, values, false, validate, alpha);
+  const factorized = new FactorizedData(factors, values, validate, alpha);
 
   if (validate) {
     if(!factorized.areVarsEqual(alpha))
