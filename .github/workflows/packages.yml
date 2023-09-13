@@ -311,29 +311,29 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
-#      - name: Wait for published docker to become available
-#        if: matrix.docker == 'build_docker'
-#        timeout-minutes: 5
-#        run: |
-#          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
-#          do
-#            sleep 1
-#            docker ps
-#            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
-#            echo -e "\nRetrying..."
-#          done
-#          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
-#
-#          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'" '${{ matrix.package }}'
-#          do
-#            sleep 1
-#            curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
-#            docker ps
-#            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
-#            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
-#            docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
-#            echo -e "\nRetrying..."
-#          done
+      #      - name: Wait for published docker to become available
+      #        if: matrix.docker == 'build_docker'
+      #        timeout-minutes: 5
+      #        run: |
+      #          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+      #          do
+      #            sleep 1
+      #            docker ps
+      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+      #            echo -e "\nRetrying..."
+      #          done
+      #          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+      #
+      #          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'" '${{ matrix.package }}'
+      #          do
+      #            sleep 1
+      #            curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+      #            docker ps
+      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+      #            docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
+      #            echo -e "\nRetrying..."
+      #          done
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
