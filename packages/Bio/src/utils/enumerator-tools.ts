@@ -7,8 +7,8 @@ import {NOTATION, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/m
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 import {MonomerLibHelper} from '../utils/monomer-lib';
-import {toAtomicLevel} from '../package';
 import {_package} from '../package';
+import * as rxjs from 'rxjs';
 
 const LEFT_HELM_WRAPPER = 'PEPTIDE1{';
 const RIGHT_HELM_WRAPPER = '}$$$$';
@@ -53,7 +53,6 @@ async function enumerator(
   function getCycle(helm: string, position: [number, number]): string {
     const result = helm.replace(RIGHT_HELM_WRAPPER,
       `}$PEPTIDE1,PEPTIDE1,${position[0]}:R3-${position[1]}:R3${'$'.repeat(6)}`);
-    // console.log('result:', result);
     return result;
   }
 
@@ -75,33 +74,52 @@ async function enumerator(
 }
 
 export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
-  const monomerLib = MonomerLibHelper.instance.getBioLib();
-  // const monomerList: string[] = [ALL_MONOMERS].concat(monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE));
-  const monomerList: string[] = [ALL_MONOMERS].concat(
-    monomerLib.getMonomerSymbolsByRGroup(3, HELM_POLYMER_TYPE.PEPTIDE)
-  );
-  const leftTerminalChoice = ui.choiceInput('', monomerList[0], monomerList);
-  const rightTerminalChoice = ui.choiceInput('', monomerList[0], monomerList);
+  function updateMonomerList(): void {
+    console.log('hi from update:');
+    if (cyclizationTypeChoice.value === cyclizationTypes[0]) {
+      console.log('hi from first branch:');
+      monomerList = [ALL_MONOMERS].concat(
+        monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE)
+      );
+    } else if (cyclizationTypeChoice.value === cyclizationTypes[1]) {
+      monomerList = [ALL_MONOMERS].concat(
+        monomerLib.getMonomerSymbolsByRGroup(3, HELM_POLYMER_TYPE.PEPTIDE)
+      );
+      console.log('hi from second branch:');
+    }
+    leftTerminalChoice = ui.choiceInput('R1:', monomerList[0], monomerList);
+    rightTerminalChoice = ui.choiceInput('R2:', monomerList[0], monomerList);
+    ui.empty(terminalControls);
+    [leftTerminalChoice, rightTerminalChoice].forEach((el) => { terminalControls.appendChild(el.root); });
+  }
 
-  // const rGroups = ['N', 'O'];
-  const rGroups = ['S', 'S'];
-  const r1groupChoice = ui.choiceInput('R1', rGroups[0], rGroups);
-  const r2groupChoice = ui.choiceInput('R2', rGroups[1], rGroups);
+  const onCyclizationChoice = new rxjs.Subject<string>();
+  onCyclizationChoice.subscribe(() => updateMonomerList());
 
   const modifications = ['Cyclization'];
-
   const modificationChoice = ui.choiceInput('Modification', modifications[0], modifications);
 
-  const selectAtomicStructure = ui.boolInput('Get mols', false);
+  const cyclizationTypes = ['N-O', 'R3-R3'];
+  const cyclizationTypeChoice = ui.choiceInput(
+    'Type', cyclizationTypes[0], cyclizationTypes, () => { onCyclizationChoice.next(); }
+  );
+
+  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  let monomerList: string[] = [];
+  let leftTerminalChoice = ui.choiceInput('R1:', monomerList[0], monomerList);
+  let rightTerminalChoice = ui.choiceInput('R2:', monomerList[0], monomerList);
+  const terminalControls = ui.divV([leftTerminalChoice.root, rightTerminalChoice.root]);
+
+  updateMonomerList();
+
   const btn = ui.bigButton('Run', async () =>
     enumerator(molColumn, leftTerminalChoice.value!, rightTerminalChoice.value!)
   );
 
   const div = ui.div([
     modificationChoice,
-    ui.divH([r1groupChoice.root, leftTerminalChoice.root]),
-    ui.divH([r2groupChoice.root, rightTerminalChoice.root]),
-    // ui.divH([btn, atomicStructureInput.root]),
+    cyclizationTypeChoice,
+    terminalControls,
     btn
   ]);
 
