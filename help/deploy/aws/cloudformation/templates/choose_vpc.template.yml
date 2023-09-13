@@ -44,6 +44,11 @@ Metadata:
         default: "InternetIngressAccess: Access from internet"
       #      InternetEgressAccess:
       #        default: "InternetEgressAccess: Access to internet"
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W8001
+        - W8003
 Parameters:
   DatagrokVPC:
     Type: AWS::EC2::VPC::Id

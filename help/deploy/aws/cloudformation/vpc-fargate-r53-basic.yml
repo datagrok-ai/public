@@ -138,6 +138,11 @@ Metadata:
         default: Jupyter Kernel Gateway Version
       JNVersion:
         default: Jupyter Notebook Version
+  cfn-lint:
+    config:
+      ignore_checks:
+      - W8001
+      - W8003
 Outputs:
   DatagrokAdminPassword:
     Description: Admin password for first login
