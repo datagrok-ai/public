@@ -7,14 +7,14 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable, identity, merge} from 'rxjs';
+import {Subject, BehaviorSubject, Observable, identity, merge, from} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import {debounceTime, filter, map, mapTo, skip, startWith, switchMap} from 'rxjs/operators';
+import {debounceTime, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage} from '../../shared-components/src/FuncCallInput';
+import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 const INTERACTIVE_DEBOUNCE_TIME = 350;
@@ -58,7 +58,8 @@ const syncParams = {
 
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
-  private checkDisability = new Subject();
+  private validationRequests = new Subject<string>();
+  private validationUpdates = new Subject<null>();
 
   // stores the running state
   private isRunning = new BehaviorSubject(false);
@@ -71,7 +72,7 @@ export class RichFunctionView extends FunctionView {
 
   // validors
   private validators: Record<string, Validator> = {};
-  private validationState: Record<string, ValidationResult> = {};
+  private validationState: Record<string, ValidationResult | undefined> = {};
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -83,7 +84,7 @@ export class RichFunctionView extends FunctionView {
 
   constructor(
     initValue: string | DG.FuncCall,
-    public options: { historyEnabled: boolean, isTabbed: boolean} =
+    public options: {historyEnabled: boolean, isTabbed: boolean} =
     {historyEnabled: true, isTabbed: false},
   ) {
     super(initValue, options);
@@ -95,7 +96,22 @@ export class RichFunctionView extends FunctionView {
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
-    if (this.runningOnStart && this.isRunnable()) await this.doRun();
+    await this.runValidation();
+    this.validationUpdates.next(null);
+
+    if (this.runningOnStart && this.isRunnable())
+      await this.doRun();
+
+    const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next());
+    this.subs.push(fcReplacedSub);
+
+    const validationSub = this.validationRequests.pipe(
+      groupBy((name) => name),
+      mergeMap((fieldValidations$) => {
+        return fieldValidations$.pipe(switchMap((name) => from(this.runValidation(name))));
+      }),
+    ).subscribe();
+    this.subs.push(validationSub);
   }
 
   protected prevOpenedTab = null as DG.TabPane | null;
@@ -142,12 +158,11 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const disabilitySub = this.checkDisability.subscribe(() => {
-      this.runValidation();
+    const validationSub = this.validationUpdates.pipe().subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
-    this.subs.push(disabilitySub);
+    this.subs.push(validationSub);
 
     return runButton;
   }
@@ -586,7 +601,6 @@ export class RichFunctionView extends FunctionView {
 
   public async doRun(): Promise<void> {
     this.isRunning.next(true);
-    this.checkDisability.next();
     try {
       await this.run();
     } catch (e: any) {
@@ -594,7 +608,6 @@ export class RichFunctionView extends FunctionView {
       console.log(e);
     } finally {
       this.isRunning.next(false);
-      this.checkDisability.next();
     }
   }
 
@@ -675,7 +688,6 @@ export class RichFunctionView extends FunctionView {
     inputs.style.paddingTop = '0px';
     inputs.style.paddingLeft = '0px';
     inputs.style.maxWidth = '100%';
-    this.checkDisability.next();
 
     return inputs;
   }
@@ -829,7 +841,7 @@ export class RichFunctionView extends FunctionView {
       }
       if (field === SYNC_FIELD.INPUTS) {
         this.hideOutdatedOutput();
-        this.checkDisability.next();
+        this.validationRequests.next(newParam.name);
 
         if (this.runningOnInput && this.isRunnable()) this.doRun();
       }
@@ -854,7 +866,6 @@ export class RichFunctionView extends FunctionView {
         this.isHistorical.next(false);
 
       this.funcCall[field][val.name] = t.value;
-      this.checkDisability.next();
       this.hideOutdatedOutput();
     });
     this.subs.push(sub);
@@ -888,37 +899,51 @@ export class RichFunctionView extends FunctionView {
     return msgs.join('\n');
   }
 
-  private runValidation() {
-    this.clearValidation();
-    for (const [k, v] of this.funcCall.inputs.entries()) {
-      const standardMsgs = nonNullValidator(v, this._funcCall!);
+  private async runValidation(inputName?: string) {
+    this.setValidationPending(inputName);
+
+    const inputNames = this.getValidatedNames(inputName);
+
+    await Promise.all(inputNames.map(async (name) => {
+      const v = this.funcCall.inputs[name];
+      // not allowing null anywhere
+      const standardMsgs = await nonNullValidator(v, this._funcCall!);
       if (standardMsgs) {
-        this.syncValidationState(k, standardMsgs);
-        continue;
+        this.setValidationResults(name, standardMsgs);
+        return;
       }
-      const customValidator = this.validators[k];
+      const customValidator = this.validators[name];
       if (customValidator) {
-        const customMsgs = customValidator(v, this._funcCall!);
-        this.syncValidationState(k, customMsgs);
-      }
-    }
+        const customMsgs = await customValidator(v, this._funcCall!);
+        this.setValidationResults(name, customMsgs);
+      } else
+        this.setValidationResults(name);
+    }));
   }
 
-  private clearValidation() {
-    this.validationState = {};
-    for (const input of Object.values(this.inputsMap)) {
+  private setValidationPending(inputName?: string) {
+    const inputNames = this.getValidatedNames(inputName);
+    for (const name of inputNames) {
+      this.validationState[name] = makePendingValidationResult();
+      const input = this.inputsMap[name];
       if (isFuncCallInputValidated(input))
-        input.setValidation();
+        input.setValidation(makePendingValidationResult());
     }
+    this.validationUpdates.next(null);
   }
 
-  private syncValidationState(param: string, validationMessages?: ValidationResult | void) {
-    if (validationMessages) {
-      this.validationState[param] = validationMessages;
-      const input = this.inputsMap[param];
-      if (isFuncCallInputValidated(input))
-        input.setValidation(validationMessages);
-    }
+  private setValidationResults(inputName: string, validationMessages?: ValidationResult) {
+    this.validationState[inputName] = validationMessages;
+    const input = this.inputsMap[inputName];
+    if (isFuncCallInputValidated(input))
+      input.setValidation(validationMessages);
+    this.validationUpdates.next(null);
+  }
+
+  private getValidatedNames(inputName?: string) {
+    if (inputName)
+      return [inputName];
+    return [...this.funcCall.inputs.keys()];
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {

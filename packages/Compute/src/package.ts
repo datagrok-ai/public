@@ -235,8 +235,19 @@ export function RangeValidatorFactory(params: any) {
   return (val: number) => {
     const { min, max } = params;
     if (val < min || val > max) {
-      // TODO: format results
       return { errors: [`Out of range [${min}, ${max}] value: ${val}`] };
+    }
+  }
+}
+
+//name: AsyncValidatorDemoFactory
+//input: object params
+//output: object validator
+export function AsyncValidatorDemoFactory(params: any) {
+  return async (val: number) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (val === 0) {
+      return { warnings: [`Try non-null value`] };
     }
   }
 }

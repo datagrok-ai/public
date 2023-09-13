@@ -31,12 +31,13 @@ export function isFuncCallInputValidated<T = any>(arg: any): arg is FuncCallInpu
 
 // validation
 export interface ValidationResult {
+  pending?: boolean;
   warnings?: string[];
   errors?: string[];
 }
 
 export function isValidationPassed(result?: ValidationResult) {
-  return !result || !result.errors?.length;
+  return !result?.errors?.length && !result?.pending;
 }
 
 export function getErrorMessage(result?: ValidationResult) {
@@ -53,17 +54,21 @@ export function makeValidationResult(errors?: string[], warnings?: string[]) {
   return {errors, warnings};
 }
 
+export function makePendingValidationResult() {
+  return {pending: true};
+}
+
 export function mergeValidationResults(results: ValidationResult[] = []) {
   const errors = results.flatMap((res) => res.errors);
   const warnings = results.flatMap((res) => res.warnings);
   return {errors, warnings};
 }
 
-export type Validator = (val: any, context?: any) => ValidationResult | void;
+export type Validator = (val: any, context?: any) => Promise<ValidationResult | undefined>;
 
 export type ValidatorFactory = (params: any) => { validator: Validator };
 
-export const nonNullValidator: Validator = (value: any) => {
+export const nonNullValidator: Validator = async (value: any) => {
   if (value == null)
     return makeValidationResult(['Missing value']);
 };
