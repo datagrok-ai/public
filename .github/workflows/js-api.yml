@@ -134,7 +134,7 @@ jobs:
           echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
 
   build:
-    name: ${{ needs.version.outputs.job_name }}
+    name: ${{ needs.version.outputs.job_name || 'Deploy' }}
     runs-on: ubuntu-22.04
     needs: [ version, common-check ]
     if: needs.common-check.outputs.continue == 'true'

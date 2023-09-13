@@ -142,7 +142,7 @@ jobs:
           echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
 
   publish:
-    name: ${{ matrix.job_name }}
+    name: ${{ matrix.job_name || 'Deploy' }}
     needs:
       - matrix
       - common-check
