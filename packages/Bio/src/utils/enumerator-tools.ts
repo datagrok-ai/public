@@ -50,7 +50,7 @@ async function enumerator(
   function getCycle(helm: string, position: [number, number]): string {
     const result = helm.replace(RIGHT_HELM_WRAPPER,
       `}$PEPTIDE1,PEPTIDE1,${position[1]}:R2-${position[0]}:R1${'$'.repeat(6)}`);
-    console.log('result:', result);
+    // console.log('result:', result);
     return result;
   }
 
@@ -73,14 +73,15 @@ async function enumerator(
 
 export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   const monomerLib = MonomerLibHelper.instance.getBioLib();
-  const monomerList: string[] = [ALL_MONOMERS].concat(monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE));
-  // const monomerList: string[] = [ALL_MONOMERS].concat(
-  // monomerLib.getMonomerSymbolsByRGroup(3, HELM_POLYMER_TYPE.PEPTIDE)
-  // );
+  // const monomerList: string[] = [ALL_MONOMERS].concat(monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE));
+  const monomerList: string[] = [ALL_MONOMERS].concat(
+    monomerLib.getMonomerSymbolsByRGroup(3, HELM_POLYMER_TYPE.PEPTIDE)
+  );
   const leftTerminalChoice = ui.choiceInput('', monomerList[0], monomerList);
   const rightTerminalChoice = ui.choiceInput('', monomerList[0], monomerList);
 
-  const rGroups = ['term N', 'term O'];
+  // const rGroups = ['N', 'O'];
+  const rGroups = ['S', 'S'];
   const r1groupChoice = ui.choiceInput('R1', rGroups[0], rGroups);
   const r2groupChoice = ui.choiceInput('R2', rGroups[1], rGroups);
 
