@@ -6,6 +6,10 @@
 
 * Fix getSplitterWithSeparator for empty seq.
 * Fix MonomerPlacer getPosition for empty seq.
+* Move maxMonomerLength from column's temp to tags
+* Add property fitWidth for VdRegionsViewer
+* Fix UnitsHandler to not replace existing tags
+* Fix VdRegionsViewer fit width accounting position margin of WebLogo
 
 ## 5.38.0 (2023-09-06)
 
