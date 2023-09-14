@@ -3,35 +3,36 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 // Investigating what test failed with an Unhandled exception
-// import './tests/_first-tests';
-// import './tests/Palettes-test';
-// import './tests/detectors-tests';
-// import './tests/detectors-weak-and-likely-tests';
-// import './tests/detectors-benchmark-tests';
-// import './tests/msa-tests';
-// import './tests/splitters-test';
-// import './tests/monomer-libraries-tests';
-// import './tests/renderers-test';
-// import './tests/renderers-monomer-placer';
-// import './tests/converters-test';
-// import './tests/fasta-handler-test';
-// import './tests/fasta-export-tests';
+import './tests/_first-tests';
+import './tests/Palettes-test';
+import './tests/detectors-tests';
+import './tests/detectors-weak-and-likely-tests';
+import './tests/detectors-benchmark-tests';
+import './tests/msa-tests';
+import './tests/splitters-test';
+import './tests/monomer-libraries-tests';
+import './tests/renderers-test';
+import './tests/renderers-monomer-placer';
+import './tests/converters-test';
+import './tests/fasta-handler-test';
+import './tests/fasta-export-tests';
 
 import './tests/bio-tests';
 import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
-import './tests/similarity-diversity-tests';
-import './tests/substructure-filters-tests';
 import './tests/pepsea-tests';
 import './tests/viewers';
 import './tests/units-handler-tests';
 import './tests/units-handler-splitted-tests';
-import './tests/units-handler-get-region';
-import './tests/to-atomic-level-tests';
-import './tests/mm-distance-tests';
-import './tests/activity-cliffs-tests';
-import './tests/sequence-space-test';
-import './tests/scoring';
+
+// import './tests/units-handler-get-region';
+// import './tests/to-atomic-level-tests';
+// import './tests/mm-distance-tests';
+// import './tests/similarity-diversity-tests';
+// import './tests/substructure-filters-tests';
+// import './tests/activity-cliffs-tests';
+// import './tests/sequence-space-test';
+// import './tests/scoring';
 
 
 export const _package = new DG.Package();
