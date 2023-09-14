@@ -79,11 +79,17 @@ export class UnitsHandler {
       // Empty monomer alphabet is not allowed
       if (Object.keys(stats.freq).length === 0) throw new Error('Alphabet is empty');
 
-      const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
-      uh.column.setTag(TAGS.aligned, aligned);
+      let aligned = uh.column.getTag(TAGS.aligned);
+      if (aligned === null) {
+        aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+        uh.column.setTag(TAGS.aligned, aligned);
+      }
 
-      const alphabet = detectAlphabet(stats.freq, candidateAlphabets);
-      uh.column.setTag(TAGS.alphabet, alphabet);
+      let alphabet = uh.column.getTag(TAGS.alphabet);
+      if (alphabet === null) {
+        alphabet = detectAlphabet(stats.freq, candidateAlphabets);
+        uh.column.setTag(TAGS.alphabet, alphabet);
+      }
       if (alphabet === ALPHABET.UN) {
         const alphabetSize = Object.keys(stats.freq).length;
         const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);

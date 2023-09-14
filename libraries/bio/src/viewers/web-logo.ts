@@ -78,6 +78,8 @@ export type WebLogoProps = Required<typeof WebLogoPropsDefault>;
 export interface IWebLogoViewer extends WebLogoProps, IViewer {
   get onSizeChanged(): Observable<void>;
 
+  get positionMarginValue(): number;
+
   setOptions(options: Partial<WebLogoProps>): void;
 }
 
