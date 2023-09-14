@@ -63,7 +63,7 @@
     "webpack-bundle-analyzer": "latest",
     "webpack-cli": "^4.9.1",
     "@datagrok/chem": "1.7.2",
-    "@datagrok/helm": "2.1.16"
+    "@datagrok/helm": "2.1.17"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
