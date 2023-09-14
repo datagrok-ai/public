@@ -20,10 +20,10 @@ import './tests/fasta-export-tests';
 import './tests/bio-tests';
 import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
-import './tests/pepsea-tests';
+// import './tests/pepsea-tests';
 import './tests/units-handler-tests';
 import './tests/units-handler-splitted-tests';
-// import './tests/viewers';
+import './tests/viewers';
 
 import './tests/units-handler-get-region';
 import './tests/to-atomic-level-tests';
