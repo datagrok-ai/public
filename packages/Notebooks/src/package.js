@@ -340,7 +340,6 @@ class NotebookView extends DG.ViewBase {
   }
 
   static getSettings() {
-    try{
       const _settings = {
         baseUrl: grok.settings.jupyterNotebook,
         token: grok.settings.jupyterToken,
@@ -356,11 +355,6 @@ class NotebookView extends DG.ViewBase {
       settings.token = PageConfig.getToken();
   
       return settings;   
-    } catch (e) {
-      grok.log.error(e);
-      console.log(e);
-    }
-    
   }
 }
 
