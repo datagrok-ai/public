@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.13.2 (2023-09-14)
+
+### Bug Fixes
+
+* Downgraded `datagrok-api` dependency to version 1.16.4.
+
 ## 1.13.1 (2023-09-13)
 
 ### Bug Fixes

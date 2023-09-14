@@ -16,8 +16,9 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
 
   const availableColNames = (table: DG.DataFrame): string[] => {
     return table.columns.toList()
-      .filter(
-        (col) => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === DG.SEMTYPE.MACROMOLECULE,
+      .filter((col) =>
+        col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT ||
+        col.semType === DG.SEMTYPE.MACROMOLECULE || col.semType === DG.SEMTYPE.MOLECULE
       ).map((col) => col.name);
   };
 

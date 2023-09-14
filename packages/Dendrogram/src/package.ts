@@ -262,6 +262,13 @@ export async function hierarchicalClustering(): Promise<void> {
   hierarchicalClusteringDialog();
 }
 
+//top-menu: Chem | Analyze | Hierarchical Clustering...
+//name: Hierarchical Clustering
+//description: Calculates hierarchical clustering on features and injects tree to grid
+export async function hierarchicalClusteringMolecules(): Promise<void> {
+  hierarchicalClusteringDialog();
+}
+
 //top-menu: ML | Cluster | Hierarchical Clustering...
 //name: Hierarchical Clustering
 //description: Calculates hierarchical clustering on features and injects tree to grid

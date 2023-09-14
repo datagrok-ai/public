@@ -1,5 +1,5 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {BitArrayMetricsNames} from './typed-metrics/consts';
+import {BitArrayMetricsNames, IntArrayMetricsNames} from './typed-metrics/consts';
 
 export const similarityMetric: { [name: string]: (x: BitArray, y: BitArray) => number } = {
   [BitArrayMetricsNames.Tanimoto]: tanimotoSimilarity,
@@ -50,6 +50,12 @@ export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
 
 export function tanimotoDistance(x: BitArray, y: BitArray): number {
   return getDistanceFromSimilarity(tanimotoSimilarity(x, y));
+}
+
+export function tanimotoDistanceIntArray(x: Uint32Array, y: Uint32Array): number {
+  const xb = new BitArray(x, x.length * 32);
+  const yb = new BitArray(y, y.length * 32);
+  return getDistanceFromSimilarity(tanimotoSimilarity(xb, yb));
 }
 
 export function diceSimilarity(x: BitArray, y: BitArray): number {
