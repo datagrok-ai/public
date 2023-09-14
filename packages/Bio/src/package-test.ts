@@ -20,7 +20,7 @@ import './tests/fasta-export-tests';
 import './tests/bio-tests';
 import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
-// import './tests/pepsea-tests';
+import './tests/pepsea-tests';
 import './tests/units-handler-tests';
 import './tests/units-handler-splitted-tests';
 import './tests/viewers';
@@ -31,8 +31,8 @@ import './tests/mm-distance-tests';
 import './tests/substructure-filters-tests';
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';
-import './tests/scoring';
-//import './tests/similarity-diversity-tests';
+//import './tests/scoring';
+import './tests/similarity-diversity-tests';
 
 
 export const _package = new DG.Package();
