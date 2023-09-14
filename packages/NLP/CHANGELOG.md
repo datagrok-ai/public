@@ -11,7 +11,6 @@ Stemming-based search (SBS) is implemented.
 
 *Dependency: datagarok-api >= 1.0.0*
 
-
 ## 1.0.6 (2023-07-24) 
 
 Initial release of NLP package

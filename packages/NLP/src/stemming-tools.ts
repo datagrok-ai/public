@@ -106,12 +106,13 @@ function getMetrics(query: string, base: string[], minCharCount: number): Elemen
 function computeMetrics(query: string, base: DG.Column<string>, minCharCount: number): Element[] {
   const result = [] as Element[];
   const size = base.length;
+  const stemmedQuery = getStemmedWords(query, minCharCount);
 
   for (let i = 0; i < size; ++i)
     result.push({
       idx: i,
       metrics: distance(
-        getStemmedWords(query, minCharCount),
+        stemmedQuery,
         getStemmedWords(base.get(i) ?? '', minCharCount)
     )});
 
@@ -213,4 +214,60 @@ export function getFullSearchResults(query: string, baseColumn: DG.Column<string
     absClosest: getSearchResultsDataframe(query, baseColumn, closestAbs), 
     relClosest: getSearchResultsDataframe(query, baseColumn, closestRel)
   };  
+}
+
+export function getStemmedColumn(col: DG.Column<string>, minCharCount: number): DG.Column<string> {
+  const size = col.length;
+  const stemmed = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${col.name} (stemmed)`, size);
+
+  for (let i = 0; i < size; ++i)
+    stemmed.set(
+      i,
+      getStemmedWords(col.get(i) ?? '', minCharCount).join(' ')
+    );
+
+  return stemmed;
+}
+
+function computeMetricsUsingStemmedData(query: string, stemmed: DG.Column<string>, minCharCount: number): Element[] {
+  const result = [] as Element[];
+  const size = stemmed.length;
+  const stemmedQuery = getStemmedWords(query, minCharCount);
+
+  for (let i = 0; i < size; ++i)
+    result.push({
+      idx: i,
+      metrics: distance(
+        stemmedQuery,
+        (stemmed.get(i) ?? '').split(' ')
+    )});
+
+  return result;
+}
+
+export function getFullSearchResultsUsingStemmedData(query: string, stemmed: DG.Column<string>, closestCount: number, minCharCount: number): FullSearchResults {  
+  const metrics = computeMetricsUsingStemmedData(query, stemmed, minCharCount);
+  
+  const closestAbs = [...metrics.sort((a, b) => b.metrics.absolute - a.metrics.absolute).slice(0, closestCount)];
+  const closestRel = [...metrics.sort((a, b) => b.metrics.relative - a.metrics.relative).slice(0, closestCount)];
+    
+  return {
+    absClosest: getSearchResultsDataframe(query, stemmed, closestAbs), 
+    relClosest: getSearchResultsDataframe(query, stemmed, closestRel)
+  };  
+}
+
+export function getSearchResultsSplittedUsingStemmedData(query: string, source: DG.Column<string>, stemmed: DG.Column<string>, closestCount: number, minCharCount: number): SearchResultsSplitted {
+  const metrics = computeMetricsUsingStemmedData(query, stemmed, minCharCount);
+    
+  const closestRel = [...metrics.sort((a, b) => b.metrics.relative - a.metrics.relative).slice(0, closestCount)];
+  const closestAbs = [...metrics.sort((a, b) => b.metrics.absolute - a.metrics.absolute).slice(0, 2 * closestCount)];
+
+  let closestIndeces = closestRel.map((item) => item.idx);
+  closestIndeces = closestIndeces.concat(closestAbs.map((item) => item.idx).filter((idx) => !closestIndeces.includes(idx)).slice(0, closestCount - 1));
+  
+  return {
+    closestIndeces: closestIndeces,
+    closestStrings: closestIndeces.map((idx) => source.get(idx) ?? '') 
+  };
 }
