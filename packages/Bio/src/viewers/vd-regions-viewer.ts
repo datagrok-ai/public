@@ -7,6 +7,7 @@ import {fromEvent, Unsubscribable} from 'rxjs';
 import {
   IVdRegionsViewer,
   VdRegion, VdRegionType,
+  VdRegionsProps, VdRegionsPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
 import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
@@ -55,10 +56,13 @@ export enum PROPS {
   regionTypes = 'regionTypes',
   chains = 'chains',
 
-  // -- Style --
+  // -- Layout --
+  fitWidth = 'fitWidth',
   positionWidth = 'positionWidth',
   positionHeight = 'positionHeight',
 }
+
+const defaults: VdRegionsProps = VdRegionsPropsDefault;
 
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
@@ -80,7 +84,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // public sequenceColumnNamePostfix: string;
 
   public skipEmptyPositions: boolean;
-  /* A value of zero means autofit to the width. */
+  public fitWidth: boolean;
   public positionWidth: number;
   public positionHeight: PositionHeight;
 
@@ -88,22 +92,24 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     super();
 
     // -- Data --
-    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, false,
+    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, defaults.skipEmptyPositions,
       {category: PROPS_CATS.DATA});
 
     // To prevent ambiguous numbering scheme in MLB
-    this.regionTypes = this.stringList(PROPS.regionTypes, [vrt.CDR], {
+    this.regionTypes = this.stringList(PROPS.regionTypes, defaults.regionTypes, {
       category: PROPS_CATS.DATA, choices: Object.values(vrt).filter((t) => t != vrt.Unknown)
     }) as VdRegionType[];
-    this.chains = this.stringList(PROPS.chains, ['Heavy', 'Light'],
+    this.chains = this.stringList(PROPS.chains, defaults.chains,
       {category: PROPS_CATS.DATA, choices: ['Heavy', 'Light']});
 
     // -- Layout --
-    this.positionWidth = this.float(PROPS.positionWidth, 16, {
+    this.fitWidth = this.bool(PROPS.fitWidth, defaults.fitWidth,
+      {category: PROPS_CATS.LAYOUT});
+    this.positionWidth = this.float(PROPS.positionWidth, defaults.positionWidth, {
       category: PROPS_CATS.LAYOUT, editor: 'slider', min: 0, max: 64,
-      description: 'Internal WebLogo viewers property width of position. A value of zero means autofit to the width.'
+      description: 'Internal WebLogo viewers property width of position.'
     });
-    this.positionHeight = this.string(PROPS.positionHeight, PositionHeight.Entropy,
+    this.positionHeight = this.string(PROPS.positionHeight, defaults.positionHeight,
       {category: PROPS_CATS.LAYOUT, choices: Object.keys(PositionHeight)}) as PositionHeight;
   }
 
@@ -178,6 +184,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
         this.calcSize();
         break;
 
+      case PROPS.fitWidth:
       case PROPS.positionWidth:
         this.calcSize();
         break;
@@ -274,7 +281,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       for (const chain of this.chains) {
         const region: VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
-        logoPromiseList.push((async () => {
+        logoPromiseList.push((async (): Promise<[number, string, WebLogoViewer]> => {
           const wl: WebLogoViewer = await this.dataFrame.plot.fromType('WebLogo', {
             sequenceColumnName: region!.sequenceColumnName,
             startPositionName: region!.positionStartName,
@@ -381,7 +388,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
         totalPos += Math.max(...this.chains.map((chain) => this.logos[orderI][chain].Length));
       }
 
-      if (this.positionWidth === 0) {
+      if (this.fitWidth) {
         if (this.logos.length > 0 && totalPos > 0) {
           const leftPad = 22/* Chain label */;
           const rightPad = 6 + 6 + 1;
@@ -392,16 +399,18 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
           for (let orderI = 0; orderI < this.logos.length; orderI++) {
             for (const chain of this.chains) {
               const wl = this.logos[orderI][chain];
-              wl.setOptions({[wlPROPS.positionWidth]: fitPositionWidth});
+              wl.setOptions({[wlPROPS.positionWidth]: (fitPositionWidth - wl.positionMarginValue)});
               wl.root.style.width = `${fitPositionWidth * wl.Length}px`;
             }
           }
         }
+        this.host.style.setProperty('overflow', 'hidden', 'important');
       } else {
         for (let orderI = 0; orderI < this.logos.length; orderI++) {
           for (const chain of this.chains)
             this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: this.positionWidth});
         }
+        this.host.style.removeProperty('overflow');
       }
 
       if (this.positionWidth === 0)

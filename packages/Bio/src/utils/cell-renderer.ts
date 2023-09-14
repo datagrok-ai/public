@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {printLeftOrCentered, DrawStyle, TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {
   getPaletteByType,
@@ -132,7 +132,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ): void {
     let gapLength = 0;
     const msaGapLength = 8;
-    let maxLengthOfMonomer = 999; // in case of long monomer representation, do not limit max length
+    let maxLengthOfMonomer = 50; // in case of long monomer representation, do not limit max length
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
@@ -146,9 +146,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (monomerWidth === 'short') {
       // Renderer can start to work before Bio package initialized, in that time _package.properties is null.
       // TODO: Render function is available but package init method is not completed
-      maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties?.MaxMonomerLength ?? 4;
+      const tagMaxMonomerLength: number = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
+      maxLengthOfMonomer =
+        (!isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties?.MaxMonomerLength) ?? 4;
     }
-
 
     let seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
     if (!seqColTemp) {
