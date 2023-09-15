@@ -10,9 +10,13 @@ import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {_package, getScaffoldTree} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { FILTER_SCAFFOLD_TAG } from '../constants';
+import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
+import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
+import { hexToPercentRgb } from '../utils/chem-common';
 
 let attached = false;
+
+let randomColors = ['#2057b6', '#20b65a', '#b6205c', '#dd7f40'];
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -34,6 +38,7 @@ interface ITreeNode {
   orphans: boolean;
   labelDiv: HTMLDivElement;
   canvas: Element;
+  color: string;
 }
 
 interface Size {
@@ -302,6 +307,12 @@ function getNotIcon(group: TreeViewGroup) : HTMLElement | null {
   return c.length === 0 ? null : c[0] as HTMLElement;
 }
 
+function getColorIcon(group: TreeViewGroup): HTMLElement | null {
+  const molHost: HTMLElement = group.captionLabel;
+  let c = molHost.getElementsByClassName('fa-circle');
+  return c.length === 0 ? null : c[0] as HTMLElement;
+}
+
 function isNotBitOperation(group: TreeViewGroup) : boolean {
   const isNot = (group.value as ITreeNode).bitwiseNot;
   return isNot;
@@ -329,6 +340,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   wrapper: SketcherDialogWrapper | null = null;
   molCol: DG.Column | null = null;
   molColumns: Array<DG.Column[]> = [];
+  scaffolds: IColoredScaffold[] = [];
   molColumnIdx: number = -1;
   tableIdx: number = -1;
   threshold: number;
@@ -342,7 +354,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   dataFrameSwitchgInProgress: boolean = false;
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
-  allowGenerate: boolean;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -363,6 +374,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     'extra': {height: 120, width: 300},
   };
   size: string;
+  allowGenerate: boolean;
 
   constructor() {
     super();
@@ -944,6 +956,27 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
+  setColorToHighlight(group: TreeViewGroup, smiles: string, chosenColor: string): void {
+    const colorIcon = getColorIcon(group);
+    const colorIsSet = colorIcon?.classList.contains('fal');
+    if (colorIsSet) {
+      colorIcon!.classList.remove('fal');
+      colorIcon!.classList.add('fas');
+      colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+      this.scaffolds.push({molecule: smiles, color: chosenColor});
+      this.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(this.scaffolds));
+      grok.shell.tv.dataFrame.fireValuesChanged();
+    } else {
+      colorIcon!.classList.remove('fas');
+      colorIcon!.classList.add('fal');
+      colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+      this.scaffolds = this.scaffolds.filter((item: IColoredScaffold) => item.molecule !== smiles);
+      this.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(this.scaffolds));
+      console.log(this.scaffolds);
+      grok.shell.tv.dataFrame.fireValuesChanged();
+    }
+  }
+
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
     if ((group.value as ITreeNode).bitwiseNot === isNot)
       return;
@@ -969,9 +1002,24 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   addIcons(molHost: HTMLDivElement, group: TreeViewGroup, label?: string, molStrSketcher?: string): void {
     const thisViewer = this;
+    let chosenColor: string = '';
     const notIcon = ui.iconFA('equals',
       () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
       'Exclude structures containing this scaffold');
+    const colorIcon = ui.iconFA('circle',
+      () => {
+        if ((group.value as ITreeNode).color === undefined)
+          (group.value as ITreeNode).color = randomColors[0]; 
+        chosenColor = (group.value as ITreeNode).color;
+        thisViewer.setColorToHighlight(group, (group.value as ITreeNode).smiles, chosenColor);
+        randomColors = randomColors.filter((color) => color !== chosenColor);
+      }, 
+      'Assigns color to the scaffold');
+    colorIcon.classList.add('fal');
+    colorIcon.classList.add('scaffold-tree-circle');
+    colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+    colorIcon.onclick = (e) => e.stopImmediatePropagation();
+    colorIcon.onmousedown = (e) => e.stopImmediatePropagation();
     notIcon.onclick = (e) => e.stopImmediatePropagation();
     notIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
@@ -981,7 +1029,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(value(group).smiles, 300, 200, undefined, thisViewer, true), e.clientX, e.clientY);
     zoomIcon.onmouseleave = (e) => ui.tooltip.hide();
 
-    const iconsDivLeft = ui.divV([notIcon, zoomIcon], 'chem-mol-box-info-buttons');
+    const iconsDivLeft = ui.divV([notIcon, colorIcon, zoomIcon], 'chem-mol-box-info-buttons');
 
     const iconsDiv = ui.divV([
       ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
@@ -1250,7 +1298,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         });
     });
 
-    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+    /*this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
       if (node.value !== null) {
         if (value(node).bitset === undefined)
           return;
@@ -1271,7 +1319,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         return;
 
       thisViewer.wrapper.node = (node as DG.TreeViewGroup);
-    });
+    });*/
 
     this.tree.onChildNodeExpandedChanged.subscribe((group: DG.TreeViewGroup) => {
       const isFolder = value(group).orphans;

@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {ScaffoldTreeViewer, BitwiseOp} from './scaffold-tree';
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
-import { FILTER_SCAFFOLD_TAG } from '../constants';
+import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
+import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
 
 const COLUMN_NAME_CHANGED = 'column-name-changed';
 
@@ -25,6 +26,7 @@ function clearNotIcon(viewer: ScaffoldTreeViewer, tree: DG.TreeViewNode[]) {
 export class ScaffoldTreeFilter extends DG.Filter {
   viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
   savedTree: string = '';
+  scaffolds: IColoredScaffold[] = [];
 
   constructor() {
     super();
@@ -66,6 +68,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   saveState(): any {
     const state = super.saveState();
     state.savedTree = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.viewer.tree));
+    state.scaffolds = this.viewer.scaffolds;
     return state;
   }
 
@@ -74,7 +77,12 @@ export class ScaffoldTreeFilter extends DG.Filter {
     grok.events.fireCustomEvent(COLUMN_NAME_CHANGED, {
       colName: state.columnName,
     });
-    if (state.savedTree) this.viewer.loadTreeStr(state.savedTree);
+    if (state.savedTree) {
+      this.viewer.loadTreeStr(state.savedTree);
+    }
+    if (state.scaffolds) {
+      this.viewer.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(state.scaffolds));
+    }
   }
 
   applyFilter(): void {
@@ -83,6 +91,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
   detach(): void {
     super.detach();
     this.viewer.clearFilters();
+    this.viewer.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '');
+     grok.shell.tv.dataFrame.fireValuesChanged();
   }
 
   createViewer(dataFrame: DG.DataFrame) {

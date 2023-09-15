@@ -264,11 +264,11 @@
 }
 
 .mol-host > :last-child {
-  right: 5px;
+  right: 10px;
 }
 
 .mol-host > :first-child {
-  left: 50px;
+  left: 55px;
 }
 
 .scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
