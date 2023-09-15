@@ -59,6 +59,75 @@ export function getMonomerLib(): IMonomerLib {
   return monomerLib!;
 }
 
+async function getHelmContainer(): Promise<DG.DockerContainer | undefined> {
+  try {
+    const dockerContainers = await grok.dapi.docker.dockerContainers;
+    return dockerContainers.filter('helm').first();
+  } catch (error) {
+    console.error('Failed to get the Helm container:', error);
+    return undefined;
+  }
+}
+
+//name: testHelmString
+//input: string helmString
+//output: string res
+export async function getSmiles(helmString: string): Promise<string | null | undefined> {
+  const helmDockerfile = await getHelmContainer();
+  console.log(helmDockerfile);
+
+  if (!helmDockerfile) {
+    console.error('Helm container is not available.');
+    return;
+  }
+
+  const params: RequestInit = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+    }
+  };
+
+  const path = `/WebService/service/SMILES/${helmString}`;
+  try {
+    const response = await grok.dapi.docker.dockerContainers.request(helmDockerfile.id, path, params);
+    console.log(response);
+    const regex = /"SMILES":"([^"]+)"/;
+    const match = response!.match(regex);
+    if (match && match.length > 1) {
+      const smilesValue = match[1];
+      return smilesValue;
+    } else {
+      console.log('SMILES value not found in the input string.');
+    }
+  } catch (error) {
+    console.error('Failed to access the server:', error);
+    return;
+  }
+}
+
+//name: HelmToSmiles
+//top-menu: Bio | Convert | Helm To Smiles
+//input: dataframe df
+//input: column macromolecules
+export async function HelmToSmiles(df: DG.DataFrame, macromolecules: DG.Column) {
+  var smiles: string[] = new Array(macromolecules.length);
+  for (var i = 0; i < macromolecules.length; ++i) {
+    var smile: any;
+    try {
+      smile = await getSmiles(macromolecules.get(i));
+    } catch (e) {
+      console.log(e);
+    } finally {
+      smiles[i] = smile;
+    }
+  }
+  var smilesColumn = DG.Column.fromStrings('smiles', smiles);
+  smilesColumn.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE); 
+  df.columns.add(smilesColumn);
+  await grok.data.detectSemanticTypes(df);
+}
+
 function rewriteLibraries() {
   // @ts-ignore
   org.helm.webeditor.Monomers.clear();
