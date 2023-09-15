@@ -784,7 +784,7 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
 }
 
-//top-menu: Bio | Search | Similarity
+//top-menu: Bio | Search | Similarity Search
 //name: similaritySearch
 //description: Finds similar sequences
 //output: viewer result
@@ -802,7 +802,7 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
 }
 
-//top-menu: Bio | Search | Diversity
+//top-menu: Bio | Search | Diversity Search
 //name: diversitySearch
 //description: Finds the most diverse sequences
 //output: viewer result
@@ -823,7 +823,7 @@ export function searchSubsequenceEditor(call: DG.FuncCall) {
     new SubstructureSearchDialog(columns);
 }
 
-//top-menu: Bio | Search | Subsequence...
+//top-menu: Bio | Search | Subsequence Search ...
 //name: Subsequence Search
 //input: column macromolecules
 //editor: Bio:SearchSubsequenceEditor
