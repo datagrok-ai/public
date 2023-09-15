@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.58",
+  "version": "3.5.61",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -925,6 +925,9 @@
         },
         "1.1.13": {
           "datagrok-api": "^1.14.1"
+        },
+        "1.1.14": {
+          "datagrok-api": "^1.14.1"
         }
       },
       "description": "Integration with the PubChem web service.",
@@ -1712,6 +1715,9 @@
         },
         "1.0.31": {
           "datagrok-api": "^1.14.1"
+        },
+        "1.0.32": {
+          "datagrok-api": "^1.14.1"
         }
       },
       "description": "Chembl integration, commonly used queries and browser",
@@ -2346,6 +2352,9 @@
           "datagrok-api": "^1.16.0"
         },
         "2.10.3": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.4": {
           "datagrok-api": "^1.16.0"
         }
       },
