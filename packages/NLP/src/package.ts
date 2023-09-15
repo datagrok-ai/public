@@ -5,9 +5,9 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {getSearchResultsSplitted, getFullSearchResults, getClasses, getValidationResults,
-  getStemmedColumn, getFullSearchResultsUsingStemmedData, getSearchResultsSplittedUsingStemmedData,
-  getClosest} from './stemming-tools';
+import {getSearchResultsJoined, getFullSearchResults, getClasses, getValidationResults,
+  getStemmedColumn, getFullSearchResultsUsingStemmedData, getSearchResultsJoinedUsingStemmedData,
+  getClosest, getClosestJoined} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -205,7 +205,8 @@ export function similar(query: string): DG.Widget {
   const df = grok.shell.t;
   const baseCol = df.currentCol;
 
-  const searchResults = getSearchResultsSplitted(query, baseCol, CLOSEST_COUNT, MIN_CHAR_COUNT);  
+  //const searchResults = getSearchResultsJoined(query, baseCol, CLOSEST_COUNT, MIN_CHAR_COUNT);
+  const searchResults = getClosestJoined(query, baseCol, CLOSEST_COUNT, MIN_CHAR_COUNT);
 
   const divElements = [] as HTMLDivElement[];
 
@@ -388,7 +389,7 @@ export function similarUsingStemmed(query: string): DG.Widget {
   const source = df.currentCol;
   const stemmed = df.getCol(`${source.name} (stemmed)`);
 
-  const searchResults = getSearchResultsSplittedUsingStemmedData(query, source, stemmed, CLOSEST_COUNT, MIN_CHAR_COUNT);  
+  const searchResults = getSearchResultsJoinedUsingStemmedData(query, source, stemmed, CLOSEST_COUNT, MIN_CHAR_COUNT);  
 
   const divElements = [] as HTMLDivElement[];
 
