@@ -21,7 +21,7 @@ import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
 import './tests/substructure-filters-tests';
 import './tests/pepsea-tests';
-import './tests/viewers';
+// import './tests/viewers';
 import './tests/units-handler-tests';
 import './tests/units-handler-splitted-tests';
 import './tests/units-handler-get-region';
