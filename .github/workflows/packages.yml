@@ -191,7 +191,7 @@ jobs:
           fi
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != "chem" ]]; then
+          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != "chem" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != "bio" ]]; then
             DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
