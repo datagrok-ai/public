@@ -6,7 +6,8 @@ import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
 import {getSearchResultsSplitted, getFullSearchResults, getClasses, getValidationResults,
-  getStemmedColumn, getFullSearchResultsUsingStemmedData, getSearchResultsSplittedUsingStemmedData} from './stemming-tools';
+  getStemmedColumn, getFullSearchResultsUsingStemmedData, getSearchResultsSplittedUsingStemmedData,
+  getClosest} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -229,7 +230,8 @@ export function similar(query: string): DG.Widget {
 //input: column column [The column to be searched in.]
 //input: int closest = 5 [Number of the closest items to be shown in the report.]
 export function stemmingBasedSearch(query: string, table: DG.DataFrame, column: DG.Column, closest: number) { 
-  const results = getFullSearchResults(query, column, closest, 1);
+  //const results = getFullSearchResults(query, column, closest, 1);
+  const results = getClosest(query, column, closest, 1);
 
   results.absClosest.name = 'Search results (absolute metric)';
   results.relClosest.name = 'Search results (relative metric)';
@@ -303,14 +305,15 @@ export function sbsMetricCheckClasses(df: DG.DataFrame, questions: DG.Column, se
 //input: column column {type: string} [The column to be searched in.]
 //input: int index [Index of the query string taken from the target column to be searched for.]
 //input: int closest = 5 [Number of the closest items to be shown in the report.]
-//input: int launches = 10 [Number of the search launches.]
+//input: int launches = 20 [Number of the search launches.]
 export function stemmingBasedSearchPerformance(table: DG.DataFrame, column: DG.Column, index: number, closest: number, launches: number) {
   const query = column.get(((index >= 0 ) && (index < column.length))? index : 0) ?? '';
   let sum = 0;
 
   for (let i = 0; i < launches; ++i) {
     let start = new Date().getTime();  
-    const results = getFullSearchResults(query, column, closest, 1);
+    //const results = getFullSearchResults(query, column, closest, 1);
+    const results = getClosest(query, column, closest, 1);
     let finish = new Date().getTime();
 
     sum += finish - start;
@@ -322,12 +325,15 @@ export function stemmingBasedSearchPerformance(table: DG.DataFrame, column: DG.C
   // with removing stop words
   //   idx 587: 784.5 ms. -> 671 ms.
   //   idx 2: 799.05 ms -> 672.85 ms.
-  //   idx 13367: 15603 ms. -> 901 ms.
+  //   idx 13367: 15603 ms. -> 901 ms.  
 
-  // without removing stop words
-  //   idx 587: 761.1 ms.
-  //   idx 2: 774.05 ms
-  //   idx 13367: 14640 ms.
+  // Q.csv, 20117 rows:
+/* Basic     
+     "in max-length search":
+         idx 587:  674.3 ms. -> 679.65 ms.
+           idx 2:  678.7 ms. -> 682.55 ms.
+       idx 13367:  795.1 ms. -> 874.6 ms.
+*/
 }
 
 //top-menu: NLP | Stem column...
@@ -344,7 +350,7 @@ export function stemColumn(table: DG.DataFrame, column: DG.Column) { table.colum
 //input: column column {type: string} [The column to be searched in.]
 //input: int index [Index of the query string taken from the target column to be searched for.]
 //input: int closest = 5 [Number of the closest items to be shown in the report.]
-//input: int launches = 10 [Number of the search launches.]
+//input: int launches = 20 [Number of the search launches.]
 export function stemmingBasedSearchPerformanceUsingStemmed(table: DG.DataFrame, column: DG.Column, index: number, closest: number, launches: number) {
   const query = column.get(((index >= 0 ) && (index < column.length))? index : 0) ?? '';
   const stemmed = table.getCol(`${column.name} (stemmed)`);

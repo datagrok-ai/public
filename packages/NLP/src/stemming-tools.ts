@@ -35,6 +35,11 @@ type Element = {
   metrics: Metrics
 };
 
+type NumArrElement = {
+  idx: number,
+  val: number
+};
+
 export type CorrectClassesCount = {
   absolute: number,
   absoluteBest: boolean,
@@ -70,9 +75,45 @@ function getStemmedWords(str: string, minCharCount: number): string[] {
   return [...new Set(getWords(str, minCharCount).map((word) => stemmer(word)))];
 }
 
-function commonElements(words1: string[], words2: string[]): string[] {
-  return words1.filter((word) => words2.includes(word));
+function commonElements(words1: string[], words2: string[]): string[] {  
+  //return words1.filter((word) => words2.includes(word));  
+  //return (words1.length < words2.length) ? words1.filter((word) => words2.includes(word)) : words2.filter((word) => words1.includes(word));
+  return (words1.length > words2.length) ? words1.filter((word) => words2.includes(word)) : words2.filter((word) => words1.includes(word));
 }
+
+// Q.csv, 20117 rows:
+/* Basic 
+     before:        
+         idx 587:  674.5 ms.
+           idx 2:  675.3 ms.
+       idx 13367:  878.85 ms. 
+       
+     "in min-length search":
+         idx 587:  673.65 ms.
+           idx 2:  681 ms.
+       idx 13367:  879.25 ms.
+
+     "in max-length search": !!!!
+         idx 587:  674.3 ms.
+           idx 2:  678.7 ms.
+       idx 13367:  795.1 ms.
+*/
+/* Stemmed
+     before:        
+         idx 587:  31.2 ms.
+           idx 2:  32.45 ms.
+       idx 13367:  219.9 ms.
+       
+     "in min-length search":
+         idx 587:  33.55 ms.
+           idx 2:  35.8 ms.
+       idx 13367:  222.55 ms.
+
+     "in max-length search": !!!!
+         idx 587:  31.7 ms.
+           idx 2:  34 ms.
+       idx 13367:  135.2 ms.
+*/
 
 function distance(words1: string[], words2: string[]): Metrics {
   const divisor = words2.length;
@@ -201,6 +242,65 @@ export function getSearchResultsSplitted(query: string, baseColumn: DG.Column<st
   return {
     closestIndeces: closestIndeces,
     closestStrings: closestIndeces.map((idx) => baseColumn.get(idx) ?? '') 
+  };
+}
+
+function getMin(arr: Element[], getFieldFn: (elem: Element) => number): NumArrElement {
+  const res = {idx: 0, val: getFieldFn(arr[0])};
+  const size = arr.length;
+  
+  for (let i = 1; i < size; ++i) {
+    const cur = getFieldFn(arr[i]);
+
+    if (cur < res.val) {
+      res.idx = i;
+      res.val = cur;
+    }
+  }
+
+  return res;
+}
+
+function getRel(elem: Element): number { return elem.metrics.relative; }
+
+function getAbs(elem: Element): number { return elem.metrics.absolute; }
+
+export function getClosest(query: string, base: DG.Column<string>, closestCount: number, minCharCount: number): FullSearchResults {
+  const size = base.length;
+
+  if (size <= closestCount)
+    return getFullSearchResults(query, base, closestCount, minCharCount);
+
+  const closestAbs = [] as Element[];
+  const closestRel = [] as Element[];
+  const stemmedQuery = getStemmedWords(query, minCharCount);
+
+  for (let i = 0; i < closestCount; ++i) {
+    const elem = {idx: i, metrics: distance(stemmedQuery, getStemmedWords(base.get(i) ?? '', minCharCount))};
+    closestAbs.push(elem);
+    closestRel.push(elem);
+  }
+
+  let minAbs = getMin(closestAbs, getAbs);
+  let minRel = getMin(closestRel, getRel);
+
+  for (let i = closestCount; i < size; ++i) {
+    const elem = {idx: i, metrics: distance(stemmedQuery, getStemmedWords(base.get(i) ?? '', minCharCount))};
+
+    if (elem.metrics.absolute > minAbs.val) {
+      closestAbs[minAbs.idx] = elem;
+      minAbs = getMin(closestAbs, getAbs);
+    }
+
+    if (elem.metrics.relative > minRel.val) {
+      closestRel[minRel.idx] = elem;
+      minRel = getMin(closestRel, getRel);
+    }
+  }
+
+  return {
+    absClosest: getSearchResultsDataframe(query, base, [...closestAbs.sort((a, b) => b.metrics.absolute - a.metrics.absolute)]), 
+    relClosest: getSearchResultsDataframe(query, base, [...closestRel.sort((a, b) => b.metrics.relative - a.metrics.relative)])
   };
 }
 
