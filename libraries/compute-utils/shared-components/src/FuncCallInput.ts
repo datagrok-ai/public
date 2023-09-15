@@ -31,9 +31,14 @@ export function isFuncCallInputValidated<T = any>(arg: any): arg is FuncCallInpu
 
 // validation
 export interface ValidationResult {
+  // validation done
   pending?: boolean;
+  // validation results
   warnings?: string[];
   errors?: string[];
+  // revalidation request
+  revalidate?: string[];
+  context?: any;
 }
 
 export function isValidationPassed(result?: ValidationResult) {
@@ -50,12 +55,16 @@ export function getWarningMessage(result?: ValidationResult) {
     return result.warnings.join('; ');
 }
 
-export function makeValidationResult(errors?: string[], warnings?: string[]) {
+export function makeValidationResult(errors?: string[], warnings?: string[]): ValidationResult {
   return {errors, warnings};
 }
 
-export function makePendingValidationResult() {
+export function makePendingValidationResult(): ValidationResult {
   return {pending: true};
+}
+
+export function makeRevalidation(revalidate: string[], context?: any): ValidationResult {
+  return {revalidate, context};
 }
 
 export function mergeValidationResults(results: ValidationResult[] = []) {
@@ -64,7 +73,9 @@ export function mergeValidationResults(results: ValidationResult[] = []) {
   return {errors, warnings};
 }
 
-export type Validator = (val: any, context?: any) => Promise<ValidationResult | undefined>;
+export type Validator =
+  (val: any, param: string, fc: DG.FuncCall, isRevalidation: boolean, context?: any)
+  => Promise<ValidationResult | undefined>;
 
 export type ValidatorFactory = (params: any) => { validator: Validator };
 

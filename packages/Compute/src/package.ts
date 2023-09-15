@@ -9,6 +9,7 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import './css/model-card.css';
 import { ImportScriptGeneratorApp } from './import-script-generator/view';
+import { makeRevalidation } from '@datagrok-libraries/compute-utils/shared-components/src/FuncCallInput';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -232,8 +233,8 @@ export function modelCatalog() {
 //input: object params
 //output: object validator
 export function RangeValidatorFactory(params: any) {
+  const { min, max } = params;
   return (val: number) => {
-    const { min, max } = params;
     if (val < min || val > max) {
       return { errors: [`Out of range [${min}, ${max}] value: ${val}`] };
     }
@@ -248,6 +249,28 @@ export function AsyncValidatorDemoFactory(params: any) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     if (val === 0) {
       return { warnings: [`Try non-null value`] };
+    }
+  }
+}
+
+//name: GlobalValidatorDemoFactory
+//input: object params
+//output: object validator
+export function GlobalValidatorDemoFactory(params: any) {
+  const { max } = params;
+  return async (_val: number, param: string, fc: DG.FuncCall, isRevalidation: boolean, context: any) => {
+    if (context?.skipCalculations) {
+      return { warnings: [`Try lowering a value`] };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const { a, b, c } = fc.inputs;
+    const s = a + b + c;
+    if (!isRevalidation) {
+      const fields = ['a', 'b', 'c'].filter(p => p !== param)
+      return makeRevalidation(fields, { skipCalculations: true });
+    }
+    if (s > max) {
+      return { warnings: [`Try lowering a value`] };
     }
   }
 }
