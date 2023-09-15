@@ -16,8 +16,8 @@ category('viewers', () => {
       skipReason: {
         'Sequence Similarity Search': 'GROK-13162',
         'Sequence Diversity Search': 'GROK-13162',
-        'WebLogo': undefined,
-        'VdRegions': undefined
+        'WebLogo': 'GROK-13162',
+        'VdRegions': 'GROK-13162',
       }[v],
     });
   }
