@@ -12,14 +12,11 @@ import {monomersWithPhosphateLinkers} from '../data-loading-utils/json-loader';
  * omitted linkers, if needed)  */
 export class MonomerSequenceParser {
   constructor(
-    private sequence: string, private invert: boolean = false,
+    private sequence: string, 
     // todo: remove from the list of parameters
     private codeMap: Map<string, string>
   ) {
-    this.lib = MonomerLibWrapper.getInstance();
   }
-
-  private lib: MonomerLibWrapper;
 
   /** Get sequence of parsed monomer symbols, which are unique short names for
    * the monomers within the Monomer Library */
@@ -65,7 +62,7 @@ export class MonomerSequenceParser {
       const code = allCodesOfFormat.find(
         (s: string) => s === this.sequence.substring(i, i + s.length)
       )!;
-      this.invert ? parsedCodes.unshift(code) : parsedCodes.push(code);
+      parsedCodes.push(code);
       i += code.length;
     }
     return parsedCodes;
