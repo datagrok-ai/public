@@ -186,8 +186,9 @@ Parameters:
   InternetSubnetAllow:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
     Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0
-      to allow all IP addresses access, or another CIDR range.
-    Type: String
+      to allow all IP addresses access, or another CIDR range. To specify multiple
+      subnets use comma as a delimiter.
+    Type: CommaDelimitedList
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
     Default: 1.6.1
