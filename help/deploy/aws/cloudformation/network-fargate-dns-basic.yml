@@ -2113,7 +2113,6 @@ Resources:
             awslogs-stream-prefix: grok_spawner_kaniko
         MemoryReservation: 100
         Name: grok_spawner_kaniko
-        ReadonlyRootFilesystem: true
       Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:

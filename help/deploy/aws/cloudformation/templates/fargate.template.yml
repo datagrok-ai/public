@@ -14,9 +14,9 @@ Metadata:
         default: "InternetSubnetAllow: Allow connect from CIDR"
 Parameters:
   InternetSubnetAllow:
-    Type: String
+    Type: CommaDelimitedList
     AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
-    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
+    Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range. To specify multiple subnets use comma as a delimiter.
 Conditions:
   AccessFromNatGW:
     Fn::And:
@@ -3200,7 +3200,7 @@ Resources:
                 Ref: AWS::Region
               awslogs-stream-prefix: grok_spawner_kaniko
           MemoryReservation: 100
-          ReadonlyRootFilesystem: true
+#          ReadonlyRootFilesystem: true
           Name: grok_spawner_kaniko
       Cpu: '1024'
       ExecutionRoleArn:
