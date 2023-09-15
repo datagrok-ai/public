@@ -1,7 +1,6 @@
 {
   "name": "@datagrok/bio",
   "friendlyName": "Bio",
-  "skipCI": true,
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
