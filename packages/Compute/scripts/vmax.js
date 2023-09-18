@@ -1,8 +1,7 @@
 //name: Vmax
 //description: Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a training dataset of time vs filtrate volume for a given filter type, filter area and pressure
 //language: javascript
-//tags: filtration, scale-up
-//meta.department: BTDS
+//tags: filtration, scale-up, model
 //meta.status: Upstream
 //input: dataframe inputTable {caption: Input table; viewer: OutliersSelectionViewer(block: 25) | Scatter Plot(y: "t/V (hr/(L/m²))", block: 75, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true", markers: "isOutlier", lassoTool: "true", legendVisibility: "Never", filterByZoom: "false")}
 //input: dataframe reportingParameters {caption: Reporting parameters; viewer: Grid()}
@@ -19,8 +18,8 @@
 //output: dataframe sampleCharacteristics {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Sample characteristics; category: OUTPUT}
 //output: dataframe filter {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Filter; category: OUTPUT}
 //editor: Compute:ComputationView
-// inputTable = grok.shell.tables[0]; reportingParameters = grok.shell.tables[1];
-// testFilterArea = 3.5; desiredVolumeOfBatch = 25; desiredProcessTime = 0.5; sf = 1.5;
+//meta.runOnOpen: true
+//meta.runOnInput: true
 
 const COL_NAMES = {
   INPUT_TIME_IN_MINUTES: "time (min)",

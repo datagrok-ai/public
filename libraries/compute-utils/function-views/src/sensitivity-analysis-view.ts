@@ -30,7 +30,7 @@ const DISTRIB_TYPES = [
 enum ANALYSIS_TYPE {
   GRID_ANALYSIS = 'Grid',
   RANDOM_ANALYSIS = 'Monte Carlo',
-  SOBOL_ANALYSIS = 'Sobol method',
+  SOBOL_ANALYSIS = 'Sobol',
 }
 
 enum DF_OPTIONS {
@@ -79,7 +79,7 @@ export class SensitivityAnalysisView {
     const analysisInputs = {
       analysisType: {
         input: ui.choiceInput(
-          'Analysis type', ANALYSIS_TYPE.GRID_ANALYSIS, [ANALYSIS_TYPE.GRID_ANALYSIS, ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS],
+          'Method', ANALYSIS_TYPE.GRID_ANALYSIS, [ANALYSIS_TYPE.GRID_ANALYSIS, ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS],
           (v: ANALYSIS_TYPE) => {
             analysisInputs.analysisType.value.next(v);
             this.updateRunButtonText();

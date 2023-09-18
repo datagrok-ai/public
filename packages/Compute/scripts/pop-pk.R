@@ -1,5 +1,6 @@
 #name: popPK
 #language: r
+#tags: model
 #input: double dosage = 1000 {category: Dosing options} 
 #input: double doseInterval = 12 {category: Dosing options} 
 #input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']} 
@@ -11,6 +12,7 @@
 #input: double interRate = 1 {category: PK parameters} [intercompartmental rate] 
 #output: graphics popPK
 #meta.domain: PKPD
+#editor: Compute:RichFunctionViewEditor
 
 require("ggplot2")
 require("RxODE")
