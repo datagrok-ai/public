@@ -66,6 +66,6 @@ export async function pubChemToSmiles(id: string) {
 export async function inchiKeysToSmiles(id: string) {
   const s = await getBy('InChIKey', 'cids', id);
   const cids = s['IdentifierList']['CID'][0];
-  const smiles = await pubChemToSmiles(cids);
+  const smiles = await pubChemToSmiles(cids.toString());
   return smiles;
 }
