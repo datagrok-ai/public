@@ -11,7 +11,8 @@ import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {_package, getScaffoldTree} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
-import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
+import { IColoredScaffold, ISubstruct } from '../rendering/rdkit-cell-renderer';
+import * as OCL from 'openchemlib/full';
 import { hexToPercentRgb } from '../utils/chem-common';
 
 let attached = false;
@@ -38,7 +39,9 @@ interface ITreeNode {
   orphans: boolean;
   labelDiv: HTMLDivElement;
   canvas: Element;
-  color: string;
+  chosenColor?: string;
+  parentColor?: string;
+  colorIsTurned?: boolean; 
 }
 
 interface Size {
@@ -108,6 +111,10 @@ function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
 function enableToolbar(thisViewer: ScaffoldTreeViewer): void {
   const toolbar = thisViewer.root.querySelector('.chem-scaffold-tree-toolbar ') as HTMLElement;
   toolbar.classList.toggle('empty-tree', thisViewer.tree.items.length === 0);
+}
+
+function enableColorIcon(colorIcon: HTMLElement, colorIsSet: boolean) {
+  colorIcon.classList.toggle('color-is-set', colorIsSet);
 }
 
 function filterNodesIter(rootGroup: TreeViewGroup, recordCount : number, hitsThresh: number) {
@@ -241,7 +248,7 @@ let offscreen : OffscreenCanvas | null = null;
 let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
 
 
-function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false): HTMLDivElement {
+function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false, color: string | null = null, substructure: string | null = null): HTMLDivElement {
   const r = window.devicePixelRatio;
   if (offscreen === null || offscreen.width !== Math.floor(width*r) || offscreen.height !== Math.floor(height*r)) {
     offscreen = new OffscreenCanvas(Math.floor(width*r), Math.floor(height*r));
@@ -260,9 +267,30 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
     molStr = processUnits(molStr);
+    substructure = substructure !== null ? processUnits(substructure) : molStr;
     const molCtx = getMolSafe(molStr, {}, _rdKitModule);
+    const substrCtx = getMolSafe(substructure, {}, _rdKitModule);
+    const substrMol = substrCtx.mol;
     const mol = molCtx.mol;
-    if (mol !== null) {
+    if (mol !== null && substrMol !== null && color !== null) {
+      const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
+      const colorArr = hexToPercentRgb(color!);
+      const substrToTakeAtomsFrom = matchedAtomsAndBonds[0];
+      if (substrToTakeAtomsFrom.atoms) {
+        for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+          matchedAtomsAndBonds[0].highlightAtomColors ??= {};
+          matchedAtomsAndBonds[0].highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+        };
+      }
+      if (substrToTakeAtomsFrom.bonds) {
+        for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+          matchedAtomsAndBonds[0].highlightBondColors ??= {};
+          matchedAtomsAndBonds[0].highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+        };
+      }
+      drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds[0]);
+      mol.delete();
+    } else if (mol !== null && substrMol !== null) {
       drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, null);
       mol.delete();
     }
@@ -274,10 +302,9 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   $(moleculeHost).addClass('chem-canvas');
   moleculeHost.width = (viewer!.resizable && !tooltip) ? (viewer!.sizesMap['extra'].width) * r : width * r;
   moleculeHost.height = (viewer!.resizable && !tooltip) ? (viewer!.sizesMap['extra'].height) * r : height * r;
+  moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
   moleculeHost.style.width = '100%';
   moleculeHost.style.height = '';
-  moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
-
   return ui.divH([ui.div(moleculeHost, 'mol-host')], 'chem-mol-box');
 }
 
@@ -846,7 +873,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.bitset = null;
     if (this.molColumn !== null)
-      delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
+      this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '');
 
     this.checkBoxesUpdateInProgress = true;
     const checkedNodes = this.tree.items.filter((v) => v.checked);
@@ -865,7 +892,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
+    this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '');
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -894,22 +921,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (checkedNodes.length === 1) {
-      const molStr = value(checkedNodes[0]).smiles;
-      if (molStr !== undefined) {
-        let molArom;
-        try {
-          molArom = _rdKitModule.get_qmol(molStr);
-          //@ts-ignore
-          molArom.convert_to_aromatic_form();
-          this.molColumn.temp[FILTER_SCAFFOLD_TAG] = molArom.get_molblock();
-        } catch (e) {
-        } finally {
-          molArom?.delete();
-        }
-      }
-    } else delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
-
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
@@ -918,8 +929,26 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let tmpBitset = DG.BitSet.create(this.molColumn.length);
 
     let isNot = false;
-    for (let n = 0; n < checkedNodes.length; ++n) {
+    //const scaffolds: IColoredScaffold[] = [];
+    for (let n = 0; n < checkedNodes.length; ++n) { //going through all checked nodes, perform filtering and highlight
       const nodeBitset = value(checkedNodes[n]).bitset;
+      const molStr = value(checkedNodes[n]).smiles;
+      if (molStr !== undefined) {
+        let molArom;
+        try {
+          molArom = _rdKitModule.get_qmol(molStr);
+          //@ts-ignore
+          molArom.convert_to_aromatic_form();
+          this.scaffolds.push({
+            molecule: molArom.get_molblock(),
+            color: (value(checkedNodes[n]).chosenColor) ?? ''
+          });
+        } catch (e) {
+        } finally {
+          molArom?.delete();
+        }
+      }
+      
       if (nodeBitset === null)
         continue;
 
@@ -930,6 +959,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       this.bitset = this.bitOperation === BitwiseOp.AND ? this.bitset.and(tmpBitset) : this.bitset.or(tmpBitset);
     }
+    this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.scaffolds.length ? JSON.stringify(this.scaffolds): '');
 
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -937,12 +967,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   private async filterByStruct(strMol: string) {
     if (this.molColumn != null && strMol !== null) {
-      const mol = getMol(strMol);
+/*       const mol = getMol(strMol);
       if (mol !== null) {
         const molFile = mol.get_molblock();
         mol.delete();
-        this.molColumn.temp[FILTER_SCAFFOLD_TAG] = molFile;
-      }
+        const prev = this.molCol?.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG) ?? '[]';
+          const prevObj: IColoredScaffold[] = JSON.parse(prev);
+          const currentObj = prevObj.concat({
+            molecule: molFile,
+            color: `#24e5d8`
+          });
+          this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(currentObj));
+      } */
       const bitset = await handleMalformedStructures(this.molColumn, strMol);
       if (this.bitset === null)
         this.bitset = bitset;
@@ -956,25 +992,83 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
-  setColorToHighlight(group: TreeViewGroup, smiles: string, chosenColor: string): void {
+  setColorToChildren(tree: DG.TreeViewNode[], chosenColor: string, smiles: string) {
+    tree.map((group) => {
+      const castedGroup = group as DG.TreeViewGroup;
+      if (value(castedGroup).chosenColor && value(castedGroup).chosenColor !== undefined && value(castedGroup).colorIsTurned) {
+        return;
+      }
+      //if (value(castedGroup).parentColor === undefined|| value(castedGroup).parentColor === chosenColor) {
+        value(castedGroup).parentColor = chosenColor;
+        value(castedGroup).colorIsTurned = true;
+        const colorIcon = getColorIcon(castedGroup);
+        colorIcon!.classList.remove('fal');
+        colorIcon!.classList.add('fas');
+        colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+        enableColorIcon(colorIcon!, true);
+        let canvas = group.root.querySelectorAll('.chem-canvas')[0];
+        let newCanvas = renderMolecule(value(castedGroup).smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this, false, chosenColor, smiles);
+        canvas.replaceWith(newCanvas);
+        //this.scaffolds.push({molecule: , color: chosenColor});
+        //this.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(this.scaffolds));
+        grok.shell.tv.dataFrame.fireValuesChanged();
+      //}
+      if (castedGroup.children) {
+        this.setColorToChildren(castedGroup.children, chosenColor, smiles);
+      }
+    });
+  }
+
+  removeColorFromChildren(tree: DG.TreeViewNode[], chosenColor: string) {
+    tree.map((group) => {
+      const castedGroup = group as DG.TreeViewGroup;
+      if (!value(castedGroup).chosenColor && value(castedGroup).parentColor === chosenColor) {
+        let canvas = group.root.querySelectorAll('.chem-canvas')[0];
+        let newCanvas = renderMolecule(value(castedGroup).smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this);
+        canvas.replaceWith(newCanvas);
+        if (value(castedGroup).parentColor === chosenColor) {
+          delete value(castedGroup).parentColor;
+          value(castedGroup).colorIsTurned = false;
+          const colorIcon = getColorIcon(castedGroup);
+          colorIcon!.classList.remove('fas');
+          colorIcon!.classList.add('fal');
+          enableColorIcon(colorIcon!, false);
+          //colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+        }
+      }
+      if (castedGroup.children) {
+        this.removeColorFromChildren(castedGroup.children, chosenColor);
+      }
+    })
+  }
+
+  setColorToHighlight(group: TreeViewGroup, smiles: string, chosenColor: string, canvas: any): void {
     const colorIcon = getColorIcon(group);
     const colorIsSet = colorIcon?.classList.contains('fal');
     if (colorIsSet) {
       colorIcon!.classList.remove('fal');
       colorIcon!.classList.add('fas');
       colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+      (group.value as ITreeNode).colorIsTurned = true;
       this.scaffolds.push({molecule: smiles, color: chosenColor});
+      this.setColorToChildren(group.children, chosenColor, smiles);
       this.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(this.scaffolds));
+      let newCanvas = renderMolecule(smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this, false, chosenColor, smiles);
+      canvas.replaceWith(newCanvas);
       grok.shell.tv.dataFrame.fireValuesChanged();
     } else {
       colorIcon!.classList.remove('fas');
       colorIcon!.classList.add('fal');
       colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+      (group.value as ITreeNode).colorIsTurned = false;
       this.scaffolds = this.scaffolds.filter((item: IColoredScaffold) => item.molecule !== smiles);
+      this.removeColorFromChildren(group.children, chosenColor);
       this.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(this.scaffolds));
-      console.log(this.scaffolds);
+      let newCanvas = renderMolecule(smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this);
+      canvas.replaceWith(newCanvas);
       grok.shell.tv.dataFrame.fireValuesChanged();
     }
+    enableColorIcon(colorIcon!, colorIsSet!);
   }
 
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
@@ -1002,21 +1096,40 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   addIcons(molHost: HTMLDivElement, group: TreeViewGroup, label?: string, molStrSketcher?: string): void {
     const thisViewer = this;
-    let chosenColor: string = '';
+    let chosenColor: string = '#2057b6';
     const notIcon = ui.iconFA('equals',
       () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
       'Exclude structures containing this scaffold');
+    const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
+      chosenColor = value;
+    });
+    const addColorPickerIcon = ui.iconFA('palette', () => {
+      ui.dialog('Choose color')
+      .add(colorPicker)
+      .onOK(() => {
+        chosenColor = colorPicker.stringValue;
+        colorIcon.classList.add('fal');
+        colorIcon.classList.add('scaffold-tree-circle');
+        colorIcon.classList.add('color-icon');
+        colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+        (group.value as ITreeNode).chosenColor = chosenColor;
+        this.setColorToHighlight(group, (group.value as ITreeNode).smiles, chosenColor, molHost.querySelectorAll('.chem-canvas')[0]);
+      })
+      .show()
+    }, 'Choose color to highlight');
+  
     const colorIcon = ui.iconFA('circle',
       () => {
-        if ((group.value as ITreeNode).color === undefined)
-          (group.value as ITreeNode).color = randomColors[0]; 
-        chosenColor = (group.value as ITreeNode).color;
-        thisViewer.setColorToHighlight(group, (group.value as ITreeNode).smiles, chosenColor);
+        if ((group.value as ITreeNode).chosenColor === undefined)
+          (group.value as ITreeNode).chosenColor = chosenColor;  
+        chosenColor = (group.value as ITreeNode).chosenColor!;
+        thisViewer.setColorToHighlight(group, (group.value as ITreeNode).smiles, chosenColor, molHost.querySelectorAll('.chem-canvas')[0]);
         randomColors = randomColors.filter((color) => color !== chosenColor);
       }, 
       'Assigns color to the scaffold');
     colorIcon.classList.add('fal');
     colorIcon.classList.add('scaffold-tree-circle');
+    colorIcon.classList.add('color-icon');
     colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
     colorIcon.onclick = (e) => e.stopImmediatePropagation();
     colorIcon.onmousedown = (e) => e.stopImmediatePropagation();
@@ -1029,7 +1142,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(value(group).smiles, 300, 200, undefined, thisViewer, true), e.clientX, e.clientY);
     zoomIcon.onmouseleave = (e) => ui.tooltip.hide();
 
-    const iconsDivLeft = ui.divV([notIcon, colorIcon, zoomIcon], 'chem-mol-box-info-buttons');
+    const iconsDivLeft = ui.divV([notIcon, colorIcon, addColorPickerIcon, zoomIcon], 'chem-mol-box-info-buttons');
 
     const iconsDiv = ui.divV([
       ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
@@ -1298,13 +1411,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         });
     });
 
-    /*this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
       if (node.value !== null) {
         if (value(node).bitset === undefined)
           return;
 
         thisViewer.checkBoxesUpdateInProgress = true;
         this.selectGroup();
+        node.checked = true;
         thisViewer.checkBoxesUpdateInProgress = false;
         thisViewer.resetFilters();
         thisViewer.updateFilters();
@@ -1319,7 +1433,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         return;
 
       thisViewer.wrapper.node = (node as DG.TreeViewGroup);
-    });*/
+    });
 
     this.tree.onChildNodeExpandedChanged.subscribe((group: DG.TreeViewGroup) => {
       const isFolder = value(group).orphans;

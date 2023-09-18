@@ -55,7 +55,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => !this.isFiltering), debounce((_) => interval(100)))
       .subscribe((_) => {
-        delete this.column!.temp[FILTER_SCAFFOLD_TAG];
+        //delete this.column!.temp[FILTER_SCAFFOLD_TAG];
+        this.column!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '');
         this.viewer.updateFilters(this.isFiltering);
       }),
     );

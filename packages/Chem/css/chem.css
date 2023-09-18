@@ -431,3 +431,12 @@
   justify-content: center;
   display: flex;
 }
+
+.color-icon.color-is-set {
+  visibility: visible;
+}
+
+.canvas-container {
+  position: relative;
+  width: 100%;
+}
