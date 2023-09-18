@@ -27,6 +27,7 @@
 * Fixed UnitsHandler.posList length.
 * Fixed mistyping top menu path for Identity scoring.
 * Fixed Get Region missed in short top menu.
+* Fixed tests detectMacromoleculeBenchmark to specify test failed.  
 
 ## 2.9.0 (2023-08-30)
 

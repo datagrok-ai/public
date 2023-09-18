@@ -38,15 +38,15 @@ category('detectorsBenchmark', () => {
   // -- separator --
 
   test('separatorDnaShorts50Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
   });
 
   test('separatorDnaShorts50Many1E6', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
   });
 
   test('separatorDnaLong1e6Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
   });
 
   async function detectMacromoleculeBenchmark(
