@@ -47,10 +47,11 @@ export async function pubChemIdentitySearch(molString: string): Promise<DG.Widge
 //input: string id
 //output: string smiles {semType: Molecule}
 //meta.role: converter
-//meta.inputRegexp: (?i)(^\s*pubchem\:\s*[0-9]+\s*$)
+//meta.inputRegexp: (^\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\s*\:\s*[0-9]+\s*$)
 //connection: PubChemApi
 export async function pubChemToSmiles(id: string) {
-  const url = `${pubChemRest}/pug/compound/cid/${id}/property/CanonicalSMILES/JSON`;
+  const pubChemId = id.substring(id.indexOf(":") + 1).trim();
+  const url = `${pubChemRest}/pug/compound/cid/${pubChemId}/property/CanonicalSMILES/JSON`;
   const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
   return json['PropertyTable']['Properties'][0]['CanonicalSMILES'];
