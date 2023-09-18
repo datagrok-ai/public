@@ -1,10 +1,24 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
-  CreatePublicSubnets:
-    Fn::Or:
+  AccessFromInternetSubnetAllow2:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: InternetSubnetAllow2
+      - ''
+  AccessFromInternetSubnetAllow3:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: InternetSubnetAllow3
+      - ''
+  AccessFromNatGW:
+    Fn::And:
     - Condition: InternetIngressAccess
     - Condition: InternetEgressAccess
+  CreateVPC:
+    Fn::Equals:
+    - choose
+    - create
   InternetEgressAccess:
     Fn::Equals:
     - 'true'
@@ -13,41 +27,46 @@ Conditions:
     Fn::Equals:
     - Ref: InternetIngressAccess
     - 'true'
-Description: Datagrok template to deploy all components to ECS Fargate in new VPC.
-  DNS and ACM should be configured manually.
+  UseVPCEndpoint:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: DatagrokS3VPCEndpoint
+      - ''
+Description: Datagrok template to deploy all components to ECS Fargate. Template also
+  creates ACM and DNS records.
 Mappings:
   Images:
     Datagrok:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/datagrok
     GrokCompute:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/grok_compute
     GrokConnect:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/grok_connect
     GrokSpawner:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/grok_spawner
     H2o:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/h2o
     JKG:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/jupyter_kernel_gateway
     JN:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/jupyter_notebook
     Kaniko:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/kaniko
+      domain: gcr.io
+      repo: kaniko-project/executor
       version: v1.12.1
     Searchdomain:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/ecs-searchdomain-sidecar
+      domain: docker.io
+      repo: docker/ecs-searchdomain-sidecar
       version: '1.0'
     Smtp:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      domain: docker.io
       repo: datagrok/smtp
       version: 1.0.0
 Metadata:
@@ -56,14 +75,28 @@ Metadata:
     - Label:
         default: Network configuration
       Parameters:
+      - DatagrokVPC
       - CIDR
+      - DatagrokPublicSubnet1
+      - DatagrokPublicSubnet2
+      - DatagrokPrivateSubnet1
+      - DatagrokPrivateSubnet2
+      - DatagrokDataSubnet1
+      - DatagrokDataSubnet2
+      - DatagrokS3VPCEndpoint
+      - DatagrokNatGatewayEIP
       - InternetIngressAccess
+    - Label:
+        default: Access configuration
+      Parameters:
       - InternetSubnetAllow
-      - InternetEgressAccess
+      - InternetSubnetAllow2
+      - InternetSubnetAllow3
     - Label:
         default: Client Endpoint configuration
       Parameters:
-      - DatagrokArnSSLCertificate
+      - DNSZoneId
+      - DNSDomain
     - Label:
         default: Service version
       Parameters:
@@ -77,8 +110,28 @@ Metadata:
     ParameterLabels:
       CIDR:
         default: 'CIDR: VPC CIDR'
-      DatagrokArnSSLCertificate:
-        default: 'DatagrokArnSSLCertificate: AWS ACM certificate ARN'
+      DNSDomain:
+        default: 'DNSDomain: DNS domain'
+      DNSZoneId:
+        default: 'DNSZoneId: AWS Route53 Hosted Zone ID'
+      DatagrokDataSubnet1:
+        default: Data Subnet 1
+      DatagrokDataSubnet2:
+        default: Data Subnet 2
+      DatagrokNatGatewayEIP:
+        default: Nat Gateway EIP
+      DatagrokPrivateSubnet1:
+        default: Private Subnet 1
+      DatagrokPrivateSubnet2:
+        default: Private Subnet 2
+      DatagrokPublicSubnet1:
+        default: Public Subnet 1
+      DatagrokPublicSubnet2:
+        default: Public Subnet 2
+      DatagrokS3VPCEndpoint:
+        default: S3 VPC Endpoint
+      DatagrokVPC:
+        default: VPC
       DatagrokVersion:
         default: Datagrok Version
       GrokComputeVersion:
@@ -93,17 +146,20 @@ Metadata:
         default: 'InternetIngressAccess: Access from internet'
       InternetSubnetAllow:
         default: 'InternetSubnetAllow: Allow connect from CIDR'
+      InternetSubnetAllow2:
+        default: 'InternetSubnetAllow2: Allow connect from additional CIDR (Optional)'
+      InternetSubnetAllow3:
+        default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
       JKGVersion:
         default: Jupyter Kernel Gateway Version
       JNVersion:
         default: Jupyter Notebook Version
+  cfn-lint:
+    config:
+      ignore_checks:
+      - W8001
+      - W8003
 Outputs:
-  CvmLoadBalancerDNSName:
-    Description: Datagrok CVM Load Balancer DNS to create CNAME record
-    Value:
-      Fn::GetAtt:
-      - CvmLoadBalancer
-      - DNSName
   DatagrokAdminPassword:
     Description: Admin password for first login
     Value:
@@ -113,29 +169,62 @@ Outputs:
           Ref: DatagrokAdminPassword
   DatagrokEndpoint:
     Description: Datagrok endpoint
-    Value: Create DNS records for Datagrok and CVM using stated CNAMEs as values
-  DatagrokLoadBalancerDNSName:
-    Description: Datagrok Load Balancer DNS to create CNAME record
     Value:
-      Fn::GetAtt:
-      - DatagrokLoadBalancer
-      - DNSName
+      Ref: DatagrokDNS
 Parameters:
   CIDR:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
     Default: 10.0.0.0/17
-    Description: CIDR block for the new Datagrok VPC
+    Description: VPC CIDR block to allow communication inside VPC
     Type: String
-  DatagrokArnSSLCertificate:
-    AllowedPattern: (arn:([^:\n]*):([^:\n]*):([^:\n]*):([^:\n]*):(([^:\/\n]*)[:\/])?(.*))?
-    Description: The certificate is used for both Datagrok and CVM client endpoints.
-      If you do not use Route53 for DNS management, it is required to upload certificate
-      to AWS ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html)
-      and specify the Certificate ARN here.
+  DNSDomain:
+    Description: Specify DNS domain for Datagrok and CVM client endpoints. The domain
+      should be based on hosted zone name for specified DNSZoneId. For example, if
+      you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain
+      you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint
+      will be 'StackName-datagrok.subdomain.domain.com'.
+    MinLength: 3
     Type: String
+  DNSZoneId:
+    Description: Select existing Route53 Hosted Zone ID for Datagrok and CVM client
+      endpoints.
+    Type: AWS::Route53::HostedZone::Id
+  DatagrokDataSubnet1:
+    Description: Data subnet to deploy Datagrok DB.
+    Type: AWS::EC2::Subnet::Id
+  DatagrokDataSubnet2:
+    Description: Private subnet to deploy Datagrok DB.
+    Type: AWS::EC2::Subnet::Id
+  DatagrokNatGatewayEIP:
+    Description: Private subnet Nat Gateway IP to allow access inside network to public
+      load balancer. Omit if you disable access from internet (InternetIngressAccess).
+    Type: String
+  DatagrokPrivateSubnet1:
+    Description: Private subnet to deploy Datagrok components.
+    Type: AWS::EC2::Subnet::Id
+  DatagrokPrivateSubnet2:
+    Description: Private subnet to deploy Datagrok components.
+    Type: AWS::EC2::Subnet::Id
+  DatagrokPublicSubnet1:
+    Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet
+      here if you disable access from internet (InternetIngressAccess).
+    Type: AWS::EC2::Subnet::Id
+  DatagrokPublicSubnet2:
+    Default: ''
+    Description: Public subnet to deploy Datagrok Load Balancer. Use private subnet
+      here if you disable access from internet (InternetIngressAccess).
+    Type: AWS::EC2::Subnet::Id
+  DatagrokS3VPCEndpoint:
+    Default: ''
+    Description: VPC Endpoint to access Datagrok S3 bucket. Omit if you do not use
+      VPC endpoints
+    Type: String
+  DatagrokVPC:
+    Description: VPC to deploy Datagrok stack
+    Type: AWS::EC2::VPC::Id
   DatagrokVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
-    Default: 1.16.3
+    Default: 1.16.6
     Description: Enter Datagrok docker image version.
     Type: String
   GrokComputeVersion:
@@ -170,11 +259,24 @@ Parameters:
   InternetSubnetAllow:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
     Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0
-      to allow all IP addresses access, or another CIDR range.
+      to allow all IP addresses access, or another CIDR range. To specify multiple
+      subnets use comma as a delimiter.
+    Type: String
+  InternetSubnetAllow2:
+    AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
+    Default: ''
+    Description: Additional subnet for access to Datagrok client endpoints. You can
+      omit this parameter is already specified InternetSubnetAllow.
+    Type: String
+  InternetSubnetAllow3:
+    AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
+    Default: ''
+    Description: Additional subnet for access to Datagrok client endpoints. You can
+      omit this parameter is already specified InternetSubnetAllow.
     Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.6.1
+    Default: 1.6.2
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
   JNVersion:
@@ -195,8 +297,34 @@ Resources:
       IpProtocol: TCP
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
+  Cvm443Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 443
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm443Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 443
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
   Cvm443IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -235,8 +363,34 @@ Resources:
       IpProtocol: TCP
       ToPort: 5005
     Type: AWS::EC2::SecurityGroupIngress
+  Cvm5005Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 5005/tcp on CVM ALB for H2O GH
+      FromPort: 5005
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 5005
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm5005Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 5005/tcp on CVM ALB for H2O GH
+      FromPort: 5005
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 5005
+    Type: AWS::EC2::SecurityGroupIngress
   Cvm5005IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -275,8 +429,34 @@ Resources:
       IpProtocol: TCP
       ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
+  Cvm54321Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 54321/tcp on CVM ALB for H2O
+      FromPort: 54321
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 54321
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm54321Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 54321/tcp on CVM ALB for H2O
+      FromPort: 54321
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 54321
+    Type: AWS::EC2::SecurityGroupIngress
   Cvm54321IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -315,8 +495,34 @@ Resources:
       IpProtocol: TCP
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
+  Cvm80Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 80
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm80Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 80
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
   Cvm80IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -418,6 +624,28 @@ Resources:
       - Key: datagrok.component
         Value: cvm
     Type: AWS::ECS::Cluster
+  CvmDNS:
+    Properties:
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+          - CvmLoadBalancer
+          - DNSName
+        HostedZoneId:
+          Fn::GetAtt:
+          - CvmLoadBalancer
+          - CanonicalHostedZoneID
+      Comment:
+        Fn::Sub: ${AWS::StackName} Public Datagrok CVM DNS
+      HostedZoneId:
+        Ref: DNSZoneId
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}-datagrok-cvm.${domain}.
+        - domain:
+            Ref: DNSDomain
+      Type: A
+    Type: AWS::Route53::RecordSet
   CvmEgress:
     Properties:
       Description:
@@ -613,8 +841,34 @@ Resources:
       IpProtocol: TCP
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
+  Datagrok443Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 443
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok443Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 443
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
   Datagrok443IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -653,8 +907,34 @@ Resources:
       IpProtocol: TCP
       ToPort: 80
     Type: AWS::EC2::SecurityGroupIngress
+  Datagrok80Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 80
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok80Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 80
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
   Datagrok80IngressNatGW:
-    Condition: InternetEgressAccess
+    Condition: AccessFromNatGW
     Properties:
       CidrIp:
         Fn::Sub:
@@ -766,6 +1046,40 @@ Resources:
         RequireEachIncludedType: true
         SecretStringTemplate: '{"user": "admin"}'
     Type: AWS::SecretsManager::Secret
+  DatagrokArnSSLCertificate:
+    Properties:
+      DomainName:
+        Fn::Sub:
+        - ${AWS::StackName}-datagrok.${domain}
+        - domain:
+            Ref: DNSDomain
+      DomainValidationOptions:
+      - DomainName:
+          Fn::Sub:
+          - ${AWS::StackName}-datagrok.${domain}
+          - domain:
+              Ref: DNSDomain
+        HostedZoneId:
+          Ref: DNSZoneId
+      - DomainName:
+          Fn::Sub:
+          - ${AWS::StackName}-datagrok-cvm.${domain}
+          - domain:
+              Ref: DNSDomain
+        HostedZoneId:
+          Ref: DNSZoneId
+      KeyAlgorithm: RSA_2048
+      SubjectAlternativeNames:
+      - Fn::Sub:
+        - ${AWS::StackName}-datagrok-cvm.${domain}
+        - domain:
+            Ref: DNSDomain
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-datagrok
+      ValidationMethod: DNS
+    Type: AWS::CertificateManager::Certificate
   DatagrokCloudMap:
     Properties:
       Description:
@@ -860,83 +1174,28 @@ Resources:
       - Key: datagrok.component
         Value: rds
     Type: AWS::RDS::DBSubnetGroup
-  DatagrokDataSubnet1:
+  DatagrokDNS:
     Properties:
-      AvailabilityZone:
-        Fn::Select:
-        - 0
-        - Fn::GetAZs:
-            Ref: AWS::Region
-      CidrBlock:
-        Fn::Select:
-        - 4
-        - Fn::Cidr:
-          - Fn::GetAtt:
-            - DatagrokVPC
-            - CidrBlock
-          - 6
-          - 6
-      MapPublicIpOnLaunch: false
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Data Subnet 1
-      - Key: datagrok.component
-        Value: rds
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::Subnet
-  DatagrokDataSubnet2:
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-        - 1
-        - Fn::GetAZs:
-            Ref: AWS::Region
-      CidrBlock:
-        Fn::Select:
-        - 5
-        - Fn::Cidr:
-          - Fn::GetAtt:
-            - DatagrokVPC
-            - CidrBlock
-          - 6
-          - 6
-      MapPublicIpOnLaunch: false
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Data Subnet 2
-      - Key: datagrok.component
-        Value: rds
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::Subnet
-  DatagrokDataSubnetRouteAssos1:
-    Properties:
-      RouteTableId:
-        Ref: DatagrokDataSubnetRouteTable
-      SubnetId:
-        Ref: DatagrokDataSubnet1
-    Type: AWS::EC2::SubnetRouteTableAssociation
-  DatagrokDataSubnetRouteAssos2:
-    Properties:
-      RouteTableId:
-        Ref: DatagrokDataSubnetRouteTable
-      SubnetId:
-        Ref: DatagrokDataSubnet2
-    Type: AWS::EC2::SubnetRouteTableAssociation
-  DatagrokDataSubnetRouteTable:
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Data Subnet Route Table
-      - Key: datagrok.component
-        Value: rds
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::RouteTable
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+          - DatagrokLoadBalancer
+          - DNSName
+        HostedZoneId:
+          Fn::GetAtt:
+          - DatagrokLoadBalancer
+          - CanonicalHostedZoneID
+      Comment:
+        Fn::Sub: ${AWS::StackName} Public Datagrok DNS
+      HostedZoneId:
+        Ref: DNSZoneId
+      Name:
+        Fn::Sub:
+        - ${AWS::StackName}-datagrok.${domain}.
+        - domain:
+            Ref: DNSDomain
+      Type: A
+    Type: AWS::Route53::RecordSet
   DatagrokDbAdminUser:
     Properties:
       Description: Datagrok Admin User First-login password
@@ -1061,7 +1320,7 @@ Resources:
           Ref: DatagrokH2oTCP54321IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: CvmSecurityGroup
           Subnets:
@@ -1288,6 +1547,7 @@ Resources:
             awslogs-stream-prefix: h2o
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -1348,24 +1608,6 @@ Resources:
       RetentionInDays: 7
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
-  DatagrokInternetGateway:
-    Condition: CreatePublicSubnets
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Internet Gateway
-      - Key: datagrok.component
-        Value: common
-    Type: AWS::EC2::InternetGateway
-  DatagrokInternetGatewayAttach:
-    Condition: CreatePublicSubnets
-    Properties:
-      InternetGatewayId:
-        Ref: DatagrokInternetGateway
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::VPCGatewayAttachment
   DatagrokJupyterKernelGatewayService:
     DependsOn:
     - CvmTCP80Listener
@@ -1406,7 +1648,7 @@ Resources:
           Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: CvmSecurityGroup
           Subnets:
@@ -1640,6 +1882,7 @@ Resources:
             awslogs-stream-prefix: jkg
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -1731,7 +1974,7 @@ Resources:
           Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: CvmSecurityGroup
           Subnets:
@@ -1965,6 +2208,7 @@ Resources:
             awslogs-stream-prefix: jn
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -2182,34 +2426,6 @@ Resources:
       RetentionInDays: 7
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
-  DatagrokNatGateway:
-    Condition: InternetEgressAccess
-    Properties:
-      AllocationId:
-        Fn::GetAtt:
-        - DatagrokNatGatewayEIP
-        - AllocationId
-      ConnectivityType: public
-      SubnetId:
-        Ref: DatagrokPublicSubnet1
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Nat Gateway
-      - Key: datagrok.component
-        Value: common
-    Type: AWS::EC2::NatGateway
-  DatagrokNatGatewayEIP:
-    Condition: InternetEgressAccess
-    Properties:
-      Domain: vpc
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Nat Gateway EIP
-      - Key: datagrok.component
-        Value: common
-    Type: AWS::EC2::EIP
   DatagrokPolicy:
     Properties:
       Description:
@@ -2269,183 +2485,112 @@ Resources:
         VPCRegion:
           Ref: AWS::Region
     Type: AWS::Route53::HostedZone
-  DatagrokPrivateSubnet1:
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-        - 0
-        - Fn::GetAZs:
-            Ref: AWS::Region
-      CidrBlock:
-        Fn::Select:
-        - 2
-        - Fn::Cidr:
-          - Fn::GetAtt:
-            - DatagrokVPC
-            - CidrBlock
-          - 6
-          - 6
-      MapPublicIpOnLaunch: false
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Private Subnet 1
-      - Key: datagrok.component
-        Value: common
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::Subnet
-  DatagrokPrivateSubnet2:
-    Properties:
-      AvailabilityZone:
-        Fn::Select:
-        - 1
-        - Fn::GetAZs:
-            Ref: AWS::Region
-      CidrBlock:
-        Fn::Select:
-        - 3
-        - Fn::Cidr:
-          - Fn::GetAtt:
-            - DatagrokVPC
-            - CidrBlock
-          - 6
-          - 6
-      MapPublicIpOnLaunch: false
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Private Subnet 2
-      - Key: datagrok.component
-        Value: common
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::Subnet
-  DatagrokPrivateSubnetNatRoute:
-    Condition: InternetEgressAccess
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: DatagrokNatGateway
-      RouteTableId:
-        Ref: DatagrokPrivateSubnetRouteTable
-    Type: AWS::EC2::Route
   DatagrokPrivateSubnetRouteAssos1:
-    Properties:
-      RouteTableId:
-        Ref: DatagrokPrivateSubnetRouteTable
-      SubnetId:
-        Ref: DatagrokPrivateSubnet1
-    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVPC
+    Type: Custom::NonResource
   DatagrokPrivateSubnetRouteAssos2:
-    Properties:
-      RouteTableId:
-        Ref: DatagrokPrivateSubnetRouteTable
-      SubnetId:
-        Ref: DatagrokPrivateSubnet2
-    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVPC
+    Type: Custom::NonResource
   DatagrokPrivateSubnetRouteTable:
+    Condition: CreateVPC
+    Type: Custom::NonResource
+  DatagrokR53Cleanup:
+    DependsOn:
+    - DatagrokR53CleanupLambdaFunctionLogGroup
     Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Private Subnet Route Table
-      - Key: datagrok.component
-        Value: common
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::RouteTable
-  DatagrokPublicSubnet1:
-    Condition: CreatePublicSubnets
+      DNSZone:
+        Ref: DNSZoneId
+      SSLCertificate:
+        Ref: DatagrokArnSSLCertificate
+      ServiceToken:
+        Fn::GetAtt:
+        - DatagrokR53CleanupLambdaFunction
+        - Arn
+    Type: AWS::CloudFormation::CustomResource
+  DatagrokR53CleanupLambdaFunction:
     Properties:
-      AvailabilityZone:
-        Fn::Select:
-        - 0
-        - Fn::GetAZs:
-            Ref: AWS::Region
-      CidrBlock:
-        Fn::Select:
-        - 0
-        - Fn::Cidr:
-          - Fn::GetAtt:
-            - DatagrokVPC
-            - CidrBlock
-          - 6
-          - 6
-      MapPublicIpOnLaunch: true
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Public Subnet 1
-      - Key: datagrok.component
-        Value: common
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::Subnet
-  DatagrokPublicSubnet2:
-    Condition: CreatePublicSubnets
+      Code:
+        ZipFile: "import boto3\nimport cfnresponse\n\n\ndef handler(event, context):\n\
+          \    responseData = {}\n    try:\n        zone_id = event['ResourceProperties']['DNSZone']\n\
+          \        certArn = event['ResourceProperties']['SSLCertificate']\n\n   \
+          \     if event['RequestType'] == 'Delete':\n            session = boto3.Session()\n\
+          \            acm = session.client('acm')\n            response = acm.describe_certificate(CertificateArn=certArn)\n\
+          \            records = []\n            for d in response['Certificate']['DomainValidationOptions']:\n\
+          \                records.append(d['ResourceRecord'])\n            r53 =\
+          \ session.client('route53')\n            for r in records:\n           \
+          \     response = r53.list_resource_record_sets(HostedZoneId=zone_id, StartRecordName=r['Name'],\
+          \ MaxItems='1')\n                if r['Name'] in response['ResourceRecordSets'][0]['Name']:\n\
+          \                    r53.change_resource_record_sets(\n                \
+          \        HostedZoneId=zone_id,\n                        ChangeBatch={\n\
+          \                            'Changes': [{\n                           \
+          \     'Action': 'DELETE',\n                                'ResourceRecordSet':\
+          \ response['ResourceRecordSets'][0]\n                            }]\n  \
+          \                      }\n                    )\n                    print(f'Deleted:\
+          \ {response[\"ResourceRecordSets\"][0]}')\n                else:\n     \
+          \               print(f'Record {r[\"Name\"]} does not exist')\n        \
+          \    responseData['Status'] = 200\n        cfnresponse.send(event, context,\
+          \ cfnresponse.SUCCESS, responseData)\n    except Exception as e:\n     \
+          \   print(type(e).__name__, e)\n        cfnresponse.send(event, context,\
+          \ cfnresponse.FAILED, responseData)\n"
+      Description: Removes obsolete validation records from AWS
+      Handler: index.handler
+      MemorySize: 128
+      Role:
+        Fn::GetAtt:
+        - DatagrokR53CleanupLambdaRole
+        - Arn
+      Runtime: python3.10
+      Timeout: 600
+    Type: AWS::Lambda::Function
+  DatagrokR53CleanupLambdaFunctionLogGroup:
+    DeletionPolicy: Delete
     Properties:
-      AvailabilityZone:
-        Fn::Select:
-        - 1
-        - Fn::GetAZs:
-            Ref: AWS::Region
-      CidrBlock:
-        Fn::Select:
-        - 1
-        - Fn::Cidr:
-          - Fn::GetAtt:
-            - DatagrokVPC
-            - CidrBlock
-          - 6
-          - 6
-      MapPublicIpOnLaunch: true
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Public Subnet 2
-      - Key: datagrok.component
-        Value: common
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::Subnet
-  DatagrokPublicSubnetPublicRoute:
-    Condition: CreatePublicSubnets
+      LogGroupName:
+        Fn::Sub:
+        - /aws/lambda/${function_name}
+        - function_name:
+            Ref: DatagrokR53CleanupLambdaFunction
+      RetentionInDays: 1
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+  DatagrokR53CleanupLambdaRole:
     Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: DatagrokInternetGateway
-      RouteTableId:
-        Ref: DatagrokPublicSubnetRouteTable
-    Type: AWS::EC2::Route
-  DatagrokPublicSubnetRouteAssos1:
-    Condition: CreatePublicSubnets
-    Properties:
-      RouteTableId:
-        Ref: DatagrokPublicSubnetRouteTable
-      SubnetId:
-        Ref: DatagrokPublicSubnet1
-    Type: AWS::EC2::SubnetRouteTableAssociation
-  DatagrokPublicSubnetRouteAssos2:
-    Condition: CreatePublicSubnets
-    Properties:
-      RouteTableId:
-        Ref: DatagrokPublicSubnetRouteTable
-      SubnetId:
-        Ref: DatagrokPublicSubnet2
-    Type: AWS::EC2::SubnetRouteTableAssociation
-  DatagrokPublicSubnetRouteTable:
-    Condition: CreatePublicSubnets
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok Public Subnet Route Table
-      - Key: datagrok.component
-        Value: common
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::RouteTable
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokR53CleanupLambdaFunction-*:*
+          - Action:
+            - acm:DescribeCertificate
+            Effect: Allow
+            Resource:
+              Ref: DatagrokArnSSLCertificate
+          - Action:
+            - route53:ListResourceRecordSets
+            - route53:ChangeResourceRecordSets
+            Effect: Allow
+            Resource:
+              Fn::Sub:
+              - arn:${AWS::Partition}:route53:::hostedzone/${zone}
+              - zone:
+                  Ref: DNSZoneId
+          Version: '2012-10-17'
+        PolicyName:
+          Fn::Sub: ${AWS::StackName}-r53-lambda
+    Type: AWS::IAM::Role
   DatagrokS3:
     Properties:
       BucketEncryption:
@@ -2496,7 +2641,7 @@ Resources:
           \ as e:\n        print(type(e).__name__, e)\n        cfnresponse.send(event,\
           \ context, cfnresponse.FAILED, {'Exception': f\"{type(e).__name__} {e}\"\
           })\n"
-      Description: Sets required settings for Datagrok
+      Description: Empty S3 bucket on CFN deletion for Datagrok
       Handler: index.handler
       MemorySize: 128
       Role:
@@ -2562,29 +2707,32 @@ Resources:
         Ref: DatagrokS3
       PolicyDocument:
         Statement:
-        - Action:
-          - s3:PutObject
-          - s3:GetObject
-          - s3:DeleteObject
-          Condition:
-            StringNotEquals:
-              aws:PrincipalArn:
-              - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
-              - Ref: DatagrokS3EmptyLambdaRole
-              aws:SourceVpce:
-                Ref: DatagrokS3VPCEndpoint
-          Effect: Deny
-          Principal: '*'
-          Resource:
-          - Fn::GetAtt:
-            - DatagrokS3
-            - Arn
-          - Fn::Sub:
-            - ${bucket}/*
-            - bucket:
-                Fn::GetAtt:
-                - DatagrokS3
-                - Arn
+        - Fn::If:
+          - UseVPCEndpoint
+          - Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+            Condition:
+              StringNotEquals:
+                aws:PrincipalArn:
+                - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+                - Ref: DatagrokS3EmptyLambdaRole
+                aws:SourceVpce:
+                  Ref: DatagrokS3VPCEndpoint
+            Effect: Deny
+            Principal: '*'
+            Resource:
+            - Fn::GetAtt:
+              - DatagrokS3
+              - Arn
+            - Fn::Sub:
+              - ${bucket}/*
+              - bucket:
+                  Fn::GetAtt:
+                  - DatagrokS3
+                  - Arn
+          - Ref: AWS::NoValue
         - Action: '*'
           Condition:
             Bool:
@@ -2603,63 +2751,6 @@ Resources:
                 - Arn
         Version: '2012-10-17'
     Type: AWS::S3::BucketPolicy
-  DatagrokS3VPCEndpoint:
-    Properties:
-      PolicyDocument:
-        Statement:
-        - Action:
-          - s3:PutObject
-          - s3:GetObject
-          - s3:DeleteObject
-          - s3:ListBucket
-          Condition: {}
-          Effect: Allow
-          Principal: '*'
-          Resource:
-          - Fn::GetAtt:
-            - DatagrokS3
-            - Arn
-          - Fn::Sub:
-            - ${bucket}/*
-            - bucket:
-                Fn::GetAtt:
-                - DatagrokS3
-                - Arn
-          - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com
-          - Fn::Sub: arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com/*
-          - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}
-          - Fn::Sub: arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}/*
-          - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket
-          - Fn::Sub: arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
-          - arn:aws:s3:::docker-images-prod
-          - arn:aws:s3:::docker-images-prod/*
-          - arn:aws:s3:::datagrok-data
-          - arn:aws:s3:::datagrok-data/*
-          - Fn::Sub:
-            - arn:aws:s3:::cloudformation-custom-resource-response-${region}
-            - region:
-                Fn::Join:
-                - ''
-                - Fn::Split:
-                  - '-'
-                  - Ref: AWS::Region
-          - Fn::Sub:
-            - arn:aws:s3:::cloudformation-custom-resource-response-${region}/*
-            - region:
-                Fn::Join:
-                - ''
-                - Fn::Split:
-                  - '-'
-                  - Ref: AWS::Region
-        Version: '2012-10-17'
-      RouteTableIds:
-      - Ref: DatagrokPrivateSubnetRouteTable
-      ServiceName:
-        Fn::Sub: com.amazonaws.${AWS::Region}.s3
-      VpcEndpointType: Gateway
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::VPCEndpoint
   DatagrokSecurityGroup:
     Properties:
       GroupDescription:
@@ -2737,14 +2828,14 @@ Resources:
       - ContainerName: datagrok
         ContainerPort: 8080
         TargetGroupArn:
-          Ref: TCP8080TargetGroup
+          Ref: DatagrokTCP8080TargetGroup
       - ContainerName: datagrok
         ContainerPort: 8080
         TargetGroupArn:
           Ref: DatagrokTCP8080IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: DatagrokSecurityGroup
           Subnets:
@@ -2782,6 +2873,201 @@ Resources:
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
+  DatagrokSettingsSet:
+    DependsOn:
+    - DatagrokService
+    - DatagrokSettingsSetLambdaFunctionLogGroup
+    Properties:
+      DatagrokPrivateSubnetRouteAssos1:
+      - Fn::If:
+        - CreateVPC
+        - Ref: DatagrokPrivateSubnetRouteAssos1
+        - Ref: AWS::NoValue
+      DatagrokPrivateSubnetRouteAssos2:
+      - Fn::If:
+        - CreateVPC
+        - Ref: DatagrokPrivateSubnetRouteAssos2
+        - Ref: AWS::NoValue
+      DevKey:
+        Ref: DatagrokAdminDevKey
+      Host:
+        Fn::Sub:
+        - http://${dns}:8080
+        - dns:
+            Fn::GetAtt:
+            - DatagrokLoadBalancerInt
+            - DNSName
+      ServiceToken:
+        Fn::GetAtt:
+        - DatagrokSettingsSetLambdaFunction
+        - Arn
+      VpcEndpoint:
+      - Fn::If:
+        - CreateVPC
+        - Ref: DatagrokS3VPCEndpoint
+        - Ref: AWS::NoValue
+      cvmClient:
+        Ref: CvmDNS
+    Type: AWS::CloudFormation::CustomResource
+  DatagrokSettingsSetLambdaFunction:
+    Properties:
+      Code:
+        ZipFile: "import base64\nimport json\nimport boto3\nimport cfnresponse\nimport\
+          \ urllib3\nfrom urllib3.util import Retry\n\ntimeout = urllib3.Timeout(connect=5.0,\
+          \ read=5.0)\nhttp = urllib3.PoolManager(timeout=timeout)\nretries = 10\n\
+          retry = Retry(\n    total=retries,\n    read=retries,\n    connect=retries,\n\
+          \    status_forcelist=tuple(range(401, 600)))\n\n\ndef handler(event, context):\n\
+          \    try:\n        status = 0\n        if event['RequestType'] != 'Delete':\n\
+          \            key_arn = event['ResourceProperties']['DevKey']\n         \
+          \   host = event['ResourceProperties']['Host']\n            cvmClient =\
+          \ event['ResourceProperties']['cvmClient']\n\n            session = boto3.session.Session()\n\
+          \            client = session.client(service_name='secretsmanager')\n  \
+          \          response = client.get_secret_value(SecretId=key_arn)\n      \
+          \      if 'SecretString' in response:\n                secret = response['SecretString']\n\
+          \                j = json.loads(secret)\n                devKey = j['password']\n\
+          \            else:\n                decoded_binary_secret = base64.b64decode(response['SecretBinary'])\n\
+          \                devKey = decoded_binary_secret.password\n\n           \
+          \ while True:\n                r = http.request(\"GET\", f'{host}/api/info/server',\
+          \ retries=retry)\n                if r.data:\n                    try:\n\
+          \                        print(f\"{host} is available for {json.loads(r.data)['Uptime']}.\"\
+          )\n                        break\n                    except (ValueError,\
+          \ KeyError) as e:\n                        print(type(e).__name__, e)\n\
+          \                        print(f\"Response for url {host}/api/info/server:\
+          \ {r.data}\")\n                print(f\"{host} is unavailable.\")\n\n  \
+          \          auth = ''\n            while True:\n                r = http.request(\"\
+          POST\", f'{host}/api/users/login/dev/{devKey}', retries=retry)\n       \
+          \         if r.data:\n                    try:\n                       \
+          \ auth = json.loads(r.data)['token']\n                        print(f\"\
+          Got auth for {host}.\")\n                        break\n               \
+          \     except (ValueError, KeyError) as e:\n                        print(type(e).__name__,\
+          \ e)\n                        print(f\"Response for url {host}/api/users/login/dev/XXX:\
+          \ {r.data}\")\n\n            oldSettings = {}\n            while True:\n\
+          \                r = http.request(\"GET\", f'{host}/api/admin/plugins/scripts/settings',\n\
+          \                                 headers={'Authorization': auth},\n   \
+          \                              retries=retry)\n                if r.data:\n\
+          \                    try:\n                        oldSettings = json.loads(r.data)\n\
+          \                        print(f\"Got settings for {host}.\")\n        \
+          \                break\n                    except ValueError as e:\n  \
+          \                      print(type(e).__name__, e)\n                    \
+          \    print(f\"Response for url {host}/api/admin/plugins/scripts/settings:\
+          \ {r.data}\")\n\n            new_settings = {\n                '#type':\
+          \ oldSettings['settings']['#type'],\n                'apiUrl': oldSettings['settings']['apiUrl'],\n\
+          \                'cvmUrl': oldSettings['settings']['cvmUrl'],\n        \
+          \        'h2oUrl': oldSettings['settings']['h2oUrl'],\n                'cvmUrlClient':\
+          \ f\"https://{cvmClient}\",\n                'cvmSplit': oldSettings['settings']['cvmSplit'],\n\
+          \                'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],\n\
+          \                'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']\n\
+          \            }\n\n            setSettings = http.request(\"POST\", f'{host}/api/admin/plugins/scripts/settings',\n\
+          \                                       body=json.dumps(new_settings),\n\
+          \                                       headers={'Authorization': auth,\
+          \ \"Content-Type\": \"application/json\"},\n                           \
+          \            retries=retry)\n            status = setSettings.status\n \
+          \           if status != 200:\n                raise Exception(f'Could not\
+          \ update settings for {host} with status code {status}')\n            else:\n\
+          \                print(f\"Changed Cvm Client Url to https://{cvmClient}\"\
+          )\n        cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Status':\
+          \ status})\n    except Exception as e:\n        print(type(e).__name__,\
+          \ e)\n        cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception':\
+          \ f\"{type(e).__name__}: {e}\"})\n"
+      Description: Sets required settings for Datagrok
+      Handler: index.handler
+      MemorySize: 128
+      Role:
+        Fn::GetAtt:
+        - DatagrokSettingsSetLambdaRole
+        - Arn
+      Runtime: python3.10
+      Timeout: 600
+      VpcConfig:
+        SecurityGroupIds:
+        - Ref: DatagrokSecurityGroup
+        SubnetIds:
+        - Ref: DatagrokPrivateSubnet1
+        - Ref: DatagrokPrivateSubnet2
+    Type: AWS::Lambda::Function
+  DatagrokSettingsSetLambdaFunctionLogGroup:
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub:
+        - /aws/lambda/${function_name}
+        - function_name:
+            Ref: DatagrokSettingsSetLambdaFunction
+      RetentionInDays: 1
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+  DatagrokSettingsSetLambdaRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-DatagrokSettingsSetLambdaFunction-*:*
+          - Action:
+            - ec2:DescribeNetworkInterfaces
+            Effect: Allow
+            Resource: '*'
+          - Action:
+            - ec2:CreateNetworkInterface
+            Effect: Allow
+            Resource:
+            - Fn::Sub:
+              - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
+              - subnet_id:
+                  Ref: DatagrokPrivateSubnet1
+            - Fn::Sub:
+              - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet_id}
+              - subnet_id:
+                  Ref: DatagrokPrivateSubnet2
+            - Fn::Sub:
+              - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${security_group_id}
+              - security_group_id:
+                  Ref: DatagrokSecurityGroup
+            - Fn::Sub: arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*
+          - Action:
+            - ec2:DeleteNetworkInterface
+            - ec2:AssignPrivateIpAddresses
+            - ec2:UnassignPrivateIpAddresses
+            Condition:
+              ArnLikeIfExists:
+                ec2:Subnet:
+                - Fn::Sub:
+                  - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}
+                  - subnet:
+                      Ref: DatagrokPrivateSubnet1
+                - Fn::Sub:
+                  - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${subnet}
+                  - subnet:
+                      Ref: DatagrokPrivateSubnet2
+                ec2:Vpc:
+                  Fn::Sub:
+                  - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${vpc}
+                  - vpc:
+                      Ref: DatagrokVPC
+            Effect: Allow
+            Resource: '*'
+          - Action:
+            - secretsmanager:GetSecretValue
+            Effect: Allow
+            Resource:
+              Ref: DatagrokAdminDevKey
+          Version: '2012-10-17'
+        PolicyName:
+          Fn::Sub: ${AWS::StackName}-settings-lambda
+    Type: AWS::IAM::Role
   DatagrokTCP443Listener:
     Properties:
       Certificates:
@@ -2791,7 +3077,7 @@ Resources:
       - ForwardConfig:
           TargetGroups:
           - TargetGroupArn:
-              Ref: TCP8080TargetGroup
+              Ref: DatagrokTCP8080TargetGroup
         Type: forward
       LoadBalancerArn:
         Ref: DatagrokLoadBalancer
@@ -2860,6 +3146,24 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  DatagrokTCP8080TargetGroup:
+    Properties:
+      HealthCheckIntervalSeconds: 60
+      HealthCheckPath: /api/admin/health
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-datagrok
+      Port: 8080
+      Protocol: HTTP
+      Tags:
+      - Key: datagrok.component
+        Value: datagrok
+      TargetType: ip
+      UnhealthyThresholdCount: 5
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
   DatagrokTCP80Listener:
     Properties:
       DefaultActions:
@@ -2909,6 +3213,7 @@ Resources:
             awslogs-stream-prefix: datagrok
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3043,20 +3348,6 @@ Resources:
       - Key: datagrok.service
         Value: datagrok
     Type: AWS::IAM::Role
-  DatagrokVPC:
-    Properties:
-      CidrBlock:
-        Ref: CIDR
-      EnableDnsHostnames: true
-      EnableDnsSupport: true
-      InstanceTenancy: default
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Sub: ${AWS::StackName} Datagrok VPC
-      - Key: datagrok.component
-        Value: common
-    Type: AWS::EC2::VPC
   GrokComputeService:
     DependsOn:
     - CvmTCP80Listener
@@ -3244,6 +3535,7 @@ Resources:
             awslogs-stream-prefix: grok_compute
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3335,7 +3627,7 @@ Resources:
           Ref: GrokConnectTCP1234IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: DatagrokSecurityGroup
           Subnets:
@@ -3440,6 +3732,7 @@ Resources:
             awslogs-stream-prefix: grok_connect
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3474,6 +3767,7 @@ Resources:
         - ContainerPort: 1234
           HostPort: 1234
           Protocol: tcp
+        ReadonlyRootFilesystem: true
       Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -3700,7 +3994,7 @@ Resources:
           Ref: DatagrokTCP8000IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           SecurityGroups:
           - Ref: DatagrokSecurityGroup
           Subnets:
@@ -3774,6 +4068,7 @@ Resources:
             awslogs-stream-prefix: grok_spawner
         MemoryReservation: 100
         Name: ResolvConf
+        ReadonlyRootFilesystem: true
       - DependsOn:
         - Condition: SUCCESS
           ContainerName: ResolvConf
@@ -3881,21 +4176,113 @@ Resources:
       - Key: datagrok.service
         Value: grok_spawner
     Type: AWS::IAM::Role
-  TCP8080TargetGroup:
-    Properties:
-      HealthCheckIntervalSeconds: 60
-      HealthCheckPath: /api/admin/health
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-datagrok
-      Port: 8080
-      Protocol: HTTP
-      Tags:
-      - Key: datagrok.component
-        Value: datagrok
-      TargetType: ip
-      UnhealthyThresholdCount: 5
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+Rules:
+  InternetIngressAccess:
+    Assertions:
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: DatagrokPublicSubnet1
+          - Ref: DatagrokPrivateSubnet1
+      AssertDescription: Separate public and private subnets must be specified for
+        access from internet (DatagrokPublicSubnet1 and DatagrokPrivateSubnet1 match)
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: DatagrokPublicSubnet2
+          - Ref: DatagrokPrivateSubnet2
+      AssertDescription: Separate public and private subnets must be specified for
+        access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet2 match)
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: DatagrokPublicSubnet1
+          - Ref: DatagrokPrivateSubnet2
+      AssertDescription: Separate public and private subnets must be specified for
+        access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet2 match)
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: DatagrokPublicSubnet2
+          - Ref: DatagrokPrivateSubnet1
+      AssertDescription: Separate public and private subnets must be specified for
+        access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet1 match)
+    RuleCondition:
+      Fn::Equals:
+      - Ref: InternetIngressAccess
+      - 'true'
+  InternetSubnetAllow:
+    Assertions:
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow
+          - Ref: InternetSubnetAllow2
+      AssertDescription: Subnets for access to Datagrok client endpoints must be unique
+        (InternetSubnetAllow and InternetSubnetAllow2 match)
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow
+          - Ref: InternetSubnetAllow3
+      AssertDescription: Subnets for access to Datagrok client endpoints must be unique
+        (InternetSubnetAllow and InternetSubnetAllow3 match)
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow2
+          - Ref: InternetSubnetAllow3
+      AssertDescription: Subnets for access to Datagrok client endpoints must be unique
+        (InternetSubnetAllow2 and InternetSubnetAllow3 match)
+    RuleCondition:
+      Fn::Or:
+      - Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow2
+          - ''
+      - Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow3
+          - ''
+  SubnetsInVPC:
+    Assertions:
+    - Assert:
+        Fn::EachMemberEquals:
+        - - Fn::ValueOf:
+            - DatagrokPublicSubnet1
+            - VpcId
+          - Fn::ValueOf:
+            - DatagrokPublicSubnet2
+            - VpcId
+          - Fn::ValueOf:
+            - DatagrokPrivateSubnet1
+            - VpcId
+          - Fn::ValueOf:
+            - DatagrokPrivateSubnet2
+            - VpcId
+          - Fn::ValueOf:
+            - DatagrokDataSubnet1
+            - VpcId
+          - Fn::ValueOf:
+            - DatagrokDataSubnet2
+            - VpcId
+        - Ref: DatagrokVPC
+      AssertDescription: All subnets must in the VPC
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: DatagrokDataSubnet1
+          - Ref: DatagrokDataSubnet2
+      AssertDescription: Data subnets must be unique
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: DatagrokPrivateSubnet1
+          - Ref: DatagrokPrivateSubnet2
+      AssertDescription: Private subnets must be unique
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: DatagrokPublicSubnet1
+          - Ref: DatagrokPublicSubnet2
+      AssertDescription: Public subnets must be unique
