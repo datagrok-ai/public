@@ -99,6 +99,8 @@ jobs:
           pip install pyyaml deepmerge argparse
           python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i r53.template.yml -i marketplace.template.yml -i versions.template.yml -o ../network-fargate-r53-marketplace.yml
           python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i dns.template.yml -i marketplace.template.yml -i versions.template.yml -o ../network-fargate-dns-marketplace.yml
+          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i dns.template.yml -i marketplace.template.yml -i versions.template.yml -o ../vpc-fargate-dns-marketplace.yml
+          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i r53.template.yml -i marketplace.template.yml -i versions.template.yml -o ../vpc-fargate-r53-marketplace.yml
           python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i r53.template.yml -i basic.template.yml -i versions.template.yml -o ../network-fargate-r53-basic.yml
           python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i r53.template.yml -i basic.template.yml -i versions.template.yml -o ../vpc-fargate-r53-basic.yml
           python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i dns.template.yml -i basic.template.yml -i versions.template.yml -o ../network-fargate-dns-basic.yml
