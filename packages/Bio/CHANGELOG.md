@@ -9,6 +9,9 @@
 * Fix WebLogo viewer for gaps with Helm.
 * Fix cell renderer for empty values MSA.
 * Fix detectMacromolecule to ignore empty seqs.
+* Add property fitWidth for VdRegionsViewer
+* Fix VdRegionsViewer fit width accounting position margin of WebLogo
+* Fix similarity/diversity viewer tests.
 
 ## 2.10.0 (2023-09-06)
 

@@ -339,7 +339,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
-  private get positionMarginValue(): number {
+  public get positionMarginValue(): number {
     if (this.positionMarginState === PositionMarginStates.AUTO && this.unitsHandler!.getAlphabetIsMultichar() === true)
       return this.positionMargin;
     else if (this.positionMarginState === PositionMarginStates.ON)
@@ -598,12 +598,11 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
   }
 
-  /** Updates {@link host}, {@link canvas}, {@link slider}.
+  /** Updates {@link host}, {@link canvas}, {@link slider} .min, .max.
    * Calls {@link render} with {@link WlRenderLevel.Layout}
    */
   private calcLayout(dpr: number): void {
     if (!this.host || !this.canvas || !this.slider) return;
-    if (this.root.clientHeight === 0 || this.root.clientWidth === 0) return;
 
     this.host.classList.remove('bio-wl-fixWidth', 'bio-wl-fitArea');
     this.canvas.classList.remove('bio-wl-fixWidth', 'bio-wl-fitArea');
@@ -892,7 +891,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   /** Renders requested repeatedly will be performed once on window.requestAnimationFrame() */
   render(recalcLevel: WlRenderLevel, reason: string): Promise<void> {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>` +
-      `.render( recalcLevel=${recalcLevel}, reason='${reason}' )`);
+      `.render( recalcLevelVal=${recalcLevel}, reason='${reason}' )`);
 
     /** Calculate freqs of monomers */
     const calculateFreqsInt = (): void => {
@@ -989,6 +988,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       /** 0 is for no position labels */
       const positionLabelsHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT : 0;
       if (recalcLevel >= WlRenderLevel.Freqs) calculateFreqsInt();
+      if (this.positions.length === 0) return;
       if (recalcLevel >= WlRenderLevel.Layout) calculateLayoutInt(window.devicePixelRatio, positionLabelsHeight);
 
       const length: number = this.Length;
