@@ -162,13 +162,6 @@ export function getBioLib(): IMonomerLib {
 //input: column seqCol {semType: Macromolecule}
 //output: widget result
 export function getRegionPanel(seqCol: DG.Column<string>): DG.Widget {
-  // const host = ui.divV([
-  //   ui.inputs([
-  //     ui.stringInput('Region', ''),
-  //   ]),
-  //   ui.button('Ok', () => {})
-  // ]);
-  // return DG.Widget.fromRoot(host);
   const funcName: string = 'getRegionTopMenu';
   const funcList = DG.Func.find({package: _package.name, name: funcName});
   if (funcList.length !== 1) throw new Error(`Package '${_package.name}' func '${funcName}' not found`);
@@ -357,7 +350,7 @@ export function getRegion(
 }
 
 //top-menu: Bio | Convert | Get Region...
-//name: Get Region
+//name: Get Region Top Menu
 //description: Get sequences for a region specified from a Macromolecule
 //input: dataframe table                           [Input data table]
 //input: column sequence  {semType: Macromolecule} [Sequence column]

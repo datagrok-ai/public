@@ -25,7 +25,8 @@
 ### Bug fixes
 
 * Fixed UnitsHandler.posList length.
-* Fix mistyping top menu path for Identity scoring.
+* Fixed mistyping top menu path for Identity scoring.
+* Fixed Get Region missed in short top menu.
 
 ## 2.9.0 (2023-08-30)
 
