@@ -1,6 +1,16 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Conditions:
+  AccessFromInternetSubnetAllow2:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: InternetSubnetAllow2
+      - ''
+  AccessFromInternetSubnetAllow3:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: InternetSubnetAllow3
+      - ''
   AccessFromNatGW:
     Fn::And:
     - Condition: InternetIngressAccess
@@ -74,6 +84,8 @@ Metadata:
         default: Access configuration
       Parameters:
       - InternetSubnetAllow
+      - InternetSubnetAllow2
+      - InternetSubnetAllow3
     - Label:
         default: Client Endpoint configuration
       Parameters:
@@ -110,6 +122,10 @@ Metadata:
         default: 'InternetIngressAccess: Access from internet'
       InternetSubnetAllow:
         default: 'InternetSubnetAllow: Allow connect from CIDR'
+      InternetSubnetAllow2:
+        default: 'InternetSubnetAllow2: Allow connect from additional CIDR (Optional)'
+      InternetSubnetAllow3:
+        default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
       JKGVersion:
         default: Jupyter Kernel Gateway Version
       JNVersion:
@@ -188,7 +204,19 @@ Parameters:
     Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0
       to allow all IP addresses access, or another CIDR range. To specify multiple
       subnets use comma as a delimiter.
-    Type: CommaDelimitedList
+    Type: String
+  InternetSubnetAllow2:
+    AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
+    Default: ''
+    Description: Additional subnet for access to Datagrok client endpoints. You can
+      omit this parameter is already specified InternetSubnetAllow.
+    Type: String
+  InternetSubnetAllow3:
+    AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
+    Default: ''
+    Description: Additional subnet for access to Datagrok client endpoints. You can
+      omit this parameter is already specified InternetSubnetAllow.
+    Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
     Default: 1.6.1
@@ -204,6 +232,32 @@ Resources:
     Properties:
       CidrIp:
         Ref: InternetSubnetAllow
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 443
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm443Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 443
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm443Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
       Description:
         Fn::Sub: ${AWS::StackName} 443/tcp on CVM ALB for JKG, JN, GC
       FromPort: 443
@@ -252,6 +306,32 @@ Resources:
       IpProtocol: TCP
       ToPort: 5005
     Type: AWS::EC2::SecurityGroupIngress
+  Cvm5005Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 5005/tcp on CVM ALB for H2O GH
+      FromPort: 5005
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 5005
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm5005Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 5005/tcp on CVM ALB for H2O GH
+      FromPort: 5005
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 5005
+    Type: AWS::EC2::SecurityGroupIngress
   Cvm5005IngressNatGW:
     Condition: AccessFromNatGW
     Properties:
@@ -292,6 +372,32 @@ Resources:
       IpProtocol: TCP
       ToPort: 54321
     Type: AWS::EC2::SecurityGroupIngress
+  Cvm54321Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 54321/tcp on CVM ALB for H2O
+      FromPort: 54321
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 54321
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm54321Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 54321/tcp on CVM ALB for H2O
+      FromPort: 54321
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 54321
+    Type: AWS::EC2::SecurityGroupIngress
   Cvm54321IngressNatGW:
     Condition: AccessFromNatGW
     Properties:
@@ -324,6 +430,32 @@ Resources:
     Properties:
       CidrIp:
         Ref: InternetSubnetAllow
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 80
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm80Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN, GC
+      FromPort: 80
+      GroupId:
+        Ref: CvmALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Cvm80Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
       Description:
         Fn::Sub: ${AWS::StackName} 80/tcp on CVM ALB for JKG, JN, GC
       FromPort: 80
@@ -652,6 +784,32 @@ Resources:
       IpProtocol: TCP
       ToPort: 443
     Type: AWS::EC2::SecurityGroupIngress
+  Datagrok443Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 443
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok443Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
+      Description:
+        Fn::Sub: ${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 443
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
   Datagrok443IngressNatGW:
     Condition: AccessFromNatGW
     Properties:
@@ -684,6 +842,32 @@ Resources:
     Properties:
       CidrIp:
         Ref: InternetSubnetAllow
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 80
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok80Ingress2:
+    Condition: AccessFromInternetSubnetAllow2
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow2
+      Description:
+        Fn::Sub: ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 80
+      GroupId:
+        Ref: DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 80
+    Type: AWS::EC2::SecurityGroupIngress
+  Datagrok80Ingress3:
+    Condition: AccessFromInternetSubnetAllow3
+    Properties:
+      CidrIp:
+        Ref: InternetSubnetAllow3
       Description:
         Fn::Sub: ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
       FromPort: 80
@@ -2691,7 +2875,7 @@ Resources:
           \ as e:\n        print(type(e).__name__, e)\n        cfnresponse.send(event,\
           \ context, cfnresponse.FAILED, {'Exception': f\"{type(e).__name__} {e}\"\
           })\n"
-      Description: Sets required settings for Datagrok
+      Description: Empty S3 bucket on CFN deletion for Datagrok
       Handler: index.handler
       MemorySize: 128
       Role:
@@ -4297,3 +4481,37 @@ Resources:
       - Key: datagrok.service
         Value: grok_spawner
     Type: AWS::IAM::Role
+Rules:
+  InternetSubnetAllow:
+    Assertions:
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow
+          - Ref: InternetSubnetAllow2
+      AssertDescription: Subnets for access to Datagrok client endpoints must be unique
+        (InternetSubnetAllow and InternetSubnetAllow2 match)
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow
+          - Ref: InternetSubnetAllow3
+      AssertDescription: Subnets for access to Datagrok client endpoints must be unique
+        (InternetSubnetAllow and InternetSubnetAllow3 match)
+    - Assert:
+        Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow2
+          - Ref: InternetSubnetAllow3
+      AssertDescription: Subnets for access to Datagrok client endpoints must be unique
+        (InternetSubnetAllow2 and InternetSubnetAllow3 match)
+    RuleCondition:
+      Fn::Or:
+      - Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow2
+          - ''
+      - Fn::Not:
+        - Fn::Equals:
+          - Ref: InternetSubnetAllow3
+          - ''

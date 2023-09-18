@@ -171,7 +171,25 @@ Rules:
             - Fn::Equals:
                 - Ref: DatagrokPublicSubnet1
                 - Ref: DatagrokPrivateSubnet1
-        AssertDescription: Separate public and private subnets must be specified for access from internet
+        AssertDescription: Separate public and private subnets must be specified for access from internet (DatagrokPublicSubnet1 and DatagrokPrivateSubnet1 match)
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DatagrokPublicSubnet2
+                - Ref: DatagrokPrivateSubnet2
+        AssertDescription: Separate public and private subnets must be specified for access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet2 match)
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DatagrokPublicSubnet1
+                - Ref: DatagrokPrivateSubnet2
+        AssertDescription: Separate public and private subnets must be specified for access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet2 match)
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DatagrokPublicSubnet2
+                - Ref: DatagrokPrivateSubnet1
+        AssertDescription: Separate public and private subnets must be specified for access from internet (DatagrokPublicSubnet2 and DatagrokPrivateSubnet1 match)
 Resources:
   DatagrokPrivateSubnetRouteAssos1:
     Type: Custom::NonResource
