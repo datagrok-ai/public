@@ -9,7 +9,7 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import './css/model-card.css';
 import { ImportScriptGeneratorApp } from './import-script-generator/view';
-import { makeRevalidation } from '@datagrok-libraries/compute-utils/shared-components/src/FuncCallInput';
+import { makeRevalidation, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-components/src/FuncCallInput';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -246,7 +246,7 @@ export function RangeValidatorFactory(params: any) {
 //output: object validator
 export function AsyncValidatorDemoFactory(params: any) {
   return async (val: number) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     if (val === 0) {
       return { warnings: [`Try non-null value`] };
     }
@@ -260,17 +260,18 @@ export function GlobalValidatorDemoFactory(params: any) {
   const { max } = params;
   return async (_val: number, param: string, fc: DG.FuncCall, isRevalidation: boolean, context: any) => {
     if (context?.skipCalculations) {
-      return { warnings: [`Try lowering a value`] };
+      return makeValidationResult(undefined, [`Try lowering a value as well`]);
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
     const { a, b, c } = fc.inputs;
     const s = a + b + c;
+    const valRes = makeValidationResult(undefined, s > max ? [`Try lowering a value`] : undefined);
     if (!isRevalidation) {
-      const fields = ['a', 'b', 'c'].filter(p => p !== param)
-      return makeRevalidation(fields, { skipCalculations: true });
+      const fields = ['a', 'b', 'c'].filter(p => p !== param);
+      return { ...makeRevalidation(fields, { skipCalculations: true }), ...valRes };
+    } else {
+      return valRes;
     }
-    if (s > max) {
-      return { warnings: [`Try lowering a value`] };
-    }
+
   }
 }

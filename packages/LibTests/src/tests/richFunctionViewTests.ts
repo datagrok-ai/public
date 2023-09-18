@@ -342,3 +342,118 @@ category('RichFunctionView Inputs', async () => {
 
 
 });
+
+category('RichFunctionView Validation', async () => {
+  before(async () => {
+  });
+
+  test('Validate on start', async () => {
+    const view = new RichFunctionView('Compute:validationDemo');
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(1500);
+    const results = view.getValidationState();
+    expectDeepEqual(
+      results,
+      {
+        "a": {
+          "errors": [
+            "Missing value"
+          ]
+        },
+        "b": {
+          "errors": [
+            "Missing value"
+          ]
+        },
+        "x": {
+          "warnings": [
+            "Try non-null value"
+          ]
+        }
+      }
+    );
+  });
+
+  test('Validate on input', async () => {
+    const view = new RichFunctionView('Compute:validationDemo');
+    const inputValues: Record<string, any> = {
+      a: 2.3,
+      b: 3.2,
+      x: -1,
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(1500);
+    for (const [name, input] of Object.entries(inputsMap)) {
+      input.value = inputValues[name];
+      const element = (input as any).input;
+      element.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    await delay(400);
+
+    const results = view.getValidationState();
+    expectDeepEqual(
+      results,
+      {
+        "b": {
+          "errors": [
+            "Out of range [20, 100] value: 3.2"
+          ]
+        }
+      }
+    );
+  });
+
+  test('Revalidation sequence', async () => {
+    const view = new RichFunctionView('Compute:globalValidationDemo');
+    const inputValues: Record<string, any> = {
+      a: 30,
+      b: 40,
+      c: 50,
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(1500);
+    for (const [name, input] of Object.entries(inputsMap)) {
+      input.value = inputValues[name];
+      const element = (input as any).input;
+      element.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    await delay(500);
+    const results = view.getValidationState();
+    expectDeepEqual(
+      results,
+      {
+        "a": {
+          "revalidate": [
+            "b",
+            "c"
+          ],
+          "context": {
+            "skipCalculations": true
+          },
+          "warnings": [
+            "Try lowering a value"
+          ]
+        },
+        "b": {
+          "warnings": [
+            "Try lowering a value as well"
+          ]
+        },
+        "c": {
+          "warnings": [
+            "Try lowering a value as well"
+          ]
+        }
+      }
+    );
+  });
+
+});

@@ -15,7 +15,7 @@ export interface FuncCallInput<T = any> {
 }
 
 export interface FuncCallInputValidated<T = any> extends FuncCallInput<T> {
-  setValidation: (messages?: ValidationResult) => void;
+  setValidation: (messages?: ValidationResultBase) => void;
 }
 
 export type InputFactory = (params: any) => { input: FuncCallInput | FuncCallInputValidated };
@@ -30,14 +30,19 @@ export function isFuncCallInputValidated<T = any>(arg: any): arg is FuncCallInpu
 }
 
 // validation
-export interface ValidationResult {
-  // validation done
-  pending?: boolean;
-  // validation results
+export interface ValidationResultBase {
   warnings?: string[];
   errors?: string[];
+  // TODO: some implementation
+  actions?: Record<string, Function>;
+}
+
+export interface ValidationResult extends ValidationResultBase {
+  // awaiting for validation results
+  pending?: boolean;
   // revalidation request
   revalidate?: string[];
+  // revalidations context
   context?: any;
 }
 
@@ -77,7 +82,7 @@ export type Validator =
   (val: any, param: string, fc: DG.FuncCall, isRevalidation: boolean, context?: any)
   => Promise<ValidationResult | undefined>;
 
-export type ValidatorFactory = (params: any) => { validator: Validator };
+export type ValidatorFactory = (params: any) => { validator: Validator, isAdvisory: boolean };
 
 export const nonNullValidator: Validator = async (value: any) => {
   if (value == null)

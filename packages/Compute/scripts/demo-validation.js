@@ -1,4 +1,4 @@
-//name: Validation demo
+//name: validationDemo
 //description: Custom validators demo
 //language: javascript
 //tags: simulation, demo

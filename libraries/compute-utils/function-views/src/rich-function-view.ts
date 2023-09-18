@@ -7,7 +7,7 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import { Subject, BehaviorSubject, Observable, merge, from, of, combineLatest, identity } from 'rxjs';
+import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest, identity} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
@@ -103,14 +103,6 @@ export class RichFunctionView extends FunctionView {
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
-    // always run validations on start
-    const results = await this.runValidation({isRevalidation: false});
-    this.setValidationResults(results);
-    this.runRevalidations({isRevalidation: false}, results);
-    this.validationUpdates.next(null);
-
-    if (this.runningOnStart && this.isRunnable())
-      await this.doRun();
 
     const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next({isRevalidation: false}));
     this.subs.push(fcReplacedSub);
@@ -140,6 +132,7 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(validationSub);
 
+    // waiting for validation after enter is pressed
     const runSub = combineLatest([
       this.runRequests.pipe(
         switchMap(() => of(false).pipe(
@@ -154,6 +147,16 @@ export class RichFunctionView extends FunctionView {
         return false;
       })).subscribe(() => this.doRun());
     this.subs.push(runSub);
+
+    // always run validations on start
+    const results = await this.runValidation({isRevalidation: false});
+    this.setValidationResults(results);
+    this.runRevalidations({isRevalidation: false}, results);
+    this.validationUpdates.next(null);
+
+    if (this.runningOnStart && this.isRunnable())
+      await this.doRun();
+
   }
 
   protected prevOpenedTab = null as DG.TabPane | null;
@@ -202,7 +205,6 @@ export class RichFunctionView extends FunctionView {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
     const validationSub = this.validationUpdates.pipe().subscribe(() => {
       const isValid = this.isRunnable();
-      // console.log('Run button disabled:', !isValid, (new Date()).getTime());
       runButton.disabled = !isValid;
     });
     this.subs.push(validationSub);
@@ -903,7 +905,6 @@ export class RichFunctionView extends FunctionView {
     const sub = getObservable(t.onInput.bind(t)).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
-      // console.log('Input changed:', val.name, (new Date()).getTime());
 
       this.funcCall[field][val.name] = t.value;
     });
@@ -951,7 +952,7 @@ export class RichFunctionView extends FunctionView {
 
       const customValidator = this.validators[name];
       if (customValidator) {
-        const customMsgs = await customValidator(v, name, this._funcCall!, payload.isRevalidation);
+        const customMsgs = await customValidator(v, name, this._funcCall!, payload.isRevalidation, payload.context);
         return [name, customMsgs] as const;
       }
       return [name, undefined] as const;

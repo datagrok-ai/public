@@ -1,4 +1,4 @@
-//name: Global Validation demo
+//name: globalValidationDemo
 //description: Global validators demo
 //language: javascript
 //tags: simulation, demo
