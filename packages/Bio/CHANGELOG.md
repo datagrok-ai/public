@@ -18,9 +18,9 @@
 ### Features
 
 * GetRegion for Macromolecule:
-    * Added dialog Top menu Bio | Convert | GetRegion.
-    * Added maintaining `.positionNames` tag for GetRegion derived column.
-    * Added using `.regions` tag annotation for GetRegion dialog.
+  * Added dialog Top menu Bio | Convert | GetRegion.
+  * Added maintaining `.positionNames` tag for GetRegion derived column.
+  * Added using `.regions` tag annotation for GetRegion dialog.
 
 ### Bug fixes
 
