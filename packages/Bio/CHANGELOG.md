@@ -17,16 +17,15 @@
 
 ### Features
 
-* GetRegion for Macromolecule.
-* Top menu Bio | Convert | GetRegion dialog.
-* Add tests for UnitsHandler.getRegion.
-* Maintain `.positionNames` tag for GetRegion derived column.
-* Use `.regions` tag annotation for GetRegion dialog.
-* Fix mistyping top menu path for Identity scoring.
+* GetRegion for Macromolecule:
+    * Added dialog Top menu Bio | Convert | GetRegion.
+    * Added maintaining `.positionNames` tag for GetRegion derived column.
+    * Added using `.regions` tag annotation for GetRegion dialog.
 
 ### Bug fixes
 
 * Fixed UnitsHandler.posList length.
+* Fix mistyping top menu path for Identity scoring.
 
 ## 2.9.0 (2023-08-30)
 
