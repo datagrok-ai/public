@@ -61,7 +61,6 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         );
 
         let divClass = 'd4-flex-col';
-        console.log(`**********Dataframe is null ${this.dataFrame == null}`);
         if (this.renderMolIds[i] == this.dataFrame?.currentRowIdx) {
           divClass += ' d4-current';
           grid.style.backgroundColor = '#ddffd9';

@@ -146,7 +146,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             divClass += ' d4-current';
             grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           }
-          console.log(`**********Dataframe is null ${this.dataFrame == null}`);
           if (this.dataFrame?.selection.get(idx)) {
             divClass += ' d4-selected';
             if (divClass == 'd4-flex-col d4-selected')
