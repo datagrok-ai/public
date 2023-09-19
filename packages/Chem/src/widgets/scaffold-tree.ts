@@ -8,9 +8,9 @@ import {chem} from 'datagrok-api/grok';
 import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UNITS} from 'datagrok-api/dg';
 import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from '../chem-searches';
-import {_package, getScaffoldTree} from '../package';
+import {_package, getScaffoldTree, isSmarts} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
+import { SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
 import { IColoredScaffold, ISubstruct } from '../rendering/rdkit-cell-renderer';
 import * as OCL from 'openchemlib/full';
 import { hexToPercentRgb } from '../utils/chem-common';
@@ -273,27 +273,26 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     const substrMol = substrCtx.mol;
     const mol = molCtx.mol;
     if (mol !== null && substrMol !== null && color !== null) {
-      const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
+      const matchedAtomsAndBonds: ISubstruct = JSON.parse(mol.get_substruct_match(substrMol));
       const colorArr = hexToPercentRgb(color!);
-      const substrToTakeAtomsFrom = matchedAtomsAndBonds[0];
+      const substrToTakeAtomsFrom = matchedAtomsAndBonds;
       if (substrToTakeAtomsFrom.atoms) {
         for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-          matchedAtomsAndBonds[0].highlightAtomColors ??= {};
-          matchedAtomsAndBonds[0].highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+          matchedAtomsAndBonds.highlightAtomColors ??= {};
+          matchedAtomsAndBonds.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
         };
       }
       if (substrToTakeAtomsFrom.bonds) {
         for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-          matchedAtomsAndBonds[0].highlightBondColors ??= {};
-          matchedAtomsAndBonds[0].highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+          matchedAtomsAndBonds.highlightBondColors ??= {};
+          matchedAtomsAndBonds.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
         };
       }
-      drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds[0]);
-      mol.delete();
-    } else if (mol !== null && substrMol !== null) {
+      drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds);
+    } else if (mol !== null && substrMol !== null)
       drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, null);
-      mol.delete();
-    }
+    mol?.delete();
+    substrMol?.delete();
   }
 
   const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
@@ -873,7 +872,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.bitset = null;
     if (this.molColumn !== null)
-      this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '');
+      this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
 
     this.checkBoxesUpdateInProgress = true;
     const checkedNodes = this.tree.items.filter((v) => v.checked);
@@ -892,7 +891,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '');
+    this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -940,7 +939,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           //@ts-ignore
           molArom.convert_to_aromatic_form();
           this.scaffolds.push({
-            molecule: molArom.get_molblock(),
+            molecule: isSmarts(molStr) ? molStr : molArom.get_molblock(),
             color: (value(checkedNodes[n]).chosenColor) ?? ''
           });
         } catch (e) {
@@ -959,7 +958,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       this.bitset = this.bitOperation === BitwiseOp.AND ? this.bitset.and(tmpBitset) : this.bitset.or(tmpBitset);
     }
-    this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.scaffolds.length ? JSON.stringify(this.scaffolds): '');
+    this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, this.scaffolds.length ? JSON.stringify(this.scaffolds): '');
 
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -1052,7 +1051,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       (group.value as ITreeNode).colorIsTurned = true;
       this.scaffolds.push({molecule: smiles, color: chosenColor});
       this.setColorToChildren(group.children, chosenColor, smiles);
-      this.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(this.scaffolds));
+      this.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.scaffolds));
       let newCanvas = renderMolecule(smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this, false, chosenColor, smiles);
       canvas.replaceWith(newCanvas);
       grok.shell.tv.dataFrame.fireValuesChanged();
@@ -1063,7 +1062,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       (group.value as ITreeNode).colorIsTurned = false;
       this.scaffolds = this.scaffolds.filter((item: IColoredScaffold) => item.molecule !== smiles);
       this.removeColorFromChildren(group.children, chosenColor);
-      this.molCol!.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(this.scaffolds));
+      this.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.scaffolds));
       let newCanvas = renderMolecule(smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this);
       canvas.replaceWith(newCanvas);
       grok.shell.tv.dataFrame.fireValuesChanged();
