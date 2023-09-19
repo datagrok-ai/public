@@ -72,8 +72,8 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
-    profiles: [ "all", "nginx", "cvm", "chem", "jupyter_notebook", "notebook", "scripting",
-                "grok_compute", "jupyter_kernel_gateway", "jkg", "h2o" ]
+    profiles: [ "all", "nginx", "cvm", "chem", "jupyter", "scripting",
+                "grok_compute", "jkg", "h2o" ]
 
   grok_compute:
     image: datagrok/grok_compute:${GROK_COMPUTE_VERSION:-latest}
