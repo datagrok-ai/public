@@ -119,7 +119,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   beforeRender() {
-    if (!this.initialized)
+    if (!this.initialized || !this.dataFrame)
       return false;
     if (this.dataFrame && this.moleculeColumnName &&
           this.dataFrame.col(this.moleculeColumnName)?.semType !== DG.SEMTYPE.MOLECULE) {
