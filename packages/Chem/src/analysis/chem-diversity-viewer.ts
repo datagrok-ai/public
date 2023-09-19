@@ -61,12 +61,12 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         );
 
         let divClass = 'd4-flex-col';
-
-        if (this.renderMolIds[i] == this.dataFrame.currentRowIdx) {
+        console.log(`**********Dataframe is null ${this.dataFrame == null}`);
+        if (this.renderMolIds[i] == this.dataFrame?.currentRowIdx) {
           divClass += ' d4-current';
           grid.style.backgroundColor = '#ddffd9';
         }
-        if (!this.tooltipUse && this.dataFrame.selection.get(this.renderMolIds[i])) {
+        if (!this.tooltipUse && this.dataFrame?.selection.get(this.renderMolIds[i])) {
           divClass += ' d4-selected';
           if (divClass == 'd4-flex-col d4-selected')
             grid.style.backgroundColor = '#f8f8df';
@@ -77,7 +77,6 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         $(grid).addClass(divClass);
         grid.addEventListener('click', (event: MouseEvent) => {
           if (this.dataFrame) {
-            console.log(`************Dataframe is null - ${this.dataFrame == null}`)
             if (event.shiftKey || event.altKey)
               this.dataFrame.selection.set(this.renderMolIds[i], true);
             else if (event.metaKey) {

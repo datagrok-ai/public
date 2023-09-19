@@ -72,13 +72,13 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {
+    if (this.moleculeColumn && this.dataFrame) {
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
-      this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
+      this.curIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
       if (computeData && !this.gridSelect && this.followCurrentRow) {
         this.error = '';
         this.root.classList.remove(`chem-malformed-molecule-error`);
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
+        this.targetMoleculeIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
         if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
           this.error = 'Empty';
           this.closeWithError(progressBar);
@@ -146,7 +146,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             divClass += ' d4-current';
             grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           }
-          if (this.dataFrame!.selection.get(idx)) {
+          console.log(`**********Dataframe is null ${this.dataFrame == null}`);
+          if (this.dataFrame?.selection.get(idx)) {
             divClass += ' d4-selected';
             if (divClass == 'd4-flex-col d4-selected')
               grid.style.backgroundColor = '#f8f8df';
@@ -156,7 +157,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           $(grid).addClass(divClass);
           grid.addEventListener('click', (event: MouseEvent) => {
             if (this.dataFrame && this.idxs) {
-              console.log(`************Dataframe is null - ${this.dataFrame == null}`)
               if (event.shiftKey || event.altKey)
                 this.dataFrame.selection.set(idx, true);
               else if (event.metaKey) {
