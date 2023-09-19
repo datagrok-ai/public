@@ -77,6 +77,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         $(grid).addClass(divClass);
         grid.addEventListener('click', (event: MouseEvent) => {
           if (this.dataFrame) {
+            console.log(`************Dataframe is null - ${this.dataFrame == null}`)
             if (event.shiftKey || event.altKey)
               this.dataFrame.selection.set(this.renderMolIds[i], true);
             else if (event.metaKey) {

@@ -156,6 +156,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           $(grid).addClass(divClass);
           grid.addEventListener('click', (event: MouseEvent) => {
             if (this.dataFrame && this.idxs) {
+              console.log(`************Dataframe is null - ${this.dataFrame == null}`)
               if (event.shiftKey || event.altKey)
                 this.dataFrame.selection.set(idx, true);
               else if (event.metaKey) {
