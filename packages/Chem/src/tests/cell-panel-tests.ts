@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, expectFloat, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectFloat, before, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdMap} from '../widgets/identifiers';
 // import {getPanelElements, molfileWidget} from '../widgets/molfile';
@@ -84,7 +84,7 @@ category('cell panel', async () => {
   //TODO: Check if image is returned; Visual test required
   test('structure3d-widget', async () => {
     for (const mol of molFormats)
-      structure3dWidget(mol);
+      await structure3dWidget(mol);
   });
 
 
@@ -157,7 +157,10 @@ category('cell panel', async () => {
 
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
-    for (const mol of molFormats)
-      getDescriptorsSingle(mol);
+    for (const mol of molFormats) {
+      const widget = getDescriptorsSingle(mol);
+      await awaitCheck(() => widget.root.querySelector('table') !== null,
+      `descriptors table hasn\'t been created for ${mol}`, 10000);
+    }
   });
 });
