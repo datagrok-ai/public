@@ -224,11 +224,9 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
 async function getSelected() : Promise<any> {
   if (!descriptors) {
     const res = await _package.files.readAsText('constants/descriptors_const.json');
-    console.log(`****************descriptors_const ${res}`);
     descriptors = JSON.parse(res);
   }
   const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
-  console.log(`****************descriptors selected ${str}`);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {
     //selected =
