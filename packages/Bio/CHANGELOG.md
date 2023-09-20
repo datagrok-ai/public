@@ -9,10 +9,11 @@
 * Fix WebLogo viewer for gaps with Helm.
 * Fix cell renderer for empty values MSA.
 * Fix detectMacromolecule to ignore empty seqs.
-* Add property fitWidth for VdRegionsViewer
-* Fix VdRegionsViewer fit width accounting position margin of WebLogo
+* Add property fitWidth for VdRegionsViewer.
+* Fix VdRegionsViewer fit width accounting position margin of WebLogo.
 * Fix similarity/diversity viewer tests.
-* Fix reset filters for Substructure Search filter
+* Fix reset filters for Substructure Search filter.
+* Fix Macromolecule cell renderer width limit for devicePixelRatio less than 1.
 
 ## 2.10.0 (2023-09-06)
 

@@ -34,8 +34,8 @@ type TempType = { [tagName: string]: any };
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: MonomerToShortFunc = monomerToShort;
 
-function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number): number {
-  return grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number, dpr: number): number {
+  return !!grid ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
 }
 
 export function processSequence(subParts: ISeqSplitted): [string[], boolean] {
@@ -182,11 +182,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     g.save();
     try {
+      const dpr = window.devicePixelRatio;
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
       const value: any = gridCell.cell.value;
       const paletteType = tableCol.getTag(bioTAGS.alphabet);
       const minDistanceRenderer = 50;
-      w = getUpdatedWidth(grid, g, x, w);
+      w = getUpdatedWidth(grid, g, x, w, dpr);
       g.beginPath();
       g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
       g.clip();
@@ -263,13 +264,14 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     _cellStyle: DG.GridCellStyle): void {
+    const dpr = window.devicePixelRatio;
     const grid = gridCell.grid;
     const cell = gridCell.cell;
     const tableCol = gridCell.tableColumn as DG.Column<string>;
     const s: string = cell.value ?? '';
     const separator = tableCol.tags[bioTAGS.separator];
     const units: string = tableCol.tags[DG.TAGS.UNITS];
-    w = getUpdatedWidth(grid, g, x, w);
+    w = getUpdatedWidth(grid, g, x, w, dpr);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const splitter = getSplitter(units, separator);
