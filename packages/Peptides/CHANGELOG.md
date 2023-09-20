@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.13.3 (WIP)
+
+### Bug Fixes
+
+* Fixed distribution panel throwing error when selection matches filter.
+
 ## 1.13.2 (2023-09-14)
 
 ### Bug Fixes

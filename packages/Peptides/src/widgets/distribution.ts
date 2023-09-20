@@ -165,9 +165,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const hist = getActivityDistribution(prepareTableForHistogram(distributionTable));
         const bitArray = BitArray.fromString(table.selection.toBinaryString());
         const mask = DG.BitSet.create(rowCount,
-          bitArray.allFalse ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
+          bitArray.allFalse || bitArray.allTrue ? (_): boolean => true : (i): boolean => bitArray.getBit(i));
         const aggregatedColMap = model.getAggregatedColumnValues({filterDf: true, mask});
-        const stats = bitArray.allFalse ? {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray} :
+        const stats = bitArray.allFalse || bitArray.allTrue ? {count: rowCount, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray} :
           getStats(activityColData, bitArray);
         const tableMap = getStatsTableMap(stats);
         const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
