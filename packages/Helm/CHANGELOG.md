@@ -8,6 +8,7 @@
 * Fix message WebEditor not supporting Helm with gaps.
 * Prevent display tooltip by fallback cell renderer while WebEditor renders.
 * Reset monomer placer on monomer lib changed.
+* Fix Pistoia Helm WebEditor settings for case-sensitive monomer libs.
 
 ## 2.1.16 (2023-07-21)
 

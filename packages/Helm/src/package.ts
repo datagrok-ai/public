@@ -18,6 +18,9 @@ export const _package = new DG.Package();
 
 //tags: init
 export async function initHelm(): Promise<void> {
+  //@ts-ignore
+  org.helm.webeditor.kCaseSensitive = true; // GROK-13880
+
   return Promise.all([
     new Promise((resolve, reject) => {
       // @ts-ignore
@@ -59,6 +62,7 @@ export function getMonomerLib(): IMonomerLib {
   return monomerLib!;
 }
 
+/** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
 function rewriteLibraries() {
   // @ts-ignore
   org.helm.webeditor.Monomers.clear();
