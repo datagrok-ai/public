@@ -2,6 +2,10 @@
 
 ## 1.13.3 (WIP)
 
+### Features
+
+* WebLogo now reacts to filtering.
+
 ### Bug Fixes
 
 * Fixed distribution panel throwing error when selection matches filter.

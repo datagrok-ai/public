@@ -535,13 +535,27 @@ export class PeptidesModel {
     sourceGrid.columns.setOrder([scaledCol.name]);
   }
 
-  calculateMonomerPositionStatistics(): MonomerPositionStats {
-    const positionColumns = this.splitSeqDf.columns.toList();
-    const sourceDfLen = this.df.rowCount;
+  calculateMonomerPositionStatistics(options: {isFiltered?: boolean, columns?: string[]} = {}): MonomerPositionStats {
+    options.isFiltered ??= false;
     const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
-    const activityColData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
+    let activityColData: Float64Array = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData() as Float64Array;
+    let positionColumns = this.splitSeqDf.columns.toList();
+    let sourceDfLen = this.df.rowCount;
+
+    if (options.isFiltered) {
+      sourceDfLen = this.df.filter.trueCount;
+      const tempActivityData = new Float64Array(sourceDfLen);
+      const selectedIndexes = this.df.filter.getSelectedIndexes();
+      for (let i = 0; i < sourceDfLen; ++i)
+        tempActivityData[i] = activityColData[selectedIndexes[i]];
+      activityColData = tempActivityData;
+      positionColumns = this.splitSeqDf.clone(this.df.filter).columns.toList();
+    }
+    options.columns ??= positionColumns.map((col) => col.name);
 
     for (const posCol of positionColumns) {
+      if (!options.columns.includes(posCol.name))
+        continue;
       const posColData = posCol.getRawData();
       const posColCateogries = posCol.categories;
       const currentPositionObject = {general: {}} as PositionStats & {general: SummaryStats};
@@ -740,10 +754,8 @@ export class PeptidesModel {
       const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
       if (this.cachedWebLogoTooltip.bar === bar)
         ui.tooltip.show(this.cachedWebLogoTooltip.tooltip!, ev.clientX, ev.clientY);
-      else {
-        this.cachedWebLogoTooltip = {bar: bar,
-          tooltip: this.showTooltipAt(monomerPosition, ev.clientX, ev.clientY)};
-      }
+      else
+        this.cachedWebLogoTooltip = {bar: bar, tooltip: this.showTooltipAt(monomerPosition, ev.clientX, ev.clientY)};
     }
   }
 
@@ -763,20 +775,22 @@ export class PeptidesModel {
 
         //TODO: optimize
         if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
-          const stats = this.monomerPositionStats[col.name];
+          const isDfFiltered = this.df.filter.anyFalse;
+          const stats = (isDfFiltered ? this.calculateMonomerPositionStatistics({isFiltered: true, columns: [col.name]}) :
+            this.monomerPositionStats)[col.name];
           if (!stats)
             return;
           //TODO: precalc on stats creation
           const sortedStatsOrder = Object.keys(stats).sort((a, b) => {
             if (a === '' || a === '-')
-              return -1;
-            else if (b === '' || b === '-')
               return +1;
+            else if (b === '' || b === '-')
+              return -1;
             return 0;
           }).filter((v) => v !== 'general');
 
           this.webLogoBounds[col.name] = CR.drawLogoInBounds(ctx, bounds, stats, col.name, sortedStatsOrder,
-            this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
+            this.df.filter.trueCount, this.cp, this.headerSelectedMonomers[col.name]);
           gcArgs.preventDefault();
         }
       } catch (e) {
