@@ -90,10 +90,9 @@
 }
 
 .ua-cards .ua-card {
-  width: 100px;
+  width: 120px;
   margin: 12px;
   height: 80px;
-  /* padding: 4px; */
   box-shadow: 0px 0px 2px var(--grey-3);
   align-items: center;
   display: flex;
@@ -101,6 +100,8 @@
   justify-content: center;
   position: relative;
   padding: 8px;
+  flex-grow: 1;
+  max-width: 120px;
 }
 
 .ua-test-card {
