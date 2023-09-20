@@ -2,19 +2,28 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {Observable} from 'rxjs';
+
 import {IViewer} from './viewer';
+
+export enum TAGS {
+  /** Controls displaying WebLogo in a Macromolecule column's header tooltip */
+  tooltipWebLogo = '.tooltipWebLogo',
+}
 
 export enum PositionHeight {
   Entropy = 'Entropy',
   full = '100%',
 }
 
+/** top, middle, bottom */
 export enum VerticalAlignments {
   TOP = 'top',
   MIDDLE = 'middle',
   BOTTOM = 'bottom',
 }
 
+/** left, center, right */
 export enum HorizontalAlignments {
   LEFT = 'left',
   CENTER = 'center',
@@ -46,7 +55,7 @@ export const WebLogoPropsDefault = new class {
 
   // -- Style --
   backgroundColor: number = 0xFFFFFFFF;
-  positionHeight: string = PositionHeight.full;
+  positionHeight: string = PositionHeight.Entropy; // that is the way in the bioinformatics domain
   positionWidth: number = 16;
 
   // -- Layout --
@@ -56,6 +65,7 @@ export const WebLogoPropsDefault = new class {
   fitArea: boolean = true;
   minHeight: number = 50;
   maxHeight: number = 100;
+  showPositionLabels: boolean = true;
   positionMarginState: PositionMarginStates = PositionMarginStates.AUTO;
   positionMargin: number = 0;
 
@@ -66,15 +76,14 @@ export const WebLogoPropsDefault = new class {
 export type WebLogoProps = Required<typeof WebLogoPropsDefault>;
 
 export interface IWebLogoViewer extends WebLogoProps, IViewer {
-  // Some methods to control the viewer
+  get onSizeChanged(): Observable<void>;
+
+  get positionMarginValue(): number;
+
+  setOptions(options: Partial<WebLogoProps>): void;
 }
 
-export const positionSeparator: string = ', ';
 export const positionRe: RegExp = /(\d+)([A-Z]?)/;
-
-export enum TAGS {
-  positionNames = '.positionNames',
-}
 
 declare module 'datagrok-api/dg' {
   export interface DataFramePlotHelper {

@@ -14,7 +14,7 @@ import * as testUtils from '../utils/test-utils';
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
   const commandOptions = ['host', 'csv', 'gui', 'catchUnhandled',
-    'report', 'skip-build', 'skip-publish', 'category', 'record'];
+    'report', 'skip-build', 'skip-publish', 'category', 'record', 'verbose'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -100,7 +100,8 @@ export function test(args: TestArgs): boolean {
     let browser: Browser;
     let page: Page;
     let recorder: PuppeteerScreenRecorder;
-    type resultObject = { failReport: string, skipReport: string, passReport: string, failed: boolean, csv?: string };
+    type resultObject = { failReport: string, skipReport: string, passReport: string,
+      failed: boolean, csv?: string, countReport: {skip: number, pass: number} };
 
     function init(timeout: number): Promise<void> {
       const params = Object.assign({}, testUtils.defaultLaunchParameters);
@@ -119,7 +120,7 @@ export function test(args: TestArgs): boolean {
     }
 
     function runTest(timeout: number, options: {category?: string, catchUnhandled?: boolean,
-      report?: boolean, record?: boolean} = {}): Promise<resultObject> {
+      report?: boolean, record?: boolean, verbose?: boolean} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         let consoleLog: string = '';
         if (options.record) {
@@ -136,7 +137,7 @@ export function test(args: TestArgs): boolean {
         console.log(`Testing ${targetPackage} package...\n`);
 
         let r: resultObject = await page.evaluate((targetPackage, options, testContext): Promise<resultObject> => {
-          return new Promise<resultObject>((resolve, reject) => {            
+          return new Promise<resultObject>((resolve, reject) => {        
             (<any>window).grok.functions.call(`${targetPackage}:test`, {
               'category': options.category,
               'testContext': testContext,
@@ -145,11 +146,13 @@ export function test(args: TestArgs): boolean {
               let skipReport = '';
               let passReport = '';
               let failReport = '';
+              let countReport = {skip: 0, pass: 0};
 
               if (df == null) {
                 failed = true;
                 failReport = `Fail reason: No package tests found${options.category ? ` for category "${options.category}"` : ''}`;
-                resolve({failReport, skipReport, passReport, failed});
+                resolve({failReport, skipReport, passReport, failed, countReport});
+                return;
               }
 
               const cStatus = df.columns.byName('success');
@@ -162,17 +165,24 @@ export function test(args: TestArgs): boolean {
                 if (cStatus.get(i)) {
                   if (cSkipped.get(i)) {
                     skipReport += `Test result : Skipped : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                    countReport.skip += 1;
                   } else {
                     passReport += `Test result : Success : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+                    countReport.pass += 1;
                   }
                 } else {
                   failed = true;
                   failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
                 }
               }
+              // if (!options.verbose)
+              //   df.rows.removeWhere((r: any) => r.get('success'));
               const csv = df.toCsv();
-              resolve({failReport, skipReport, passReport, failed, csv});
-            }).catch((e: any) => reject(e));
+              resolve({failReport, skipReport, passReport, failed, csv, countReport});
+            }).catch((e: any) => {
+              let stack = (<any>window).DG.Logger.translateStackTrace(e.stack);
+              resolve({failReport: `${e.message}\n${stack}`, skipReport: '', passReport: '', failed: true, csv: '', countReport: {skip: 0, pass: 0}});
+            });
           });
         }, targetPackage, options, new testUtils.TestContext(options.catchUnhandled, options.report));
 
@@ -193,7 +203,7 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000, { category: args.category,
+      const r = await runTest(7200000, { category: args.category, verbose: args.verbose,
         catchUnhandled: args.catchUnhandled, report: args.report, record: args.record });
 
       if (r.csv && args.csv) {
@@ -201,11 +211,15 @@ export function test(args: TestArgs): boolean {
         color.info('Saved `test-report.csv`\n');
       }
 
-      if (r.passReport)
+      if (r.passReport && args.verbose)
         console.log(r.passReport);
+      else
+        console.log('Passed tests: ' + r.countReport.pass)
 
-      if (r.skipReport)
+      if (r.skipReport && args.verbose)
         console.log(r.skipReport);
+      else
+        console.log('Skipped tests: ' + r.countReport.skip)
 
       if (r.failed) {
         console.log(r.failReport);
@@ -236,4 +250,5 @@ interface TestArgs {
   record?: boolean,
   'skip-build'?: boolean,
   'skip-publish'?: boolean,
+  verbose?: boolean,
 }

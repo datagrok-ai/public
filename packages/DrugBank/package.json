@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/drug-bank",
   "friendlyName": "DrugBank",
-  "version": "1.0.9",
+  "version": "1.0.16",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -30,7 +30,6 @@
     "eslint-config-google": "latest",
     "@datagrok/chem": "latest"
   },
-  
   "scripts": {
     "install-dependencies": "npm install",
     "debug-drugbank": "grok publish",

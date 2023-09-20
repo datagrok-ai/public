@@ -129,4 +129,4 @@ function setSelection(tableView: DG.TableView, label: string) {
 See also:
 
 * [How-to: Build an application](./build-an-app.md)
-* [Routing](../../datagrok/routing.md)
+* [Routing](../../datagrok/navigation/routing.md)

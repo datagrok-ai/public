@@ -176,8 +176,10 @@ export class DemoScript {
 
     await this._steps[this._currentStep].func();
     this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
-    await this._countdown(entry as HTMLElement, entryIndicator as HTMLElement, stepDelay);
-    await delay(stepDelay);
+    if (this._isAutomatic) {
+      await this._countdown(entry as HTMLElement, entryIndicator as HTMLElement, stepDelay);
+      await delay(stepDelay);
+    }
 
     const newEntryIndicator = ui.iconFA('check');
     entryIndicator.replaceWith(newEntryIndicator);

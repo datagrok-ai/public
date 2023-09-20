@@ -60,7 +60,9 @@ export class SPEBase {
    */
   protected async initDistance(vectors: Vectors) {
     this.dmIndexFunct = dmLinearIndex(vectors.length);
-    this.distance = await new DistanceMatrixService().calc(vectors, this.distanceFunctionName);
+    const matrixService = new DistanceMatrixService(true, false);
+    this.distance = await matrixService.calc(vectors, this.distanceFunctionName);
+    matrixService.terminate();
   }
 
   /**
@@ -81,7 +83,7 @@ export class SPEBase {
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
-  public embed(vectors: Vectors): Coordinates {
+  public async embed(vectors: Vectors): Promise<Coordinates> {
     const nItems = vectors.length;
     const areaWidth = 40;
     // Initialize the D-dimensional coordinates of the N points.
@@ -93,7 +95,7 @@ export class SPEBase {
       this.steps = vectors.length - 1;
 
 
-    this.initDistance(vectors);
+    await this.initDistance(vectors);
 
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       for (let step = 0; step < this.steps; ++step) {
@@ -142,14 +144,14 @@ export class PSPEBase extends SPEBase {
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
-  public embed(vectors: Vectors): Coordinates {
+  public async embed(vectors: Vectors): Promise<Coordinates> {
     const nItems = vectors.length;
     const areaWidth = 40;
     //  Initialize the D-dimensional coordinates of the N points.
     const coordinates = fillRandomMatrix(nItems, PSPEBase.dimension, areaWidth);
     let lambda = this.lambda;
 
-    this.initDistance(vectors);
+    await this.initDistance(vectors);
 
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       // Select a point, i, at random (pivot).
@@ -208,13 +210,13 @@ export class OriginalSPE extends SPEBase {
     this.maxDistanceSteps = options?.maxDistanceSteps ?? null;
   }
 
-  public embed(vectors: Vectors): Coordinates {
+  public async embed(vectors: Vectors): Promise<Coordinates> {
     const nItems = vectors.length;
     const areaWidth = 40;
     // Initialize the D-dimensional coordinates of the N points.
     const coordinates = fillRandomMatrix(nItems, OriginalSPE.dimension, areaWidth);
 
-    this.initDistance(vectors);
+    await this.initDistance(vectors);
 
     if (this.maxDistanceSteps === null)
       this.maxDistanceSteps = nItems * Math.floor((nItems - 1) / 2);

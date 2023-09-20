@@ -3,25 +3,25 @@
 
 # Tests: Predictive Models Browser
 
-Model browser allows you to view previously created [models](predictive-modeling.md), view their properties and manage
+Model browser allows you to view previously created [models](learn.md), view their properties and manage
 them.
 
 ## Testing scenarios
 
-1. Open "Browse Models" from **Tools | Predictive Modeling**
+1. Open "Browse Models" from **ML | Models**
 
 * Model browser is open
 * You can change the view, use sort and search
 
-1. Use context menu for apply [model](predictive-modeling.md) from browser
+1. Use context menu for apply [model](learn.md) from browser
 
 * Models are applied successfully and correctly from context menu
 
-1. Edit [model](predictive-modeling.md) from its context menu in broser
+1. Edit [model](learn.md) from its context menu in broser
 
 * Model edit dialog has been opened
 
-1. Share [model](predictive-modeling.md) from its context menu to another [user](../govern/user.md)
+1. Share [model](learn.md) from its context menu to another [user](../govern/user.md)
    or user [group](../govern/group.md)
 
 * Access to the model is enabled for the selected [user](../govern/user.md)
@@ -49,7 +49,7 @@ them.
 1. Open the "Activity" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Activity" tab is open
-* Display information about actual actions with [model](predictive-modeling.md)
+* Display information about actual actions with [model](learn.md)
 
 1. Select two models (using ```CTRL``` key)
 
@@ -65,6 +65,6 @@ them.
 
 See also:
 
-* [Predictive modeling](predictive-modeling.md)
+* [Predictive modeling](learn.md)
 * [Predictive modeling test](predictive-modeling-test.md)
-* [Predictive modeling tutorial](../_internal/tutorials/predictive-modeling.md)
+* [Predictive modeling tutorial](../_internal/tutorials/learn.md)

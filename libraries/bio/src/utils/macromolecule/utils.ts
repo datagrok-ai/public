@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {CandidateSimType, CandidateType, MonomerFreqs, SeqColStats, SplitterFunc} from './types';
+import {CandidateSimType, CandidateType, ISeqSplitted, MonomerFreqs, SeqColStats, SplitterFunc} from './types';
 import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION, TAGS} from './consts';
 import {UnitsHandler} from '../units-handler';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
@@ -19,14 +19,19 @@ import {UnknownSeqPalettes} from '../../unknown';
  * @param {SplitterFunc} splitter
  * @return { SeqColStats }, sameLength: boolean } stats of column sequences
  */
-export function getStats(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
+export function getStatsForCol(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
+  const cats = seqCol.categories;
+  const splitted: Iterable<ISeqSplitted> = wu(seqCol.getRawData())
+    .map((catI) => splitter(seqCol.categories[catI]));
+  return getStats(splitted, minLength);
+}
+
+function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColStats {
   const freq: { [m: string]: number } = {};
   let sameLength = true;
   let firstLength = null;
 
-  for (const seq of seqCol.categories) {
-    const mSeq = splitter(seq);
-
+  for (const mSeq of splitted) {
     if (firstLength == null)
       firstLength = mSeq.length;
     else if (mSeq.length !== firstLength)
@@ -48,12 +53,23 @@ export function getStats(seqCol: DG.Column, minLength: number, splitter: Splitte
  * @return {string[]} array of monomers
  */
 export function splitterAsFasta(seq: any): string[] {
+  // return seq.toString().replace(monomerRe, '.$1').slice(1).split('.').map((monomer: string) => {
+  //   if (monomer.startsWith('[') && monomer.endsWith(']'))
+  //     return monomer.slice(1, -1);
+  //   else if (monomer === '-')
+  //     return '';
+  //   else
+  //     return monomer;
+  // });
+
   return wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
     .map((ma: RegExpMatchArray) => {
-      const m: string = ma[0];
-      const mRes = m.length > 1 ? ma[1] : m;
-      return mRes;
+      return ma[2] ?? ma[1]; // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
     }).toArray();
+}
+
+export function splitterAsFastaSimple(seq: any): string[] {
+  return !seq ? [] : seq as string[];
 }
 
 /** Gets method to split sequence by separator
@@ -63,7 +79,7 @@ export function splitterAsFasta(seq: any): string[] {
  */
 export function getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
   return (seq: string) => {
-    return seq.split(separator, limit);
+    return !seq ? [] : seq.split(separator, limit);
   };
 }
 
@@ -93,7 +109,10 @@ export function splitterAsHelm(seq: any): string[] {
   return mmList.map(mmPostProcess);
 }
 
-/** Get splitter method to split sequences to monomers
+/** Func type to shorten a {@link monomerLabel} with length {@link limit} */
+export type MonomerToShortFunc = (monomerLabel: string, limit: number) => string;
+
+/** Get splitter method to split sequences to monomers (required for MacromoleculeDifferenceCellRenderer)
  * @param {string} units
  * @param {string} separator
  * @param limit
@@ -117,22 +136,21 @@ export function getSplitter(units: string, separator: string, limit: number | un
  * @return {SplitterFunc} Splitter function
  */
 export function getSplitterForColumn(col: DG.Column): SplitterFunc {
-  if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
-    throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
-
-  const units = col.getTag(DG.TAGS.UNITS);
-  const separator = col.getTag(TAGS.separator);
-  return getSplitter(units, separator);
+  const uh = UnitsHandler.getOrCreate(col);
+  return uh.getSplitter();
 }
 
-const longMonomerPartRe: RegExp = /(\w+)/g;
+const longMonomerPartRe: RegExp = /([^\W_]+)/g;
 
 /** Convert long monomer names to short ones */
 export function monomerToShort(amino: string, maxLengthOfMonomer: number): string {
+  if (amino.length <= maxLengthOfMonomer)
+    return amino;
+  //const kebabAmino = amino.replace(/[A-Z]+(?![a-z])|[A-Z]/g, ($, ofs) => (ofs ? '-' : '') + $);
   const shortAminoMatch: RegExpMatchArray | null = amino.match(longMonomerPartRe);
   const needAddDots: boolean = amino.length > maxLengthOfMonomer || (shortAminoMatch?.length ?? 0) > 1;
   const shortAmino = shortAminoMatch?.[0] ?? ' ';
-  return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer) + '…';
+  return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer - 1) + '…';
 }
 
 /** */
@@ -198,10 +216,10 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
 export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
   let alphabet: string;
   if (seqCol.semType == DG.SEMTYPE.MACROMOLECULE) {
-    const uh: UnitsHandler = new UnitsHandler(seqCol);
+    const uh: UnitsHandler = UnitsHandler.getOrCreate(seqCol);
     alphabet = uh.alphabet;
   } else {
-    const stats: SeqColStats = getStats(seqCol, minLength, splitterAsFasta);
+    const stats: SeqColStats = getStatsForCol(seqCol, minLength, splitterAsFasta);
     alphabet = detectAlphabet(stats.freq, candidateAlphabets);
   }
 
@@ -222,7 +240,7 @@ export function getPaletteByType(paletteType: string): SeqPalette {
   }
 }
 
-export function pickUpSeqCol(df: DG.DataFrame): DG.Column | null {
+export function pickUpSeqCol(df: DG.DataFrame): DG.Column<string> | null {
   const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
   let resCol: DG.Column | null = semTypeColList.find((col) => {
     const units = col.getTag(DG.TAGS.UNITS);

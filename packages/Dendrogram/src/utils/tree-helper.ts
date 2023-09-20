@@ -12,6 +12,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {MmDistanceFunctionsNames} from
   '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {NumberMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {IntArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics/consts';
 type DataNodeDict = { [nodeName: string]: number };
 
 export const enum TAGS {
@@ -489,13 +490,19 @@ export class TreeHelper implements ITreeHelper {
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
         values = await distanceMatrixService.calc(col.getRawData(), NumberMetricsNames.NumericDistance, false);
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = new UnitsHandler(col);
+        const uh = UnitsHandler.getOrCreate(col);
         // Use Hamming distance when sequences are aligned
         const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
 
         if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
           isUsingNeedlemanWunsch = true;
         values = await distanceMatrixService.calc(col.toList(), seqDistanceFunction, false);
+      } else if (col.semType === DG.SEMTYPE.MOLECULE) {
+        const fingerPrintCol: DG.Column<DG.BitSet | null> =
+          await grok.functions.call('Chem:getMorganFingerprints', {molColumn: col});
+        const fingerPrintBitArrayCol = fingerPrintCol.toList().map((bs: DG.BitSet | null) =>
+          bs ? bs.getBuffer() : null);
+        values = await distanceMatrixService.calc(fingerPrintBitArrayCol, IntArrayMetricsNames.TanimotoIntArray, false);
       } else { throw new TypeError('Unsupported column type'); }
 
       if (!out) {

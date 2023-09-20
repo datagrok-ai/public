@@ -477,7 +477,7 @@
               "xpath:position"
             ]
           ],
-          "value": "DemoScripts:RDup(GetCurrentRowField(\"sex\"))"
+          "value": "Demo:RDup(GetCurrentRowField(\"sex\"))"
         },
         {
           "id": "6f82bcb7-026c-4452-9b7b-a1d082618fb4",

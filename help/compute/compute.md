@@ -4,10 +4,10 @@ sidebar_position: 0
 ---
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as
-[in-memory data engine](../develop/advanced/performance.md#in-memory-database),
-[interactive visualizations](../explore/exploratory-data-analysis.md),
-[data access](../home.md#access),
-[machine learning](../home.md#machine-learning), and [enterprise features](../home.md#deploy-and-integrate)
+[in-memory data engine](../develop/under-the-hood/performance.md#in-memory-database),
+[interactive visualizations](../datagrok/solutions/domains/use-cases/eda.md),
+[data access](../access/access.md),
+[machine learning](../learn/learn.md), and [enterprise features](../home.md#deploy-and-integrate)
 to enable developing, publishing, discovering, and using scientific applications:
 
 1. [Functions and cross-language support](#functions-and-cross-language-support)
@@ -49,8 +49,8 @@ with the following features:
 * Annotated with [metadata](#metadata) both on the function and on the parameter level
 * Could be serialized and re-executed at a later point.
 
-A [function](https://datagrok.ai/help/datagrok/functions/function)
-could be written in [any language that Datagrok supports](https://datagrok.ai/help/compute/scripting). Typically,
+A [function](../datagrok/concepts/functions/functions.md)
+could be written in [any language that Datagrok supports](scripting.md). Typically,
 computations are developed in `Python`, `R`, `Julia`, `Matlab/Octave`, `JavaScript`, or `C++`. Data access usually
 uses `SQL`, `SPARQL`, `OpenAPI`, or `JavaScript`.
 
@@ -117,16 +117,16 @@ experience.
 A visual tool for annotating function parameters is
 [currently in the development](https://github.com/datagrok-ai/public/issues/184).
 
-Learn more: [function parameters](https://datagrok.ai/help/datagrok/functions/func-params-enhancement)
+Learn more: [function parameters](../datagrok/concepts/functions/func-params-enhancement.md).
 
-See also: [auto-generating UI for dynamic data retrieval](#data-access)
+See also: [auto-generating UI for dynamic data retrieval](#data-access).
 
 ### Custom UI
 
 On the other side of the spectrum, if necessary the UI could be developed from scratch without any limitations, using
 either vanilla JavaScript, a framework of your choice such as React, or
-[Datagrok UI toolkit](../develop/js-api.md#ui). No matter what you choose,
-Datagrok [JS API](https://datagrok.ai/help/develop/develop) could always be used. For convenience, a repository of
+[Datagrok UI toolkit](../develop/packages/js-api.md#ui). No matter what you choose,
+Datagrok [JS API](../develop/packages/js-api.md) could always be used. For convenience, a repository of
 commonly used UI templates is provided.
 
 ### Mobile devices
@@ -186,7 +186,7 @@ It could be done either manually via the UI, or automatically
 * **Automatic** deployment: save model as part of the [package](../develop/develop.md#packages), and publish it
 
 Together with the [script versioning](#versioning) and [script environments](#environment) features outlined below, this
-enables [reproducibility of results](#reproducible-computations)
+enables [reproducibility of results](#reproducible-computations).
 
 ### Versioning
 
@@ -219,8 +219,8 @@ example: `https://dev.datagrok.ai/func/Skalkin.LotkaVolterra?x0=0.5&y0=2&alpha=0
 
 ## Data access
 
-The platform allows to seamlessly [access](../home.md#access) any machine-readable data source, such
-as [databases](../access/access.md#data-connection),
+The platform allows to seamlessly [access](../access/access.md) any machine-readable data source, such
+as [databases](../access/databases/databases.mdx),
 [web services](../access/open-api.md),
 [files](../access/files/files.mdx) (either on network shares on in S3). To make a model retrieve the
 input data from the data source, annotate the input parameter with the
@@ -228,7 +228,7 @@ corresponding [parameterized query](../access/databases/databases.mdx#parameteri
 the platform can automatically generate the UI that would contain both input- and computation-specific parts.
 
 By untangling the computation from the data access, implementing both of them as
-pure [functions](https://datagrok.ai/help/datagrok/functions/function), and eliminating the hardcoded UI altogether, we
+pure [functions](../datagrok/concepts/functions/functions.md), and eliminating the hardcoded UI altogether, we
 can now create powerful, interactive scientific application without having to write a single line of the UI code. These
 applications also automatically benefit from all other cross-cutting features.
 
@@ -309,16 +309,15 @@ with that in a declarative manner.
 
 ## Integration
 
-Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the box
+Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the-box,
 we get many platform integration capabilities such as authentication, data access, and many others. In addition to that,
 there are some capabilities specific to models: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
 
 ### REST API
 
-Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
-input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
+Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the input parameters along with the authentication token. This allows instantaneous deployment of scientific methods for
+external consumption. To learn how to use it, click on the function and expand the `REST` pane on the context panel
 on the right. Both JavaScript and Curl samples are provided.
 
 ![rest-api](rest-api.png)
@@ -326,14 +325,14 @@ on the right. Both JavaScript and Curl samples are provided.
 ### JS API
 
 JavaScript-based apps have access to the whole Datagrok platform via the
-[JS API](../develop/js-api.md).
+[JS API](../develop/packages/js-api.md).
 
 ### Embedding as iframe
 
 Sometimes, an app has to be included in the external web page. The simplest way to achieve it is via
 the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
-element. To embed a model, click on the hamburger icon in the top left corner, and choose `Embed...`
-. You will see a dialog with the HTML code on top that you can use to embed this into external site. Note that you can
+element. To embed a model, click on the hamburger icon in the top left corner and choose `Embed...`
+. You will see a dialog with the HTML code on top that you can use to embed this into an external site. Note that you can
 change parameter values right in the URL.
 
 On the bottom, you see a preview of the result ()
@@ -349,7 +348,7 @@ The computation engine utilizes the power of the Datagrok platform, which brings
 
 ### Logging, audit, and traceability
 
-Out-of-the box, the platform provides audit and logging capabilities, and when the model is [deployed](#deployment), we
+Out-of-the-box, the platform provides audit and logging capabilities, and when the model is [deployed](#deployment), we
 get the following automatically:
 
 * See who created, edited, deployed, and used the model
@@ -363,21 +362,21 @@ in a structured, machine-readable way. We can also tune what needs to be persist
 
 ### Privileges and visibility
 
-Datagrok has the built-in [role-based privileges system](https://datagrok.ai/help/govern/authorization)
+Datagrok has a built-in [role-based privileges system](../govern/authorization.md)
 that is used to define who can see, execute, or edit models. The same mechanism is used for the data access control.
 
 ### Exploratory data analysis
 
-Perhaps the most commonly used data structure in computing is [DataFrame](../develop/advanced/data-frame.md). To analyze
-either input or output dataframe, click on the `+` ("Add to workspace")
-icon. This will open the dataframe in the [exploratory data analysis](../explore/exploratory-data-analysis.md)
+Perhaps the most commonly used data structure in computing is [dataframe](../develop/advanced/data-frame.md). To analyze
+either input or output dataframe, click the `+`` ("Add to workspace")
+icon. This action opens the dataframe in the [exploratory data analysis](../datagrok/solutions/domains/use-cases/eda.md)
 mode, allowing to [visualize](../visualize/viewers/viewers.md) the data,
 [transform](../transform/query-transformations.md)
 or perform more in-depth exploration, such as multivariate analysis.
 
 In the picture below, we are exploring the result of the model execution. While the default output is visualized via the
-line chart, once we added the dataframe to the workspace we can explore it in different other ways, such as visualizing
-it on scatter plot, histogram, or correlation plot.
+line chart, once we add the dataframe to the workspace, we can explore it in different ways, such as visualizing
+it on a scatter plot, histogram, or correlation plot.
 
 ![add-to-workspace](add-to-workspace.gif)
 

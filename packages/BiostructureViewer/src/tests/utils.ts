@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {PdbEntry} from '../pdb-entry';
-import {byId} from '../viewers/molstar-viewer';
+import {byId} from '../viewers/molstar-viewer/utils';
 
 export const _packageName = 'BiostructureViewer';
 const _examplePDBID = '2V0A';

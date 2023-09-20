@@ -15,23 +15,28 @@ public class StringColumn extends Column<String> {
     private Integer[] idxs;
     private List<String> categories;
 
+    public StringColumn() {
+        data = new String[initColumnSize];
+    }
+
+    public StringColumn(int initColumnSize) {
+        this.initColumnSize = initColumnSize;
+        data = new String[initColumnSize];
+    }
+
+    public StringColumn(String[] values) {
+        data = new String[initColumnSize];
+        addAll(values);
+    }
+
     public String getType() {
         return TYPE;
     }
 
     public void empty() {
         length = 0;
-        data = new String[100];
+        data = new String[initColumnSize];
         categorize();
-    }
-
-    public StringColumn() {
-        data = new String[100];
-    }
-
-    public StringColumn(String[] values) {
-        data = new String[100];
-        addAll(values);
     }
 
     public void encode(BufferAccessor buf) {
@@ -56,6 +61,11 @@ public class StringColumn extends Column<String> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    @Override
+    public void set(int index, String value) {
+        data[index] = value;
     }
 
     private void ensureSpace(int extraLength) {

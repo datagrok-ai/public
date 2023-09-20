@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {UaToolbox} from '../ua-toolbox';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
 
-
 export interface Filter {
   time_start: number;
   time_end: number;
@@ -13,7 +12,6 @@ export interface Filter {
   packages: string[];
   functions?: string[];
 }
-
 
 export class UaView extends DG.ViewBase {
   uaToolbox: UaToolbox;
@@ -33,10 +31,6 @@ export class UaView extends DG.ViewBase {
       this.initialized = true;
       this.initViewers();
     }
-  }
-
-  getScatterPlot(): UaQueryViewer {
-    return this.viewers.find((v) => v.viewer?.type === 'Scatter plot') as UaQueryViewer;
   }
 
   async initViewers(): Promise<void> {}

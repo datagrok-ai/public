@@ -56,6 +56,9 @@ category('Algorithms', () => {
   });
 
   test('MutationCliffs - Benchmark 5k', async () => {
+    if (!DG.Test.isInBenchmark)
+      return;
+
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
     const activityCol: type.RawData = df.getCol('Activity').getRawData();
     const monomerCols: type.RawColumn[] = [];
@@ -64,5 +67,5 @@ category('Algorithms', () => {
       monomerCols.push({name: col.name, rawData: col.getRawData(), cat: col.categories});
     }
     DG.time('MutationCliffs', () => findMutations(activityCol, monomerCols));
-  }, {skipReason: 'Benchmark'});
+  }, {timeout: 5000});
 });

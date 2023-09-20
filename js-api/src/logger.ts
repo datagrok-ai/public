@@ -62,7 +62,11 @@ export class Logger {
   }
 
   /** Reports error record to Datagrok **/
-  error(message: string, params?: object, stackTrace?: string): void {
+  error(message: any, params?: object, stackTrace?: string): void {
+    if (message instanceof Error) {
+      stackTrace ??= message.stack;
+      message = message.message;
+    }
     this._log({level: LOG_LEVEL.ERROR, message, params, stackTrace});
   }
 

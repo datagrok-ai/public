@@ -1,3 +1,4 @@
+import {isNil} from './utils';
 import {Measure} from '../typed-metrics';
 
 onmessage = (event) => {
@@ -12,7 +13,7 @@ onmessage = (event) => {
     const retVal = new Float32Array(chunckSize);
     const distanceFn = new Measure(fnName).getMeasure(opts);
     while (cnt < chunckSize) {
-      const value = values[i] !== null && values[j] !== null ?
+      const value = !isNil(values[i]) && !isNil(values[j]) ?
         distanceFn(values[i], values[j]) : 1;
       retVal[cnt] = value;
       if (value < lmin)

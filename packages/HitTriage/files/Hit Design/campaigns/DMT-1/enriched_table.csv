@@ -1,0 +1,7 @@
+Molecule,Stage,V-iD,MolWt
+c1cc2ccccc2cc1,Stage 1,V000001,128.1739959716797
+,Stage 1,StageDefiningRow,
+,Stage 1,StageDefiningRow,
+,Stage 1,StageDefiningRow,
+c1cc2cc(cccc3)c3cc2cc1,Stage 1,V000002,178.23399353027344
+c1ccccc1,Stage 1,V000003,78.11399841308594

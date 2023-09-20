@@ -91,11 +91,12 @@ export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: Word Cloud Viewer
+//name: Word cloud
 //description: Creates a word cloud viewer
 //tags: viewer
 //output: viewer result
 //meta.icon: icons/wordcloud-viewer.svg
+//meta.toolbox: true
 export function _WordCloudViewer() {
   return new WordCloudViewer();
 }

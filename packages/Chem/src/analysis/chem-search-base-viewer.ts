@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import '../../css/chem.css';
 import {Fingerprint} from '../utils/chem-common';
+import { Subject } from 'rxjs';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
@@ -30,6 +31,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   metricsDiv: HTMLElement | null;
   moleculeProperties: string[];
   applyColorTo: string;
+  renderCompleted = new Subject<void>();
+  isComputing = false;
 
   constructor(name: string, col?: DG.Column) {
     super();
@@ -76,11 +79,12 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
         .subscribe(async (_: any) => await this.render(false)));
-      this.moleculeColumn ??= this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      this.moleculeColumnName ??= this.moleculeColumn?.name!;
+      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      this.moleculeColumnName = this.moleculeColumn?.name ?? '';
     }
     await this.render(true);
   }
+
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
@@ -89,8 +93,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (this.metricsProperties.includes(property.name))
       this.updateMetricsLink(this, {});
     if (property.name === 'moleculeColumnName') {
-      const col = this.dataFrame.col(property.get(this))!;
-      if (col.semType === DG.SEMTYPE.MOLECULE)
+      const col = this.dataFrame.col(property.get(this));
+      if (col?.semType === DG.SEMTYPE.MOLECULE)
         this.moleculeColumn = col;
     }
     if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
@@ -114,16 +118,27 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.metricsDiv!.appendChild(metricsButton);
   }
 
-  async render(computeData = true) {
+  async render(computeData = true): Promise<void> {
+    try {
+      await this.renderInternal(computeData);
+    } finally {
+      if (this.isComputing) {
+        this.isComputing = false;
+        this.renderCompleted.next();
+      }
+    }
+  }
+
+  async renderInternal(compute = true) {
 
   }
 
   beforeRender() {
-    if (!this.initialized)
+    if (!this.initialized || !this.dataFrame)
       return false;
     if (this.dataFrame && this.moleculeColumnName &&
-          this.dataFrame.col(this.moleculeColumnName)!.semType !== DG.SEMTYPE.MOLECULE) {
-      grok.shell.error(`${this.moleculeColumnName} is not Molecule type`);
+          this.dataFrame.col(this.moleculeColumnName)?.semType !== DG.SEMTYPE.MOLECULE) {
+      grok.shell.error(`${this.moleculeColumnName} is not Molecule type or missing`);
       return false;
     }
     return true;

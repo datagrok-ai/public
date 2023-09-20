@@ -133,7 +133,7 @@ public class OracleObjectsMother {
                 .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
-                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                dayOfYear == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
@@ -165,7 +165,6 @@ public class OracleObjectsMother {
                 .build();
         // --input: string date = "last year" {pattern: datetime}
         DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 yesterday.getYear() < now.getYear() ? yesterday.toString() : null,
                                 dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),

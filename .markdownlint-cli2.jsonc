@@ -8,6 +8,7 @@
     "**/node_modules",
     "js-api/docs/**",
     "js-api/help/**",
-    "LICENSE.md"
+    "LICENSE.md",
+    "help/develop/admin/releases/changelog-policy.md"
   ]
 }

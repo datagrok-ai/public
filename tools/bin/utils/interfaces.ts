@@ -13,6 +13,7 @@ export interface PackageFile {
     url?: string,
     directory?: string,
   },
+  servicePackage?: boolean,
   dependencies?: {
     [dependency: string]: string,
   },
@@ -55,7 +56,7 @@ export interface FuncMetadata extends Indexable {
 }
 
 export interface FuncParam {
-  name?: string,
+  name: string,
   type: string,
 }
 

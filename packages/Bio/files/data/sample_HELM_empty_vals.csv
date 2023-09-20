@@ -67,7 +67,7 @@ PEPTIDE1{meI.Pip.dK.Thr_PO3H2.pnT.D-Tyr_Et.Tyr_ab-dehydroMe.dV.Cys_SEt.N.D-Orn.D
 PEPTIDE1{meI.D-2Thi.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.Thr_PO3H2.N.D-Orn.D-aThr.Phe_4Me}$$$$,5.49809
 PEPTIDE1{meI.dE.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.D-Thz.N.D-Orn.D-aThr.Phe_4Me}$$$$,6.53041
 PEPTIDE1{meI.D-Hyp.N.T.dK.Thr_PO3H2.Trp_Ome.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$,3.07080
-"PEPTIDE1{meI.Pip.dK.Thr_PO3H2.L-hArg(Et,Et).D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$",4.44629
+"PEPTIDE1{meI.Pip.dK.Thr_PO3H2.[L-hArg(Et,Et)].D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$",4.44629
 PEPTIDE1{meI.T.dK.Thr_PO3H2.D-Thz.D-Tyr_Et.Tyr_ab-dehydroMe.dV.D-Thz.N.D-Orn.xiHyp.Phe_4Me}$$$$,6.32360
 PEPTIDE1{meI.1Nal.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.Thr_PO3H2.N.D-Orn.D-aThr.Phe_4Me}$$$$,5.90846
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Phe_4Sdihydroorotamido.dV.E.N.dV.Phe_4Me}$$$$,2.47020
@@ -186,8 +186,8 @@ PEPTIDE1{meI.Aca.N.T.meV.Thr_PO3H2.Aca.seC.Tyr_ab-dehydroMe.dV.Thr_PO3H2.N.D-Orn
 PEPTIDE1{meI.Aca.Cys_SEt.T.meV.Thr_PO3H2.Aca.Tyr_PO3H2.Tyr_ab-dehydroMe.dV.Thr_PO3H2.N.D-Orn.D-aThr.Phe_4Me}$$$$,7.10947
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Bmt.Tyr_ab-dehydroMe.dV.E.N.pnG.Phe_4Me}$$$$,1.82444
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.Sta_3S4S.Tyr_ab-dehydroMe.dV.E.N.pnG.Phe_4Me}$$$$,1.77812
-"PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.L-hArg(Et,Et).aMePhe.Phe_4Me}$$$$",3.68767
-"PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.L-hArg(Et,Et).aMePhe.Phe_4Me}$$$$",3.88535
+"PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.[L-hArg(Et,Et)].aMePhe.Phe_4Me}$$$$",3.68767
+"PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.[L-hArg(Et,Et)].aMePhe.Phe_4Me}$$$$",3.88535
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.NMe2Abz.Phe_4Me}$$$$,6.58770
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Nle.Phe_4Me}$$$$,1.90002
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.NMe2Abz.Phe_4Me}$$$$,4.77066
@@ -228,16 +228,16 @@ PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.Thr_PO3H2.aIle.Phe_4Me}$$$$,3.33894
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.Thr_PO3H2.aIle.Phe_4Me}$$$$,1.65063
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.Phe_4Sdihydroorotamido.aIle.Phe_4Me}$$$$,2.65963
-"PEPTIDE1{meI.Aca.N.T.dK.Aca.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.Phe_2F.Thr_PO3H2.N.L-hArg(Et,Et).aIle.Phe_4Me}$$$$",3.08747
+"PEPTIDE1{meI.Aca.N.T.dK.Aca.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.Phe_2F.Thr_PO3H2.N.[L-hArg(Et,Et)].aIle.Phe_4Me}$$$$",3.08747
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Bmt.E.N.dV.Phe_4Me}$$$$,2.47859
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.Phe_4Br.aIle.Phe_4Me}$$$$,1.64943
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Bmt.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.meN.E.N.dV.Phe_4Me}$$$$,1.78684
-"PEPTIDE1{meI.Aca.N.T.dK.Bmt.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.L-hArg(Et,Et).aIle.Phe_4Me}$$$$",1.64537
+"PEPTIDE1{meI.Aca.N.T.dK.Bmt.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.[L-hArg(Et,Et)].aIle.Phe_4Me}$$$$",1.64537
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.H.meF}$$$$,5.98851
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.H.Phe_4Me}$$$$,4.63562
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.meN.E.N.Wil.D-aThr.Phe_4Me}$$$$,4.03158
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.NMe2Abz.Phe_4Br.Phe_4Me}$$$$,2.82505
-"PEPTIDE1{meI.Aca.N.T.dK.NMebAla.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.L-hArg(Et,Et).aIle.Phe_4Me}$$$$",3.91273
+"PEPTIDE1{meI.Aca.N.T.dK.NMebAla.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.[L-hArg(Et,Et)].aIle.Phe_4Me}$$$$",3.91273
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.meN.E.N.dV.meF}$$$$,4.68059
 PEPTIDE1{D-Phg.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.pnG.Phe_4Me}$$$$,3.68825
 PEPTIDE1{D-Phg.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.pnG.Phe_4Me}$$$$,2.91926
@@ -264,7 +264,7 @@ PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.H.P.
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.meN.E.N.dV.Phe_4Br.Phe_4Me}$$$$,5.14651
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.dV.Phe_4Br.Phe_4Me}$$$$,1.91246
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.NMe2Abz.Phe_4Br.Phe_4Me}$$$$,1.51989
-"PEPTIDE1{meI.Aca.N.T.dK.Y.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.L-hArg(Et,Et).aIle.Phe_4Me}$$$$",3.00778
+"PEPTIDE1{meI.Aca.N.T.dK.Y.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.[L-hArg(Et,Et)].aIle.Phe_4Me}$$$$",3.00778
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.H.Phe_4Br.Phe_4Me}$$$$,6.52448
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.aThr.aIle.Phe_4Me}$$$$,2.28325
 PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.Abu.aIle.Phe_4Me}$$$$,3.19869
@@ -272,7 +272,7 @@ PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.
 PEPTIDE1{aThr.hHis.Hcy.Q.T.W.Q.Phe_4NH2.Pqa.Tyr_ab-dehydroMe.dV.E.N.dV.Phe_4Me}$$$$,3.64898
 PEPTIDE1{hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.dV.Phe_4Me}$$$$,4.52096
 PEPTIDE1{meI.hHis.Aca.N.T.dK.Aca.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.Phe_2F.E.N.Phe_4Sdihydroorotamido.aIle.Phe_4Me}$$$$,3.57961
-"PEPTIDE1{meI.hHis.Aca.N.T.dK.Aca.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.Phe_2F.E.N.L-hArg(Et,Et).aIle.Phe_4Me}$$$$",2.57664
+"PEPTIDE1{meI.hHis.Aca.N.T.dK.Aca.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.Phe_2F.E.N.[L-hArg(Et,Et)].aIle.Phe_4Me}$$$$",2.57664
 PEPTIDE1{4Pal.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.pnG.Phe_4Me}$$$$,2.82918
 PEPTIDE1{Phe_4Sdihydroorotamido.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.pnG.Phe_4Me}$$$$,2.62389
 PEPTIDE1{Phe_4Sdihydroorotamido.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.D-Dap.Thr_PO3H2.N.pnG.Phe_4Me}$$$$,2.61653
@@ -518,7 +518,7 @@ PEPTIDE1{D-Hyp.hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.Bmt.Phe_4Me
 PEPTIDE1{hPhe.hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.Bmt.Phe_4Me}$$$$,3.14182
 PEPTIDE1{D-Cha.hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.Bmt.Phe_4Me}$$$$,3.51577
 PEPTIDE1{D-Cit.hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.Bmt.Phe_4Me}$$$$,4.51122
-"PEPTIDE1{L-hArg(Et,Et).hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.Bmt.Phe_4Me}$$$$",1.71900
+"PEPTIDE1{[L-hArg(Et,Et)].hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.Bmt.Phe_4Me}$$$$",1.71900
 PEPTIDE1{D-Pip.hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.Bmt.Phe_4Me}$$$$,3.28024
 PEPTIDE1{meI.hHis.Phe_4NH2.Q.T.W.Q.A.D-Tyr_Et.Tyr_ab-dehydroMe.dV.Aca.N.dV.Phe_4Me}$$$$,3.43997
 PEPTIDE1{aThr.hHis.Aca.Q.T.W.Q.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.Q.N.dV.Phe_4Me}$$$$,3.87007

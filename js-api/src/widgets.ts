@@ -125,7 +125,7 @@ export class ObjectPropertyBag {
 
   /** Sets the current state of viewer properties as the default configuration used to create new viewer
   * instances of this type. Equivalent to the "Pick Up / Apply | Set as Default" context menu command.
-  * Read more about viewer commands: {@link https://datagrok.ai/help/visualize/viewers/#common-actions}
+  * Read more about viewer commands: https://datagrok.ai/help/visualize/viewers/#common-actions
   * @param data indicates if data settings should be copied.
   * @param style indicates if style (non-data) settings should be copied. */
   setDefault(data: boolean = false, style: boolean = true) {
@@ -133,6 +133,10 @@ export class ObjectPropertyBag {
       api.grok_Viewer_Props_SetDefault(this.source.dart, data, style);
     else
       throw 'Call failed: object is not Viewer instance';
+  }
+
+  static setDefaultProperty(viewerType: string, propertyName: string, propertyValue: any) {
+    api.grok_Viewer_Props_SetDefaultProperty(viewerType, propertyName, propertyValue);
   }
 
   /** Clears the previously remembered default settings for viewers of this type. See also: [setDefault] */
@@ -1092,6 +1096,12 @@ export class InputBase<T = any> {
     api.grok_InputBase_AddPatternMenu(this.dart, pattern);
   }
 
+  /** Adds a validator that accepts a string representation of the edited value
+   * and returns null if valid, or error message if invalid*/
+  addValidator(validator: (value: string) => string | null): void {
+    api.grok_InputBase_AddValidator(this.dart, validator);
+  }
+
   /** Sets the tooltip */
   setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): InputBase<T> {
     api.grok_InputBase_SetTooltip(this.dart, msg, tooltipCheck);
@@ -1143,6 +1153,20 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
   set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
+
+export class ChoiceInput<T> extends InputBase<T> {
+  dart: any;
+
+  constructor(dart: any, onChanged: any = null) {
+    super(dart, onChanged);
+  }
+
+  get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
+  set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
+
+}
+
+
 export class ProgressIndicator {
   dart: any;
 
@@ -1158,13 +1182,11 @@ export class ProgressIndicator {
     return api.grok_ProgressIndicator_Get_Percent(this.dart);
   }
 
-  get description(): string {
-    return api.grok_ProgressIndicator_Get_Description(this.dart);
-  }
+  /** Flag indicating whether the operation was canceled by the user. */
+  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
 
-  set description(s: string) {
-    api.grok_ProgressIndicator_Set_Description(this.dart, s);
-  }
+  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
+  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
 
   update(percent: number, description: string): void {
     api.grok_ProgressIndicator_Update(this.dart, percent, description);
@@ -1181,12 +1203,16 @@ export class ProgressIndicator {
   get onLogUpdated(): Observable<any> {
     return observeStream(api.grok_Progress_Log_Updated(this.dart));
   }
+
+  get onCanceled(): Observable<any> {
+    return observeStream(api.grok_Progress_Canceled(this.dart));
+  }
 }
 
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
-  static create(name?: string): TaskBarProgressIndicator {
-    return toJs(api.grok_TaskBarProgressIndicator_Create(name));
+  static create(name?: string, options?: { cancelable?: boolean, pausable?: boolean, spinner?: boolean }): TaskBarProgressIndicator {
+    return toJs(api.grok_TaskBarProgressIndicator_Create(name, options?.cancelable ?? false, options?.pausable ?? false, options?.spinner ?? false));
   }
 
   close(): any {

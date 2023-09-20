@@ -62,3 +62,7 @@ To activate, click on the `Add New Column` icon on the toolbar. Here are some of
 * Functions registry
 * Auto-suggested functions based on the column type and semantic type
 * History, saving and reusing formulas
+
+# Windows Manager
+
+Use icons on the right of the status bar to control visibility of tool windows.

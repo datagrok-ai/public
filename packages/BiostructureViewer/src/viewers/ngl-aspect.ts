@@ -4,9 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as NGL from 'NGL';
 
-// export let _package = new DG.Package();
-
-const _getCircularReplacer = (): (this: any, key: string, value: any) => any => {
+const getCircularReplacer = (): (this: any, key: string, value: any) => any => {
   const seen = new WeakSet();
   return (_key: string, value: any) => {
     if (typeof value === 'object' && value !== null) {

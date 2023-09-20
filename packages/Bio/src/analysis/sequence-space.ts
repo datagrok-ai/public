@@ -6,7 +6,6 @@ import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import * as grok from 'datagrok-api/grok';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
@@ -57,17 +56,17 @@ export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpacePar
 }
 
 export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  const nc = new NotationConverter(spaceParams.seqCol);
-  if (nc.isFasta() || (nc.isSeparator() && nc.alphabet && nc.alphabet !== ALPHABET.UN)) {
+  const ncUH = UnitsHandler.getOrCreate(spaceParams.seqCol);
+  if (ncUH.isFasta() || (ncUH.isSeparator() && ncUH.alphabet && ncUH.alphabet !== ALPHABET.UN)) {
     let distanceFName = MmDistanceFunctionsNames.LEVENSHTEIN;
     let seqList = spaceParams.seqCol.toList();
-    if (nc.isSeparator()) {
-      const fastaCol = nc.convert(NOTATION.FASTA);
+    if (ncUH.isSeparator()) {
+      const fastaCol = ncUH.convert(NOTATION.FASTA);
       seqList = fastaCol.toList();
-      const uh = new UnitsHandler(fastaCol);
+      const uh = UnitsHandler.getOrCreate(fastaCol);
       distanceFName = uh.getDistanceFunctionName();
     } else {
-      distanceFName = nc.getDistanceFunctionName();
+      distanceFName = ncUH.getDistanceFunctionName();
     }
     for (let i = 0; i < seqList.length; i++) {
       // toList puts empty values in array and it causes downstream errors. replace with null

@@ -62,7 +62,6 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
   * [Statistics](#statistics)
   * [Tile Viewer](#tile-viewer)
   * [Tree Map](#tree-map)
-  * [Word Cloud](#word-cloud)
 * [Ribbon](#ribbon)
 * [Toolbox](#toolbox)
 
@@ -555,17 +554,6 @@ proportional to a specified dimension of the data.
 ```javascript
 let view = grok.shell.addTableView(grok.data.demo.demog());
 view.treeMap();
-```
-
-#### Word cloud
-
-A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for
-representing size or color of the particular word. On the example of the demographics dataset, to visualize races by
-indicating size as number of subjects, and color as average age.
-
-```javascript
-let view = grok.shell.addTableView(grok.data.demo.demog());
-view.wordCloud();
 ```
 
 ### Ribbon

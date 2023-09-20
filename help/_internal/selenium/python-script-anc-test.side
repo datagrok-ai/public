@@ -469,7 +469,7 @@
               "xpath:position"
             ]
           ],
-          "value": "DemoScripts:PythonDup(GetCurrentRowField(\"sex\"))"
+          "value": "Demo:PythonDup(GetCurrentRowField(\"sex\"))"
         },
         {
           "id": "be9cee24-ece0-402b-b7ee-7513bb302dc3",

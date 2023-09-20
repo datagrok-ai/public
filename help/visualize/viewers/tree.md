@@ -52,15 +52,15 @@ the node.
 
 ## Viewer controls
 
-|      Action                           |         Control             |
-|-------------------------------------|-----------------------|
-| Expand/collapse branch        | Click the node       |
-| Add node to selection           | Shift+click the node|
-| Toggle node selection           | Ctrl+click the node |
+| Action                 | Control              |
+|------------------------|----------------------|
+| Expand/collapse branch | Click the node       |
+| Add node to selection  | Shift+click the node |
+| Toggle node selection  | Ctrl+click the node  |
 
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Network viewer](network-diagram.md)
-* BiostructureViewer
-* PhyloTreeViewer
+* [Network diagram](network-diagram.md) viewer
+* [Dendrogram](./dendrogram) viewer
+* [PhylocanvasGL](./phylocanvas-gl) viewer

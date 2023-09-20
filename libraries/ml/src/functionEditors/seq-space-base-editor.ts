@@ -40,7 +40,7 @@ export class SequenceSpaceBaseFuncEditor {
       });
       //TODO: remove when the new version of datagrok-api is available
       //@ts-ignore
-      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE} as ColumnInputOptions);
+      this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {filter: (col: DG.Column) => col.semType === semtype} as ColumnInputOptions);
       this.molColInputRoot = this.molColInput.root;
       this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
         if(settingsOpened) {

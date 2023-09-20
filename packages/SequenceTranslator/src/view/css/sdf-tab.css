@@ -1,0 +1,39 @@
+/* Naming convention: class names should begin with st and tab name (main, axo, sdf) to avoid naming collitions */
+
+.st-sdf-body {
+  padding-right: 20px;
+}
+
+.st-sdf-input-form {
+  text-align: right;
+  vertical-align: top;
+  min-width: 95px;
+}
+
+.st-sdf-direction-choice label {
+  min-width: 100px;
+  float: right;
+}
+
+.st-sdf-direction-choice div {
+  justify-content: right;
+}
+
+.st-sdf-text-input-td { /* Style for td containing textarea */
+  width: 100%;
+}
+
+.st-sdf-mol-img {
+  margin-right: 30px;
+  float: right;
+}
+
+.st-sdf-bool-button-block {
+  justify-content: right;
+  margin-bottom: 10px;
+}
+
+.st-sdf-bottom {
+  flex-direction: row-reverse;
+  padding-top: 20px;
+}

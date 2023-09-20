@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { ALIGN_BY_SCAFFOLD_TAG } from '../constants';
 
 enum StructureFilterType {
   Sketch = 'Sketch',
@@ -32,7 +33,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     });
   scaffoldColumnChoice.setTooltip('Align structures to a scaffold defined in another column');
 
-  const highlightScaffoldsCheckbox = ui.boolInput('Highlight from column',
+  const highlightScaffoldsCheckbox = ui.boolInput('Highlight scaffold',
     col?.temp && col.temp['highlight-scaffold'] === 'true',
     (v: any) => {
       col.temp['highlight-scaffold'] = v.toString();
@@ -40,7 +41,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     });
   highlightScaffoldsCheckbox.setTooltip('Highlight scaffold defined above');
 
-  const regenerateCoordsCheckbox = ui.boolInput('Regenerate coords',
+  const regenerateCoordsCheckbox = ui.boolInput('Regen coords',
     col?.temp && col.temp['regenerate-coords'] === 'true',
     (v: any) => {
       col.temp['regenerate-coords'] = v.toString();
@@ -58,11 +59,11 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   );
   moleculeFilteringChoice.setTooltip('Sketch a molecule, or use them as categories in a filter');
 
-  const showStructures = ui.boolInput('Show structures',
+  const showStructures = ui.boolInput('Structures',
     col.tags['cell.renderer'] == DG.SEMTYPE.MOLECULE,
     (v: boolean) => col.tags['cell.renderer'] = v ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING);
 
-  const rdKitInputs = ui.inputs([
+  const rdKitInputs = ui.form([
     showStructures,
     scaffoldColumnChoice,
     highlightScaffoldsCheckbox,
@@ -71,11 +72,11 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   ]);
   const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;
-  sketcher.setMolFile(col.tags['chem-scaffold']);
+  sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_TAG]);
   sketcher.onChanged.subscribe((_: any) => {
     const molFile = sketcher.getMolFile();
-    col.tags['chem-scaffold'] = molFile;
-    col.temp['chem-scaffold'] = molFile;
+    col.tags[ALIGN_BY_SCAFFOLD_TAG] = molFile;
+    col.temp[ALIGN_BY_SCAFFOLD_TAG] = molFile;
     col.dataFrame.fireValuesChanged();
   });
   sketcher.root.classList.add('ui-input-editor');
@@ -88,6 +89,5 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   ]);
   scaffoldInput.className = 'ui-input-root';
   rdKitInputs.append(scaffoldInput);
-
-  return new DG.Widget(rdKitInputs);
+  return new DG.Widget(ui.box(rdKitInputs));
 }

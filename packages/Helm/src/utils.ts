@@ -1,4 +1,14 @@
 import * as DG from 'datagrok-api/dg';
+import {
+  RGROUP_CAP_GROUP_NAME,
+  RGROUP_CAP_GROUP_SMILES,
+  jsonSdfMonomerLibDict,
+  MONOMER_SYMBOL,
+  RGROUP_ALTER_ID,
+  RGROUPS,
+  RGROUP_LABEL,
+  SDF_MONOMER_NAME
+} from './constants';
 
 export function getParts(subParts: string[], s: string): string[] {
   const j = 0;
@@ -14,7 +24,7 @@ export function getParts(subParts: string[], s: string): string[] {
   return allParts;
 }
 
-export function parseHelm(s: string) {
+export function parseHelm(s: string): string[] {
   const sections = split(s, '$');
   s = sections[0];
   const monomers = [];
@@ -50,7 +60,7 @@ export function parseHelm(s: string) {
           const firstPiece = monomer.substring(0, monomer.indexOf('('));
           const thirdPiece = monomer.substring(monomer.lastIndexOf(')') + 1);
           const secondPiece = monomer.substring(firstPiece.length + 1, monomer.length - thirdPiece.length - 1);
-          const elements =[firstPiece, secondPiece, thirdPiece];
+          const elements = [firstPiece, secondPiece, thirdPiece];
           for (const el of elements)
             ss.push(el);
         } else {
@@ -61,9 +71,31 @@ export function parseHelm(s: string) {
   }
   return monomers;
 }
-/* this function returns names of monomers that are NOT in the monomer library */
-export function findMonomers(helmString: string) {
-  //@ts-ignore
+
+// /** Find monomers missed in Helm monomer library configured and
+//  * used in org.helm.webeditor / scil.helm.Monomers / org.helm.webeditor.Monomers .
+//  */
+// export function findMonomers(helmString: string) {
+//   //@ts-ignore
+//   const types: string[] = Object.keys(org.helm.webeditor.monomerTypeList());
+//   const monomerNameList: any[] = [];
+//   const monomerNameI: number = 0;
+//   const weMonomers = org.helm.webeditor.Monomers;
+//   for (let typeI = 0; typeI < types.length; typeI++) {
+//     //@ts-ignore
+//     const ofTypeMonomers: {} = weMonomers.getMonomerSet(types[typeI]) ?? {};
+//     Object.keys(ofTypeMonomers).forEach((key) => {
+//       const monomer: any = ofTypeMonomers[key];
+//       monomerNameList[monomerNameI] = monomer.id;
+//       monomerNameI += 1;
+//     });
+//   }
+//   const helmPartList = parseHelm(helmString);
+//   return new Set(helmPartList.filter((val) => !monomerNameList.includes(val)));
+// }
+
+/** Searches monomers of helmString for missed. */
+export function findMonomers(monomerSymbolList: string[]): Set<string> {
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
   const monomers: any = [];
   const monomerNames: any = [];
@@ -75,8 +107,7 @@ export function findMonomers(helmString: string) {
       monomerNames.push(monomers[i][k].id);
     });
   }
-  const splitString = parseHelm(helmString);
-  return new Set(splitString.filter((val) => !monomerNames.includes(val)));
+  return new Set(monomerSymbolList.filter((val) => !monomerNames.includes(val)));
 }
 
 function split(s: string, sep: string) {
@@ -149,8 +180,8 @@ function _detachAppendix(s: string, c: string) {
     }
   }
   if (tag != null)
-    tag = tag.replace(new RegExp('\\' + c, 'g'), c);
-  return {tag: unescape(tag), str: s};
+    tag = unescape(tag.replace(new RegExp('\\' + c, 'g'), c));
+  return {tag: tag, str: s};
 }
 
 function unescape(s: string) {
@@ -160,14 +191,14 @@ function unescape(s: string) {
 
   return s.replace(/[\\]./g, function(m) {
     switch (m) {
-    case '\\r':
-      return '\r';
-    case '\\n':
-      return '\n';
-    case '\\t':
-      return '\t';
-    default:
-      return m.substring(1);
+      case '\\r':
+        return '\r';
+      case '\\n':
+        return '\n';
+      case '\\t':
+        return '\t';
+      default:
+        return m.substring(1);
     }
   });
 }

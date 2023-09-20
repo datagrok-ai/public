@@ -2,7 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {usageAnalysisApp} from './package';
+// import {usageAnalysisApp} from './package';
 
 export class UsageWidget extends DG.Widget {
   caption: string;
@@ -58,6 +58,7 @@ const uniqueUsersChartStyle = {
   'showSplitSelector': false,
   'showYAxis': false,
   'showMarkers': 'Never',
+  'autoLayout': false,
 };
 
 const userEventsChartStyle = {
@@ -78,6 +79,7 @@ const userEventsChartStyle = {
   'showYAxis': false,
   'legendVisibility': 'Never',
   'showMarkers': 'Never',
+  'autoLayout': false,
 };
 
 
@@ -99,4 +101,5 @@ const userErrorsChartStyle = {
   'showYAxis': false,
   'legendVisibility': 'Never',
   'showMarkers': 'Never',
+  'autoLayout': false,
 };

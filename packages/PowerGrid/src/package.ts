@@ -17,6 +17,7 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 import {PinnedColumn} from "@datagrok-libraries/gridext/src/pinned/PinnedColumn";
+import {FormCellRenderer} from "./forms/forms";
 
 export const _package = new DG.Package();
 
@@ -110,6 +111,17 @@ export function radarCellRenderer() {
   return new RadarChartCellRender();
 }
 
+//name: Smart Form
+//tags: cellRenderer
+//meta.cellType: smartform
+//meta.gridChart: true
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function smartFormCellRenderer() {
+  return new FormCellRenderer();
+}
+
+
 //description: Adds a sparkline column for the selected columns
 //input: list columns { type: numerical }
 //meta.action: Sparklines...
@@ -145,6 +157,45 @@ export function summarizeColumns(columns: DG.Column[]) {
     .create({title: 'Add Summary Column'})
     .add(name)
     .add(sparklineType)
+    .add(columnsSelector)
+    .add(hide)
+    .onOK(addSummaryColumn)
+    .show();
+}
+
+
+//description: Adds a 'form' column for the selected columns
+//input: list columns
+//meta.action: Smart form...
+export function addFormColumn(columns: DG.Column[]) {
+  const table = columns[0].dataFrame;
+  const name = ui.stringInput('Name', table.columns.getUnusedName('Form'));
+  const columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+    checked: names(columns),
+  });
+  const hide = ui.boolInput('Hide', false);
+  hide.setTooltip('Hide source columns in the grid');
+
+  function addSummaryColumn() {
+    const grid = grok.shell.tv.grid;
+    const left = grid.horzScroll.min;
+    const columnNames = names(columnsSelector.value);
+    const options = {gridColumnName: name.value, cellType: 'smartform'};
+    const gridCol = grid.columns.add(options);
+    gridCol.move(grid.columns.byName(columnNames[0])!.idx);
+    gridCol.settings = {columnNames: columnNames};
+    if (hide.value) {
+      for (const name of columnNames)
+        grid.columns.byName(name)!.visible = false;
+    }
+    grid.horzScroll.scrollTo(left);
+    gridCol.scrollIntoView();
+    grok.shell.o = gridCol;
+  }
+
+  DG.Dialog
+    .create({title: 'Add Form'})
+    .add(name)
     .add(columnsSelector)
     .add(hide)
     .onOK(addSummaryColumn)

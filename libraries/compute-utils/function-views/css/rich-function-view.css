@@ -1,11 +1,39 @@
-.ui-input-root > input.ui-input-editor.disabled:focus {
-    outline: none;
-    border-bottom: 1px solid var(--grey-2)!important;
+.rfv-buttons {
+    margin-top: 0px;
+    position: sticky;
 }
 
-.ui-btn-nav {
-    background-color: rgb(80 169 197 / 25%);
-    color: #50A9C5;
-    float: left;
-    margin-right: 5px;
+.ui-form-condensed .rfv-buttons > .ui-label {
+    margin-right: 0px!important;
+}
+
+.ui-form .rfv-buttons > .ui-input-editor {
+    justify-content: space-between
+}
+
+div.ui-box > div.ui-box.rfv-form > div.ui-div {
+    overflow: visible!important;
+}
+
+.rfv-scalar-table {
+    border-collapse: collapse;
+    margin: 10px;
+}
+
+.rfv-scalar-table td {
+    width: max-content;
+    white-space: nowrap;
+}
+
+.rfv-scalar-table tr{
+    min-height: 30px;
+    border-bottom: 1pt solid var(--grey-12);
+}
+
+.rfv-scalar-table tr:nth-child(odd) {
+    background-color: var(--grey-1);
+}
+
+.rfv-scalar-table td:last-child {
+    width: 100%;
 }

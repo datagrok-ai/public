@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: cvm-nginx
+  name: cvm-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: cvm-nginx
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        network: "datagrok"
+        service: cvm-nginx
+    spec:
+      containers:
+        - image: datagrok/cvm_nginx:latest
+          imagePullPolicy: Always
+          name: nginx
+          ports:
+            - containerPort: 8090
+          env:
+            - name: GC_ADDR
+              value: grok-compute.datagrok.svc.cluster.local
+            - name: JKG_ADDR
+              value: jupyter-kernel-gateway.datagrok.svc.cluster.local
+            - name: JN_ADDR
+              value: jupyter-notebook.datagrok.svc.cluster.local
+      restartPolicy: Always

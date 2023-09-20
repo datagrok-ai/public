@@ -725,7 +725,7 @@ export async function _demoScaffoldTree(): Promise<void> {
   const table: DG.DataFrame = tv.dataFrame;
   const tree = await _package.files.readAsText('scaffold_tree.json');
   const viewer = new ScaffoldTreeViewer();
-  viewer.autoGenerate = false;
+  viewer.allowGenerate = false;
   viewer.dataFrame = table;
   viewer.size = 'small';
   viewer.addOrphanFolders = false;

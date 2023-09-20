@@ -12,7 +12,7 @@ a comprehensive platform for working with chemical and biological data.
 Regarding the performance, our goal is to be able to open chemical datasets of up to 10 millions small molecules completely
 in the browser, and interactively perform commonly used operations such as substructure and similarity search
 without having to rely on a server. In order to hit these goals, we are using a couple of techniques. First of all,
-we are leveraging Datagrok's capability to [efficiently work with relational data](https://datagrok.ai/help/develop/performance).
+we are leveraging Datagrok's capability to [efficiently work with relational data](https://datagrok.ai/help/develop/under-the-hood/performance).
 For cheminformatics, we are relying on the [RDKit library compiled to WebAssembly](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html).
 This not only gives us the ability to execute C++ code at the native speed, but also take full advantage of the
 modern multicore CPUs by running computations in multiple threads.
@@ -86,7 +86,7 @@ where d.chembl_id = @id
 
 ![molecule queries](help/molecule-queries.gif)
 
-A molecule query does not have to be a database query, any [function](../../help/datagrok/functions/function.md)
+A molecule query does not have to be a database query, any [function](../../help/datagrok/concepts/functions/functions.md)
 will do. For instance, InChi query is implemented as a Python script.
 
 ## Elemental analysis
@@ -131,10 +131,40 @@ As for Similarity search, you can adjust metrics or add fields to molecule panes
 
 ![diversity search](help/diversity_search.png)
 
+## Substructure search
+
+We offer a highly efficient and fast substructure search capability that can handle datasets of any size, including millions of molecules.
+
+Here are the advantages of our approach:
+
+* Utilizing pattern fingerprints for preliminary filtration to accelerate the search process.
+* Caching fingerprints: once a search is performed on a specific column, the fingerprints are calculated, saved, and can be reused without recalculating.
+* Returning search results in batches, enabling the first results to appear in less than a second, regardless of the dataset size.
+* Displaying a search progress bar for easy tracking of the search process.
+
+There are two ways to run a substructure search:
+
+* Select `Top menu` -> `Chem` -> `Search` -> `Substructure Search...`
+* Click **Filter** icon on a toolbox
+
+In both cases, a filter opens on the right side of the table.
+
+To conduct a search:
+
+ 1. Click on the `Click to edit` pane for the desired column. The molecule sketcher opens
+ 2. Sketch some substructure. The search starts immediately.
+
+Clicking **OK** during the active search closes the sketcher, but the search continues. Clicking **Cancel** terminates the active search.
+Additionally, you can modify the substructure during an active search, and the results will recalculate instantly.
+
+Here is an example:
+
+![substructure search](help/substructure_search.gif)
+
 See also:
 
-* [Cheminformatics predictive modeling](https://datagrok.ai/help/domains/chem/chem-predictive-modeling)
-* [Datagrok JS API](https://datagrok.ai/help/develop/js-api)
-* [Datagrok Cheminformatics API](https://datagrok.ai/help/develop/cheminformatics-development)
+* [Cheminformatics predictive modeling](https://datagrok.ai/help/datagrok/solutions/domains/chem/#qsar-and-qspr-modeling)
+* [Datagrok JS API](https://datagrok.ai/help/develop/packages/js-api)
+* [Datagrok Cheminformatics API](https://datagrok.ai/help/develop/domains/chem/cheminformatics#datagrok-js-api)
 * [Introducing new RDKit JavaScript wrappers](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
 * [Webassembly](https://webassembly.org/)

@@ -3,12 +3,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject} from 'rxjs';
+import {Subject, BehaviorSubject} from 'rxjs';
+import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 import {RunComparisonView} from './run-comparison-view';
 import {CARD_VIEW_TYPE} from './shared/consts';
 import {deepCopy} from './shared/utils';
+import {HistoryPanel} from '../../shared-components/src/history-panel';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -41,13 +43,34 @@ export abstract class FunctionView extends DG.ViewBase {
    * Runs after an initial FuncCall loading done.
    */
   protected async onFuncCallReady() {
-    this.changeViewName(this.funcCall.func.friendlyName);
-    this.build();
+    if (!this.options.isTabbed) this.changeViewName(this.funcCall.func.friendlyName);
+    await historyUtils.augmentCallWithFunc(this.funcCall);
 
-    if (this.getStartId()) {
-      await this.loadRun(this.funcCall.id);
+    this.build();
+    const runId = this.getStartId();
+    if (runId && !this.options.isTabbed) {
+      ui.setUpdateIndicator(this.root, true);
+      this.loadRun(this.funcCall.id);
+      ui.setUpdateIndicator(this.root, false);
       this.setAsLoaded();
     }
+
+    const historySub = this.isHistorical.subscribe((newValue) => {
+      if (this.options.isTabbed || !this.func) return;
+
+      if (newValue) {
+        this.path = `?id=${this.funcCall.id}`;
+        const dateStarted = new Date(this.funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+        if ((this.name.indexOf(' — ') < 0))
+          this.changeViewName(`${this.name} — ${this.funcCall.options['title'] ?? dateStarted}`);
+        else
+          this.changeViewName(`${this.name.substring(0, this.name.indexOf(' — '))} — ${this.funcCall.options['title'] ?? dateStarted}`);
+      } else {
+        this.path = ``;
+        this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
+      }
+    });
+    this.subs.push(historySub);
   }
 
   /**
@@ -161,22 +184,7 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   public linkFunccall(funcCall: DG.FuncCall) {
-    const isPreviousHistorical = this._funcCall?.options['isHistorical'];
     this._funcCall = funcCall;
-
-    if (!this.options.isTabbed) {
-      if (funcCall.options['isHistorical']) {
-        if (!isPreviousHistorical)
-          this.changeViewName(`${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
-        else
-          this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
-        this.path = `?id=${this._funcCall!.id}`;
-      } else {
-        this.path = ``;
-
-        this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
-      }
-    }
 
     this.funcCallReplaced.next(true);
   }
@@ -256,6 +264,7 @@ export abstract class FunctionView extends DG.ViewBase {
     grok.shell.addView(v);
   }
 
+  protected historyBlock = null as null | HistoryPanel;
   /**
    * Override to create a custom historical runs control.
    * @returns The HTMLElement with history block UI
@@ -265,7 +274,11 @@ export abstract class FunctionView extends DG.ViewBase {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
     this.subs.push(
-      newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id))),
+      newHistoryBlock.onRunChosen.subscribe(async (id) => {
+        ui.setUpdateIndicator(this.root, true);
+        await this.loadRun(id);
+        ui.setUpdateIndicator(this.root, false);
+      }),
       newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
       grok.events.onCurrentViewChanged.subscribe(() => {
         if (grok.shell.v === this) {
@@ -281,6 +294,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock.root);
     grok.shell.o = this.historyRoot;
+    this.historyBlock = newHistoryBlock;
     return newHistoryBlock.root;
   }
 
@@ -299,17 +313,39 @@ export abstract class FunctionView extends DG.ViewBase {
     historyButton.classList.add('d4-toggle-button');
     if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
 
+    const exportBtn = ui.comboPopup(
+      ui.iconFA('arrow-to-bottom'),
+      this.exportConfig!.supportedFormats,
+      async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format)),
+    );
+
+    const editBtn = ui.iconFA('edit', () => {
+      if (!this.historyBlock || !this.lastCall) return;
+
+      this.historyBlock.showEditDialog(this.lastCall);
+    }, 'Edit this run');
+
+    const ribbonSub = this.isHistorical.subscribe((newValue) => {
+      if (newValue) {
+        $(exportBtn).show();
+        $(editBtn).show();
+      } else {
+        $(exportBtn).hide();
+        $(editBtn).hide();
+      }
+    });
+
+    this.subs.push(ribbonSub);
+
     const newRibbonPanels: HTMLElement[][] =
       [[
-        ...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
-          ui.comboPopup(
-            ui.iconFA('arrow-to-bottom'),
-            this.exportConfig.supportedFormats,
-            async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format)),
-          )]: [],
         ...this.options.historyEnabled ? [
           historyButton,
         ]: [],
+        ...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
+          exportBtn,
+        ]: [],
+        editBtn,
       ]];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -353,7 +389,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.linkFunccall(savedCall);
 
     if (this.options.historyEnabled) this.buildHistoryBlock();
-    if (!this.options.isTabbed) this.path = `?id=${savedCall.id}`;
+    this.isHistorical.next(true);
 
     await this.onAfterSaveRun(savedCall);
     return savedCall;
@@ -411,6 +447,8 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeLoadRun();
     const pulledRun = await historyUtils.loadRun(funcCallId);
     this.lastCall = pulledRun;
+    this.linkFunccall(pulledRun);
+    this.isHistorical.next(true);
     await this.onAfterLoadRun(pulledRun);
     return pulledRun;
   }
@@ -439,14 +477,22 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
     this.funcCall.newId();
-    await this.funcCall.call(); // CAUTION: mutates the funcCall field
-    pi.close();
-    await this.onAfterRun(this.funcCall);
+    try {
+      await this.funcCall.call(); // CAUTION: mutates the funcCall field
 
-    // If a view is incapuslated into a tab (e.g. in PipelineView),
-    // there is no need to save run till an entire pipeline is over.
-    this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+      await this.onAfterRun(this.funcCall);
+
+      // If a view is incapuslated into a tab (e.g. in PipelineView),
+      // there is no need to save run till an entire pipeline is over.
+      this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+    } catch (err: any) {
+      grok.shell.error(err.toString());
+    } finally {
+      pi.close();
+    }
   }
+
+  public isHistorical = new BehaviorSubject<boolean>(false);
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
 
@@ -480,9 +526,5 @@ export abstract class FunctionView extends DG.ViewBase {
 
   protected get runningOnStart() {
     return this.func.options['runOnOpen'] === 'true';
-  }
-
-  protected get isHistorical() {
-    return this.funcCall.options['isHistorical'] === true;
   }
 }

@@ -13,6 +13,11 @@ data points, compare data, etc.
 1. Go to **Tables** and expand the **Viewers** panel.
 1. Locate the **Word Cloud** icon and click it.
 
+Another variant:
+
+1. Go to **Add viewer**
+1. Locate the **Word cloud** viewer and click it.
+
 Initially, the viewer picks up the first string column in the corresponding
 table and builds a word cloud.
 
@@ -21,11 +26,11 @@ table and builds a word cloud.
 To configure a word cloud, click the **Gear** icon on top of the viewer and use
 the info panels on the **Context Pane**. For example, you can:
 
-* **Select the word column** using the `Word` property
-* **Size-code words** using `Size` and `Size Column Aggr Type` properties
-* **Color-code words** using `Color` and `Color Column Aggr Type` properties
-* **Limit the number of words to appear in a cloud** using the **Max Words**
-  setting.
+* **Select the word column** using the `Column` property
+* **Select the text size** using the `Min Text Size` and `Max Text Size` properties
+* **Select the rotation degree** using the `Min Rotation Degree` and `Max Rotation Degree`
+properties
+* **Limit the drawing out of bound** using the **Draw Out Of Bound** setting.
 
 ## Interactivity
 
@@ -37,5 +42,4 @@ can use it to filter other viewers.
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
-* [JS API: Word cloud](https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud)
+* [Table View](../../datagrok/navigation/table-view.md)

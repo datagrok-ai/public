@@ -1,20 +1,12 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.1.9",
+  "version": "2.1.18",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
   "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
-  "dependencies": {
-    "@datagrok-libraries/bio": "^5.30.2",
-    "@datagrok-libraries/utils": "^1.19.1",
-    "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.10.2",
-    "dayjs": "^1.10.6",
-    "rxjs": "^6.5.5"
-  },
   "sources": [
     "css/helm.css",
     "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
@@ -22,10 +14,20 @@
     "helm/JSDraw/Scilligence.JSDraw2.Resources.js",
     "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
+  "dependencies": {
+    "@datagrok-libraries/bio": "^5.38.0",
+    "@datagrok-libraries/utils": "^4.0.17",
+    "cash-dom": "^8.1.1",
+    "datagrok-api": "^1.10.2",
+    "dayjs": "^1.10.6",
+    "rxjs": "^6.5.5"
+  },
   "devDependencies": {
+    "@datagrok/bio": "^2.1.12",
     "path": "^0.12.7",
+    "source-map-loader": "^4.0.1",
     "ts-loader": "^9.2.6",
-    "typescript": "^4.4.4",
+    "typescript": "^4.8.4",
     "webpack": "^5.59.1",
     "webpack-cli": "^4.9.1",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
@@ -35,16 +37,16 @@
   },
   "scripts": {
     "link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/bio",
-    "debug-helm": "webpack && grok publish ",
+    "debug-helm": "webpack && grok publish",
     "release-helm": "webpack && grok publish --release",
     "build-helm": "webpack",
     "build": "webpack",
-    "debug-local": "grok publish local",
-    "release-local": "grok publish local --release",
-    "debug-helm-dev": "grok publish dev",
-    "release-helm-dev": "grok publish dev --release",
-    "debug-helm-public": "grok publish public",
-    "release-helm-public": "grok publish public --release",
+    "debug-helm-local": "webpack && grok publish local",
+    "release-helm-local": "webpack && grok publish local --release",
+    "debug-helm-dev": "webpack && grok publish dev",
+    "release-helm-dev": "webpack && grok publish dev --release",
+    "debug-helm-public": "webpack && grok publish public",
+    "release-helm-public": "webpack && grok publish public --release",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "test": "grok test",

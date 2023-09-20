@@ -1,7 +1,7 @@
 import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
-import {__obs, _sub, EventData, StreamSubscription} from './events';
+import {__obs, _sub, EventData, StreamSubscription, GridCellArgs} from './events';
 import {_identityInt32, _toIterable} from './utils';
 import {Observable} from 'rxjs';
 import {RangeSlider} from './widgets';
@@ -73,6 +73,22 @@ export class Rect {
     let minX = Math.min(x1, x2);
     let minY = Math.min(y1, y2);
     return new Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY)
+  }
+
+  static fromXYArrays(x: number[], y: number[]): Rect {
+    let minX = x[0];
+    let minY = y[0];
+    let maxX = x[0];
+    let maxY = y[0];
+  
+    for (let i = 1; i < x.length; i++) {
+      minX = Math.min(minX, x[i]);
+      minY = Math.min(minY, y[i]);
+      maxX = Math.max(maxX, x[i]);
+      maxY = Math.max(maxY, y[i]);
+    }
+  
+    return new Rect(minX, minY, maxX - minX, maxY - minY);
   }
 
   static fromDart(dart: any): Rect {
@@ -553,8 +569,9 @@ export class GridCell {
   /** Grid cell bounds, relative to the document. Useful for showing hints, tooltips, etc.*/
   get documentBounds(): Rect {
     const r = this.bounds;
-    this.grid.root.offsetLeft
-    return this.bounds;
+    const clientRect = this.grid.root.getBoundingClientRect();
+    const documentBounds = new Rect(window.scrollX + clientRect.x + r.x, window.scrollY + clientRect.y + r.y, r.width, r.height);
+    return documentBounds;
   }
 
   /** Returns grid cell renderer. */
@@ -651,8 +668,8 @@ export class GridColumn {
   set tooltipForm(x: string) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
   /** Tooltip columns. Also requires {@link tooltipType} to be 'Columns'. */
-  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
-  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
+  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipColumns(this.dart); }
+  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipColumns(this.dart, x); }
 
   /** isTextColorCoded. Whether to apply color to the text or background. */
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
@@ -679,6 +696,9 @@ export class GridColumn {
 
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
+
+  /** Number of pixels required to render the longest element in the column. */
+  getDataWidth(): number { return api.grok_GridColumn_GetDataWidth(this.dart); }
 
   /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
   scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
@@ -995,6 +1015,8 @@ export class Grid extends Viewer<IGridLookSettings> {
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
 
+  get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
+
   /** Returns currently visible cells */
   getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {
     return _toIterable(api.grok_Grid_GetVisibleCells(this.dart, column?.dart))
@@ -1005,6 +1027,10 @@ export class Grid extends Viewer<IGridLookSettings> {
     api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
   }
 }
+
+
+export type HorzAlign = 'right' | 'center' | 'left';
+export type VertAlign = 'top' | 'center' | 'bottom';
 
 
 /** Represents grid cell style. */
@@ -1022,6 +1048,15 @@ export class GridCellStyle {
   /** Font. Example: 12px Verdana */
   get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
   set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
+
+  get hozrAlign(): string { return api.grok_GridCellStyle_Get_HorzAlign(this.dart) ?? ''; }
+  set horzAlign(x: string) { api.grok_GridCellStyle_Set_HorzAlign(this.dart, x); }
+
+  get marker(): string { return api.grok_GridCellStyle_Get_Marker(this.dart) ?? ''; }
+  set marker(x: string) { api.grok_GridCellStyle_Set_Marker(this.dart, x); }
+
+  get marginLeft(): number { return api.grok_GridCellStyle_Get_MarginLeft(this.dart) ?? ''; }
+  set marginLeft(x: number) { api.grok_GridCellStyle_Set_MarginLeft(this.dart, x); }
 
   /** Text color (RGBA-encoded) */
   get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }

@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 
 import * as utils from './utils';
 
-
 export class TreeUtils {
+
   static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: treeDataType) => void) | null = null, aggregations:
       aggregationInfo[] = [], linkSelection: boolean = true): treeDataType {
@@ -12,6 +12,7 @@ export class TreeUtils {
       name: 'All',
       value: 0,
       path: null,
+      label: {},
       children: [],
     };
 
@@ -113,10 +114,17 @@ export class TreeUtils {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
         const name = columns[colIdx].getString(i);
         const node: treeDataType = {
+          semType: columns[colIdx].semType,
           name: name,
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
+        const colorCodingType = columns[colIdx].getTag(DG.TAGS.COLOR_CODING_TYPE);
+        if (colorCodingType !== 'Off' && colorCodingType !== null) {
+          node.itemStyle = {
+            color: DG.Color.toHtml(columns[colIdx].colors.getColor(i)),
+          };
+        }
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);
 
@@ -143,7 +151,7 @@ export class TreeUtils {
   }
 
   static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet) {
-    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 10);
+    const tree = TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0);
     return tree.children;
   }
 
@@ -177,6 +185,6 @@ export class TreeUtils {
   }
 }
 
-export type treeDataType = { name: string, value: number, path: null | string, children?: treeDataType[],
+export type treeDataType = { name: string, value: number, semType?: null | string, path?: null | string, label?: {}, children?: treeDataType[],
   itemStyle?: { color?: string }, [prop: string]: any };
 export type aggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };

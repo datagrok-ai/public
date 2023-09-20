@@ -932,6 +932,14 @@ export class FileSource {
     return api.grok_Dapi_UserFiles_ReadBinaryDataFrames(file);
   }
 
+  /** Writes a list of dataframes as a d42 file.
+   * @param {FileInfo | string} file
+   * @param {DataFrame[]} dataFrames */
+  async writeBinaryDataFrames(file: FileInfo | string, dataFrames: DataFrame[]): Promise<void> {
+    file = this.setRoot(file);
+    return api.grok_Dapi_UserFiles_WriteBinaryDataFrames(file, dataFrames.map((df) => df.dart));
+  }
+
   /** Writes a file.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file

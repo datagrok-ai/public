@@ -109,7 +109,6 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     g.strokeStyle = 'lightgrey';
     g.lineWidth = 1;
 
-
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
 

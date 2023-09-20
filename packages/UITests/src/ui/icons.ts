@@ -36,4 +36,4 @@ category('UI: Icons', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});

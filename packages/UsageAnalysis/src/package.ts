@@ -18,6 +18,7 @@ export function usageAnalysisApp(): void {
 
 //output: widget result
 //tags: dashboard
+//test: usageWidget()
 export function usageWidget(): DG.Widget {
   return new UsageWidget();
 }

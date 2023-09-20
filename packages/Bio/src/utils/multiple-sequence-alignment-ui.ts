@@ -3,15 +3,19 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {ColumnInputOptions} from '@datagrok-libraries/utils/src/type-declarations';
+
 import {runKalign} from './multiple-sequence-alignment';
 import {pepseaMethods, runPepsea} from './pepsea';
 import {checkInputColumnUI} from './check-input-column';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-import {_package} from '../package';
 import {multipleSequenceAlginmentUIOptions} from './types';
 import {kalignVersion, msaDefaultOptions} from './constants';
+
+import {_package} from '../package';
+
 import '../../css/msa.css';
-import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+
 export class MsaWarning extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -51,6 +55,13 @@ export async function multipleSequenceAlignmentUI(
     const gapExtendInput = ui.floatInput('Gap extend', options.pepsea.gapExtend);
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
 
+    const msaParamsDiv = ui.inputs([gapOpenInput, gapExtendInput, terminalGapInput]);
+    const msaParamsButton = ui.button('Alignment parameters', () => {
+      msaParamsDiv.hidden = !msaParamsDiv.hidden;
+    }, 'Adjust alignment parameters such as penalties for opening and extending gaps');
+    msaParamsButton.classList.add('msa-params-button');
+    msaParamsDiv.hidden = true;
+    msaParamsButton.prepend(ui.icons.settings(() => null));
     const pepseaInputRootStyles: CSSStyleDeclaration[] = [methodInput.root.style];
     const kalignInputRootStyles: CSSStyleDeclaration[] = [terminalGapInput.root.style, kalignVersionDiv.style];
 
@@ -59,12 +70,12 @@ export async function multipleSequenceAlignmentUI(
     //TODO: remove when the new version of datagrok-api is available
     //TODO: allow only macromolecule colums to be chosen
     const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
-      performAlignment = await onColInputChange(
-        colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
-        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
-      );
-      //@ts-ignore
-    }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
+        performAlignment = await onColInputChange(
+          colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
+          methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput,
+        );
+        //@ts-ignore
+      }, {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE} as ColumnInputOptions
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
     const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
@@ -84,9 +95,8 @@ export async function multipleSequenceAlignmentUI(
       .add(colInput)
       .add(clustersColInput)
       .add(methodInput)
-      .add(gapOpenInput)
-      .add(gapExtendInput)
-      .add(terminalGapInput)
+      .add(msaParamsDiv)
+      .add(msaParamsButton)
       .add(kalignVersionDiv)
       .onOK(async () => { await onDialogOk(colInput, table, performAlignment, resolve, reject); })
       .show();
@@ -94,7 +104,7 @@ export async function multipleSequenceAlignmentUI(
 }
 
 async function onDialogOk(
-  colInput: DG.InputBase< DG.Column<any>>,
+  colInput: DG.InputBase<DG.Column<any>>,
   table: DG.DataFrame,
   performAlignment: (() => Promise<DG.Column<string> | null>) | undefined,
   resolve: (value: DG.Column<any>) => void,
@@ -145,33 +155,34 @@ async function onColInputChange(
       gapOpenInput.value = null;
       gapExtendInput.value = null;
       terminalGapInput.value = null;
-      const potentialColNC = new NotationConverter(col);
-      const performCol: DG.Column<string> = potentialColNC.isFasta() ? col :
-        potentialColNC.convert(NOTATION.FASTA);
+      const potentialColUH = UnitsHandler.getOrCreate(col);
+      const performCol: DG.Column<string> = potentialColUH.isFasta() ? col :
+        potentialColUH.convert(NOTATION.FASTA);
       return async () => await runKalign(performCol, false, unusedName, clustersColInput.value);
     } else if (checkInputColumnUI(col, col.name,
       [NOTATION.HELM], [], false)
     ) { // PepSeA branch - Helm notation or separator notation with unknown alphabets
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
-      gapOpenInput.value = msaDefaultOptions.pepsea.gapOpen;
-      gapExtendInput.value = msaDefaultOptions.pepsea.gapExtend;
+      gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
+      gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
 
       return async () => await runPepsea(col, unusedName, methodInput.value!,
-          gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+        gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
     } else if (checkInputColumnUI(col, col.name, [NOTATION.SEPARATOR], [ALPHABET.UN], false)) {
       //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
-      const potentialColNC = new NotationConverter(col);
-      if (!await potentialColNC.checkHelmCompatibility())
-        return;
-      const helmCol = potentialColNC.convert(NOTATION.HELM);
+      const potentialColUH = UnitsHandler.getOrCreate(col);
+      const helmCol = potentialColUH.convert(NOTATION.HELM);
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
-      gapOpenInput.value = msaDefaultOptions.pepsea.gapOpen;
-      gapExtendInput.value = msaDefaultOptions.pepsea.gapExtend;
+      gapOpenInput.value ??= msaDefaultOptions.pepsea.gapOpen;
+      gapExtendInput.value ??= msaDefaultOptions.pepsea.gapExtend;
       // convert to helm and assign alignment function to PepSea
 
       return async () => await runPepsea(helmCol, unusedName, methodInput.value!,
-            gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+        gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
     } else {
+      gapOpenInput.value = null;
+      gapExtendInput.value = null;
+      terminalGapInput.value = null;
       switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'kalign');
       return;
     }

@@ -38,18 +38,16 @@ category('detectorsBenchmark', () => {
   // -- separator --
 
   test('separatorDnaShorts50Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
-  }, {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
+  });
 
   test('separatorDnaShorts50Many1E6', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
-  },
-  { /* skipReason: 'slow transmit large dataset to detector' */});
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
+  });
 
   test('separatorDnaLong1e6Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
-  },
-  {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
+  });
 
   async function detectMacromoleculeBenchmark(
     maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
@@ -127,11 +125,11 @@ category('detectorsBenchmark', () => {
   }
 
   function checkDetectorRes(col: DG.Column, tgt: TgtType): void {
-    const uh = new UnitsHandler(col);
-    expect(col.semType, tgt.semType);
-    expect(uh.notation, tgt.notation);
-    expect(uh.alphabet, tgt.alphabet);
-    expect(uh.separator, tgt.separator);
+    const uh = UnitsHandler.getOrCreate(col);
+    expect(col.semType === tgt.semType, true);
+    expect(uh.notation === tgt.notation, true);
+    expect(uh.alphabet === tgt.alphabet, true);
+    expect(uh.separator === tgt.separator, true);
   }
 });
 

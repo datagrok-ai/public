@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: datagrok
+  labels:
+    service: grok-spawner
+  name: grok-spawner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: grok-spawner
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        service: grok-spawner
+        network: "datagrok"
+    spec:
+      containers:
+        - image: datagrok/grok_spawner:latest
+          imagePullPolicy: Always
+          name: grok-spawner
+          ports:
+            - containerPort: 8000
+      restartPolicy: Always

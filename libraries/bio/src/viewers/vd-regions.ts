@@ -39,6 +39,7 @@ export const VdRegionsPropsDefault = new class {
   //sequenceColumnNamePostfix: string = 'chain sequence';
 
   skipEmptyPositions: boolean = false;
+  fitWidth: boolean = false;
   positionWidth: number = 16;
   positionHeight: PositionHeight = PositionHeight.Entropy;
 }();

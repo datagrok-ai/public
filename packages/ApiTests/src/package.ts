@@ -34,6 +34,15 @@ export function getDT(rows: number = 20, name: any = 'demog'): DG.DataFrame {
   return df;
 }
 
+//name: getCell [get table cell]
+//input: dataframe table
+//input: int rowIndex
+//input: string columnName
+//output: cell x
+export function getCell(table: DG.DataFrame, rowIndex: number, columnName: string): DG.Cell {
+  return table.cell(rowIndex, columnName);
+}
+
 //name: expectTable
 //shortName: expectTable
 //input: dataframe actual

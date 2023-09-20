@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import $ from 'cash-dom';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
@@ -19,6 +18,8 @@ import {
   NglPropsDefault,
   RepresentationType,
 } from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+
+import {_package} from '../package';
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -111,21 +112,21 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     }
 
     switch (property.name) {
-    case PROPS.representation:
-      this.updateView();
-      break;
-    case PROPS.showCurrentRowLigand:
-    case PROPS.showSelectedRowsLigands:
-    case PROPS.showMouseOverRowLigand:
-      this.rebuildViewLigands();
-      break;
+      case PROPS.representation:
+        this.updateView();
+        break;
+      case PROPS.showCurrentRowLigand:
+      case PROPS.showSelectedRowsLigands:
+      case PROPS.showMouseOverRowLigand:
+        this.rebuildViewLigands();
+        break;
     }
 
     switch (property.name) {
-    case PROPS.pdb:
-    case PROPS.pdbTag:
-      this.setData('onPropertyChanged');
-      break;
+      case PROPS.pdb:
+      case PROPS.pdbTag:
+        this.setData('onPropertyChanged');
+        break;
     }
   }
 
@@ -260,7 +261,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
     //highlights in NGL
     /* eslint-disable camelcase, prefer-const */
-    let scheme_buffer: string[][] = [];
+    let scheme_buffer: [string, string][] = [];
 
     //TODO: remove - demo purpose only
     scheme_buffer.push(['#0069a7', `* and :A`]);

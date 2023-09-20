@@ -11,16 +11,24 @@ import java.util.List;
 import java.util.Set;
 
 public class QueryMonitor {
+    private static QueryMonitor instance;
     private final List<String> statementIdsToCancel;
     private final Set<String> resultSetIdsToCancel;
     private final Multimap<String, Statement> runningStatements;
     private final List<String> cancelledStatementIds;
 
-    public QueryMonitor() {
+    private QueryMonitor() {
         statementIdsToCancel = Collections.synchronizedList(new ArrayList<>());
         resultSetIdsToCancel = Collections.synchronizedSet(new HashSet<>());
         runningStatements = ArrayListMultimap.create();
         cancelledStatementIds = Collections.synchronizedList(new ArrayList<>());
+    }
+
+    public static synchronized QueryMonitor getInstance() {
+        if (instance == null) {
+            instance = new QueryMonitor();
+        }
+        return instance;
     }
 
     public boolean addNewStatement(String id, Statement statement) {

@@ -11,7 +11,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
-const helmFn: string = 'samples/sample_HELM.csv';
+const helmFn: string = 'samples/HELM.csv';
 
 export async function demoBio05UI(): Promise<void> {
   let view: DG.TableView;

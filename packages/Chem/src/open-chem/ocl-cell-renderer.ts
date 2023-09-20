@@ -29,7 +29,6 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
     w: number,
     h: number,
     gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle,
   ): void {
     if (w < 5 || h < 5)
       return;

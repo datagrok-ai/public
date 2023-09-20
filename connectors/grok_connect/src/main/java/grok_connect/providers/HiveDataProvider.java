@@ -3,55 +3,34 @@ package grok_connect.providers;
 import java.io.IOException;
 import java.sql.*;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
-import grok_connect.connectors_info.*;
-import grok_connect.providers.proxy.HiveMetaDataProviderProxyProvider;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
+import serialization.Column;
 import serialization.DataFrame;
+import serialization.StringColumn;
 import serialization.Types;
 
 public class HiveDataProvider extends JdbcDataProvider {
-    private static final List<String> AVAILABLE_META_STORES =
-            Collections.unmodifiableList(Arrays.asList("MySQL", "Postgres", "Oracle", "MS SQL"));
-    private static final String DEFAULT_META_STORE_DB = "metastore";
 
-    public HiveDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public HiveDataProvider() {
         driverClassName = "org.apache.hadoop.hive.jdbc.HiveDriver";
 
         descriptor = new DataSource();
         descriptor.type = "Hive";
         descriptor.description = "Query Hive database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        Property metaStores = new Property(Property.STRING_TYPE, DbCredentials.META_STORE,
-                "Select database engine hosting Hive Metastore to enable schema browsing support");
-        metaStores.choices = AVAILABLE_META_STORES;
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
-        descriptor.connectionTemplate.add(metaStores);
-        descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_SERVER,
-                "Hostname or IP address of server on which Hive Metastore is available"));
-        descriptor.connectionTemplate.add(new Property(Property.INT_TYPE, DbCredentials.META_STORE_PORT,
-                "Port of Hive Metastore"));
-        descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_DB,
-                "Database name of metastore. Defaults to \"metastore\""));
-        descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_LOGIN,
-                "Hive Metastore login"));
-        descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_PASSWORD,
-                "Hive Metastore password",
-                new Prop("password")));
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
@@ -89,7 +68,7 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException, GrokConnectException {
+    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         prepareProvider();
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
@@ -97,15 +76,42 @@ public class HiveDataProvider extends JdbcDataProvider {
     @Override
     public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException,
             ParseException, IOException, QueryCancelledByUser, GrokConnectException {
-        return getProxyMetaStoreProvider(connection).getSchemas(prepareMetaStoreConnection(connection));
+        DataFrame result = new DataFrame();
+        Column tableSchemaColumn = new StringColumn();
+        tableSchemaColumn.name = "table_schema";
+        result.addColumn(tableSchemaColumn);
+        Connection dbConnection = getConnection(connection);
+        ResultSet schemas = dbConnection.getMetaData().getSchemas();
+        while (schemas.next())
+            result.addRow(schemas.getString(1));
+
+        return result;
     }
 
     @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table) throws
             ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser,
             GrokConnectException {
-        return getProxyMetaStoreProvider(connection)
-                .getSchema(prepareMetaStoreConnection(connection), schema, table);
+        DataFrame result = new DataFrame();
+        Column tableSchema = new StringColumn();
+        tableSchema.name = "table_schema";
+        Column tableNameColumn = new StringColumn();
+        tableNameColumn.name = "table_name";
+        Column columnName = new StringColumn();
+        columnName.name = "column_name";
+        Column dataType = new StringColumn();
+        dataType.name = "data_type";
+        result.addColumn(tableSchema);
+        result.addColumn(tableNameColumn);
+        result.addColumn(columnName);
+        result.addColumn(dataType);
+        Connection dbConnection = getConnection(connection);
+        ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null);
+        while (columns.next())
+            result.addRow(columns.getString(2), columns.getString(3),
+                    columns.getString(4), columns.getString(6));
+
+        return result;
     }
 
     @Override
@@ -139,28 +145,16 @@ public class HiveDataProvider extends JdbcDataProvider {
         return lst.size() - 1;
     }
 
-    private JdbcDataProvider getProxyMetaStoreProvider(DataConnection connection) {
-        return new HiveMetaDataProviderProxyProvider()
-                .getProxy(providerManager, getMetaDataProvider(connection).getClass());
-    }
-
-    private JdbcDataProvider getMetaDataProvider(DataConnection connection) {
-        if (connection.parameters.containsKey(DbCredentials.META_STORE)) {
-            return providerManager.getByName((String) connection.parameters.get(DbCredentials.META_STORE));
+    @Override
+    public String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+        try {
+            statement.setTimestamp(parameterIndex, ts);
+            return ts.toString();
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
+                    parameterIndex), e);
         }
-        throw new UnsupportedOperationException("Hive Metastore information should be provided for schema browsing");
-    }
-
-    private DataConnection prepareMetaStoreConnection(DataConnection connection) {
-        Credentials credentials = new Credentials();
-        credentials.parameters.put(DbCredentials.LOGIN, connection.get(DbCredentials.META_STORE_LOGIN));
-        credentials.parameters.put(DbCredentials.PASSWORD, connection.get(DbCredentials.META_STORE_PASSWORD));
-        DataConnection metaStoreConnection = new DataConnection();
-        metaStoreConnection.credentials = credentials;
-        String metaStoreDb = (String) connection.parameters.get(DbCredentials.META_STORE_DB);
-        metaStoreConnection.parameters.put(DbCredentials.DB, metaStoreDb == null ? DEFAULT_META_STORE_DB : metaStoreDb);
-        metaStoreConnection.parameters.put(DbCredentials.SERVER, connection.get(DbCredentials.META_STORE_SERVER));
-        metaStoreConnection.parameters.put(DbCredentials.PORT, connection.parameters.get(DbCredentials.META_STORE_PORT));
-        return metaStoreConnection;
     }
 }

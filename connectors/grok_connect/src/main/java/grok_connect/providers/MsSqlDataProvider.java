@@ -7,26 +7,29 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bool_column.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.Types;
 import serialization.DataFrame;
 
 public class MsSqlDataProvider extends JdbcDataProvider {
-    public MsSqlDataProvider(ProviderManager providerManager) {
-        super(providerManager);
-        driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
 
+    public MsSqlDataProvider() {
+        driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
         descriptor = new DataSource();
         descriptor.type = "MS SQL";
         descriptor.category = "Database";
@@ -153,8 +156,9 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT)
-                || (type == java.sql.Types.SMALLINT);
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.BOOL, new MySqlMssqlBoolColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

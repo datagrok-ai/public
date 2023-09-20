@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 import {after, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
-category('DataFrame', () => {
+category('DataFrame: Calculated columns', () => {
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3]),
     DG.Column.fromList(DG.TYPE.FLOAT, 'y', [4, 5, 6]),
@@ -21,6 +21,16 @@ category('DataFrame', () => {
       expect(column.get(0), -2);
       expect(column.get(1), -1);
       expect(column.get(2), 0);
+    } finally {
+      df.columns.remove('new');
+    }
+  });
+
+  test('Create a calculated column with script formula', async () => {
+    try {
+      const column = await df.columns.addNewCalculated('new', 'ApiTests:FormulaScript(${x})');
+      expect(df.columns.contains(column.name), true);
+      expect(column.get(0), 11);
     } finally {
       df.columns.remove('new');
     }

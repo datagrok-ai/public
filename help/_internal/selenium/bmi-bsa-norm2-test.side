@@ -633,7 +633,7 @@
               "xpath:position"
             ]
           ],
-          "value": "(norm2(DemoScripts:BMI(GetCurrentRowField(\"HEIGHT\"), GetCurrentRowField(\"WEIGHT\")), GetCurrentRowField(\"AGE\"))+norm2(DemoScripts:BSA(GetCurrentRowField(\"HEIGHT\"),GetCurrentRowField(\"WEIGHT\")), GetCurrentRowField(\"AGE\")))*100"
+          "value": "(norm2(Demo:BMI(GetCurrentRowField(\"HEIGHT\"), GetCurrentRowField(\"WEIGHT\")), GetCurrentRowField(\"AGE\"))+norm2(Demo:BSA(GetCurrentRowField(\"HEIGHT\"),GetCurrentRowField(\"WEIGHT\")), GetCurrentRowField(\"AGE\")))*100"
         },
         {
           "id": "ae6c5ea1-d039-49b8-a0bf-e45060f80b0d",

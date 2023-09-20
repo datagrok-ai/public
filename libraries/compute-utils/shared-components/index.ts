@@ -9,19 +9,21 @@ export namespace UiUtils {
     initialText = 'Drag-n-drop here',
     initialValue: File | null = null,
     onValueChanged: Function | null = null,
-    fileType = EXCEL_BLOB_TYPE,
+    fileType: string | null = EXCEL_BLOB_TYPE,
   ) {
     return new FileInput(initialText, initialValue, onValueChanged, fileType);
   }
 
   export function historyInput(
     label: string,
-    _funcName: string,
-    _stringValueFunc: (currentRun: DG.FuncCall) => string,
-    _visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
-    _visibleColumnsForFilter: string[] = [],
+    funcName: string,
+    stringValueFunc: (currentRun: DG.FuncCall) => string,
+    visibleColumnsForGrid: Record<string, (currentRun: DG.FuncCall) => string>,
+    visibleColumnsForFilter: string[] = [],
+    includeParams = true,
   ) {
-    return new HistoryInput(label, _funcName, _stringValueFunc, _visibleColumnsForGrid, _visibleColumnsForFilter);
+    return new HistoryInput(
+      label, funcName, stringValueFunc, visibleColumnsForGrid, visibleColumnsForFilter, includeParams);
   }
 
   export function historyPanel(objFunc: DG.Func) {

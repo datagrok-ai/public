@@ -28,7 +28,7 @@ export function saveAsFastaUI() {
     .filter((gc: DG.GridColumn) => {
       const col: DG.Column | null = gc.column;
       if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = new UnitsHandler(col);
+        const uh = UnitsHandler.getOrCreate(col);
         return uh.isFasta();
       }
       return false;
@@ -73,7 +73,7 @@ export function saveAsFastaUI() {
  * @param {number} lineWidth - FASTA line width
  * @param {string} lineSeparator - FASTA line separator
  * @return {string} FASTA content
-*/
+ */
 export function saveAsFastaDo(
   idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n',
 ): string {
@@ -107,7 +107,7 @@ export function wrapSequence(seq: string, splitter: SplitterFunc, lineWidth: num
   const seqLineList: string[] = [];
   while (seqPos < seqLength) {
     /* join sliced monomer into line */
-    const seqLine: string[] = seqMonomerList.slice(seqPos, seqPos + lineWidth);
+    const seqLine: string[] = wu(seqMonomerList).slice(seqPos, seqPos + lineWidth).toArray();
     const seqLineTxt: string = seqLine.map((m) => m.length > 1 ? `[${m}]` : m).join('');
     seqLineList.push(seqLineTxt);
     seqPos += seqLine.length;

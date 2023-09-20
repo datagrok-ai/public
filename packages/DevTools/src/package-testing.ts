@@ -88,8 +88,15 @@ export class TestManager extends DG.ViewBase {
   }
 
   async init(): Promise<void> {
+    let TMStateB = false;
     let pathSegments = window.location.pathname.split('/');
     pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
+    const TMState = localStorage.getItem('TMState');
+    if (pathSegments.length <= 4 && TMState) {
+      pathSegments = TMState.split('/');
+      pathSegments = pathSegments.map((it) => it ? it.replace(/%20/g, ' ') : undefined);
+      TMStateB = true;
+    }
     this.testFunctions = await this.collectPackages();
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
@@ -104,7 +111,8 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.append(testUIElements.testsTree.root);
     if (this.dockLeft)
       grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.25);
-    this.runTestsForSelectedNode();
+    if (!TMStateB)
+      this.runTestsForSelectedNode();
   }
 
   async collectPackages(packageName?: string): Promise<any[]> {
@@ -135,23 +143,22 @@ export class TestManager extends DG.ViewBase {
           let subcatsFromUrl = [];
           if (testFromUrl && testFromUrl.catName)
             subcatsFromUrl = testFromUrl.catName.split(':');
-
           let previousCat = packageTestsFinal;
           for (let i = 0; i < subcats.length; i++) {
-            if (!packageTestsFinal[subcats[i]]) {
+            if (!previousCat[subcats[i]]) {
               previousCat[subcats[i]] = {
                 tests: [],
                 subcategories: {},
                 packageName: f.package.name,
                 name: subcats[i],
-                fullName: subcats.slice(0, i+1).join(':'),
+                fullName: subcats.slice(0, i + 1).join(':'),
                 subCatsNames: [cat],
                 resultDiv: null,
                 expand: subcats[i] === subcatsFromUrl[i],
-                totalTests: 0};
+                totalTests: 0,
+              };
             } else
               previousCat[subcats[i]].subCatsNames.push(cat);
-            ;
             if (i === subcats.length - 1) {
               previousCat[subcats[i]].tests = previousCat[subcats[i]].tests ?
                 previousCat[subcats[i]].tests.concat(tests) : tests;
@@ -306,6 +313,9 @@ export class TestManager extends DG.ViewBase {
         .item('Run', async () => {
           this.runAllTests(node, tests, nodeType);
         })
+        .item('Copy', async () => {
+          navigator.clipboard.writeText(node.captionLabel.innerText.trim());
+        })
         .show();
       e.preventDefault();
       e.stopPropagation();
@@ -376,12 +386,14 @@ export class TestManager extends DG.ViewBase {
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    const res = await grok.functions.call(
+    const res: DG.DataFrame = await grok.functions.call(
       `${t.packageName}:test`, {
         'category': t.test.category,
         'test': t.test.name,
         'testContext': new TestContext(false),
       });
+    if (res.getCol('result').type !== 'string')
+      res.changeColumnType('result', 'string');
     const testSucceeded = res.get('success', 0);
     if (runSkipped) t.test.options.skipReason = skipReason;
     if (!this.testsResultsDf) {
@@ -439,6 +451,7 @@ export class TestManager extends DG.ViewBase {
       break;
     }
     }
+    localStorage.setItem('TMState', this.testManagerView.path);
     await delay(1000);
     if (grok.shell.lastError.length > 0) {
       grok.shell.error(`Unhandled exception: ${grok.shell.lastError}`);
@@ -513,8 +526,15 @@ export class TestManager extends DG.ViewBase {
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
     const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
-    acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType)), true);
+    acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType), {style: {userSelect: 'text'}}), true);
     acc.addPane('Results', () => ui.div(grid), true);
+    if (tests.test !== undefined) {
+      acc.addPane('History', () => ui.waitBox(async () => {
+        const history = await grok.data.query('DevTools:TestHistory',
+          {packageName: tests.packageName, category: tests.test.category, test: tests.test.name});
+        return (await history.plot.grid()).root;
+      }), true);
+    }
     return acc.root;
   };
 

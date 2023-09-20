@@ -1,14 +1,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+
+import {
+  Tags as mmcrTags, Temps as mmcrTemps, MonomerWidthMode,
+  tempTAGS, rendererSettingsChangedState
+} from '../utils/cell-renderer-consts';
+
+import {_package} from '../package';
+
 
 /**
  * @export
  * @param {DG.Column} col macromolecule cell.
  * @return {Promise<DG.Widget>} Widget.
  */
-export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
+export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
     (c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
@@ -16,16 +26,36 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   columnsSet.delete(col.name);
 
   const monomerWidth = ui.choiceInput('Monomer width',
-    (col?.temp['monomer-width'] != null) ? col.temp['monomer-width'] : 'short',
-    ['short', 'long'],
+    (col?.temp[tempTAGS.monomerWidth] != null) ? col.temp[tempTAGS.monomerWidth] : MonomerWidthMode.short,
+    [MonomerWidthMode.short, MonomerWidthMode.long],
     (s: string) => {
-      col.temp['monomer-width'] = s;
-      col.setTag('.calculatedCellRender', '0');
+      col.temp[tempTAGS.monomerWidth] = s;
+      col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
       col.dataFrame.fireValuesChanged();
     });
   monomerWidth.setTooltip(
-    'In short mode, only the first character should be visible, followed by .. if there are more characters',
+    `In short mode, only the 'Max monomer length' characters are displayed, followed by .. if there are more`,
   );
+
+  const tagMaxMonomerLength: number = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
+  const maxMonomerLength: DG.InputBase = ui.intInput('Max monomer length',
+    !isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties.MaxMonomerLength,
+    (value: number) => {
+      col.setTag(mmcrTAGS.maxMonomerLength, value.toString());
+      col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
+      col.dataFrame.fireValuesChanged();
+    });
+  maxMonomerLength.setTooltip(
+    `The max length of monomer name displayed without shortening in '${MonomerWidthMode.short}' monomer width mode.`
+  );
+
+  const gapLengthInput = ui.intInput('Monomer margin', col.temp[mmcrTemps.gapLength] ?? 0,
+    (value: number) => {
+      col.temp[mmcrTemps.gapLength] = value;
+      col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
+      col.dataFrame.fireValuesChanged();
+    });
+  gapLengthInput.setTooltip('The size of margin between monomers (in pixels)');
 
   const colorCode = ui.boolInput('Color code',
     (col?.temp['color-code'] != null) ? col.temp['color-code'] : true,
@@ -53,8 +83,10 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const rdKitInputs = ui.inputs([
     monomerWidth,
-    colorCode,
+    maxMonomerLength,
+    gapLengthInput,
     referenceSequence,
+    colorCode,
     compareWithCurrent,
   ]);
 

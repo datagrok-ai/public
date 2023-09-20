@@ -433,7 +433,7 @@ export async function callWasm(module, funcName, inputs) {
     // CALL EXPORTED CPP-FUNCTION
     let callResult = cppFuncWrapper(module, funcName, 'num', cppFuncInput);
 
-    console.log('C++-function call result: ' + callResult);
+    //console.log('C++-function call result: ' + callResult);
 
     // store result that is returned by exported cpp-function
     args._callResult = Param.num(callResult);
@@ -443,7 +443,7 @@ export async function callWasm(module, funcName, inputs) {
 
     let finish = new Date().getTime();
 
-    console.log(`Time for C/C++-function is ${finish - start} ms.`)
+    //console.log(`Time for C/C++-function is ${finish - start} ms.`)
 
     // if a single object must be returned
     if(output['type'] != 'objects')

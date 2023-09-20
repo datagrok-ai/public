@@ -2,35 +2,35 @@
 title: "Usage Analysis"
 ---
 
-Datagrok is a universal data platform that enables users to perform broad range of tasks, ranging from the self-service
-data analytics to using custom applications on top of the platform. In this environment, it is important to understand
-how exactly the platform is being used. Here are some of the reasons for doing so:
+Users to perform wide range of tasks, from the self-service
+data analytics to using custom applications on top of the platform. It is important to understand
+how exactly they use the platform. With this knowledge you can:
 
-* UX improvements
+* Improve UX
   * Remove unused menu items, etc
-* Understanding your users better
+* Understand your users better
   * Cluster usage by usage patterns
   * Correlate usage patterns with the organizational groups
-* Data history tracking
+* Track data history
   * Track origin of datasets
   * See history of modifications
-  * See all actions performed with an object (Activity tab)
-* Performance analysis
+  * See all actions performed with an object
+* Analyze performance
   * See how long each operation takes
-* Function usage analysis
-  * Analyze function usage as a table of users, timestamps, inputs and outputs
-* Error tracking
+* Analyze function usage
+  * Get a table of users, timestamps, inputs and outputs for functions
+* Track errors
   * See all errors across the platform
   * See which actions are causing the errors
 
-Logs are stored in a [Postgres database](../develop/admin/architecture.md#data-engine) in a form that allows for easy
+Logs are stored in a [Postgres database](../develop/under-the-hood/architecture.md#data-engine) in a form that allows for easy
 analysis of event parameters (See the following tables: `events`, `event_types`,
 `event_parameters`, `event_parameter_values`). Each event is associated with a user session that triggered the event.
 
 ## Client-based activity
 
 Due to the unique technology used in Datagrok (such
-as [in-memory database](../develop/advanced/performance.md#in-memory-database))
+as [in-memory database](../develop/under-the-hood/performance.md#in-memory-database))
 , a significant part of the users activity happens completely on the client side, not using the server at all. This
 includes things like opening local files, aggregating tables, adding [viewers](../visualize/viewers/viewers.md), etc. Still,
 each action a user performs generates an internal named event in the platform. These events are used for multiple
@@ -42,7 +42,7 @@ purposes:
 
 A reasonable default set of client-based actions gets logged. For instance, we log opening a file and its name, but not
 content. We do not log less important things like "rows selected", although there are ways to override the default
-behavior. This could done by writing a script using the [JS API](../develop/js-api.md), and logging the event in the
+behavior. This could done by writing a script using the [JS API](../develop/packages/js-api.md), and logging the event in the
 event handler. This [sample](https://public.datagrok.ai/js/samples/ui/ui-events)
 demonstrates how to do it.
 

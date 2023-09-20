@@ -69,4 +69,4 @@ category('UI: Tags', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, false);
+}, {clear: false});

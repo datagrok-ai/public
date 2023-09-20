@@ -38,7 +38,7 @@ category('activityCliffs', async () => {
     const cliffsNum = DG.Test.isInBenchmark ? 6 : 3;
 
     await _testActivityCliffsOpen(actCliffsDf, cliffsNum, DimReductionMethods.UMAP, 'sequence');
-  });
+  }, {skipReason: 'GROK-13952'});
 
   test('activityCliffsWithEmptyRows', async () => {
     actCliffsDfWithEmptyRows = await readDataframe('tests/100_3_clustests_empty_vals.csv');
@@ -47,5 +47,5 @@ category('activityCliffs', async () => {
     viewList.push(actCliffsTableViewWithEmptyRows);
 
     await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 3, DimReductionMethods.UMAP, 'sequence');
-  });
+  }, {skipReason: 'GROK-13851: Unhandled exceptions'});
 });

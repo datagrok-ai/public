@@ -132,7 +132,7 @@ async function _initMacromoleculeColumn(csv: string): Promise<UnitsHandler> {
   if (semType)
     seqCol.semType = semType;
   await grok.data.detectSemanticTypes(srcDf);
-  const uh = new UnitsHandler(seqCol);
+  const uh = UnitsHandler.getOrCreate(seqCol);
   return uh;
 }
 

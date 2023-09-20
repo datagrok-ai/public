@@ -1,7 +1,6 @@
 # Dendrogram
 
-_Dendrogram_ is a [package](https://datagrok.ai/help/develop#packages) for the [Datagrok](https://datagrok.ai)
-platform for phylogenetic trees visualization.
+_Dendrogram_ is a [package](../../develop/develop.md#packages) for phylogenetic trees visualization.
 
 ## Notations
 
@@ -11,7 +10,7 @@ Now only the _Newick_ tree format is supported.
 
 Dendrogram viewer is a pure typescript component derived from
 [DG.JsViewer](https://datagrok.ai/js-api/classes/dg.JsViewer) to be used as
-[a Datagrok viewer](https://datagrok.ai/help/visualize/viewers).
+[a Datagrok viewer](../../visualize/viewers/viewers.md).
 Exposed properties allow customizing the viewer appearance for the line width and color, the node size and fill color.
 
 ![Dendrogram properties](../../uploads/gifs/dendrogram-properties-1.gif)

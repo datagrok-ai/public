@@ -1,0 +1,187 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+
+import {Unsubscribable} from 'rxjs';
+import wu from 'wu';
+
+import {UnitsHandler} from './units-handler';
+import {SplitterFunc, MonomerToShortFunc, getSplitterForColumn, ALPHABET} from './macromolecule';
+import {IMonomerLib, Monomer} from '../types';
+import {HELM_POLYMER_TYPE} from './const';
+
+type MonomerPlacerProps = {
+  unitsHandler: UnitsHandler,
+  monomerLib?: IMonomerLib,
+  monomerCharWidth: number, separatorWidth: number,
+  monomerToShort: MonomerToShortFunc, monomerLengthLimit: number,
+};
+
+const polymerTypeMap = {
+  [ALPHABET.DNA]: HELM_POLYMER_TYPE.RNA,
+  [ALPHABET.RNA]: HELM_POLYMER_TYPE.RNA,
+  [ALPHABET.PT]: HELM_POLYMER_TYPE.PEPTIDE,
+  [ALPHABET.UN]: HELM_POLYMER_TYPE.PEPTIDE,
+};
+
+export class MonomerPlacer {
+  private readonly _splitter: SplitterFunc;
+  private _monomerLengthList: number[][] | null = null;
+
+  // width of separator symbol
+  private separatorWidth = 5;
+  private props: MonomerPlacerProps;
+  private _rowsProcessed: DG.BitSet; // rows for which monomer lengths were processed
+
+  private _updated: boolean = false;
+  public get updated(): boolean { return this._updated; }
+
+  public _monomerLengthMap: { [key: string]: TextMetrics } = {}; // caches the lengths to save time on g.measureText
+  public _monomerStructureMap: { [key: string]: HTMLDivElement } = {}; // caches the atomic structures of monomers
+  private readonly subs: Unsubscribable[] = [];
+
+  /** View is required to subscribe and handle for data frame changes */
+  constructor(
+    public readonly grid: DG.Grid | null,
+    public readonly col: DG.Column<string>,
+    private readonly propsProvider: () => MonomerPlacerProps
+  ) {
+    this._splitter = getSplitterForColumn(this.col);
+    this.props = this.propsProvider();
+    this._rowsProcessed = DG.BitSet.create(this.col.length);
+    if (this.grid) {
+      // Changes handling is available only in with a view
+      this.subs.push(col.dataFrame.onDataChanged.subscribe(() => {
+        this.props = this.propsProvider();
+        this._monomerLengthList = null;
+        this._rowsProcessed = DG.BitSet.create(this.col.length);
+      }));
+      this.subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
+        if (this.grid?.view?.id === view.id) this.destroy();
+      }));
+    }
+  }
+
+  private destroy() {
+    for (const sub of this.subs) sub.unsubscribe();
+  }
+
+  /** Returns monomers lengths of the {@link rowIdx} and cumulative sums for borders, monomer places */
+  public getCellMonomerLengths(rowIdx: number): [number[], number[]] {
+    const res: number[] = this.props.unitsHandler.isMsa() ? this.getCellMonomerLengthsForSeqMsa() :
+      this.getCellMonomerLengthsForSeq(rowIdx);
+
+    const resSum: number[] = new Array<number>(res.length + 1);
+    resSum[0] = 5; // padding
+    for (let pos: number = 1; pos < resSum.length; pos++)
+      resSum[pos] = resSum[pos - 1] + res[pos - 1];
+    return [res, resSum];
+  }
+
+  private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
+    if (this._monomerLengthList === null) {
+      this._monomerLengthList = new Array(this.col.length).fill(null);
+      this._updated = true;
+    }
+
+    let res: number[] = this._monomerLengthList[rowIdx];
+    if (res === null) {
+      const seqMonList: string[] = this.getSeqMonList(rowIdx);
+      res = this._monomerLengthList[rowIdx] = new Array<number>(seqMonList.length);
+
+      for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
+        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
+        const separatorWidth = this.props.unitsHandler.isSeparator() ? this.separatorWidth : this.props.separatorWidth;
+        const seqMonWidth: number = separatorWidth + shortMon.length * this.props.monomerCharWidth;
+        res[seqMonI] = seqMonWidth;
+      }
+      this._updated = true;
+    }
+    return res;
+  }
+
+  private getCellMonomerLengthsForSeqMsa(): number[] {
+    if (this._monomerLengthList === null) {
+      this._monomerLengthList = new Array(1).fill(null);
+      this._updated = true;
+    }
+    this._monomerLengthList[0] ??= new Array(0);
+    const res = this._monomerLengthList[0];
+    const startIdx = Math.max(Math.floor((this.grid?.vertScroll.min ?? 0) - 10), 0);
+    const endIdx = Math.min(Math.ceil((this.grid?.vertScroll.max ?? 0) + 10), this.col.length);
+    for (let seqIdx = startIdx; seqIdx < endIdx; seqIdx++) {
+      if (this._rowsProcessed.get(seqIdx))
+        continue;
+      const seqMonList: string[] = this.getSeqMonList(seqIdx);
+      if (seqMonList.length > res.length)
+        res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
+
+      for (const [seqMonLabel, seqMonI] of wu.enumerate(seqMonList)) {
+        const shortMon: string = this.props.monomerToShort(seqMonLabel, this.props.monomerLengthLimit);
+        const seqMonWidth: number = this.props.separatorWidth + shortMon.length * this.props.monomerCharWidth;
+        res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
+      }
+      this._updated = true;
+    }
+    return res; // first (and single) row of data
+  }
+
+  /** Returns seq position for pointer x */
+  public getPosition(rowIdx: number, x: number): number | null {
+    const [monomerMaxLengthList, monomerMaxLengthSumList]: [number[], number[]] = this.getCellMonomerLengths(rowIdx);
+    const seq: string = this.col.get(rowIdx)!;
+    const seqMonList: string[] = wu(this._splitter(seq)).toArray();
+    if (seqMonList.length === 0) return null;
+
+    let iterationCount: number = 100;
+    let left: number | null = null;
+    let right = seqMonList.length;
+    let found = false;
+    let mid = 0;
+    if (monomerMaxLengthSumList[0] <= x && x < monomerMaxLengthSumList.slice(-1)[0]) {
+      while (!found) {
+        mid = Math.floor((right + (left ?? 0)) / 2);
+        if (x >= monomerMaxLengthSumList[mid] && x <= monomerMaxLengthSumList[mid + 1]) {
+          left = mid;
+          found = true;
+        } else if (x < monomerMaxLengthSumList[mid])
+          right = mid - 1;
+        else if (x > monomerMaxLengthSumList[mid + 1])
+          left = mid + 1;
+
+        if (left == right)
+          found = true;
+
+        if (--iterationCount <= 0) {
+          throw new Error(`Get position for pointer x = ${x} searching has not converged ` +
+            `on ${JSON.stringify(monomerMaxLengthSumList)}. `);
+        }
+      }
+    }
+    return left;
+  }
+
+  getSeqMonList(rowIdx: number): string[] {
+    const seq: string | null = this.col.get(rowIdx);
+    return seq ? wu(this._splitter(seq)).toArray() : [];
+  }
+
+  public getMonomer(symbol: string): Monomer | null {
+    const alphabet = this.props.unitsHandler.alphabet ?? ALPHABET.UN;
+    const polymerType = polymerTypeMap[alphabet as ALPHABET];
+    return this.props.monomerLib?.getMonomer(polymerType, symbol) ?? null;
+  }
+
+  public setMonomerLengthLimit(limit: number): void {
+    this.props.monomerLengthLimit = limit;
+    this._updated = true;
+  }
+
+  public setSeparatorWidth(width: number): void {
+    this.props.separatorWidth = width;
+    this._updated = true;
+  }
+
+  public isMsa(): boolean {
+    return this.props.unitsHandler.isMsa();
+  }
+}

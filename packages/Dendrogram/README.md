@@ -1,6 +1,6 @@
 # Dendrogram
 
-_Dendrogram_ is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+_Dendrogram_ is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai)
 platform for phylogenetic trees visualization.
 
 ## Notations
@@ -55,21 +55,14 @@ are synchronized between grid and injected tree in both directions.
 
 ![ML | Hierarchical Clustering](../../help/uploads/gifs/dendrogram-hierarchical-clustering-interactivity.gif)
 
-## Web Assembly
+Hierarchical clustering supports numeric columns, as well as Macromolecule columns and combination of those. Different distance functions will be used depending on the type of macromolecule. Levenstein distance for DNA/RNA/Unknown, Needleman-Wunsch for Proteins and Hamming for pre-aligned columns. Distance matrix calculation is paralellized on web-workers, which yields very fast and efficient compute times. Hierarchical clustering is performed in web-assembly and supports multiple linkage methods, like `ward`, `average`, `centroid`, `complete`, `single`, `weighted` and `median`. For dataset of 2000 sequences, it takes less than 2 seconds to calculate the tree and render it.
 
-Package contains webAssembly code (compiled from cpp) of hierarchical clustering using reduced distance matrix.
-the files are contained in ```src/wasm``` and corresponding cpp files are in ```src/wasm/cpp```. to modify the cpp code and compile it, following steps are to be done. 
+![ML | Hierarchical Clustering Sequences](../../help/uploads/gifs/clustering-2000-seq.gif)
 
-1. Emscripten has to be installed on system and found in global PATH
+There is also an option to close the dendrogram viewer and restore the original grid view, by clicking on the `X` button on the top rigth corner of the tree view.
 
-2. In command line prompt, cd into the ```src/wasm/cpp``` directory and execute command ```emsdk activate lates``` .  This will init the working directory.
+![Close dendrogram](../../help/uploads/pictures/dendrogram-close-button.png)
 
-3. Then execute command fount in same folder under the name ```emsc command.txt```.
+When clustering is performed, the tree aplies its own sorting to the table. Therefore, any external sorting will not be alowed. If however, the user wants to sort the table by a specific column, the tree viewer will be hidden, and a message will be displayed to the user. From there, the user can either restore sorting and continue working with the tree, or click on the `X` button to close the tree and restore the original grid view.
 
-You will generate two files, ```wasmCluster.js``` and ```wasmCluster.wasm```. In order to allow the wasm to work with webworkers, following has to be done:
-
-1. Move the ```wasmCluster.js``` and ```wasmCluster.wasm``` to ```src/wasm``` directory.
-
-2. Open ```wasmCluster.js``` and before the second line ```var exportCppLib = (() => {``` add ```export```
-
-Done.
+![Restore sorting](../../help/uploads/gifs/dendrogram-sorting.gif)

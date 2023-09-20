@@ -8,7 +8,7 @@ import {DimensionalityReducer, IReduceDimensionalityResult} from '@datagrok-libr
 import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {DistanceMetricsSubjects, Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
@@ -114,7 +114,7 @@ export class PeptideSimilaritySpaceWidget {
    */
   constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {
     this.availableMethods = DimensionalityReducer.availableMethods;
-    this.availableMetrics = Measure.getMetricByDataType('String');
+    this.availableMetrics = Measure.getMetricByDataType(DistanceMetricsSubjects.String);
     this.method = this.availableMethods[0];
     this.metrics = this.availableMetrics[0];
     const df = alignedSequencesColumn.dataFrame;

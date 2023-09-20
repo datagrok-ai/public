@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {isNil} from './utils';
 
 /** Distance matrix class compatible with data structure of scipy.spatial.distance.pdist */
 export class DistanceMatrix {
@@ -60,7 +61,7 @@ export class DistanceMatrix {
     for (let i = 0; i < size; i++) {
       for (let j = i + 1; j < size; j++) {
         // if any of the values is null, set distance to 1
-        res.set(i, j, list[i] !== null && list[j] !== null ? method(list[i], list[j]) : 1);
+        res.set(i, j, !isNil(list[i]) && !isNil(list[j]) ? method(list[i], list[j]) : 1);
       }
     }
     return res;

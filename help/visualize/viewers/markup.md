@@ -2,7 +2,7 @@
 title: "Markup viewer"
 ---
 
-Use this viewer to host any text, arbitrary HTML content, or [markdown-formatted text](../../datagrok/markdown.md). In
+Use this viewer to host any text, arbitrary HTML content, or [Markdown-formatted text](https://en.wikipedia.org/wiki/Markdown). In
 most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
 
 Properties:
@@ -11,7 +11,7 @@ Properties:
 |---------------------|---------|
 | Content             |     |
 | Mode                | Text, Html, Markdown, or Auto |
-| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../../datagrok/markup.md) engine |
+| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../../datagrok/navigation/markup.md) engine |
 
 Context menu:
 
@@ -32,6 +32,6 @@ Here is how to embed iframes:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/table-view.md)
-* [Flex view](../../datagrok/flex-view.md)
+* [Table view](../../datagrok/navigation/table-view.md)
+* [Flex view](../../datagrok/navigation/flex-view.md)
 * [JS API: Markup](https://public.datagrok.ai/js/samples/ui/viewers/types/markup)

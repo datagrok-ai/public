@@ -3,7 +3,7 @@
 --input: list groups
 --input: list packages
 --meta.cache: true
---meta.invalidate: 0 * * * *
+--meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
@@ -28,9 +28,9 @@ and proj.is_package = true
 left join packages p1 on proj.name = p1.name or proj.name = p1.friendly_name
 left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
 on epv.event_id = e.id
-left join published_packages pp1 on pp1.id::text = epv.value
+left join published_packages pp1 on pp1.id = epv.value_uuid
 left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value::uuid
+inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value_uuid
 inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
 on epv1.event_id = e.id
 inner join users_sessions s on e.session_id = s.id
@@ -69,7 +69,7 @@ GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --input: list users
 --input: list packages
 --meta.cache: true
---meta.invalidate: 0 * * * *
+--meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneFunctions(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res AS (
@@ -103,7 +103,7 @@ group by res.package, res.id, res.name, res.pid
 --input: list users
 --input: list packages
 --meta.cache: true
---meta.invalidate: 0 * * * *
+--meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneLogs(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
@@ -113,7 +113,7 @@ from events e
 inner join event_types et on e.event_type_id = et.id
 left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
 on epv.event_id = e.id
-left join published_packages pp1 on pp1.id::text = epv.value
+left join published_packages pp1 on pp1.id = epv.value_uuid
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where et.source in ('debug', 'error', 'info', 'warning', 'usage')
@@ -134,7 +134,7 @@ group by res.source
 --input: list users
 --input: list packages
 --meta.cache: true
---meta.invalidate: 0 * * * *
+--meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneAudit(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
@@ -143,7 +143,7 @@ coalesce(pp2.package_id, '00000000-0000-0000-0000-000000000000') as pid
 from events e
 inner join event_types et on e.event_type_id = et.id
 left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value::uuid
+inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value_uuid
 inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
 on epv1.event_id = e.id
 inner join users_sessions s on e.session_id = s.id

@@ -88,6 +88,10 @@ export class Tags {
 
   static CustomFilterType = '.custom-filter-type';
 
+  static UseAsFilter = '.use-as-filter';
+
+  static PickupColumnsTags = '.pickup-column-tags';
+
   static Charts = '.charts';
 
   /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
@@ -198,6 +202,72 @@ export class Tags {
   /// Boolean flag that Specifies whether the column is exported as part of the binary file. Defaults to true.
   static IncludeInBinaryExport = '.includeInBinaryExport';
 
+  /// Specifies the behavior of link click (open in new tab, open in context panel, custom)
+  static LinkClickBehavior = '.linkClickBehavior';
+
+  /// Pipe-separated path that defines where this column is within the hierarchy
+  /// Used for dynamic forms construction, etc
+  static Hierarchy = 'hierarchy';
+
+}
+export class FuncOptions {
+  /// Fully qualified name of the function that edits corresponding function calls
+  static Editor = 'editor';
+
+  /// Shows the function in the 'Action' pane
+  static Action = 'action';
+
+  /// Shows the function in the toolbox
+  static Toolbox = 'toolbox';
+
+  static AutostartImmediate = 'autostartImmediate';
+
+  /// Applies to [FuncTypes.CellRenderer].
+  /// Comma-separated list of key-value pairs that represent
+  /// required tags for a column to be picked up by the renderer.
+  static CellRendererColumnTags = 'columnTags';
+
+  /// Applies to [FuncTypes.CellRenderer].
+  /// Cell type (name of the renderer to be used in the UI).
+  static CellRendererCellType = 'cellType';
+
+  /// Applies to [FuncTypes.ValueEditor]. Refers to [Types].
+  static InputPropertyType = 'propertyType';
+
+  /// Applies to [FuncTypes.ValueEditor].
+  static SemType = 'semType';
+
+  /// Applies to [FuncTypes.Panel]
+  static VisibilityCondition = 'condition';
+
+  /// Demo path, such as 'Viewers | Radar'
+  static DemoPath = 'condition';
+
+  /// Viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | <ViewerPath>)
+  static ViewerPath = 'viewerPath';
+
+  /// When set to 'true', the function is shown in the grid context menu: Add | Summary Columns | ...
+  static GridChart = 'gridChart';
+
+  /// Boolean value that controls whether a function should be executed when the input changes.
+  static RunOnInput = 'runOnInput';
+
+  /// Boolean value that controls whether a function should be executed when the function preview opens.
+  /// Applicable to models as well.
+  static RunOnOpen = 'runOnOpen';
+
+  /// When set to 'true', the function is higher-priority to be set in Filters Panel
+  static PrimaryFilter = 'primaryFilter';
+
+  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  static InspectorPanel = 'inspectorPanel';
+
+  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  static Cache = 'cache';
+
+  /// Cron string that specifies when the cache is invalidated
+  static CacheInvalidateOn = 'cache.invalidateOn';
+
 }
 export class FuncParamOptions {
   static SemType = 'semType';
@@ -235,5 +305,7 @@ export class FuncParamOptions {
   static Editor = 'editor';
 
   static Nullable = 'nullable';
+
+  static Separators = 'separators';
 
 }

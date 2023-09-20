@@ -8,7 +8,8 @@ import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
-import {LogView} from "./tabs/log";
+import {LogView} from './tabs/log';
+import {TestsView} from './tabs/tests';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -18,6 +19,7 @@ export class ViewHandler {
   private urlParams: Map<string, string> = new Map<string, string>();
   public static UAname = 'Usage Analysis';
   static UA: DG.MultiView;
+  dockFilters: DG.DockNode | null = null;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -31,21 +33,20 @@ export class ViewHandler {
     const toolbox = await UaToolbox.construct();
     const params = this.getSearchParameters();
     // [ErrorsView, FunctionsView, UsersView, DataView];
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView];
-    // const viewFactories: {[name: string]: any} = {};
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, LogView, TestsView];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
       currentView.tryToinitViewers();
       ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
     const paramsHaveDate = params.has('date');
-    const paramsHaveUsers = params.has('users');
+    const paramsHaveUsers = params.has('groups');
     const paramsHavePackages = params.has('packages');
     if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
       if (paramsHaveUsers)
-        toolbox.setGroups(params.get('users')!);
+        toolbox.setGroups(params.get('groups')!);
       if (paramsHavePackages)
         toolbox.setPackages(params.get('packages')!);
       toolbox.applyFilter();
@@ -53,6 +54,7 @@ export class ViewHandler {
     let helpShown = false;
     ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
       const view = ViewHandler.UA.currentView;
+      ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z]+)/, '$1' + view.name);
       if (view instanceof UaView) {
         for (const viewer of view.viewers) {
           if (!viewer.activated) {
@@ -73,9 +75,21 @@ export class ViewHandler {
         }
         helpShown = true;
       }
+      if (view.name === 'Tests') {
+        grok.shell.windows.showToolbox = false;
+        this.dockFilters = grok.shell.dockManager.dock(TestsView.filters, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.12);
+      } else {
+        grok.shell.windows.showToolbox = true;
+        if (this.dockFilters)
+          grok.shell.dockManager.close(this.dockFilters);
+        this.dockFilters = null;
+      }
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;
+    const urlTab = window.location.pathname.match(/UsageAnalysis\/([a-zA-Z]+)/)?.[1];
+    ViewHandler.UA.path = APP_PREFIX + (urlTab ?? 'Overview');
+    if (urlTab) ViewHandler.changeTab(urlTab);
     grok.shell.addView(ViewHandler.UA);
   }
 
@@ -118,6 +132,6 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    grok.shell.v.path = `${APP_PREFIX}${grok.shell.v.name}?${params.join('&')}`;
+    ViewHandler.UA.path = `${APP_PREFIX}${ViewHandler.getCurrentView().name}?${params.join('&')}`;
   }
 }

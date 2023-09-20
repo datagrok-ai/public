@@ -1,5 +1,6 @@
 ---
 title: "Function roles"
+sidebar_position: 5
 ---
 
 A package can contain functions that get discovered and integrated with the platform at runtime.
@@ -29,7 +30,7 @@ const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 
 ## Applications
 
-Applications are [functions](../datagrok/functions/functions.md) tagged with the `#app` tag. Use `datagrok-tools` to get
+Applications are [functions](../datagrok/concepts/functions/functions.md) tagged with the `#app` tag. Use `datagrok-tools` to get
 a template:
 
 ```shell

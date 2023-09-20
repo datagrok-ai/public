@@ -80,6 +80,7 @@
 .ua-cards.ui-div {
   flex-direction: row;
   display: flex;
+  align-items: flex-start;
 }
 
 .ua-cards .ua-card .grok-wait {
@@ -99,7 +100,12 @@
   flex-direction: column;
   justify-content: center;
   position: relative;
-  flex-grow: 1;
+  padding: 8px;
+}
+
+.ua-test-card {
+  cursor: pointer;
+  text-transform: capitalize;
 }
 
 .ua-cards .ua-card > .grok-wait > .ui-div {

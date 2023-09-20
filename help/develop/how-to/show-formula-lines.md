@@ -59,7 +59,7 @@ demog.meta.formulaLines.addBand({
 // This is a generalized method for adding lines.
 // To use it, you must specify the line type in the parameter list:
 demog.meta.formulaLines.add({
-  type: 'line'  // "line" or "band"
+  type: 'line',  // "line" or "band"
   formula: '${height} = ${weight}',
 });
 

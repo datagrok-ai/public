@@ -142,7 +142,7 @@ To modify a connection, right-click it and select **Edit...** from the list of o
 
 **Database Manager** provides a hierarchical browsing interface for schemas and database objects, such as queries, tables, and table columns (if supported by the providers). You can perform various operations like adding new connections and queries, previewing data, running queries, and managing objects using context actions that are accessible through right-clicking an object. If you don't see a certain action, it may be due to insufficient permissions. Contact your Datagrok administrator for assistance.
 
-The **Context Panel**, which is located to the right of the **Database Manager**, helps you work with database objects. Whenever you click an object within the **Database Manager**, the **Context Panel** displays the object's properties and context actions. For example, when you click a table, the **Context Panel** lets you view the table's metadata, dynamically preview the table's contents, run queries, and access other relevant information and options. To learn more about the **Context Panel**, see [Context Panel](../../datagrok/navigation.md#context-panel).
+The **Context Panel**, which is located to the right of the **Database Manager**, helps you work with database objects. Whenever you click an object within the **Database Manager**, the **Context Panel** displays the object's properties and context actions. For example, when you click a table, the **Context Panel** lets you view the table's metadata, dynamically preview the table's contents, run queries, and access other relevant information and options. To learn more about the **Context Panel**, see [Context Panel](../../datagrok/navigation/navigation.md#context-panel).
 
 :::note developers
 
@@ -288,14 +288,14 @@ Use this tool to merge tables:
 
 ### Parameterized queries
 
-In Datagrok, queries are functions. Like with JavaScript functions, you can add metadata to a Datagrok function at the function level or the parameter level. This metadata can include things like the function's name, connection details, caching options, and more. At the parameter level, you can specify metadata such as the parameter's name as it should appear in the user interface, its semantic type, input type, and so on. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
+In Datagrok, queries are functions. Like with JavaScript functions, you can add metadata to a Datagrok function at the function level or the parameter level. This metadata can include things like the function's name, connection details, caching options, and more. At the parameter level, you can specify metadata such as the parameter's name as it should appear in the user interface, its semantic type, input type, and so on. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](../../datagrok/concepts/functions/func-params-annotation), with additions specific to queries.
 
 When you want a query to ask for input every time you run it, you can create a _parameterized query_. This type of query relies on one or more parameters, which are placeholders for input values. When you run a parameterized query, Datagrok autogenerates a parameter dialog, prompting you to enter the relevant parameter values. By doing so, you can
 use the same query to retrieve data that matches different criteria.
 
 #### Query parameters
 
-The syntax for defining query parameters is based on [functions syntax](../../datagrok/functions/func-params-annotation.md)
+The syntax for defining query parameters is based on [functions syntax](../../datagrok/concepts/functions/func-params-annotation.md)
 with additions specific to queries.
 
 Queries have a special `connection` parameter corresponding to the query connection name. It is optional, just like the
@@ -325,7 +325,7 @@ To define input parameters for your SQL query, use the `--input` annotation foll
 
 `--input: <type> <name> = <value> {<option>: <value>; ...} [<description>]`
 
-Supported parameter types include `integer`, `float`, `boolean`, `string`, `DateTime`, and `list<T>` (a list of parameter type `T`, currently supports the `strings` type only). [Additional options](https://datagrok.ai/help/datagrok/functions/func-params-annotation#options) are based on the parameter type, and may include _choices_, _suggestions_, and _validators_.
+Supported parameter types include `integer`, `float`, `boolean`, `string`, `DateTime`, and `list<T>` (a list of parameter type `T`, currently supports the `strings` type only). [Additional options](../../datagrok/concepts/functions/func-params-annotation#options) are based on the parameter type, and may include _choices_, _suggestions_, and _validators_.
 
 For example, to create a string input parameter for a _ship country_, you can use the following code snippet:
 
@@ -421,7 +421,7 @@ Here's a list of all supported search patterns:
 |                    | `after`       | `after March 2001`           |
 |                    | `min-max`     | `Range: 1941-1945`           |
 
-To learn more, see [search patterns](../../explore/data-search-patterns.md).
+To learn more, see [search patterns](../../explore/search-filter-select/data-search-patterns.md).
 </details>
 
 #### Output parameters
@@ -489,7 +489,7 @@ To save the query output as a dynamic dashboard, do the following:
 1. In the **Upload project** dialog, enter a name and description (optional) in the fields provided.
 1. Select how to store data:
     * Save the data as a static snapshot.
-    * Store the data as a generation script by toggling the **Data sync** control. The query re-executes each time the project is opened. To learn more about dynamic data updates in projects, see [Dynamic data](../../datagrok/project.md#dynamic-data).
+    * Store the data as a generation script by toggling the **Data sync** control. The query re-executes each time the project is opened. To learn more about dynamic data updates in projects, see [Dynamic data](../../collaborate/project.md#dynamic-data).
 1. Click **OK** to upload the project.
 1. [Share](#sharing-query-results) the project with others.
 
@@ -514,7 +514,7 @@ If you want to persist a specific layout, create a dynamic dashboard, or assign 
 
 ## Access control
 
-In Datagrok, certain objects called _entities_ have a [set of operations](../../datagrok/objects.md) that can be applied to them. These entities are connections, queries, tables, and table columns, all of which can be shared, assigned permissions, annotated, and more.
+In Datagrok, certain objects called _entities_ have a [set of operations](../../datagrok/concepts/objects.md) that can be applied to them. These entities are connections, queries, tables, and table columns, all of which can be shared, assigned permissions, annotated, and more.
 
 When you create an entity such as a connection or a query, it's private and visible to you only. To make it accessible to others, you can share it.
 
@@ -547,6 +547,127 @@ Datagrok query belongs to the database connection for which it's created. It mea
 
 :::
 
+## Debug query
+
+### Open debug section
+
+To open debug section follow the next steps:
+
+<img alt="Open debug section" src={require('./debug-section-open-saved-query.gif').default} width="800px"/>
+
+If you have a saved data query:
+
+1. Go to **Data > Databases**.
+2. In the **Database Manager**, click the desired connector, choose saved connection, and click on saved query.
+3. Activate **Context Panel** with F2 keyboard shortcut or with the help of **Windows > Context Panel**.
+4. Click on **Debug** section.
+
+:::tip
+
+Additionally, you can open debug window by right-clicking on saved query and clicking on Debug
+
+:::
+
+<img alt="Open debug section" src={require('./debug-section-open-new-query.gif').default} width="800px"/>
+
+If you don't have a saved query:
+
+1. Go to **Data > Databases**.
+2. In the **Database Manager**, click the desired connector, choose saved connection and click **Add query**.
+3. Write your query and click on Debug icon
+
+### Debug section parameters
+
+There are two parameters that can significantly influence execution time of query - **Fetch size** and **Init fetch size**.
+
+**Fetch size**. Gives the JDBC driver a hint as to the number of rows that should be fetched from the database
+when more rows are needed for this ResultSet object. If the fetch size specified is zero, the JDBC driver ignores the value
+and is free to make its own best guess as to what the fetch size should be.
+Grok Connect under the hood not only uses this value as fetch size for ResultSet but also as the number
+of rows that will be sent to the server in one WebSocket message. And consequently, this value for User-Agent equals
+the number of rows that will be rendered on the screen by 1 workaround.
+By default, this value is calculated automatically by Grok Connect based on the average size of the row to achieve a maximum message size of 10 Mb
+that is sent to the server by WebSocket. This parameter can be specified in megabytes to limit the maximum message size.
+
+:::note
+
+To get consistent results for debugging **Fetch size** parameter should be specified.
+
+:::
+
+To specify **Fetch size** for debugging use the corresponding input field in the debug section.
+If you want to run the query with this parameter every time, add to the query declaration an additional meta parameter.
+
+<details>
+<summary> Here's an example </summary>
+
+```sql
+--meta.connectFetchSize: 10000
+SELECT * FROM very_big_table
+```
+
+Or if you want to set it in megabytes:
+
+```sql
+--meta.connectFetchSize: 10 MB
+```
+
+</details>
+
+**Init fetch size**. It is the same parameter as Fetch size, but it is set on Statement and
+influences the time taken to execute the Statement and the time of rendering of first rows of the DataFrame on the screen.
+The default value is 100.
+To specify **Init fetch size** for debug use the corresponding input field in the debug section.
+
+:::note
+
+**Init fetch size** will not influence debug run. So it is not mandatory as Fetch size.
+
+:::
+
+If you want to run the query with this parameter every time, add to the query declaration an additional meta parameter.
+<details>
+<summary> Here's an example </summary>
+
+```sql
+--meta.initConnectFetchSize: 1000
+SELECT * FROM very_big_table
+```
+
+</details>
+
+:::note
+
+Init fetch size can be set only in numbers.
+
+:::
+
+**Optimize fetch size**. When checked disables other inputs and runs several queries with different fetch sizes and displays in the end times of execution for each run.
+
+### Debug run
+
+When you press the **Debug** button with **Optimize fetch size** unchecked, under the hood Grok Connect runs 3 queries.
+First two without processing ResultSet and the last with processing. It adds 2 additional parameters to the Log Summary (see [Query logs](#query-logs)) of the query:
+
+1. **DRY_RUN** - time taken on reading ResultSet without interpretation of its values and filling of columns of DataFrame.
+2. **COLUMN_FILL** - difference between **RESULT_SET_PROCESSING_WITH_COLUMN_FILL** and **DRY_RUN**. It is close to real
+time taken to read ResultSet and process all its values.
+
+In general, Debug run helps to estimate the overhead of the interpretation of ResultSet values and filling of DataFrame columns.
+
+:::note
+
+The stability of network connection or in the case of local database load of SSD/HDD can significantly influence the result.
+So for best evaluation try to run several consecutive Debug runs.
+
+:::
+
+### Query logs
+
+When you run a query in debug mode you get results of execution and logs. Log Summary consists of various parameters that describe times of different stages of query execution.
+These metrics are helpful in the evaluation of the influence of different factors such as Networking throughput,
+the complexity of data etc. Logs can be viewed for saved queries at any time in the Log section.
+
 ## Resources
 
 * Videos
@@ -555,4 +676,4 @@ Datagrok query belongs to the database connection for which it's created. It mea
   * [Parameterized queries - Example](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
   * [Using lists in parameterized queries](https://www.youtube.com/watch?v=meRAEF7ogtw)
 * Tutorials
-  * [Adding parameters to functions](../../datagrok/functions/func-params-enhancement.md)
+  * [Adding parameters to functions](../../datagrok/concepts/functions/func-params-enhancement.md)

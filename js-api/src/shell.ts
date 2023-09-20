@@ -7,7 +7,8 @@ import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils";
-import {FuncCall} from "./functions";
+import { FuncCall } from "./functions";
+import { SettingsInterface } from './api/xamgle.api.g';
 
 declare let ui: any;
 declare let grok: { shell: Shell };
@@ -20,7 +21,13 @@ let api = <any>window;
  * */
 export class Shell {
   windows: Windows = new Windows();
-  settings: Settings = new Settings();
+  settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
+
+
+
+  testError(s: String): void {
+    return api.grok_Test_Error(s);
+  }
 
   /** Current table, or null. */
   get t(): DataFrame {
@@ -40,8 +47,9 @@ export class Shell {
   }
 
   /** Adds a table to the workspace. */
-  addTable(table: DataFrame): void {
+  addTable(table: DataFrame): DataFrame {
     api.grok_AddTable(table.dart);
+    return table;
   }
 
   /** Closes a table and removes from the workspace. */
@@ -53,8 +61,7 @@ export class Shell {
   get lastError(): string { return api.grok_Get_LastError(); }
   set lastError(s: string) { api.grok_Set_LastError(s); }
 
-  /** Current user
-   *  @type {User} */
+  /** Current user */
   get user(): User {
     return toJs(api.grok_User());
   }
@@ -64,13 +71,8 @@ export class Shell {
   set o(x: any) { api.grok_Set_CurrentObject(toDart(x)); }
 
   /** Current viewer */
-  get viewer(): Viewer {
-    return toJs(api.grok_Get_CurrentViewer(), false);
-  }
-
-  set viewer(x: Viewer) {
-    api.grok_Set_CurrentViewer(toDart(x));
-  }
+  get viewer(): Viewer { return toJs(api.grok_Get_CurrentViewer(), false); }
+  set viewer(x: Viewer) { api.grok_Set_CurrentViewer(toDart(x)); }
 
   /** @type {TabControl} */
   get sidebar(): TabControl {
@@ -379,7 +381,6 @@ export class Windows {
   get simpleMode(): boolean { return api.grok_Get_SimpleMode(); }
   set simpleMode(x: boolean) { api.grok_Set_SimpleMode(x); }
 }
-
 
 /** User-specific platform settings. */
 export class Settings {

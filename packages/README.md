@@ -8,7 +8,7 @@
 | [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | [Data Connection](https://datagrok.ai/help/access/access#data-connection), [Data Query](https://datagrok.ai/help/access/access#data-query), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
 | [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts) | [Scripting](https://datagrok.ai/help/compute/scripting), [Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics), [RDKit](https://www.rdkit.org/) |
 | [Covid](https://github.com/datagrok-ai/public/tree/master/packages/Covid) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/) |
-| [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts) | [Scripting](https://datagrok.ai/help/compute/scripting), [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
+| [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo) | [Scripting](https://datagrok.ai/help/compute/scripting), [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
 | [DSP](https://github.com/datagrok-ai/public/tree/master/packages/DSP) | |
 | [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [FileEditors](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors) | |

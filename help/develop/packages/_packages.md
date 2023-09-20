@@ -273,8 +273,8 @@ Your package might contain the following additional folders, depending on your n
 
 | Folder       | Description                            | Documentation               | Package Examples                        |
 |--------------|----------------------------------------|-----------------------------|-----------------------------------------|
-| environments | Environment configurations             | [Scripting > Environments]  | [DemoScripts]                           |
-| scripts      | Collection of scripts for computations | [Scripting]                 | [Chem/scripts], [DemoScripts], [Impute] |
+| environments | Environment configurations             | [Scripting > Environments]  | [Demo]                           |
+| scripts      | Collection of scripts for computations | [Scripting]                 | [Chem/scripts], [Demo], [Impute] |
 | swaggers     | OpenAPI specifications                 | [Access > OpenAPI]          | [EnamineStore], [Swaggers]              |
 | connections  | Database connections                   | [Access > Data Connections] | [Chembl], [UsageAnalysis]               |
 | queries      | Database queries                       | [Access > Data Queries]     | [Chembl], [UsageAnalysis]               |
