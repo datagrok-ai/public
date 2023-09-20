@@ -29,17 +29,26 @@ export function isFuncCallInputValidated<T = any>(arg: any): arg is FuncCallInpu
   return arg?.setValidation && isFuncCallInput(arg);
 }
 
-// validation
+// validation/advisory system
+export interface ActionItems {
+  actionName: string;
+  action: Function;
+}
+
+export interface Advice {
+  description: string;
+  actions?: ActionItems[];
+}
+
 export interface ValidationResultBase {
-  warnings?: string[];
-  errors?: string[];
-  // TODO: some implementation
-  actions?: Record<string, Function>;
+  // awaiting for validation results
+  pending?: boolean;
+  errors?: Advice[];
+  warnings?: Advice[];
+  notifications?: Advice[];
 }
 
 export interface ValidationResult extends ValidationResultBase {
-  // awaiting for validation results
-  pending?: boolean;
   // revalidation request
   revalidate?: string[];
   // revalidations context
@@ -50,32 +59,32 @@ export function isValidationPassed(result?: ValidationResult) {
   return !result?.errors?.length && !result?.pending;
 }
 
+export function makeAdvice(description: string, actions?: ActionItems[]) {
+  return { description, actions };
+}
+
 export function getErrorMessage(result?: ValidationResult) {
   if (result?.errors)
-    return result.errors.join('; ');
+    return result.errors.map(err => err.description).join('; ');
 }
 
-export function getWarningMessage(result?: ValidationResult) {
-  if (result?.warnings)
-    return result.warnings.join('; ');
+export interface ValidationPayload {
+  errors?: (string | Advice)[],
+  warnings?: (string | Advice)[],
+  notifications?: (string | Advice)[],
 }
 
-export function makeValidationResult(errors?: string[], warnings?: string[]): ValidationResult {
-  return {errors, warnings};
+export function makeValidationResult(payload?: ValidationPayload): ValidationResultBase {
+  const wrapper = (item: string | Advice) => typeof item === 'string' ? makeAdvice(item) : item;
+  return {errors: payload?.errors?.map(err =>  wrapper(err)), warnings: payload?.warnings?.map(warn => wrapper(warn))};
 }
 
 export function makePendingValidationResult(): ValidationResult {
   return {pending: true};
 }
 
-export function makeRevalidation(revalidate: string[], context?: any): ValidationResult {
-  return {revalidate, context};
-}
-
-export function mergeValidationResults(results: ValidationResult[] = []) {
-  const errors = results.flatMap((res) => res.errors);
-  const warnings = results.flatMap((res) => res.warnings);
-  return {errors, warnings};
+export function makeRevalidation(revalidate: string[], context?: any, result?: ValidationResultBase): ValidationResult {
+  return {revalidate, context, ...result};
 }
 
 export type Validator =
@@ -86,5 +95,5 @@ export type ValidatorFactory = (params: any) => { validator: Validator, isAdviso
 
 export const nonNullValidator: Validator = async (value: any) => {
   if (value == null)
-    return makeValidationResult(['Missing value']);
+    return makeValidationResult({errors: ['Missing value']});
 };

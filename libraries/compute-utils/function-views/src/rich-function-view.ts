@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult} from '../../shared-components/src/FuncCallInput';
+import { FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase } from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -835,16 +835,47 @@ export class RichFunctionView extends FunctionView {
   }
 
   private injectInputBaseValidation(t: DG.InputBase) {
-    // just simple error/warn classes
-    function setValidation(messages: ValidationResult | undefined) {
+    const validationIndicator = ui.div('', { style: { display: 'flex' } });
+    t.root.append(validationIndicator);
+    const it = this;
+    function setValidation(messages: ValidationResultBase | undefined) {
+      while(validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
+      const icon = it.getValidationIcon(messages);
+      if (icon) {
+        validationIndicator.appendChild(icon);
+      }
       t.input.classList.remove('d4-invalid');
       t.input.classList.remove('d4-partially-invalid');
-      if (messages?.errors)
+      if (messages?.errors) {
         t.input.classList.add('d4-invalid');
-      else if (messages?.warnings)
+      } else if (messages?.warnings) {
         t.input.classList.add('d4-partially-invalid');
+      }
     }
     (t as any).setValidation = setValidation;
+  }
+
+  private getValidationIcon(messages: ValidationResultBase | undefined) {
+    if (messages?.pending) {
+      const icon = ui.iconFA('spinner', () => { console.log('click') }, 'Some tool tip');
+      return icon;
+    }
+    if (messages?.errors) {
+      const icon = ui.iconFA('exclamation', () => { console.log('click') }, 'Some tool tip');
+      icon.style.color = 'var(--red-3)';
+      return icon;
+    }
+    if (messages?.warnings) {
+      const icon = ui.iconFA('exclamation', () => { console.log('click') }, 'Some tool tip');
+      icon.style.color = 'var(--orange-2)';
+      return icon;
+
+    }
+    if (messages?.notifications) {
+      const icon = ui.iconFA('info', () => { console.log('click') }, 'Some tool tip');
+      icon.style.color = 'var(--blue-1)';
+      return icon;
+    }
   }
 
   private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {

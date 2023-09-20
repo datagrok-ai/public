@@ -236,7 +236,7 @@ export function RangeValidatorFactory(params: any) {
   const { min, max } = params;
   return (val: number) => {
     if (val < min || val > max) {
-      return { errors: [`Out of range [${min}, ${max}] value: ${val}`] };
+      return makeValidationResult({errors: [`Out of range [${min}, ${max}] value: ${val}`]});
     }
   }
 }
@@ -248,7 +248,7 @@ export function AsyncValidatorDemoFactory(params: any) {
   return async (val: number) => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     if (val === 0) {
-      return { warnings: [`Try non-null value`] };
+      return makeValidationResult({warnings: [`Try non-null value`]});
     }
   }
 }
@@ -259,19 +259,17 @@ export function AsyncValidatorDemoFactory(params: any) {
 export function GlobalValidatorDemoFactory(params: any) {
   const { max } = params;
   return async (_val: number, param: string, fc: DG.FuncCall, isRevalidation: boolean, context: any) => {
-    if (context?.skipCalculations) {
-      return makeValidationResult(undefined, [`Try lowering a value as well`]);
+    if (isRevalidation) {
+      if (context?.isOk)
+        return makeValidationResult();
+      return makeValidationResult({warnings: [`Try lowering a value as well`]});
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
     const { a, b, c } = fc.inputs;
     const s = a + b + c;
-    const valRes = makeValidationResult(undefined, s > max ? [`Try lowering a value`] : undefined);
-    if (!isRevalidation) {
-      const fields = ['a', 'b', 'c'].filter(p => p !== param);
-      return { ...makeRevalidation(fields, { skipCalculations: true }), ...valRes };
-    } else {
-      return valRes;
-    }
-
+    const isOk = s <= max;
+    const valRes = isOk ? makeValidationResult() : makeValidationResult({ warnings: [`Try lowering a value`] });
+    const fields = ['a', 'b', 'c'].filter(p => p !== param);
+    return makeRevalidation(fields, { isOk }, valRes);
   }
 }

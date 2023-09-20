@@ -340,7 +340,6 @@ category('RichFunctionView Inputs', async () => {
     expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
   });
 
-
 });
 
 category('RichFunctionView Validation', async () => {
@@ -357,17 +356,23 @@ category('RichFunctionView Validation', async () => {
       {
         "a": {
           "errors": [
-            "Missing value"
+            {
+              "description": "Missing value"
+            }
           ]
         },
         "b": {
           "errors": [
-            "Missing value"
+            {
+              "description": "Missing value"
+            }
           ]
         },
         "x": {
           "warnings": [
-            "Try non-null value"
+            {
+              "description": "Try non-null value"
+            }
           ]
         }
       }
@@ -400,7 +405,9 @@ category('RichFunctionView Validation', async () => {
       {
         "b": {
           "errors": [
-            "Out of range [20, 100] value: 3.2"
+            {
+              "description": "Out of range [20, 100] value: 3.2"
+            }
           ]
         }
       }
@@ -436,20 +443,26 @@ category('RichFunctionView Validation', async () => {
             "c"
           ],
           "context": {
-            "skipCalculations": true
+            "isOk": false
           },
           "warnings": [
-            "Try lowering a value"
+            {
+              "description": "Try lowering a value"
+            }
           ]
         },
         "b": {
           "warnings": [
-            "Try lowering a value as well"
+            {
+              "description": "Try lowering a value as well"
+            }
           ]
         },
         "c": {
           "warnings": [
-            "Try lowering a value as well"
+            {
+              "description": "Try lowering a value as well"
+            }
           ]
         }
       }
