@@ -26,16 +26,20 @@ enum ERROR_MSG {
   NON_EQUAL_VARIANCES = 'variances are not equal.',
   NON_NORMAL_DISTRIB = 'non-normal distribution.',
   UNSUPPORTED_COLUMN_TYPE = 'unsupported column type.',
+  INCORRECT_CATEGORIES_COL_TYPE = 'incorrect categories column type.',
+  ANOVA_FAILED_JUST_ONE_CAT = 'ANOVA filed: there should be at least 2 categories.'
 };
 
-export type SampleData = {
+type SampleData = {
   sum: number,
   sumOfSquares: number,
   size: number,
 };
 
+const OVERFLOW_LIMIT = 1000000;
+
 /** One-way ANOVA computation results. The classic notations are used (see [2], p. 290). */
-export type OneWayAnova = {
+type OneWayAnova = {
   /** sum of squares between groups, SSbn */
   ssBn: number,
   /** sum of squares within groups, SSnn */ 
@@ -58,7 +62,14 @@ export type OneWayAnova = {
   pValue: number,
 };
 
-type ValuesType = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
+/** Categorical column */
+type CatCol = DG.Column<DG.COLUMN_TYPE.STRING>;
+
+/** Numerical column */
+type NumCol = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
+
+/** Numerical array */
+type NumArr = Array<number> | Int32Array | Float32Array;
 
 /** Create dataframe with one-way ANOVA results. */
 export function getOneWayAnovaDF(anova: OneWayAnova, alpha: number, fCritical: number, hypothesis: string, testResult: string): DG.DataFrame {
@@ -94,7 +105,7 @@ export function getVariance(data: SampleData): number {
 } // getVariance
 
 /** Check equality of variances of 2 samples. F-test is performed.*/
-export function areVarsEqual(xData: SampleData, yData: SampleData, alpha: number = 0.05): boolean {
+function areVarsEqual(xData: SampleData, yData: SampleData, alpha: number = 0.05): boolean {
   // The applied approach can be found in [3]
   checkSignificanceLevel(alpha);
   
@@ -110,16 +121,23 @@ export function areVarsEqual(xData: SampleData, yData: SampleData, alpha: number
   return (fStat < fCrit);
 } // areVarsEqual
 
-export class FactorizedData extends Map<any, SampleData> {
+export class FactorizedData {
   private isNormDistrib: boolean | undefined = undefined;
+  private categories: string[] = [];  
+  private sums!: NumArr;
+  private sumsOfSquares!: NumArr;
+  private subSampleSizes!: Int32Array;
+  private size!: number;
+  private catCount!: number;
 
-  constructor(factors: DG.Column, values: ValuesType, checkNormality: boolean = false, alpha: number = 0.05) { 
-    super();
+  constructor(categories: CatCol, values: NumCol, checkNormality: boolean = false, alpha: number = 0.05) {
+    if (categories.type !== DG.COLUMN_TYPE.STRING)
+      throw new Error();
 
-    if (factors.length !== values.length)
+    if (categories.length !== values.length)
       throw new Error(ERROR_MSG.NON_EQUAL_FACTORS_VALUES_SIZE);      
 
-    this.setStats(factors, values, checkNormality, alpha);
+    this.setStats(categories, values, checkNormality, alpha);
   }
 
   public isNormal(): boolean | undefined {
@@ -129,19 +147,16 @@ export class FactorizedData extends Map<any, SampleData> {
 
   /** Check equality of variances of factorized data. */
   public areVarsEqual(alpha: number = 0.05): boolean {
-    const iter = this.keys();
-    let key = iter.next();
-    const xData = this.get(key.value);
-    
-    while (true) {
-      key = iter.next();
-      
-      if (key.done)
-        break;
-      
-      if(!areVarsEqual(xData!, this.get(key.value)!, alpha))
+    const K = this.catCount;
+
+    if (K === 1)
+      return true;
+
+    const first: SampleData = {sum: this.sums[0], sumOfSquares: this.sumsOfSquares[0], size: this.subSampleSizes[0]};
+
+    for (let i = 1; i < K; ++i)
+      if(!areVarsEqual(first, {sum: this.sums[i], sumOfSquares: this.sumsOfSquares[i], size: this.subSampleSizes[i]}, alpha))
         return false;
-    }
 
     return true;    
   } // areVarsEqual
@@ -150,19 +165,21 @@ export class FactorizedData extends Map<any, SampleData> {
   public getOneWayAnova(): OneWayAnova {
     // Further, notations and formulas from (see [2], p. 290) are used.
 
-    const K = this.size;
+    const K = this.catCount;
+
+    if (K === 1)
+      throw new Error(ERROR_MSG.ANOVA_FAILED_JUST_ONE_CAT);
   
     let sum = 0;
     let sumOfSquares = 0;
-    let N = 0;
-    let buf = 0; 
-  
-    this.forEach((levelData, key, map) => {
-      sum += levelData.sum;
-      sumOfSquares += levelData.sumOfSquares;
-      N += levelData.size;
-      buf += (levelData.sum) ** 2 / levelData.size;
-    });
+    let N = this.size;
+    let buf = 0;
+
+    for (let i = 0; i < K; ++i) {
+      sum += this.sums[i];
+      sumOfSquares += this.sumsOfSquares[i];
+      buf += this.sums[i] ** 2 / this.subSampleSizes[i];      
+    }
   
     const ssTot = sumOfSquares - sum ** 2 / N;
     const ssBn = buf - sum ** 2 / N;
@@ -192,25 +209,53 @@ export class FactorizedData extends Map<any, SampleData> {
   } // getOneWayAnova
 
   /** Compute sum & sums of squares with respect to factor levels. */
-  private setStats(factors: DG.Column, values: ValuesType, checkNormality: boolean = false, alpha: number = 0.05): void {
-    // TODO: provide check normality feature
-    const size = factors.length;
+  private setStats(categories: CatCol, values: NumCol, checkNormality: boolean = false, alpha: number = 0.05): void {
+    // TODO: provide check normality feature    
+    const type = values.type;
+    const size = values.length;
 
-    switch (values.type) {
+    switch (type) {
       case DG.COLUMN_TYPE.INT:
       case DG.COLUMN_TYPE.FLOAT:
-        const buf = values.getRawData();
+        this.categories = categories.categories;
+        const catCount = this.categories.length;
+        this.catCount = catCount;
+        this.size = size;
 
+        const vals = values.getRawData();
+        const cats = categories.getRawData();
+
+        let sums: NumArr;
+        let sumsOfSquares: NumArr;
+        const subSampleSizes = new Int32Array(catCount).fill(0);
+
+        if (size > OVERFLOW_LIMIT) {
+          sums = new Array(catCount);
+          sumsOfSquares = new Array(catCount);
+        }
+        else if (type === DG.COLUMN_TYPE.INT) {
+          sums = new Int32Array(catCount);
+          sumsOfSquares = new Int32Array(catCount);
+        }
+        else {
+          sums = new Float32Array(catCount);
+          sumsOfSquares = new Float32Array(catCount);
+        }
+
+        sums.fill(0);
+        sumsOfSquares.fill(0);
+        
         for (let i = 0; i < size; ++i) {
-          const fact = factors.get(i);
-          const cur = this.get(fact) ?? {sum: 0, sumOfSquares: 0, size: 0, data: undefined};
-    
-          cur.sum += buf[i];
-          cur.sumOfSquares += buf[i] ** 2;
-          ++cur.size;
-    
-          this.set(fact, cur);
-        }        
+          const c = cats[i];    
+          sums[c] += vals[i];
+          sumsOfSquares[c] += vals[i] ** 2;
+          ++subSampleSizes[c];
+        }
+
+        this.sums = sums;
+        this.sumsOfSquares = sumsOfSquares;
+        this.subSampleSizes = subSampleSizes;
+
         break;
 
       default:
@@ -220,10 +265,10 @@ export class FactorizedData extends Map<any, SampleData> {
 } // FactorizedData
 
 /** Perform one-way analysis of variances. */
-export function oneWayAnova(factors: DG.Column, values: DG.Column, alpha: number = 0.05, validate: boolean = false): DG.DataFrame {
+export function oneWayAnova(categores: CatCol, values: NumCol, alpha: number = 0.05, validate: boolean = false): DG.DataFrame {
   checkSignificanceLevel(alpha);  
 
-  const factorized = new FactorizedData(factors, values, validate, alpha);
+  const factorized = new FactorizedData(categores, values, validate, alpha);
 
   if (validate) {
     if(!factorized.areVarsEqual(alpha))
@@ -236,7 +281,7 @@ export function oneWayAnova(factors: DG.Column, values: DG.Column, alpha: number
   const anova = factorized.getOneWayAnova();
   const fCrit = jStat.centralF.inv(1 - alpha, anova.dfBn, anova.dfWn);
 
-  const hypothesis = `THE NULL HYPOTHESIS: the "${factors.name}" factor does not produce a significant difference in the "${values.name}" feature.`;
+  const hypothesis = `THE NULL HYPOTHESIS: the "${categores.name}" factor does not produce a significant difference in the "${values.name}" feature.`;
   const testResult = `Test result: ${(anova.fStat > fCrit) ? 'REJECTED.' : 'FAILED TO REJECT.'}`;
 
   return getOneWayAnovaDF(anova, alpha, fCrit, hypothesis, testResult);
