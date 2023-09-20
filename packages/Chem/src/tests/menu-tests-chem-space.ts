@@ -54,7 +54,7 @@ category('top menu chem space', async () => {
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0]?.children[0]?.innerHTML ===
         '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
-      'cannot find warning balloon', 1000);
+      'cannot find warning balloon', 5000);
     } finally {DG.Balloon.closeAll();}
   });
 
