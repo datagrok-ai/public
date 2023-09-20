@@ -1477,7 +1477,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh-int
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1557,7 +1557,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-int
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1637,7 +1637,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-int
       Port: 8889
       Protocol: HTTP
       Tags:
