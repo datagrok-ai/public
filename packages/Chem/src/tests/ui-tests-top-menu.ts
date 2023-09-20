@@ -16,7 +16,7 @@ category('UI top menu', () => {
         grok.shell.windows.showProperties = true;
     });
 
-/*      test('similarity search', async () => {
+    test('similarity search', async () => {
         smiles = grok.data.demo.molecules(20);
         v = grok.shell.addTableView(smiles);
         await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
@@ -272,7 +272,7 @@ category('UI top menu', () => {
         v.close();
         grok.shell.o = ui.div();
     });
- */
+
     test('scaffold tree', async () => {
         smiles = grok.data.demo.molecules(20);
         v = grok.shell.addTableView(smiles);
