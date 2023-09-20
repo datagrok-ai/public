@@ -12,6 +12,7 @@
 * Add property fitWidth for VdRegionsViewer
 * Fix VdRegionsViewer fit width accounting position margin of WebLogo
 * Fix similarity/diversity viewer tests.
+* Fix reset filters for Substructure Search filter
 
 ## 2.10.0 (2023-09-06)
 
