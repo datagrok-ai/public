@@ -19,6 +19,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
 import {molV2000, molV3000} from './utils';
+import { EMPTY_MOLECULE_MESSAGE } from '../constants';
 
 category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
@@ -158,9 +159,14 @@ category('cell panel', async () => {
   //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
     for (const mol of molFormats) {
-      const widget = getDescriptorsSingle(mol);
-      await awaitCheck(() => widget.root.querySelector('table') !== null,
-      `descriptors table hasn\'t been created for ${mol}`, 10000);
+      const widget: DG.Widget = await grok.functions.call('Chem:descriptorsWidget', {smiles: mol});
+      if (mol === CONST.EMPTY) {
+        await awaitCheck(() => widget.root.innerText === EMPTY_MOLECULE_MESSAGE,
+        `empty data handled incorrectly`, 5000);
+      } else {
+        await awaitCheck(() => widget.root.querySelector('table') !== null,
+        `descriptors table hasn\'t been created for ${mol}`, 15000);
+      }
     }
-  });
+  }, { timeout: 70000 });
 });

@@ -22,12 +22,12 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   constructor(tooltipUse = false, col?: DG.Column) {
     super(DIVERSITY, col);
     this.renderMolIds = [];
-    this.updateMetricsLink(this, {fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.updateMetricsLink(this, { fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px' });
     this.tooltipUse = tooltipUse;
   }
 
 
-  async render(computeData = true): Promise<void> {
+  async renderInternal(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
@@ -36,6 +36,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
 
       if (computeData) {
+        this.isComputing = true;
         this.renderMolIds =
           await chemDiversitySearch(
             this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
@@ -54,10 +55,12 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
-            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height,
-              popupMenu: !this.tooltipUse}),
+            {
+              width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height,
+              popupMenu: !this.tooltipUse
+            }),
           molProps],
-        {style: {margin: '5px', padding: '3px', position: 'relative'}},
+          { style: { margin: '5px', padding: '3px', position: 'relative' } },
         );
 
         let divClass = 'd4-flex-col';
@@ -88,8 +91,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         grids[cnt2++] = grid;
       }
 
-      panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
-      this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
+      panel[cnt++] = ui.div(grids, { classes: 'd4-flex-wrap' });
+      this.root.appendChild(ui.div(panel, { style: { margin: '5px' } }));
       if (!this.tooltipUse)
         progressBar!.close();
     }
