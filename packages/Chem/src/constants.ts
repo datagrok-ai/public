@@ -33,3 +33,4 @@ export const getSearchProgressEventName =
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = 'chem-scaffold';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
+export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning'

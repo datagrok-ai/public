@@ -76,36 +76,6 @@ export class SubstructureFilter extends DG.Filter {
     this.calculating = false;
     this.root.appendChild(this.sketcher.root);
     this.root.appendChild(this.loader);
-    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
-      {
-        this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
-        this.updateExternalSketcher();
-      }
-    }));
-    this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
-      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
-        /* setting syncEvent to true only if base sketcher is initialized.
-        If base sketcher is initialized, it will fire onChange event */
-        if (this.currentSearches.size > 0)
-          grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
-        if (this.sketcher.sketcher?.isInitialized)
-          this.syncEvent = true;
-        this.bitset = state.bitset!;
-        this.sketcher.setMolFile(state.molblock!);
-        this.updateExternalSketcher();
-      }
-    }));
-    this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
-      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
-        if (this.sketcher.sketcher?.isInitialized) {
-          if (DG.chem.currentSketcherType !== this.sketcherType &&
-              this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
-            this.sketcherType = DG.chem.currentSketcherType;
-            this.sketcher.sketcherType = DG.chem.currentSketcherType;
-          }
-        }
-      }
-    }));
   }
 
   get _debounceTime(): number {
@@ -130,7 +100,7 @@ export class SubstructureFilter extends DG.Filter {
       });
     }
     super.attach(dataFrame);
-    this.column ??=dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name ?? '';
     this.tableName = dataFrame.name ?? '';
     this.onSketcherChangedSubs?.unsubscribe();
@@ -140,9 +110,40 @@ export class SubstructureFilter extends DG.Filter {
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_: any) => delete this.column!.temp[FILTER_SCAFFOLD_TAG]));
 
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
+      {
+        this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
+        this.updateExternalSketcher();
+      }
+    }));
+    this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
+      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+        /* setting syncEvent to true only if base sketcher is initialized.
+        If base sketcher is initialized, it will fire onChange event */
+        if (this.currentSearches.size > 0)
+          grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
+        if (this.sketcher.sketcher?.isInitialized)
+          this.syncEvent = true;
+        this.bitset = state.bitset!;
+        this.sketcher.setMolFile(state.molblock!);
+        this.updateExternalSketcher();
+      }
+    }));
+    this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
+      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+        if (this.sketcher.sketcher?.isInitialized) {
+          if (DG.chem.currentSketcherType !== this.sketcherType &&
+            this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
+            this.sketcherType = DG.chem.currentSketcherType;
+            this.sketcher.sketcherType = DG.chem.currentSketcherType;
+          }
+        }
+      }
+    }));
+
     this.currentSearches.add('');
     chemSubstructureSearchLibrary(this.column!, '', '', false, false)
-      .then((_) => {}); // Precalculating fingerprints
+      .then((_) => { }); // Precalculating fingerprints
 
     let onChangedEvent: any = this.sketcher.onChanged;
     onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
