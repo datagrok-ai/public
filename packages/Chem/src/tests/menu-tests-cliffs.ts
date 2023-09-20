@@ -10,6 +10,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {chemSpace} from '../analysis/chem-space';
 import {getSimilaritiesMarix} from '../utils/similarity-utils';
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
+import { MALFORMED_DATA_WARNING_CLASS } from '../constants';
 // const {jStat} = require('jstat');
 
 
@@ -46,7 +47,7 @@ category('top menu activity cliffs', async () => {
     await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
       'canonical_smiles', 'FractionCSP3', 24);
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0]?.children[0]?.innerHTML ===
+      await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
         '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 5000);
     } finally {
