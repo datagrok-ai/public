@@ -14,6 +14,7 @@ Mappings:
     Jupyter:
       domain: "docker.io"
       repo: "datagrok/jupyter"
+      version: "bleeding-edge"
     GrokCompute:
       domain: "docker.io"
       repo: "datagrok/grok_compute"

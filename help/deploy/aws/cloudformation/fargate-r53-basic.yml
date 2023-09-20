@@ -35,6 +35,7 @@ Mappings:
     Jupyter:
       domain: docker.io
       repo: datagrok/jupyter
+      version: bleeding-edge
     Kaniko:
       domain: gcr.io
       repo: kaniko-project/executor
@@ -1552,7 +1553,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh-int
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1632,7 +1633,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-int
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1712,7 +1713,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-i
+        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-int
       Port: 8889
       Protocol: HTTP
       Tags:
@@ -2794,8 +2795,7 @@ Resources:
           \                'cvmUrl': oldSettings['settings']['cvmUrl'],\n        \
           \        'h2oUrl': oldSettings['settings']['h2oUrl'],\n                'cvmUrlClient':\
           \ f\"https://{cvmClient}\",\n                'cvmSplit': oldSettings['settings']['cvmSplit'],\n\
-          \                'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken'],\n\
-          \                'jupyterNotebookToken': oldSettings['settings']['jupyterNotebookToken']\n\
+          \                'jupyterToken': oldSettings['settings']['jupyterToken']\n\
           \            }\n\n            setSettings = http.request(\"POST\", f'{host}/api/admin/plugins/scripts/settings',\n\
           \                                       body=json.dumps(new_settings),\n\
           \                                       headers={'Authorization': auth,\
