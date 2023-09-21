@@ -389,7 +389,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb-int
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb-int
       - Key: datagrok.component
         Value: cvm
       VpcId:
@@ -402,7 +402,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb
       - Key: datagrok.component
         Value: cvm
       VpcId:
@@ -466,7 +466,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb
       - Key: datagrok.component
         Value: cvm
       Type: application
@@ -477,7 +477,7 @@ Resources:
       - Key: routing.http.drop_invalid_header_fields.enabled
         Value: 'true'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-int
+        Fn::Sub: ${AWS::StackName}-dg-cvm-int
       Scheme: internal
       SecurityGroups:
       - Ref: CvmALBIntSecurityGroup
@@ -487,7 +487,7 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: ${AWS::StackName}-datagrok-cvm-alb-int
+          Fn::Sub: ${AWS::StackName}-dg-cvm-alb-int
       - Key: datagrok.component
         Value: cvm
       Type: application
@@ -1122,7 +1122,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o-gh-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o-gh-i
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1161,7 +1161,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o-gh
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o-gh
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1197,7 +1197,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o-i
       Port: 54321
       Protocol: HTTP
       Tags:
@@ -1236,7 +1236,7 @@ Resources:
       Matcher:
         HttpCode: '200'
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o
       Port: 54321
       Protocol: HTTP
       Tags:
@@ -1332,7 +1332,7 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-h2o
+        Fn::Sub: ${AWS::StackName}-dg-cvm-h2o
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -1478,7 +1478,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh-int
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jup-gh-int
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1518,7 +1518,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-gh
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jup-gh
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -1558,7 +1558,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-int
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter-int
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1598,7 +1598,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
       Port: 8888
       Protocol: HTTP
       Tags:
@@ -1638,7 +1638,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter-int
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern-int
       Port: 8889
       Protocol: HTTP
       Tags:
@@ -1678,7 +1678,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern
       Port: 8889
       Protocol: HTTP
       Tags:
@@ -1779,7 +1779,7 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-jupyter
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
       Memory: '3072'
       NetworkMode: awsvpc
       RequiresCompatibilities:
@@ -2922,7 +2922,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-gc-i
+        Fn::Sub: ${AWS::StackName}-dg-cvm-gc-i
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -2962,7 +2962,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-gc
+        Fn::Sub: ${AWS::StackName}-dg-cvm-gc
       Port: 5005
       Protocol: HTTP
       Tags:
@@ -3058,7 +3058,7 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-datagrok-cvm-grok_compute
+        Fn::Sub: ${AWS::StackName}-dg-cvm-grok_compute
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
