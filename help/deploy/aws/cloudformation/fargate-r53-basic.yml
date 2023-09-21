@@ -150,6 +150,14 @@ Parameters:
     Default: 1.1.1
     Description: Enter Datagrok H2O docker image version.
     Type: String
+  InternetEgressAccess:
+    Default: 'true'
+    Description: Engress internet traffic enable
+    Type: String
+  InternetIngressAccess:
+    Default: 'true'
+    Description: Ingress internet traffic enable
+    Type: String
   InternetSubnetAllow:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
     Description: Subnet for access to Datagrok client endpoints. Set CIDR to 0.0.0.0/0

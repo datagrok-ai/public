@@ -33,6 +33,14 @@ Parameters:
     Default: ""
     AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
     Description: Additional subnet for access to Datagrok client endpoints. You can omit this parameter is already specified InternetSubnetAllow.
+  InternetIngressAccess:
+    Type: String
+    Default: "true"
+    Description: Ingress internet traffic enable
+  InternetEgressAccess:
+    Type: String
+    Default: "true"
+    Description: Engress internet traffic enable
 Conditions:
   AccessFromNatGW:
     Fn::And:
