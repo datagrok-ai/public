@@ -418,7 +418,7 @@ export class UnitsHandler {
       case ALPHABET.RNA:
         return MmDistanceFunctionsNames.LEVENSHTEIN;
       case ALPHABET.PT:
-        return MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
+        return MmDistanceFunctionsNames.LEVENSHTEIN;
       // For default case, let's use Levenshtein distance
       default:
         return MmDistanceFunctionsNames.LEVENSHTEIN;
