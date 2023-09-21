@@ -16,7 +16,8 @@ export interface RDModule {
   writeArrayToMemory(arr: any, buff:any): any;
   MolList: MolListConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
-  }
+  get_mmp(mols: RDMol, minCuts: number, maxCuts: number, maxCutsBonds: number): string;
+}
 
 export interface RDMol {
   is_qmol: boolean;

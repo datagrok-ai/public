@@ -40,7 +40,6 @@ import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
-import {getMCS} from './utils/most-common-subs';
 
 //analytical imports
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -48,6 +47,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, getEmbeddingColsNames, runChemSpace} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {performMmpAnalysis} from './analysis/mmp-analysis';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -1239,6 +1239,16 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
+//top-menu: Chem | Analyze | MMP...
+//name: mmpAnalysis
+//input: dataframe table [Input data table]
+//input: column molecules { semType: Molecule }
+//input: column activities {type:numerical}
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities:DG.Column): Promise<void> {
+  const grid = performMmpAnalysis(table, molecules, activities);
+  grok.shell.tv.dockManager.dock(grid, 'right', null, 'MMP Analysis', 1);
+}
+
 //name: Scaffold Tree Filter
 //description: Scaffold Tree filter
 //tags: filter
@@ -1342,5 +1352,3 @@ export async function demoDatabases(): Promise<void> {
 export async function demoScaffold(): Promise<void> {
   _demoScaffoldTree();
 }
-
-export {getMCS};
