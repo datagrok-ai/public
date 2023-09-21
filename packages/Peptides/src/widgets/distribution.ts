@@ -184,6 +184,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     input.enabled = !model.isMonomerPositionSelectionEmpty;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
     $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
+    $(input.captionLabel).addClass('ui-label-right');
   };
 
   let defaultValuePos = model.splitByPos;
@@ -193,13 +194,11 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     defaultValueMonomer = false;
   }
 
-  const splitByPosition = ui.boolInput('', defaultValuePos, updateDistributionHost);
-  splitByPosition.addPostfix('Split by position');
+  const splitByPosition = ui.boolInput('Split by position', defaultValuePos, updateDistributionHost);  
   splitByPosition.setTooltip('Constructs distribution for each position separately');
   setDefaultProperties(splitByPosition);
   $(splitByPosition.root).css('margin-right', '10px');
-  const splitByMonomer = ui.boolInput('', defaultValueMonomer, updateDistributionHost);
-  splitByMonomer.addPostfix('Split by monomer');
+  const splitByMonomer = ui.boolInput('Split by monomer', defaultValueMonomer, updateDistributionHost);
   splitByMonomer.setTooltip('Constructs distribution for each monomer separately');
   setDefaultProperties(splitByMonomer);
 

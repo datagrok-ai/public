@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.13.4 (WIP)
+
+### Features
+
+* Fixed Distribution panel labels.
+
 ## 1.13.3 (2023-09-20)
 
 ### Features
