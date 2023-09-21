@@ -436,6 +436,18 @@
   visibility: visible;
 }
 
+.palette-icon.color-is-not-set {
+  visibility: hidden;
+}
+
+.palette-icon.color-is-set {
+  visibility: hidden;
+}
+
+.palette-icon.color-is-set:hover {
+  visibility: visible;
+}
+
 .canvas-container {
   position: relative;
   width: 100%;
