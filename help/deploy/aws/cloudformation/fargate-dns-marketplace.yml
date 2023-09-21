@@ -32,7 +32,10 @@ Mappings:
     H2o:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/h2o
-    Jupyter:
+    JKG:
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/jupyter
+    JN:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/jupyter
     Kaniko:
@@ -1366,7 +1369,7 @@ Resources:
       VpcId:
         Ref: DatagrokVPC
     Type: AWS::EC2::VPCGatewayAttachment
-  DatagrokJupyterService:
+  DatagrokJupyterKernelGatewayService:
     DependsOn:
     - CvmTCP80Listener
     - CvmTCP443Listener
@@ -1375,8 +1378,6 @@ Resources:
     - DatagrokJupyterTCP5005IntListenerRule
     - DatagrokJupyterTCP8888ListenerRule
     - DatagrokJupyterTCP8888IntListenerRule
-    - DatagrokJupyterTCP8889ListenerRule
-    - DatagrokJupyterTCP8889IntListenerRule
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -1390,30 +1391,22 @@ Resources:
       DesiredCount: 1
       LaunchType: FARGATE
       LoadBalancers:
-      - ContainerName: jupyter
+      - ContainerName: jupyter_kernel_gateway
         ContainerPort: 5005
         TargetGroupArn:
           Ref: DatagrokJupyterTCP5005TargetGroup
-      - ContainerName: jupyter
+      - ContainerName: jupyter_kernel_gateway
         ContainerPort: 8888
         TargetGroupArn:
           Ref: DatagrokJupyterTCP8888TargetGroup
-      - ContainerName: jupyter
-        ContainerPort: 8889
-        TargetGroupArn:
-          Ref: DatagrokJupyterTCP8889TargetGroup
-      - ContainerName: jupyter
+      - ContainerName: jupyter_kernel_gateway
         ContainerPort: 5005
         TargetGroupArn:
           Ref: DatagrokJupyterTCP5005IntTargetGroup
-      - ContainerName: jupyter
+      - ContainerName: jupyter_kernel_gateway
         ContainerPort: 8888
         TargetGroupArn:
           Ref: DatagrokJupyterTCP8888IntTargetGroup
-      - ContainerName: jupyter
-        ContainerPort: 8889
-        TargetGroupArn:
-          Ref: DatagrokJupyterTCP8889IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -1438,6 +1431,171 @@ Resources:
       TaskDefinition:
         Ref: DatagrokJupyterTaskDefinition
     Type: AWS::ECS::Service
+  DatagrokJupyterNotebookService:
+    DependsOn:
+    - CvmTCP80Listener
+    - CvmTCP443Listener
+    - CvmTCP8090IntListener
+    - DatagrokJupyterTCP5005ListenerRule
+    - DatagrokJupyterTCP5005IntListenerRule
+    - DatagrokJupyterTCP8889ListenerRule
+    - DatagrokJupyterTCP8889IntListenerRule
+    Properties:
+      Cluster:
+        Fn::GetAtt:
+        - CvmCluster
+        - Arn
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DeploymentController:
+        Type: ECS
+      DesiredCount: 1
+      LaunchType: FARGATE
+      LoadBalancers:
+      - ContainerName: jupyter_notebook
+        ContainerPort: 5005
+        TargetGroupArn:
+          Ref: DatagrokJupyterTCP5005TargetGroup
+      - ContainerName: jupyter_notebook
+        ContainerPort: 8889
+        TargetGroupArn:
+          Ref: DatagrokJupyterTCP8889TargetGroup
+      - ContainerName: jupyter_notebook
+        ContainerPort: 5005
+        TargetGroupArn:
+          Ref: DatagrokJupyterTCP5005IntTargetGroup
+      - ContainerName: jupyter_notebook
+        ContainerPort: 8889
+        TargetGroupArn:
+          Ref: DatagrokJupyterTCP8889IntTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+          - Ref: CvmSecurityGroup
+          Subnets:
+          - Ref: DatagrokPrivateSubnet1
+          - Ref: DatagrokPrivateSubnet2
+      PlatformVersion: 1.4.0
+      PropagateTags: SERVICE
+      SchedulingStrategy: REPLICA
+      ServiceRegistries:
+      - RegistryArn:
+          Fn::GetAtt:
+          - DatagrokJupyterNotebookServiceDiscoveryEntry
+          - Arn
+      Tags:
+      - Key: datagrok.component
+        Value: cvm
+      - Key: datagrok.service
+        Value: jupyter
+      TaskDefinition:
+        Ref: DatagrokJupyterNotebookTaskDefinition
+    Type: AWS::ECS::Service
+  DatagrokJupyterNotebookServiceDiscoveryEntry:
+    Properties:
+      Description:
+        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter' service discovery entry
+          in Cloud Map
+      DnsConfig:
+        DnsRecords:
+        - TTL: 60
+          Type: A
+        RoutingPolicy: MULTIVALUE
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: jupyter_notebook
+      NamespaceId:
+        Ref: DatagrokCloudMap
+    Type: AWS::ServiceDiscovery::Service
+  DatagrokJupyterNotebookTaskDefinition:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: ${AWS::Region}.compute.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+        - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+        Essential: false
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - repo
+            tag:
+              Fn::FindInMap:
+              - Images
+              - Searchdomain
+              - version
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: DatagrokLogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: jupyter_notebook
+        MemoryReservation: 100
+        Name: ResolvConf
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: ResolvConf
+        Essential: true
+        Image:
+          Fn::Sub:
+          - ${domain}/${repo}:${tag}
+          - domain:
+              Fn::FindInMap:
+              - Images
+              - Jupyter
+              - domain
+            repo:
+              Fn::FindInMap:
+              - Images
+              - Jupyter
+              - repo
+            tag:
+              Ref: JupyterVersion
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: DatagrokLogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: jupyter_notebook
+        MemoryReservation: 2048
+        Name: jupyter_notebook
+        PortMappings:
+        - ContainerPort: 5005
+          HostPort: 5005
+          Protocol: tcp
+        - ContainerPort: 8889
+          HostPort: 8889
+          Protocol: tcp
+      Cpu: '1024'
+      EphemeralStorage:
+        SizeInGiB: 50
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - DatagrokTaskExecutionRole
+        - Arn
+      Family:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
+      Memory: '3072'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+    Type: AWS::ECS::TaskDefinition
   DatagrokJupyterServiceDiscoveryEntry:
     Properties:
       Description:
@@ -1450,7 +1608,7 @@ Resources:
         RoutingPolicy: MULTIVALUE
       HealthCheckCustomConfig:
         FailureThreshold: 1
-      Name: jupyter
+      Name: jupyter_kernel_gateway
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
@@ -1633,7 +1791,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
   DatagrokJupyterTCP8889IntTargetGroup:
     Properties:
-      HealthCheckPath: /jupyter/api
+      HealthCheckPath: /notebook/api
       Matcher:
         HttpCode: 200
       Name:
@@ -1727,7 +1885,7 @@ Resources:
               Ref: DatagrokLogGroup
             awslogs-region:
               Ref: AWS::Region
-            awslogs-stream-prefix: jupyter
+            awslogs-stream-prefix: jupyter_kernel_gateway
         MemoryReservation: 100
         Name: ResolvConf
       - DependsOn:
@@ -1757,18 +1915,15 @@ Resources:
               Ref: DatagrokLogGroup
             awslogs-region:
               Ref: AWS::Region
-            awslogs-stream-prefix: jupyter
+            awslogs-stream-prefix: jupyter_kernel_gateway
         MemoryReservation: 2048
-        Name: jupyter
+        Name: jupyter_kernel_gateway
         PortMappings:
         - ContainerPort: 5005
           HostPort: 5005
           Protocol: tcp
         - ContainerPort: 8888
           HostPort: 8888
-          Protocol: tcp
-        - ContainerPort: 8889
-          HostPort: 8889
           Protocol: tcp
       Cpu: '1024'
       EphemeralStorage:
