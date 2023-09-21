@@ -11,7 +11,11 @@ Mappings:
     GrokSpawner:
       domain: "docker.io"
       repo: "datagrok/grok_spawner"
-    Jupyter:
+    JKG:
+      domain: "docker.io"
+      repo: "datagrok/jupyter"
+      version: "bleeding-edge"
+    JN:
       domain: "docker.io"
       repo: "datagrok/jupyter"
       version: "bleeding-edge"
