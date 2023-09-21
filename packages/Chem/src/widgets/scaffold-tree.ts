@@ -10,7 +10,7 @@ import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {_package, getScaffoldTree, isSmarts} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
+import {SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
 import { IColoredScaffold, ISubstruct } from '../rendering/rdkit-cell-renderer';
 import * as OCL from 'openchemlib/full';
 import { hexToPercentRgb } from '../utils/chem-common';
@@ -1203,7 +1203,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   
     if (colorIsSet) {
       this.scaffolds.push({ molecule: smiles, color: chosenColor });
-      this.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.scaffolds));
+      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, this.scaffolds.length > 0 ? JSON.stringify(this.scaffolds) : '');
       grok.shell.tv.dataFrame.fireValuesChanged();
       await Promise.all([
         this.highlightCanvas(group, chosenColor, smiles),
@@ -1229,7 +1229,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (indexToRemove !== -1)
         this.scaffolds.splice(indexToRemove, 1);
       
-      this.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.scaffolds));
+      this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, this.scaffolds.length > 0 ? JSON.stringify(this.scaffolds) : '');
       grok.shell.tv.dataFrame.fireValuesChanged();
       // Use Promise.all to execute the actions concurrently
       await Promise.all([
@@ -1316,12 +1316,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const addIcon = ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold');
     const editIcon = ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold');
-    if (this.molCol!.getTag('editable') === 'false') {
+    /*if (this.molCol!.getTag('editable') === 'false') {
       addIcon.classList.add('disable-icon');
       addIcon.style.cssText += 'color: var(--grey-4) !important';
       editIcon.classList.add('disable-icon');
       editIcon.style.cssText += 'color: var(--grey-4) !important';
-    }
+    }*/
     const iconsDiv = ui.divV([
       addIcon,
       editIcon,
