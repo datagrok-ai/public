@@ -139,6 +139,7 @@ function getColoredDiv(color: number): HTMLDivElement {
 
 function filterByAlert(molCol: DG.Column, alert: string): void {
   const tv = grok.shell.tv;
+  molCol.setTag('editable', 'false');
   //@ts-ignore
   const filterState = tv.getFiltersGroup({createDefaultFilters: false}).getStates(molCol.name, 'Chem:scaffoldTreeFilter');
   let newScaffoldTree = [{scaffold: alert}];

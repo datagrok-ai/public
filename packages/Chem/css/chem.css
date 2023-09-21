@@ -452,3 +452,9 @@
   position: relative;
   width: 100%;
 }
+
+.disable-icon {
+  pointer-events: none;
+  color: var(--grey-4)!important;
+  cursor:default!important;
+}
