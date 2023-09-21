@@ -192,7 +192,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       case PROPS.positionHeight:
         for (let orderI = 0; orderI < this.logos.length; ++orderI) {
           for (const chain of this.chains)
-            this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: this.positionWidth});
+            this.logos[orderI][chain].setOptions({[wlPROPS.positionHeight]: this.positionHeight});
         }
         this.calcSize();
         break;

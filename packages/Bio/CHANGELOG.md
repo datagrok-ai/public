@@ -14,6 +14,7 @@
 * Fix similarity/diversity viewer tests.
 * Fix reset filters for Substructure Search filter.
 * Fix Macromolecule cell renderer width limit for devicePixelRatio less than 1.
+* Fix VdRegionsViewer.positionHeight transmit to enclosed WebLogo.
 
 ## 2.10.0 (2023-09-06)
 
@@ -29,7 +30,7 @@
 * Fixed UnitsHandler.posList length.
 * Fixed mistyping top menu path for Identity scoring.
 * Fixed Get Region missed in short top menu.
-* Fixed tests detectMacromoleculeBenchmark to specify test failed.  
+* Fixed tests detectMacromoleculeBenchmark to specify test failed.
 
 ## 2.9.0 (2023-08-30)
 
