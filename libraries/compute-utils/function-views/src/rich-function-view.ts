@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import { FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase } from '../../shared-components/src/FuncCallInput';
+import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase, Advice} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -156,7 +156,6 @@ export class RichFunctionView extends FunctionView {
 
     if (this.runningOnStart && this.isRunnable())
       await this.doRun();
-
   }
 
   protected prevOpenedTab = null as DG.TabPane | null;
@@ -234,6 +233,10 @@ export class RichFunctionView extends FunctionView {
         this.validators[param.name] = call.outputs.validator;
       }
     }));
+  }
+
+  private keepInputs() {
+    return this.func?.options['keepOutput'] === 'true';
   }
 
   private getSaveButton(name = 'Save') {
@@ -653,6 +656,7 @@ export class RichFunctionView extends FunctionView {
       console.log(e);
     } finally {
       this.isRunning.next(false);
+      this.validationRequests.next({isRevalidation: false});
     }
   }
 
@@ -835,47 +839,118 @@ export class RichFunctionView extends FunctionView {
   }
 
   private injectInputBaseValidation(t: DG.InputBase) {
-    const validationIndicator = ui.div('', { style: { display: 'flex' } });
-    t.root.append(validationIndicator);
+    const validationIndicator = ui.div('', {style: {display: 'flex'}});
+    t.addOptions(validationIndicator);
     const it = this;
     function setValidation(messages: ValidationResultBase | undefined) {
-      while(validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
+      while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
       const icon = it.getValidationIcon(messages);
-      if (icon) {
+      if (icon)
         validationIndicator.appendChild(icon);
-      }
+
       t.input.classList.remove('d4-invalid');
       t.input.classList.remove('d4-partially-invalid');
-      if (messages?.errors) {
+      if (messages?.errors)
         t.input.classList.add('d4-invalid');
-      } else if (messages?.warnings) {
+      else if (messages?.warnings)
         t.input.classList.add('d4-partially-invalid');
-      }
     }
     (t as any).setValidation = setValidation;
   }
 
   private getValidationIcon(messages: ValidationResultBase | undefined) {
-    if (messages?.pending) {
-      const icon = ui.iconFA('spinner', () => { console.log('click') }, 'Some tool tip');
-      return icon;
-    }
-    if (messages?.errors) {
-      const icon = ui.iconFA('exclamation', () => { console.log('click') }, 'Some tool tip');
-      icon.style.color = 'var(--red-3)';
-      return icon;
-    }
-    if (messages?.warnings) {
-      const icon = ui.iconFA('exclamation', () => { console.log('click') }, 'Some tool tip');
-      icon.style.color = 'var(--orange-2)';
-      return icon;
+    let popover: any;
+    let icon: any;
+    if (messages?.pending)
+      icon = ui.iconFA('spinner', () => {this.displayValidation(messages, icon, popover);});
 
-    }
-    if (messages?.notifications) {
-      const icon = ui.iconFA('info', () => { console.log('click') }, 'Some tool tip');
+    if (messages?.errors) {
+      icon = ui.iconFA('exclamation', () => {this.displayValidation(messages, icon, popover);});
+      icon.style.color = 'var(--red-3)';
+    } else if (messages?.warnings) {
+      icon = ui.iconFA('exclamation', () => {this.displayValidation(messages, icon, popover);});
+      icon.style.color = 'var(--orange-2)';
+    } else if (messages?.notifications) {
+      icon = ui.iconFA('info', () => {this.displayValidation(messages, icon, popover);} );
       icon.style.color = 'var(--blue-1)';
-      return icon;
     }
+    if (icon)
+      popover = this.addPopover(icon);
+
+    return icon;
+  }
+
+  private addPopover(icon: HTMLElement) {
+    const popover = ui.div();
+    this.stylePopover(popover);
+    icon.appendChild(popover);
+    return popover;
+  }
+
+  private displayValidation(messages: ValidationResultBase, icon: HTMLElement, popover: HTMLElement) {
+    if (popover && icon) {
+      this.alignPopover(icon, popover);
+      while (popover.firstChild && popover.removeChild(popover.firstChild));
+      const content = this.renderDynamicHelp(messages);
+      popover.appendChild(content);
+      popover.showPopover();
+    }
+  }
+
+  private alignPopover(target: HTMLElement, popover: HTMLElement): void {
+    const bounds = target.getBoundingClientRect().toJSON();
+    popover.style.inset = 'unset';
+    popover.style.top = bounds.y + 'px';
+    popover.style.left = (bounds.x + 20) + 'px';
+  }
+
+  private stylePopover(popover: HTMLElement): void {
+    popover.popover = 'auto';
+    popover.style.cursor = 'default';
+    popover.style.padding = '10px';
+    popover.style.background = '#fdffe5';
+    popover.style.border = '1px solid #E4E6CE';
+    popover.style.borderRadius = '2px';
+    popover.style.boxShadow = '0 0 5px #E4E6CE';
+    popover.style.maxWidth = '500px';
+  }
+
+  private renderDynamicHelp(messages: ValidationResultBase) {
+    const root = ui.div('', {style: {display: 'flex', flexDirection: 'column'}});
+    for (const [category, advices] of Object.entries(messages)) {
+      const icon = this.getAdviceIcon(category);
+      if (!icon || !advices)
+        continue;
+      for (const advice of advices as Advice[]) {
+        root.appendChild(ui.span([
+          icon,
+          advice.description,
+          ...(advice.actions ?? []).map(
+            (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '10px'}})),
+        ], {style: {lineHeight: '1.2', marginBottom: '10px'}}));
+      }
+    }
+    return root;
+  }
+
+  private getAdviceIcon(category: string) {
+    let icon: HTMLElement | undefined;
+    if (category === 'errors') {
+      icon = ui.iconFA('exclamation');
+      icon.style.color = 'var(--red-3)';
+    } else if (category === 'warnings') {
+      icon = ui.iconFA('exclamation');
+      icon.style.color = 'var(--orange-2)';
+    } else if (category === 'notifications') {
+      icon = ui.iconFA('info');
+      icon.style.color = 'var(--blue-1)';
+    }
+    if (icon) {
+      icon.style.cursor = 'default';
+      icon.style.display = 'inline-block';
+      icon.style.fontFamily = '"Font Awesome 5 Pro"';
+    }
+    return icon;
   }
 
   private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
@@ -977,13 +1052,18 @@ export class RichFunctionView extends FunctionView {
     const validationItems = await Promise.all(inputNames.map(async (name) => {
       const v = this.funcCall.inputs[name];
       // not allowing null anywhere
-      const standardMsgs = await nonNullValidator(v, name, this._funcCall!, payload.isRevalidation);
+      const standardMsgs = await nonNullValidator(v, {
+        param: name, funcCall: this._funcCall!, lastCall: this.lastCall, isRevalidation: payload.isRevalidation,
+      });
       if (standardMsgs)
         return [name, standardMsgs] as const;
 
       const customValidator = this.validators[name];
       if (customValidator) {
-        const customMsgs = await customValidator(v, name, this._funcCall!, payload.isRevalidation, payload.context);
+        const customMsgs = await customValidator(v, {
+          param: name, funcCall: this._funcCall!, lastCall: this.lastCall,
+          isRevalidation: payload.isRevalidation, context: payload.context,
+        });
         return [name, customMsgs] as const;
       }
       return [name, undefined] as const;
@@ -1043,6 +1123,8 @@ export class RichFunctionView extends FunctionView {
   }
 
   private hideOutdatedOutput() {
+    if (this.keepInputs())
+      return;
     this.outputsTabsElem.panes
       .filter((tab) => Object.keys(this.categoryToDfParamMap.outputs).includes(tab.name))
       .forEach((tab) => $(tab.header).hide());

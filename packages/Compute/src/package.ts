@@ -9,7 +9,7 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import './css/model-card.css';
 import { ImportScriptGeneratorApp } from './import-script-generator/view';
-import { makeRevalidation, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-components/src/FuncCallInput';
+import { ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-components/src/FuncCallInput';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -258,18 +258,39 @@ export function AsyncValidatorDemoFactory(params: any) {
 //output: object validator
 export function GlobalValidatorDemoFactory(params: any) {
   const { max } = params;
-  return async (_val: number, param: string, fc: DG.FuncCall, isRevalidation: boolean, context: any) => {
-    if (isRevalidation) {
-      if (context?.isOk)
+  return async (_val: number, info: ValidationInfo) => {
+    if (info.isRevalidation) {
+      if (info.context?.isOk)
         return makeValidationResult();
       return makeValidationResult({warnings: [`Try lowering a value as well`]});
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const { a, b, c } = fc.inputs;
+    const { a, b, c } = info.funcCall.inputs;
     const s = a + b + c;
     const isOk = s <= max;
     const valRes = isOk ? makeValidationResult() : makeValidationResult({ warnings: [`Try lowering a value`] });
-    const fields = ['a', 'b', 'c'].filter(p => p !== param);
+    const fields = ['a', 'b', 'c'].filter(p => p !== info.param);
     return makeRevalidation(fields, { isOk }, valRes);
+  }
+}
+
+//name: ValidatorActionsDemoFactory
+//input: object params
+//output: object validator
+export function ValidatorActionsDemoFactory(params: any) {
+  return async (_val: number, info: ValidationInfo) => {
+    const notifications = [makeAdvice('Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.', [
+      { actionName: 'First action', action: () => grok.shell.info('First action') },
+      { actionName: 'Another action', action: () => {
+        ui.dialog({ title: 'Another action'}).show({center: true, fullScreen: true})
+      }}
+    ])];
+    // TODO: fix last call mutations
+    if (info.lastCall) {
+      const delta = info.lastCall.inputs.x - info.funcCall.inputs.x;
+      const warnings = [makeAdvice(`Param delta change ${delta}`)];
+      return makeValidationResult({ warnings, notifications });
+    }
+    return makeValidationResult({ notifications });
   }
 }

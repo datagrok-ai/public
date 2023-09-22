@@ -60,12 +60,12 @@ export function isValidationPassed(result?: ValidationResult) {
 }
 
 export function makeAdvice(description: string, actions?: ActionItems[]) {
-  return { description, actions };
+  return {description, actions};
 }
 
 export function getErrorMessage(result?: ValidationResult) {
   if (result?.errors)
-    return result.errors.map(err => err.description).join('; ');
+    return result.errors.map((err) => err.description).join('; ');
 }
 
 export interface ValidationPayload {
@@ -76,7 +76,11 @@ export interface ValidationPayload {
 
 export function makeValidationResult(payload?: ValidationPayload): ValidationResultBase {
   const wrapper = (item: string | Advice) => typeof item === 'string' ? makeAdvice(item) : item;
-  return {errors: payload?.errors?.map(err =>  wrapper(err)), warnings: payload?.warnings?.map(warn => wrapper(warn))};
+  return {
+    errors: payload?.errors?.map((err) => wrapper(err)),
+    warnings: payload?.warnings?.map((warn) => wrapper(warn)),
+    notifications: payload?.notifications?.map((note) => wrapper(note)),
+  };
 }
 
 export function makePendingValidationResult(): ValidationResult {
@@ -87,8 +91,15 @@ export function makeRevalidation(revalidate: string[], context?: any, result?: V
   return {revalidate, context, ...result};
 }
 
-export type Validator =
-  (val: any, param: string, fc: DG.FuncCall, isRevalidation: boolean, context?: any)
+export interface ValidationInfo {
+  param: string,
+  funcCall: DG.FuncCall,
+  lastCall?:DG.FuncCall,
+  isRevalidation: boolean,
+  context?: any
+}
+
+export type Validator = (val: any, info: ValidationInfo)
   => Promise<ValidationResult | undefined>;
 
 export type ValidatorFactory = (params: any) => { validator: Validator, isAdvisory: boolean };
