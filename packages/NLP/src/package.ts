@@ -5,8 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {getCategories, getValidationResults, stemmedColumn, getClosestElementsDFusingStemmedData, getClosestUsingStemmedData,
-  closestElementsDF, getSearchResults, STEMMED_SUFIX} from './stemming-tools';
+import {stemmedColumn, getClosestUsingStemmedData, closestElementsDF, getSearchResults, STEMMED_SUFIX, getDictOfStemmedWords} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -212,7 +211,7 @@ export function similar(query: string): DG.Widget {
 
   for (let i = 0; i < count; ++i)
     if (searchResults.indeces[i] !== cellIndex) {
-      divElements.push(ui.divText('# ' + (searchResults.indeces[i] + 1).toString()));
+      //divElements.push(ui.divText('# ' + (searchResults.indeces[i] + 1).toString()));
       divElements.push(ui.divText(searchResults.strings[i]));
       divElements.push(ui.divText('------'));
     }
@@ -248,135 +247,6 @@ export function stemmingBasedSearch(query: string, table: DG.DataFrame, column: 
 //input: column column {type: string}
 export function stemColumn(table: DG.DataFrame, column: DG.Column) { table.columns.add(stemmedColumn(column, 1)); }
 
-//top-menu: NLP | Compare Metrics...
-//name: Compare SBS-metrics
-//description: Compare stemming-based similarity metrics: absolute & relative. A query is the string specified from the target column.
-//input: int index [Index of the query string taken from the target column to be searched for.]
-//input: dataframe table [Source dataframe.]
-//input: column column {type: string} [The column to be searched in.]
-//input: column categories {type: string} [The column with validation classes.]
-//input: int closest = 5 [Number of the closest items to be shown in the report.]
-export function compareMetrics(index: number, table: DG.DataFrame, column: DG.Column, categories: DG.Column, closest: number) {
-  const query = column.get(((index >= 0 ) && (index < column.length))? index : 0) ?? '';
-  const results = closestElementsDF(query, column, closest, 1);
-
-  results.absClosest.name = 'Search results (absolute metric)';
-  results.relClosest.name = 'Search results (relative metric)';
-
-  results.absClosest.columns.add(getCategories(results.absClosest, categories));
-  results.relClosest.columns.add(getCategories(results.relClosest, categories));
-
-  grok.shell.addTableView(results.absClosest);
-  grok.shell.addTableView(results.relClosest);
-}
-
-//top-menu: NLP | Categories Check...
-//name: Stemming-based search
-//description: Classes-based research of stemming-based similarity metric. A query is a random string from the column Questions.
-//input: dataframe df {caption: Table; category: Database} [Source dataframe.]
-//input: column strings {type: string; caption: Questions; category: Database} [The column to be searched in.]
-//input: column categories {type: string; caption: section; category: Database} [The column with validation classes.]
-//input: int closestCount = 5 {caption: Closest count; category: Research parameters} [Number of the closest items to be shown in the report.]
-//input: int launchesCount = 10 {caption: Launches; category: Research parameters} [Number of launches of the search process.]
-//output: dataframe results {caption: Metrics comparison}
-export function sbsMetricCheckClasses(df: DG.DataFrame, strings: DG.Column, categories: DG.Column, closestCount: number, launchesCount: number) 
-{
-  let absClassesSum = 0;
-  let relClassesSum = 0;
-  let absBestSum = 0;
-  let relBestSum = 0;
-
-  for (let i = 0; i < launchesCount; ++i) {
-    const idx = Math.floor(Math.random() * df.rowCount);
-    const res = getValidationResults(idx, strings, categories, closestCount);
-
-    absClassesSum += res.absolute;
-    relClassesSum += res.relative;
-    absBestSum += res.absoluteBest ? 1 : 0;
-    relBestSum += res.relativeBest ? 1 : 0;
-  }
-
-  const coef1 = 100 / launchesCount;
-  const coef2 = coef1 / closestCount;
-
-  return DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('criteria', [`Coincide '${categories.name}', overall`, `Coincide '${categories.name}', the best item`]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'absolute, %', [absClassesSum * coef2, absBestSum * coef1]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'relative, %', [relClassesSum * coef2, relBestSum * coef1]),
-  ]);
-}
-
-//top-menu: NLP | Time Performance...
-//name: SBS time performance
-//description: Time performance of stemming-based similarity metric.
-//input: dataframe table [Source dataframe.]
-//input: column column {type: string} [The column to be searched in.]
-//input: int index [Index of the query string taken from the target column to be searched for.  Try 587, 2 or 13367.]
-//input: int closest = 5 [Number of the closest items to be shown in the report.]
-//input: int launches = 20 [Number of the search launches.]
-export function stemmingBasedSearchPerformance(table: DG.DataFrame, column: DG.Column, index: number, closest: number, launches: number) {
-  const query = column.get(((index >= 0 ) && (index < column.length))? index : 0) ?? '';
-  let sum = 0;
-
-  for (let i = 0; i < launches; ++i) {
-    let start = new Date().getTime();    
-    const results = closestElementsDF(query, column, closest, 1);
-    let finish = new Date().getTime();
-
-    sum += finish - start;
-  }
-
-  ui.dialog({title: 'Perfromance'})
-    .add(ui.span([`Search of the item #${index} in ${table.rowCount} rows requires ${sum / launches} ms.`]))    
-    .show();
-
-  // Q.csv, 20117 rows:
-  // with removing stop words
-  //   idx 587: 784.5 ms. -> 671 ms.
-  //   idx 2: 799.05 ms -> 672.85 ms.
-  //   idx 13367: 15603 ms. -> 901 ms.  
-
-  // Q.csv, 20117 rows:
-/* Basic     
-     "in max-length search":
-         idx 587:  674.3 ms. -> 679.65 ms.
-           idx 2:  678.7 ms. -> 682.55 ms.
-       idx 13367:  795.1 ms. -> 874.6 ms.
-*/
-}
-
-//top-menu: NLP | Time Performance (using stemmed)...
-//name: SBS time performance
-//description: Time performance of stemming-based similarity metric (stemmed data is used).
-//input: dataframe table [Source dataframe.]
-//input: column column {type: string} [The column to be searched in.]
-//input: int index [Index of the query string taken from the target column to be searched for. Try 587, 2 or 13367.]
-//input: int closest = 5 [Number of the closest items to be shown in the report.]
-//input: int launches = 20 [Number of the search launches.]
-export function stemmingBasedSearchPerformanceUsingStemmedData(table: DG.DataFrame, column: DG.Column, index: number, closest: number, launches: number) {
-  const query = column.get(((index >= 0 ) && (index < column.length))? index : 0) ?? '';
-  const stemmed = table.getCol(`${column.name}${STEMMED_SUFIX}`);
-  let sum = 0;  
-
-  for (let i = 0; i < launches; ++i) {
-    let start = new Date().getTime();  
-    const results = getClosestElementsDFusingStemmedData(query, stemmed, closest, 1);
-    let finish = new Date().getTime();
-
-    sum += finish - start;
-  }
-
-  ui.dialog({title: 'Perfromance'})
-    .add(ui.span([`Search of the item #${index} in ${table.rowCount} rows requires ${sum / launches} ms.`]))    
-    .show();
-
-  // Q.csv, 20117 rows:
-  // with removing stop words
-  //   idx 587: 31.9 ms.
-  //   idx 2: 32.6 ms.
-  //   idx 13367: 219.55 ms.
-}
-
 //name: Similar (using stemmed)
 //tags: panel, widgets
 //input: string query {semType: Text}
@@ -395,7 +265,7 @@ export function similarUsingStemmed(query: string): DG.Widget {
   const divElements = [] as HTMLDivElement[];
 
   for (let i = 1; i < searchResults.indeces.length; ++i) {
-    divElements.push(ui.divText('# ' + (searchResults.indeces[i] + 1).toString()));
+    //divElements.push(ui.divText('# ' + (searchResults.indeces[i] + 1).toString()));
     divElements.push(ui.divText(searchResults.strings[i]));
     divElements.push(ui.divText('------'));
   }
@@ -405,4 +275,14 @@ export function similarUsingStemmed(query: string): DG.Widget {
   ui.tooltip.bind(wgt.root, 'Stemming-based search results.');
 
   return wgt;
+}
+
+//top-menu: NLP | Get Dict...
+//name: Get Dict of Stemmed...
+//input: dataframe table
+//input: column strings
+export function getDict(table: DG.DataFrame, strings: DG.Column) {
+  const res = getDictOfStemmedWords(strings, 1);
+  console.log(res.dict);
+  table.columns.add(res.indices);
 }

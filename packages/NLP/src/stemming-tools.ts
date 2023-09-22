@@ -283,53 +283,6 @@ export function stemmedColumn(col: DG.Column<string>, minCharCount: number): DG.
   return stemmed;
 }
 
-// HEURISTIC VALIDATION TOOLS
-
-/** Return categories corresponding to the closest items */
-export function getCategories(closest: DG.DataFrame, categories: DG.Column): DG.Column {
-  const size = closest.rowCount;
-  const res = DG.Column.fromType(DG.COLUMN_TYPE.STRING, categories.name, size);
-  const indices = closest.col(INDEX_COL_NAME);
-
-  for (let i = 0; i < size; ++i)
-    res.set(i, categories.get(indices?.get(i)));
-
-  return res; 
-}
-
-/** Find the number of occurrences of an element in a column. */
-function countOccurs(element: any, col: DG.Column): number {  
-  let res = 0;
-  const size = col.length;
-
-  for (let i = 0; i < size; ++i)
-    if (col.get(i) === element)
-      ++res;
-
-  return res;
-}
-
-/** Heuristic validation. */
-export function getValidationResults(idx: number, strings: DG.Column, categories: DG.Column, closestCount: number): CorrectClassesCount {
-  const query = strings.get(((idx >= 0 ) && (idx < strings.length))? idx : 0) ?? '';
-  const searchResults = closestElementsDF(query, strings, closestCount, 1);
-
-  const absClasses = getCategories(searchResults.absClosest, categories);
-  const relClasses = getCategories(searchResults.relClosest, categories);
-
-  searchResults.absClosest.columns.add(absClasses);
-  searchResults.relClosest.columns.add(relClasses);
-
-  const queryClass = categories.get(idx);
-
-  return {
-    absolute: countOccurs(queryClass, absClasses) - 1,
-    absoluteBest: queryClass === absClasses.get(1),
-    relative: countOccurs(queryClass, relClasses) - 1,
-    relativeBest: queryClass === relClasses.get(1),
-  };
-}
-
 // EXPERIMENTAL TOOLS: discussion & optimization are required!
 
 function computeMetricsUsingStemmedData(query: string, stemmed: DG.Column<string>, minCharCount: number): Element[] {
@@ -373,4 +326,29 @@ export function getClosestUsingStemmedData(query: string, source: DG.Column<stri
     indeces: closestIndeces,
     strings: closestIndeces.map((idx) => source.get(idx) ?? '') 
   };
+}
+
+export function getDictOfStemmedWords(source: DG.Column<string>, minCharCount: number): {dict: Map<string, number>, indices: DG.Column} {
+  const dict = new Map<string, number>();
+  const size = source.length;
+  const indices = DG.Column.fromType(DG.COLUMN_TYPE.OBJECT, `${source.name} (inds)`, size);
+
+  for (let i = 0; i < size; ++i) {
+    const words = getStemmedWords(source.get(i) ?? '', minCharCount);
+    const inds = new Uint16Array(words.length);
+    let j = 0; 
+
+    words.forEach((w) => {
+      if (!dict.has(w))
+        dict.set(w, dict.size);
+
+      inds[j] = dict.get(w)!;
+      
+      ++j;
+    });
+
+    indices.set(i, inds.sort());
+  }
+
+  return {dict: dict, indices: indices};
 }
