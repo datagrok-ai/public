@@ -1782,7 +1782,7 @@ Resources:
       - Field: path-pattern
         PathPatternConfig:
           Values:
-          - /jupyter/*
+          - /notebook/*
       ListenerArn:
         Ref: CvmTCP8090IntListener
       Priority: 6
@@ -1822,7 +1822,7 @@ Resources:
       - Field: path-pattern
         PathPatternConfig:
           Values:
-          - /jupyter/*
+          - /notebook/*
       ListenerArn:
         Ref: CvmTCP443Listener
       Priority: 6
