@@ -18,9 +18,11 @@ import {Measure, KnownMetrics, AvailableMetrics,
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters} from 'umap-js';
 import {DistanceMatrix, DistanceMatrixService, distanceMatrixProxy, dmLinearIndex} from './distance-matrix';
+import { SparseMatrixService } from './distance-matrix/sparse-matrix-service';
 
 export interface IReduceDimensionalityResult {
   distance?: Float32Array;
+  sparseMatrix?: Map<number, Map<number, number>>;
   embedding: Matrix;
 }
 
@@ -36,6 +38,9 @@ export interface IUMAPOptions {
   nNeighbors?: number;
   spread?: number;
   minDist?: number;
+  sparseMatrixThreshold?: number;
+  preCalculateDistanceMatrix?: boolean;
+  usingSparseMatrix?: boolean;
 }
 
 export interface ITSNEOptions {
@@ -137,7 +142,11 @@ class TSNEReducer extends Reducer {
   }
 }
 
-export type UmapOptions = Options & UMAPParameters & {preCalculateDistanceMatrix?: boolean};
+export type UmapOptions = Options & UMAPParameters & {
+  preCalculateDistanceMatrix?: boolean,
+  usingSparseMatrix?: boolean,
+  sparseMatrixThreshold?: number,
+};
 
 /**
  * Implements UMAP dimensionality reduction.
@@ -152,7 +161,10 @@ class UMAPReducer extends Reducer {
   protected vectors: number[][];
   protected distanceMatrix?: Float32Array;
   protected usingDistanceMatrix: boolean;
+  protected sparseMatrix?: Map<number, Map<number, number>>;
   protected dmIndexFunc: (i: number, j: number) => number;
+  protected usingSparseMatrix: boolean;
+  protected sparseMatrixThreshold: number;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -163,16 +175,21 @@ class UMAPReducer extends Reducer {
     assert('distanceFname' in options);
     assert('distanceFn' in options);
     this.distanceFn = options.distanceFn!;
+    this.usingSparseMatrix = !!options.usingSparseMatrix;
+    this.sparseMatrixThreshold = options.sparseMatrixThreshold ?? 0.8;
+    
 
     this.distanceFname = options.distanceFname!;
     this.dmIndexFunc = dmLinearIndex(this.data.length);
     //Umap uses vector indexing, so we need to create an array of vectors as indeces.
     this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
     this.usingDistanceMatrix = !(!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS);
-    if (!this.usingDistanceMatrix)
-      options.distanceFn = this._encodedDistance.bind(this);
-    else
+    if (this.usingDistanceMatrix)
       options.distanceFn = this._encodedDistanceMatrix.bind(this);
+    else if (this.usingSparseMatrix)
+      options.distanceFn = this._encodedSparseMatrix.bind(this);
+    else
+      options.distanceFn = this._encodedDistance.bind(this);
 
     if (this.data.length < 15)
       options.nNeighbors = this.data.length - 1;
@@ -195,6 +212,10 @@ class UMAPReducer extends Reducer {
     if (a[0] > b[0])
       return this.distanceMatrix![this.dmIndexFunc(b[0], a[0])];
     return this.distanceMatrix![this.dmIndexFunc(a[0], b[0])];
+  }
+
+  protected _encodedSparseMatrix(a: number[], b: number[]): number {
+    return this.sparseMatrix!.get(a[0])?.get(b[0]) ?? this.sparseMatrix!.get(b[0])?.get(a[0]) ?? 1;
   }
 
   protected _encodedDistance(a: number[], b: number[]): number {
@@ -220,6 +241,19 @@ class UMAPReducer extends Reducer {
         }
       })() :
         (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); return ret.data; })();
+    } else if (this.usingSparseMatrix) {
+          const matrixService = new SparseMatrixService();
+          const res = await matrixService.calc(this.data, this.distanceFname, this.sparseMatrixThreshold);
+          this.sparseMatrix = new Map<number, Map<number, number>>();
+          for (let i = 0; i < res.i.length; ++i) {
+            const first = res.i[i];
+            const second = res.j[i];
+            const similarity = res.similarity[i];
+            if (!this.sparseMatrix.has(first))
+              this.sparseMatrix.set(first, new Map<number, number>());
+            this.sparseMatrix.get(first)!.set(second, similarity);
+          }
+        
     }
     const embedding = this.reducer.fit(this.vectors);
 
