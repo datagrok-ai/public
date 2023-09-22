@@ -453,7 +453,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.destroyView( dataFrame = ${dataFrameTxt} ) start`);
 
-    this.viewSubs.forEach((sub) => sub.unsubscribe());
     this.host!.remove();
     this.msgHost = undefined;
     this.host = undefined;
@@ -560,15 +559,17 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   }
 
   /** Updates {@link positionNames} and calculates {@link startPosition} and {@link endPosition}.
+   * Calls {@link render}() with {@link WlRenderLevel.Freqs}
    */
   private updatePositions(): void {
     if (!this.seqCol) return;
 
     const dfFilter = this.filterSource === FilterSources.Filtered ? this.dataFrame.filter :
       this.dataFrame.selection;
-    const maxLength = wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
-      return dfFilter.get(rowI) && !!mList ? mList.length : 0;
-    }).reduce((max, l) => Math.max(max, l), 0);
+    const maxLength: number = dfFilter.trueCount === 0 ? this.unitsHandler!.maxLength :
+      wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
+        return dfFilter.get(rowI) && !!mList ? mList.length : 0;
+      }).reduce((max, l) => Math.max(max, l), 0);
 
     /** positionNames and positionLabel can be set up through the column's tags only */
     const positionNamesTxt = this.seqCol.getTag(TAGS.positionNames);
@@ -617,6 +618,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.calcLayoutFitArea(dpr);
     else
       this.calcLayoutNoFitArea(dpr);
+
+    this.slider.root.style.width = `${this.host.clientWidth}px`;
   }
 
   /** */
@@ -641,7 +644,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     this.slider.root.style.display = 'none';
 
-    this.slider.setValues(0, this.Length - 1, 0, this.Length - 1);
+    this.slider.setValues(0, Math.max(0, this.Length - 1), 0, Math.max(0, this.Length - 1));
 
     this.canvas.width = areaWidth * dpr;
     this.canvas.height = areaHeight * dpr;
@@ -691,10 +694,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       newMax = Math.min(Math.max(newMin, 0) + visibleLength, this.Length - 0.001);
       newMin = Math.max(0, Math.min(newMax, this.Length - 0.001) - visibleLength);
 
-      this.slider.setValues(0, this.Length - 0.001, newMin, newMax);
+      this.slider.setValues(0, Math.max(this.Length - 0.001), newMin, newMax);
     } else {
       //
-      this.slider.setValues(0, this.Length - 0.001, 0, this.Length - 0.001);
+      this.slider.setValues(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
     }
 
     this.canvas.width = width * dpr;
@@ -757,10 +760,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       newMax = Math.min(Math.max(newMin, 0) + visibleLength, this.Length - 0.001);
       newMin = Math.max(0, Math.min(newMax, this.Length - 0.001) - visibleLength);
 
-      this.slider.setValues(0, this.Length - 0.001, newMin, newMax);
+      this.slider.setValues(0, Math.max(0, this.Length - 0.001), newMin, newMax);
     } else {
       //
-      this.slider.setValues(0, this.Length - 0.001, 0, this.Length - 0.001);
+      this.slider.setValues(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
     }
 
     this.canvas.width = width * dpr;
@@ -939,7 +942,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const calculateLayoutInt = (dpr: number, positionLabelsHeight: number): void => {
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), start `);
 
-      this.calcLayout(dpr);
       const absoluteMaxHeight = this.canvas.height - positionLabelsHeight * dpr;
       const alphabetSize = this.getAlphabetSize();
       if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
@@ -975,21 +977,19 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         }
       }
 
-      if (!this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 ||
-        this.endPosition === -1 || this.host == null || this.slider == null)
+      if (!this.seqCol || !this.dataFrame || !this.cp || this.host == null || this.slider == null)
         return;
-
-      const g = this.canvas.getContext('2d');
-      if (!g) return;
-
-      this.slider.root.style.width = `${this.host.clientWidth}px`;
 
       const dpr: number = window.devicePixelRatio;
       /** 0 is for no position labels */
       const positionLabelsHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT : 0;
       if (recalcLevel >= WlRenderLevel.Freqs) calculateFreqsInt();
-      if (this.positions.length === 0) return;
+      this.calcLayout(dpr); // after _skipEmptyPositions
+      if (this.positions.length === 0 || this.startPosition === -1 || this.endPosition === -1) return;
       if (recalcLevel >= WlRenderLevel.Layout) calculateLayoutInt(window.devicePixelRatio, positionLabelsHeight);
+
+      const g = this.canvas.getContext('2d');
+      if (!g) return;
 
       const length: number = this.Length;
       g.resetTransform();

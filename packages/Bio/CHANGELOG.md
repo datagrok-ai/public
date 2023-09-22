@@ -13,8 +13,10 @@
 * Fix VdRegionsViewer fit width accounting position margin of WebLogo.
 * Fix similarity/diversity viewer tests.
 * Fix reset filters for Substructure Search filter.
-* Fix Macromolecule cell renderer width limit for devicePixelRatio less than 1.
-* Fix VdRegionsViewer.positionHeight transmit to enclosed WebLogo.
+* Fix Macromolecule cell renderer width limit for `devicePixelRatio` less than 1.
+* Fix VdRegionsViewer `positionHeight` transmit to enclosed WebLogo.
+* Fix added by Split to monomers columns to be not used as a filter.
+* Fix WebLogo with `filterSource`of Selection to work from project.
 
 ## 2.10.0 (2023-09-06)
 
