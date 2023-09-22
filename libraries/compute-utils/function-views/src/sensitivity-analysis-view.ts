@@ -882,6 +882,8 @@ export class SensitivityAnalysisView {
         overviewPanel.addPane(e[0], () => ui.divV(e[1]));
       });
 
+      this.comparisonView.grid.props.rowHeight = 25;
+
       grok.shell.o = overviewPanel.root;
     });
   }
@@ -966,6 +968,7 @@ export class SensitivityAnalysisView {
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
     this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
     this.openedViewers.push(corPlot);
+    this.comparisonView.grid.props.rowHeight = 25;
 
     const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, options.variedInputs.length);
 
@@ -1108,7 +1111,7 @@ export class SensitivityAnalysisView {
 
     this.comparisonView.dataFrame = comparisonDf;
 
-    this.comparisonView.grid.props.rowHeight = 180;
+    this.comparisonView.grid.props.rowHeight = 25;
     this.comparisonView.grid.props.showAddNewRowIcon = false;
     this.comparisonView.grid.props.allowEdit = false;
 
@@ -1154,6 +1157,8 @@ export class SensitivityAnalysisView {
         gc.element.style.height = '100%';
       }
     });
+
+    this.comparisonView.grid.props.rowHeight = 25;
   }
 
   private async runElementaryAnalysis() {
@@ -1330,6 +1335,7 @@ export class SensitivityAnalysisView {
     const corPlot = this.comparisonView.addViewer(DG.Viewer.correlationPlot(funcEvalResults));
     this.comparisonView.dockManager.dock(corPlot, 'right', undefined, '', 0.4);
     this.openedViewers.push(corPlot);
+    this.comparisonView.grid.props.rowHeight = 25;
 
     const nameOfNonFixedOutput = this.getOutputNameForScatterPlot(colNamesToShow, funcEvalResults, variedInputsColumns.length);
 
