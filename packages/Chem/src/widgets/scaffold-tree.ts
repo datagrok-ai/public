@@ -271,12 +271,11 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     const lineWidth = tm.width;
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
-    molStr = processUnits(molStr);
-    substructure = substructure !== null ? processUnits(substructure) : molStr;
-    const molCtx = getMolSafe(molStr, {}, _rdKitModule);
-    const substrMol = getQueryMolSafe(substructure, '', _rdKitModule);
-    //const substrMol = substrCtx.mol;
-    const mol = molCtx.mol;
+    substructure = substructure !== null ? substructure : molStr;
+    const molCtx = getQueryMolSafe(molStr, '', _rdKitModule);
+    const substrCtx = getQueryMolSafe(substructure, '', _rdKitModule);
+    const substrMol = substrCtx;
+    const mol = molCtx;
     if (mol !== null && substrMol !== null && color !== null) {
       const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
       const colorArr = hexToPercentRgb(color!);
@@ -293,10 +292,10 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
           matchedAtomsAndBonds[0].highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
         };
       }
-      drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds[0] === undefined ? null : matchedAtomsAndBonds[0]);
+      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds[0] === undefined ? null : matchedAtomsAndBonds[0]);
       mol.delete();
     } else if (mol !== null && substrMol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, null);
+      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, null);
       mol.delete();
     }
   }
@@ -970,11 +969,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (molStr !== undefined) {
         let molArom;
         try {
-          molArom = _rdKitModule.get_qmol(molStr);
-          //@ts-ignore
-          molArom.convert_to_aromatic_form();
+          molArom = _rdKitModule.get_qmol(processUnits(molStr));
           this.scaffolds.push({
-            molecule: molArom.get_molblock(),
+            molecule:  isSmarts(molStr) ? molStr : molArom.get_molblock(),
             color: (value(checkedNodes[n]).chosenColor) ?? ''
           });
         } catch (e) {
