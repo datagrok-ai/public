@@ -361,6 +361,14 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, 
         }));
       } else if (fingerprint == Fingerprint.Pattern)
         fp = mol.get_pattern_fp_as_uint8array();
+      else if (fingerprint == Fingerprint.AtomPair)
+        fp = mol.get_atom_pair_fp_as_uint8array();
+      else if (fingerprint == Fingerprint.MACCS)
+        fp = mol.get_maccs_fp_as_uint8array();
+      else if (fingerprint == Fingerprint.RDKit)
+        fp = mol.get_rdkit_fp_as_uint8array();
+      else if (fingerprint == Fingerprint.TopologicalTorsion)
+        fp = mol.get_topological_torsion_fp_as_uint8array();
       else
         throw new Error(`${fingerprint} does not match any fingerprint`);
       return rdKitFingerprintToBitArray(fp) as BitArray;

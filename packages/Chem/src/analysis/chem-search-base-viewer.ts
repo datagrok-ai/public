@@ -19,7 +19,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   limit: number;
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
-  fingerprintChoices = [Fingerprint.Morgan];
+  fingerprintChoices = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
+    Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
   sizesMap: {[key: string]: {[key: string]: number}} = {
     'small': {height: 60, width: 120},
     'normal': {height: 100, width: 200},
