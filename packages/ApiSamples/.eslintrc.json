@@ -38,6 +38,7 @@
       }
     ],
     "block-spacing": 2,
-    "eol-last":"off"
+    "eol-last":"off",
+    "arrow-parens":"off"
   }
 }
