@@ -220,7 +220,7 @@ export class RichFunctionView extends FunctionView {
 
     ui.tools.handleResize(inputBlock, () => {
       if (([
-        ...Array.from(inputForm.childNodes),
+        ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
         ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
       ]).some((child) => $(child).width() < 250) ||
       $(inputBlock).width() < 350) {
@@ -740,7 +740,7 @@ export class RichFunctionView extends FunctionView {
         const chevronToOpen = ui.iconFA('chevron-right', () => {
           $(chevronToClose).show();
           $(chevronToOpen).hide();
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).show());
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).css({'display': 'inherit'}));
         }, 'Open category');
         $(chevronToOpen).css('padding-right', '5px');
         const chevronToClose = ui.iconFA('chevron-down', () => {
