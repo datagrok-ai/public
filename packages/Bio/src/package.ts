@@ -69,6 +69,7 @@ import {_getEnumeratorWidget, _setPeptideColumn} from './utils/enumerator-tools'
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
+import {helmToMolfile} from './utils/helm-to-molfile';
 
 export const _package = new BioPackage();
 
@@ -992,4 +993,18 @@ export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG
 //output: widget result
 export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   return _getEnumeratorWidget(molColumn);
+}
+
+//name: HelmToMol
+export async function helmToMol(): Promise<void> {
+  const df = await _package.files.readCsv('./samples/helm-to-molfile.csv');
+  grok.shell.addTableView(df);
+  const helmCol = df.col('HELM');
+  if (!helmCol) {
+    grok.shell.error('HELM column not found');
+    return;
+  }
+  const molCol = await helmToMolfile(helmCol);
+  // append molCol to dataFrame
+  df.columns.add(molCol);
 }
