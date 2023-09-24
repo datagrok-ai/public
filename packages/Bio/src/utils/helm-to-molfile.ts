@@ -3,7 +3,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export async function helmToMolfile(helmCol: DG.Column<string>): Promise<DG.Column> {
-  const polymerMolfile: DG.Column<string> = await grok.functions.call('HELM:getMolfiles', {col: helmCol});
-  return polymerMolfile;
+export class HelmToMolfileConverter {
+  constructor(private helmColumn: DG.Column<string> ) {
+    this.helmColumn = helmColumn;
+  }
+
+  async convert(): Promise<DG.Column<string>> {
+    const polymerMolfileCol: DG.Column<string> = await this.getPolymerMolfiles();
+    return polymerMolfileCol;
+  }
+
+  async getPolymerMolfiles(): Promise<DG.Column<string>> {
+    const polymerMolfileCol: DG.Column<string> = await grok.functions.call('HELM:getMolfiles', {col: this.helmColumn});
+    return polymerMolfileCol;
+  }
 }

@@ -69,7 +69,7 @@ import {_getEnumeratorWidget, _setPeptideColumn} from './utils/enumerator-tools'
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
-import {helmToMolfile} from './utils/helm-to-molfile';
+import {HelmToMolfileConverter} from './utils/helm-to-molfile';
 
 export const _package = new BioPackage();
 
@@ -1004,7 +1004,7 @@ export async function helmToMol(): Promise<void> {
     grok.shell.error('HELM column not found');
     return;
   }
-  const molCol = await helmToMolfile(helmCol);
-  // append molCol to dataFrame
+  const converter = new HelmToMolfileConverter(helmCol);
+  const molCol = await converter.convert();
   df.columns.add(molCol);
 }
