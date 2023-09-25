@@ -29,7 +29,7 @@ category('detectorsBenchmark', () => {
   });
 
   test('fastaDnaLong1e6Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
+    await detectMacromoleculeBenchmark(15, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
   });
 
   // -- separator --
