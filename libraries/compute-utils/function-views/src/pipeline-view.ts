@@ -421,7 +421,7 @@ export class PipelineView extends ComputationView {
       .map((mainChildRun) => historyUtils.loadRun(mainChildRun.id)));
 
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
-    const v = await RunComparisonView.fromComparedRuns(fullMainChildFuncCalls, {
+    const v = await RunComparisonView.fromComparedRuns(fullMainChildFuncCalls, fullMainChildFuncCalls[0].func, {
       parentView: cardView,
       parentCall,
     });

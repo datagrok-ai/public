@@ -14,6 +14,7 @@ import {FunctionView} from './function-view';
 import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
+import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 import {FuncCallInput, SubscriptionLike} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
@@ -220,7 +221,7 @@ export class RichFunctionView extends FunctionView {
 
     ui.tools.handleResize(inputBlock, () => {
       if (([
-        ...Array.from(inputForm.childNodes),
+        ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
         ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
       ]).some((child) => $(child).width() < 250) ||
       $(inputBlock).width() < 350) {
@@ -340,12 +341,15 @@ export class RichFunctionView extends FunctionView {
       ...this.isUploadMode.value ? ['d4-current']: [],
     );
 
+    const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
+
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
         ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
+        sensitivityAnalysis,
       ],
     ];
 
@@ -636,6 +640,10 @@ export class RichFunctionView extends FunctionView {
     return this.renderIOForm(SYNC_FIELD.OUTPUTS);
   }
 
+  private async onSALaunch(): Promise<void> {
+    await SensitivityAnalysis.fromEmpty(this.func);
+  }
+
   private renderInputForm(): HTMLElement {
     return this.renderIOForm(SYNC_FIELD.INPUTS);
   }
@@ -740,7 +748,7 @@ export class RichFunctionView extends FunctionView {
         const chevronToOpen = ui.iconFA('chevron-right', () => {
           $(chevronToClose).show();
           $(chevronToOpen).hide();
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).show());
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).css({'display': 'inherit'}));
         }, 'Open category');
         $(chevronToOpen).css('padding-right', '5px');
         const chevronToClose = ui.iconFA('chevron-down', () => {
