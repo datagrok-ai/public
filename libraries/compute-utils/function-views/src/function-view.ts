@@ -482,9 +482,11 @@ export abstract class FunctionView extends DG.ViewBase {
 
       await this.onAfterRun(this.funcCall);
 
+      this.lastCall = deepCopy(this.funcCall);
       // If a view is incapuslated into a tab (e.g. in PipelineView),
       // there is no need to save run till an entire pipeline is over.
-      this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+      if (!(this.options.isTabbed || this.runningOnInput || this.runningOnStart))
+        await this.saveRun(this.funcCall);
     } catch (err: any) {
       grok.shell.error(err.toString());
     } finally {

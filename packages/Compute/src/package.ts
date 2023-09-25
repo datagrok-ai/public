@@ -285,9 +285,8 @@ export function ValidatorActionsDemoFactory(params: any) {
         ui.dialog({ title: 'Another action'}).show({center: true, fullScreen: true})
       }}
     ])];
-    // TODO: fix last call mutations
-    if (info.lastCall) {
-      const delta = info.lastCall.inputs.x - info.funcCall.inputs.x;
+    if (info.lastCall && info.funcCall.inputs.x !== info.lastCall.inputs.x) {
+      const delta = info.funcCall.inputs.x - info.lastCall.inputs.x;
       const warnings = [makeAdvice(`Param delta change ${delta}`)];
       return makeValidationResult({ warnings, notifications });
     }
