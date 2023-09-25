@@ -15,6 +15,7 @@ import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, 
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase, Advice} from '../../shared-components/src/FuncCallInput';
+import { getValidationIcon } from '../../shared-components/src/validation';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -841,10 +842,9 @@ export class RichFunctionView extends FunctionView {
   private injectInputBaseValidation(t: DG.InputBase) {
     const validationIndicator = ui.div('', {style: {display: 'flex'}});
     t.addOptions(validationIndicator);
-    const it = this;
     function setValidation(messages: ValidationResultBase | undefined) {
       while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
-      const icon = it.getValidationIcon(messages);
+      const icon = getValidationIcon(messages);
       if (icon)
         validationIndicator.appendChild(icon);
 
@@ -856,101 +856,6 @@ export class RichFunctionView extends FunctionView {
         t.input.classList.add('d4-partially-invalid');
     }
     (t as any).setValidation = setValidation;
-  }
-
-  private getValidationIcon(messages: ValidationResultBase | undefined) {
-    let popover: any;
-    let icon: any;
-    if (messages?.pending)
-      icon = ui.iconFA('spinner', () => {this.displayValidation(messages, icon, popover);});
-
-    if (messages?.errors) {
-      icon = ui.iconFA('exclamation', () => {this.displayValidation(messages, icon, popover);});
-      icon.style.color = 'var(--red-3)';
-    } else if (messages?.warnings) {
-      icon = ui.iconFA('exclamation', () => {this.displayValidation(messages, icon, popover);});
-      icon.style.color = 'var(--orange-2)';
-    } else if (messages?.notifications) {
-      icon = ui.iconFA('info', () => {this.displayValidation(messages, icon, popover);} );
-      icon.style.color = 'var(--blue-1)';
-    }
-    if (icon)
-      popover = this.addPopover(icon);
-
-    return icon;
-  }
-
-  private addPopover(icon: HTMLElement) {
-    const popover = ui.div();
-    this.stylePopover(popover);
-    icon.appendChild(popover);
-    return popover;
-  }
-
-  private displayValidation(messages: ValidationResultBase, icon: HTMLElement, popover: HTMLElement) {
-    if (popover && icon) {
-      this.alignPopover(icon, popover);
-      while (popover.firstChild && popover.removeChild(popover.firstChild));
-      const content = this.renderDynamicHelp(messages);
-      popover.appendChild(content);
-      popover.showPopover();
-    }
-  }
-
-  private alignPopover(target: HTMLElement, popover: HTMLElement): void {
-    const bounds = target.getBoundingClientRect().toJSON();
-    popover.style.inset = 'unset';
-    popover.style.top = bounds.y + 'px';
-    popover.style.left = (bounds.x + 20) + 'px';
-  }
-
-  private stylePopover(popover: HTMLElement): void {
-    popover.popover = 'auto';
-    popover.style.cursor = 'default';
-    popover.style.padding = '10px';
-    popover.style.background = '#fdffe5';
-    popover.style.border = '1px solid #E4E6CE';
-    popover.style.borderRadius = '2px';
-    popover.style.boxShadow = '0 0 5px #E4E6CE';
-    popover.style.maxWidth = '500px';
-  }
-
-  private renderDynamicHelp(messages: ValidationResultBase) {
-    const root = ui.div('', {style: {display: 'flex', flexDirection: 'column'}});
-    for (const [category, advices] of Object.entries(messages)) {
-      const icon = this.getAdviceIcon(category);
-      if (!icon || !advices)
-        continue;
-      for (const advice of advices as Advice[]) {
-        root.appendChild(ui.span([
-          icon,
-          advice.description,
-          ...(advice.actions ?? []).map(
-            (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '10px'}})),
-        ], {style: {lineHeight: '1.2', marginBottom: '10px'}}));
-      }
-    }
-    return root;
-  }
-
-  private getAdviceIcon(category: string) {
-    let icon: HTMLElement | undefined;
-    if (category === 'errors') {
-      icon = ui.iconFA('exclamation');
-      icon.style.color = 'var(--red-3)';
-    } else if (category === 'warnings') {
-      icon = ui.iconFA('exclamation');
-      icon.style.color = 'var(--orange-2)';
-    } else if (category === 'notifications') {
-      icon = ui.iconFA('info');
-      icon.style.color = 'var(--blue-1)';
-    }
-    if (icon) {
-      icon.style.cursor = 'default';
-      icon.style.display = 'inline-block';
-      icon.style.fontFamily = '"Font Awesome 5 Pro"';
-    }
-    return icon;
   }
 
   private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
