@@ -96,13 +96,14 @@ export interface ValidationInfo {
   funcCall: DG.FuncCall,
   lastCall?:DG.FuncCall,
   isRevalidation: boolean,
+  isNewOutput: boolean,
   context?: any
 }
 
 export type Validator = (val: any, info: ValidationInfo)
   => Promise<ValidationResult | undefined>;
 
-export type ValidatorFactory = (params: any) => { validator: Validator, isAdvisory: boolean };
+export type ValidatorFactory = (params: any) => { validator: Validator };
 
 export const nonNullValidator: Validator = async (value: any) => {
   if (value == null)

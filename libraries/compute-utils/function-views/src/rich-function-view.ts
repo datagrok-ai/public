@@ -14,7 +14,7 @@ import {FunctionView} from './function-view';
 import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase, Advice} from '../../shared-components/src/FuncCallInput';
+import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase} from '../../shared-components/src/FuncCallInput';
 import { getValidationIcon } from '../../shared-components/src/validation';
 
 const FILE_INPUT_TYPE = 'file';
@@ -61,6 +61,7 @@ const syncParams = {
 interface ValidationRequestPayload {
   field?: string,
   isRevalidation: boolean,
+  isNewOutput?: boolean,
   context?: any,
 }
 
@@ -657,7 +658,7 @@ export class RichFunctionView extends FunctionView {
       console.log(e);
     } finally {
       this.isRunning.next(false);
-      this.validationRequests.next({isRevalidation: false});
+      this.validationRequests.next({isRevalidation: false, isNewOutput: true});
     }
   }
 
@@ -958,7 +959,11 @@ export class RichFunctionView extends FunctionView {
       const v = this.funcCall.inputs[name];
       // not allowing null anywhere
       const standardMsgs = await nonNullValidator(v, {
-        param: name, funcCall: this._funcCall!, lastCall: this.lastCall, isRevalidation: payload.isRevalidation,
+        param: name,
+        funcCall: this._funcCall!,
+        lastCall: this.lastCall,
+        isNewOutput: !!payload.isNewOutput,
+        isRevalidation: payload.isRevalidation,
       });
       if (standardMsgs)
         return [name, standardMsgs] as const;
@@ -966,8 +971,12 @@ export class RichFunctionView extends FunctionView {
       const customValidator = this.validators[name];
       if (customValidator) {
         const customMsgs = await customValidator(v, {
-          param: name, funcCall: this._funcCall!, lastCall: this.lastCall,
-          isRevalidation: payload.isRevalidation, context: payload.context,
+          param: name,
+          funcCall: this._funcCall!,
+          lastCall: this.lastCall,
+          isNewOutput: !!payload.isNewOutput,
+          isRevalidation: payload.isRevalidation,
+          context: payload.context,
         });
         return [name, customMsgs] as const;
       }
