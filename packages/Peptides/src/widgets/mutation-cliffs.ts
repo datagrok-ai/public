@@ -91,6 +91,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   pairsGrid.props.allowRowSelection = false;
   pairsGrid.props.allowBlockSelection = false;
   pairsGrid.props.allowColSelection = false;
+  pairsGrid.props.showRowHeader = false;
   pairsGrid.root.style.width = '100%';
   pairsGrid.root.style.height = '150px';
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
@@ -98,10 +99,33 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
   substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
 
+  let keyPress = false;
+  let lastSelectedIndex: number | null = null;
   const pairsSelectedIndexes: number[] = [];
+  pairsGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+    try {
+      const rowIdx = gridCell.tableRowIndex;
+      if (!keyPress)
+        return;
+      if (rowIdx === null)
+        return;
+      if (lastSelectedIndex !== null)
+        pairsSelectedIndexes.splice(pairsSelectedIndexes.indexOf(lastSelectedIndex), 1);
+
+      if (!pairsSelectedIndexes.includes(rowIdx)) {
+        pairsSelectedIndexes.push(rowIdx);
+        pairsGrid.invalidate();
+      }
+      uniqueSequencesTable.filter.fireChanged();
+    } finally {
+      keyPress = false;
+      lastSelectedIndex = gridCell.tableRowIndex;
+    }
+  });
+  pairsGrid.root.addEventListener('keydown', (event) => keyPress = event.key.startsWith('Arrow'));
   pairsGrid.root.addEventListener('click', (event) => {
     const gridCell = pairsGrid.hitTest(event.offsetX, event.offsetY);
-    if (gridCell === null || gridCell.tableRowIndex === null)
+    if (!gridCell || gridCell.tableRowIndex === null)
       return;
 
     const rowIdx = gridCell.tableRowIndex;
@@ -116,7 +140,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
         pairsSelectedIndexes.splice(rowIdxIdx, 1);
     }
     uniqueSequencesTable.filter.fireChanged();
-    gridCell.cell.dataFrame.currentRowIdx = -1;
     pairsGrid.invalidate();
   });
   pairsGrid.onCellRender.subscribe((gcArgs) => {
@@ -146,6 +169,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   uniqueSequencesGrid.props.allowRowSelection = false;
   uniqueSequencesGrid.props.allowBlockSelection = false;
   uniqueSequencesGrid.props.allowColSelection = false;
+  uniqueSequencesGrid.props.showRowHeader = false;
   uniqueSequencesGrid.props.rowHeight = 20;
   uniqueSequencesGrid.root.style.width = '100%';
   uniqueSequencesGrid.root.style.height = '250px';

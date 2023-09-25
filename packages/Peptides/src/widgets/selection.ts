@@ -27,5 +27,6 @@ export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): D
       col.setTag(tag, value);
   }
   const newGrid = newTable.plot.grid();
+  newGrid.props.showRowHeader = false;
   return new DG.Widget(ui.box(newGrid.root, {style: {width: '100%'}}));
 }

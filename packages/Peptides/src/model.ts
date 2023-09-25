@@ -266,8 +266,16 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${splitByMonomerFlag}${flag ? 1 : 0}`;
   }
 
-  get isMonomerPositionSelectionEmpty(): boolean {
+  get isMutationCliffsSelectionEmpty(): boolean {
     for (const monomerList of Object.values(this.mutationCliffsSelection)) {
+      if (monomerList.length !== 0)
+        return false;
+    }
+    return true;
+  }
+
+  get isInvariantMapSelectionEmpty(): boolean {
+    for (const monomerList of Object.values(this.invariantMapSelection)) {
       if (monomerList.length !== 0)
         return false;
     }
@@ -965,20 +973,21 @@ export class PeptidesModel {
 
     const showAccordion = (): void => {
       const acc = this.createAccordion();
-      if (acc !== null) {
-        grok.shell.o = acc.root;
-        for (const pane of acc.panes)
-          pane.expanded = true;
-      }
+      if (acc === null)
+        return;
+      grok.shell.o = acc.root;
+      for (const pane of acc.panes)
+        pane.expanded = true;
     };
 
-    selection.onChanged.subscribe(() => {
+    DG.debounce(selection.onChanged, 500).subscribe(() => {
       if (!this.isUserChangedSelection)
         selection.copyFrom(getLatestSelection(), false);
       showAccordion();
+      this.isUserChangedSelection = true;
     });
 
-    filter.onChanged.subscribe(() => {
+    DG.debounce(filter.onChanged, 500).subscribe(() => {
       const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
       if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
         lstViewer.createLogoSummaryTableGrid();
@@ -986,6 +995,7 @@ export class PeptidesModel {
       }
       showAccordion();
     });
+
     this.isBitsetChangedInitialized = true;
   }
 
@@ -995,7 +1005,6 @@ export class PeptidesModel {
     if (fireFilterChanged)
       this.df.filter.fireChanged();
     this.headerSelectedMonomers = calculateSelected(this.df);
-    this.isUserChangedSelection = true;
   }
 
   setGridProperties(props?: DG.IGridLookSettings): void {

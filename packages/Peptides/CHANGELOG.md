@@ -4,6 +4,10 @@
 
 ### Features
 
+* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+
+### Bug Fixes
+
 * Fixed Distribution panel labels.
 
 ## 1.13.3 (2023-09-20)

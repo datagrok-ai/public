@@ -29,6 +29,8 @@ export class MonomerPosition extends DG.JsViewer {
   colorCol: string;
   aggregation: string;
   target: string;
+  keyPressed: boolean = false;
+  currentGridCell: DG.GridCell | null = null;
 
   constructor() {
     super();
@@ -126,16 +128,43 @@ export class MonomerPosition extends DG.JsViewer {
       return this.model.showTooltip(monomerPosition, x, y, true);
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
+    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+      try {
+        if (!this.keyPressed)
+          return;
+        if (this.currentGridCell !== null) {
+          const previousMonomerPosition = this.getMonomerPosition(this.currentGridCell);
+          if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+            this.model.modifyInvariantMapSelection(previousMonomerPosition, {shiftPressed: true, ctrlPressed: true}, false);
+          else if (this.model.mutationCliffs?.get(previousMonomerPosition.monomerOrCluster)?.get(previousMonomerPosition.positionOrClusterType)?.size)
+            this.model.modifyMutationCliffsSelection(previousMonomerPosition, {shiftPressed: true, ctrlPressed: true}, false);
+        }
+        const monomerPosition = this.getMonomerPosition(gridCell);
+        if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+          this.model.modifyInvariantMapSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, true);
+        else if (this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
+          this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false}, true);
+
+        this.viewerGrid.invalidate();
+      } finally {
+        this.keyPressed = false;
+        this.currentGridCell = gridCell;
+      }
+    });
+    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPressed = ev.key.startsWith('Arrow'));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
       if (!gridCell?.isTableCell || gridCell?.tableColumn?.name === C.COLUMNS_NAMES.MONOMER)
         return;
 
       const monomerPosition = this.getMonomerPosition(gridCell);
-      if (this.mode === SELECTION_MODE.INVARIANT_MAP)
+      if (this.mode === SELECTION_MODE.INVARIANT_MAP) {
         this.model.modifyInvariantMapSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
-      else if (this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
+        if (this.model.isInvariantMapSelectionEmpty)
+          monomerPositionDf.currentRowIdx = -1;
+      } else if (this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
         this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
+
       this.viewerGrid.invalidate();
     });
 
@@ -191,6 +220,8 @@ export class MostPotentResidues extends DG.JsViewer {
   _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
+  keyPressed: boolean = false;
+  currentGridRowIdx: number | null = null;
 
   constructor() {
     super();
@@ -320,6 +351,24 @@ export class MostPotentResidues extends DG.JsViewer {
         return false;
       return this.model.showTooltip(monomerPosition, x, y, true);
     });
+    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+      try {
+        if ((this.keyPressed && mostPotentResiduesDf.currentCol.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE) || !this.keyPressed)
+          return;
+        const monomerPosition = this.getMonomerPosition(gridCell);
+        if (this.currentGridRowIdx !== null) {
+          const previousMonomerPosition = this.getMonomerPosition(this.viewerGrid.cell(C.COLUMNS_NAMES.MEAN_DIFFERENCE, this.currentGridRowIdx));
+          this.model.modifyMutationCliffsSelection(previousMonomerPosition, {shiftPressed: true, ctrlPressed: true}, false);
+        }
+        if (this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
+          this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: true, ctrlPressed: false});
+        this.viewerGrid.invalidate();
+      } finally {
+        this.keyPressed = false;
+        this.currentGridRowIdx = gridCell.gridRow;
+      }
+    });
+    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPressed = ev.key.startsWith('Arrow'));
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -427,8 +476,9 @@ function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): v
   gridProps.allowRowSelection = false;
   gridProps.allowBlockSelection = false;
   gridProps.allowColSelection = false;
-  gridProps.showCurrentCellOutline = false;
-  gridProps.showCurrentRowIndicator = false;
+  gridProps.showRowHeader = false;
+  // gridProps.showCurrentCellOutline = false;
+  // gridProps.showCurrentRowIndicator = false;
 
   gridProps.rowHeight = 20;
   const girdCols = grid.columns;
