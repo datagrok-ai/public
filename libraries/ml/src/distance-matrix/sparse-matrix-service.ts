@@ -13,16 +13,16 @@ export class SparseMatrixService {
       const matSize = values.length * (values.length - 1) / 2;
       const chunkSize = Math.floor(matSize / this._workerCount);
       const promises =
-        new Array<Promise<{i: number[], j: number[], similarity: number[], idx: number}>>(this._workerCount);
+        new Array<Promise<{i: Int32Array, j: Int32Array, distance: Float32Array, idx: number}>>(this._workerCount);
       for (let idx = 0; idx < this._workerCount; idx++) {
         promises[idx] = new Promise((resolveWorker, rejectWorker) => {
           const startIdx = idx * chunkSize;
           const endIdx = idx === this._workerCount - 1 ? matSize : (idx + 1) * chunkSize;
           this._workers[idx].postMessage({values, startIdx, endIdx, threshold, fnName});
-          this._workers[idx].onmessage = ({data: {error, i, j, similarity}}): void => {
+          this._workers[idx].onmessage = ({data: {error, i, j, distance}}): void => {
             if (error) { rejectWorker(error); } else {
               this._workers[idx].terminate();
-              resolveWorker({i, j, similarity, idx});
+              resolveWorker({i, j, distance, idx});
             }
           };
         });
@@ -32,14 +32,14 @@ export class SparseMatrixService {
       const fullSize = results.reduce((acc, val) => acc + val.i.length, 0);
       const i = new Int32Array(fullSize);
       const j = new Int32Array(fullSize);
-      const similarity = new Float32Array(fullSize);
+      const distance = new Float32Array(fullSize);
       let offset = 0;
       for (const res of results) {
         i.set(res.i, offset);
         j.set(res.j, offset);
-        similarity.set(res.similarity, offset);
+        distance.set(res.distance, offset);
         offset += res.i.length;
       }
-      return {i, j, similarity};
+      return {i, j, distance};
     }
 }

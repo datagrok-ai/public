@@ -20,6 +20,12 @@ import {UMAPParameters} from 'umap-js';
 import {DistanceMatrix, DistanceMatrixService, distanceMatrixProxy, dmLinearIndex} from './distance-matrix';
 import { SparseMatrixService } from './distance-matrix/sparse-matrix-service';
 
+export type SparseMatrixTransferType = {
+  i: Int32Array,
+  j: Int32Array,
+  distance: Float32Array,
+}
+
 export interface IReduceDimensionalityResult {
   distance?: Float32Array;
   sparseMatrix?: Map<number, Map<number, number>>;
@@ -41,6 +47,7 @@ export interface IUMAPOptions {
   sparseMatrixThreshold?: number;
   preCalculateDistanceMatrix?: boolean;
   usingSparseMatrix?: boolean;
+  sparseMatrix?: SparseMatrixTransferType;
 }
 
 export interface ITSNEOptions {
@@ -146,6 +153,7 @@ export type UmapOptions = Options & UMAPParameters & {
   preCalculateDistanceMatrix?: boolean,
   usingSparseMatrix?: boolean,
   sparseMatrixThreshold?: number,
+  sparseMatrix?: SparseMatrixTransferType
 };
 
 /**
@@ -165,6 +173,7 @@ class UMAPReducer extends Reducer {
   protected dmIndexFunc: (i: number, j: number) => number;
   protected usingSparseMatrix: boolean;
   protected sparseMatrixThreshold: number;
+  protected transferedSparseMatrix?: SparseMatrixTransferType;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -175,15 +184,16 @@ class UMAPReducer extends Reducer {
     assert('distanceFname' in options);
     assert('distanceFn' in options);
     this.distanceFn = options.distanceFn!;
-    this.usingSparseMatrix = !!options.usingSparseMatrix;
+    this.usingSparseMatrix = !!options.usingSparseMatrix || !!options.sparseMatrix;
     this.sparseMatrixThreshold = options.sparseMatrixThreshold ?? 0.8;
-    
+    this.transferedSparseMatrix = options.sparseMatrix;
 
     this.distanceFname = options.distanceFname!;
     this.dmIndexFunc = dmLinearIndex(this.data.length);
     //Umap uses vector indexing, so we need to create an array of vectors as indeces.
     this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
-    this.usingDistanceMatrix = !(!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS);
+    this.usingDistanceMatrix = !((!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS)
+      || this.usingSparseMatrix);
     if (this.usingDistanceMatrix)
       options.distanceFn = this._encodedDistanceMatrix.bind(this);
     else if (this.usingSparseMatrix)
@@ -242,16 +252,16 @@ class UMAPReducer extends Reducer {
       })() :
         (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); return ret.data; })();
     } else if (this.usingSparseMatrix) {
-          const matrixService = new SparseMatrixService();
-          const res = await matrixService.calc(this.data, this.distanceFname, this.sparseMatrixThreshold);
+          const res = this.transferedSparseMatrix ??
+            await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold);
           this.sparseMatrix = new Map<number, Map<number, number>>();
           for (let i = 0; i < res.i.length; ++i) {
             const first = res.i[i];
             const second = res.j[i];
-            const similarity = res.similarity[i];
+            const distance = res.distance[i];
             if (!this.sparseMatrix.has(first))
               this.sparseMatrix.set(first, new Map<number, number>());
-            this.sparseMatrix.get(first)!.set(second, similarity);
+            this.sparseMatrix.get(first)!.set(second, distance);
           }
         
     }

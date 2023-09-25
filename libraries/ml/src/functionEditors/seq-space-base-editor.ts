@@ -47,6 +47,7 @@ export class SequenceSpaceBaseFuncEditor {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         }
+        this.displaySimilarityThresholdInput();
       });
 
       this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0.5);
@@ -69,7 +70,7 @@ export class SequenceSpaceBaseFuncEditor {
         this.similarityMetricInput.root.style.display = 'none';
       }
       setTimeout(() => {
-        this.onTableInputChanged(semtype);
+        this.displaySimilarityThresholdInput();
       });
     }
   
@@ -90,10 +91,14 @@ export class SequenceSpaceBaseFuncEditor {
         this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
         ui.empty(this.molColInputRoot);
         Array.from(this.molColInput.root.children).forEach((it) => this.molColInputRoot.append(it));
-        if (this.tableInput.value && (this.tableInput.value as DG.DataFrame).rowCount > 20000) {
-          this.similarityThresholdInput.root.style.display = 'block';
-        } else {
-          this.similarityThresholdInput.root.style.display = 'none';
-        } 
+        this.displaySimilarityThresholdInput();
+    }
+
+    displaySimilarityThresholdInput() {
+      if (this.tableInput.value && (this.tableInput.value as DG.DataFrame).rowCount > 20000 && this.methodInput.value === DimReductionMethods.UMAP) {
+        this.similarityThresholdInput.root.style.display = 'block';
+      } else {
+        this.similarityThresholdInput.root.style.display = 'none';
+      }
     }
   }
