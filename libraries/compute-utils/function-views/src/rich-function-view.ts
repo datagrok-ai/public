@@ -15,7 +15,7 @@ import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, 
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
 import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase} from '../../shared-components/src/FuncCallInput';
-import { getValidationIcon } from '../../shared-components/src/validation';
+import {getValidationIcon} from '../../shared-components/src/validation';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
