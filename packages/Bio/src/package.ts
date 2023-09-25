@@ -459,12 +459,13 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
+//input: double sparseMatrixThreshold = 0.8 [Similarity Threshold for sparse matrix calculation]
 //input: object options {optional: true}
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(
   table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto,
-  plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions,
+  plotEmbeddings: boolean, sparseMatrixThreshold?: number, options?: IUMAPOptions | ITSNEOptions,
 ): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
@@ -480,7 +481,8 @@ export async function sequenceSpaceTopMenu(
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames,
-    options: options,
+    options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.8,
+      usingSparseMatrix: table.rowCount > 20000},
   };
 
   const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
