@@ -16,7 +16,6 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
-import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 import {_package} from '../package';
@@ -316,19 +315,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private error: Error | null = null;
 
-  private get filter(): DG.BitSet {
-    let res: DG.BitSet;
-    switch (this.filterSource) {
-      case FilterSources.Filtered:
-        res = this.dataFrame.filter;
-        break;
-      case FilterSources.Selected:
-        res = this.dataFrame.selection;
-        break;
-    }
-    return res;
-  }
-
   /** Full length of {@link positions}.
    * Inclusive, for startPosition equals to endPosition Length is 1
    */
@@ -564,16 +550,15 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private updatePositions(): void {
     if (!this.seqCol) return;
 
-    const dfFilter = this.filterSource === FilterSources.Filtered ? this.dataFrame.filter :
-      this.dataFrame.selection;
+    const dfFilter = this.getFilter();
     const maxLength: number = dfFilter.trueCount === 0 ? this.unitsHandler!.maxLength :
       wu.enumerate(this.unitsHandler!.splitted).map(([mList, rowI]) => {
         return dfFilter.get(rowI) && !!mList ? mList.length : 0;
       }).reduce((max, l) => Math.max(max, l), 0);
 
     /** positionNames and positionLabel can be set up through the column's tags only */
-    const positionNamesTxt = this.seqCol.getTag(TAGS.positionNames);
-    const positionLabelsTxt = this.seqCol.getTag(TAGS.positionLabels);
+    const positionNamesTxt = this.seqCol.getTag(bioTAGS.positionNames);
+    const positionLabelsTxt = this.seqCol.getTag(bioTAGS.positionLabels);
     this.positionNames = !!positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((v) => v.trim()) :
       [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`)/* fallback if tag is not provided */;
     this.positionLabels = !!positionLabelsTxt ? positionLabelsTxt.split(positionSeparator).map((v) => v.trim()) :
@@ -587,6 +572,20 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
 
     this.render(WlRenderLevel.Freqs, 'updatePositions').then(() => {});
+  }
+
+  private getFilter(): DG.BitSet {
+    let dfFilterRes: DG.BitSet;
+    switch (this.filterSource) {
+      case FilterSources.Filtered:
+        dfFilterRes = this.dataFrame.filter;
+        break;
+
+      case FilterSources.Selected:
+        dfFilterRes = this.dataFrame.selection.trueCount === 0 ? this.dataFrame.filter : this.dataFrame.selection;
+        break;
+    }
+    return dfFilterRes;
   }
 
   setSliderVisibility(visible: boolean): void {
@@ -913,8 +912,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
-      const dfFilter =
-        this.filterSource === FilterSources.Filtered ? this.dataFrame.filter : this.dataFrame.selection;
+      const dfFilter = this.getFilter();
       const dfRowCount = this.dataFrame.rowCount;
       const splitted = this.unitsHandler.splitted;
       for (let rowI = 0; rowI < dfRowCount; ++rowI) {
@@ -1114,7 +1112,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         const atPI: PositionInfo = this.positions[jPos];
         const monomerAtPosSeqCount = countForMonomerAtPosition(
-          this.dataFrame, this.unitsHandler!, this.filter, monomer, atPI);
+          this.dataFrame, this.unitsHandler!, this.getFilter(), monomer, atPI);
 
         const tooltipEl = ui.div([
           // ui.div(`pos ${jPos}`),
@@ -1143,7 +1141,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
         // Calculate a new BitSet object for selection to prevent interfering with existing
         const selBS: DG.BitSet = DG.BitSet.create(this.dataFrame.selection.length, (rowI: number) => {
-          return checkSeqForMonomerAtPos(this.dataFrame, this.unitsHandler!, this.filter, rowI, monomer, atPI);
+          return checkSeqForMonomerAtPos(this.dataFrame, this.unitsHandler!, this.getFilter(), rowI, monomer, atPI);
         });
         this.dataFrame.selection.init((i) => selBS.get(i));
       }
