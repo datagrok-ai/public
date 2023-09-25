@@ -40,9 +40,10 @@ export enum PositionMarginStates {
 export enum FilterSources {
   /** Sequences of filtered rows are considered, default. */
   Filtered = 'Filtered',
-  /** Sequences in selection are considered to plot WebLogo for faster exploration. */
+  /** Sequences in selection are considered to plot WebLogo for faster exploration.
+   * In case selection is empty displays all.
+   */
   Selected = 'Selected',
-  SelectedOrAll = 'SelectedOrAll',
 }
 
 export const WebLogoPropsDefault = new class {
