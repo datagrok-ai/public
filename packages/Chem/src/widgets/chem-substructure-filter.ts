@@ -309,7 +309,7 @@ export class SubstructureFilter extends DG.Filter {
         this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
           this.dataFrame?.rows.requestFilter();
-            this.progressBar!.update(progress, `${progress?.toFixed(2)}% of search completed`);
+            this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
         });
       } catch {
         this.finishSearch(newSmarts ?? '');
