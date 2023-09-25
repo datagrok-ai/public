@@ -3,6 +3,7 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
+import { SubstructureSearchType } from '../constants';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -47,14 +48,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return numMalformed;
   }
 
-  async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Promise<Uint32Array> {
+  async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[],
+    searchType?: SubstructureSearchType): Promise<Uint32Array> {
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
     const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
 
     if (queryMol !== null) {
-      const matches = await this.searchWithPatternFps(queryMol, molecules);
+      const matches = await this.searchWithPatternFps(queryMol, molecules, searchType ?? SubstructureSearchType.INCLUDED_IN);
       queryMol.delete();
       return matches;
     } else
@@ -62,7 +64,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
 
-  async searchWithPatternFps(queryMol: RDMol, molecules: string[]): Promise<Uint32Array> {
+  async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType): Promise<Uint32Array> {
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;
@@ -82,7 +84,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         if (cachedMol || this.addToCache(mol))
           isCached = true;
         if (mol) {
-          if (mol.get_substruct_match(queryMol) !== '{}')
+          if (this.searchBySearchType(mol, queryMol, searchType, i) !== '{}')
             matches.setFast(i, true);
         }
       } catch {
@@ -92,6 +94,21 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
     }
     return matches.buffer;
+  }
+
+  searchBySearchType(mol: RDMol, queryMol: RDMol, searchType: SubstructureSearchType, i: number): string {
+    switch (searchType) {
+      case SubstructureSearchType.INCLUDED_IN:
+        return mol.get_substruct_match(queryMol);
+      case SubstructureSearchType.CONTAINS:
+        return queryMol.get_substruct_match(mol);
+      case SubstructureSearchType.EXACT_MATCH:
+        const match1 = mol.get_substruct_match(queryMol);
+        const match2 = queryMol.get_substruct_match(mol);
+        return match1 !== '{}' && match2 !== '{}' ? match1 : '{}'
+      default:
+        throw Error('Unknown search type: ' + searchType);
+    }
   }
 
 

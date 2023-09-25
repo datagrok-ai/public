@@ -24,7 +24,7 @@ ctx.addEventListener('message', async (e: any) => {
     } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES)
       result = _rdKitServiceWorker!.initMoleculesStructures(args[0]);
     else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE)
-      result = await _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2]);
+      result = await _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2], args[3]);
     else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
       _rdKitServiceWorker!.freeMoleculesStructures();
       _rdKitServiceWorker = null;

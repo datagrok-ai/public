@@ -25,7 +25,8 @@ interface IMolRenderingInfo {
 
 export interface IColoredScaffold {
   molecule: string,
-  color?: string
+  color?: string,
+  isSuperstructure?: string
 }
 
 export class GridCellRendererProxy extends DG.GridCellRenderer {
@@ -134,12 +135,12 @@ M  END
 
             let substructJson = '';
             try {
-              substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
+              substructJson = !scaffolds[0].isSuperstructure ? mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
                 useCoordGen: true,
                 allowRGroups: true,
                 acceptFailure: false,
                 alignOnly: molHasOwnCoords,
-              }));
+              })) : mol.get_substruct_match(mol!);
             } catch {
               // exceptions should not be thrown anymore by RDKit, but let's play safe
             }
@@ -309,14 +310,14 @@ M  END
     return scaffoldString ? [{molecule: scaffoldString}] : [];
   }
 
-  _initScaffoldArray(col: DG.Column, tagName: string): IColoredScaffold[] {
-    const scaffoldArrStr = col.getTag(tagName);
+  _initScaffoldArray(col: any, tagName: string, isTempCol?: boolean): IColoredScaffold[] {
+    const scaffoldArrStr = !isTempCol ? col.getTag(tagName) : col ? col[tagName] : null;
     if (scaffoldArrStr) {
       const scaffoldArr: IColoredScaffold[] = JSON.parse(scaffoldArrStr);    
       const scaffoldArrFinal: IColoredScaffold[] = [];
       scaffoldArr.forEach((it) => {
         if (!it.molecule.endsWith(this.WHITE_MOLBLOCK_SUFFIX))
-          scaffoldArrFinal.push({molecule: it.molecule, color: it.color});
+          scaffoldArrFinal.push(it);
       });
       if(!scaffoldArrFinal.length)
         col.setTag(tagName, '');
@@ -344,7 +345,7 @@ M  END
     const colTemp = gridCell.cell.column.temp;
 
     const singleScaffoldHighlightMolString = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
-    const singleScaffoldFilterMolString = this._initScaffoldString(colTemp, FILTER_SCAFFOLD_TAG); //expected molBlock
+    const singleScaffoldFilterMolString = this._initScaffoldArray(colTemp, FILTER_SCAFFOLD_TAG, true); //expected molBlock
     const multipleScaffoldMolString = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const singleScaffoldMolString = singleScaffoldFilterMolString.length ? singleScaffoldFilterMolString :
       singleScaffoldHighlightMolString.length ? singleScaffoldHighlightMolString : multipleScaffoldMolString;

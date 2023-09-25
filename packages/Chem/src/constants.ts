@@ -33,4 +33,11 @@ export const getSearchProgressEventName =
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
 export const ALIGN_BY_SCAFFOLD_TAG = 'chem-scaffold';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
-export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning'
+export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';
+export enum SubstructureSearchType {
+  EXACT_MATCH = 'exact match',
+  CONTAINS = 'contains',
+  INCLUDED_IN = 'included in',
+  IS_SIMILAR = 'is similar'
+}
+export const FILTER_TYPE_TAG = '.filter-type'

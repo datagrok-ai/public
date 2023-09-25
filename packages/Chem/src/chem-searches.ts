@@ -17,7 +17,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import {getMolSafe} from './utils/mol-creation_rdkit';
 import {_package} from './package';
 import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
-import {getSearchProgressEventName, getTerminateEventName} from './constants';
+import {SubstructureSearchType, getSearchProgressEventName, getTerminateEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 
 const enum FING_COL_TAGS {
@@ -247,11 +247,12 @@ before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false,
-  awaitAll = true): Promise<BitArray> {
+  awaitAll = true, searchType = SubstructureSearchType.INCLUDED_IN, similarityCutOf = 0.8, simScoreCol?: DG.Column): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name??''}`;
-  currentSearchSmiles[searchKey] = molBlockFailover;
+  const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOf}`;
+  currentSearchSmiles[searchKey] = currentSearch;
   await chemBeginCriticalSection();
-  if (currentSearchSmiles[searchKey] !== molBlockFailover) {
+  if (currentSearchSmiles[searchKey] !== currentSearch) {
     chemEndCriticalSection();
     return new BitArray(molStringsColumn.length);
   }
@@ -284,7 +285,8 @@ export async function chemSubstructureSearchLibrary(
 
     const canonicalSmilesList = getSavedCol(canonicalSmilesColName)?.toList() ??
       new Array<string | null>(molStringsColumn.length).fill(null);
-    const fgsList = getSavedCol(Fingerprint.Pattern)?.toList() ??
+    const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? Fingerprint.Morgan : Fingerprint.Pattern;
+    const fgsList = getSavedCol(fpType)?.toList() ??
       new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
 
     if (invalidateCacheFlag) //invalidating cache in case column has been changed
@@ -299,14 +301,14 @@ export async function chemSubstructureSearchLibrary(
     };
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
-        molStringsColumn.toList(), !columnIsCanonicalSmiles);
+        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOf, simScoreCol);
 
     const saveProcessedColumns = () => {
       try {
         !columnIsCanonicalSmiles ?
           saveColumns(molStringsColumn, [result.fpsRes!.fps, result.fpsRes!.smiles!],
-            [Fingerprint.Pattern, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
-          saveColumns(molStringsColumn, [result.fpsRes!.fps], [Fingerprint.Pattern], [DG.COLUMN_TYPE.BYTE_ARRAY]);
+            [fpType, canonicalSmilesColName], [DG.COLUMN_TYPE.BYTE_ARRAY, DG.COLUMN_TYPE.STRING]):
+          saveColumns(molStringsColumn, [result.fpsRes!.fps], [fpType], [DG.COLUMN_TYPE.BYTE_ARRAY]);
       } catch {
 
       } finally {
