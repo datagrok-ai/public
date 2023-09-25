@@ -1,9 +1,11 @@
-import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import {NglViewerApp} from '../apps/ngl-viewer-app';
 import {TaskBarProgressIndicator} from 'datagrok-api/dg';
+
+import {_package} from '../package';
 
 export async function dockingDemoApp(appName: string, pi: TaskBarProgressIndicator): Promise<void> {
   const piMsg = pi.description;

@@ -1,8 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+
+import {runTests, tests, TestContext, test as _test, category} from '@datagrok-libraries/utils/src/test';
 import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
 import './connections/queries-test';
+import './sync/data-sync-test';
+import './benchmarks/benchmark';
+import './cache/cache-test';
 
 export const _package = new DG.Package();
 export {tests};
@@ -19,7 +23,6 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //name: testConnections
 //output: dataframe result
-//top-menu: Tools | Dev | Test Connections
 export async function testConnections(): Promise<DG.DataFrame> {
   const connections: string[] = ['PostgreSQLDBTests', 'SnowflakeDBTests', 'MSSQLDBTests', 'OracleDBTests'];
   const tables: string[] = ['Long', 'Normal', 'Wide', 'Tiny'];
@@ -91,10 +94,25 @@ export async function testConnections(): Promise<DG.DataFrame> {
         df.columns.byName('TTC').set(row, Date.now() - startTime);
 
         row++;
-      };
-    };
-  };
-  df;
+      }
+    }
+  }
   grok.shell.addTableView(df);
   return df;
+}
+
+const skip = ['Redshift', 'Athena'];
+
+//tags: init
+export async function initTests() {
+  const connections = await grok.dapi.connections.list();
+  for (const c of connections) {
+    category(('Providers:' + c.dart.z), () => {
+      _test(c.friendlyName, async () => {
+        const res = await c.test();
+        if (res !== 'ok')
+          throw new Error(res);
+      }, skip.includes(c.dart.z) ? {skipReason: 'SKIP'} : undefined);
+    });
+  }
 }

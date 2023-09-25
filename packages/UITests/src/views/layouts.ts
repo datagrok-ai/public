@@ -37,7 +37,6 @@ category('Layouts', () => {
   });
 
   after(async () => {
-    tv.close();
-    grok.shell.closeTable(df);
+    grok.shell.closeAll();
   });
-});
+}, {clear: false});

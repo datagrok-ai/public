@@ -1,92 +1,101 @@
-import {after, before, category, test, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
-import {createTableView, readDataframe} from './utils';
+import {createTableView} from './utils';
 import * as grok from 'datagrok-api/grok';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
+import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 
 category('similarity/diversity', async () => {
-
-  before(async () => {
-    grok.shell.closeAll();
-  });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
-
   test('similaritySearchViewer', async () => {
     await _testSimilaritySearchViewer();
   });
+
   test('diversitySearchViewer', async () => {
     await _testDiversitySearchViewer();
   });
 });
 
 async function _testSimilaritySearchViewer() {
-  try {
-    const molecules = await createTableView('tests/sample_MSA_data.csv');
-    const viewer = molecules.addViewer('Sequence Similarity Search');
-    await awaitCheck(() => getSearchViewer(viewer, 'Sequence Similarity Search') !== undefined,
-      'Sequence Similarity Search has not been created', 5000);
-    const similaritySearchViewer: SequenceSimilarityViewer = getSearchViewer(viewer, 'Sequence Similarity Search');
-    await awaitCheck(() => similaritySearchViewer.root.getElementsByClassName('d4-grid').length !== 0,
-      'Sequence Similarity Search has not been created', 5000);
-    expect(similaritySearchViewer.fingerprint, 'Morgan');
-    expect(similaritySearchViewer.distanceMetric, 'Tanimoto');
-    expect(similaritySearchViewer.scores!.get(0), DG.FLOAT_NULL);
-    expect(similaritySearchViewer.idxs!.get(0), 0);
-    expect(similaritySearchViewer.molCol!.get(0),
-      'D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
-    expect(similaritySearchViewer.scores!.get(1), 0.4722222089767456);
-    expect(similaritySearchViewer.idxs!.get(1), 11);
-    expect(similaritySearchViewer.molCol!.get(1),
-      'meI/hHis//Aca/meM/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
-    const waiter = waitForCompute(similaritySearchViewer); /* subscribe for computeCompleted event before start compute */
-    molecules.dataFrame.currentRowIdx = 1;
-    await waiter;
-    expect(similaritySearchViewer.targetMoleculeIdx, 1);
-    expect(similaritySearchViewer.molCol!.get(0),
-      'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me');
-  } finally {
-    grok.shell.closeAll();
-  }
+  const moleculesView = await createTableView('tests/sample_MSA_data.csv');
+
+  const viewer: SequenceSimilarityViewer = (await moleculesView.dataFrame.plot
+    .fromType('Sequence Similarity Search')) as SequenceSimilarityViewer;
+  let computeCompleted: boolean = false;
+  viewer.computeCompleted.subscribe((value) => {
+    if (value) computeCompleted = true;
+  });
+  moleculesView.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity');
+  await viewer.renderPromise; // required to wait for computeCompleted
+
+  await awaitCheck(() => getSearchViewer(moleculesView, 'Sequence Similarity Search') !== undefined,
+    'Sequence Similarity Search viewer has not been created', 100);
+  if (!viewer.initialized) throw new Error('The viewer is not initialized.');
+  if (!viewer.moleculeColumn) throw new Error('The viewer has not molecule column (onTableAttached).');
+  if (!viewer.beforeRender()) throw new Error('The viewer is not able to render.');
+  if (!viewer.computeRequested) throw new Error('The viewer has not compute requested even.');
+  if (!computeCompleted) throw new Error('The viewer has not compute completed.');
+
+  const similaritySearchViewer = viewer;
+  await awaitCheck(() => similaritySearchViewer.root.getElementsByClassName('d4-grid').length !== 0,
+    'Sequence Similarity Search viewer grid has not been created', 100);
+
+  /* eslint-disable max-len */
+  const str0: string = 'D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me';
+  const str1: string = 'meI/hHis//Aca/meM/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me';
+  const simStr1: string = 'meI/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Phe_ab-dehydro/N/D-Orn/D-aThr//Phe_4Me';
+  /* eslint-enable max-len */
+
+  expect(similaritySearchViewer.fingerprint, 'Morgan');
+  expect(similaritySearchViewer.distanceMetric, 'Tanimoto');
+  expect(similaritySearchViewer.scores!.get(0), DG.FLOAT_NULL);
+  expect(similaritySearchViewer.idxs!.get(0), 0);
+  expect(similaritySearchViewer.molCol!.get(0), str0);
+  expect(similaritySearchViewer.scores!.get(1), 0.4722222089767456);
+  expect(similaritySearchViewer.idxs!.get(1), 11);
+  expect(similaritySearchViewer.molCol!.get(1), str1);
+  moleculesView.dataFrame.currentRowIdx = 1;
+  await awaitCheck(() => similaritySearchViewer.targetMoleculeIdx === 1,
+    'Target molecule has not been changed', 5000);
+  await awaitCheck(() => similaritySearchViewer.molCol!.get(0) === simStr1,
+    'Incorrect first similar molecule', 5000);
 }
 
 async function _testDiversitySearchViewer() {
-  try {
-    const molecules = await createTableView('tests/sample_MSA_data.csv');
-    const viewer = molecules.addViewer('Sequence Diversity Search');
-    await awaitCheck(() => getSearchViewer(viewer, 'Sequence Diversity Search') !== undefined,
-      'Sequence Diversity Search has not been created', 5000);
-    const diversitySearchviewer = getSearchViewer(viewer, 'Sequence Diversity Search');
-    await awaitCheck(() => diversitySearchviewer.root.getElementsByClassName('d4-grid').length !== 0,
-      'Sequence Diversity Search has not been created', 5000);
-    expect(diversitySearchviewer.fingerprint, 'Morgan');
-    expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
-    expect(diversitySearchviewer.initialized, true);
-    expect(diversitySearchviewer.renderMolIds.length > 0, true);
-  } finally {
-    grok.shell.closeAll();
-  }
-}
+  const moleculesView = await createTableView('tests/sample_MSA_data.csv');
 
-function getSearchViewer(viewer: DG.Viewer, name: string) {
-  //@ts-ignore
-  for (const v of viewer.view.viewers) {
-    if (v.type === name)
-      return v;
-  }
-}
-
-async function waitForCompute(viewer: SequenceSimilarityViewer) {
-  const t = new Promise((resolve, reject) => {
-    viewer.computeCompleted.subscribe(async (_: any) => {
-      try {
-        resolve(true);
-      } catch (error) {
-        reject(error);
-      }
-    });
+  const viewer: SequenceDiversityViewer = (await moleculesView.dataFrame.plot
+    .fromType('Sequence Diversity Search')) as SequenceDiversityViewer;
+  let computeCompleted: boolean = false;
+  viewer.computeCompleted.subscribe((value) => {
+    if (value) computeCompleted = true;
   });
-  await t;
+  moleculesView.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN, null, 'Diversity');
+  await viewer.renderPromise;
+
+  await awaitCheck(() => getSearchViewer(moleculesView, 'Sequence Diversity Search') !== undefined,
+    'Sequence Diversity Search viewer has not been created', 100);
+  if (!viewer.initialized) throw new Error('The viewer is not initialized.');
+  if (!viewer.moleculeColumn) throw new Error('The viewer has not molecule column (onTableAttached).');
+  if (!viewer.beforeRender()) throw new Error('The viewer is not able to render.');
+  if (!viewer.computeRequested) throw new Error('The viewer has not compute requested even.');
+  if (!computeCompleted) throw new Error('The viewer has not compute completed.');
+
+  //const diversitySearchViewer = getSearchViewer(viewer, 'Sequence Diversity Search');
+  const diversitySearchViewer = viewer;
+  await awaitCheck(() => diversitySearchViewer.root.getElementsByClassName('d4-grid').length !== 0,
+    'Sequence Diversity Search viewer grid has not been created', 100);
+
+  expect(diversitySearchViewer.fingerprint, 'Morgan');
+  expect(diversitySearchViewer.distanceMetric, 'Tanimoto');
+  expect(diversitySearchViewer.initialized, true);
+  expect(diversitySearchViewer.renderMolIds!.length > 0, true);
+}
+
+function getSearchViewer(tv: DG.TableView, name: string): DG.Viewer | null {
+  let res: DG.Viewer | null = null;
+  for (const v of tv.viewers) {
+    if (v.type === name)
+      res = v;
+  }
+  return res;
 }

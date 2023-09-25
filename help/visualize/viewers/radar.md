@@ -9,9 +9,7 @@ values from the same table row are connected across axes with lines.
 
 On radar viewer, you can compare the numerical values of different columns
 within a row and rows’ values within a dataset. Radar viewer is commonly used in
-the comparison, decision-making, and analysis, for example, in [elemental
-analysis in
-cheminformatics](https://github.com/datagrok-ai/public/tree/master/packages/Chem#elemental-analysis).
+the comparison, decision-making, and analysis, for example, in [elemental analysis in cheminformatics](../../datagrok/solutions/domains/chem/chem.md#elemental-analysis).
 
 ![Radar viewer](radar-viewer.png)
 

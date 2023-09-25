@@ -28,3 +28,4 @@ dist/
 .idea/**/shelf
 .idea/codeStyles/
 test-report.html
+test-console-output.log

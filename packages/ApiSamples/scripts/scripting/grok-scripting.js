@@ -1,3 +1,3 @@
 grok.functions
-  .eval('OpenServerFile("Skalkin:DatagrokData/formats/xslx/beer.xlsx")')
+  .eval('OpenServerFile("Demo:Files/beer.csv")')
   .then((t) => grok.shell.addTableView(t[0]));

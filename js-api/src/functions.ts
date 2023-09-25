@@ -5,7 +5,6 @@ import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
-import {decorators} from "./decorators/functions";
 import * as rxjs from "rxjs";
 import dayjs from "dayjs";
 declare let grok: any;
@@ -99,14 +98,39 @@ const FuncCallParamMapProxy = new Proxy(class {
 );
 
 
+export interface IFunctionRegistrationData {
+  signature: string;    // int foo(string bar)
+  run: Function;
+  tags?: string;        // comma-separated tags
+  isAsync?: boolean;    // whether is can be called synchronously
+  namespace?: string;
+  options?: {[key: string]: string}
+}
+
+
+export interface IFunctionCallOptions {
+  /** Function call context. */
+  context: Context;
+
+  /** Specifies if this call could be cached, even if the parent function/connection is not. */
+  cacheable?: boolean;
+
+  /** Whether Func.beforeCommandExecuted and afterCommandExecuted events are fired. */
+  reportable?: boolean;
+
+  progress?: ProgressIndicator;
+}
+
+
 /** Grok functions */
 export class Functions {
-  get decorators() {
-    return decorators;
-  }
 
-  register(func: Func): void {
-    api.grok_RegisterFunc(func);
+  /** Controls client caching. */
+  get clientCache(): ClientCache { return new ClientCache(); }
+
+  /** Registers a function globally. */
+  register(func: IFunctionRegistrationData): Func {
+    return new Func(api.grok_RegisterFunc(func));
   }
 
   registerParamFunc(name: string, type: Type, run: Function, check: boolean | null = null, description: string | null = null): void {
@@ -148,6 +172,30 @@ export class Functions {
   get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
   get onParamsUpdated(): Observable<FuncCall> { return __obs('d4-func-call-output-params-updated'); }
+}
+
+
+/** Client caching service that caches results of function invocations and stores
+ * them in the IndexedDb. */
+export class ClientCache {
+
+  /** Clears cache content. */
+  clear(): Promise<void> { return api.grok_ClientCache_Clear(); }
+
+  /** Starts client function caching service. */
+  start(): Promise<void> { return api.grok_ClientCache_Start(); }
+
+  /** Stops client function caching service. */
+  stop(): void { api.grok_ClientCache_Stop(); }
+
+  /** Removes expired records. Normally, Datagrok does it automatically when needed. */
+  cleanup(): Promise<void> { return api.grok_ClientCache_Cleanup(); }
+
+  /** Returns the number of */
+  getRecordCount(): Promise<number> { return api.grok_ClientCache_GetRecordCount(); }
+
+  /** Indicates whether the caching service is running. */
+  get isRunning() { return api.grok_ClientCache_Get_IsRunning(); }
 }
 
 
@@ -214,24 +262,42 @@ export class Context {
   }
 }
 
+type FuncCallParams = {
+  [name: string]: FuncCallParam;
+} & { values(): FuncCallParam[]; }
+
 /** Represents a function call
  * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
 export class FuncCall extends Entity {
   public readonly dart: any;
-  public inputs: any;
-  public outputs: any;
+
+  /** Named input values. See {@link inputParams} for parameter metadata. */
+  public inputs: {[name: string]: any};
+
+  /** Named output values. See {@link outputParams} for parameter metadata. */
+  public outputs: {[name: string]: any};
+
+  /** Input parameter metadata. See {@link inputs} for parameter values. */
+  public inputParams: FuncCallParams;
+
+  /** Output parameter metadata. See {@link outputs} for parameter values. */
+  public outputParams: FuncCallParams;
+
   public aux: any;
   public options: any;
-  public inputParams: any;
-  public outputParams: any;
 
   constructor(dart: any) {
     super(dart);
+    // @ts-ignore
     this.inputs = new FuncCallParamMapProxy(this.dart, true);
+    // @ts-ignore
     this.outputs = new FuncCallParamMapProxy(this.dart, false);
+    // @ts-ignore
     this.inputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, true));
+    // @ts-ignore
     this.outputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, false));
+
     this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.dart));
     this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.dart));
   }
@@ -244,7 +310,17 @@ export class FuncCall extends Entity {
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
 
   get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
+
+  set started(value: dayjs.Dayjs) {
+    if (!(dayjs.isDayjs(value) || value == null))
+      value = dayjs(value);
+    api.grok_FuncCall_Set_Started(this.dart, value?.valueOf());
+  }
+
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
+
+  get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
+  set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
   override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)) }
 

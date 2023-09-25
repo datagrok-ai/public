@@ -1,12 +1,10 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
 import {FitChartCellRenderer} from './fit/fit-renderer';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
-import {createDemoDataFrame, curveDemo} from './fit/fit-demo';
+import {curveDemo} from './fit/fit-demo';
 
 
 export const _package = new DG.Package();
@@ -27,12 +25,6 @@ export function fitCellRenderer() {
 //output: viewer result
 export function _FitViewer() {
   return new MultiCurveViewer();
-}
-
-//tags: app
-//name: Curves Demo
-export function curveFitDemoApp() {
-  grok.shell.addTableView(createDemoDataFrame(30, 5, 2));
 }
 
 //name: Curve fitting

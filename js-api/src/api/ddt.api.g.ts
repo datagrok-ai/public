@@ -6,9 +6,9 @@ export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?
   { return api.grok_histogram(toDart(col), toDart(bitset), toDart(flag), toDart(options?.bins), toDart(options?.logScale)); }
 
 export class Tags {
-  /// A user that created this entity
   static Description = 'description';
 
+  /// A user that created this entity
   static CreatedBy = 'createdBy';
 
   static SemanticDetectionDuration = '.semantic-detection-duration';
@@ -51,9 +51,9 @@ export class Tags {
 
   static OriginalViewName = '.orig.view.name';
 
-  /// Comma-separated list of domains the entity belongs to
   static CellRenderer = 'cell.renderer';
 
+  /// Comma-separated list of domains the entity belongs to
   static Domains = 'domains';
 
   static Quality = 'quality';
@@ -70,27 +70,34 @@ export class Tags {
 
   static Markup = 'markup';
 
-  /// JSON-encoded list of strings to be used in a cell editor.
   static SourcePrecision = '.source-precision';
+
+  static Formula = 'formula';
 
   /// JSON-encoded list of strings to be used in a cell editor.
   /// Applicable for string columns only.
-  static Formula = 'formula';
-
+  /// See also [AutoChoices].
   static Choices = '.choices';
 
+  /// JSON-encoded order of categories. Applicable to string columns only.
   static CategoryOrder = '.category-order';
 
   static DefaultFilter = '.default-filter';
 
   static IgnoreCustomFilter = '.ignore-custom-filter';
 
-  /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
   static CustomFilterType = '.custom-filter-type';
 
-  /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
+  static UseAsFilter = '.use-as-filter';
+
+  static PickupColumnsTags = '.pickup-column-tags';
+
   static Charts = '.charts';
 
+  /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
+  /// from a list of already existing values in the column.
+  /// Applicable for string columns only.
+  /// See also [Choices].
   static AutoChoices = '.auto-choices';
 
   static ImportTime = 'import-time';
@@ -143,13 +150,13 @@ export class Tags {
 
   static DataQueryName = 'DataQuery.name';
 
-  /// Expression that was used to derive the column.
   static DataQueryCall = '.DataQuery.query.call';
 
   static Presentation = '.presentation';
 
   static QueryJson = '.query-json';
 
+  /// Expression that was used to derive the column.
   static Expression = 'expression';
 
   static TableSchema = 'table_schema';
@@ -178,14 +185,127 @@ export class Tags {
 
   static MultiValueSeparator = '.multi-value-separator';
 
-  /// Applies to columns or dataframes.
-  /// Comma-separated list of user or group names that are allowed to make changes to that column.
   static FriendlyName = 'friendlyName';
 
   static AllowRename = '.allow-rename';
 
+  /// Applies to columns or dataframes.
+  /// Comma-separated list of user or group names that are allowed to make changes to that column.
   static EditableBy = 'editableBy';
 
+  /// Pin this column if you are specifically an editor (see "editable by").
   static PinIfEditable = 'pinIfEditable';
+
+  /// Boolean flag that specifies whether the column is exported as part of the CSV file. Defaults to true.
+  static IncludeInCsvExport = '.includeInCsvExport';
+
+  /// Boolean flag that Specifies whether the column is exported as part of the binary file. Defaults to true.
+  static IncludeInBinaryExport = '.includeInBinaryExport';
+
+  /// Specifies the behavior of link click (open in new tab, open in context panel, custom)
+  static LinkClickBehavior = '.linkClickBehavior';
+
+  /// Pipe-separated path that defines where this column is within the hierarchy
+  /// Used for dynamic forms construction, etc
+  static Hierarchy = 'hierarchy';
+
+}
+export class FuncOptions {
+  /// Fully qualified name of the function that edits corresponding function calls
+  static Editor = 'editor';
+
+  /// Shows the function in the 'Action' pane
+  static Action = 'action';
+
+  /// Shows the function in the toolbox
+  static Toolbox = 'toolbox';
+
+  static AutostartImmediate = 'autostartImmediate';
+
+  /// Applies to [FuncTypes.CellRenderer].
+  /// Comma-separated list of key-value pairs that represent
+  /// required tags for a column to be picked up by the renderer.
+  static CellRendererColumnTags = 'columnTags';
+
+  /// Applies to [FuncTypes.CellRenderer].
+  /// Cell type (name of the renderer to be used in the UI).
+  static CellRendererCellType = 'cellType';
+
+  /// Applies to [FuncTypes.ValueEditor]. Refers to [Types].
+  static InputPropertyType = 'propertyType';
+
+  /// Applies to [FuncTypes.ValueEditor].
+  static SemType = 'semType';
+
+  /// Applies to [FuncTypes.Panel]
+  static VisibilityCondition = 'condition';
+
+  /// Demo path, such as 'Viewers | Radar'
+  static DemoPath = 'condition';
+
+  /// Viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | <ViewerPath>)
+  static ViewerPath = 'viewerPath';
+
+  /// When set to 'true', the function is shown in the grid context menu: Add | Summary Columns | ...
+  static GridChart = 'gridChart';
+
+  /// Boolean value that controls whether a function should be executed when the input changes.
+  static RunOnInput = 'runOnInput';
+
+  /// Boolean value that controls whether a function should be executed when the function preview opens.
+  /// Applicable to models as well.
+  static RunOnOpen = 'runOnOpen';
+
+  /// When set to 'true', the function is higher-priority to be set in Filters Panel
+  static PrimaryFilter = 'primaryFilter';
+
+  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  static InspectorPanel = 'inspectorPanel';
+
+  /// Function that returns a Widget that gets added as a tab to the "Inspector" window
+  static Cache = 'cache';
+
+  /// Cron string that specifies when the cache is invalidated
+  static CacheInvalidateOn = 'cache.invalidateOn';
+
+}
+export class FuncParamOptions {
+  static SemType = 'semType';
+
+  static Columns = 'columns';
+
+  static Category = 'category';
+
+  static Optional = 'optional';
+
+  static Type = 'type';
+
+  static Format = 'format';
+
+  static AllowNulls = 'allowNulls';
+
+  static Action = 'action';
+
+  static Choices = 'choices';
+
+  static Suggestions = 'suggestions';
+
+  static Min = 'min';
+
+  static Max = 'max';
+
+  static Validators = 'validators';
+
+  static Caption = 'caption';
+
+  static Postfix = 'postfix';
+
+  static Units = 'units';
+
+  static Editor = 'editor';
+
+  static Nullable = 'nullable';
+
+  static Separators = 'separators';
 
 }

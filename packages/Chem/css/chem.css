@@ -66,6 +66,11 @@
   overflow: hidden;
 }
 
+.d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar) {
+  position: relative;
+  height: 100%;
+}
+
 .d4-filter-element .grok-loader {
   position: absolute;
   top: 10px;
@@ -76,6 +81,7 @@
   font-size: 14px;
 }
 
+.d4-viewer.d4-filters .scaffold-tree-viewer .grok-icon:hover,
 .scaffold-tree-viewer .grok-icon:hover {
   filter: brightness(1.2);
   -webkit-filter: brightness(1.2);
@@ -100,8 +106,9 @@
 }
 
 .d4-scaffold-tree .d4-tree-view-node .d4-tree-view-group-label {
-  border: 1px solid var(--grey-2);
-  margin-left: 8px;
+  border: 0.5px solid var(--grey-2);
+  display: flex;
+  flex-grow: 1;
 }
 
 .d4-scaffold-tree .d4-tree-view-node .d4-tree-view-group-label,
@@ -131,10 +138,10 @@
   color : #4d5261;
   text-align: center;
   position: absolute;
-  top: 45%;
+  top: 40%;
   font-size: 13px;
   width: 100% !important;
-  height: 30px !important;
+  height: 33px !important;
   visibility: hidden;
 }
 
@@ -210,6 +217,10 @@
   visibility: visible;
 }
 
+.chem-scaffold-tree-toolbar.empty-tree {
+  visibility: visible;
+}
+
 .d4-viewer.d4-scaffold-tree:hover .chem-scaffold-tree-toolbar {
   visibility: visible;
 }
@@ -218,40 +229,68 @@
   visibility: visible;
 }
 
+.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label {
+  border: 1px solid var(--grey-2);
+  margin-left: 8px;
+}
+
+.d4-viewer.d4-filters .d4-tree-view-node .d4-tree-view-group-label {
+  flex-grow: 1;
+}
+
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
   display: flex;
   flex-direction: column;
   align-items: end;
+  flex: 1;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 100%;
   /* box-sizing: content-box; */
 }
 
-.scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
-  height: 80px;
-  margin: 6px;
-}
-
+.scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info,
 .scaffold-tree-normal .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
   height: 80px;
-  margin: 6px;
+  margin: 0px 6px;
 }
 
-.scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
-  margin: 6px 6px 6px auto;
+.mol-host {
+  margin: 0 6px;
+  flex-grow: 1;
+  overflow: hidden;
+  display: flex;
+}
+
+.mol-host > :last-child {
+  right: 5px;
+}
+
+.mol-host > :first-child {
+  left: 50px;
 }
 
 .scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 300px;
-  height: 100px;
+  width: 280px;
+  height: 110px;
+}
+
+.scaffold-tree-extra .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
+  min-width: 200px;
+  max-width: 340px;
+  height: auto;
+  aspect-ratio: 3/1.25;
 }
 
 .scaffold-tree-normal .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 252px;
-  height: 90px;
+  width: 240px;
+  height: 100px;
 }
 
 .scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 210px;
-  height: 80px;
+  width: 200px;
+  height: 90px;
 }
 
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info .chem-mol-box-info-buttons {
@@ -344,4 +383,51 @@
 
 .chem-hide-filter {
   display: none;
+}
+
+.d4-flex-row.ui-div.chem-scaffold-tree-scrollbar {
+  overflow: hidden!important;
+}
+
+.chem-drug-likeness-widget-score-div, .chem-toxicity-widget-risk-row {
+  display: flex;
+  align-items: center;
+}
+
+.chem-drug-likeness-calc-all-button {
+  margin-left: 4px;
+  color: #2083d5;
+}
+
+.chem-toxicity-widget-calc-all-button {
+  margin-right: 5px;
+  color: #2083d5;
+}
+
+.chem-malformed-molecule-error {
+    align-items: center;
+    color: red;
+    text-align: center;
+}
+
+.chem-col-highlight-sketcher-input {
+  width: 150px;
+  height: 100%;
+  position: relative;
+}
+
+.struct-alerts-mol-box {
+  position: relative
+}
+
+.struct-alerts-mol-box > .pep-more-icon {
+  position: absolute;
+}
+
+.highlight-substr-grid-button {
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
 }

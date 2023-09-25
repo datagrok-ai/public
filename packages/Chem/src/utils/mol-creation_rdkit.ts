@@ -16,7 +16,7 @@ export function isFragment(molString: string) {
     return !!molString.match(/\[.?:|\*.?\]/g);
 }
 
-export function isSmarts(molString: string): boolean {
+export function _isSmarts(molString: string): boolean {
   if (isMolBlock(molString))
     return MolfileHandler.getInstance(molString).isQuery();
   else
@@ -26,48 +26,70 @@ export function isSmarts(molString: string): boolean {
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule,
   warnOff: boolean = true): IMolContext {
   let isQMol = false;
-  let kekulize: boolean = true;
+  const kekulizeProp = (details as any).kekulize;
+  let kekulize: boolean = typeof kekulizeProp === 'boolean' ? kekulizeProp : true;
   let useMolBlockWedging: boolean = false;
   let mol: RDMol | null = null;
 
   try {
-    const _isSmarts = isSmarts(molString);
-    mol = _isSmarts ? rdKitModule.get_qmol(molString) : rdKitModule.get_mol(molString, JSON.stringify(details));
-    isQMol = _isSmarts;
-  } catch (e) {
-    if (mol !== null) {
-      mol.delete();
-      mol = null;
-    }
-
-    kekulize = false;
-    try {mol = rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize}));} catch (e2) {
-      if (mol !== null) {
-        mol.delete();
-        mol = null;
-      }
-
-      try {mol = rdKitModule.get_qmol(molString);} catch (e3) {
-        if (mol !== null) {
-          mol.delete();
-          mol = null;
-        }
-        if (!warnOff)
-          console.error('Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molString + '`');
-        return {mol, kekulize, isQMol, useMolBlockWedging};
-      }
-      return {mol, kekulize, isQMol, useMolBlockWedging};
-    }
-    if (mol.is_valid())
-      useMolBlockWedging = (mol.has_coords() === 2);
-
-    return {mol, kekulize, isQMol, useMolBlockWedging};
+    mol = rdKitModule.get_mol(molString, JSON.stringify(details));
+  } catch (e) {}
+  if (!mol && kekulize) {
+    kekulize = false; //Pyrrole cycles
+    try {
+      mol = rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize}));
+    } catch (e) {}
   }
-  if (mol.is_valid())
+  if (!mol) {
+    try {
+      mol = rdKitModule.get_qmol(molString);
+      isQMol = true;
+    } catch (e) {}
+  }
+  if (mol)
     useMolBlockWedging = (mol.has_coords() === 2);
-  else {
-    mol?.delete();
-    mol = null;
-  }
+  else if (!warnOff)
+    console.error('Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molString + '`');
   return {mol, kekulize, isQMol, useMolBlockWedging};
+}
+
+
+export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string,
+  rdKitModule: RDModule): RDMol | null {
+  let queryMol = null;
+
+  if (isMolBlock(queryMolString)) {
+    if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
+      queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
+    else {
+      try {
+        queryMol = rdKitModule.get_qmol(queryMolString);
+        queryMol.convert_to_aromatic_form();
+      } catch (e) {
+        if (queryMol) {
+          queryMol.delete();
+          queryMol = null;
+        }
+      }
+    }
+  } else { // not a molblock
+    try {
+      queryMol = rdKitModule.get_qmol(queryMolString);
+    } catch (e) { }
+    if (queryMol !== null) {
+      const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
+      if (mol !== null) { // check the qmol is proper
+        const match = mol.get_substruct_match(queryMol);
+        if (match === '{}') {
+          queryMol.delete(); //remove mol object previously stored in queryMol
+          queryMol = mol;
+        } else
+          mol.delete();
+      } // else, this looks to be a real SMARTS
+    } else { // failover to queryMolBlockFailover
+      // possibly get rid of fall-over in future
+      queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, rdKitModule).mol;
+    }
+  }
+  return queryMol;
 }

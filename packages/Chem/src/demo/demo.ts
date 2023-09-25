@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset,
   openSketcher, scrollTable} from '../utils/demo-utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
@@ -724,7 +725,7 @@ export async function _demoScaffoldTree(): Promise<void> {
   const table: DG.DataFrame = tv.dataFrame;
   const tree = await _package.files.readAsText('scaffold_tree.json');
   const viewer = new ScaffoldTreeViewer();
-  viewer.autoGenerate = false;
+  viewer.allowGenerate = false;
   viewer.dataFrame = table;
   viewer.size = 'small';
   viewer.addOrphanFolders = false;

@@ -1,4 +1,4 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -34,7 +34,6 @@ category('UI: Icons', () => {
   });
 
   after(async () => {
-    v.close();
     grok.shell.closeAll();
   });
-});
+}, {clear: false});

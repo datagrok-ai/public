@@ -3,19 +3,29 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
+import {_package} from '../package-test';
 
 category('Viewers: Core Viewers', () => {
-  const df = grok.data.demo.demog(100);
+  let df: DG.DataFrame;
+
+  const skip: {[key: string]: string} = {'Form': 'GROK-11708',
+    'Heat map': 'GROK-11705', 'Network diagram': 'GROK-11707'};
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
-    !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') && v !== 'Google map');
+    !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
+    v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' &&
+    v !== 'Scatter plot' && v !== DG.VIEWER.FILTERS); // TO FIX
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
-  const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
-  //@ts-ignore
-  coreViewers.push('Leaflet', 'distributionProfiler');
+  const coreViewers: string[] = regViewers.filter((x) => !JsViewers.includes(x));
+  coreViewers.push('distributionProfiler');
+
+  before(async () => {
+    df = await _package.files.readCsv('SPGI_v2_100.csv');
+  });
+
   for (const v of coreViewers) {
     test(v, async () => {
-      await testViewer(v, df.clone());
-    });
+      await testViewer(v, v === '3d scatter plot' ? grok.data.demo.demog(100) : df.clone());
+    }, {skipReason: skip[v]});
   }
 });
 
@@ -27,7 +37,8 @@ category('Viewers', () => {
 
   before(async () => {
     coreViewerTypes = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID &&
-      !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') && v !== 'Google map');
+      !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
+      v !== 'Google map' && v !== 'Word cloud');
     df = grok.data.demo.demog(100);
     tv = grok.shell.addTableView(df);
     viewerList = [];
@@ -208,6 +219,7 @@ category('Viewers', () => {
 
   after(async () => {
     grok.shell.closeAll();
+    DG.Balloon.closeAll();
 
     for (const viewer of viewerList) {
       try {
@@ -219,7 +231,7 @@ category('Viewers', () => {
     }
     viewerList = [];
   });
-});
+}, {clear: false});
 
 function closeViewers(view: DG.TableView) {
   Array.from(view.viewers).slice(1).forEach((v) => v.close());

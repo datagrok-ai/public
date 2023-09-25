@@ -6,6 +6,7 @@ import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
 import {PackageLogger} from "./logger";
 import * as Module from "module";
+import dayjs from "dayjs";
 
 declare var grok: any;
 let api = <any>window;
@@ -58,10 +59,10 @@ export class Entity {
   get path(): string { return api.grok_Entity_Path(this.dart); }
 
   /** Time when entity was created **/
-  get createdOn(): string { return api.grok_Entity_Get_CreatedOn(this.dart); }
+  get createdOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_CreatedOn(this.dart)); }
 
   /** Time when entity was updated **/
-  get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.dart); }
+  get updatedOn(): dayjs.Dayjs { return dayjs(api.grok_Entity_Get_UpdatedOn(this.dart)); }
 
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
@@ -145,7 +146,7 @@ export class User extends Entity {
       "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380",
       "Admin": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee",
       "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3",
-    }
+    } as const;
   }
 }
 
@@ -352,7 +353,9 @@ export class DataQuery extends Func {
     super(dart);
   }
 
+  /** @deprecated Use FuncCall.adHoc instead **/
   get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.dart); }
+  /** @deprecated Use FuncCall.adHoc instead **/
   set adHoc(a: boolean) { api.grok_Query_Set_AdHoc(this.dart, a); }
 
   /** Query text */
@@ -632,10 +635,18 @@ export class FileInfo extends Entity {
   /** Returns file URL */
   get url(): string { return api.grok_FileInfo_Get_Url(this.dart); }
 
+  /** Checks if file */
+  get isFile(): boolean { return api.grok_FileInfo_Get_IsFile(this.dart); }
+
+  /** Checks if directory */
+  get isDirectory(): boolean { return api.grok_FileInfo_Get_IsDirectory(this.dart); }
+
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
   //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
   // }
+
+  get data(): Uint8Array {return api.grok_FileInfo_Get_Data(this.dart);}
 
   readAsString(): Promise<string> {
     return api.grok_FileInfo_ReadAsString(this.dart);
@@ -715,7 +726,7 @@ export class Group extends Entity {
       "Admin": "a4b45840-9a50-11e6-c537-6bf8e9ab02ee",
       "System": "a4b45840-ac9c-4d39-8b4b-4db3e576b3c3",
       "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
-    }
+    } as const;
   }
 }
 
@@ -883,14 +894,14 @@ export class LogEventParameterValue extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package extends Entity {
-  public webRoot: string = '';
-  public version: string = '';
+  _webRoot: string | undefined;
+  public _version: string = '';
 
   constructor(dart: any | undefined = undefined) {
     super(dart);
 
     if (typeof dart === 'string') {
-      this.webRoot = dart;
+      this._webRoot = dart;
       this.dart = null;
     }
   }
@@ -901,6 +912,31 @@ export class Package extends Entity {
   init(): Promise<null> { return Promise.resolve(null); }
 
   private _name: string = '';
+
+  get webRoot(): string {
+    if (this._webRoot === undefined)
+      return api.grok_Package_Get_WebRoot(this.dart);
+    else
+      return this._webRoot;
+  }
+
+  set webRoot(x) {
+    this._webRoot = x;
+  }
+
+  get version(): string {
+    if (this.dart != null)
+      return api.grok_Package_Get_Version(this.dart);
+    else
+      return this._version;
+  }
+
+  set version(x) {
+    if (this.dart != null)
+      api.grok_Package_Set_Version(this.dart, x);
+    else
+      this._version = x;
+  }
 
   /** Package short name */
   get name(): string {
@@ -1008,6 +1044,9 @@ export interface PropertyOptions {
 
   /** Property type */
   type?: string;
+
+  /** Property input type */
+  inputType?: string;
 
   /** Whether an empty value is allowed. This is used by validators. */
   nullable?: boolean;
@@ -1120,6 +1159,14 @@ export class Property {
   get editor(): string { return api.grok_Property_Get(this.dart, 'editor'); }
   set editor(s: string) { api.grok_Property_Set(this.dart, 'editor', s); }
 
+  /** Whether a slider appears next to the number input. Applies to numerical columns only. */
+  get showSlider(): string { return api.grok_Property_GetShowSlider(this.dart); }
+  set showSlider(s: string) { api.grok_Property_SetShowSlider(this.dart, s); }
+
+  /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
+  get showPlusMinus(): string { return api.grok_Property_GetShowPlusMinus(this.dart); }
+  set showPlusMinus(s: string) { api.grok_Property_SetShowPlusMinus(this.dart, s); }
+
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
    *  @returns {Array<string>} */
@@ -1195,22 +1242,6 @@ export class Property {
   }
 }
 
-/*
-export class DateTime {
-  public dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static fromDate(date: Date): DateTime {
-    return DateTime.fromMillisecondsSinceEpoch(date.getTime());
-  }
-
-  static fromMillisecondsSinceEpoch(millisecondsSinceEpoch: number): DateTime {
-    return new DateTime(api.grok_DateTime_FromMillisecondsSinceEpoch(millisecondsSinceEpoch));
-  }
-}*/
 
 export class HistoryEntry {
   public dart: any;

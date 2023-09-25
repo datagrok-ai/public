@@ -1,10 +1,8 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {syncQueryAromatics} from '../utils/aromatic-utils';
-import {getMolSafe} from '../utils/mol-creation_rdkit';
-import {isMolBlock} from '../utils/chem-common';
+import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { RuleId } from '../panels/structural-alerts';
+import {RuleId} from '../panels/structural-alerts';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -25,119 +23,77 @@ Malformed
   0  0  0  0  0  0            999 V3000
 M  END`;
 
-function validateMol(mol: RDMol | null, molString: string) : void {
-  if (mol === null)
-    throw new Error('FATAL RDKit Error: Created a null molecule with no exception ' + molString);
-  if (!mol.is_valid()) {
-    mol.delete();
-    throw new Error('FATAL RDKit Error: Created a not valid molecule with no exception ' + molString);
-  }
-}
-
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
   initMoleculesStructures(molecules: string[]): number {
+    console.log(`initMoleculesStructures`);
     this.freeMoleculesStructures();
     this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
-    let malformed = 0;
+    let numMalformed = 0;
     for (let i = 0; i < molecules.length; ++i) {
       const item = molecules[i];
       if (item && item !== '') {
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
         const mol = molSafe.mol;
-        if (mol) {
-          mol.is_qmol = molSafe.isQMol;
-          this._rdKitMols[i] = mol;
-        } else
-          malformed++;
+        if (mol)
+            this._rdKitMols![i] = mol;
+        else
+          numMalformed++;
       }
     }
-    return malformed;
+    return numMalformed;
   }
 
-  getQMol(molString: string) : RDMol | null {
-    let mol = null;
-    try {mol = this._rdKitModule.get_qmol(molString);} catch (e) {
-      if (mol !== null)
-        mol.delete();
-      return null;
-    }
-    validateMol(mol, molString);
-    return mol;
-  }
+  async searchSubstructure(queryMolString: string, queryMolBlockFailover: string, molecules?: string[]): Promise<Uint32Array> {
+    if (!molecules)
+      throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
-  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, bitset?: boolean[]): string {
-    const matches: number[] = [];
-    if (this._rdKitMols === null)
-      return '[' + matches.join(', ') + ']';
-
-    let queryMol: RDMol | null;
-
-    if (isMolBlock(queryMolString)) {
-      if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
-        queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
-      else {
-        const molTmp = getMolSafe(queryMolString, {'mergeQueryHs': true, 'kekulize': true}, this._rdKitModule).mol;
-        if (molTmp !== null) {
-          let molBlockAroma: string | null;
-          try {molBlockAroma = molTmp!.get_aromatic_form();} catch (e) {
-            // looks like we get here when the molecule is already aromatic, so we just re-assign the block
-            molBlockAroma = queryMolString;
-          }
-
-          molTmp.delete();
-          queryMolString = syncQueryAromatics(molBlockAroma, queryMolString);
-        }
-        queryMol = this.getQMol(queryMolString);
-      }
-    } else { // not a molblock
-      queryMol = this.getQMol(queryMolString);
-      if (queryMol !== null) {
-        const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
-        if (mol !== null) { // check the qmol is proper
-          const match = mol.get_substruct_match(queryMol);
-          if (match === '{}') {
-            queryMol.delete(); //remove mol object previously stored in queryMol
-            queryMol = mol;
-          } else
-            mol.delete();
-        } // else, this looks to be a real SMARTS
-      } else { // failover to queryMolBlockFailover
-        // possibly get rid of fall-over in future
-        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol;
-      }
-    }
+    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
 
     if (queryMol !== null) {
-      if (bitset) {
-        for (let i = 0; i < bitset.length; ++i) {
-          try { //get_substruct_match can potentially throw an exception, need to catch
-            // Is patternFP iff?
-            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
-              matches.push(i);
-          } catch {
-            continue;
-          }
-        }
-      } else {
-        for (let i = 0; i < this._rdKitMols!.length; ++i) {
-          try {
-            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
-              matches.push(i);
-          } catch {
-            continue;
-          }
-        }
-      }
+      const matches = await this.searchWithPatternFps(queryMol, molecules);
       queryMol.delete();
+      return matches;
     } else
       throw new Error('Chem | Search pattern cannot be set');
-
-    return '[' + matches.join(', ') + ']';
   }
+
+
+  async searchWithPatternFps(queryMol: RDMol, molecules: string[]): Promise<Uint32Array> {
+    const matches = new BitArray(molecules.length);
+    if (this._requestTerminated)
+      return matches.buffer;
+    const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
+    for (let i = 0; i < molecules.length; ++i) {
+      
+      if (i % this._terminationCheckDelay === 0) //every N molecules check for termination flag
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return matches.buffer;
+
+      let mol: RDMol | null = null;
+      let isCached = false;
+      try {
+        const cachedMol = this._molsCache?.get(molecules[i]);
+        mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
+        if (cachedMol || this.addToCache(mol))
+          isCached = true;
+        if (mol) {
+          if (mol.get_substruct_match(queryMol) !== '{}')
+            matches.setFast(i, true);
+        }
+      } catch {
+        continue;
+      } finally {
+        !isCached && mol?.delete();
+      }
+    }
+    return matches.buffer;
+  }
+
 
   freeMoleculesStructures(): void {
     if (this._rdKitMols !== null) {
@@ -182,11 +138,16 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
     const ruleSmartsMap: {[rule in RuleId]?: (RDMol | null)[]} = {};
     const rules = Object.keys(alerts) as RuleId[];
-    for (let rule of rules) {
+    for (const rule of rules) {
       const ruleLength = alerts[rule]!.length;
       ruleSmartsMap[rule] = new Array(ruleLength);
-      for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++)
-        ruleSmartsMap[rule]![smartsIdx] = this.getQMol(alerts[rule]![smartsIdx]);
+      for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++) {
+        let qmol = null;
+        try {
+          qmol = this._rdKitModule.get_qmol(alerts[rule]![smartsIdx]);
+        } catch {}
+        ruleSmartsMap[rule]![smartsIdx] = qmol;
+      }
     }
 
     const molsCount = molecules?.length ?? this._rdKitMols!.length;
@@ -232,4 +193,17 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
+
+  invalidateCache() {
+    this._cacheCounter = 0;
+    if (this._molsCache) {
+      this._molsCache.forEach((it) => it?.delete());
+      this._molsCache.clear();
+    }
+  }
+
+  setTerminateFlag(flag: boolean) {
+    this._requestTerminated = flag;
+  }
+
 }

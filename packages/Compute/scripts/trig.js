@@ -6,6 +6,9 @@
 //output: double cos
 //output: double tan
 //meta.domain: math
+//meta.runOnOpen: true
+//meta.runOnInput: true
+
 
 sin = Math.sin(x);
 cos = Math.cos(x);

@@ -32,3 +32,4 @@ dist/
 *.js
 *.d.ts
 *.d.ts.map
+test-console-output.log

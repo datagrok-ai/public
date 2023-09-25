@@ -6,11 +6,12 @@ import $ from 'cash-dom';
 
 import {getSequenceMolecularWeight} from '../utils/molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {createDimensinalityReducingWorker, IReduceDimensionalityResult,
+import {createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
+import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;

@@ -79,10 +79,10 @@ test('Skipped', async () => {
 
 ## Testing functions
 
-Every package utilizes the concept of [functions](../../datagrok/functions/functions.md).
+Every package utilizes the concept of [functions](../../datagrok/concepts/functions/functions.md).
 Tests cases can be added directly to a function's annotation. Afterwards, the metadata
 is used to test package functions automatically. Use the `test` parameter to add
-test cases. A test is essentially any [grok script](../../datagrok/grok-script.md)
+test cases. A test is essentially any [grok script](../under-the-hood/grok-script.md)
 expression that will be evaluated to a boolean value. Here are some examples:
 
 ```ts
@@ -118,5 +118,5 @@ See also:
 
 - [Packages](../develop.md#packages)
 - [Package testing](test-packages.md)
-- [Grok script](../../datagrok/grok-script.md)
+- [Grok script](../under-the-hood/grok-script.md)
 - [Instructions for datagrok-tools](https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools)

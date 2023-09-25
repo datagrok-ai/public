@@ -7,11 +7,25 @@ on:
     paths:
       - '**/*.js'
       - '**/*.ts'
+  pull_request:
+    branches-ignore:
+      - 'dependabot/**'
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
 
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   codeql:
     name: CodeQL static analysis
-    runs-on: ubuntu-20.04
+    needs: common-check
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true'
     permissions:
       security-events: write
     steps:
@@ -21,6 +35,7 @@ jobs:
         uses: github/codeql-action/init@v2
         with:
           languages: 'javascript'
+          trap-caching: false
       - name: Autobuild
         uses: github/codeql-action/autobuild@v2
       - name: Perform CodeQL Analysis

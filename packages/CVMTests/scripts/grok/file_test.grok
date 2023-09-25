@@ -1,0 +1,12 @@
+#name: Grok Lines Count
+#description: file lines count
+#language: grok
+#input: file file
+#input: bool header
+#input: string separator = ","
+#input: string dec = "."
+#condition: file.isFile && file.name.endsWith("csv")
+#output: int num_lines
+
+df = OpenFile('System:AppData/' + file.path)
+num_lines = df.rowCount

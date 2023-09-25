@@ -1,11 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import {RDModule, Reaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {drawErrorCross, drawRdKitReactionToOffscreenCanvas} from '../utils/chem-common-rdkit';
 
 export class RDKitReactionRenderer extends DG.GridCellRenderer {
   rdKitModule: RDModule;
   canvasCounter: number;
-  reactionCache: DG.LruCache<String, Reaction | null> = new DG.LruCache<String, Reaction | null>();
+  reactionCache: DG.LruCache<String, RDReaction | null> = new DG.LruCache<String, RDReaction | null>();
   reactionRendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
   canvasReused: OffscreenCanvas;
 
@@ -30,8 +30,8 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
   get defaultWidth() {return 600;}
   get defaultHeight() {return 150;}
 
-  _fetchRxnGetOrCreate(reactionString: string, details: object = {}): Reaction | null {
-    let rxn: Reaction | null = null;
+  _fetchRxnGetOrCreate(reactionString: string, details: object = {}): RDReaction | null {
+    let rxn: RDReaction | null = null;
     try {
       rxn = this.rdKitModule.get_rxn(reactionString, JSON.stringify(details));
     } catch (e) { }
@@ -40,7 +40,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
     return rxn;
   }
 
-  _fetchRxn(reactionString: string, details: object = {}): Reaction | null {
+  _fetchRxn(reactionString: string, details: object = {}): RDReaction | null {
     const name = reactionString + ' || ' + (Object.keys(details).length ? ' || ' + JSON.stringify(details) : '');
     return this.reactionCache.getOrCreate(name, (_: any) => this._fetchRxnGetOrCreate(reactionString, details));
   }
@@ -76,7 +76,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
   }
 
   render(g: any, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
+    gridCell: DG.GridCell): void {
     const reactionString = gridCell.cell.value;
     if (reactionString == null || reactionString === '')
       return;

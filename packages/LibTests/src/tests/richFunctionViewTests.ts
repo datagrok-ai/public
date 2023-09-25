@@ -1,0 +1,344 @@
+import * as DG from 'datagrok-api/dg';
+import {category, test, before, delay} from '@datagrok-libraries/utils/src/test';
+import {RichFunctionView} from '@datagrok-libraries/compute-utils';
+import {take} from 'rxjs/operators';
+import {applyTransformations, serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {getFuncCallIO} from './utils';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/src/rich-function-view';
+import fc1 from './mocks/fc1.json';
+
+category('RichFunctionView Inputs', async () => {
+  before(async () => {
+  });
+
+  test('Simple inputs setParamValue', async () => {
+    const view = new RichFunctionView('Libtests:simpleInputs');
+    const inputValues: Record<string, any> = {
+      a: 1,
+      b: 2.2,
+      c: 'test',
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    view.funcCall.setParamValue('a', 1);
+    view.funcCall.setParamValue('b', 2.2);
+    view.funcCall.setParamValue('c', 'test');
+    await view.doRun();
+    const expected = {
+      'inputs': [
+        [
+          'a',
+          1,
+        ],
+        [
+          'b',
+          2.2,
+        ],
+        [
+          'c',
+          'test',
+        ],
+      ],
+      'outputs': [
+        [
+          'aout',
+          1,
+        ],
+        [
+          'bout',
+          2.2,
+        ],
+        [
+          'cout',
+          'test',
+        ],
+      ],
+    };
+    expectDeepEqual(getFuncCallIO(view.funcCall), expected, {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
+    for (const [name, val] of Object.entries(inputValues))
+      expectDeepEqual(inputsMap[name].value, val, {prefix: `input ${name}`});
+
+  });
+
+  test('Simple inputs inputs tweak', async () => {
+    const view = new RichFunctionView('Libtests:simpleInputs');
+    const inputValues: Record<string, any> = {
+      a: 1,
+      b: 2.2,
+      c: 'test',
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(100);
+    for (const [name, input] of Object.entries(inputsMap)) {
+      input.value = inputValues[name];
+      const element = (input as any).input;
+      element.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    await delay(100);
+    await view.doRun();
+    const expected = {
+      'inputs': [
+        [
+          'a',
+          1,
+        ],
+        [
+          'b',
+          2.2,
+        ],
+        [
+          'c',
+          'test',
+        ],
+      ],
+      'outputs': [
+        [
+          'aout',
+          1,
+        ],
+        [
+          'bout',
+          2.2,
+        ],
+        [
+          'cout',
+          'test',
+        ],
+      ],
+    };
+    expectDeepEqual(getFuncCallIO(view.funcCall), expected, {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
+  });
+
+  test('Simple inputs setParamValue rerun', async () => {
+    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues');
+    const inputValues: Record<string, any> = {
+      a: 2,
+      b: 3.2,
+      c: 'test2',
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(100);
+    await view.doRun();
+    view.funcCall.setParamValue('a', 2);
+    view.funcCall.setParamValue('b', 3.2);
+    view.funcCall.setParamValue('c', 'test2');
+    await view.doRun();
+    const expected = {
+      'inputs': [
+        [
+          'a',
+          2,
+        ],
+        [
+          'b',
+          3.2,
+        ],
+        [
+          'c',
+          'test2',
+        ],
+      ],
+      'outputs': [
+        [
+          'aout',
+          2,
+        ],
+        [
+          'bout',
+          3.2,
+        ],
+        [
+          'cout',
+          'test2',
+        ],
+      ],
+    };
+    expectDeepEqual(getFuncCallIO(view.funcCall), expected, {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
+    for (const [name, val] of Object.entries(inputValues))
+      expectDeepEqual(inputsMap[name].value, val, {prefix: `input ${name}`});
+  });
+
+  test('Simple inputs inputs tweak rerun', async () => {
+    const view = new RichFunctionView('Libtests:simpleInputsDefaultValues');
+    const inputValues: Record<string, any> = {
+      a: 2,
+      b: 3.2,
+      c: 'test2',
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(100);
+    await view.doRun();
+    await delay(100);
+    for (const [name, input] of Object.entries(inputsMap)) {
+      input.value = inputValues[name];
+      const element = (input as any).input;
+      element.dispatchEvent(new Event('input', {bubbles: true}));
+    }
+    await delay(100);
+    await view.doRun();
+    const expected = {
+      'inputs': [
+        [
+          'a',
+          2,
+        ],
+        [
+          'b',
+          3.2,
+        ],
+        [
+          'c',
+          'test2',
+        ],
+      ],
+      'outputs': [
+        [
+          'aout',
+          2,
+        ],
+        [
+          'bout',
+          3.2,
+        ],
+        [
+          'cout',
+          'test2',
+        ],
+      ],
+    };
+    expectDeepEqual(getFuncCallIO(view.funcCall), expected, {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
+  });
+
+  test('Complex inputs setParamValue', async () => {
+    const view = new RichFunctionView('Libtests:complexInputs');
+    const inputValues: Record<string, any> = {
+      df: DG.DataFrame.fromColumns([
+        DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
+      ]),
+      data: JSON.stringify({a: 1, b: 'test'}),
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    view.funcCall.setParamValue('df', inputValues['df']);
+    view.funcCall.setParamValue('data', inputValues['data']);
+    await view.doRun();
+    expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
+    expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
+  });
+
+  test('Complex inputs inputs tweak', async () => {
+    const view = new RichFunctionView('Libtests:complexInputs');
+    const inputValues: Record<string, any> = {
+      df: DG.DataFrame.fromColumns([
+        DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
+      ]),
+      data: JSON.stringify({a: 1, b: 'test'}),
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(100);
+    inputsMap['data'].value = inputValues['data'];
+    // TODO: test df input, not rly used rn
+    view.funcCall.setParamValue('df', inputValues['df']);
+    await delay(100);
+    await view.doRun();
+    expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
+    expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
+  });
+
+  test('Complex inputs setParamValue rerun', async () => {
+    const view = new RichFunctionView('Libtests:complexInputs');
+    const inputValuesPre: Record<string, any> = {
+      df: DG.DataFrame.fromColumns([
+        DG.Column.fromList('double', 'col', [11.1, 12.2, 13.3]),
+      ]),
+      data: JSON.stringify({a: 2, b: 'pretest'}),
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    view.funcCall.setParamValue('df', inputValuesPre['df']);
+    view.funcCall.setParamValue('data', inputValuesPre['data']);
+    await view.doRun();
+    const inputValues: Record<string, any> = {
+      df: DG.DataFrame.fromColumns([
+        DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
+      ]),
+      data: JSON.stringify({a: 1, b: 'test'}),
+    };
+    view.funcCall.setParamValue('df', inputValues['df']);
+    view.funcCall.setParamValue('data', inputValues['data']);
+    await view.doRun();
+    expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
+    expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
+  });
+
+  test('Complex inputs inputs tweak rerun', async () => {
+    const view = new RichFunctionView('Libtests:complexInputs');
+    const inputValuesPre: Record<string, any> = {
+      df: DG.DataFrame.fromColumns([
+        DG.Column.fromList('double', 'col', [11.1, 12.2, 13.3]),
+      ]),
+      data: JSON.stringify({a: 2, b: 'pretest'}),
+    };
+    const inputsMap: Record<string, InputVariants> = {};
+    view.afterInputPropertyRender.subscribe(({prop, input}) => {
+      inputsMap[prop.name] = input;
+    });
+    await view.funcCallReplaced.pipe(take(1)).toPromise();
+    await delay(100);
+    inputsMap['data'].value = inputValuesPre['data'];
+    // TODO: test df input, not rly used rn
+    view.funcCall.setParamValue('df', inputValuesPre['df']);
+    await delay(100);
+    await view.doRun();
+    const inputValues: Record<string, any> = {
+      df: DG.DataFrame.fromColumns([
+        DG.Column.fromList('double', 'col', [1.1, 2.2, 3.3]),
+      ]),
+      data: JSON.stringify({a: 1, b: 'test'}),
+    };
+    inputsMap['data'].value = inputValues['data'];
+    // TODO: test df input, not rly used rn
+    view.funcCall.setParamValue('df', inputValues['df']);
+    await delay(100);
+    await view.doRun();
+    expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
+    expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
+    expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
+  });
+
+
+});

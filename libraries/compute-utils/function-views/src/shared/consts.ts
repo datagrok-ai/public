@@ -45,3 +45,12 @@ export enum DIRECTION {
 export const EXPERIMENTAL_TAG = 'experimental';
 export const RUN_NAME_COL_LABEL = 'Run name' as const;
 export const RUN_ID_COL_LABEL = 'RunId' as const;
+export enum VISIBILITY_STATE {
+  HIDDEN = 'hidden',
+  VISIBLE = 'visible',
+}
+
+export enum ABILITY_STATE {
+  ENABLED = 'enabled',
+  DISABLED = 'disabled',
+}

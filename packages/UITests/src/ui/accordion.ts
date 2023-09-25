@@ -1,4 +1,4 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -23,12 +23,12 @@ category('UI: Accordion', () => {
 
   test('accordion.getPane', async () => {
     if (acc.getPane('New pane') == undefined)
-      throw 'getPane error';
+      throw new Error('getPane error');
   });
 
   test('pane.name', async () => {
     if (acc.panes[0].name != 'New pane')
-      throw 'pane.name error';
+      throw new Error('pane.name error');
   });
 
   test('pane.root', async () => {
@@ -37,18 +37,16 @@ category('UI: Accordion', () => {
 
   test('pane.expanded', async () => {
     if (acc.panes[0].expanded != false)
-      throw 'pane.name error';
+      throw new Error('pane.name error');
   });
 
   test('accordion.removePane', async () => {
     acc.removePane(acc.panes[0]);
     if (acc.getPane('New pane') != undefined)
-      throw 'getPane error';
+      throw new Error('getPane error');
   });
-
 
   after(async () => {
-    v.close();
     grok.shell.closeAll();
   });
-});
+}, {clear: false});

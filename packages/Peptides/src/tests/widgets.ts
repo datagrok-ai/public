@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -36,6 +36,16 @@ category('Widgets: Settings', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
@@ -77,15 +87,21 @@ category('Widgets: Distribution panel', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
     getDistributionWidget(model.df, model);
   });
-
-  test('Split', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
 });
 
 category('Widgets: Mutation cliffs', () => {
@@ -109,19 +125,21 @@ category('Widgets: Mutation cliffs', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('UI', async () => {
     mutationCliffsWidget(model.df, model);
   });
-
-  test('General', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
-
-  test('Filtering', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
 });
 
 category('Widgets: Actions', () => {
@@ -145,6 +163,16 @@ category('Widgets: Actions', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('New view', async () => {
@@ -164,7 +192,7 @@ category('Widgets: Actions', () => {
     expect(currentTable.getTag(C.TAGS.UUID), newViewId, 'Current table is expected to have the same UUID as new view');
     expect(currentTable.rowCount, 1, 'Current table is expected to have 1 row');
 
-    await delay(500);
+    await awaitCheck(() => currentTable.currentRowIdx === 0, 'Grid never finished initializing', 2000);
 
     const currentTableModel = currentTable.temp[PeptidesModel.modelName] as PeptidesModel;
     const lstViewer = currentTableModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
@@ -181,28 +209,29 @@ category('Widgets: Actions', () => {
     const selection = model.df.selection;
     selection.set(0, true, false);
 
-    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+    if (lstViewer === null)
+      throw new Error('Logo summary table viewer is not found');
 
     // Check that custom clusters are not created yet
     expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters before creating one');
 
     // Create custom cluster
-    model._newClusterSubject.next();
+    lstViewer.clusterFromSelection();
     const customClusterList = wu(model.customClusters).toArray();
     expect(customClusterList.length, 1, 'Expected to have 1 custom cluster');
     const clustName = customClusterList[0].name;
-    expect(model.df.col(clustName) !== null, true,
-      'Expected to have custom cluster column in the table');
+    expect(model.df.col(clustName) !== null, true, 'Expected to have custom cluster column in the table');
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) !== -1, true,
       'Expected to have custom cluster in the Logo Summary Table');
 
     // Remove custom cluster
-    model.modifyClusterSelection(clustName);
-    model._removeClusterSubject.next();
+    model.modifyClusterSelection({monomerOrCluster: clustName, positionOrClusterType: CLUSTER_TYPE.CUSTOM});
+    lstViewer.removeCluster();
     expect(wu(model.customClusters).toArray().length, 0, 'Expected to have 0 custom clusters after removing one');
     expect(model.df.col(clustName) === null, true,
       'Expected to have no custom cluster column in the table');
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) === -1, true,
       'Expected to have no custom cluster in the Logo Summary Table');
   });
-});
+}, {clear: false});

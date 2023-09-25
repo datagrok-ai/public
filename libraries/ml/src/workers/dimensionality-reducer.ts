@@ -8,22 +8,24 @@ import {KnownMetrics} from '../typed-metrics/typed-metrics';
  * @param {KnownMethods} method Embedding method.
  * @param {KnownMetrics} measure Distance metric.
  * @param {any} options Options to pass to algorithm.
+ * @param {boolean} parallelDistanceWorkers Whether to use parallel distance workers.
  * @return {any} Embedding (and distance matrix where applicable).
  */
-function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options?: any): {distance?: any, embedding?: any} {
+async function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics,
+  options?: any, parallelDistanceWorkers?: boolean): Promise<{distance?: any, embedding?: any}> {
   const reducer = new DimensionalityReducer(
     columnData,
     method,
     measure,
     options,
   );
-  return reducer.transform(true);
+  return await reducer.transform(true, parallelDistanceWorkers);
 }
 
-self.onmessage = ({data: {columnData, method, measure, options}}) => {
+self.onmessage = async ({data: {columnData, method, measure, options, parallelDistanceWorkers}}) => {
   let data: {error?: any, distance?: any, embedding?: any};
-  try{
-    data = onMessage(columnData, method, measure, options);
+  try {
+    data = await onMessage(columnData, method, measure, options, parallelDistanceWorkers);
   } catch (e: any) {
     data = {error: e};
   }

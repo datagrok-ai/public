@@ -7,10 +7,6 @@ import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-librarie
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
 import {awaitContainerStart} from './utils';
-//import * as grok from 'datagrok-api/grok';
-
-export const _package = new DG.Package();
-
 
 category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
@@ -76,11 +72,11 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   test('isCorrect', async () => {
     await _testMsaIsCorrect(fromCsv, toCsv);
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectLong', async () => {
     await _testMsaIsCorrect(longFromCsv, longToCsv);
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectHelm', async () => {
     await awaitContainerStart();
@@ -94,15 +90,15 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
 
   test('isCorrectSeparator', async () => {
     await _testMSAOnColumn(
-      SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT
+      SeparatorFromCsv, SeparatorToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  }, {skipReason: 'GROK-13221'});
+  });
 
   test('isCorrectSeparatorLong', async () => {
     await _testMSAOnColumn(
-      SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT
+      SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
-  }, {skipReason: 'GROK-13221'});
+  });
 });
 
 async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> {
@@ -116,13 +112,13 @@ async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> 
     srcCol.semType = semType;
 
   const tgtCol: DG.Column = tgtDf.getCol('seq')!;
-  const msaCol: DG.Column = await runKalign(srcCol, true);
-  expectArray(msaCol.toList(), tgtCol.toList());
+  const resCol: DG.Column = await runKalign(srcCol, true);
+  expectArray(resCol.toList(), tgtCol.toList());
 }
 
 async function _testMSAOnColumn(
   srcCsv: string, tgtCsv: string,
-  srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string
+  srcNotation: NOTATION, tgtNotation: NOTATION, alphabet?: ALPHABET, pepseaMethod?: string,
 ): Promise<void> {
   const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);

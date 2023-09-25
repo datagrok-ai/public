@@ -5,9 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import {_package, sequenceSpaceTopMenu} from '../package';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 enum EMBED_COL_NAMES {
   X = 'Embed_X',
@@ -15,7 +14,7 @@ enum EMBED_COL_NAMES {
 }
 
 export async function demoSequenceSpace(
-  view: DG.TableView, df: DG.DataFrame, colName: string, method: string
+  view: DG.TableView, df: DG.DataFrame, colName: string, method: string,
 ): Promise<DG.ScatterPlotViewer> {
   let resSpaceViewer: DG.ScatterPlotViewer;
   if (true) {

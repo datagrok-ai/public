@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import * as C from '../utils/constants';
+
+const MAX_ROWS_FOR_DISTANCE_MATRIX = 22000;
 
 export class SequenceSearchBaseViewer extends DG.JsViewer {
   name: string = '';
@@ -13,10 +14,11 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
   fingerprintChoices = ['Morgan', 'Pattern'];
-  moleculeColumn?: DG.Column|null;
+  moleculeColumn?: DG.Column | null;
   moleculeColumnName: string;
   initialized: boolean = false;
   tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet];
+  preComputeDistanceMatrix: boolean = false;
 
   constructor(name: string) {
     super();
@@ -39,19 +41,21 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
     this.init();
 
     if (this.dataFrame) {
-      this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_: any) => await this.render()));
+      this.preComputeDistanceMatrix = this.dataFrame.rowCount <= MAX_ROWS_FOR_DISTANCE_MATRIX;
+      this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50)
+        .subscribe((_: any) => this.render(true)));
       const compute = this.name !== 'diversity';
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
-        .subscribe(async (_: any) => await this.render(compute)));
+        .subscribe((_: any) => this.render(compute)));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-        .subscribe(async (_: any) => await this.render(false)));
+        .subscribe((_: any) => this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
-        .subscribe(async (_: any) => await this.render(false)));
+        .subscribe((_: any) => this.render(false)));
       this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
       this.moleculeColumnName = this.moleculeColumn?.name!;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
     }
-    await this.render();
+    this.render();
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -66,7 +70,17 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
     this.render();
   }
 
-  async render(computeData = true) {
+  /** For tests */ public computeRequested: boolean;
+  public renderPromise: Promise<void> = Promise.resolve();
+
+  protected render(computeData = true): void {
+    this.renderPromise = this.renderPromise.then(async () => {
+      this.computeRequested = this.computeRequested || computeData;
+      await this.renderInt(computeData);
+    });
+  }
+
+  async renderInt(_computeData: boolean): Promise<void> {
 
   }
 

@@ -86,6 +86,8 @@ export interface ITreeMapLookSettings {
 
   sizeColumnName: string;
 
+  autoLayout: boolean;
+
   sizeAggrType: string;
 
   defaultColor: number;
@@ -159,6 +161,15 @@ export interface IHistogramLookSettings {
 
   showYAxis: boolean;
 
+  /// Whether the horizontal axis should be zoomed to the range of the visible bins.
+  zoomToRange: boolean;
+
+  /// Whether the values should be normalized to the filter or globally.
+  normalizeToFilter: boolean;
+
+  /// Bin the values that are in the filter range.
+  binToRange: boolean;
+
   /// Whether markers should be drown when multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
   showMarkers: boolean;
@@ -204,6 +215,8 @@ export interface IHistogramLookSettings {
   showContextMenu: boolean;
 
   //style
+  autoLayout: boolean;
+
   xAxisHeight: number;
 
   yAxisWidth: number;
@@ -376,6 +389,7 @@ export interface IScatterPlotLookSettings {
 
   markerType: string;
 
+  // -1 default - automatic sizing based on current dataframe
   markerDefaultSize: number;
 
   markerOpacity: number;
@@ -429,9 +443,15 @@ export interface IScatterPlotLookSettings {
   /// Shows exact X and Y coordinates for the mouse cursor.
   showDropLines: boolean;
 
+  mouseDrag: string;
+
   /// When true, lasso area selector is used instead of the rectangular one.
   /// Toggle this option by pressing L.
   lassoTool: boolean;
+
+  allowZoom: boolean;
+
+  autoLayout: boolean;
 
   backColor: number;
 
@@ -553,12 +573,16 @@ export interface ILineChartLookSettings {
 
   xAxisLabelOrientation: string;
 
+  xMin: number;
+
+  xMax: number;
+
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
   yColumnNames: Array<string>;
 
   /// A categorical column by which lines are split
-  splitColumnName: string;
+  splitColumnNames: Array<string>;
 
   showYAxis: boolean;
 
@@ -609,6 +633,8 @@ export interface ILineChartLookSettings {
 
   /// Show additional chart on the left
   leftPanel: string;
+
+  autoLayout: boolean;
 
   segmentsFont: string;
 
@@ -788,6 +814,10 @@ export interface IBarChartLookSettings {
   /// Only works for cumulative aggregations such as count.
   showSelectedRows: boolean;
 
+  showMouseOverRect: boolean;
+
+  autoLayout: boolean;
+
   maxCategoryWidth: number;
 
   categoryValueWidth: number;
@@ -830,6 +860,10 @@ export interface IBarChartLookSettings {
 
   outerMarginBottom: number;
 
+  showEmptyBars: boolean;
+
+  showLabels: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -859,6 +893,8 @@ export interface IDensityPlotLookSettings {
 
   /// Columns to be put on the Y axis
   yColumnName: string;
+
+  autoLayout: boolean;
 
   showXAxis: boolean;
 
@@ -950,13 +986,15 @@ export interface IBoxPlotLookSettings {
   /// Show points outside Q2-Q3
   showOutsideValues: boolean;
 
+  /// Show p-value. Press T to toggle.
+  /// Currently works only when there are two categories.
+  /// Welch's t-test is used for calculating the p-value.
   showPValue: boolean;
 
   statistics: Array<string>;
 
-  /// Show p-value. Press T to toggle.
-  /// Currently works only when there are two categories.
-  /// Welch's t-test is used for calculating the p-value.
+  autoLayout: boolean;
+
   axisFont: string;
 
   categoryFont: string;
@@ -1025,6 +1063,8 @@ export interface IPieChartLookSettings {
   pieSortOrder: string;
 
   includeNulls: boolean;
+
+  autoLayout: boolean;
 
   segmentAngleColumnName: string;
 
@@ -1103,6 +1143,8 @@ export interface IMatrixPlotLookSettings {
 
   cellPlotType: string;
 
+  autoLayout: boolean;
+
   showXAxes: boolean;
 
   showYAxes: boolean;
@@ -1133,9 +1175,7 @@ export interface IMatrixPlotLookSettings {
 }
 
 export interface IGridLookSettings {
-  /// Whether the spreadsheet should only show rows that pass the filter
-  showFilteredRowsOnly: boolean;
-
+  /// Determines the rows shown in grid
   /// Indicates whether the grid is editable.
   /// See also *Show Add New Row Icon*
   allowEdit: boolean;
@@ -1151,9 +1191,6 @@ export interface IGridLookSettings {
 
   showColumnLabels: boolean;
 
-  /// Orientation of the column header text.
-  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
-  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Column header height. If not specified, it is calculated automatically.
   /// See also *Col Labels Orientation*, *Horz Col Labels Height*
   colHeaderHeight: number;
@@ -1245,6 +1282,9 @@ export interface IGridLookSettings {
   /// Whether the context menu is shown
   showContextMenu: boolean;
 
+  /// Whether to show notifications when the user tries to edit a read-only table
+  showReadOnlyNotifications: boolean;
+
   frozenColumns: number;
 
   showCurrentCellOutline: boolean;
@@ -1257,6 +1297,9 @@ export interface IGridLookSettings {
 
   colHeaderFont: string;
 
+  /// Orientation of the column header text.
+  /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
+  /// In heat map mode, it depends on whether the text can fit in the area.
   /// Resizing column header by dragging the border between the header and the first row
   allowColHeaderResizing: boolean;
 
@@ -1310,6 +1353,9 @@ export interface IGridLookSettings {
   marginRight: number;
 
   marginBottom: number;
+
+  /// Determines whether newly added columns are added to the grid
+  syncNewColumns: boolean;
 
   colorScheme: Array<number>;
 
@@ -1389,14 +1435,31 @@ export interface ITrellisPlotLookSettings {
 
   categoryLabelFont: string;
 
-  //Map innerViewerLookState;
+  innerViewerLooks: Map<string, any>;
+
+  globalScale: boolean;
+
+  showGridlines: string;
+
   showXAxes: boolean;
 
   showYAxes: boolean;
 
+  showXLabels: boolean;
+
+  showYLabels: boolean;
+
   showControlPanel: boolean;
 
   syncMouseOverRow: boolean;
+
+  packCategories: boolean;
+
+  useTiledView: boolean;
+
+  tilesPerRow: number;
+
+  autoLayout: boolean;
 
   backColor: number;
 
@@ -1458,6 +1521,8 @@ export interface IPcPlotLookSettings {
 
   currentLineWidth: number;
 
+  autoLayout: boolean;
+
   lineWidth: number;
 
   mouseOverLineWidth: number;
@@ -1483,6 +1548,12 @@ export interface IPcPlotLookSettings {
   showDensity: boolean;
 
   showMinMax: boolean;
+
+  showLabels: boolean;
+
+  maxCategories: number;
+
+  horzMargin: number;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -1698,52 +1769,6 @@ export interface IMarkupViewerLookSettings {
 
 }
 
-export interface IWordCloudLookSettings {
-  wordColumnName: string;
-
-  minSize: number;
-
-  maxSize: number;
-
-  backColor: number;
-
-  autoFontSize: boolean;
-
-  font: string;
-
-  maxWords: number;
-
-  sizeColumnName: string;
-
-  sizeColumnAggrType: string;
-
-  colorColumnName: string;
-
-  colorColumnAggrType: string;
-
-  //StreamController _changes;
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  // Viewer description that gets shown at the *Descriptor Position*.
-  // Markup is supported.
-  description: string;
-
-  // Help to be shown when user clicks on the '?' icon on top.
-  // Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-}
-
 export interface INetworkDiagramLookSettings {
   node1ColumnName: string;
 
@@ -1780,6 +1805,8 @@ export interface INetworkDiagramLookSettings {
   node1LabelColumnName: string;
 
   node2LabelColumnName: string;
+
+  autoLayout: boolean;
 
   node1Color: number;
 
@@ -1922,13 +1949,16 @@ export interface ITileViewerLookSettings {
 }
 
 export interface IPivotViewerLookSettings {
+  /// Determines the rows used in pivot viewer.
   showHeader: boolean;
 
-  columnsColumnNames: Array<string>;
+  pivotColumnNames: Array<string>;
 
-  rowsColumnNames: Array<string>;
+  groupByColumnNames: Array<string>;
 
-  measures: Array<string>;
+  aggregateColumnNames: Array<string>;
+
+  aggregateAggTypes: Array<string>;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

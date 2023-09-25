@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "4.11.0",
+  "version": "4.12.15",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -18,12 +18,14 @@
     "node-recursive-directory": "^1.2.0",
     "os": "^0.1.1",
     "path": "^0.12.7",
-    "puppeteer": "^20.3.0"
+    "puppeteer": "^20.3.0",
+    "puppeteer-screen-recorder": "^2.1.2"
   },
   "scripts": {
     "link": "npm link",
     "prepublishOnly": "babel bin --extensions .ts -d bin",
-    "babel": "babel bin --extensions .ts -d bin"
+    "babel": "babel bin --extensions .ts -d bin",
+    "build": "babel bin --extensions .ts -d bin"
   },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",

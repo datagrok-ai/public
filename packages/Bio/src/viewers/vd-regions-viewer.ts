@@ -1,14 +1,19 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import * as rxjs from 'rxjs';
-import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+import {fromEvent, Unsubscribable} from 'rxjs';
+
 import {
-  VdRegionsPropsDefault, VdRegionsProps, IVdRegionsViewer,
-  VdRegion, VdRegionType
+  IVdRegionsViewer,
+  VdRegion, VdRegionType,
+  VdRegionsProps, VdRegionsPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
-import {FilterSources, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {Unsubscribable} from 'rxjs';
+import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+
+import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+
+import {_package} from '../package';
 
 const vrt = VdRegionType;
 
@@ -38,6 +43,27 @@ const vrt = VdRegionType;
 //   new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '118', null/*128*/),
 // ];
 
+export enum PROPS_CATS {
+  STYLE = 'Style',
+  BEHAVIOR = 'Behavior',
+  LAYOUT = 'Layout',
+  DATA = 'Data',
+}
+
+export enum PROPS {
+  // -- Data --
+  skipEmptyPositions = 'skipEmptyPositions',
+  regionTypes = 'regionTypes',
+  chains = 'chains',
+
+  // -- Layout --
+  fitWidth = 'fitWidth',
+  positionWidth = 'positionWidth',
+  positionHeight = 'positionHeight',
+}
+
+const defaults: VdRegionsProps = VdRegionsPropsDefault;
+
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
  */
@@ -58,23 +84,33 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // public sequenceColumnNamePostfix: string;
 
   public skipEmptyPositions: boolean;
+  public fitWidth: boolean;
   public positionWidth: number;
   public positionHeight: PositionHeight;
 
   constructor() {
     super();
 
-    // To prevent ambiguous numbering scheme in MLB
-    this.regionTypes = this.stringList('regionTypes', [vrt.CDR],
-      {choices: Object.values(vrt).filter((t) => t != vrt.Unknown)}) as VdRegionType[];
-    this.chains = this.stringList('chains', ['Heavy', 'Light'],
-      {choices: ['Heavy', 'Light']});
-    // this.sequenceColumnNamePostfix = this.string('sequenceColumnNamePostfix', 'chain sequence');
+    // -- Data --
+    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, defaults.skipEmptyPositions,
+      {category: PROPS_CATS.DATA});
 
-    this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
-    this.positionWidth = this.float('positionWidth', 16);
-    this.positionHeight = this.string('positionHeight', PositionHeight.Entropy,
-      {choices: Object.keys(PositionHeight)}) as PositionHeight;
+    // To prevent ambiguous numbering scheme in MLB
+    this.regionTypes = this.stringList(PROPS.regionTypes, defaults.regionTypes, {
+      category: PROPS_CATS.DATA, choices: Object.values(vrt).filter((t) => t != vrt.Unknown)
+    }) as VdRegionType[];
+    this.chains = this.stringList(PROPS.chains, defaults.chains,
+      {category: PROPS_CATS.DATA, choices: ['Heavy', 'Light']});
+
+    // -- Layout --
+    this.fitWidth = this.bool(PROPS.fitWidth, defaults.fitWidth,
+      {category: PROPS_CATS.LAYOUT});
+    this.positionWidth = this.float(PROPS.positionWidth, defaults.positionWidth, {
+      category: PROPS_CATS.LAYOUT, editor: 'slider', min: 0, max: 64,
+      description: 'Internal WebLogo viewers property width of position.'
+    });
+    this.positionHeight = this.string(PROPS.positionHeight, defaults.positionHeight,
+      {category: PROPS_CATS.LAYOUT, choices: Object.keys(PositionHeight)}) as PositionHeight;
   }
 
   public async init() {
@@ -101,21 +137,27 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
     // this.mlbView.dockManager.dock(this.regionsFg.root, DG.DOCK_TYPE.LEFT, rootNode, 'Filter regions', 0.2);
 
-    this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
-    this.subs.push(rxjs.fromEvent<MouseEvent>(this.root, 'mousemove').subscribe(this.rootOnMouseMove.bind(this)));
+    this.subs.push(fromEvent<MouseEvent>(this.root, 'mousemove').subscribe(this.rootOnMouseMove.bind(this)));
 
     // await this.buildView('init'); // init
   }
 
-  public override async onTableAttached() {
-    const superOnTableAttached = super.onTableAttached.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // onTableAttached
-      superOnTableAttached();
-      if (!this.viewed) {
-        await this.buildView('onTableAttached'); // onTableAttached
-        this.viewed = true;
+  override detach() {
+    if (this.setDataInProgress) return;
+    const superDetach = super.detach.bind(this);
+    this.detachPromise = this.detachPromise.then(async () => { // detach
+      await this.viewPromise;
+      if (this.viewed) {
+        await this.destroyView('detach');
+        this.viewed = false;
       }
+      superDetach();
     });
+  }
+
+  override onTableAttached() {
+    super.onTableAttached();
+    this.setData(this.dataFrame, this.regions);
   }
 
   public override onPropertyChanged(property: DG.Property | null): void {
@@ -126,30 +168,38 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       return;
     }
 
-    if (property) {
-      switch (property.name) {
-      case 'regionTypes':
+    switch (property.name) {
+      case PROPS.regionTypes:
+      case PROPS.chains:
+        this.setData(this.dataFrame, this.regions);
         break;
-      case 'chains':
-        break;
-      case 'sequenceColumnNamePostfix':
-        break;
-        // for (let orderI = 0; orderI < this.logos.length; orderI++) {
-        //   for (let chainI = 0; chainI < this.chains.length; chainI++) {
-        //     const chain: string = this.chains[chainI];
-        //     this.logos[orderI][chain].setOptions({skipEmptyPositions: this.skipEmptyPositions});
-        //   }
-        // }
-        // this.calcSize();
-      }
     }
 
     switch (property.name) {
-    case 'skipEmptyPositions':
-    case 'positionWidth':
-    case 'positionHeight':
-      this.setData(this.dataFrame, this.regions); // onPropertyChanged
-      break;
+      case PROPS.skipEmptyPositions:
+        for (let orderI = 0; orderI < this.logos.length; ++orderI) {
+          for (const chain of this.chains)
+            this.logos[orderI][chain].setOptions({[wlPROPS.skipEmptyPositions]: this.skipEmptyPositions});
+        }
+        this.calcSize();
+        break;
+
+      case PROPS.fitWidth:
+      case PROPS.positionWidth:
+        this.calcSize();
+        break;
+
+      case PROPS.positionHeight:
+        for (let orderI = 0; orderI < this.logos.length; ++orderI) {
+          for (const chain of this.chains)
+            this.logos[orderI][chain].setOptions({[wlPROPS.positionHeight]: this.positionHeight});
+        }
+        this.calcSize();
+        break;
+
+      default:
+        this.setData(this.dataFrame, this.regions); // onPropertyChanged
+        break;
     }
   }
 
@@ -157,39 +207,41 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
   public setData(mlbDf: DG.DataFrame, regions: VdRegion[]) {
-    console.debug('Bio: VdRegionsViewer.setData()');
+    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
+    _package.logger.debug('Bio: VdRegionsViewer.setData()');
+
     this.viewPromise = this.viewPromise.then(async () => { // setData
       if (this.viewed) {
-        await this.destroyView('setData'); // setData
+        await this.destroyView('setData');
         this.viewed = false;
       }
-    });
+    }).then(async () => {
+      await this.detachPromise;
+      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-    this.regions = regions;
-    this.dataFrame = mlbDf; // causes detach and onTableAttached
-
-    this.viewPromise = this.viewPromise.then(async () => { // setData
+      // -- Data --
+      this.regions = regions;
+      if (this.dataFrame.dart !== mlbDf.dart) this.dataFrame = mlbDf; // causes detach and onTableAttached
+    }).then(async () => {
       if (!this.viewed) {
-        await this.buildView('setData'); // setData
+        await this.buildView('setData');
         this.viewed = true;
       }
-    });
-  }
-
-  override detach() {
-    const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
-      if (this.viewed) {
-        await this.destroyView('detach'); // detach
-        this.viewed = false;
-      }
-      superDetach();
+    }).catch((err: any) => {
+      const errMsg = err instanceof Error ? err.message : err.toString();
+      const stack = err instanceof Error ? err.stack : undefined;
+      grok.shell.error(errMsg);
+      _package.logger.error(errMsg, undefined, stack);
+    }).finally(() => {
+      this.setDataInProgress = false;
     });
   }
 
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
+  private detachPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
   private filterSourceInput: DG.InputBase<boolean | null> | null = null;
@@ -200,7 +252,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   private async destroyView(purpose: string): Promise<void> {
     // TODO: Unsubscribe from and remove all view elements
-    console.debug(`Bio: VdRegionsViewer.destroyView( mainLayout = ${!this.mainLayout ? 'none' : 'value'} ), ` +
+    _package.logger.debug(`Bio: VdRegionsViewer.destroyView( mainLayout = ${!this.mainLayout ? 'none' : 'value'} ), ` +
       `purpose = '${purpose}'`);
     if (this.filterSourceInput) {
       //
@@ -219,29 +271,39 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   private async buildView(purpose: string): Promise<void> {
-    console.debug(`Bio: VdRegionsViewer.buildView() begin, ` + `purpose = '${purpose}'`);
+    _package.logger.debug(`Bio: VdRegionsViewer.buildView() begin, ` + `purpose = '${purpose}'`);
 
     const regionsFiltered: VdRegion[] = this.regions.filter((r: VdRegion) => this.regionTypes.includes(r.type));
     const orderList: number[] = Array.from(new Set(regionsFiltered.map((r) => r.order))).sort();
 
-    this.logos = [];
+    const logoPromiseList: Promise<[number, string, WebLogoViewer]>[] = [];
     for (let orderI = 0; orderI < orderList.length; orderI++) {
-      const regionChains: { [chain: string]: WebLogoViewer } = {};
       for (const chain of this.chains) {
         const region: VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
-        regionChains[chain] = (await this.dataFrame.plot.fromType('WebLogo', {
-          sequenceColumnName: region!.sequenceColumnName,
-          startPositionName: region!.positionStartName,
-          endPositionName: region!.positionEndName,
-          fixWidth: true,
-          skipEmptyPositions: this.skipEmptyPositions,
-          positionWidth: this.positionWidth,
-          positionHeight: this.positionHeight,
-        })) as unknown as WebLogoViewer;
+        logoPromiseList.push((async (): Promise<[number, string, WebLogoViewer]> => {
+          const wl: WebLogoViewer = await this.dataFrame.plot.fromType('WebLogo', {
+            sequenceColumnName: region!.sequenceColumnName,
+            startPositionName: region!.positionStartName,
+            endPositionName: region!.positionEndName,
+            fixWidth: true,
+            skipEmptyPositions: this.skipEmptyPositions,
+            positionWidth: this.positionWidth,
+            positionHeight: this.positionHeight,
+          }) as WebLogoViewer;
+          wl.onSizeChanged.subscribe(() => { this.calcSize(); });
+          return [orderI, chain, wl];
+        })());
       }
-      // WebLogo creation fires onRootSizeChanged event even before control being added to this.logos
-      this.logos[orderI] = regionChains;
+    }
+    const logoList: [number, string, WebLogoViewer][] = await Promise.all(logoPromiseList);
+    // Fill in this.logos with created viewers
+    this.logos = new Array(orderList.length);
+    for (let orderI = 0; orderI < orderList.length; ++orderI)
+      this.logos[orderI] = {};
+    for (const [orderI, chain, wl] of logoList) {
+      this.logos[orderI][chain] = wl;
+      this.viewSubs.push(wl.onFreqsCalculated.subscribe(() => { this.calcSize(); }));
     }
 
     // ui.tableFromMap()
@@ -259,7 +321,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
               width: '16px',
               marginTop: '24px',
               marginLeft: '6px',
-            }
+            },
           })] : []),
           // List with controls for regions
           ...[...Array(orderList.length).keys()].map((orderI) => {
@@ -271,7 +333,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
                 // height: '100%',
                 marginTop: '4px',
                 marginBottom: '4px',
-              }
+              },
             });
 
             return resDiv;
@@ -280,8 +342,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       },
       ['', ...[...Array(orderList.length).keys()].map(
         (orderI: number) => regionsFiltered.find(
-          (r: VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0]
-        )!.name || 'Name')]
+          (r: VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0],
+        )!.name || 'Name')],
     );
     this.mainLayout.className = 'mlb-vd-regions-viewer-table2';
     // this.mainLayout.style.background = '#EEEEFF';
@@ -292,42 +354,87 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     this.filterSourceInput.root.style.position = 'absolute';
     this.filterSourceInput.root.style.left = '10px';
     this.filterSourceInput.root.style.top = '-3px';
-    ui.tooltip.bind(this.filterSourceInput.root, 'Check to filter sequences for selected VRs');
+    //this.filterSourceInput.setTooltip('Check to filter sequences for selected VRs'); // TODO: GROK-13614
+    ui.tooltip.bind(this.filterSourceInput.input, 'Check to filter sequences for selected VRs');
 
-    const color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
+    const _color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
     this.host = ui.div([this.mainLayout, this.filterSourceInput!.root],
       {/*style: {backgroundColor: color}*/});
     this.root.appendChild(this.host);
     this.root.style.overflowX = 'auto';
 
     this.calcSize();
+    this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
-    console.debug('Bio: VdRegionsViewer.buildView() end');
+    _package.logger.debug('Bio: VdRegionsViewer.buildView() end');
   }
 
+  private calcSizeRequested: boolean = false;
+
   private calcSize() {
-    const logoHeight = (this.root.clientHeight - 54) / this.chains.length;
+    _package.logger.debug(`Bio: VdRegionsViewer.calcSize(), start`);
+    const calcSizeInt = (): void => {
+      // Postponed calcSizeInt can result call after the viewer has been closed (on tests)
+      if (!this.host) return;
 
-    const maxHeight: number = Math.min(logoHeight,
-      Math.max(...this.logos.map((wlDict) =>
-        Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight))))
-    );
+      const logoHeight = (this.root.clientHeight - 54) / this.chains.length;
+      let totalPos: number = 0;
+      for (let orderI = 0; orderI < this.logos.length; orderI++) {
+        for (const chain of this.chains) {
+          const wl = this.logos[orderI][chain];
+          wl.root.style.height = `${logoHeight}px`;
+        }
 
-    for (let orderI = 0; orderI < this.logos.length; orderI++) {
-      for (let chainI = 0; chainI < this.chains.length; chainI++) {
-        const chain: string = this.chains[chainI];
-        this.logos[orderI][chain].root.style.height = `${maxHeight}px`;
+        totalPos += Math.max(...this.chains.map((chain) => this.logos[orderI][chain].Length));
       }
+
+      if (this.fitWidth) {
+        if (this.logos.length > 0 && totalPos > 0) {
+          const leftPad = 22/* Chain label */;
+          const rightPad = 6 + 6 + 1;
+          const logoMargin = 8 + 1;
+          const fitPositionWidth =
+            (this.root.clientWidth - leftPad - (this.logos.length - 1) * logoMargin - rightPad) / totalPos;
+
+          for (let orderI = 0; orderI < this.logos.length; orderI++) {
+            for (const chain of this.chains) {
+              const wl = this.logos[orderI][chain];
+              wl.setOptions({[wlPROPS.positionWidth]: (fitPositionWidth - wl.positionMarginValue)});
+              wl.root.style.width = `${fitPositionWidth * wl.Length}px`;
+            }
+          }
+        }
+        this.host.style.setProperty('overflow', 'hidden', 'important');
+      } else {
+        for (let orderI = 0; orderI < this.logos.length; orderI++) {
+          for (const chain of this.chains)
+            this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: this.positionWidth});
+        }
+        this.host.style.removeProperty('overflow');
+      }
+
+      if (this.positionWidth === 0)
+        this.host!.style.setProperty('overflow-x', 'hidden', 'important');
+      else
+        this.host!.style.removeProperty('overflow-x');
+    };
+
+    if (!this.calcSizeRequested) {
+      this.calcSizeRequested = true;
+      window.setTimeout(() => {
+        calcSizeInt();
+        this.calcSizeRequested = false;
+      }, 0 /* next event cycle */);
     }
   }
 
   // -- Handle events --
 
-  private rootOnSizeChanged(args: any): void {
+  private rootOnSizeChanged(_args: any): void {
     this.calcSize();
   }
 
-  private rootOnMouseMove(e: MouseEvent) {
+  private rootOnMouseMove(_e: MouseEvent) {
     // ui.tooltip.show('text', e.x + 8, e.y + 8,);
     // console.log(`onMouseMoveRoot.( x: ${e.x}, y: ${e.y} )`);
   }

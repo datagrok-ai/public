@@ -9,14 +9,14 @@ module.exports = {
       filename: 'package-test.js',
       library: {type: 'var', name: `${packageName}_test`},
       import: './src/package-test.ts',
-    }
+    },
   },
   devServer: {
-    contentBase: './dist'
+    contentBase: './dist',
   },
   experiments: {
     asyncWebAssembly: true,
-    topLevelAwait: true
+    topLevelAwait: true,
   },
   resolve: {
     fallback: {'url': false},
@@ -28,7 +28,7 @@ module.exports = {
         test: /\.worker\.ts$/,
         loader: 'worker-loader',
         options: {
-          inline: 'fallback' // this creates a separate file
+          inline: 'fallback', // this creates a separate file
         },
       },
       {
@@ -37,8 +37,8 @@ module.exports = {
         loader: 'file-loader',
         options: {
           publicPath: 'dist/',
-          name: '[name].[ext]'
-        }
+          name: '[name].[ext]',
+        },
       },
       {
         test: /\.ts(x?)$/,
@@ -54,6 +54,7 @@ module.exports = {
         test: /\.js$/,
         enforce: 'pre',
         use: ['source-map-loader'],
+        exclude: /node_modules/,
       },
     ],
   },

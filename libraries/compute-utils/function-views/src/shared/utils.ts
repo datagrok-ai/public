@@ -35,6 +35,13 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
       // Converting internal Dart labels to JS DG.VIEWER labels
       if (k === 'type') return viewerTypesMapping[v] || v;
 
+      if (!k.toLowerCase().includes('color')) {
+        const parsed = Number.parseFloat(v);
+
+        if (!Number.isNaN(parsed))
+          return parsed;
+      }
+
       return v;
     })}:
     {name: prop.name, config: []};

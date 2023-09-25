@@ -24,6 +24,13 @@ export function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
   return _renderDevPanel(ent, minifiedClassNameMap);
 }
 
+//friendlyName: DevTools
+//output: widget panel
+//meta.inspectorPanel: true
+export function _makeInspectorPanel(): DG.Widget {
+  return DG.Widget.fromRoot(ui.divText('Custom panel from DevTools'));
+}
+
 //tags: autostart
 export function describeCurrentObj(): void {
   minifiedClassNameMap = getMinifiedClassNameMap();

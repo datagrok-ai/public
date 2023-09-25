@@ -1,8 +1,8 @@
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -41,10 +41,11 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
 }
 
 //TODO: optimize
-export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
+export function calculateSelected(df: DG.DataFrame): type.SelectionStats {
   const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
-  const selectedObj: type.MonomerSelectionStats = {};
-  for (const idx of df.selection.getSelectedIndexes()) {
+  const selectedObj: type.SelectionStats = {};
+  const selectedIndexes = df.filter.clone().and(df.selection).getSelectedIndexes();
+  for (const idx of selectedIndexes) {
     for (const col of monomerColumns) {
       const monomer = col.get(idx);
       if (!monomer)
@@ -59,11 +60,6 @@ export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats 
   return selectedObj;
 }
 
-// export function isGridCellInvalid(gc: DG.GridCell | null): boolean {
-//   return !gc || !gc.cell.value || !gc.tableColumn || gc.tableRowIndex === null || gc.tableRowIndex === -1 ||
-//     gc.cell.value === DG.INT_NULL || gc.cell.value === DG.FLOAT_NULL;
-// }
-
 export function extractColInfo(col: DG.Column<string>): type.RawColumn {
   return {
     name: col.name,
@@ -73,10 +69,33 @@ export function extractColInfo(col: DG.Column<string>): type.RawColumn {
 }
 
 export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHistogramLookSettings>,
-  statsMap: StringDictionary, isTooltip: boolean = false): HTMLDivElement {
+  statsMap: StringDictionary): HTMLDivElement {
   const result = ui.divV([legend, hist.root, ui.tableFromMap(statsMap)]);
-  result.style.minWidth = '200px';
-  if (isTooltip)
-    hist.root.style.maxHeight = '150px';
+  hist.root.style.maxHeight = '75px';
   return result;
+}
+
+export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
+  const activityCol: DG.Column<number> = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const splitCol: DG.Column<boolean> = table.getCol(C.COLUMNS_NAMES.SPLIT_COL);
+
+  const rowCount = activityCol.length;
+  const activityColData = activityCol.getRawData();
+  const expandedData: number[] = new Array(rowCount + splitCol.stats.sum);
+  const expandedMasks: boolean[] = new Array(expandedData.length);
+  for (let i = 0, j = 0; i < rowCount; ++i) {
+    const isSplit = splitCol.get(i)!;
+    expandedData[i] = activityColData[i];
+    expandedMasks[i] = isSplit;
+    if (isSplit) {
+      expandedData[rowCount + j] = activityColData[i];
+      expandedMasks[rowCount + j] = false;
+      ++j;
+    }
+  }
+
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.TYPE.FLOAT, activityCol.name, expandedData),
+    DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
+  ]);
 }

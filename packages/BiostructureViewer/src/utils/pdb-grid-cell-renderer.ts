@@ -3,9 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
-import {_package, getNglGlService} from '../package';
+
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
+
+import {_getNglGlService} from '../package-utils';
+
+import {_package} from '../package';
 
 const PDB_RENDERER_IMAGE_CACHE_KEY = 'PdbRendererImageCache';
 
@@ -83,7 +87,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     _cellStyle: DG.GridCellStyle,
   ): void {
     const r = window.devicePixelRatio;
-    const service = getNglGlService();
+    const service = _getNglGlService();
 
     if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
 

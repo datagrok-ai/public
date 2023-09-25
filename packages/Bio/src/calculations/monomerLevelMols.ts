@@ -2,34 +2,35 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as C from '../utils/constants';
+import wu from 'wu';
+
 import {getHelmMonomers} from '../package';
-import {TAGS as bioTAGS, getSplitter, getStats} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 const V2000_ATOM_NAME_POS = 31;
 
-export async function getMonomericMols(mcol: DG.Column<string>,
-  pattern: boolean = false, monomersDict?: Map<string, string>): Promise<DG.Column> {
-  const separator: string = mcol.tags[bioTAGS.separator];
-  const units: string = mcol.tags[DG.TAGS.UNITS];
-  const splitter = getSplitter(units, separator);
+export async function getMonomericMols(
+  mcol: DG.Column<string>, pattern: boolean = false, monomersDict?: Map<string, string>
+): Promise<DG.Column> {
+  const uh = UnitsHandler.getOrCreate(mcol);
   let molV3000Array;
   monomersDict ??= new Map();
-  const monomers = units === 'helm' ?
-    getHelmMonomers(mcol) : Object.keys(getStats(mcol, 0, splitter).freq).filter((it) => it !== '');
+  const monomers = uh.isHelm() ?
+    getHelmMonomers(mcol) : Object.keys(uh.stats.freq).filter((it) => it !== '');
 
   for (let i = 0; i < monomers.length; i++) {
     if (!monomersDict.has(monomers[i]))
       monomersDict.set(monomers[i], `${monomersDict.size + 1}`);
   }
 
-  if (units === 'helm') {
+  if (uh.isHelm()) {
     molV3000Array = await grok.functions.call('HELM:getMolFiles', {col: mcol});
     molV3000Array = changeV2000ToV3000(molV3000Array, monomersDict, pattern);
   } else {
     molV3000Array = new Array<string>(mcol.length);
     for (let i = 0; i < mcol.length; i++) {
-      const sequenceMonomers = splitter(mcol.get(i)!).filter((it) => it !== '');
+      const sequenceMonomers = wu(uh.splitted[i]).filter((it) => it !== '').toArray();
       const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
       molV3000Array[i] = molV3000;
     }
@@ -38,7 +39,7 @@ export async function getMonomericMols(mcol: DG.Column<string>,
 }
 
 function molV3000FromNonHelmSequence(
-  monomers: Array<string>, monomersDict: Map<string, string>, pattern: boolean = false) {
+  monomers: ISeqSplitted, monomersDict: Map<string, string>, pattern: boolean = false) {
   let molV3000 = `
   Datagrok macromolecule handler
 

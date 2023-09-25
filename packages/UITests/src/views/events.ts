@@ -151,4 +151,4 @@ category('View: Events', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {clear: false});

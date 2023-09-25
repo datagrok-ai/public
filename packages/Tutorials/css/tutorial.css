@@ -131,10 +131,6 @@ progress[value]::-webkit-progress-value::after {
 }
 
 /* Tutorial Root CSS */
-.tutorials-target-hint {
-    background-color: rgba(255,162,74, 0.25);
-    border: 1px dashed rgba(255,162,74, 0.5);
-}
 
 .tutorials-root-description{
     font-weight: normal;

@@ -5,7 +5,7 @@ title: "Class decorators"
 # Class decorators
 
 Package functions are typically registered in the main package file `package.ts`. Each function has a special
-[parameter annotation](../../datagrok/functions/func-params-annotation.md) depending on its [role](../function-roles.md).
+[parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md) depending on its [role](../function-roles.md).
 You can use [class decorators](https://www.typescriptlang.org/docs/handbook/decorators.html#class-decorators) to register
 such package functions as:
 
@@ -14,7 +14,7 @@ such package functions as:
 * [custom cell renderers](../how-to/custom-cell-renderers.md)
 
 If a function uses a subclass that extends classes from [Datagrok JS API](https://datagrok.ai/js-api), you can use a
-decorator `@grok.functions.decorators.<name>`. This is equivalent to adding a function to `package.ts`. There is no need
+decorator `@grok.decorators.<name>`. This is equivalent to adding a function to `package.ts`. There is no need
 to add anything other than the class itself. When you run the `build` script for your package, the webpack plugin called
 `FuncGeneratorPlugin` will add a special `package.g.ts` file to your project. Note that it is not on the ignore list, so
 you should commit this file to the repository.
@@ -45,7 +45,7 @@ you should commit this file to the repository.
 
    ```json
    "devDependencies": {
-     "datagrok-tools": "^4.10.x"
+     "datagrok-tools": "^4.12.x"
    }
    ```
 
@@ -56,7 +56,7 @@ you should commit this file to the repository.
 <div>
 
 ```ts
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   name: 'Test Viewer',
   description: 'Creates a Test Viewer instance',
   icon: 'images/icon.png',
@@ -75,7 +75,7 @@ export class TestViewer extends DG.JsViewer {
 <div>
 
 ```ts
-@grok.functions.decorators.grokFilter({
+@grok.decorators.filter({
   name: 'Radio Button Filter',
   description: 'Single option filter',
   semType: 'Country',
@@ -92,7 +92,7 @@ export class RadioButtonFilter extends DG.Filter {
 <div>
 
 ```ts
-@grok.functions.decorators.grokCellRenderer({
+@grok.decorators.cellRenderer({
   name: 'Fasta Sequence Cell Renderer',
   description: 'Macromolecule renderer',
   cellType: 'sequence',
@@ -108,6 +108,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 See also:
 
 * [Function roles](../function-roles.md)
-* [Parameter annotation](../../datagrok/functions/func-params-annotation.md)
+* [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md)
 * [JavaScript development](../develop.md)
 * [TypeScript class decorators](https://www.typescriptlang.org/docs/handbook/decorators.html#class-decorators)

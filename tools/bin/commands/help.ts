@@ -51,12 +51,14 @@ Usage: grok init
 Modify a package template by adding config files for linters, IDE, etc.
 
 Options:
-[--eslint] [--ide] [--test] [--ts]
+[--eslint] [--ide] [--test] [--ts] [--git]
 
 --eslint    Add a configuration for eslint
 --ide       Add an IDE-specific configuration for debugging (vscode)
 --test      Add tests support (TypeScript packages only)
 --ts        Convert a JavaScript package to TypeScript
+--git       Configure GIT and install commit linting tools.
+            Read more: https://datagrok.ai/help/develop/advanced/git-policy
 `;
 
 const HELP_API = `

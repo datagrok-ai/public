@@ -27,7 +27,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
   prerequisites: TutorialPrerequisites = {packages: ['Chem', 'PowerPack'], jupyter: true, grokCompute: true, h2o: true};
   demoTable: string = 'chem/tutorials/training-data.csv';
-  helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
+  helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#curation';
 
   protected async _run(): Promise<void> {
     // Save the view with experimental data

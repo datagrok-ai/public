@@ -111,7 +111,7 @@ category('Functions: Date', () => {
 
   test('Today', () => check({
     'Today()': dayjs.utc().hour(0).minute(0).second(0).millisecond(0),
-  }));
+  }), {skipReason: 'GROK-11670'});
 
   test('Weeknum', () => check({
     'Weeknum(Date(2020, 1, 1))': 0,

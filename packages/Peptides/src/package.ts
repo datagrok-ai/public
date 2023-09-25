@@ -6,9 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {analyzePeptidesUI} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
-import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
+import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {IDendrogramService, getDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
@@ -17,27 +16,25 @@ import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper | null = null;
-let dendrogramService: IDendrogramService | null = null;
 
 export const _package = new DG.Package();
 
-export function getMonomerWorksInstance(): MonomerWorks {
-  return monomerWorks!;
+export function getMonomerWorksInstance(): MonomerWorks | null {
+  return monomerWorks;
 }
 
-export function getTreeHelperInstance(): ITreeHelper {
-  return treeHelper!;
-}
-
-export function getDendrogramServiceInstance(): IDendrogramService {
-  return dendrogramService!;
+export function getTreeHelperInstance(): ITreeHelper | null {
+  return treeHelper;
 }
 
 //tags: init
 export async function initPeptides(): Promise<void> {
-  monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
-  treeHelper ??= await getTreeHelper();
-  dendrogramService ??= await getDendrogramService();
+  try {
+    monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
+    treeHelper ??= await getTreeHelper();
+  } catch (e) {
+    grok.log.error(e as string);
+  }
 }
 
 async function openDemoData(chosenFile: string): Promise<void> {
@@ -92,7 +89,7 @@ export function Peptides(): void {
   ]);
 }
 
-//top-menu: Bio | SAR | Peptides...
+//top-menu: Bio | Analyze | SAR...
 //name: Bio Peptides
 export function peptidesDialog(): DG.Dialog {
   const analyzeObject = analyzePeptidesUI(grok.shell.t);
@@ -127,8 +124,8 @@ export function monomerPosition(): MonomerPosition {
 //tags: viewer
 //meta.icon: files/icons/peptide-sar-vertical-viewer.svg
 //output: viewer result
-export function mostPotentResidues(): MostPotentResiduesViewer {
-  return new MostPotentResiduesViewer();
+export function mostPotentResidues(): MostPotentResidues {
+  return new MostPotentResidues();
 }
 
 //name: Logo Summary Table
@@ -176,7 +173,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //name: Macromolecule SAR Analysis
 //description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
-//meta.isDemoScript: True
+//meta.isDemoScript: False
 export async function macromoleculeSarFastaDemo(): Promise<void> {
   return macromoleculeSarFastaDemoUI();
 }

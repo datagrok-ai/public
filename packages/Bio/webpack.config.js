@@ -36,7 +36,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'bio',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

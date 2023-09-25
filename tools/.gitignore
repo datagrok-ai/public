@@ -1,3 +1,4 @@
 bin/validators/*.js
 bin/utils/*.js
 bin/commands/*.js
+test-console-output.log

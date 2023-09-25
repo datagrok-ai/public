@@ -1,11 +1,11 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+// import * as grok from 'datagrok-api/grok';
+// import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {
   intToHtmlA, intToHtml,
   intToRgba, intToRgb,
-  htmlToInt, htmlToIntA
+  htmlToInt, htmlToIntA,
 } from '@datagrok-libraries/utils/src/color';
 
 category('Utils: color', () => {

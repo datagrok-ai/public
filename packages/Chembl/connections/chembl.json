@@ -5,7 +5,8 @@
   "parameters": {
     "server": "db.datagrok.ai",
     "port": 54325,
-    "db": "chembl"
+    "db": "chembl",
+    "cacheResults": true
   },
   "credentials": {
     "parameters": {

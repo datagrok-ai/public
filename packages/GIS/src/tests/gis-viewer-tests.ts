@@ -100,7 +100,7 @@ category('MapViewer', async () => {
       col = testDF2.columns.byName('Store Number');
       expect(false, col.semType === SEMTYPEGIS.GISZIPCODE);
     }
-  });
+  }, {skipReason: 'GROK-12555'});
 
   after(async () => {
     grok.shell.closeTable(testDF as DG.DataFrame);

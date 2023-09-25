@@ -5,7 +5,6 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src
 
 import {ConverterFunc} from './types';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 // import {mmSemType} from '../const';
@@ -45,94 +44,76 @@ category('converters', () => {
     fastaPt: `seq
 FWPHEY
 YNRQWYV
-MKPSEYV
-`,
+MKPSEYV`,
     separatorPt: `seq
 F-W-P-H-E-Y
 Y-N-R-Q-W-Y-V
-M-K-P-S-E-Y-V
-`,
+M-K-P-S-E-Y-V`,
     helmPt: `seq
 PEPTIDE1{F.W.P.H.E.Y}$$$$
 PEPTIDE1{Y.N.R.Q.W.Y.V}$$$$
-PEPTIDE1{M.K.P.S.E.Y.V}$$$$
-`,
+PEPTIDE1{M.K.P.S.E.Y.V}$$$$`,
     fastaDna: `seq
 ACGTC
 CAGTGT
-TTCAAC
-`,
+TTCAAC`,
     separatorDna: `seq
 A/C/G/T/C
 C/A/G/T/G/T
-T/T/C/A/A/C
-`,
+T/T/C/A/A/C`,
     helmDna: `seq
 DNA1{D(A)P.D(C)P.D(G)P.D(T)P.D(C)P}$$$$
 DNA1{D(C)P.D(A)P.D(G)P.D(T)P.D(G)P.D(T)P}$$$$
-DNA1{D(T)P.D(T)P.D(C)P.D(A)P.D(A)P.D(C)P}$$$$
-`,
+DNA1{D(T)P.D(T)P.D(C)P.D(A)P.D(A)P.D(C)P}$$$$`,
     fastaRna: `seq
 ACGUC
 CAGUGU
-UUCAAC
-`,
+UUCAAC`,
     separatorRna: `seq
 A*C*G*U*C
 C*A*G*U*G*U
-U*U*C*A*A*C
-`,
+U*U*C*A*A*C`,
     helmRna: `seq
 RNA1{R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$$
 RNA1{R(C)P.R(A)P.R(G)P.R(U)P.R(G)P.R(U)P}$$$$
-RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$$
-`,
+RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$$`,
     fastaGaps: `seq
 FW-PH-EYY
 FYNRQWYV-
-FKP-Q-SEYV
-`,
+FKP-Q-SEYV`,
     separatorGaps: `seq
 F/W//P/H//E/Y/Y
 F/Y/N/R/Q/W/Y/V/
-F/K/P//Q//S/E/Y/V
-`,
+F/K/P//Q//S/E/Y/V`,
     helmGaps: `seq
 PEPTIDE1{F.W.*.P.H.*.E.Y.Y}$$$$
 PEPTIDE1{F.Y.N.R.Q.W.Y.V.*}$$$$
-PEPTIDE1{F.K.P.*.Q.*.S.E.Y.V}$$$$
-`,
+PEPTIDE1{F.K.P.*.Q.*.S.E.Y.V}$$$$`,
 
     fastaUn: `seq
 [meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D
 [meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
-[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
-`,
+[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]`,
     separatorUn: `seq
 meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D
 meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
-Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
-`,
+Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2`,
     helmUn: `seq
 PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D}$$$$
 PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$
-PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$
-`,
+PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$`,
     helmLoneDeoxyribose: `seq
 DNA1{D(A).D(C).D(G).D(T).D(C)}$$$$
 DNA1{D(C).D(A).D(G).D(T).D(G).D(T)P}$$$$
-DNA1{D(T).D(T).D(C).D(A).D(A).D(C)P}$$$$
-`,
+DNA1{D(T).D(T).D(C).D(A).D(A).D(C)P}$$$$`,
     helmLoneRibose: `seq
 RNA1{R(A).R(C).R(G).R(U).R(C)}$$$$
 RNA1{R(C).R(A).R(G).R(U).R(G).R(U)P}$$$$
-RNA1{R(U).R(U).R(C).R(A).R(A).R(C)P}$$$$
-`,
+RNA1{R(U).R(U).R(C).R(A).R(A).R(C)P}$$$$`,
     helmLonePhosphorus: `seq
 RNA1{P.P.R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$$
 RNA1{P.P.R(C)P.R(A)P.P.R(G)P.R(U)P.R(G)P.R(U)P}$$$$
-RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$
-`,
+RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$`,
   };
 
   /** Also detects semantic types
@@ -147,31 +128,31 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$
     return df;
   }
 
-  function converter(tgtNotation: NOTATION, tgtSeparator: string | null = null): ConverterFunc {
+  function converter(tgtNotation: NOTATION, tgtSeparator?: string): ConverterFunc {
     if (tgtNotation === NOTATION.SEPARATOR && !tgtSeparator)
       throw new Error(`Argument 'separator' is mandatory for target notation '${tgtNotation.toString()}'.`);
 
     return function(srcCol: DG.Column): DG.Column {
-      const converter = new NotationConverter(srcCol);
-      const resCol = converter.convert(tgtNotation, tgtSeparator);
-      expect(resCol.getTag('units'), tgtNotation);
+      const converterUH = UnitsHandler.getOrCreate(srcCol);
+      const resCol = converterUH.convert(tgtNotation, tgtSeparator);
+      expect(resCol.getTag(DG.TAGS.UNITS), tgtNotation);
       return resCol;
     };
   }
 
-  async function _testConvert(srcKey: Samples, converter: ConverterFunc, tgtKey: Samples) {
+  async function _testConvert(srcKey: Samples, colConverter: ConverterFunc, tgtKey: Samples) {
     const srcDf: DG.DataFrame = await readCsv(srcKey);
     const srcCol: DG.Column = srcDf.getCol('seq');
 
     // conversion results
-    const resCol: DG.Column = converter(srcCol);
+    const resCol: DG.Column = colConverter(srcCol);
 
     // The correct reference data to compare conversion results with.
     const tgtDf: DG.DataFrame = await readCsv(tgtKey);
     const tgtCol: DG.Column = tgtDf.getCol('seq');
 
     expectArray(resCol.toList(), tgtCol.toList());
-    const uh: UnitsHandler = new UnitsHandler(resCol);
+    const _uh: UnitsHandler = UnitsHandler.getOrCreate(resCol);
   }
 
   // FASTA tests

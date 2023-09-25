@@ -14,5 +14,6 @@ export const settings = new Settings();
 export const data = new Data();
 export * from './src/chem';
 export * from './src/ml';
+export * from './src/decorators/functions';
 
 export const log = Logger.getStatic();

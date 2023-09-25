@@ -1,6 +1,3 @@
-//name: testSubstructureSearchSmarts
-//language: javascript
-
 // An example of using substructure search with SMARTS pattern,
 // encoded through an ALS parameter block of a MolFile
 
@@ -25,9 +22,9 @@ grok.data.getDemoTable('chem/smiles.csv')
   1 T    2   6   7
 M  ALS   1  2 T C   N   
 M  END
-`
-      )
-      .then(function (bs) {
-        t.filter.copyFrom(bs);
-        grok.shell.addTableView(t);
-      }));
+`,
+  )
+    .then(function(bs) {
+      t.filter.copyFrom(bs);
+      grok.shell.addTableView(t);
+    }));

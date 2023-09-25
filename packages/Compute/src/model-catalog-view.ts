@@ -58,6 +58,7 @@ export class ModelCatalogView extends DG.CustomCardView {
                 }
               })
       }
+    grok.shell.windows.showHelp = false;
   }
 
   currentCall: DG.FuncCall;

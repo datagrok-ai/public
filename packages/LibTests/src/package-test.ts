@@ -3,6 +3,7 @@ import {TestContext, runTests, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/expectTests';
 import './tests/jsonSerializationTests';
+import './tests/richFunctionViewTests';
 
 export const _package = new DG.Package();
 export {tests};

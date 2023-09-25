@@ -74,7 +74,7 @@ title: "Grid"
 
 See also:
 
-* [Formatting notation](../../discover/tags.md#format) for dates and numbers
+* [Formatting notation](../../catalog/tags.md#format) for dates and numbers
 * [Formatting via JS API](../../develop/how-to/customize-grid.md#formatting)
 
 ## Color coding
@@ -191,5 +191,5 @@ Everyone else will get a notification when trying to edit this column.
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/table-view.md)
+* [Table View](../../datagrok/navigation/table-view.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)

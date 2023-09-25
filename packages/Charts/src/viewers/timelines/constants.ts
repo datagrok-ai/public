@@ -30,3 +30,11 @@ export interface ColumnsData extends Indexable {
   eventColumnName?: ColumnData | null,
   eventsColumnNames?: {[key: string]: ColumnData},
 }
+
+export enum DateFormats {
+  MAX_DIFF = '{yyyy}',
+  YEARS_DIFF = '{MMM} {yyyy}',
+  YEAR_DIFF = '{MMM} {d}',
+  TIME_DIFF = '{HH}:{mm}:{ss}',
+  MIN_DIFF = '{HH}:{mm}:{ss}:{SSS}',
+}

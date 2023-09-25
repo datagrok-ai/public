@@ -1,18 +1,15 @@
+import {_WordCloudViewer} from './package.g';
+import {_TreeViewer} from './package.g';
+import {_TimelinesViewer} from './package.g';
+import {_SurfacePlot} from './package.g';
+import {_SunburstViewer} from './package.g';
+import {_SankeyViewer} from './package.g';
+import {_RadarViewer} from './package.g';
+import {_GroupAnalysisViewer} from './package.g';
+import {_GlobeViewer} from './package.g';
+import {_ChordViewer} from './package.g';
 import * as DG from 'datagrok-api/dg';
-
 import {FlagCellRenderer} from './renderers/flag-cell-renderer';
-
-import {TreeViewer} from './viewers/tree/tree-viewer';
-import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
-import {RadarViewer} from './viewers/radar/radar-viewer';
-import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
-import {SankeyViewer} from './viewers/sankey/sankey';
-import {ChordViewer} from './viewers/chord/chord-viewer';
-import {WordCloudViewer} from './viewers/word-cloud/word-cloud-viewer';
-import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewer';
-import {SurfacePlot} from './viewers/surface-plot/surface-plot';
-import {GlobeViewer} from './viewers/globe/globe-viewer';
-
 import {viewerDemo} from './demos/demo';
 
 
@@ -27,103 +24,9 @@ export function flagCellRenderer() {
   return new FlagCellRenderer();
 }
 
-
-//name: Chord
-//description: Creates a chord viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/chord-viewer.svg
-export function _ChordViewer() {
-  return new ChordViewer();
-}
-
-//name: Globe
-//description: Creates a globe viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/globe-viewer.svg
-export function _GlobeViewer() {
-  return new GlobeViewer();
-}
-
-//name: Group Analysis
-//description: Creates a group analysis viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/groupanalysis-viewer.svg
-export function _GroupAnalysisViewer() {
-  return new GroupAnalysisViewer();
-}
-
-//name: Radar
-//description: Creates a radar viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/radar-viewer.svg
-export function _RadarViewer() {
-  return new RadarViewer();
-}
-
-//name: Sankey
-//description: Creates a sankey viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/sankey-viewer.svg
-export function _SankeyViewer() {
-  return new SankeyViewer();
-}
-
-//name: Sunburst
-//description: Creates a sunburst viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/sunburst-viewer.svg
-export function _SunburstViewer() {
-  return new SunburstViewer();
-}
-
-//name: Surface plot
-//description: Creates a surface plot viewer
-//tags: viewer
-//meta.icon: icons/surfaceplot-viewer.svg
-//output: viewer result
-export function _SurfacePlot() {
-  return new SurfacePlot();
-}
-
-//name: Timelines
-//description: Creates a timelines viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/timelines-viewer.svg
-export function _TimelinesViewer() {
-  return new TimelinesViewer();
-}
-
-//name: Tree
-//description: Creates a tree viewer
-//tags: viewer
-//meta.trellisable: true
-//output: viewer result
-//meta.icon: icons/tree-viewer.svg
-export function _TreeViewer() {
-  return new TreeViewer();
-}
-
-//name: Word Cloud Viewer
-//description: Creates a word cloud viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/wordcloud-viewer.svg
-export function _WordCloudViewer() {
-  return new WordCloudViewer();
-}
-
-
 //name: chordViewerDemo
 //description: Chord viewer visualizes weighted relationships between several entities
 //meta.demoPath: Visualization | General | Chord
-//test: _chordViewerDemo() //wait: 200
 export async function _chordViewerDemo() {
   await viewerDemo('Chord');
 }
@@ -131,7 +34,6 @@ export async function _chordViewerDemo() {
 //name: globeViewerDemo
 //description: Globe viewer represents data visualization layers on a 3-dimensional globe in a spherical projection
 //meta.demoPath: Visualization | Geographical | Globe
-//test: _globeViewerDemo() //wait: 200
 export async function _globeViewerDemo() {
   await viewerDemo('Globe');
 }
@@ -139,7 +41,6 @@ export async function _globeViewerDemo() {
 //name: radarViewerDemo
 //description: Radar viewer is used on multivariate data to plot groups of values over several common variables
 //meta.demoPath: Visualization | General | Radar
-//test: _radarViewerDemo() //wait: 200, skip: skip
 export async function _radarViewerDemo() {
   await viewerDemo('Radar');
 }
@@ -147,7 +48,6 @@ export async function _radarViewerDemo() {
 //name: sankeyViewerDemo
 //description: Sankey viewer depicts a flow from one set of values to another
 //meta.demoPath: Visualization | General | Sankey
-//test: _sankeyViewerDemo() //wait: 200
 export async function _sankeyViewerDemo() {
   await viewerDemo('Sankey');
 }
@@ -155,7 +55,6 @@ export async function _sankeyViewerDemo() {
 //name: sunburstViewerDemo
 //description: Sunburst viewer displays hierarchical data
 //meta.demoPath: Visualization | General | Sunburst
-//test: _sunburstViewerDemo() //wait: 200
 export async function _sunburstViewerDemo() {
   await viewerDemo('Sunburst');
 }
@@ -163,7 +62,6 @@ export async function _sunburstViewerDemo() {
 //name: surfacePlotDemo
 //description: Surface plot viewer displays a set of three-dimensional data as a mesh surface
 //meta.demoPath: Visualization | General | Surface Plot
-//test: _surfacePlotDemo() //wait: 200
 export async function _surfacePlotDemo() {
   await viewerDemo('SurfacePlot');
 }
@@ -171,7 +69,6 @@ export async function _surfacePlotDemo() {
 //name: timelinesViewerDemo
 //description: Timelines viewer displays the flow of events over time
 //meta.demoPath: Visualization | General | Timelines
-//test: _timelinesViewerDemo() //wait: 200
 export async function _timelinesViewerDemo() {
   await viewerDemo('Timelines', {lineWidth: 4, markerPosition: 'above main line'});
 }
@@ -179,7 +76,6 @@ export async function _timelinesViewerDemo() {
 //name: treeViewerDemo
 //description: Tree viewer visualizes hierarchical data by categories
 //meta.demoPath: Visualization | Data flow and hierarchy | Tree
-//test: _treeViewerDemo() //wait: 200
 export async function _treeViewerDemo() {
   await viewerDemo('Tree', {left: '40px', right: '75px'});
 }
@@ -187,7 +83,17 @@ export async function _treeViewerDemo() {
 //name: wordCloudViewerDemo
 //description: Word Cloud viewer visualizes unstructured text data
 //meta.demoPath: Visualization | General | Word Cloud
-//test: _wordCloudViewerDemo() //wait: 200
 export async function _wordCloudViewerDemo() {
-  await viewerDemo('WordCloudViewer', {drawOutOfBound: false});
+  await viewerDemo(DG.VIEWER.WORD_CLOUD, {drawOutOfBound: false});
 }
+
+export {_ChordViewer};
+export {_GlobeViewer};
+export {_GroupAnalysisViewer};
+export {_RadarViewer};
+export {_SankeyViewer};
+export {_SunburstViewer};
+export {_SurfacePlot};
+export {_TimelinesViewer};
+export {_TreeViewer};
+export {_WordCloudViewer};

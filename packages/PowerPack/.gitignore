@@ -3,3 +3,4 @@ node_modules/
 dist/
 src/**/*.js
 test-report.html
+test-console-output.log

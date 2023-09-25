@@ -13,17 +13,12 @@ category('Viewers: Scatter Plot', () => {
   test('Table is unexpectedly filtered after empty column creation #1744', async () => {
     const df = await readDataframe('#1744.csv');
     const tv = grok.shell.addTableView(df);
-    try {
-      const col = df.getCol('Col');
-      for (let i = 0; i < 6; i++) col.set(i, null);
-      tv.addViewer(DG.VIEWER.SCATTER_PLOT, {xColumnName: 'Col', xAxisType: 'logarithmic', yAxisType: 'logarithmic'});
-      await awaitCheck(() => document.querySelector('[name=viewer-Scatter-plot i] canvas') !== null,
-        'cannot load viewer', 2000);
-      expect(df.filter.trueCount, 7);
-    } finally {
-      tv.close();
-      grok.shell.closeTable(df);
-    }
+    const col = df.getCol('Col');
+    for (let i = 0; i < 6; i++) col.set(i, null);
+    tv.addViewer(DG.VIEWER.SCATTER_PLOT, {xColumnName: 'Col', xAxisType: 'logarithmic', yAxisType: 'logarithmic'});
+    await awaitCheck(() => document.querySelector('[name=viewer-Scatter-plot i] canvas') !== null,
+      'cannot load viewer', 2000);
+    expect(df.filter.trueCount, 7);
   });
 
   test('Wrong min/max in log scale if near-zero values present #1764', async () => {

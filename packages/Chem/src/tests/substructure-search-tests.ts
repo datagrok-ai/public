@@ -5,7 +5,7 @@ import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParame
 import {before, category, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { searchSubstructure } from '../package';
+import {chemSubstructureSearchLibrary} from '../chem-searches';
 
 export const testSubstructure = 'C1CC1';
 //csv with C1CC1 as substructure in pos 0 and 2
@@ -17,7 +17,6 @@ CC(C(=O)NCCS)c1cccc(c1)C(=O)c2ccccc2
 COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5`;
 
 category('substructure search', () => {
-
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -25,12 +24,12 @@ category('substructure search', () => {
     }
   });
 
-  test('searchSubstructure.sar-small', async () => {
+  test('searchSubstructure.sar-small_awaitAll', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
   });
 
-  test('searchSubstructureColWithoutDf', async () => {
+  test('searchSubstructureColWithoutDf_awaitAll', async () => {
     const col = DG.Column.fromStrings('smiles', [
       'CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4',
       'Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5',
@@ -39,26 +38,25 @@ category('substructure search', () => {
   });
 
   //Number of molecules is smaller than a number of threads
-  test('searchSubstructure.5_rows', async () => {
+  test('searchSubstructure.5_rows_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
   });
 
-  test('searchSubstructureWithMalformedMolString', async () => {
+  test('searchSubstructureWithMalformedMolString_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     df.columns.byName('smiles').set(4, 'qq');
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
   });
 
-  test('searchSubstructureWithNull', async () => {
+  test('searchSubstructureWithNull_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     df.columns.byName('smiles').set(4, null);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
   });
 
-  test('searchSubstructurePerformance', async () => {
+  test('searchSubstructurePerformance_awaitAll', async () => {
     const df = grok.data.demo.molecules(50000);
-
     const startTime = performance.now();
     await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1')!;
     const midTime1 = performance.now();
@@ -68,19 +66,19 @@ category('substructure search', () => {
     await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'C1CC1')!;
     const endTime = performance.now();
 
-    console.log(`first Call to WithLibrary took ${midTime1 - startTime} milliseconds`);
-    console.log(`loop Call to WithLibrary took ${midTime2 - midTime1} milliseconds`);
-    console.log(`last Call to WithLibrary took ${endTime - midTime2} milliseconds`);
-  });
+    console.log(`first Call to searchSubstructure took ${midTime1 - startTime} milliseconds`);
+    console.log(`loop Call to searchSubstructure took ${midTime2 - midTime1} milliseconds`);
+    console.log(`last Call to searchSubstructure took ${endTime - midTime2} milliseconds`);
+  }, {timeout: 180000});
 
-  test('searchSubstructureAfterChanges', async () => {
+  test('searchSubstructureAfterChanges_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
     df.columns.byName('smiles').set(0, 'COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC');
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [2]);
   });
 
-  test('searchSubstructureWith2Columns', async () => {
+  test('searchSubstructureWith2Columns_awaitAll', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const col = DG.Column.fromStrings('smiles1', [
       'COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC',
@@ -94,7 +92,17 @@ category('substructure search', () => {
     await _testSearchSubstructure(df, 'smiles1', testSubstructure, [1, 4]);
   });
 
-  test('searchSubstructureExplicitHydrogen', async () => {
+  test('searchSubstructure2Dataframes_awaitAll', async () => {
+    const df1 = grok.data.demo.molecules(50);
+    const df2 = grok.data.demo.molecules(50);
+
+    await _testSearchSubstructure(df1, 'smiles', 'c1ccncc1', [6, 26, 46]);
+    await _testSearchSubstructure(df2, 'smiles', 'c1ccccc1',
+      [0, 4, 5, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24,
+        25, 27, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 45, 47, 48]);
+  });
+
+  test('searchSubstructureExplicitHydrogen_awaitAll', async () => {
     const df = await readDataframe('tests/explicit_h_test.csv');
     await _testSearchSubstructure(df, 'smiles', `
   MJ201900                      
@@ -133,7 +141,7 @@ M  END
   });
 
 
-  test('searchSubstructureAromaticBond', async () => {
+  test('searchSubstructureAromaticBond_awaitAll', async () => {
     const df = await readDataframe('tests/aromatic_bond_test.csv');
     await _testSearchSubstructure(df, 'smiles', `
   MJ201900                      
@@ -155,9 +163,39 @@ M  END
 `, [2, 3]);
   });
 
-  test('substructureSearchLibrary', async () => {
-    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable("Demo:Files/chem/smiles_200K.zip") :
+
+  test('search_benzene_awaitAll', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
       grok.data.demo.molecules(500);
-    await searchSubstructure(df.col('smiles')!, 'c1ccccc1', '');
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccccc1');
   });
+
+  test('search_2_benzene_rings_awaitAll', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1ccc2ccccc2c1');
+  });
+
+  test('search_complex_structure_awaitAll', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'c1nn2cnnc2s1');
+  });
+
+  test('search_non_ring_structure_awaitAll', async () => {
+    const df = DG.Test.isInBenchmark ? await grok.data.files.openTable('Demo:Files/chem/smiles_1M.zip') :
+      grok.data.demo.molecules(500);
+    await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O');
+  });
+
+  async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
+    const startTime = performance.now();
+    await chemSubstructureSearchLibrary(molCol, query, '');
+    const midTime1 = performance.now();
+    await chemSubstructureSearchLibrary(molCol, query, '');
+    const midTime2 = performance.now();
+
+    console.log(`first Call to substructure search took ${midTime1 - startTime} milliseconds`);
+    console.log(`second Call to substructure search took ${midTime2 - midTime1} milliseconds`);
+  }
 });

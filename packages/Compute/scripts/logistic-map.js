@@ -8,6 +8,8 @@
 //input: double res = 8 [Largest n-cycle visible]
 //output: dataframe df {viewer: Scatter plot(title: "Logistic map")}
 //meta.domain: Nonlinear dynamics
+//meta.runOnOpen: true
+//meta.runOnInput: true
 
 function getRandomNumberInRange(min, max) {
   return Math.random() * (max - min) + min;

@@ -9,6 +9,9 @@
 //output: double finalConcentration
 //meta.domain: Manufacturing
 //meta.modality: Small molecule
+//meta.runOnOpen: true
+//meta.runOnInput: true
+
 
 function sigmoid(z) {
   return 1 / (1 + Math.exp(-z));

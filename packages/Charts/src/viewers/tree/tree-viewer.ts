@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils, treeDataType } from '../../utils/tree-utils';
@@ -7,6 +8,12 @@ import * as utils from '../../utils/utils';
 
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
+@grok.decorators.viewer({
+  name: 'Tree',
+  description: 'Creates a tree viewer',
+  trellisable: true,
+  icon: 'icons/tree-viewer.svg',
+})
 export class TreeViewer extends EChartViewer {
   layout: layoutType;
   orient: orientation;

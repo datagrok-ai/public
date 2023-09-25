@@ -19,11 +19,9 @@ export async function demoBio01aUI() {
   let dendrogramSvc: IDendrogramService;
   let view: DG.TableView;
   let df: DG.DataFrame;
-  let spViewer: DG.ScatterPlotViewer;
+  let _spViewer: DG.ScatterPlotViewer;
 
   const dimRedMethod: string = 'UMAP';
-  const idRows: { [id: number]: number } = {};
-  const embedCols: { [colName: string]: DG.Column<number> } = {};
 
   try {
     const demoScript = new DemoScript(
@@ -34,7 +32,7 @@ export async function demoBio01aUI() {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
-          getDendrogramService()
+          getDendrogramService(),
         ]);
         view = grok.shell.addTableView(df);
         view.grid.props.rowHeight = 22;
@@ -49,10 +47,10 @@ export async function demoBio01aUI() {
         delay: 2000,
       })
       .step('Build sequence space', async () => {
-        spViewer = await demoSequenceSpace(view, df, seqColName, dimRedMethod);
+        _spViewer = await demoSequenceSpace(view, df, seqColName, dimRedMethod);
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
-        delay: 2000
+        delay: 2000,
       })
       .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol(seqColName);
@@ -80,6 +78,7 @@ export async function demoBio01aUI() {
         });
         df.currentRowIdx = 27;
       }, {
+        // eslint-disable-next-line max-len
         description: 'Selecting a group of rows from a data frame to show their similarity and proximity to each other on a viewer..',
         delay: 2000,
       })

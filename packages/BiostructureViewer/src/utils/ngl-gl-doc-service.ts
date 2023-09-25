@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
 import * as NGL from 'NGL';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {SignalBinding} from 'signals';
 
+import {_package} from '../package';
 
 const TASK_TIMEOUT: number = 2000;
 

@@ -5,7 +5,7 @@ title: "Develop custom viewers"
 Developers can extend Datagrok with special visual components bound to data, which are called
 [viewers](../../visualize/viewers/viewers.md). There are two ways to develop viewers on Datagrok. The first
 one is JavaScript-based development, which lets you create interactive viewers
-via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
+via [Datagrok JavaScript API](../packages/js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
 [scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less
 interactive. Both options support data filtering and selection.
@@ -113,7 +113,7 @@ the viewer is closed) unsubscribes from them.
 ### Properties
 
 Viewer properties include all the parameters you want users to edit via
-the [context panel](../../datagrok/navigation.md#context-panel). They get persisted with the viewer layout.
+the [context panel](../../datagrok/navigation/navigation.md#context-panel). They get persisted with the viewer layout.
 
 In this case, we want to set a couple of properties for our bar chart:
 
@@ -483,7 +483,7 @@ chart pinned to the right.
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available in
 the top menu and enables common viewer operations, such as cloning, docking, embedding, and switching to full screen
-mode. This also means that users can persist this viewer as part of a [project](../../datagrok/project.md).
+mode. This also means that users can persist this viewer as part of a [project](../../collaborate/project.md).
 
 ![top-menu-add-viewer](top-menu-add-viewer.gif "Add a viewer")
 
@@ -497,6 +497,7 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //tags: viewer
 //meta.icon: images/icon.svg
 //meta.toolbox: true
+//meta.trellisable: true
 //meta.viewerPath: Subcategory Name | Friendly Viewer Name
 //output: viewer result
 export function awesome() {
@@ -504,18 +505,19 @@ export function awesome() {
 }
 ```
 
-The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, and `meta.viewerPath`,
-can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and replaces the default icon
-with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox in a table view. The
-`meta.viewerPath` parameter defines a path under which the viewer is shown in the top menu. The default path is
-`Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`.
+The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, `meta.trellisable`, and
+`meta.viewerPath`, can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and
+replaces the default icon with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox
+in a table view. The `meta.trellisable` parameter indicates whether this viewer can be an inner viewer of
+[DG.VIEWER.TRELLIS_PLOT]. The `meta.viewerPath` parameter defines a path under which the viewer is shown in the top
+menu. The default path is `Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`.
 
 :::tip
 
-If you are on version `^4.10.x` of `datagrok-tools`, you can use class decorators to register viewers:
+If you are on version `^4.12.x` of `datagrok-tools`, you can use class decorators to register viewers:
 
 ```ts
-@grok.functions.decorators.grokViewer({
+@grok.decorators.viewer({
   icon: 'images/icon.png',
   toolbox: true,
 })
@@ -570,7 +572,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 * Scripting viewers (R, Python, Julia):
   * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
     Python and R code using scripting viewers for the respective programming languages
-  * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
+  * [Demo]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
   browser: [https://public.datagrok.ai/scripts?q=%23viewers](https://public.datagrok.ai/scripts?q=%23viewers)
@@ -582,11 +584,11 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 See also:
 
-* [Datagrok JavaScript API](../js-api.md)
+* [Datagrok JavaScript API](../packages/js-api.md)
 * [JS API Samples: custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 * [JS API Samples: viewers](https://public.datagrok.ai/js/samples/ui/viewers/create-viewers)
 * [JavaScript development](../develop.md)
 * [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
+[Demo]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

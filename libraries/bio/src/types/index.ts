@@ -3,8 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
-import {HELM_REQUIRED_FIELDS as REQ,
-  HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT} from '../utils/const';
+import {
+  HELM_REQUIRED_FIELDS as REQ,
+  HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT
+} from '../utils/const';
 
 type RGroup = {
   [RGP.CAP_GROUP_SMILES]: string,
@@ -24,11 +26,14 @@ export type Monomer = {
   [REQ.MONOMER_TYPE]: string,
   [REQ.CREATE_DATE]: string | null,
   [OPT.NATURAL_ANALOG]?: string,
-  [OPT.META]?: {[property: string]: any}};
+  [OPT.META]?: { [property: string]: any }
+};
 
 export interface IMonomerLib {
+  get error(): string | undefined;
   getMonomer(polymerType: string, monomerSymbol: string): Monomer | null;
-  getMonomerMolsByPolymerType(polymerType: string): {[monomerSymbol: string]: string} | null;
+  getMonomerMolsByPolymerType(polymerType: string): { [monomerSymbol: string]: string } | null;
+  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: string, element?: string): string[];
   getMonomerSymbolsByType(polymerType: string): string[];
   getPolymerTypes(): string[];
   update(lib: IMonomerLib): void;

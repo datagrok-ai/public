@@ -34,7 +34,9 @@ public class DataFrameBuilder {
 
     public <T> DataFrameBuilder setColumn(Column<T> column, String columnName, T[] data) {
         column.name = columnName;
-        column.addAll(data);
+        for (T t: data) {
+            column.add(t);
+        }
         dataFrame.addColumn(column);
         return this;
     }

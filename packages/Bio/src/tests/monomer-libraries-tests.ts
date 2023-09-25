@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {test, after, before, category, expect} from '@datagrok-libraries/utils/src/test';
 
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {LIB_STORAGE_NAME} from '../utils/monomer-lib';
+import {getLibFileNameList, getUserLibSettings, LIB_STORAGE_NAME, setUserLibSetting} from '../utils/monomer-lib';
 
 
 category('monomerLibraries', () => {
@@ -30,5 +30,18 @@ category('monomerLibraries', () => {
     // Currently default monomer lib set is of all files at LIB_PATH (at least HELMCoreLibrary.json)
     const currentMonomerLib = monomerLibHelper.getBioLib();
     expect(currentMonomerLib.getPolymerTypes().length > 0, true);
+  });
+
+  test('empty', async () => {
+    // exclude all monomer libraries for empty set
+    const libSettings = await getUserLibSettings();
+    const libFnList = await getLibFileNameList();
+    libSettings.exclude = libFnList;
+    await setUserLibSetting(libSettings);
+
+    await monomerLibHelper.loadLibraries(true);
+    const currentMonomerLib = monomerLibHelper.getBioLib();
+    expect(currentMonomerLib.getPolymerTypes().length === 0, true);
+    const monomerOfTypesList = currentMonomerLib.getMonomerMolsByPolymerType('PEPTIDE');
   });
 });

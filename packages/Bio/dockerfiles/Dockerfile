@@ -24,12 +24,12 @@ RUN savedAptMark="$(apt-mark showmanual)" ; \
     ; \
     apt-mark auto '.*' > /dev/null ; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
-	wget https://mafft.cbrc.jp/alignment/software/mafft_7.520-1_amd64.deb -O mafft.deb; \
-	apt install -y ./mafft.deb; \
-	rm -rf mafft.deb; \
+    wget https://mafft.cbrc.jp/alignment/software/mafft_7.520-1_amd64.deb -O mafft.deb; \
+    apt install -y ./mafft.deb; \
+    rm -rf mafft.deb; \
     wget https://github.com/Merck/PepSeA/archive/refs/heads/main.zip -O PepSeA.zip; \
     unzip -q PepSeA.zip -d /opt ; \
-	rm -rf PepSeA.zip; \
+    rm -rf PepSeA.zip; \
     chown -R grok:grok /opt/PepSeA-main ; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false ; \
     apt-get clean ; \
@@ -57,6 +57,7 @@ def distout():\n\
 \n\
     return distout_output\n' >> /opt/PepSeA-main/alignment/api.py;
 
+# It is important to run docker container as user and not as root
 USER grok:grok
 
 # Command source does not work for Docker, cause it will apply only to one layer

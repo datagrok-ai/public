@@ -224,5 +224,13 @@ export const DEMO_APP_HIERARCHY = {
 				},
 			]
 		},
+		{
+			name: 'Curves',
+			children: [
+				{
+					name: 'Curve fitting',
+				},
+			]
+		},
 	]
 };

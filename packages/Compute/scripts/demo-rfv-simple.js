@@ -2,8 +2,8 @@
 //description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
 //language: javascript
 //tags: simulation, demo
-//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment}
-//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment}
+//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50}
+//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50}
 //input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment}
 //input: double area = 0.06 {caption: Surface area; units: m²; category: Object properties}
 //input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties}
@@ -15,6 +15,9 @@
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
 //editor: Compute:RichFunctionViewEditor
 //meta.uploadMode: true
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//meta.foldedCategories: ["Object properties"]
 
 timeToCool = undefined;
 

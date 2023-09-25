@@ -3,7 +3,7 @@
     "tasks": [
       {
         "type": "shell",
-        "command": "(cmd.exe /c \"webpack) -and (grok publish dev\")",
+        "command": "(cmd.exe /c \"npm run build) -and (grok publish dev\")",
         "label": "rebuild"
       }
     ]

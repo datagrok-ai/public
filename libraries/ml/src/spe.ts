@@ -1,11 +1,12 @@
 import {Options, Coordinates, Vectors, DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {
   calculateEuclideanDistance,
-  calcDistanceMatrix,
   fillRandomMatrix,
   vectorAdd,
 } from '@datagrok-libraries/utils/src/vector-operations';
 import {randomInt} from '@datagrok-libraries/utils/src/random';
+import {KnownMetrics} from './typed-metrics';
+import {DistanceMatrixService, dmLinearIndex} from './distance-matrix';
 
 /**
  * Implements stochastic proximity embedding.
@@ -25,7 +26,9 @@ export class SPEBase {
   protected dlambda2: number;
   protected epsilon: number;
   protected distanceFunction: DistanceMetric;
-  distance: Coordinates;
+  protected distanceFunctionName: KnownMetrics;
+  distance: Float32Array;
+  protected dmIndexFunct?: (i: number, j: number) => number;
 
   /**
    * Creates an instance of SPEBase.
@@ -40,12 +43,13 @@ export class SPEBase {
     // ... an initial learning rate {lambda} > 0
     this.lambda = options?.lambda ?? 2.0;
     this.dlambda = options?.dlambda ?? 0.01;
-    this.lambda2 = this.lambda/2.;
-    this.dlambda2 = this.dlambda/2.;
+    this.lambda2 = this.lambda / 2.;
+    this.dlambda2 = this.dlambda / 2.;
     this.epsilon = options?.epsilon ?? 1e-10;
     // eslint-disable-next-line brace-style
     this.distanceFunction = options?.distance ?? calculateEuclideanDistance;
-    this.distance = [];
+    this.distance = new Float32Array();
+    this.distanceFunctionName = options?.distanceFunctionName!;
   }
 
   /**
@@ -54,8 +58,11 @@ export class SPEBase {
    * @param {Vectors} vectors Input vectors to calculate distance between.
    * @memberof SPEBase
    */
-  protected initDistance(vectors: Vectors) {
-    this.distance = calcDistanceMatrix(vectors, this.distanceFunction);
+  protected async initDistance(vectors: Vectors) {
+    this.dmIndexFunct = dmLinearIndex(vectors.length);
+    const matrixService = new DistanceMatrixService(true, false);
+    this.distance = await matrixService.calc(vectors, this.distanceFunctionName);
+    matrixService.terminate();
   }
 
   /**
@@ -67,7 +74,7 @@ export class SPEBase {
    * @return {number} Distance between these two vectors.
    */
   protected calcDistance(vectors: Vectors, index1: number, index2: number): number {
-    return this.distance[index1][index2];
+    return this.distance[this.dmIndexFunct!(index1, index2)];
   }
 
   /**
@@ -76,7 +83,7 @@ export class SPEBase {
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
-  public embed(vectors: Vectors): Coordinates {
+  public async embed(vectors: Vectors): Promise<Coordinates> {
     const nItems = vectors.length;
     const areaWidth = 40;
     // Initialize the D-dimensional coordinates of the N points.
@@ -84,11 +91,11 @@ export class SPEBase {
 
     let lambda2 = this.lambda2;
 
-    if (this.steps == 0) {
-      this.steps = vectors.length-1;
-    }
+    if (this.steps === 0)
+      this.steps = vectors.length - 1;
 
-    this.initDistance(vectors);
+
+    await this.initDistance(vectors);
 
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       for (let step = 0; step < this.steps; ++step) {
@@ -107,7 +114,7 @@ export class SPEBase {
 
         // If rij <= rc, or if rij > rc and dij < rij ...
         if ((this.cutoff == 0) || (r <= this.cutoff) || (d < r)) {
-          const multiplier = lambda2*(r - d) / (d + this.epsilon);
+          const multiplier = lambda2 * (r - d) / (d + this.epsilon);
           // ... update the coordinates xi and xj.
           const diffIJ = vectorAdd(rowi, rowj, -1);
           coordinates[i] = vectorAdd(rowi, diffIJ, multiplier);
@@ -116,9 +123,8 @@ export class SPEBase {
       }
       // Decrease the learning rate {lambda} by a prescribed {dlambda}.
       lambda2 -= this.dlambda2;
-      if (lambda2 <= 0.) {
+      if (lambda2 <= 0.)
         break;
-      }
     }
     return coordinates;
   }
@@ -138,14 +144,14 @@ export class PSPEBase extends SPEBase {
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
-  public embed(vectors: Vectors): Coordinates {
+  public async embed(vectors: Vectors): Promise<Coordinates> {
     const nItems = vectors.length;
     const areaWidth = 40;
     //  Initialize the D-dimensional coordinates of the N points.
     const coordinates = fillRandomMatrix(nItems, PSPEBase.dimension, areaWidth);
     let lambda = this.lambda;
 
-    this.initDistance(vectors);
+    await this.initDistance(vectors);
 
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       // Select a point, i, at random (pivot).
@@ -170,9 +176,8 @@ export class PSPEBase extends SPEBase {
       }
       // Decrease the learning rate {lambda} by a prescribed {dlambda}.
       lambda -= this.dlambda;
-      if (lambda <= 0.) {
+      if (lambda <= 0.)
         break;
-      }
     }
     return coordinates;
   }
@@ -205,27 +210,26 @@ export class OriginalSPE extends SPEBase {
     this.maxDistanceSteps = options?.maxDistanceSteps ?? null;
   }
 
-  public embed(vectors: Vectors): Coordinates {
+  public async embed(vectors: Vectors): Promise<Coordinates> {
     const nItems = vectors.length;
     const areaWidth = 40;
     // Initialize the D-dimensional coordinates of the N points.
     const coordinates = fillRandomMatrix(nItems, OriginalSPE.dimension, areaWidth);
 
-    this.initDistance(vectors);
+    await this.initDistance(vectors);
 
-    if (this.maxDistanceSteps == null) {
+    if (this.maxDistanceSteps === null)
       this.maxDistanceSteps = nItems * Math.floor((nItems - 1) / 2);
-    }
-    if (this.maxDistance == null) {
+
+    if (this.maxDistance === null) {
       this.maxDistance = -1e37;
       for (let n = 0; n < this.maxDistanceSteps; n++) {
         const i = randomInt(nItems); let j = randomInt(nItems);
         while (i == j) j = randomInt(nItems);
 
         const d = this.calcDistance(vectors, i, j);
-        if (d > this.maxDistance) {
+        if (d > this.maxDistance)
           this.maxDistance = d;
-        }
       }
     }
 
@@ -256,9 +260,8 @@ export class OriginalSPE extends SPEBase {
         }
       }
       lambda -= ((this.lambda - this.dlambda) / (this.cycles - 1.0)); ;
-      if (lambda < this.dlambda) {
+      if (lambda < this.dlambda)
         break;
-      }
     }
     return coordinates;
   }

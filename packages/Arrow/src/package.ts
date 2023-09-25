@@ -26,11 +26,11 @@ export async function parquetInit() {
 //output: list tables
 //tags: file-handler
 //meta.ext: parquet
-export function parquetFileHandler(bytes: any) {
+export function parquetFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>) {
   const table = tableFromIPC(readParquet(bytes)).toArray();
   const df = DG.DataFrame.fromObjects(table);
   if (df)
-    return grok.shell.addTableView(df);
+    return [df];
 }
 
 //input: list bytes
@@ -42,7 +42,7 @@ export function featherFileHandler(bytes: WithImplicitCoercion<ArrayBuffer | Sha
   const table = tableFromIPC(arrow).toArray();
   const df = DG.DataFrame.fromObjects(table);
   if (df) 
-    return grok.shell.addTableView(df);
+    return [df];
 }
 
 //name: saveAsParquet

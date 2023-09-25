@@ -3,9 +3,9 @@ title: "Dashboard"
 ---
 
 Use dashboard to visually present data in a pre-specified way. In contrast to
-[table views](../datagrok/table-view.md) that excel at
-[exploratory data analysis](../explore/exploratory-data-analysis.md),
-[data wrangling](../transform/data-wrangling.md) and other table-specific tasks, dashboards trade the ability to quickly
+[table views](../datagrok/navigation/table-view.md) that excel at
+[exploratory data analysis](../datagrok/solutions/domains/use-cases/eda.md),
+[data wrangling](../transform/transform.md) and other table-specific tasks, dashboards trade the ability to quickly
 interrogate data in unpredicted ways for delivering the visuals exactly as designed. In particular, here are some
 features that are unique to dashboards:
 
@@ -29,9 +29,9 @@ clicks on that button.
 
 ## Form designer
 
-* Click on an object to select it; its properties appear in [context panel](../datagrok/navigation.md#context-panel)
-* Click-and-drag to select multiple objects at once
+* Click on an object to select it; its properties appear in [Context Panel](../datagrok/navigation/navigation.md#context-panel)
+* Click-and-drag to select multiple objects at once.
 
 See also:
 
-* [Table view](../datagrok/table-view.md)
+* [Table view](../datagrok/navigation/table-view.md)

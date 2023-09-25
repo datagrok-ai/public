@@ -38,4 +38,4 @@ Samples:
 
 See also:
 
-* [Link Tables](../explore/link-tables.md)
+* [Link Tables](link-tables.md)

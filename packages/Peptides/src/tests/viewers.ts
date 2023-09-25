@@ -1,13 +1,14 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
-import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResiduesViewer, showTooltip} from '../viewers/sar-viewer';
+import {SELECTION_MODE, MonomerPosition, MostPotentResidues} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
 import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -45,13 +46,25 @@ category('Viewers: Monomer-Position', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
     mpViewer = model.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Tooltip', async () => {
     const cellCoordinates = {col: '9', row: 6};
     const gc = mpViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
-    expect(showTooltip(gc, 0, 0, model), true,
+    const mp = mpViewer.getMonomerPosition(gc);
+    expect(model.showTooltip(mp, 0, 0), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 
@@ -59,18 +72,18 @@ category('Viewers: Monomer-Position', () => {
     if (mpViewer === null)
       throw new Error('Monomer-Position viewer doesn\'t exist');
 
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
-      `Default Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS}`);
+    expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
+      `Default Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS}`);
 
-    mpViewer.mode = MONOMER_POSITION_MODE.INVARIANT_MAP;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.INVARIANT_MAP,
-      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.INVARIANT_MAP} after switching`);
+    mpViewer.mode = SELECTION_MODE.INVARIANT_MAP;
+    expect(mpViewer.mode, SELECTION_MODE.INVARIANT_MAP,
+      `Monomer-Position mode is not ${SELECTION_MODE.INVARIANT_MAP} after switching`);
 
-    mpViewer.mode = MONOMER_POSITION_MODE.MUTATION_CLIFFS;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
-      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
+    mpViewer.mode = SELECTION_MODE.MUTATION_CLIFFS;
+    expect(mpViewer.mode, SELECTION_MODE.MUTATION_CLIFFS,
+      `Monomer-Position mode is not ${SELECTION_MODE.MUTATION_CLIFFS} after switching`);
   });
-});
+}, {clear: false});
 
 category('Viewers: Most Potent Residues', () => {
   let df: DG.DataFrame;
@@ -79,7 +92,7 @@ category('Viewers: Most Potent Residues', () => {
   let sequenceCol: DG.Column<string>;
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
-  let mprViewer: MostPotentResiduesViewer;
+  let mprViewer: MostPotentResidues;
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
@@ -94,13 +107,25 @@ category('Viewers: Most Potent Residues', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResiduesViewer;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
+    mprViewer = model.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Tooltip', async () => {
     const cellCoordinates = {col: 'Diff', row: 6};
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
-    expect(showTooltip(gc, 0, 0, model), true,
+    const mp = mprViewer.getMonomerPosition(gc);
+    expect(model.showTooltip(mp, 0, 0), true,
       `Tooltip is not shown for grid cell at column '${cellCoordinates.col}', row ${cellCoordinates.row}`);
   });
 });
@@ -127,7 +152,18 @@ category('Viewers: Logo Summary Table', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
+    let overlayInit = false;
+    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
+
     lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+
+    // Ensure grid finished initializing to prevent Unhandled exceptions
+    let accrodionInit = false;
+    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
+    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
+    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
+    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
+    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
   });
 
   test('Properties', async () => {
@@ -149,7 +185,7 @@ category('Viewers: Logo Summary Table', () => {
 
   test('Tooltip', async () => {
     const cluster = '0';
-    const tooltipElement = lstViewer.showTooltip(cluster, 0, 0);
+    const tooltipElement = lstViewer.showTooltip({monomerOrCluster: cluster, positionOrClusterType: CLUSTER_TYPE.ORIGINAL}, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
-});
+}, {clear: false});

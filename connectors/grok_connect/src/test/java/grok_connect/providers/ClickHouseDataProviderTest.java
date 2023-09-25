@@ -52,7 +52,7 @@ class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.ClickHouseObjectsMother#getSchemas_ok")
     public void getSchemas_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchemas(connection));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqualUnOrdered(expected, actual));
     }
 
     @Disabled
@@ -85,7 +85,7 @@ class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqualUnOrdered(expected, actual));
     }
 
     @DisplayName("Parameters support for datetime")

@@ -70,8 +70,8 @@ export const msaDefaultOptions = {
     method: pepseaMethods[0],
   },
   kalign: {
-    gapOpen: null,
-    gapExtend: null,
-    terminalGap: null,
+    gapOpen: -1.0,
+    gapExtend: -1.0,
+    terminalGap: -1.0,
   },
 } as const;

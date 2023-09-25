@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -17,7 +17,8 @@ category('Settings', () => {
   test('Dev Settings', async () => {
     expect(gss.loadDefaultsOnStart, true, 'loadDefaultsOnStart');
     expect(gss.webpackDevUrl, null, 'webpackDevUrl');
-    expect(gss.cvmUrl.startsWith('https://cvm'), true, 'cvmUrl');
+    expect(gss.cvmUrl.startsWith('http://localhost') ||
+      gss.cvmUrl.startsWith('https://cvm') || gss.cvmUrl.startsWith('http://cvm'), true, 'cvmUrl does not start with cvm');
     expect(gss.cvmSplit, true, 'cvmSplit');
     expect(gss.apiUrl.endsWith('/api'), true, 'apiUrl');
     expect(gss.helpBaseUrl, '', 'helpBaseUrl');
@@ -69,10 +70,5 @@ category('Settings', () => {
     expect(gss.showVariables, grok.shell.windows.showVariables, 'showVariables');
     expect(gss.showConsole, grok.shell.windows.showConsole, 'showConsole');
     expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
-  });
-
-  after(async () => {
-    // views.forEach((v) => v.close());
-    grok.shell.closeAll();
   });
 });

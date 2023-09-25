@@ -1,8 +1,8 @@
+/* eslint-disable max-len */
 import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
 import {
   Options,
-  DistanceMetric,
   Coordinates,
   Vector,
   Vectors,
@@ -11,16 +11,30 @@ import {
 import {
   transposeMatrix,
   assert,
-  calcNormalizedDistanceMatrix,
 } from '@datagrok-libraries/utils/src/vector-operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics/typed-metrics';
+import {Measure, KnownMetrics, AvailableMetrics,
+  isBitArrayMetric, AvailableDataTypes} from './typed-metrics/typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters} from 'umap-js';
+import {DistanceMatrix, DistanceMatrixService, distanceMatrixProxy, dmLinearIndex} from './distance-matrix';
+import { SparseMatrixService } from './distance-matrix/sparse-matrix-service';
+
+export type SparseMatrixTransferType = {
+  i: Int32Array,
+  j: Int32Array,
+  distance: Float32Array,
+}
+
+export interface IReduceDimensionalityResult {
+  distance?: Float32Array;
+  sparseMatrix?: Map<number, Map<number, number>>;
+  embedding: Matrix;
+}
 
 export enum DimReductionMethods{
   UMAP = 'UMAP',
-  T_SNE =  't-SNE'
+  T_SNE = 't-SNE'
 }
 
 export interface IUMAPOptions {
@@ -30,6 +44,10 @@ export interface IUMAPOptions {
   nNeighbors?: number;
   spread?: number;
   minDist?: number;
+  sparseMatrixThreshold?: number;
+  preCalculateDistanceMatrix?: boolean;
+  usingSparseMatrix?: boolean;
+  sparseMatrix?: SparseMatrixTransferType;
 }
 
 export interface ITSNEOptions {
@@ -48,10 +66,10 @@ export interface IDimReductionParam {
 /** Umap uses precalculated distance matrix to save time. though for too much data, memory becomes constraint.
  * if we have 100 000 rows, distance matrix will take ~10gb of memory and probably overflow.
  */
-export const MAX_DISTANCE_MATRIX_ROWS = 10000;
+export const MAX_DISTANCE_MATRIX_ROWS = 20000;
 
 export class UMAPOptions {
-  learningRate: IDimReductionParam =  {uiName: 'Learinig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
+  learningRate: IDimReductionParam = {uiName: 'Learinig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
   nComponents: IDimReductionParam = {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
   nEpochs: IDimReductionParam = {uiName: 'Epochs', value: 0, tooltip: 'The number of epochs to optimize embeddings via SGD. Computed automatically if set to 0'};
   nNeighbors: IDimReductionParam = {uiName: 'Neighbors', value: 15, tooltip: 'The number of nearest neighbors to construct the fuzzy manifold'};
@@ -62,13 +80,12 @@ export class UMAPOptions {
 }
 
 export class TSNEOptions {
-  epsilon: IDimReductionParam =  {uiName: 'Epsilon', value: 10, tooltip: 'Epsilon is learning rate'};
+  epsilon: IDimReductionParam = {uiName: 'Epsilon', value: 10, tooltip: 'Epsilon is learning rate'};
   perplexity: IDimReductionParam = {uiName: 'Perplexity', value: 30, tooltip: 'Roughly how many neighbors each point influences'};
   dim: IDimReductionParam = {uiName: 'Dimensionality', value: 2, tooltip: 'Dimensionality of the embedding'};
 
   constructor() {};
 }
-
 
 /** Abstract dimensionality reducer */
 abstract class Reducer {
@@ -80,14 +97,15 @@ abstract class Reducer {
 
   /** Embeds the data given into the two-dimensional space.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable. */
-  abstract transform(): { [key: string]: Matrix };
+  abstract transform(parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult>;
 }
 
 /** t-SNE dimensionality reduction. */
 class TSNEReducer extends Reducer {
   protected reducer: TSNE;
   protected iterations: number;
-  protected distanceFn: DistanceMetric;
+  protected distanceFname: KnownMetrics;
+  protected distanceFn: (a: any, b: any) => number;
 
   /**
    * Creates an instance of TSNEReducer.
@@ -98,25 +116,45 @@ class TSNEReducer extends Reducer {
     super(options);
     this.reducer = new TSNE(options);
     this.iterations = options?.iterations ?? 100;
-    this.distanceFn = options.distance;
+    this.distanceFname = options.distanceFname;
+    this.distanceFn = options.distanceFn;
   }
 
   /**
-   * Embeds the data given into the two-dimensional space using t-SNE method.
+   * Embeds the data given into the two-dimensional space using t-SNE method.\
+   * @param {boolean} [parallelDistanceWorkers] Whether to use parallel distance workers.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string]: Matrix } {
-    const distance = calcNormalizedDistanceMatrix(this.data, this.distanceFn);
-    this.reducer.initDataDist(distance);
+  public async transform(parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
+    const distance = parallelDistanceWorkers ? await (async () => {
+      const matrixService = new DistanceMatrixService(true, false);
+      try {
+        const dist = await matrixService.calc(this.data, this.distanceFname);
+        matrixService.terminate();
+        return dist;
+      } catch (e) {
+        matrixService.terminate();
+        throw e;
+      }
+    })() :
+      (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); ret.normalize(); return ret.data; })();
 
-    for (let i = 0; i < this.iterations; ++i) {
+    const matrixProxy = distanceMatrixProxy(distance, this.data.length);
+    this.reducer.initDataDist(matrixProxy);
+
+    for (let i = 0; i < this.iterations; ++i)
       this.reducer.step(); // every time you call this, solution gets better
-    }
+
     return {distance: distance, embedding: this.reducer.getSolution()};
   }
 }
 
-export type UmapOptions = Options & UMAPParameters & {preCalculateDistanceMatrix?: boolean};
+export type UmapOptions = Options & UMAPParameters & {
+  preCalculateDistanceMatrix?: boolean,
+  usingSparseMatrix?: boolean,
+  sparseMatrixThreshold?: number,
+  sparseMatrix?: SparseMatrixTransferType
+};
 
 /**
  * Implements UMAP dimensionality reduction.
@@ -126,10 +164,16 @@ export type UmapOptions = Options & UMAPParameters & {preCalculateDistanceMatrix
  */
 class UMAPReducer extends Reducer {
   protected reducer: umj.UMAP;
+  protected distanceFname: KnownMetrics;
   protected distanceFn: Function;
   protected vectors: number[][];
-  protected distanceMatrix?: Matrix;
+  protected distanceMatrix?: Float32Array;
   protected usingDistanceMatrix: boolean;
+  protected sparseMatrix?: Map<number, Map<number, number>>;
+  protected dmIndexFunc: (i: number, j: number) => number;
+  protected usingSparseMatrix: boolean;
+  protected sparseMatrixThreshold: number;
+  protected transferedSparseMatrix?: SparseMatrixTransferType;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -137,18 +181,26 @@ class UMAPReducer extends Reducer {
    */
   constructor(options: UmapOptions) {
     super(options);
-
+    assert('distanceFname' in options);
     assert('distanceFn' in options);
-
     this.distanceFn = options.distanceFn!;
+    this.usingSparseMatrix = !!options.usingSparseMatrix || !!options.sparseMatrix;
+    this.sparseMatrixThreshold = options.sparseMatrixThreshold ?? 0.8;
+    this.transferedSparseMatrix = options.sparseMatrix;
+
+    this.distanceFname = options.distanceFname!;
+    this.dmIndexFunc = dmLinearIndex(this.data.length);
+    //Umap uses vector indexing, so we need to create an array of vectors as indeces.
     this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
-    this.usingDistanceMatrix = !(!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS);
-    if (!this.usingDistanceMatrix) {
-      options.distanceFn = this._encodedDistance.bind(this);
-    } else {
-      this.distanceMatrix = Array(this.data.length).fill(0).map(() => new Float32Array(this.data.length).fill(0));
+    this.usingDistanceMatrix = !((!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS)
+      || this.usingSparseMatrix);
+    if (this.usingDistanceMatrix)
       options.distanceFn = this._encodedDistanceMatrix.bind(this);
-    }
+    else if (this.usingSparseMatrix)
+      options.distanceFn = this._encodedSparseMatrix.bind(this);
+    else
+      options.distanceFn = this._encodedDistance.bind(this);
+
     if (this.data.length < 15)
       options.nNeighbors = this.data.length - 1;
     this.reducer = new umj.UMAP(options);
@@ -165,7 +217,15 @@ class UMAPReducer extends Reducer {
    * @memberof UMAPReducer
    */
   protected _encodedDistanceMatrix(a: number[], b: number[]): number {
-    return this.distanceMatrix![a[0]][b[0]];
+    if (a[0] === b[0])
+      return 0;
+    if (a[0] > b[0])
+      return this.distanceMatrix![this.dmIndexFunc(b[0], a[0])];
+    return this.distanceMatrix![this.dmIndexFunc(a[0], b[0])];
+  }
+
+  protected _encodedSparseMatrix(a: number[], b: number[]): number {
+    return this.sparseMatrix!.get(a[0])?.get(b[0]) ?? this.sparseMatrix!.get(b[0])?.get(a[0]) ?? 1;
   }
 
   protected _encodedDistance(a: number[], b: number[]): number {
@@ -173,24 +233,38 @@ class UMAPReducer extends Reducer {
   }
 
   /**
-   * Encodes the input data as a vector of indices.
-   *
-   * @protected
-   * @memberof UMAPReducer
-   */
-  protected _encode() {
-    for (let i = 0; i < this.data.length; ++i) {
-      this.vectors.push([i]);
-    }
-  }
-
-  /**
    * Embeds the data given into the two-dimensional space using UMAP method.
+   * @param {boolean} [parallelDistanceWorkers] Whether to use parallel distance matrix workers.
    * @return {any} Cartesian coordinate of this embedding.
    */
-  public transform(): { [key: string]: Matrix } {
-    if(this.usingDistanceMatrix)
-      this.distanceMatrix = calcNormalizedDistanceMatrix(this.data, this.distanceFn as DistanceMetric);
+  public async transform(parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
+    if (this.usingDistanceMatrix) {
+      this.distanceMatrix = parallelDistanceWorkers ? await (async () => {
+        const matrixService = new DistanceMatrixService(true, false);
+        try {
+          const dist = await matrixService.calc(this.data, this.distanceFname);
+          matrixService.terminate();
+          return dist;
+        } catch (e) {
+          matrixService.terminate();
+          throw e;
+        }
+      })() :
+        (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); return ret.data; })();
+    } else if (this.usingSparseMatrix) {
+          const res = this.transferedSparseMatrix ??
+            await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold);
+          this.sparseMatrix = new Map<number, Map<number, number>>();
+          for (let i = 0; i < res.i.length; ++i) {
+            const first = res.i[i];
+            const second = res.j[i];
+            const distance = res.distance[i];
+            if (!this.sparseMatrix.has(first))
+              this.sparseMatrix.set(first, new Map<number, number>());
+            this.sparseMatrix.get(first)!.set(second, distance);
+          }
+        
+    }
     const embedding = this.reducer.fit(this.vectors);
 
     function arrayCast2Coordinates(data: number[][]): Coordinates {
@@ -224,8 +298,8 @@ class SPEReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using the original SPE method.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string]: Matrix } {
-    const emb = this.reducer.embed(this.data);
+  public async transform(): Promise<IReduceDimensionalityResult> {
+    const emb = await this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
 }
@@ -253,8 +327,8 @@ class PSPEReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using the modified SPE method.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string]: Matrix } {
-    const emb = this.reducer.embed(this.data);
+  public async transform(): Promise<IReduceDimensionalityResult> {
+    const emb = await this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
 }
@@ -282,8 +356,8 @@ class OriginalSPEReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using the original SPE method.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string]: Matrix } {
-    const emb = this.reducer.embed(this.data);
+  public async transform(): Promise<IReduceDimensionalityResult> {
+    const emb = await this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
 }
@@ -320,29 +394,30 @@ export class DimensionalityReducer {
     let specOptions = {};
 
     if (isBitArrayMetric(metric)) {
-      for (let i = 0; i < data.length; ++i) {
+      for (let i = 0; i < data.length; ++i)
         data[i] = new BitArray(data[i]._data, data[i]._length);
-      }
     }
 
     if (method == 'UMAP') {
       specOptions = {
         ...{data: data},
         ...{distanceFn: measure},
+        ...{distanceFname: metric},
         ...{nEpochs: options?.cycles},
         ...options,
       };
     } else if (method == 't-SNE') {
       specOptions = {
         ...{data: data},
-        ...{distance: measure},
+        ...{distanceFn: measure},
+        ...{distanceFname: metric},
         ...{iterations: options?.cycles ?? undefined},
         ...options,
       };
     } else if (method == 'SPE') {
-      specOptions = {...{data: data}, ...{distance: measure}, ...options};
+      specOptions = {...{data: data}, ...{distance: measure}, distanceFunctionName: metric, ...options};
     } else {
-      specOptions = {...{data: data}, ...{distance: measure}, ...options};
+      specOptions = {...{data: data}, ...{distance: measure}, distanceFunctionName: metric, ...options};
     }
     this.reducer = new AvailableReducers[method](specOptions);
   }
@@ -351,20 +426,20 @@ export class DimensionalityReducer {
    * Embeds the data given into the two-dimensional space using the chosen method.
    *
    * @param {boolean} transpose Whether to transform coordinates to have columns-first orientation.
+   * @param {boolean} parallelDistanceWorkers Whether to use parallel distance computation.
    * @throws {Error} If the embedding method was not found.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    * @memberof DimensionalityReducer
    */
-  public transform(transpose: boolean = false): { [key: string]: Matrix } {
-    if (this.reducer == undefined) {
+  public async transform(transpose: boolean = false, parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
+    if (this.reducer === undefined)
       throw new Error('Reducer was not defined.');
-    }
 
-    let {embedding, distance} = this.reducer.transform();
+    let {embedding, distance} = await this.reducer.transform(parallelDistanceWorkers);
 
-    if (transpose) {
+    if (transpose)
       embedding = transposeMatrix(embedding);
-    }
+
     return {distance: distance, embedding: embedding};
   }
 

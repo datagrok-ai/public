@@ -25,7 +25,8 @@ export enum SparklineType {
   BarChart = 'barchart',
   PieChart = 'piechart',
   Radar = 'radar',
-  Sparkline = 'sparkline'
+  Sparkline = 'sparkline',
+  Form = 'smartform'
 }
 
 export const sparklineTypes: string[] = [
@@ -33,6 +34,7 @@ export const sparklineTypes: string[] = [
   SparklineType.PieChart,
   SparklineType.Radar,
   SparklineType.Sparkline,
+  SparklineType.Form
 ];
 
 export function distance(p1: DG.Point, p2: DG.Point): number {

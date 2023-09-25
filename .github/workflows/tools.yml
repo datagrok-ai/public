@@ -4,9 +4,21 @@ on:
   push:
     paths:
       - 'tools/**'
+  pull_request:
+    paths:
+      - 'tools/**'
+
 jobs:
+  common-check:
+    name: Common checks
+    uses: ./.github/workflows/common_check.yaml
+    with:
+      run_trigger: ${{ github.event_name }}
+
   check:
-    runs-on: ubuntu-20.04
+    needs: common-check
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true'
     name: Check version was changed
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
@@ -31,8 +43,9 @@ jobs:
 
   build:
     name: Build and publish to npm
-    runs-on: ubuntu-20.04
-    needs: check
+    needs: [check, common-check]
+    runs-on: ubuntu-22.04
+    if: needs.common-check.outputs.continue == 'true'
     steps:
       - uses: actions/checkout@v3
         with:

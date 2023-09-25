@@ -329,6 +329,8 @@ export class DemoView extends DG.ViewBase {
     if (this._isDockPanelInit())
       this._closeDockPanel();
 
+    dockRoot.innerHTML = '';
+      
     this._createHomeNode();
 
     for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {

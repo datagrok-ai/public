@@ -18,7 +18,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {TableView, VIEWER} from 'datagrok-api/dg';
-import {FuzzyFilter} from './fuzzy-filter';
+import {windowsManagerPanel} from './windows-manager';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -44,11 +44,10 @@ export function _distributionProfiler(): DistributionProfilerViewer {
 }
 
 //name: welcomeView
-//tags: autostart
 //meta.autostartImmediate: true
-export function _welcomeView(): void {
-  if (_properties['showWelcomeView'])
-    welcomeView();
+//output: view home
+export function _welcomeView(): DG.View | undefined {
+  return welcomeView();
 }
 
 //output: widget result
@@ -171,6 +170,20 @@ export async function powerPackInit() {
   _properties = await _package.getProperties();
 }
 
+//description: Windows Manager
+//tags: autostart
+export function windowsManager() {
+  windowsManagerPanel();
+}
+
+//name: viewerDialog
+//description: Open "Viewer Gallery" dialog 
+//input: dynamic tv 
+export function viewerDialog(tv: DG.TableView) {
+  if (tv instanceof DG.TableView)
+    return viewersDialog(tv, tv.table!);
+}
+
 //description: ViewerGallery
 //tags: autostart
 export function viewerGallery(): void {
@@ -187,15 +200,4 @@ export function viewerGallery(): void {
       panel[0][0].after(btn);
     }
   });
-}
-
-//name: FuzzyFilter
-//friendlyName: Fuzzy Filter
-//description: search related texts
-//tags: filter
-//output: filter result
-//meta.semType: Text
-//meta.primaryFilter: true
-export function fuzzyFilter(): FuzzyFilter {
-  return new FuzzyFilter();
 }

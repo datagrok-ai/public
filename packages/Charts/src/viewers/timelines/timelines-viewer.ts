@@ -9,11 +9,16 @@ import $ from 'cash-dom';
 import { EChartViewer } from '../echart/echart-viewer';
 import { options, deepCopy } from './echarts-options';
 import { ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint,
-  visibilityMode, VISIBILITY_MODE } from './constants';
+  visibilityMode, VISIBILITY_MODE, DateFormats } from './constants';
 
 import '../../../css/timelines-viewer.css';
 
 
+@grok.decorators.viewer({
+  name: 'Timelines',
+  description: 'Creates a timelines viewer',
+  icon: 'icons/timelines-viewer.svg',
+})
 export class TimelinesViewer extends EChartViewer {
   splitByColumnName: string;
   startColumnName: string;
@@ -80,7 +85,7 @@ export class TimelinesViewer extends EChartViewer {
     this.startRegexps = [/^((VISIT|[A-Z]{2}(ST)?)DY)$/, /start|begin/i];
     this.endRegexps = [/^((VISIT|[A-Z]{2}(EN)?)DY)$/, /stop|end/i];
 
-    this.defaultDateFormat = '{MMM} {d}';
+    this.defaultDateFormat = DateFormats.YEAR_DIFF;
     this.data = [];
     this.columnData = {};
     this.count = 0;
@@ -173,6 +178,11 @@ export class TimelinesViewer extends EChartViewer {
           this.colorMap = null;
         }
       }
+      const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
+        ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
+        this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
+      if (this.timeOptionsApplicable(timeColumns))
+        this.dateFormat = this.selectDateFormat(timeColumns);
     } else if (property.name === 'legendVisibility' && this.colorByColumnName)
       this.switchLegendVisibility(property.get(this));
 
@@ -270,6 +280,12 @@ export class TimelinesViewer extends EChartViewer {
     this.colorMap = this.getColorMap(this.columnData.colorByColumnName!.categories!);
     this.updateLegend(this.columnData.colorByColumnName!.column);
     this.switchLegendVisibility(this.legendVisibility);
+
+    const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
+      ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
+      this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
+    if (this.timeOptionsApplicable(timeColumns))
+      this.dateFormat = this.selectDateFormat(timeColumns);
 
     let prevSubj: string | null = null;
 
@@ -500,12 +516,12 @@ export class TimelinesViewer extends EChartViewer {
     const endColumn = this.columnData.endColumnName?.column;
     const eventColumns = this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames)
       .map((columnName) => this.columnData.eventsColumnNames![columnName]!.column) : [];
+    const timeColumns = [startColumn, endColumn, ...eventColumns].filter((col) => col) as DG.Column[];
 
-    if ([startColumn, endColumn, ...eventColumns].some((column) =>
-      column ? column.type !== DG.COLUMN_TYPE.DATE_TIME : false))
-      this.removeTimeOptions();
-    else
+    if (this.timeOptionsApplicable(timeColumns))
       this.addTimeOptions();
+    else
+      this.removeTimeOptions();
 
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName!, i);
@@ -556,6 +572,10 @@ export class TimelinesViewer extends EChartViewer {
     return this.data;
   }
 
+  timeOptionsApplicable(columns: DG.Column[]): boolean {
+    return columns.every((col) => col.type === DG.COLUMN_TYPE.DATE_TIME);
+  }
+
   addTimeOptions(): void {
     if (this.dateFormat === null)
       (this.props as Indexable).dateFormat = this.defaultDateFormat;
@@ -574,6 +594,32 @@ export class TimelinesViewer extends EChartViewer {
       min: 'dataMin',
       max: (value: { min: number; max: number; }) => this.dataMax = value.max,
     };
+  }
+
+  selectDateFormat(columns: DG.DateTimeColumn[]): string {
+    if (columns.length === 0)
+      return DateFormats.YEAR_DIFF;
+
+    let min = columns[0].min;
+    let max = columns[0].max;
+    for (const column of columns) {
+      min = column.min < min ? column.min : min;
+      max = column.max > max ? column.max : max;
+    }
+    const diff = (max - min) * 1e-3;
+    const yearMs = 3.154e10;
+    const dayMs = 8.64e7;
+    const yearsNum = 3;
+
+    if (diff > yearsNum * yearMs)
+      return DateFormats.MAX_DIFF;
+    else if (diff > yearMs)
+      return DateFormats.YEARS_DIFF;
+    else if (diff < 1e3)
+      return DateFormats.MIN_DIFF;
+    else if (diff < dayMs)
+      return DateFormats.TIME_DIFF;
+    return DateFormats.YEAR_DIFF;
   }
 
   showErrorMessage(msg: string): void {

@@ -4,3 +4,4 @@ dist/
 built/
 .vscode/
 test-report.html
+test-console-output.log

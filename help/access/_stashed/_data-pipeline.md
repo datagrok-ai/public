@@ -10,7 +10,7 @@ ability to cancel running jobs.
 
 ## Concepts
 
-Datagrok offers [30+ connectors](../supported-connectors.md) to different data sources. They include all popular
+Datagrok offers [30+ connectors](../databases/connectors/connectors.md) to different data sources. They include all popular
 databases, as well as other queryable data sources, such as Twitter or Facebook. To view a list of data sources
 currently available to you, run **File | Connect to Data...**.
 
@@ -24,7 +24,7 @@ Now we are ready to create a data query. To do that, choose **Add Query** from t
 editors are specific to data sources. For instance, for relational databases you would need to enter a SQL query, for
 linked data that would be a SPARQL query, and for Twitter it would be something completely different. Try running the
 query before saving it to make sure it works as intended. It is also possible to create
-[queries that accept parameters](../access/databases.mdx#parameterized-queries), which will be either explicitly
+[queries that accept parameters](../access/databases/databases.mdx#parameterized-queries), which will be either explicitly
 provided by user, or provided by the parent data job. To browse all queries, open `Admin | Data Queries`.
 
 To run a query, double-click on it, or select **Run** from the context menu. To see information associated with the
@@ -38,7 +38,7 @@ etc.
 
 Sometimes, you want more than a table to be returned. Data jobs let you get results from multiple queries
 at once, massage the data using transformations, and apply any visualizations on top of it. Just as data queries, data
-jobs can be parameterized as well. The output of the data job is a [project](../datagrok/project.md), which is
+jobs can be parameterized as well. The output of the data job is a [project](../collaborate/project.md), which is
 essentially a dashboard.
 
 ## Security

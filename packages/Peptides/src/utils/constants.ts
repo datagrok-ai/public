@@ -29,8 +29,10 @@ export enum TAGS {
   POSITION = 'pos',
   SEPARATOR = 'separator',
   SELECTION = 'selection',
+  MUTATION_CLIFFS_SELECTION = 'mutationCliffsSelection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
+  INVARIANT_MAP_SELECTION = 'invariantMapSelection',
   SAR_MODE = 'sarMode',
   CLUSTER_SELECTION = 'clusterSelection',
   VISIBLE = 'visible',
@@ -39,6 +41,8 @@ export enum TAGS {
   UUID = 'pep-uuid',
   MONOMER_POSITION_MODE = 'monomerPositionMode',
   MULTIPLE_VIEWS = 'isMultipleViews',
+  IDENTITY_TEMPLATE = 'Identity template',
+  SIMILARITY_TEMPLATE = 'Similarity template',
 }
 
 export enum SEM_TYPES {

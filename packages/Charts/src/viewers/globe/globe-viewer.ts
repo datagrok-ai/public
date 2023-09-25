@@ -10,6 +10,11 @@ import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear}
 import {_package} from '../../package';
 
 
+@grok.decorators.viewer({
+  name: 'Globe',
+  description: 'Creates a globe viewer',
+  icon: 'icons/globe-viewer.svg',
+})
 export class GlobeViewer extends DG.JsViewer {
   latitudeColumnName: string;
   longitudeColumnName: string;

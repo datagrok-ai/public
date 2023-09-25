@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package, activityCliffs,} from '../package';
+import {_package, activityCliffs} from '../package';
 import $ from 'cash-dom';
 
 import {TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -12,7 +12,7 @@ import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree
 import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
@@ -25,7 +25,6 @@ export async function demoBio01bUI() {
   let activityCliffsViewer: DG.ScatterPlotViewer;
 
   const dimRedMethod: DimReductionMethods = DimReductionMethods.UMAP;
-  const idRows: { [id: number]: number } = {};
 
   try {
     const demoScript = new DemoScript(
@@ -39,7 +38,7 @@ export async function demoBio01bUI() {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
-          getDendrogramService()
+          getDendrogramService(),
         ]);
 
         view = grok.shell.addTableView(df);
@@ -63,9 +62,10 @@ export async function demoBio01bUI() {
         cliffsLink.click();
       }, {
         description: 'Reveal similar sequences with a cliff of activity.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Cluster sequences', async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence clustering...`);
         const seqCol: DG.Column<string> = df.getCol('sequence');
         const seqList = seqCol.toList();
         const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
@@ -73,6 +73,7 @@ export async function demoBio01bUI() {
           return levDistance / ((aSeq.length + bSeq.length) / 2);
         });
         const treeRoot = await treeHelper.hierarchicalClusteringByDistance(distance, 'ward');
+        progressBar.close();
         dendrogramSvc.injectTreeForGrid(view.grid, treeRoot, undefined, 150, undefined);
 
         // adjust for visual
@@ -80,7 +81,7 @@ export async function demoBio01bUI() {
         activityGCol.scrollIntoView();
       }, {
         description: 'Perform hierarchical clustering to reveal relationships between sequences.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Browse the cliff', async () => {
         //cliffsDfGrid.dataFrame.currentRowIdx = -1; // reset
@@ -100,7 +101,7 @@ export async function demoBio01bUI() {
         // }
       }, {
         description: 'Zoom in to explore selected activity cliff details.',
-        delay: 2000
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

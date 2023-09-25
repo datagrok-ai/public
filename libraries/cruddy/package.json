@@ -1,0 +1,47 @@
+{
+  "name": "@datagrok-libraries/ml",
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "friendlyName": "Cruddy",
+  "version": "6.3.36",
+  "description": "A framework for building CRUD apps on top of Datagrok",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.0.11",
+    "cash-dom": "latest",
+    "datagrok-api": "^1.15.0",
+    "dayjs": "latest",
+    "rxjs": "^6.6.7"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "css-loader": "latest",
+    "eslint": "^7.32.0",
+    "eslint-config-google": "^0.14.0",
+    "ts-loader": "^9.2.6",
+    "typescript": "^5.0.4",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "debug-ml": "grok publish",
+    "release-ml": "grok publish --release",
+    "build-ml": "tsc",
+    "build": "tsc",
+    "debug-ml-public": "grok publish public",
+    "release-ml-public": "grok publish public --release",
+    "debug-ml-local": "grok publish local",
+    "release-ml-local": "grok publish local --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  }
+}

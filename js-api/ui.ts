@@ -24,7 +24,7 @@ import {
   DropDown,
   TypeAhead,
   TypeAheadConfig,
-  TagsInput
+  TagsInput, ChoiceInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -37,6 +37,7 @@ import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
+import {ItemsGrid} from "./src/ui/items-grid";
 
 
 let api = <any>window;
@@ -665,10 +666,19 @@ export namespace input {
     return input;
   }
 
+  export function grid(items: any[], properties: Property[]): ItemsGrid {
+    return new ItemsGrid(items, properties);
+  }
+
   /** Returns a form for the specified properties, bound to the specified object */
   export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
     return inputs(props.map((p) => forProperty(p, source, options)));
   }
+
+  export function color(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
+    return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+  }
+
 
   // export function bySemType(semType: string) {
   //
@@ -707,8 +717,8 @@ export function sliderInput(name: string, value: number | null, min: number, max
   return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
 }
 
-export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
-  return new InputBase(api.grok_ChoiceInput(name, selected, items), onValueChanged);
+export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): ChoiceInput<T | null> {
+  return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
 export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T[] | null> {
@@ -743,8 +753,9 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase<Column | null> {
-  return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null, options?: {filter?: Function | null}): InputBase<Column | null> {
+  const filter = options && typeof options.filter === 'function' ? (x: any) => options.filter!(toJs(x)) : null;
+  return new InputBase(api.grok_ColumnInput(name, table.dart, filter, value?.dart), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
@@ -762,6 +773,10 @@ export function textInput(name: string, value: string, onValueChanged: Function 
 
 export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+}
+
+export function radioInput(name: string, value: string, items: string[], onValueChanged: Function | null = null): InputBase<string | null> {
+  return new InputBase(api.grok_RadioInput(name, value, items), onValueChanged);
 }
 
 /**
@@ -1319,6 +1334,7 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
   }
   _options(d, options);
   $(d).addClass('ui-form');
+  
   return d;
 }
 
@@ -1647,4 +1663,215 @@ interface HintPage {
   /** Returns error message (and stops wizard from proceeding to the next page),
    * or null if validated */
   validate?: () => string | null;
+}
+
+export namespace css {
+
+  export enum flex {
+    row = 'd4-flex-row',
+    col = 'd4-flex-col',
+    wrap = 'd4-flex-wrap',
+    nowrap = 'd4-flex-nowrap',
+    grow = 'd4-flex-grow',
+  }
+
+  export enum alignItems {
+    start = 'css-align-items-start',
+    end = 'css-align-items-end',
+    center = 'css-align-items-center',
+    baseline = 'css-align-items-baseline',
+    stretch = 'css-align-items-stretch',
+  }
+
+  export enum justifyContent {
+    start = 'css-justify-content-start',
+    end = 'css-justify-content-end',
+    center = 'css-justify-content-center',
+    between = 'css-justify-content-between',
+    around = 'css-justify-content-around',
+  }
+
+  export enum gap {
+    small = 'css-gap-small',
+    medium = 'css-gap-medium',
+    large = 'css-gap-large',
+  }
+
+  export enum margin {
+    none = 'css-m-none',
+    small = 'css-m-small',
+    medium = 'css-m-medium',
+    large = 'css-m-large',
+    auto = 'css-m-auto'
+  }
+
+  export enum marginX {
+    none = 'css-mx-none',
+    small = 'css-mx-small',
+    medium = 'css-mx-medium',
+    large = 'css-mx-large',
+    auto = 'css-mx-auto'
+  }
+
+  export enum marginY {
+    none = 'css-my-none',
+    small = 'css-my-small',
+    medium = 'css-my-medium',
+    large = 'css-my-large',
+    auto = 'css-my-auto'
+  }
+
+  export enum marginLeft {
+    none = 'css-ml-none',
+    small = 'css-ml-small',
+    medium = 'css-ml-medium',
+    large = 'css-ml-large',
+    auto = 'css-ml-auto'
+  }
+
+  export enum marginRight {
+    none = 'css-mr-none',
+    small = 'css-mr-small',
+    medium = 'css-mr-medium',
+    large = 'css-mr-large',
+    auto = 'css-mr-auto'
+  }
+
+  export enum marginTop {
+    none = 'css-mt-none',
+    small = 'css-mt-small',
+    medium = 'css-mt-medium',
+    large = 'css-mt-large',
+    auto = 'css-mt-auto'
+  }
+
+  export enum marginBottom {
+    none = 'css-mb-none',
+    small = 'css-mb-small',
+    medium = 'css-mb-medium',
+    large = 'css-mb-large',
+    auto = 'css-mb-auto'
+  }
+
+  export enum padding {
+    none = 'css-p-none',
+    small = 'css-p-small',
+    medium = 'css-p-medium',
+    large = 'css-p-large',
+  }
+
+  export enum paddingX {
+    none = 'css-px-none',
+    small = 'css-px-small',
+    medium = 'css-px-medium',
+    large = 'css-px-large',
+  }
+
+  export enum paddingY {
+    none = 'css-py-none',
+    small = 'css-py-small',
+    medium = 'css-py-medium',
+    large = 'css-py-large',
+  }
+
+  export enum paddingLeft {
+    none = 'css-pl-none',
+    small = 'css-pl-small',
+    medium = 'css-pl-medium',
+    large = 'css-pl-large',
+  }
+
+  export enum paddingRight {
+    none = 'css-pr-none',
+    small = 'css-pr-small',
+    medium = 'css-pr-medium',
+    large = 'css-pr-large',
+  }
+
+  export enum paddingTop {
+    none = 'css-pt-none',
+    small = 'css-pt-small',
+    medium = 'css-pt-medium',
+    large = 'css-pt-large',
+  }
+
+  export enum paddingBottom {
+    none = 'css-pb-none',
+    small = 'css-pb-small',
+    medium = 'css-pb-medium',
+    large = 'css-pb-large',
+  }
+
+  export enum textSize {
+    small = 'css-text-small',
+    medium = 'css-text-medium',
+    large = 'css-text-large',
+  }
+
+  export enum textAlign {
+    left = 'css-text-left',
+    right = 'css-text-right',
+    center = 'css-text-center',
+  }
+
+  export enum textWeight {
+    light = 'css-text-light',
+    normal = 'css-text-normal',
+    bolder = 'css-text-bolder',
+    bold = 'css-text-bold',
+  }
+
+  export enum textTransform {
+    lowercase = 'css-text-lowercase',
+    uppercase = 'css-text-uppercase',
+    capitalize = 'css-text-capitalize',
+  }
+
+  export enum lineHeight {
+    small = 'css-lh-small',
+    medium = 'css-lh-medium',
+    large = 'css-lh-large',
+  }
+
+  export enum background {
+    none = 'css-bg-none',
+    white = 'css-bg-white',
+    light = 'css-bg-light',
+  }
+
+  export enum shadow {
+    none = 'css-shadow-none',
+    small = 'css-shadow-small',
+    medium = 'css-shadow-medium',
+    large = 'css-shadow-large',
+  }
+
+  export enum table {
+    noraml = 'css-table',
+    wide = 'css-table-wide'
+  }
+
+  export enum tableSize {
+    small = 'css-table-small',
+    medium = 'css-table-medium',
+    large = 'css-table-large'
+  }
+
+  export enum tableStyle {
+    border = 'css-table-border',
+    linesRow = 'css-table-row-lines',
+    linesCol = 'css-table-col-lines',
+    striped = 'css-table-striped'
+  }
+  
+  export enum border {
+    all = 'css-border',
+    right = 'css-border-right',
+    left = 'css-border-left',
+    top = 'css-border-top',
+    bottom = 'css-border-bottom',
+    leftRight = 'css-border-left-right',
+    topBottom = 'css-border-top-bottom'
+  }
+
 }

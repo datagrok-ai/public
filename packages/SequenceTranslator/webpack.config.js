@@ -12,11 +12,20 @@ module.exports = {
     }
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader'}
+      {
+        test: /\.ts(x?)$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+        exclude: /node_modules/,
+      },
     ],
   },
   devtool: 'source-map',
@@ -26,7 +35,11 @@ module.exports = {
     'datagrok-api/ui': 'ui',
     // 'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators'
+    'rxjs/operators': 'rxjs.operators',
+    'cash-dom': '$',
+    'dayjs': 'dayjs',
+    'wu': 'wu',
+    'exceljs': 'ExcelJS',
   },
   output: {
     filename: '[name].js',

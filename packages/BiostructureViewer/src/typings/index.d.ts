@@ -15,7 +15,7 @@ declare module 'NGL' {
 
     addScheme(scheme: Function | Colormaker, label: String): String
 
-    addSelectionScheme(dataList: Array, label?: String): String
+    addSelectionScheme(dataList: [string, string][], label?: String): String
   }
 
   export const ColormakerRegistry: ColormakerRegistryClass;
@@ -29,7 +29,7 @@ declare module 'NGL' {
     ) // from NGL lib
 
   export class Component {
-    addRepresentation(type: StructureRepresentationType, params?: RepresentationParameters = {}): RepresentationElement;
+    addRepresentation(type: StructureRepresentationType, params?: RepresentationParameters): RepresentationElement;
 
     autoView(duration?: number): undefined;
 
@@ -54,7 +54,7 @@ declare module 'NGL' {
 
     removeAllComponents(type?: string): undefined;
 
-    async loadFile(path: String | File | Blob, params: Partial<LoaderParameters>): Promise<void>;
+    loadFile(path: String | File | Blob, params: Partial<LoaderParameters>): Promise<void>;
 
     dispose(): undefined;
   }

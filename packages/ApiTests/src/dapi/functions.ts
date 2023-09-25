@@ -5,7 +5,7 @@ import {category, test, expect, expectTable} from '@datagrok-libraries/utils/src
 
 const GDF = grok.dapi.functions;
 
-category('Dapi: functions.calls', async () => {
+category('Dapi: functions calls', async () => {
   const xValue = 1.5;
 
   test('clone DFs', async () => {
@@ -63,9 +63,53 @@ category('Dapi: functions.calls', async () => {
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await GDF.calls.save(funcCall);
-
+   
     // expect no-throw
     await GDF.calls.find(funcCall.id);
+  });
+
+  test('load script call inputs & outputs', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    const loadedCall = await GDF.calls.find(funcCall.id);
+    expect(loadedCall.inputs['a'], 1);
+    expect(loadedCall.inputs['b'], 2);
+    expect(loadedCall.outputs['c'], 3);
+  });
+
+  test('load package function call inputs & outputs', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    const loadedCall = await GDF.calls.find(funcCall.id);
+    expect(loadedCall.inputs['a'], 1);
+    expect(loadedCall.inputs['b'], 2);
+    expect(loadedCall.outputs['c'], 3);
+  });
+
+  test('load package funccall with func\'s valid nqName', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedWithFunc = await GDF.calls.include('func').find(funcCall.id);
+  
+    expect(loadedWithFunc.func.nqName, 'ApiTests:dummyPackageFunction');
+  });
+
+  test('load script funccall with func\'s valid nqName', async () => {
+    const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await scriptFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    const loadedWithFunc = await GDF.calls.include('func').find(funcCall.id);
+  
+    expect(loadedWithFunc.func.nqName, 'ApiTests:DummyPackageScript');
   });
 
   test('list', async () => {
@@ -73,7 +117,7 @@ category('Dapi: functions.calls', async () => {
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     await GDF.calls.save(funcCall);
-    const loadedFuncCalls = await GDF.calls.filter(`func.id="${funcCall.func.id}"`).list();
+    const loadedFuncCalls = await GDF.calls.filter(`id="${funcCall.id}"`).list({pageSize: 5});
     expect(loadedFuncCalls.some((loadedCall) => loadedCall.id === funcCall.id), true);
   });
 
@@ -99,8 +143,28 @@ category('Dapi: functions.calls', async () => {
   test('delete', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
-    expect((await GDF.calls.filter(`func.id="${funcCall.func.id}"`).list()).includes(funcCall), false);
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+    expect(await GDF.calls.find(funcCall.id) !== undefined, true, 'funcCall was not saved');
     await GDF.calls.delete(funcCall);
-    expect((await GDF.calls.filter(`func.id="${funcCall.func.id}"`).list()).includes(funcCall), false);
+    expect(await GDF.calls.find(funcCall.id) === undefined, true, 'funcCall was not deleted');
+  });
+});
+
+category('Dapi: functions', async () => {
+  test('Load package function with package', async () => {
+    const func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const loadedFunc = await GDF.include('package').find(func!.id);
+    
+    console.log(loadedFunc);
+    expect(loadedFunc.package.name, 'ApiTests');
+  });
+
+  test('Load script function with package', async () => {
+    const func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const loadedFunc = await GDF.include('package').find(func!.id);
+  
+    console.log(loadedFunc);
+    expect(loadedFunc.package.name, 'ApiTests');  
   });
 });

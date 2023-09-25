@@ -3,9 +3,10 @@
   "friendlyName": "PowerPack",
   "sources": [
     "css/power-pack.css",
-    "css/viewers-gallery.css"
+    "css/viewers-gallery.css",
+    "css/windows-manager.css"
   ],
-  "version": "1.0.7",
+  "version": "1.1.0",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -19,7 +20,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "latest",
-    "datagrok-api": "^1.6.9",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.7",
     "fuse.js": "^6.6.2",
     "rxjs": "^6.5.5"
@@ -50,6 +51,7 @@
     "release-powerpack-dev": "grok publish dev --release",
     "debug-powerpack-public": "grok publish public",
     "release-powerpack-public": "grok publish public --release",
+    "release-powerpack-localhost": "webpack && grok publish localhost --release",
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost"
@@ -59,12 +61,6 @@
       "name": "searchTemplatePaths",
       "propertyType": "string",
       "defaultValue": "Admin:Home/templates;System:AppData/PowerPack/search-templates",
-      "nullable": false
-    },
-    {
-      "name": "showWelcomeView",
-      "propertyType": "bool",
-      "defaultValue": true,
       "nullable": false
     },
     {

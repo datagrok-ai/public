@@ -16,9 +16,8 @@ datagrok_public_repo_url="https://raw.githubusercontent.com/datagrok-ai/public/m
 datagrok_local_url="http://localhost:8080/"
 
 script_name="$0"
-script_dir=$(dirname "$(readlink -f "$0")" )
+script_dir=$(dirname "$(readlink -f "$0")")
 compose_config_path="${script_dir}/${compose_config_name}"
-
 
 function message() {
     echo -e "${YELLOW}$1${RESET}"
@@ -32,7 +31,7 @@ function user_query_yn() {
     echo -ne "${YELLOW}"
     read -r -p "${1} (y/N)" answer
     echo -ne "${RESET}"
-    if [[ $answer =~ ^(Y|y) ]] ; then
+    if [[ $answer =~ ^(Y|y) ]]; then
         return 0 # 0 = True
     else
         return 1 # 1 = False
@@ -41,7 +40,7 @@ function user_query_yn() {
 
 function count_down() {
     echo -n "Waiting:"
-    for ((i = ${1} ; i > 0 ; i--)); do
+    for ((i = ${1}; i > 0; i--)); do
         echo -n " $i"
         sleep 1
     done
@@ -56,10 +55,18 @@ function check_docker() {
     fi
 }
 
+function check_docker_daemon() {
+    docker info >/dev/null || {
+        error "Docker daemon is not running"
+        message "Please launch Docker Desktop application"
+        exit 255
+    }
+}
+
 function check_installation() {
     if [ ! -f "${compose_config_path}" ]; then
         return 1 # False
-    else 
+    else
         docker_image=$(docker images -q "datagrok/datagrok")
         if [ ! -n "$docker_image" ]; then
             return 1 # False
@@ -82,7 +89,18 @@ function datagrok_start() {
         datagrok_install
     fi
     message "Starting Datagrok containers"
-    docker compose -f "${compose_config_path}" --project-name datagrok --profile all up -d
+    update_installation=false
+    if [ ! -z "$1" ] && [ "$1"=="update" ]; then
+        update_installation=true
+    fi
+    # Checking do we need tu run update
+    if [ "$update_installation" = true ] ; then
+        message "Updating Datagrok to the latest version"
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all pull
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all  up -d --force-recreate
+    else
+        docker compose -f "${compose_config_path}" --project-name datagrok --profile all up -d
+    fi
     message "Waiting while the Datagrok server is starting"
     echo "When the browser opens, use the following credentials to log in:"
     echo "------------------------------"
@@ -97,6 +115,10 @@ function datagrok_start() {
     xdg-open ${datagrok_local_url}
     message "If the browser hasn't open, use the following link: $datagrok_local_url"
     message "To extend Datagrok fucntionality, install extension packages on the 'Manage -> Packages' page"
+    if [ "$update_installation" = true ] ; then
+        message "Removing old images"
+        docker image prune -f
+    fi
 }
 
 function datagrok_stop() {
@@ -126,20 +148,24 @@ function datagrok_purge() {
     fi
     if user_query_yn "This action will stop Datagrok and COMPLETELY remove Datagrok installation. Are you sure?"; then
         docker compose -f "${compose_config_path}" --project-name datagrok --profile all down --volumes
-        docker rmi $(docker images -q datagrok/*)
+        #docker rmi $(docker images -q datagrok/*)
     fi
 }
 
-
 # === Main part of the script starts from here ===
 check_docker
+check_docker_daemon
 
 case "$1" in
-    install) datagrok_install ;;
-    start)   datagrok_start ;;
-    stop)    datagrok_stop ;;
-    reset)   datagrok_reset ;;
-    purge)   datagrok_purge ;;
-    help|"-h"|"--help") echo "usage: $script_name install|start|stop|reset" >&2 ; exit 1 ;;
-    *) datagrok_start
+install) datagrok_install ;;
+start) datagrok_start ;;
+stop) datagrok_stop ;;
+reset) datagrok_reset ;;
+update) datagrok_start update ;;
+purge) datagrok_purge ;;
+help | "-h" | "--help")
+    echo "usage: $script_name install|start|stop|update|reset|purge" >&2
+    exit 1
+    ;;
+*) datagrok_start ;;
 esac

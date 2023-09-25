@@ -14,13 +14,16 @@ import {
   russelDistance,
   sokalDistance,
   tanimotoDistance,
+  numericDistance,
+  tanimotoDistanceIntArray,
 } from '../distance-metrics-methods';
 
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
-import { DistanceMetricsSubjects, BitArrayMetricsNames, StringMetricsNames, VectorMetricsNames } from './consts';
+import {DistanceMetricsSubjects, BitArrayMetricsNames,
+  StringMetricsNames, VectorMetricsNames, NumberMetricsNames, IntArrayMetricsNames} from './consts';
 
 
 export const vectorDistanceMetricsMethods: { [name: string]: (x: Vector, y: Vector) => number } = {
@@ -48,6 +51,14 @@ export const bitArrayDistanceMetricsMethods: { [name: string]: (x: BitArray, y: 
   [BitArrayMetricsNames.Euclidean]: euclideanDistance,
 };
 
+export const intArrayDistanceMetricsMethods: { [name: string]: (x: Uint32Array, y: Uint32Array) => number } = {
+  [IntArrayMetricsNames.TanimotoIntArray]: tanimotoDistanceIntArray,
+};
+
+export const numberDistanceMetricsMethods: { [name: string]: (x: number, y: number) => number } = {
+  [NumberMetricsNames.NumericDistance]: numericDistance,
+};
+
 export const AvailableMetrics = {
   [DistanceMetricsSubjects.Vector]: {
     [VectorMetricsNames.Euclidean]: vectorDistanceMetricsMethods[VectorMetricsNames.Euclidean],
@@ -69,18 +80,24 @@ export const AvailableMetrics = {
     [BitArrayMetricsNames.Russel]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Russel],
     [BitArrayMetricsNames.Sokal]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Sokal],
   },
-  [DistanceMetricsSubjects.MacroMolecule]: { // optional args are needed for macromolecule functions which initialize them
+  [DistanceMetricsSubjects.MacroMolecule]: { // optional args needed for macromolecule functions which initialize them
     [MmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[MmDistanceFunctionsNames.HAMMING],
     [MmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[MmDistanceFunctionsNames.LEVENSHTEIN],
     [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
   },
+  [DistanceMetricsSubjects.Number]: {
+    [NumberMetricsNames.NumericDistance]: numberDistanceMetricsMethods[NumberMetricsNames.NumericDistance],
+  },
+  [DistanceMetricsSubjects.IntArray]: {
+    [IntArrayMetricsNames.TanimotoIntArray]: intArrayDistanceMetricsMethods[IntArrayMetricsNames.TanimotoIntArray],
+  }
 };
 
 export const MetricToDataType: StringDictionary = Object.keys(AvailableMetrics)
   .reduce((ret: StringDictionary, key) => {
-    for (const val of Object.keys(AvailableMetrics[key as AvailableDataTypes])) {
+    for (const val of Object.keys(AvailableMetrics[key as AvailableDataTypes]))
       ret[val as AvailableDataTypes] = key;
-    }
+
     return ret;
   }, {});
 
@@ -88,12 +105,14 @@ export type AvailableDataTypes = keyof typeof AvailableMetrics;
 export type VectorMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.Vector];
 export type StringMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.String];
 export type BitArrayMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.BitArray];
-export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics | MmDistanceFunctionsNames;
+export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics |
+  MmDistanceFunctionsNames | NumberMetricsNames | IntArrayMetricsNames;
 
 export type ValidTypes =
   { data: string[], metric: StringMetrics | MmDistanceFunctionsNames } |
   { data: Vector[], metric: VectorMetrics } |
-  { data: BitArray[], metric: BitArrayMetrics };
+  { data: BitArray[], metric: BitArrayMetrics } |
+  { data: number[], metric: NumberMetricsNames };
 
 export function isStringMetric(name: KnownMetrics) {
   return MetricToDataType[name] == 'String';
@@ -117,9 +136,8 @@ export function manhattanDistance(s1: string, s2: string): number {
     return 1;
   } else {
     let dist: number = 0;
-    for (let i = 1; i < s1.length; i++) {
+    for (let i = 1; i < s1.length; i++)
       dist += s1[i] == s2[i] ? 0 : 1;
-    }
     return dist / s1.length;
   }
 }

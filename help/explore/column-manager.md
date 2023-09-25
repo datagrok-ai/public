@@ -1,5 +1,5 @@
 ---
-title: "Column manager"
+title: "Column Manager"
 ---
 
 Column Manager, available via **View | Columns** or **Add | Column Viewer**, contains a list of columns in the currently

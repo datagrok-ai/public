@@ -58,7 +58,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
 }
 
 export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, genFunc: Function}} = {
-  grokViewer: {
+  viewer: {
     metadata: {
       tags: [FUNC_TYPES.VIEWER],
       inputs: [],
@@ -66,7 +66,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     },
     genFunc: generateClassFunc,
   },
-  grokFilter: {
+  filter: {
     metadata: {
       tags: [FUNC_TYPES.FILTER],
       inputs: [],
@@ -74,7 +74,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     },
     genFunc: generateClassFunc,
   },
-  grokCellRenderer: {
+  cellRenderer: {
     metadata: {
       tags: [FUNC_TYPES.CELL_RENDERER],
       inputs: [],
@@ -82,7 +82,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     },
     genFunc: generateClassFunc,
   },
-  grokFileExporter: {
+  fileExporter: {
     metadata: {
       tags: [FUNC_TYPES.FILE_EXPORTER],
       inputs: [],
@@ -90,7 +90,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     },
     genFunc: generateFunc,
   },
-  grokFileImporter: {
+  fileImporter: {
     metadata: {
       tags: [FUNC_TYPES.FILE_IMPORTER],
       inputs: [{name: 'content', type: 'string'}],
@@ -98,7 +98,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     },
     genFunc: generateFunc,
   },
-  grokFileViewer: {
+  fileViewer: {
     metadata: {
       tags: [FUNC_TYPES.FILE_VIEWER],
       inputs: [{name: 'f', type: 'file'}],
@@ -106,7 +106,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     },
     genFunc: generateFunc,
   },
-  grokSettingsEditor: {
+  settingsEditor: {
     metadata: {
       tags: [FUNC_TYPES.SETTINGS_EDITOR],
       inputs: [],

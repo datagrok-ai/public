@@ -48,7 +48,10 @@ const defaultArgs: NeedlemanWunchArgs = {
   alphabetIndexes: ProtIndexes
 };
 
-/** Returns a function that calculates the distance between two sequences based on gap penalty and matrix */
+/** Returns a function that calculates the distance between two sequences based on gap penalty and matrix
+ * @param {Partial<NeedlemanWunchArgs>}args - arguments for Needleman-Wunch algorithm like gap penalty, Scoring matrix..
+ * @return {mmDistanceFunctionType} - function that calculates the distance between two sequences
+*/
 export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFunctionType {
   return (seq1: string, seq2: string) : number => {
     const {gapOpen, gapExtend, scoringMatrix, alphabetIndexes} = {...defaultArgs, ...args};
@@ -99,7 +102,12 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
       currRow = (currRow + 1) % 2;
     }
     // as the matrix is the similarity matrix, but we are interested in distance,
-    // we need to invert the result
-    return -matrix[prevRow][seq1.length];
+    // we need compare it to perfect match score to get reasonable distance
+    const perfectMatchSeq1 = seq1.split('').map((c) => scoringMatrix[alphabetIndexes[c]][alphabetIndexes[c]])
+      .reduce((a, b) => a + b, 0);
+    const perfectMatchSeq2 = seq2.split('').map((c) => scoringMatrix[alphabetIndexes[c]][alphabetIndexes[c]])
+      .reduce((a, b) => a + b, 0);
+    const maxScore = Math.max(perfectMatchSeq1, perfectMatchSeq2);
+    return (maxScore - matrix[prevRow][seq1.length]) / maxScore;
   };
 }

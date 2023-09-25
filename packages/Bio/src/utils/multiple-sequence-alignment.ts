@@ -34,7 +34,7 @@ function _stringsToFasta(sequences: string[]): string {
  * @return {Promise<DG.Column>} Aligned sequences.
  */
 export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = false, unUsedName: string = '',
-  clustersCol: DG.Column | null = null, gapOpen?: number, gapExtend?: number, terminalGap?: number
+  clustersCol: DG.Column | null = null, gapOpen?: number, gapExtend?: number, terminalGap?: number,
 ): Promise<DG.Column> {
   let sequences: string[] = srcCol.toList();
 
@@ -60,7 +60,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
 
   const CLI = await new Aioli([
     'base/1.0.0',
-    {tool: 'kalign', version: kalignVersion, reinit: true}
+    {tool: 'kalign', version: kalignVersion, reinit: true},
   ]);
   const tgtCol = DG.Column.string(unUsedName, sequencesLength);
 

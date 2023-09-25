@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findRGroups} from '../scripts-api';
-import {convertMolNotation, getRdKitModule} from '../package';
+import {getRdKitModule} from '../package';
 import {getMCS} from '../utils/most-common-subs';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 
 export function convertToRDKit(smiles: string): string {
@@ -35,9 +36,11 @@ export function rGroupAnalysis(col: DG.Column): void {
     try {
       const molCol = col.dataFrame.columns.byName(columnInput.value!);
       //TODO: implements mcs using web worker
-      const smarts: string = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
-      ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setMolFile(convertMolNotation(smarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
+      const mcsSmarts = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
+      if (mcsSmarts !== null) {
+        ui.setUpdateIndicator(sketcher.root, false);
+        sketcher.setSmarts(mcsSmarts);
+      }
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
@@ -70,7 +73,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
         return;
       }
-      const core = sketcher.getMolFile();
+      const core = await sketcher.getSmarts();
       if (!core) {
         grok.shell.error('No core was provided');
         return;
@@ -85,12 +88,14 @@ export function rGroupAnalysis(col: DG.Column): void {
             const molsArray = new Array<string>(resCol.length);
             for (let i = 0; i < resCol.length; i++) {
               const molStr = resCol.get(i);
+              let mol: RDMol | null = null;
               try {
-                const mol = module.get_mol(molStr);
+                mol = module.get_mol(molStr);
                 molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-                mol.delete();
               } catch (e) {
-                console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+                //do nothing here, molsArray[i] is empty for invalid molecules
+              } finally {
+                mol?.delete();
               }
             }
             const rCol = DG.Column.fromStrings(resCol.name, molsArray);

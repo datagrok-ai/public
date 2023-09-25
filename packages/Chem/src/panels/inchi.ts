@@ -9,12 +9,14 @@ function addDerived(table: DG.DataFrame, col: DG.Column, description: string,
   const pi = DG.TaskBarProgressIndicator.create(description);
   const result = new Array(col.length);
   for (let i = 0; i < result.length; i++) {
+    let mol: RDMol | null = null;
     try {
-      const mol = _rdKitModule.get_mol(col.get(i));
+      mol = _rdKitModule.get_mol(col.get(i));
       result[i] = extract(mol);
-      mol.delete();
     } catch (e: any) {
       result[i] = '';
+    } finally {
+      mol?.delete();
     }
   }
   const name = table.columns.getUnusedName(colName);

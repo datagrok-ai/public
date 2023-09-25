@@ -11,7 +11,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
-const helmFn: string = 'samples/sample_HELM.csv';
+const helmFn: string = 'samples/HELM.csv';
 
 export async function demoBio05UI(): Promise<void> {
   let view: DG.TableView;
@@ -48,6 +48,7 @@ export async function demoBio05UI(): Promise<void> {
         df.columns.add(msaHelmCol);
         await grok.data.detectSemanticTypes(df);
       }, {
+        // eslint-disable-next-line max-len
         description: 'Multiple sequence alignment (MSA) performed with PepSeA tool operating on non-natural aminoacids as well.',
         delay: 2000,
       })
@@ -57,7 +58,7 @@ export async function demoBio05UI(): Promise<void> {
         view.dockManager.dock(ssViewer, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
       }, {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
-        delay: 2000
+        delay: 2000,
       })
       .step('Analyse sequence composition', async () => {
         wlViewer = await df.plot.fromType('WebLogo', {
@@ -67,6 +68,7 @@ export async function demoBio05UI(): Promise<void> {
         }) as DG.Viewer & IWebLogoViewer;
         view.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.2);
       }, {
+        // eslint-disable-next-line max-len
         description: 'Composition analysis allows to reveal functional features of sequences like motifs, or variable loops.',
         delay: 2000,
       })

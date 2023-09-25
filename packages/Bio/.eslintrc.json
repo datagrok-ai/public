@@ -1,7 +1,7 @@
 {
   "env": {
     "browser": true,
-    "es2022": true
+    "es2020": true
   },
   "extends": [
     "google"
@@ -36,12 +36,10 @@
       }
     ],
     "block-spacing": [2, "always"],
-    "comma-dangle": ["error", {
-      "arrays": "only-multiline",
-      "functions": "never",
-      "objects": "only-multiline",
-      "imports": "only-multiline"
-    }],
-    "guard-for-in": "off"
+    "comma-dangle": "off",
+    "comma-spacing": "error",
+    "comma-style": "error",
+    "guard-for-in": "off",
+    "space-infix-ops": "error"
   }
 }

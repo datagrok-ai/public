@@ -4,13 +4,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
-import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {TAGS as bioTAGS, getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {calcMmDistanceMatrix, dmLinearIndex} from './workers/mm-distance-worker-creator';
+import {calculateMMDistancesArray} from './workers/mm-distance-array-service';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
@@ -40,14 +39,14 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     this.initialized = true;
   }
 
-  async render(computeData = true): Promise<void> {
+  override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.moleculeColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const uh = new UnitsHandler(this.moleculeColumn!);
+        const uh = UnitsHandler.getOrCreate(this.moleculeColumn!);
 
         await (uh.isFasta() ? this.computeByMM() : this.computeByChem());
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
@@ -67,7 +66,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
         const targetScoreCell = grid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (event: MouseEvent) => {
+        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (_event: MouseEvent) => {
           this.gridSelect = false;
         });
         updateDivInnerHTML(this.root, grid.root);
@@ -87,23 +86,30 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       metricName: this.distanceMetric,
       limit: this.limit,
       minScore: this.cutoff,
-      fingerprint: this.fingerprint
+      fingerprint: this.fingerprint,
     });
     this.idxs = df.getCol('indexes');
     this.scores = df.getCol('score');
   }
 
   private async computeByMM() {
-    if (!this.distanceMatrixComputed) {
+    let distanceArray = new Float32Array();
+    if (!this.distanceMatrixComputed && this.preComputeDistanceMatrix) {
       this.mmDistanceMatrix = await calcMmDistanceMatrix(this.moleculeColumn!);
       this.distanceMatrixComputed = true;
+    } else if (!this.preComputeDistanceMatrix) {
+      // use fast distance array calculation if matrix will take too much space
+      distanceArray = await calculateMMDistancesArray(this.moleculeColumn!, this.targetMoleculeIdx);
     }
     const len = this.moleculeColumn!.length;
     const linearizeFunc = dmLinearIndex(len);
     // array that keeps track of the indexes and scores together
     const indexWScore = Array(len).fill(0)
-      .map((_, i) => ({idx: i, score: i === this.targetMoleculeIdx ? 1 :
-        1 - this.mmDistanceMatrix[linearizeFunc(this.targetMoleculeIdx, i)]}));
+      .map((_, i) => ({
+        idx: i, score: i === this.targetMoleculeIdx ? 1 :
+          this.preComputeDistanceMatrix ? 1 - this.mmDistanceMatrix[linearizeFunc(this.targetMoleculeIdx, i)] :
+            1 - distanceArray[i]
+      }));
     indexWScore.sort((a, b) => b.score - a.score);
     // get the most similar molecules
     const actualLimit = Math.min(this.limit, len);
@@ -116,18 +122,18 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const propPanel = ui.div();
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const molColName = this.molCol?.name!;
-    const units = resDf.col(molColName)!.getTag(DG.TAGS.UNITS);
-    const separator = resDf.col(molColName)!.getTag(bioTAGS.separator);
-    const splitter = getSplitter(units, separator);
+    const col = resDf.col(molColName)!;
+    const uh = UnitsHandler.getOrCreate(col);
+    const splitter = uh.getSplitter();
     const subParts1 = splitter(this.moleculeColumn!.get(this.targetMoleculeIdx));
     const subParts2 = splitter(resDf.get(molColName, resDf.currentRowIdx));
-    const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
+    const canvas = createDifferenceCanvas(subParts1, subParts2, uh.units, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([
         ui.divText(`Different sequence length:`, {style: {fontWeight: 'bold'}}),
         ui.divText(`target: ${subParts1.length} monomers`),
-        ui.divText(`selected: ${subParts2.length} monomers`)
+        ui.divText(`selected: ${subParts2.length} monomers`),
       ], {style: {paddingBottom: '10px'}}));
     }
     propPanel.append(createDifferencesWithPositions(molDifferences));
