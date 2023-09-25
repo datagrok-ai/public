@@ -10,9 +10,9 @@ const skip = [
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark', 'menu-customization',
   'scatter-plot-3d', 'network-diagram', // Break
   // To fix
-  'files', 'open-table-by-id', 'visible-cells', 'property-grid', 'tree-view-adv',
-  'attached-properties', 'all-input-types', 'add-single-filter', 'custom-filters', 'all-chembl-structures',
-  'charts-in-cells', 'filter-group', 'dynamic-loading',
+  'files', 'open-table-by-id', 'all-chembl-structures', 'charts-in-cells',
+  'property-grid', 'tree-view-adv', 'attached-properties', 'all-input-types',
+  'add-single-filter', 'custom-filters', 'filter-group', 'dynamic-loading'
 ];
 
 //name: test
