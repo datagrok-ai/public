@@ -16,7 +16,8 @@
 * Fix Macromolecule cell renderer width limit for `devicePixelRatio` less than 1.
 * Fix VdRegionsViewer `positionHeight` transmit to enclosed WebLogo.
 * Fix added by Split to monomers columns to be not used as a filter.
-* Fix WebLogo with `filterSource`of Selection to work from project.
+* Fix WebLogo with `filterSource` of `Selection` to work from project.
+* Fix WebLogo with `filterSource` of `Selection` display all in case of empty selection.
 
 ## 2.10.0 (2023-09-06)
 
