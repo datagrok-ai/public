@@ -2,6 +2,10 @@
 
 ## 5.39.0 (WIP)
 
+### Features 
+
+* Add WebLogo `FilterSource` mode `SelectedOrAll`.
+
 ### Bug fixes
 
 * Fix getSplitterWithSeparator for empty seq.

@@ -42,6 +42,7 @@ export enum FilterSources {
   Filtered = 'Filtered',
   /** Sequences in selection are considered to plot WebLogo for faster exploration. */
   Selected = 'Selected',
+  SelectedOrAll = 'SelectedOrAll',
 }
 
 export const WebLogoPropsDefault = new class {
