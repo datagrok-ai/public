@@ -257,7 +257,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
-  private filterSourceInput!: DG.ChoiceInput<FilterSources | null>;
+  private filterSourceInput!: DG.InputBase<FilterSources | null>;
   private mainLayout: HTMLTableElement | null = null;
   private logos: { [chain: string]: WebLogoViewer }[] = [];
 
