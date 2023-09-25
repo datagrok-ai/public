@@ -97,6 +97,7 @@ export interface ValidationInfo {
   lastCall?:DG.FuncCall,
   isRevalidation: boolean,
   isNewOutput: boolean,
+  signal: AbortSignal,
   context?: any
 }
 

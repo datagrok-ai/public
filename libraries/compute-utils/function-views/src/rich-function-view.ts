@@ -118,7 +118,22 @@ export class RichFunctionView extends FunctionView {
             return of(null).pipe(
               // run revalidations immediately
               payload.isRevalidation ? identity : delay(VALIDATION_DEBOUNCE_TIME),
-              mergeMap(() => from(this.runValidation(payload))),
+              mergeMap(() => {
+                const controller = new AbortController();
+                const signal = controller.signal;
+                let done = false;
+                return new Observable<Record<string, ValidationResult | undefined>>((observer) => {
+                  const sub = from(this.runValidation({...payload}, signal)).subscribe((val) => {
+                    done = true;
+                    observer.next(val);
+                  });
+                  return () => {
+                    if (!done)
+                      controller.abort();
+                    sub.unsubscribe();
+                  };
+                });
+              }),
               tap((results) => {
                 this.setValidationResults(results);
                 this.runRevalidations(payload, results);
@@ -151,7 +166,8 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(runSub);
 
     // always run validations on start
-    const results = await this.runValidation({isRevalidation: false});
+    const controller = new AbortController();
+    const results = await this.runValidation({isRevalidation: false}, controller.signal);
     this.setValidationResults(results);
     this.runRevalidations({isRevalidation: false}, results);
     this.validationUpdates.next(null);
@@ -951,7 +967,7 @@ export class RichFunctionView extends FunctionView {
     return msgs.join('\n');
   }
 
-  private async runValidation(payload: ValidationRequestPayload) {
+  private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal) {
     const inputName = payload ? payload.field : undefined;
     const inputNames = this.getValidatedNames(inputName);
 
@@ -962,6 +978,7 @@ export class RichFunctionView extends FunctionView {
         param: name,
         funcCall: this._funcCall!,
         lastCall: this.lastCall,
+        signal,
         isNewOutput: !!payload.isNewOutput,
         isRevalidation: payload.isRevalidation,
       });
@@ -974,6 +991,7 @@ export class RichFunctionView extends FunctionView {
           param: name,
           funcCall: this._funcCall!,
           lastCall: this.lastCall,
+          signal,
           isNewOutput: !!payload.isNewOutput,
           isRevalidation: payload.isRevalidation,
           context: payload.context,
