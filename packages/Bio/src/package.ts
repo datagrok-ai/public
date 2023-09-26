@@ -1006,7 +1006,6 @@ export async function helmToMol(): Promise<void> {
   }
   const converter = new HelmToMolfileConverter(helmCol);
   const molCol = await converter.convertToMolfile();
-  // add semtype Molecule to molCol
   molCol.semType = DG.SEMTYPE.MOLECULE;
   df.columns.add(molCol, true);
   await grok.data.detectSemanticTypes(df);

@@ -7,10 +7,9 @@ import {MonomerLibHelper} from './monomer-lib';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
-import {Monomer} from '@datagrok-libraries/bio/src/types';
 
 export class HelmToMolfileConverter {
-  constructor(private helmColumn: DG.Column<string> ) {
+  constructor(private helmColumn: DG.Column<string>) {
     this.helmColumn = helmColumn;
   }
 
@@ -18,26 +17,25 @@ export class HelmToMolfileConverter {
     const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
-        const sourceHelm = this.helmColumn.get(idx);
-        if (!sourceHelm)
+        const helm = this.helmColumn.get(idx);
+        if (!helm)
           throw new Error(`HELM column is empty at row ${idx}`);
-        return this.getPolymerMolfile(sourceHelm, pseudoMolfile);
+        return this.getPolymerMolfile(helm, pseudoMolfile);
       });
-    console.log('molfile list:', molfileList);
     const molfileColName = this.helmColumn.dataFrame.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
     const molfileColumn = DG.Column.fromList('string', molfileColName, molfileList);
     return molfileColumn;
   }
 
   async getPolymerGraphColumn(): Promise<DG.Column<string>> {
-    const polymerPseudoMolfileCol: DG.Column<string> =
+    const polymerGraphColumn: DG.Column<string> =
       await grok.functions.call('HELM:getMolfiles', {col: this.helmColumn});
-    return polymerPseudoMolfileCol;
+    return polymerGraphColumn;
   }
 
-  private getPolymerMolfile(sourceHelm: string, polymerGraph: string): string {
-    const meta = new MonomerShiftMetadata(polymerGraph);
-    const polymerWrapper = new PolymerWrapper(sourceHelm, polymerGraph);
+  private getPolymerMolfile(helm: string, polymerGraph: string): string {
+    const meta = new MonomerMetadataManager(polymerGraph);
+    const polymerWrapper = new PolymerWrapper(helm);
     meta.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
       const shift = meta.getMonomerShifts(monomerIdx);
       polymerWrapper.addShiftedMonomer(monomerSymbol, shift);
@@ -47,7 +45,7 @@ export class HelmToMolfileConverter {
   }
 }
 
-class MonomerShiftMetadata {
+class MonomerMetadataManager {
   constructor(helmCoordinates: string) {
     this.molfileHandler = MolfileHandler.getInstance(helmCoordinates);
   }
@@ -66,16 +64,17 @@ class MonomerShiftMetadata {
 }
 
 class MonomerWrapper {
-  constructor(monomerSymbol:string) {
+  constructor(
+    monomerSymbol:string,
+    // id: {polymer: number, monomer: number}
+  ) {
     const monomerLib = MonomerLibHelper.instance.getBioLib();
     const monomer = monomerLib.getMonomer(HELM_POLYMER_TYPE.PEPTIDE, monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);
-    this.monomer = monomer;
     this.molfileWrapper = new MolfileWrapper(monomer.molfile);
   }
 
-  private monomer: Monomer;
   private molfileWrapper: MolfileWrapper;
 
   shiftCoordinates(shift: {x: number, y: number}): void {
@@ -155,12 +154,32 @@ class MolfileWrapper {
   }
 }
 
+class HelmManager {
+  constructor(private helm: string) {
+    const helmSections = this.helm.split('$');
+    const separator = '|';
+    this.simplePolymers = helmSections[0].split(separator);
+    this.connectionList = helmSections[1].split(separator);
+  }
+  private simplePolymers: string[];
+  private connectionList: string[];
+
+  getConnectionMap() {
+    // identify helm connection list with the monomer ids from pseudomol
+    // also handle the R-groups (maybe, not here)
+  }
+}
+
 class PolymerWrapper {
-  constructor(private sourceHelm: string, private polymerGraph: string) { }
+  constructor(private helm: string) { }
 
   private monomerWrappers: MonomerWrapper[] = [];
 
-  addShiftedMonomer(monomerSymbol: string, shift: {x: number, y: number}): void {
+  addShiftedMonomer(
+    monomerSymbol: string,
+    shift: {x: number, y: number},
+    // id: {polymer: number, monomer: number}
+  ): void {
     const monomerWrapper = new MonomerWrapper(monomerSymbol);
     monomerWrapper.shiftCoordinates(shift);
     this.monomerWrappers.push(monomerWrapper);
