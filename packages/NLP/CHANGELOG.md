@@ -7,7 +7,6 @@ Stemming-based search (SBS) is implemented.
 ### Features
 
 * SBS context panel for text columns
-* SBS performance research tools
 
 *Dependency: datagarok-api >= 1.0.0*
 

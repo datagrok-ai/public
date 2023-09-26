@@ -5,7 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemmedColumn, getClosestUsingStemmedData, closestElementsDF, getSearchResults, STEMMED_SUFIX, getDictOfStemmedWords} from './stemming-tools';
+import {stemmColumn, getClosest, stemBuffer} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -197,92 +197,26 @@ export async function initAWS() {
 //output: widget result
 //condition: true
 export function similar(query: string): DG.Widget {
-  const MIN_CHAR_COUNT = 1;
-  const CLOSEST_COUNT = 3;
-
-  const df = grok.shell.t;
-  const baseCol = df.currentCol;
-  const cellIndex = df.currentCell.rowIndex;
-
-  const searchResults = getSearchResults(query, baseCol, CLOSEST_COUNT, MIN_CHAR_COUNT);
-
-  const divElements = [] as HTMLDivElement[];
-  const count = searchResults.indeces.length;
-
-  for (let i = 0; i < count; ++i)
-    if (searchResults.indeces[i] !== cellIndex) {
-      //divElements.push(ui.divText('# ' + (searchResults.indeces[i] + 1).toString()));
-      divElements.push(ui.divText(searchResults.strings[i]));
-      divElements.push(ui.divText('------'));
-    }
-
-  const wgt = new DG.Widget(ui.divV(divElements));
-
-  ui.tooltip.bind(wgt.root, 'Stemming-based search results.');
-
-  return wgt;
-}
-
-//top-menu: NLP | Search...
-//name: Stemming-based search
-//description: Find the closest sentences with respect to stemming-based similarity metric.
-//input: string query [The query string to be searched for.]
-//input: dataframe table [Source dataframe.]
-//input: column column [The column to be searched in.]
-//input: int closest = 5 [Number of the closest items to be shown in the report.]
-export function stemmingBasedSearch(query: string, table: DG.DataFrame, column: DG.Column, closest: number) { 
-  const results = closestElementsDF(query, column, closest, 1);
-
-  results.absClosest.name = 'Search results (absolute metric)';
-  results.relClosest.name = 'Search results (relative metric)';
-
-  grok.shell.addTableView(results.absClosest);
-  grok.shell.addTableView(results.relClosest);
-}
-
-//top-menu: NLP | Stem Column...
-//name: Stem
-//description: Stem column of strings and add results to the table.
-//input: dataframe table
-//input: column column {type: string}
-export function stemColumn(table: DG.DataFrame, column: DG.Column) { table.columns.add(stemmedColumn(column, 1)); }
-
-//name: Similar (using stemmed)
-//tags: panel, widgets
-//input: string query {semType: Text}
-//output: widget result
-//condition: true
-export function similarUsingStemmed(query: string): DG.Widget {
-  const MIN_CHAR_COUNT = 1;
-  const CLOSEST_COUNT = 3;
-
   const df = grok.shell.t;
   const source = df.currentCol;
-  const stemmed = df.getCol(`${source.name}${STEMMED_SUFIX}`);
 
-  const searchResults = getClosestUsingStemmedData(query, source, stemmed, CLOSEST_COUNT, MIN_CHAR_COUNT);  
+  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name)) {
+    stemBuffer.dfName = df.name;
+    stemBuffer.colName = source.name;
+    stemBuffer.indices = stemmColumn(source, 1).indices;
+  }
+
+  const closest = getClosest(stemBuffer.indices!, df.currentCell.rowIndex, 6); 
 
   const divElements = [] as HTMLDivElement[];
 
-  for (let i = 1; i < searchResults.indeces.length; ++i) {
-    //divElements.push(ui.divText('# ' + (searchResults.indeces[i] + 1).toString()));
-    divElements.push(ui.divText(searchResults.strings[i]));
+  for (let i = 1; i < closest.length; ++i) {
+    divElements.push(ui.divText('# ' + (closest[i] + 1).toString()));
+    divElements.push(ui.divText(source.get(closest[i])));
     divElements.push(ui.divText('------'));
   }
 
   const wgt = new DG.Widget(ui.divV(divElements));
 
-  ui.tooltip.bind(wgt.root, 'Stemming-based search results.');
-
   return wgt;
-}
-
-//top-menu: NLP | Get Dict...
-//name: Get Dict of Stemmed...
-//input: dataframe table
-//input: column strings
-export function getDict(table: DG.DataFrame, strings: DG.Column) {
-  const res = getDictOfStemmedWords(strings, 1);
-  console.log(res.dict);
-  table.columns.add(res.indices);
 }
