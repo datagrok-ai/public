@@ -477,8 +477,7 @@ function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): v
   gridProps.allowBlockSelection = false;
   gridProps.allowColSelection = false;
   gridProps.showRowHeader = false;
-  // gridProps.showCurrentCellOutline = false;
-  // gridProps.showCurrentRowIndicator = false;
+  gridProps.showCurrentRowIndicator = false;
 
   gridProps.rowHeight = 20;
   const girdCols = grid.columns;

@@ -468,22 +468,12 @@ export class PeptidesModel {
 
   updateGrid(): void {
     this.joinDataFrames();
-
     this.createScaledCol();
-
-    this.initInvariantMapSelection({notify: false});
-    this.initMutationCliffsSelection({notify: false});
-    this.initClusterSelection({notify: false});
-
     this.setWebLogoInteraction();
     this.webLogoBounds = {};
-
     this.setCellRenderers();
-
     this.setTooltips();
-
     this.setBitsetCallback();
-
     this.setGridProperties();
   }
 

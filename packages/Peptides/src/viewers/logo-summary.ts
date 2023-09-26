@@ -344,6 +344,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     gridProps.allowBlockSelection = false;
     gridProps.allowColSelection = false;
     gridProps.showRowHeader = false;
+    gridProps.showCurrentRowIndicator = false;
 
     return this.viewerGrid;
   }
@@ -405,10 +406,8 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   removeCluster(): void {
     const lss = this.model.clusterSelection[CLUSTER_TYPE.CUSTOM];
-    // const customClusters = wu(this.model.customClusters).map((cluster) => cluster.name).toArray();
 
     // // Names of the clusters to remove
-    // const clustNames = lss.filter((cluster) => customClusters.includes(cluster));
     if (lss.length === 0)
       return grok.shell.warning('No custom clusters selected to be removed');
 

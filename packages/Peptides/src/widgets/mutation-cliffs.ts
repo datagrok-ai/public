@@ -92,6 +92,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   pairsGrid.props.allowBlockSelection = false;
   pairsGrid.props.allowColSelection = false;
   pairsGrid.props.showRowHeader = false;
+  pairsGrid.props.showCurrentRowIndicator = false;
   pairsGrid.root.style.width = '100%';
   pairsGrid.root.style.height = '150px';
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
@@ -171,6 +172,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   uniqueSequencesGrid.props.allowColSelection = false;
   uniqueSequencesGrid.props.showRowHeader = false;
   uniqueSequencesGrid.props.rowHeight = 20;
+  uniqueSequencesGrid.props.showCurrentRowIndicator = false;
   uniqueSequencesGrid.root.style.width = '100%';
   uniqueSequencesGrid.root.style.height = '250px';
   uniqueSequencesTable.filter.onChanged.subscribe(() => {
