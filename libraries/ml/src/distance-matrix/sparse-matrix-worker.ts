@@ -6,7 +6,6 @@ onmessage = async (event) => {
   const i: number[] = [];
   const j: number[] = [];
   const distances: number[] = [];
-  await new Promise((resolve) => setTimeout(resolve, 20000));
   const chunkSize = endIdx - startIdx;
   //const mi = startRow;
   //const mj = startCol;
