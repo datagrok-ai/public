@@ -1005,6 +1005,7 @@ export async function helmToMol(): Promise<void> {
     return;
   }
   const converter = new HelmToMolfileConverter(helmCol);
-  const molCol = await converter.convert();
+  const molCol = await converter.convertToMolfile();
   df.columns.add(molCol);
+  await grok.data.detectSemanticTypes(df);
 }

@@ -14,29 +14,35 @@ export class HelmToMolfileConverter {
     this.helmColumn = helmColumn;
   }
 
-  async convert(): Promise<DG.Column<string>> {
-    const helmCoordinatesColumn: DG.Column<string> = await this.getHelmCoordinatesColumn();
-    helmCoordinatesColumn.toList().forEach(
-      (pseudoMolfile: string) => {
-        this.getPolymerMolfile(pseudoMolfile);
+  async convertToMolfile(): Promise<DG.Column<string>> {
+    const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
+    const molfileList = polymerGraphColumn.toList().map(
+      (pseudoMolfile: string, idx: number) => {
+        const sourceHelm = this.helmColumn.get(idx);
+        if (!sourceHelm)
+          throw new Error(`HELM column is empty at row ${idx}`);
+        return this.getPolymerMolfile(sourceHelm, pseudoMolfile);
       });
-    return helmCoordinatesColumn;
+    console.log('molfile list:', molfileList);
+    const molfileColumn = DG.Column.fromList('string', 'molfiles', molfileList);
+    return molfileColumn;
   }
 
-  async getHelmCoordinatesColumn(): Promise<DG.Column<string>> {
-    const polymerMolfileCol: DG.Column<string> = await grok.functions.call('HELM:getMolfiles', {col: this.helmColumn});
-    return polymerMolfileCol;
+  async getPolymerGraphColumn(): Promise<DG.Column<string>> {
+    const polymerPseudoMolfileCol: DG.Column<string> =
+      await grok.functions.call('HELM:getMolfiles', {col: this.helmColumn});
+    return polymerPseudoMolfileCol;
   }
 
-  private getPolymerMolfile(helmCoordinates: string): string {
-    const meta = new MonomerShiftMetadata(helmCoordinates);
-    console.log('symbols:', meta.monomerSymbols);
-    meta.monomerSymbols.forEach((monomerSymbol: string, idx: number) => {
-      const monomer = new MonomerWrapper(monomerSymbol, meta.getMonomerShifts(idx));
-      const molfile = monomer.getMonomerMolfile(meta.getMonomerShifts(idx), 0);
-      console.log(`molfile for ${monomerSymbol}:`, molfile);
+  private getPolymerMolfile(sourceHelm: string, polymerGraph: string): string {
+    const meta = new MonomerShiftMetadata(polymerGraph);
+    const polymerWrapper = new PolymerWrapper(sourceHelm, polymerGraph);
+    meta.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
+      const shift = meta.getMonomerShifts(monomerIdx);
+      polymerWrapper.addShiftedMonomer(monomerSymbol, shift);
     });
-    return '';
+    const polymerMolfile = polymerWrapper.compileToMolfile();
+    return polymerMolfile;
   }
 }
 
@@ -59,19 +65,24 @@ class MonomerShiftMetadata {
 }
 
 class MonomerWrapper {
-  constructor(monomerSymbol:string, private shift: {x: number, y: number}) {
+  constructor(monomerSymbol:string) {
     const monomerLib = MonomerLibHelper.instance.getBioLib();
     const monomer = monomerLib.getMonomer(HELM_POLYMER_TYPE.PEPTIDE, monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);
     this.monomer = monomer;
+    this.molfileWrapper = new MolfileWrapper(monomer.molfile);
   }
 
   private monomer: Monomer;
+  private molfileWrapper: MolfileWrapper;
 
-  getMonomerMolfile(shift: {x: number, y: number}, angle: number): string {
-    const molfile = this.monomer.molfile;
-    return molfile;
+  shiftCoordinates(shift: {x: number, y: number}): void {
+    this.molfileWrapper.shiftCoordinates(shift);
+  }
+
+  getMolfileData(bondShift: number): {atomLines: string[], bondLines: string[]} {
+    return this.molfileWrapper.getData(bondShift);
   }
 }
 
@@ -96,9 +107,10 @@ class MolfileWrapper {
     this.atomLines = this.atomLines.map((line: string) => {
       const x = parseFloat(line.substring(0, 10));
       const y = parseFloat(line.substring(10, 20));
-      const newX = x + shift.x;
-      const newY = y + shift.y;
-      const newLine = line.replace(x.toString(), newX.toString()).replace(y.toString(), newY.toString());
+      // get new coords with fixed precision 4 and padded with zeros
+      const newX = (x + shift.x).toFixed(4);
+      const newY = (y + shift.y).toFixed(4);
+      const newLine = `${newX.toString().padStart(10, ' ')}${newY.toString().padStart(10, ' ')}${line.substring(20)}`;
       return newLine;
     });
   }
@@ -114,16 +126,68 @@ class MolfileWrapper {
     });
   }
 
-  getData(): {atomLines: string[], bondLines: string[]} {
+  getRGroupIndices(): number[] {
+    return (MolfileHandler.getInstance(this.molfileV2K))
+      .atomTypes.map((atomType, idx) => {
+        if (atomType === 'R#')
+          return idx;
+      }).filter((idx) => idx !== undefined) as number[];
+  }
+
+  /** Get R-group ids from Atom Alias block and RGP block  */
+  // getRGroupIndexById(id: number): number {
+  // }
+
+  shiftBondNumbers(shift: number): void {
+    this.bondLines = this.bondLines.map((line: string) => {
+      const bond1 = parseInt(line.substring(0, 3));
+      const bond2 = parseInt(line.substring(3, 6));
+      const newBond1 = bond1 + shift;
+      const newBond2 = bond2 + shift;
+      return `${newBond1.toString().padStart(3, ' ')}${newBond2.toString().padStart(3, ' ')}${line.substring(6)}`;
+    });
+  }
+
+  getData(bondShift: number): {atomLines: string[], bondLines: string[]} {
+    this.shiftBondNumbers(bondShift);
     return {atomLines: this.atomLines, bondLines: this.bondLines};
   }
 }
 
 class PolymerWrapper {
-  constructor() { }
+  constructor(private sourceHelm: string, private polymerGraph: string) { }
+
+  private monomerWrappers: MonomerWrapper[] = [];
+
+  addShiftedMonomer(monomerSymbol: string, shift: {x: number, y: number}): void {
+    const monomerWrapper = new MonomerWrapper(monomerSymbol);
+    monomerWrapper.shiftCoordinates(shift);
+    this.monomerWrappers.push(monomerWrapper);
+  }
 
   compileToMolfile(): string {
-    const molfile = '';
+    const molfileHeader = '\nDatagrok\n';
+    const atomLines: string[] = [];
+    const bondLines: string[] = [];
+    this.monomerWrappers.forEach((monomerWrapper: MonomerWrapper) => {
+      const bondShift = atomLines.length;
+      const {atomLines: atomLinesPart, bondLines: bondLinesPart} = monomerWrapper.getMolfileData(bondShift);
+      atomLines.push(...atomLinesPart);
+      bondLines.push(...bondLinesPart);
+    });
+    const atomCount = atomLines.length;
+    if (atomCount > 999)
+      throw new Error(`Atom count is ${atomCount} and exceeds 999`);
+    const bondCount = bondLines.length;
+    const countsLine = `${
+      atomCount.toString().padStart(3, ' ')
+    }${
+      bondCount.toString().padStart(3, ' ')
+    }  0  0  1  0              0 V2000`;
+    const molfileEnd = 'M  END\n';
+    const newLineChar = '\n';
+    const blockList = [molfileHeader, countsLine, atomLines.join(newLineChar), bondLines.join(newLineChar), molfileEnd];
+    const molfile = blockList.join(newLineChar);
     return molfile;
   }
 }
