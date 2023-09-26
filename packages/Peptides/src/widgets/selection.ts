@@ -5,12 +5,14 @@ import {PeptidesModel} from '../model';
 
 import wu from 'wu';
 import {COLUMNS_NAMES} from '../utils/constants';
+import {addExpandIcon} from '../utils/misc';
 
 export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): HTMLElement {
   const compBitset = model.getCompoundBitset();
   if (compBitset.trueCount === 0)
     return ui.divText('No compounds selected');
   const newTable = DG.DataFrame.create(table.rowCount);
+  newTable.name = 'Selected compounds';
   newTable.filter.copyFrom(compBitset);
   const sourceGrid = model.analysisView.grid;
   const numericalCols = wu(table.columns.numerical);
@@ -42,6 +44,8 @@ export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): H
       grid.root.style.top = '10px';
     }
   });
+
+  addExpandIcon(grid);
 
   const gridHost = ui.box(grid.root);
   gridHost.style.marginLeft = '0px';

@@ -5,6 +5,7 @@
 ### Features
 
 * Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+* Added icon to expand grids in property panel to fullscreen.
 
 ### Bug Fixes
 

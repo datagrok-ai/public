@@ -1006,7 +1006,7 @@ export class PeptidesModel {
     this.df.temp[C.EMBEDDING_STATUS] = false;
     const positionCols = this.splitSeqDf.columns;
     let maxWidth = 10;
-    const canvasContext  = sourceGrid.canvas.getContext('2d');
+    const canvasContext = sourceGrid.canvas.getContext('2d');
     for (const positionCol of positionCols) {
       // Longest category
       const maxCategory = monomerToShort(positionCol.categories.reduce((a, b) => a.length > b.length ? a : b), 6);
