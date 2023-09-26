@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {pickUpPalette, TAGS as bioTAGS, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
@@ -1004,6 +1004,20 @@ export class PeptidesModel {
     sourceGridProps.allowEdit = props?.allowEdit ?? false;
     sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
+    const positionCols = this.splitSeqDf.columns;
+    let maxWidth = 10;
+    const canvasContext  = sourceGrid.canvas.getContext('2d');
+    for (const positionCol of positionCols) {
+      // Longest category
+      const maxCategory = monomerToShort(positionCol.categories.reduce((a, b) => a.length > b.length ? a : b), 6);
+      // Measure text width of longest category
+      const width = Math.ceil(canvasContext!.measureText(maxCategory).width);
+      maxWidth = Math.max(maxWidth, width);
+    }
+    setTimeout(() => {
+      for (const positionCol of positionCols)
+        sourceGrid.col(positionCol.name)!.width = maxWidth + 15;
+    }, 1000);
   }
 
   closeViewer(viewerType: VIEWER_TYPE): void {
