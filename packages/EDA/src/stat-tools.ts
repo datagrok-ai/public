@@ -36,8 +36,6 @@ type SampleData = {
   size: number,
 };
 
-const OVERFLOW_LIMIT = 1000000;
-
 /** One-way ANOVA computation results. The classic notations are used (see [2], p. 290). */
 type OneWayAnova = {
   /** sum of squares between groups, SSbn */
@@ -67,9 +65,6 @@ type CatCol = DG.Column<DG.COLUMN_TYPE.STRING>;
 
 /** Numerical column */
 type NumCol = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
-
-/** Numerical array */
-type NumArr = Array<number> | Int32Array | Float32Array;
 
 /** Create dataframe with one-way ANOVA results. */
 export function getOneWayAnovaDF(anova: OneWayAnova, alpha: number, fCritical: number, hypothesis: string, testResult: string): DG.DataFrame {
@@ -124,8 +119,8 @@ function areVarsEqual(xData: SampleData, yData: SampleData, alpha: number = 0.05
 export class FactorizedData {
   private isNormDistrib: boolean | undefined = undefined;
   private categories: string[] = [];  
-  private sums!: NumArr;
-  private sumsOfSquares!: NumArr;
+  private sums!: Float64Array;
+  private sumsOfSquares!: Float64Array;
   private subSampleSizes!: Int32Array;
   private size!: number;
   private catCount!: number;
@@ -141,8 +136,7 @@ export class FactorizedData {
   }
 
   public isNormal(): boolean | undefined {
-    return true; // TODO: after check normality feature will be implemented, replace with the following:
-    //return this.isNormDistrib;
+    return true;
   }
 
   /** Check equality of variances of factorized data. */
@@ -225,25 +219,9 @@ export class FactorizedData {
         const vals = values.getRawData();
         const cats = categories.getRawData();
 
-        let sums: NumArr;
-        let sumsOfSquares: NumArr;
+        const sums = new Float64Array(catCount).fill(0);
+        const sumsOfSquares = new Float64Array(catCount).fill(0);
         const subSampleSizes = new Int32Array(catCount).fill(0);
-
-        if (size > OVERFLOW_LIMIT) {
-          sums = new Array(catCount);
-          sumsOfSquares = new Array(catCount);
-        }
-        else if (type === DG.COLUMN_TYPE.INT) {
-          sums = new Int32Array(catCount);
-          sumsOfSquares = new Int32Array(catCount);
-        }
-        else {
-          sums = new Float32Array(catCount);
-          sumsOfSquares = new Float32Array(catCount);
-        }
-
-        sums.fill(0);
-        sumsOfSquares.fill(0);
         
         for (let i = 0; i < size; ++i) {
           const c = cats[i];    
