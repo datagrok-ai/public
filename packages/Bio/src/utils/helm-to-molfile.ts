@@ -24,7 +24,8 @@ export class HelmToMolfileConverter {
         return this.getPolymerMolfile(sourceHelm, pseudoMolfile);
       });
     console.log('molfile list:', molfileList);
-    const molfileColumn = DG.Column.fromList('string', 'molfiles', molfileList);
+    const molfileColName = this.helmColumn.dataFrame.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
+    const molfileColumn = DG.Column.fromList('string', molfileColName, molfileList);
     return molfileColumn;
   }
 
@@ -126,7 +127,7 @@ class MolfileWrapper {
     });
   }
 
-  getRGroupIndices(): number[] {
+  private getRGroupIndices(): number[] {
     return (MolfileHandler.getInstance(this.molfileV2K))
       .atomTypes.map((atomType, idx) => {
         if (atomType === 'R#')
