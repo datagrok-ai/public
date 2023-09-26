@@ -2,6 +2,10 @@
 
 ## 2.2.0 (WIP)
 
+### Features
+
+* Show tooltips on monomers rendered with WebEditor.
+
 ### Bug fixes
 
 * Fix Helm cell renderer, allowing to render with gaps by skipping.
