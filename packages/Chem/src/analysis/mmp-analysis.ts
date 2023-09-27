@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {drawMoleculeToCanvas, getRdKitModule, getUncommonAtomsAndBonds} from '../utils/chem-common-rdkit';
+import {getMCS} from '../utils/most-common-subs';
 
 type MmpRules = {
   rules: {
@@ -123,55 +124,158 @@ function getMmpRules(frags: [string, string][][]): MmpRules {
   return mmpRules;
 }
 
-// function mmpRefilter() {
+export class MmpAnalysis {
+  parentTable: DG.DataFrame;
+  parentCol: DG.Column;
+  mmpRules: MmpRules;
+  allPairsGrid: DG.Grid;
+  mmpView: DG.View;
+  canvasMol1: HTMLCanvasElement;
+  canvasMol2: HTMLCanvasElement;
 
-// }
+  constructor(table: DG.DataFrame, molecules: DG.Column, activities:DG.Column) {
+    this.parentTable = table;
+    this.parentCol = molecules;
+    const frags = getMmpFrags(molecules);
+    this.mmpRules = getMmpRules(frags);
+    this.canvasMol1 = ui.canvas();
+    this.canvasMol2 = ui.canvas();
 
-export function performMmpAnalysis(
-  table: DG.DataFrame, molecules: DG.Column, activities:DG.Column): DG.Grid {
-  const frags = getMmpFrags(molecules);
-  const mmpRules: MmpRules = getMmpRules(frags);
+    const from = new Array<string>(this.mmpRules.rules.length);
+    const to = new Array<string>(this.mmpRules.rules.length);
+    const occasions = new Array<number>(this.mmpRules.rules.length);
+    const meanDiff = new Array<number>(this.mmpRules.rules.length);
 
-  const from = new Array<string>(mmpRules.rules.length);
-  const to = new Array<string>(mmpRules.rules.length);
-  const occasions = new Array<number>(mmpRules.rules.length);
-  const meanDiff = new Array<number>(mmpRules.rules.length);
+    for (let i = 0; i < this.mmpRules.rules.length; i++) {
+      from[i] = this.mmpRules.smilesFrags[this.mmpRules.rules[i].smilesRule1];
+      to[i] = this.mmpRules.smilesFrags[this.mmpRules.rules[i].smilesRule2];
+      occasions[i] = this.mmpRules.rules[i].pairs.length;
 
-  for (let i = 0; i < mmpRules.rules.length; i++) {
-    from[i] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule1];
-    to[i] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule2];
-    occasions[i] = mmpRules.rules[i].pairs.length;
-
-    let mean: number = 0;
-    for (let j = 0; j < occasions[i]; j++) {
-      const idx1 = mmpRules.rules[i].pairs[j].firstStructure;
-      const idx2 = mmpRules.rules[i].pairs[j].secondStructure;
-      const val1 = activities.get(idx1);
-      const val2 = activities.get(idx2);
-      mean += val2 - val1;
+      let mean: number = 0;
+      for (let j = 0; j < occasions[i]; j++) {
+        const idx1 = this.mmpRules.rules[i].pairs[j].firstStructure;
+        const idx2 = this.mmpRules.rules[i].pairs[j].secondStructure;
+        const val1 = activities.get(idx1);
+        const val2 = activities.get(idx2);
+        mean += val2 - val1;
+      }
+      mean/= occasions[i];
+      meanDiff[i] = mean;
     }
-    mean/= occasions[i];
-    meanDiff[i] = mean;
+
+    const fromCol = DG.Column.fromList('string', 'From', from);
+    const toCol = DG.Column.fromList('string', 'To', to);
+    const occasionsCol = DG.Column.fromList('double', 'Occasions', occasions);
+    const meanDiffCol = DG.Column.fromList('double', 'MeanDiff', meanDiff);
+
+    fromCol.semType = DG.SEMTYPE.MOLECULE;
+    toCol.semType = DG.SEMTYPE.MOLECULE;
+
+    const dfAllPairs = DG.DataFrame.fromColumns([fromCol, toCol, occasionsCol, meanDiffCol]);
+    this.allPairsGrid = dfAllPairs.plot.grid();
+
+    this.parentTable.onCurrentRowChanged.subscribe(() => {
+      this.refilterAllPairs();
+      this.refreshPair();
+    });
+
+    this.refilterAllPairs();
+
+    this.allPairsGrid.table.currentRowIdx = 0;
+    this.allPairsGrid.table.onCurrentRowChanged.subscribe(() => {
+      this.refreshPair();
+    });
+
+    this.refreshPair();
+
+    this.mmpView = DG.View.create();
+    this.mmpView.name = 'MMP Analysis';
+    this.mmpView.box = true;
+    const tp = DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, this.allPairsGrid.table, {
+      xColumnNames: [this.allPairsGrid.table.columns.byIndex(0).name],
+      yColumnNames: [this.allPairsGrid.table.columns.byIndex(1).name],
+    });
+    //const tp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, grid.table);
+    const tabs = ui.tabControl(null, false);
+
+    tabs.addPane('Transformations', () => {
+      //this.refilterAllPairs();
+
+      const molCells = ui.divH([this.canvasMol1, this.canvasMol2]);
+      //box.style.maxHeight = '0px';
+
+      return ui.splitV([molCells, this.allPairsGrid.root]);
+    });
+    tabs.addPane('Fragments', () => {
+      this.refreshFilterAllPairs();
+      return tp.root;
+    });
+    this.mmpView.append(tabs);
   }
 
-  const fromCol = DG.Column.fromList('string', 'From', from);
-  const toCol = DG.Column.fromList('string', 'To', to);
-  const occasionsCol = DG.Column.fromList('double', 'Occasions', occasions);
-  const meanDiffCol = DG.Column.fromList('double', 'MeanDiff', meanDiff);
+  refreshPair() {
+    const idxParent = this.parentTable.currentRowIdx;
+    const idx = this.allPairsGrid.table.currentRowIdx;
 
-  fromCol.semType = DG.SEMTYPE.MOLECULE;
-  toCol.semType = DG.SEMTYPE.MOLECULE;
+    //TODO: add additional structure for algorithm simplification
 
-  const df = DG.DataFrame.fromColumns([fromCol, toCol, occasionsCol, meanDiffCol]);
-  const grid = df.plot.grid();
+    const ruleSmi1 = this.allPairsGrid.table.getCol('From').get(idx);
+    const ruleSmi2 = this.allPairsGrid.table.getCol('To').get(idx);
 
-  table.onCurrentRowChanged.subscribe(() => {
-    const idx = table.currentRowIdx;
-    const consistsBitSet: DG.BitSet = DG.BitSet.create(df.rowCount);
+    //search for numbers in smiles rules
+    const ruleSmiNum1 = this.mmpRules.smilesFrags.indexOf(ruleSmi1);
+    const ruleSmiNum2 = this.mmpRules.smilesFrags.indexOf(ruleSmi2);
 
-    for (let i = 0; i < mmpRules.rules.length; i++) {
-      for (let j = 0; j < mmpRules.rules[i].pairs.length; j++) {
-        const fs = mmpRules.rules[i].pairs[j].firstStructure;
+    let idxSecond = -1;
+
+    //search specific rule
+    for (let i = 0; i < this.mmpRules.rules.length; i++) {
+      const first = this.mmpRules.rules[i].smilesRule1; //.pairs[j].firstStructure;
+      const second = this.mmpRules.rules[i].smilesRule2; //.pairs[j].secondStructure;
+      if (ruleSmiNum1 == first && ruleSmiNum2 == second) {
+        for (let j = 0; j < this.mmpRules.rules[i].pairs.length; j++) {
+          const idxFirst = this.mmpRules.rules[i].pairs[j].firstStructure;
+
+          if (idxFirst == idxParent) {
+            idxSecond = this.mmpRules.rules[i].pairs[j].secondStructure;
+            break;
+          }
+        }
+      }
+      if (idxSecond >= 0)
+        break;
+    }
+
+    const molecule1 = this.parentCol.get(idxParent);
+    const molecule2 = this.parentCol.get(idxSecond);
+    const mcsCol = DG.Column.fromStrings('mcs', [molecule1, molecule2]);
+    const module = getRdKitModule();
+    const mcs = getMCS(mcsCol, true, true);
+    const mcsMol = module.get_qmol(mcs!);
+    const substruct1 = getUncommonAtomsAndBonds(molecule1, mcsMol, module);
+    const substruct2 = getUncommonAtomsAndBonds(molecule2, mcsMol, module);
+    // getUncommonAtomsAndBonds();
+
+
+    drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol1, molecule1, '',
+      {normalizeDepiction: true, straightenDepiction: true}, substruct1);
+    drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol2, molecule2, '',
+      {normalizeDepiction: true, straightenDepiction: true}, substruct2);
+  }
+
+  refreshFilterAllPairs() {
+    const consistsBitSet: DG.BitSet = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
+    consistsBitSet.setAll(true);
+    this.allPairsGrid.dataFrame.filter.copyFrom(consistsBitSet);
+  }
+
+  refilterAllPairs() {
+    const idx = this.parentTable.currentRowIdx;
+    const consistsBitSet: DG.BitSet = DG.BitSet.create(this.allPairsGrid.dataFrame.rowCount);
+
+    for (let i = 0; i < this.mmpRules.rules.length; i++) {
+      for (let j = 0; j < this.mmpRules.rules[i].pairs.length; j++) {
+        const fs = this.mmpRules.rules[i].pairs[j].firstStructure;
         if (idx == fs) {
           consistsBitSet.set(i, true, false);
           break;
@@ -179,9 +283,7 @@ export function performMmpAnalysis(
       }
     }
 
-    df.filter.copyFrom(consistsBitSet);
-    grid.invalidate();
-  });
-
-  return grid;
+    this.allPairsGrid.dataFrame.filter.copyFrom(consistsBitSet);
+    this.allPairsGrid.invalidate();
+  }
 }

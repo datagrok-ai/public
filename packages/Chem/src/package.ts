@@ -47,7 +47,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, getEmbeddingColsNames, runChemSpace} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
-import {performMmpAnalysis} from './analysis/mmp-analysis';
+import {MmpAnalysis} from './analysis/mmp-analysis';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -1239,14 +1239,15 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
-//top-menu: Chem | Analyze | MMP...
+//top-menu: Chem | Analyze | Molecular Matched Pairs...
 //name: mmpAnalysis
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column activities {type:numerical}
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities:DG.Column): Promise<void> {
-  const grid = performMmpAnalysis(table, molecules, activities);
-  grok.shell.tv.dockManager.dock(grid, 'right', null, 'MMP Analysis', 1);
+  const view = grok.shell.tv;
+  const mmp = new MmpAnalysis(table, molecules, activities);
+  view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
 }
 
 //name: Scaffold Tree Filter
