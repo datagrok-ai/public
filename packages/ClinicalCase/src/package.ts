@@ -26,6 +26,7 @@ import { VIEWS } from './constants/constants';
 import { addView, createTableView, getTableViewsParams } from './utils/views-creation-utils';
 import { CohortView } from './views/cohort-view';
 import { QuestionnaiesView } from './views/questionnaires-view';
+import {SplashScreenView} from '@datagrok-libraries/utils/src/splash-screen';
 
 export let _package = new DG.Package();
 
@@ -38,6 +39,8 @@ export let c: DG.FuncCall;
 //name: Clinical Case
 //tags: app
 export async function clinicalCaseApp(): Promise<any> {
+  const ss = new SplashScreenView('Clinical Case');
+  ss.add();
   c = grok.functions.getCurrentCall();
   validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
 
@@ -94,6 +97,7 @@ export async function clinicalCaseApp(): Promise<any> {
   VIEWS.push(<StudyConfigurationView>addView(new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME)));
 
   setTimeout(() => {
+    ss.remove();
     grok.shell.v = summary;
   }, 1000);
 
