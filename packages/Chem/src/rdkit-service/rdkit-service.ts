@@ -244,7 +244,7 @@ export class RdKitService {
    * */
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
-    searchType = SubstructureSearchType.CONTAINS, simCutOf = 0.8, fp = Fingerprint.Morgan, simScoreCol?: DG.Column) {
+    searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan, simScoreCol?: DG.Column) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
@@ -256,6 +256,8 @@ export class RdKitService {
         queryMol.get_pattern_fp_as_uint8array();
     } catch (e: any) {
       throw new Error(`Chem | Substructure Search failed with error: ${e.toString()}`);
+    } finally {
+      queryMol?.delete();
     }
 
     const updateRes = (batchRes: SubstructureSearchBatchResult, res: SubstructureSearchWithFpResult, length: number,
@@ -299,22 +301,16 @@ export class RdKitService {
         // *********** FILTERING using fingerprints
         const patternFpUint8Length = 256;
         const patternFpFilterBitArray = new BitArray(batch.length, false);
-        try {
-          checkEl:
-          for (let i = 0; i < batch.length; ++i) {
-            if (fpResult.fps[i]) {
-              for (let j = 0; j < patternFpUint8Length; ++j) {
-                const bitToCompare = searchType === SubstructureSearchType.INCLUDED_IN ? fpResult.fps[i]![j] : fpRdKit[j];
-                if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare)
-                  continue checkEl;
-              }
-              patternFpFilterBitArray.setFast(i, true);
+        for (let i = 0; i < batch.length; ++i) {
+          if (fpResult.fps[i]) {
+            for (let j = 0; j < patternFpUint8Length; ++j) {
+              const bitToCompare = searchType === SubstructureSearchType.INCLUDED_IN ? fpResult.fps[i]![j] : fpRdKit[j];
+              if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare)
+                continue;
             }
+            patternFpFilterBitArray.setFast(i, true);
           }
-        } catch (e: any) {
-          throw new Error(`Chem | Substructure Search failed with error: ${e.toString()}`);
         }
-
         const filteredMolecules = Array<string>(patternFpFilterBitArray.trueCount());
         let counter = 0;
         for (let i = -1; (i = patternFpFilterBitArray.findNext(i)) !== -1;) {
@@ -342,7 +338,7 @@ export class RdKitService {
           for (let i = 0; i < batch.length; ++i) {
             if (fpResult.fps[i]) {
               const simScore = tanimotoSimilarity(rdKitFingerprintToBitArray(fpResult.fps[i]!)!, rdKitFingerprintToBitArray(fpRdKit!)!);
-              if (simScore >= simCutOf) {
+              if (simScore >= simCutOff) {
                 finalBitArray.setBit(i, true);
                 simScoreCol?.set(batchStartIdx + i, simScore);
               }

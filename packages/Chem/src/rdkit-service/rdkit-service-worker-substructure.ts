@@ -54,9 +54,17 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
     const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule); 
-
+    let queryCanonicalSmiles = '';
     if (queryMol !== null) {
-      const matches = await this.searchWithPatternFps(queryMol, molecules, searchType ?? SubstructureSearchType.CONTAINS);
+      if (searchType === SubstructureSearchType.EXACT_MATCH) {
+        try {
+          queryCanonicalSmiles = queryMol.get_smiles();
+          //need to get canonical smiles from mol (not qmol) since qmol implicitly merges query hydrogens
+          queryCanonicalSmiles = this._rdKitModule.get_mol(queryMolString).get_smiles();
+        } catch {}
+      }
+      const matches = await this.searchWithPatternFps(queryMol, molecules,
+        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles);
       queryMol.delete();
       return matches;
     } else
@@ -64,33 +72,39 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
 
-  async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType): Promise<Uint32Array> {
+  async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType,
+    queryCanonicalSmiles: string): Promise<Uint32Array> {
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
-      
-      if (i % this._terminationCheckDelay === 0) //every N molecules check for termination flag
+      const terminationCheckDelay = queryCanonicalSmiles ? this._terminationCheckDelay * 10 : this._terminationCheckDelay;
+
+      if (i % terminationCheckDelay === 0) //every N molecules check for termination flag
         await new Promise((r) => setTimeout(r, 0));
       if (this._requestTerminated)
         return matches.buffer;
 
-      let mol: RDMol | null = null;
-      let isCached = false;
-      try {
-        const cachedMol = this._molsCache?.get(molecules[i]);
-        mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
-        if (cachedMol || this.addToCache(mol))
-          isCached = true;
-        if (mol) {
-          if (this.searchBySearchType(mol, queryMol, searchType, i) !== '{}')
-            matches.setFast(i, true);
+      if (queryCanonicalSmiles) {
+        matches.setFast(i, molecules[i] === queryCanonicalSmiles);
+      } else {
+        let mol: RDMol | null = null;
+        let isCached = false;
+        try {
+          const cachedMol = this._molsCache?.get(molecules[i]);
+          mol = cachedMol ?? this._rdKitModule.get_mol(molecules[i], details);
+          if (cachedMol || this.addToCache(mol))
+            isCached = true;
+          if (mol) {
+            if (this.searchBySearchType(mol, queryMol, searchType, i) !== '{}')
+              matches.setFast(i, true);
+          }
+        } catch {
+          continue;
+        } finally {
+          !isCached && mol?.delete();
         }
-      } catch {
-        continue;
-      } finally {
-        !isCached && mol?.delete();
       }
     }
     return matches.buffer;
