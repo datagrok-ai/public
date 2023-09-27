@@ -9,6 +9,7 @@ import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {getRdKitModule} from '../package';
 import { SubstructureSearchType } from '../constants';
 import { tanimotoSimilarity } from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import { getRDKitFpAsUint8Array } from '../chem-searches';
 export interface IParallelBatchesRes {
   getProgress: () => number,
   setTerminateFlag: () => void,
@@ -243,20 +244,19 @@ export class RdKitService {
    * */
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
-    searchType = SubstructureSearchType.INCLUDED_IN, simCutOf = 0.8, simScoreCol?: DG.Column) {
+    searchType = SubstructureSearchType.CONTAINS, simCutOf = 0.8, fp = Fingerprint.Morgan, simScoreCol?: DG.Column) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
-    const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? Fingerprint.Morgan : Fingerprint.Pattern;
+    const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
     if (!queryMol)
       throw new Error(`Chem | Invalid search pattern: ${query}`);
     let fpRdKit: Uint8Array;
     try {
-      fpRdKit = searchType === SubstructureSearchType.IS_SIMILAR ? queryMol.get_morgan_fp_as_uint8array() :
+      fpRdKit = searchType === SubstructureSearchType.IS_SIMILAR ? getRDKitFpAsUint8Array(queryMol, fpType):
         queryMol.get_pattern_fp_as_uint8array();
     } catch (e: any) {
       throw new Error(`Chem | Substructure Search failed with error: ${e.toString()}`);
     }
-
 
     const updateRes = (batchRes: SubstructureSearchBatchResult, res: SubstructureSearchWithFpResult, length: number,
       index: number) => {
@@ -304,7 +304,7 @@ export class RdKitService {
           for (let i = 0; i < batch.length; ++i) {
             if (fpResult.fps[i]) {
               for (let j = 0; j < patternFpUint8Length; ++j) {
-                const bitToCompare = searchType === SubstructureSearchType.CONTAINS ? fpResult.fps[i]![j] : fpRdKit[j];
+                const bitToCompare = searchType === SubstructureSearchType.INCLUDED_IN ? fpResult.fps[i]![j] : fpRdKit[j];
                 if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare)
                   continue checkEl;
               }

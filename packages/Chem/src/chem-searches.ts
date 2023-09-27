@@ -19,6 +19,7 @@ import {_package} from './package';
 import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
 import {SubstructureSearchType, getSearchProgressEventName, getTerminateEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
+import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
@@ -247,9 +248,10 @@ before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false,
-  awaitAll = true, searchType = SubstructureSearchType.INCLUDED_IN, similarityCutOf = 0.8, simScoreCol?: DG.Column): Promise<BitArray> {
-  const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name??''}`;
-  const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOf}`;
+  awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOf = 0.8,
+  fp = Fingerprint.Morgan, simScoreCol?: DG.Column): Promise<BitArray> {
+  const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
+  const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOf}_${fp}`;
   currentSearchSmiles[searchKey] = currentSearch;
   await chemBeginCriticalSection();
   if (currentSearchSmiles[searchKey] !== currentSearch) {
@@ -285,7 +287,7 @@ export async function chemSubstructureSearchLibrary(
 
     const canonicalSmilesList = getSavedCol(canonicalSmilesColName)?.toList() ??
       new Array<string | null>(molStringsColumn.length).fill(null);
-    const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? Fingerprint.Morgan : Fingerprint.Pattern;
+    const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
     const fgsList = getSavedCol(fpType)?.toList() ??
       new Array<Uint8Array | null>(molStringsColumn.length).fill(null);
 
@@ -301,7 +303,7 @@ export async function chemSubstructureSearchLibrary(
     };
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
-        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOf, simScoreCol);
+        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOf, fp, simScoreCol);
 
     const saveProcessedColumns = () => {
       try {
@@ -349,30 +351,33 @@ export async function chemSubstructureSearchLibrary(
   }
 }
 
+export function getRDKitFpAsUint8Array(mol: RDMol, fingerprint: Fingerprint): Uint8Array {
+  if (fingerprint == Fingerprint.Morgan) {
+    return mol.get_morgan_fp_as_uint8array(JSON.stringify({
+      radius: defaultMorganFpRadius,
+      nBits: defaultMorganFpLength,
+    }));
+  } else if (fingerprint == Fingerprint.Pattern)
+    return mol.get_pattern_fp_as_uint8array();
+  else if (fingerprint == Fingerprint.AtomPair)
+    return mol.get_atom_pair_fp_as_uint8array();
+  else if (fingerprint == Fingerprint.MACCS)
+    return mol.get_maccs_fp_as_uint8array();
+  else if (fingerprint == Fingerprint.RDKit)
+    return mol.get_rdkit_fp_as_uint8array();
+  else if (fingerprint == Fingerprint.TopologicalTorsion)
+    return mol.get_topological_torsion_fp_as_uint8array();
+  else
+    throw new Error(`${fingerprint} does not match any fingerprint`);
+}
+
 export function chemGetFingerprint(molString: string, fingerprint: Fingerprint, onError?:
-  (error: Error) => any): BitArray {
+  (error: Error) => any, convertToBitArray = true): BitArray {
   let mol = null;
   try {
     mol = getMolSafe(molString, {}, getRdKitModule()).mol;
     if (mol) {
-      let fp;
-      if (fingerprint == Fingerprint.Morgan) {
-        fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
-          radius: defaultMorganFpRadius,
-          nBits: defaultMorganFpLength,
-        }));
-      } else if (fingerprint == Fingerprint.Pattern)
-        fp = mol.get_pattern_fp_as_uint8array();
-      else if (fingerprint == Fingerprint.AtomPair)
-        fp = mol.get_atom_pair_fp_as_uint8array();
-      else if (fingerprint == Fingerprint.MACCS)
-        fp = mol.get_maccs_fp_as_uint8array();
-      else if (fingerprint == Fingerprint.RDKit)
-        fp = mol.get_rdkit_fp_as_uint8array();
-      else if (fingerprint == Fingerprint.TopologicalTorsion)
-        fp = mol.get_topological_torsion_fp_as_uint8array();
-      else
-        throw new Error(`${fingerprint} does not match any fingerprint`);
+      let fp = getRDKitFpAsUint8Array(mol, fingerprint);
       return rdKitFingerprintToBitArray(fp) as BitArray;
     } else
       throw new Error(`Chem | Possibly a malformed molString: ${molString}`);

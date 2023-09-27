@@ -53,10 +53,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
-    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
+    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule); 
 
     if (queryMol !== null) {
-      const matches = await this.searchWithPatternFps(queryMol, molecules, searchType ?? SubstructureSearchType.INCLUDED_IN);
+      const matches = await this.searchWithPatternFps(queryMol, molecules, searchType ?? SubstructureSearchType.CONTAINS);
       queryMol.delete();
       return matches;
     } else
@@ -98,9 +98,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   searchBySearchType(mol: RDMol, queryMol: RDMol, searchType: SubstructureSearchType, i: number): string {
     switch (searchType) {
-      case SubstructureSearchType.INCLUDED_IN:
-        return mol.get_substruct_match(queryMol);
       case SubstructureSearchType.CONTAINS:
+        return mol.get_substruct_match(queryMol);
+      case SubstructureSearchType.INCLUDED_IN:
         return queryMol.get_substruct_match(mol);
       case SubstructureSearchType.EXACT_MATCH:
         const match1 = mol.get_substruct_match(queryMol);

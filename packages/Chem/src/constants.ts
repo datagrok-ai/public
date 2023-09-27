@@ -1,3 +1,5 @@
+import { Fingerprint } from "./utils/chem-common";
+
 export const V2000_ATOM_NAME_POS = 30;
 export const V2000_ATOM_NAME_LEN = 3;
 
@@ -35,9 +37,11 @@ export const ALIGN_BY_SCAFFOLD_TAG = 'chem-scaffold';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
 export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';
 export enum SubstructureSearchType {
-  EXACT_MATCH = 'exact match',
-  CONTAINS = 'contains',
-  INCLUDED_IN = 'included in',
-  IS_SIMILAR = 'is similar'
+  EXACT_MATCH = 'Exact',
+  CONTAINS = 'Contains',
+  INCLUDED_IN = 'Included in',
+  IS_SIMILAR = 'Similar'
 }
 export const FILTER_TYPE_TAG = '.filter-type'
+export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
+  Fingerprint.RDKit, Fingerprint.TopologicalTorsion];

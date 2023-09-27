@@ -431,3 +431,16 @@
   justify-content: center;
   display: flex;
 }
+
+.chem-filter-fp-editor {
+  width: 90px;
+}
+
+.chem-filter-sim-cutoff-label {
+  width: 0px;
+  margin: 0px!important;
+}
+
+.chem-filter-sim-cutoff-editor {
+  width: 202px;
+}

@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import '../../css/chem.css';
-import {Fingerprint} from '../utils/chem-common';
 import { Subject } from 'rxjs';
+import { AVAILABLE_FPS } from '../constants';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
@@ -19,8 +19,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   limit: number;
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
-  fingerprintChoices = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
-    Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
+  fingerprintChoices = AVAILABLE_FPS;
   sizesMap: {[key: string]: {[key: string]: number}} = {
     'small': {height: 60, width: 120},
     'normal': {height: 100, width: 200},
