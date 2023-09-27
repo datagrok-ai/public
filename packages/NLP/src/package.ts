@@ -5,7 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemmColumn, getClosest, stemBuffer} from './stemming-tools';
+import {stemmColumn, getClosest, stemBuffer, getEmbeddings} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -219,4 +219,40 @@ export function similar(query: string): DG.Widget {
   const wgt = new DG.Widget(ui.divV(divElements));
 
   return wgt;
+}
+
+//top-menu: NLP | Compute Embeddings...
+//name: Compute Embeddings
+//input: dataframe table {caption: Table; category: Data}
+//input: column source {type: string; caption: Table; category: Data}
+//input: int components = 2 {caption: Components; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
+//input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
+//input: int neighbors = 4 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
+//input: double minDist = 0.001 {caption: Minimum distance; category: Hyperparameters} [The effective minimum distance between embedded points.]
+//input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
+//input: bool inNewView = true {caption: New view; category: Results} [Provide results in a new view?]
+//input: bool showScatter = true {caption: Scatter plot; category: Results} [Add a scatteplot with embeddings.]
+export function computeEmbds(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, 
+  neighbors: number, minDist: number, spread: number, newView: boolean, showScatter: boolean): void 
+{
+  const start = new Date().getTime();
+  const embds = getEmbeddings(table, source, components, epochs, neighbors, minDist, spread);
+  const finish = new Date().getTime();
+  console.log(`${table.name}:\n${components} components, ${epochs} epochs, ${neighbors} neibs, min_dist ${minDist}\nTime is ${finish - start}`);
+
+  if (newView) {
+    const res = DG.DataFrame.fromColumns([source, ...embds]);
+    res.name = `${table.name}: ${components}D, ${epochs}E, ${neighbors}N, MD ${minDist}`;
+    const view = grok.shell.addTableView(res);
+
+    if (showScatter)
+      view.addViewer(DG.VIEWER.SCATTER_PLOT);
+  }
+  else {
+    embds.forEach(col => table.columns.add(col));
+    const view = grok.shell.getTableView(table.name);
+    
+    if (showScatter)
+      view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: embds[0].name, y: embds[embds.length - 1].name});
+  }
 }

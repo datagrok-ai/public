@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {stemmer} from 'stemmer';
+import { UMAP } from 'umap-js';
 
 type StemBuffer = {
   dfName: string | undefined,
@@ -17,6 +18,8 @@ export var stemBuffer: StemBuffer = {
   colName: undefined,
   indices: undefined
 };
+
+const INFTY = 100000;
 
 const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", 
   "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", 
@@ -140,4 +143,93 @@ export function getClosest(indices: DG.Column, idx: number, count: number): Uint
   }
   
   return closestInds.filter(i => i !== idx);
+}
+
+function distaFn(arr1: Uint16Array, arr2: Uint16Array): number {
+  const len1 = arr1.length;
+  const len2 = arr2.length;
+
+  if ((len1 === 0) || (len2 === 0))
+    return INFTY;
+
+  const common = commonItemsCount(arr1, arr2);
+
+  if (common === 0)
+    return INFTY;
+
+  return ((len1 < len2) ? len1 : len2) / common;
+}
+
+function distFn(arr1: number[], arr2: number[]): number {
+  const idx1 = arr1[0];
+  const idx2 = arr2[0];
+
+  if (idx1 === idx2)
+    return 0;
+
+  const ref1 = stemBuffer.indices?.get(idx1) as Uint16Array;
+  const ref2 = stemBuffer.indices?.get(idx2) as Uint16Array;
+
+  const len1 = ref1.length;
+  const len2 = ref2.length;  
+
+  if ((len1 === 0) || (len2 === 0))
+    return INFTY;
+
+  const common = commonItemsCount(ref1, ref2);  
+
+  if (common < 2)
+  //if (common === 0)
+    return INFTY;
+
+  /*console.log(ref1);
+  console.log(ref2);
+  console.log(common);
+  console.log(((len1 < len2) ? len1 : len2) / common - 1);
+
+  alert('In custom metric func!');
+  throw new Error('Controled exit!');*/
+
+  return ((len1 < len2) ? len1 : len2) / common - 1;
+}
+
+/** Get embeddings. */
+export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
+  if ((stemBuffer.dfName !== table.name) || (stemBuffer.colName !== source.name)) {
+    console.log('Getting buffer...');
+
+    stemBuffer.dfName = table.name;
+    stemBuffer.colName = source.name;
+    stemBuffer.indices = stemmColumn(source, 1).indices;
+  }
+  else
+    console.log('We have already an appropriate buffer!');  
+
+  const DIM = 10;
+
+  const data = [...Array(stemBuffer.indices?.length).keys()].map(i => Array(DIM).fill(i));
+
+  //console.log(data);
+
+  const umap = new UMAP({
+    nComponents: components,
+    nEpochs: epochs,
+    nNeighbors: neighbors,
+    minDist: minDist,
+    spread: spread,
+// @ts-ignore
+    distanceFn: distFn,
+  });
+
+  const embeddings = umap.fit(data!);
+
+  const rowCount = embeddings.length;
+  const range = [...Array(components).keys()];
+  const umapColumnsData = range.map(_ => new Float32Array(rowCount));  
+
+  for (let i = 0; i < rowCount; ++i)
+    for (let j = 0; j < components; ++j)
+      umapColumnsData[j][i] = embeddings[i][j];  
+
+  return range.map(i => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
 }
