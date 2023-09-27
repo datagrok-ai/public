@@ -279,13 +279,13 @@ export class UnitsHandler {
    * @return {string[]} Array of wrappers
    */
   public getHelmWrappers(): string[] {
-    const prefix = (this.isDna()) ? 'DNA1{' :
+    const prefix = (this.isDna()) ? 'RNA1{' :
       (this.isRna() || this.isHelmCompatible()) ? 'RNA1{' : 'PEPTIDE1{';
 
     const postfix = '}$$$$';
-    const leftWrapper = (this.isDna()) ? 'D(' :
-      (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
-    const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
+    const leftWrapper = (this.isDna()) ? 'd(' :
+      (this.isRna()) ? 'r(' : '';
+    const rightWrapper = (this.isDna() || this.isRna()) ? ')p' : '';
     return [prefix, leftWrapper, rightWrapper, postfix];
   }
 
