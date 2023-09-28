@@ -119,6 +119,18 @@ function disablePaletteIcon(paletteIcon: HTMLElement) {
   paletteIcon.classList.toggle('color-is-not-set', true);
 }
 
+function removeElementByMolecule(array: IColoredScaffold[], moleculeToRemove: string) {
+  const indexToRemove = array.findIndex((item) => item.molecule === moleculeToRemove);
+  if (indexToRemove !== -1)
+    array.splice(indexToRemove, 1);
+}
+
+function removeElementByColor(array: IColoredScaffold[], colorToRemove: string) {
+  const indexToRemove = array.findIndex((item) => item.color === colorToRemove);
+  if (indexToRemove !== -1)
+    array.splice(indexToRemove, 1);
+}
+
 function filterNodesIter(rootGroup: TreeViewGroup, recordCount : number, hitsThresh: number) {
   if (hitsThresh < 0)
     hitsThresh = 0;
@@ -726,12 +738,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       (this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx]);
   }
 
-  removeElement(array: IColoredScaffold[], itemToRemove: string) {
-    const indexToRemove = array.findIndex((item) => item.molecule === itemToRemove);
-    if (indexToRemove !== -1)
-      array.splice(indexToRemove, 1);
-  }
-
   private openEditSketcher(group: TreeViewGroup) {
     if (this.wrapper !== null) {
       this.wrapper.node = group;
@@ -750,7 +756,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         if (finalColor) {
           const substructure = chosenColor ? molStrSketcher : this.getParentSmilesIterative(group);
           molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer, false, finalColor, substructure);
-          this.removeElement(this.colorCodedScaffolds, groupValue.smiles);
+          removeElementByMolecule(this.colorCodedScaffolds, groupValue.smiles);
           this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {molecule: substructure, color: finalColor};
           if (group.children)
             thisViewer.setColorToChildren(group.children, finalColor!, molStrSketcher);
@@ -920,7 +926,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.bitset = null;
     if (this.molColumn !== null) {
-      this.colorCodedScaffolds = this.colorCodedScaffolds.filter((item) => item.color !== '');
+      removeElementByColor(this.colorCodedScaffolds, '');
       this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
     }
 
@@ -980,7 +986,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let isNot = false;
     
     this.checkedScaffolds = [];
-    this.colorCodedScaffolds = this.colorCodedScaffolds.filter((value) => value.color !== '');
+    removeElementByColor(this.colorCodedScaffolds, '');
     for (let n = 0; n < checkedNodes.length; ++n) { //going through all checked nodes, perform filtering and highlight
       const nodeBitset = value(checkedNodes[n]).bitset;
       const molStr = value(checkedNodes[n]).smiles;
@@ -989,7 +995,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         try {
           molArom = _rdKitModule.get_qmol(processUnits(molStr));
           if (value(checkedNodes[n]).chosenColor) {
-            this.removeElement(this.colorCodedScaffolds, molStr);
+            removeElementByMolecule(this.colorCodedScaffolds, molStr);
             this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {
               molecule: molStr,//isSmarts(molStr) ? molStr : molArom.get_molblock(),
               color: (value(checkedNodes[n]).chosenColor) ?? ''
@@ -1038,15 +1044,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   highlightCanvas(group: DG.TreeViewGroup, color: string | null, smiles: string | null = null) {
     const canvas = group.root.querySelectorAll('.chem-canvas')[0];
     const molHostDiv = renderMolecule(
-      value(group).smiles,
-      this.sizesMap[this.size].width,
-      this.sizesMap[this.size].height,
-      undefined,
-      this,
-      false,
-      color,
-      smiles
-    );
+      value(group).smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this, false, color, smiles
+      );
     const coloredCanvas = molHostDiv.querySelectorAll('.chem-canvas')[0];
     canvas.replaceWith(coloredCanvas);
   }
@@ -1079,12 +1078,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     while (stack.length > 0) {
       const currentNode = stack.pop();
-
       if (!currentNode)
         continue;
 
       const parentNode = toJs(currentNode.parent);
-
       if (!parentNode || parentNode.value === null)
         continue;
 
@@ -1092,11 +1089,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const parentTreeNode = parentNode.value as ITreeNode;
 
       if (parentTreeNode.chosenColor === childParentColor)
-        return parentTreeNode.smiles;
-      
+        return parentTreeNode.smiles; 
       stack[stack.length] = parentNode;
     }
-
     return null;
   }
 
@@ -1176,15 +1171,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   
     const substr = this.getParentSmilesIterative(group);
     this.highlightCanvas(group, color!, substr);
-    const checkedLength = this.checkedScaffolds.length;
-    this.removeElement(this.checkedScaffolds, smiles);
-    if (checkedLength !== this.checkedScaffolds.length) {
-      this.removeElement(this.colorCodedScaffolds, smiles);
+    const index = this.checkedScaffolds.findIndex((item) => item.molecule === smiles);
+    if (index !== -1) {
+      if (!substr)
+        removeElementByMolecule(this.checkedScaffolds, smiles);
+      removeElementByMolecule(this.colorCodedScaffolds, smiles);
       this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {molecule: smiles, color: ''};
     } else {
-      this.removeElement(this.colorCodedScaffolds, smiles);
+      removeElementByMolecule(this.colorCodedScaffolds, smiles);
     }
-    
+
     this.updateTag();
     this.removeColorFromChildren(group.children, chosenColor, color!, substr);
   }
@@ -1194,7 +1190,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.highlightCanvas(group, chosenColor, smiles);
 
     if (this.colorCodedScaffolds.length > 0)
-      this.removeElement(this.colorCodedScaffolds, smiles);
+      removeElementByMolecule(this.colorCodedScaffolds, smiles);
     this.colorCodedScaffolds[this.colorCodedScaffolds.length] = { molecule: smiles, color: chosenColor };
     this.updateTag();
     this.setColorToChildren(group.children, chosenColor, smiles);
@@ -1206,7 +1202,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const checkedString = JSON.stringify(this.checkedScaffolds);
     if (this.colorCodedScaffolds.length > 0 && this.checkedScaffolds.length > 0) {
       updatedTag = checkedString.slice(0, -1) + ',' + colorCodedString.slice(1);
-    } else if (colorCodedString.length > 0) {
+    } else if (this.colorCodedScaffolds.length > 0) {
       updatedTag = colorCodedString;
     } else {
       updatedTag = checkedString;
