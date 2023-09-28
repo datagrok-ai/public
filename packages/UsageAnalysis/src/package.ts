@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {UsageWidget} from './usage-widget';
+import {UsageWidget} from './widgets/usage-widget';
+import {PackageUsageWidget} from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import {ViewHandler} from './view-handler';
 
@@ -21,6 +22,13 @@ export function usageAnalysisApp(): void {
 //test: usageWidget()
 export function usageWidget(): DG.Widget {
   return new UsageWidget();
+}
+
+//name: packageUsageWidget
+//input: object package
+//output: widget result
+export function packageUsageWidget(pack: DG.Package): DG.Widget {
+  return new PackageUsageWidget(pack);
 }
 
 //name: Create JIRA ticket

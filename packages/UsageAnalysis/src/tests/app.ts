@@ -5,8 +5,8 @@ import {before, after, category, test, expect, awaitCheck} from '@datagrok-libra
 import {ViewHandler} from '../view-handler';
 
 category('App', () => {
-  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log'];
-  const num = [4, 2, 2, 4, 3];
+  const tabs = ['Overview', 'Packages', 'Functions', 'Events', 'Log', 'Tests'];
+  const num = [4, 2, 2, 4, 3, 5];
 
   before(async () => {
     ViewHandler.getInstance();
@@ -19,7 +19,7 @@ category('App', () => {
     expect(grok.shell.v.name == 'Usage Analysis', true, 'cannot find Usage Analysis view');
   });
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     test(tabs[i], async () => {
       ViewHandler.changeTab(tabs[i]);
       await awaitCheck(() => document.querySelectorAll('canvas').length === num[i],
