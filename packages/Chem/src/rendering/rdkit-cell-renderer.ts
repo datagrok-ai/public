@@ -366,7 +366,7 @@ M  END
   }
 
   getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
-    const filter = this._initScaffoldString(colTemp, FILTER_SCAFFOLD_TAG); //expected molBlock
+    const filter = this._initScaffoldArray(colTemp, FILTER_SCAFFOLD_TAG, true); //expected molBlock
     const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);

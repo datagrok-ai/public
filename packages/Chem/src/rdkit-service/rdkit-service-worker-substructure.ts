@@ -97,7 +97,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (cachedMol || this.addToCache(mol))
             isCached = true;
           if (mol) {
-            if (this.searchBySearchType(mol, queryMol, searchType, i) !== '{}')
+            if (this.searchBySearchType(mol, queryMol, searchType))
               matches.setFast(i, true);
           }
         } catch {
@@ -110,16 +110,20 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return matches.buffer;
   }
 
-  searchBySearchType(mol: RDMol, queryMol: RDMol, searchType: SubstructureSearchType, i: number): string {
+  searchBySearchType(mol: RDMol, queryMol: RDMol, searchType: SubstructureSearchType): boolean {
     switch (searchType) {
       case SubstructureSearchType.CONTAINS:
-        return mol.get_substruct_match(queryMol);
+        return mol.get_substruct_match(queryMol) !== '{}';
       case SubstructureSearchType.INCLUDED_IN:
-        return queryMol.get_substruct_match(mol);
+        return queryMol.get_substruct_match(mol) !== '{}';
+      case SubstructureSearchType.NOT_CONTAINS:
+          return mol.get_substruct_match(queryMol) == '{}';
+      case SubstructureSearchType.NOT_INCLUDED_IN:
+          return queryMol.get_substruct_match(mol) == '{}';
       case SubstructureSearchType.EXACT_MATCH:
         const match1 = mol.get_substruct_match(queryMol);
         const match2 = queryMol.get_substruct_match(mol);
-        return match1 !== '{}' && match2 !== '{}' ? match1 : '{}'
+        return match1 !== '{}' && match2 !== '{}';
       default:
         throw Error('Unknown search type: ' + searchType);
     }

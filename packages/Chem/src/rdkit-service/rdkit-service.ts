@@ -299,16 +299,20 @@ export class RdKitService {
       let finalBitArray = new BitArray(batch.length, false);
       if (searchType !== SubstructureSearchType.IS_SIMILAR) {
         // *********** FILTERING using fingerprints
+        const superStructSearch = !!(searchType === SubstructureSearchType.INCLUDED_IN || searchType === SubstructureSearchType.NOT_INCLUDED_IN);
+        const inverseSearch = !!(searchType === SubstructureSearchType.NOT_CONTAINS || searchType === SubstructureSearchType.NOT_INCLUDED_IN);
         const patternFpUint8Length = 256;
-        const patternFpFilterBitArray = new BitArray(batch.length, false);
+        const patternFpFilterBitArray = new BitArray(batch.length, inverseSearch ? true : false);
+        checkEl:
         for (let i = 0; i < batch.length; ++i) {
           if (fpResult.fps[i]) {
             for (let j = 0; j < patternFpUint8Length; ++j) {
-              const bitToCompare = searchType === SubstructureSearchType.INCLUDED_IN ? fpResult.fps[i]![j] : fpRdKit[j];
-              if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare)
-                continue;
+              const bitToCompare = superStructSearch ? fpResult.fps[i]![j] : fpRdKit[j];
+              if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare) {
+                  continue checkEl;
+              }
             }
-            patternFpFilterBitArray.setFast(i, true);
+            patternFpFilterBitArray.setFast(i, inverseSearch ? false : true);
           }
         }
         const filteredMolecules = Array<string>(patternFpFilterBitArray.trueCount());

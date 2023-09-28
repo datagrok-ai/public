@@ -62,7 +62,8 @@ export class SubstructureFilter extends DG.Filter {
   similarityCutOff = 0.8;
   fp: Fingerprint = Fingerprint.Morgan;
   searchTypes = [SubstructureSearchType.CONTAINS, SubstructureSearchType.INCLUDED_IN,
-    SubstructureSearchType.EXACT_MATCH, SubstructureSearchType.IS_SIMILAR];
+    SubstructureSearchType.EXACT_MATCH, SubstructureSearchType.IS_SIMILAR,
+    SubstructureSearchType.NOT_CONTAINS, SubstructureSearchType.NOT_INCLUDED_IN];
   fpsTypes = AVAILABLE_FPS;
   searchTypeInput: DG.InputBase;
   similarityCutOffInput: DG.InputBase;
@@ -382,17 +383,22 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   updateFilterUiOnSketcherChanged(newMolFile: string){
+    this.sketcher.updateExtSketcherContent();
     if (this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE) {
       if (!!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile)){
         this.removeChildIfExists(this.root, this.emptySketcherDiv, 'empty-filter');
         this.root.appendChild(this.sketcherDiv);
         this.sketcher.root.appendChild(this.searchTypeButton);
+        if (this.searchType !== SubstructureSearchType.IS_SIMILAR || !this.showOptions)
+          this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
       }
       else {
         this.emptySketcherDiv.append(this.searchTypeInput.root);
         this.emptySketcherDiv.append(this.sketcherDiv);
         this.root.append(this.emptySketcherDiv);
         this.removeChildIfExists(this.sketcher.root, this.searchTypeButton, 'search-type-icon');
+        if (this.searchType !== SubstructureSearchType.IS_SIMILAR)
+          this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
       }
     }
   }
