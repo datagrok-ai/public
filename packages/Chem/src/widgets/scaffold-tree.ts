@@ -1022,18 +1022,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   private async filterByStruct(strMol: string) {
     if (this.molColumn != null && strMol !== null) {
-/*       const mol = getMol(strMol);
-      if (mol !== null) {
-        const molFile = mol.get_molblock();
-        mol.delete();
-        const prev = this.molCol?.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG) ?? '[]';
-          const prevObj: IColoredScaffold[] = JSON.parse(prev);
-          const currentObj = prevObj.concat({
-            molecule: molFile,
-            color: `#24e5d8`
-          });
-          this.molColumn.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(currentObj));
-      } */
       const bitset = await handleMalformedStructures(this.molColumn, strMol);
       if (this.bitset === null)
         this.bitset = bitset;
@@ -1047,13 +1035,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
-  /**
-  * Highlights a canvas within a TreeViewGroup by replacing it with a colored version.
-  * 
-  * @param {DG.TreeViewGroup} group - The TreeViewGroup containing the canvas to be highlighted.
-  * @param {string} color - The color to be applied to the canvas.
-  * @param {string} smiles - The SMILES (Simplified Molecular Input Line Entry System) representation of the molecule.
-  */
   highlightCanvas(group: DG.TreeViewGroup, color: string | null, smiles: string | null = null) {
     const canvas = group.root.querySelectorAll('.chem-canvas')[0];
     const molHostDiv = renderMolecule(
@@ -1070,12 +1051,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     canvas.replaceWith(coloredCanvas);
   }
 
-  /**
- * Makes a color icon element active by removing the 'fal' class, adding the 'fas' class, and setting a new color.
- * 
- * @param {HTMLElement} colorIcon - The color icon element to be made active.
- * @param {string | null} color - The new color to be applied to the color icon.
- */
   makeColorIconActive(group: DG.TreeViewGroup, color: string | null) {
     const colorIcon = getColorIcon(group);
     const paletteIcon = getPaletteIcon(group);
@@ -1086,11 +1061,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     enableColorIcon(colorIcon!, true);
   }
 
-  /**
- * Makes a color icon element inactive by removing the 'fas' class and adding the 'fal' class.
- * 
- * @param {HTMLElement} colorIcon - The color icon element to be made inactive.
- */
   makeColorIconInactive(group: DG.TreeViewGroup) {
     const paletteIcon = getPaletteIcon(group);
     const colorIcon = getColorIcon(group);
@@ -1100,13 +1070,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     disablePaletteIcon(paletteIcon!);
   }
 
-  /**
-     * Iteratively searches for the nearest parent node with a matching color
-     * and returns its SMILES value.
-     * 
-     * @param group - The TreeViewGroup or TreeViewNode to start the search from.
-     * @returns The SMILES value of the nearest matching parent node or null if none is found.
-     */
   getParentSmilesIterative(group: DG.TreeViewGroup | DG.TreeViewNode): any {
     if (!group)
       return null;
@@ -1213,17 +1176,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   
     const substr = this.getParentSmilesIterative(group);
     this.highlightCanvas(group, color!, substr);
-    const indexOfChecked = this.checkedScaffolds.findIndex((item: IColoredScaffold) => item.molecule === smiles);
-    if (indexOfChecked !== -1) {
-      this.removeElement(this.checkedScaffolds, smiles);
+    const checkedLength = this.checkedScaffolds.length;
+    this.removeElement(this.checkedScaffolds, smiles);
+    if (checkedLength !== this.checkedScaffolds.length) {
       this.removeElement(this.colorCodedScaffolds, smiles);
-      //this.checkedScaffolds = this.checkedScaffolds.filter((item) => item.molecule != smiles);
-      //this.colorCodedScaffolds = this.colorCodedScaffolds.filter((value) => value.molecule !== smiles);
       this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {molecule: smiles, color: ''};
     } else {
       this.removeElement(this.colorCodedScaffolds, smiles);
-      //this.colorCodedScaffolds = this.colorCodedScaffolds.filter((value) => value.molecule !== smiles);
     }
+    
     this.updateTag();
     this.removeColorFromChildren(group.children, chosenColor, color!, substr);
   }
