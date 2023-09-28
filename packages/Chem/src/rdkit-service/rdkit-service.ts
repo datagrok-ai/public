@@ -244,7 +244,7 @@ export class RdKitService {
    * */
   async searchSubstructureWithFps(query: string, queryMolBlockFailover: string, result: SubstructureSearchWithFpResult,
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
-    searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan, simScoreCol?: DG.Column) {
+    searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan) {
     const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, getRdKitModule()).mol :
       getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
@@ -340,7 +340,6 @@ export class RdKitService {
               const simScore = tanimotoSimilarity(rdKitFingerprintToBitArray(fpResult.fps[i]!)!, rdKitFingerprintToBitArray(fpRdKit!)!);
               if (simScore >= simCutOff) {
                 finalBitArray.setBit(i, true);
-                simScoreCol?.set(batchStartIdx + i, simScore);
               }
             }
           }

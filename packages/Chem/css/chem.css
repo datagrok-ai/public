@@ -433,7 +433,11 @@
 }
 
 .chem-filter-fp-editor {
-  width: 90px;
+  width: 82px;
+}
+
+.chem-filter-fp-label {
+  margin-right: 5px!important;
 }
 
 .chem-filter-sim-cutoff-label {
@@ -442,5 +446,5 @@
 }
 
 .chem-filter-sim-cutoff-editor {
-  width: 202px;
+  width: 94px;
 }

@@ -249,7 +249,7 @@ before returning (required for compatibility)
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false,
   awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOff = 0.8,
-  fp = Fingerprint.Morgan, simScoreCol?: DG.Column): Promise<BitArray> {
+  fp = Fingerprint.Morgan): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[searchKey] = currentSearch;
@@ -303,7 +303,7 @@ export async function chemSubstructureSearchLibrary(
     };
     const subFuncs = await rdKitService.
       searchSubstructureWithFps(molString, molBlockFailover, result, updateFilterFunc,
-        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp, simScoreCol);
+        molStringsColumn.toList(), !columnIsCanonicalSmiles, searchType, similarityCutOff, fp);
 
     const saveProcessedColumns = () => {
       try {
