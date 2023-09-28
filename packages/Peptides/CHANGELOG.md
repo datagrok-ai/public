@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.13.4 (WIP)
+## 1.14.0 (2023-09-28)
 
 ### Features
 
