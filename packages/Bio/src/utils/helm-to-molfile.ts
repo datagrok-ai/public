@@ -102,10 +102,12 @@ class MolfileWrapper {
     const bondCount = parseInt(lines[countsLineIdx].substring(bondCountIdx.begin, bondCountIdx.end));
     this.atomLines = lines.slice(atomBlockIdx, atomBlockIdx + atomCount);
     this.bondLines = lines.slice(atomBlockIdx + atomCount, atomBlockIdx + atomCount + bondCount);
+    this.rgpIdToAtomicIdxMap = this.getRGroupIdToAtomicIdxMap();
   }
 
   atomLines: string[];
   bondLines: string[];
+  private rgpIdToAtomicIdxMap: {[key: number]: number} = {};
 
   shiftCoordinates(shift: {x: number, y: number}): void {
     this.atomLines = this.atomLines.map((line: string) => {
@@ -129,18 +131,6 @@ class MolfileWrapper {
     });
   }
 
-  private getRGroupAtomicIndices(): number[] {
-    return (MolfileHandler.getInstance(this.molfileV2K))
-      .atomTypes.map((atomType, idx) => {
-        if (atomType === 'R#')
-          return idx;
-      }).filter((idx) => idx !== undefined) as number[];
-  }
-
-  /** Get R-group ids from Atom Alias block and RGP block  */
-  // getRGroupIndexById(id: number): number {
-  // }
-
   shiftBondNumbers(shift: number): void {
     this.bondLines = this.bondLines.map((line: string) => {
       const bond1 = parseInt(line.substring(0, 3));
@@ -154,6 +144,63 @@ class MolfileWrapper {
   getData(bondShift: number): {atomLines: string[], bondLines: string[]} {
     this.shiftBondNumbers(bondShift);
     return {atomLines: this.atomLines, bondLines: this.bondLines};
+  }
+
+  private getRGroupAtomicIndices(): number[] {
+    return (MolfileHandler.getInstance(this.molfileV2K))
+      .atomTypes.map((atomType, idx) => {
+        if (atomType === 'R#')
+          return idx;
+      }).filter((idx) => idx !== undefined) as number[];
+  }
+
+  private getRGroupIdToAtomicIdxMap(): {[key: number]: number} {
+    const rgroupLines = this.atomLines.filter((line: string) => line.startsWith('M  RGP'));
+
+    const map: {[key: number]: number} = {};
+    rgroupLines.forEach((line: string) => {
+      const indices = line.split(/\s+/).filter((item) => item)
+        .slice(3).map((item) => parseInt(item));
+      const atomIdxToRgpIdxList = new Array<[number, number]>(indices.length / 2);
+      for (let i = 0; i < indices.length; i += 2)
+        atomIdxToRgpIdxList[i / 2] = [indices[i], indices[i + 1]];
+      const mapPart = Object.fromEntries(atomIdxToRgpIdxList);
+      Object.assign(map, mapPart);
+    });
+
+    const rGroupAtomicIndices = this.getRGroupAtomicIndices();
+    rGroupAtomicIndices.forEach((atomicIdx: number) => {
+      if (!map[atomicIdx])
+        throw new Error(`Cannot find RGroup id for atom ${atomicIdx}`);
+    });
+
+    return map;
+  }
+
+  getRGroupCoordinatesById(rgroupId: number): {x: number, y: number} {
+    const atomicIdx = this.rgpIdToAtomicIdxMap[rgroupId];
+    const line = this.atomLines[atomicIdx];
+    const x = parseFloat(line.substring(0, 10));
+    const y = parseFloat(line.substring(10, 20));
+    return {x, y};
+  }
+
+  getRGroupAtomicIdxById(rgroupId: number): number {
+    return this.rgpIdToAtomicIdxMap[rgroupId];
+  }
+
+  /** find idx of the atom attached to the specified Rgroup  */
+  getAttachmentAtomIdxByRGroup(rgroupId: number): number {
+    const rGroupAtomicIdx = this.getRGroupAtomicIdxById(rgroupId);
+    const molfileHandler = MolfileHandler.getInstance(this.molfileV2K);
+    const allBondedPairs = molfileHandler.pairsOfBondedAtoms;
+    const bondedPairWithRGP = allBondedPairs.find((pair) => pair.includes(rGroupAtomicIdx));
+    if (!bondedPairWithRGP)
+      throw new Error(`Cannot find bonded pair with RGP ${rgroupId}`);
+    const attachmentIdx = bondedPairWithRGP.find((idx) => idx !== rGroupAtomicIdx);
+    if (!attachmentIdx)
+      throw new Error(`Cannot find attachment atom for RGP ${rgroupId}`);
+    return attachmentIdx;
   }
 }
 
