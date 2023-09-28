@@ -115,25 +115,21 @@ export class RichFunctionView extends FunctionView {
         return fieldValidations$.pipe(
           tap((payload) => this.setValidationPending(payload.field)),
           switchMap((payload) => {
-            return of(null).pipe(
-              // run revalidations immediately
-              payload.isRevalidation ? identity : delay(VALIDATION_DEBOUNCE_TIME),
-              mergeMap(() => {
-                const controller = new AbortController();
-                const signal = controller.signal;
-                let done = false;
-                return new Observable<Record<string, ValidationResult | undefined>>((observer) => {
-                  const sub = from(this.runValidation({...payload}, signal)).subscribe((val) => {
-                    done = true;
-                    observer.next(val);
-                  });
-                  return () => {
-                    if (!done)
-                      controller.abort();
-                    sub.unsubscribe();
-                  };
-                });
-              }),
+            const controller = new AbortController();
+            const signal = controller.signal;
+            let done = false;
+            const obs$ = new Observable<Record<string, ValidationResult | undefined>>((observer) => {
+              const sub = from(this.runValidation({...payload}, signal)).subscribe((val) => {
+                done = true;
+                observer.next(val);
+              });
+              return () => {
+                if (!done)
+                  controller.abort();
+                sub.unsubscribe();
+              };
+            });
+            return obs$.pipe(
               tap((results) => {
                 this.setValidationResults(results);
                 this.runRevalidations(payload, results);
@@ -149,7 +145,7 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(validationSub);
 
-    // waiting for validation after enter is pressed
+    // waiting for debounce and validation after enter is pressed
     const runSub = combineLatest([
       this.runRequests.pipe(
         switchMap(() => of(false).pipe(
@@ -158,11 +154,8 @@ export class RichFunctionView extends FunctionView {
         ))),
       this.validationUpdates.pipe(debounceTime(0)),
     ]).pipe(
-      filter(([needToRun]) => {
-        if (needToRun)
-          return this.isRunnable();
-        return false;
-      })).subscribe(() => this.doRun());
+      filter(([needToRun]) => needToRun && this.isRunnable())
+    ).subscribe(() => this.doRun());
     this.subs.push(runSub);
 
     // always run validations on start
@@ -253,7 +246,7 @@ export class RichFunctionView extends FunctionView {
     }));
   }
 
-  private keepInputs() {
+  private keepOutput() {
     return this.func?.options['keepOutput'] === 'true';
   }
 
@@ -930,7 +923,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    const sub = getObservable(t.onInput.bind(t)).subscribe(() => {
+    const sub = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
 
@@ -968,7 +961,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal) {
-    const inputName = payload ? payload.field : undefined;
+    const inputName = payload.field;
     const inputNames = this.getValidatedNames(inputName);
 
     const validationItems = await Promise.all(inputNames.map(async (name) => {
@@ -1055,7 +1048,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private hideOutdatedOutput() {
-    if (this.keepInputs())
+    if (this.keepOutput())
       return;
     this.outputsTabsElem.panes
       .filter((tab) => Object.keys(this.categoryToDfParamMap.outputs).includes(tab.name))

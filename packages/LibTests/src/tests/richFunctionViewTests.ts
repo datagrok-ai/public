@@ -83,7 +83,7 @@ category('RichFunctionView Inputs', async () => {
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(100);
+    await delay(300);
     await view.doRun();
     const expected = {
       'inputs': [
@@ -194,7 +194,7 @@ category('RichFunctionView Inputs', async () => {
       const element = (input as any).input;
       element.dispatchEvent(new Event('input', {bubbles: true}));
     }
-    await delay(100);
+    await delay(300);
     await view.doRun();
     const expected = {
       'inputs': [
@@ -268,7 +268,7 @@ category('RichFunctionView Inputs', async () => {
     inputsMap['data'].value = inputValues['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValues['df']);
-    await delay(100);
+    await delay(300);
     await view.doRun();
     expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
@@ -322,7 +322,7 @@ category('RichFunctionView Inputs', async () => {
     inputsMap['data'].value = inputValuesPre['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValuesPre['df']);
-    await delay(100);
+    await delay(300);
     await view.doRun();
     const inputValues: Record<string, any> = {
       df: DG.DataFrame.fromColumns([
@@ -333,7 +333,7 @@ category('RichFunctionView Inputs', async () => {
     inputsMap['data'].value = inputValues['data'];
     // TODO: test df input, not rly used rn
     view.funcCall.setParamValue('df', inputValues['df']);
-    await delay(100);
+    await delay(300);
     await view.doRun();
     expectDeepEqual(getFuncCallIO(view.funcCall), applyTransformations(fc1), {prefix: 'funcCall'});
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
