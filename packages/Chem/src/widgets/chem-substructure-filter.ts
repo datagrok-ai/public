@@ -19,6 +19,7 @@ import {AVAILABLE_FPS, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, S
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
 import { Fingerprint } from '../utils/chem-common';
+import $ from 'cash-dom';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
@@ -66,8 +67,13 @@ export class SubstructureFilter extends DG.Filter {
   searchTypeInput: DG.InputBase;
   similarityCutOffInput: DG.InputBase;
   fpInput: DG.InputBase;
-  simOptionsDiv = ui.divH([], {style: {marginBottom: '3px', gap: '5px'}});
+  similarityOptionsDiv = ui.divH([], 'chem-filter-similarity-options');
+  sketcherDiv = ui.div('', {style: {position: 'relative', width: '100%'}})
+  emptySketcherDiv = ui.divH([], 'empty-filter');
+  searchTypeButton: HTMLButtonElement;
   searchTypeChanged = new Subject();
+  searchOptionsDiv = ui.div('', 'filter-search-options');
+  showOptions = false;
   
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -95,15 +101,7 @@ export class SubstructureFilter extends DG.Filter {
     this.calculating = false;
 
     this.searchTypeInput = ui.choiceInput('', this.searchType, this.searchTypes, () => { 
-      this.searchType = this.searchTypeInput.value;
-      if (this.searchType === SubstructureSearchType.IS_SIMILAR) {
-        this.simOptionsDiv.append(this.fpInput.root);
-        this.simOptionsDiv.append(this.similarityCutOffInput.root);
-      } else {
-        ui.empty(this.simOptionsDiv);
-      }
-      if (!this.syncEvent)
-        this.searchTypeChanged.next();
+      this.onSearchTypeChanged();
     });
 
     this.fpInput = ui.choiceInput('FP', this.fp, this.fpsTypes, () => {
@@ -136,10 +134,21 @@ export class SubstructureFilter extends DG.Filter {
 
     ui.tooltip.bind((this.similarityCutOffInput.root.getElementsByClassName('ui-input-slider')[0] as HTMLElement)!, 'Similarity cutoff');
 
-    this.root.appendChild(ui.div(this.searchTypeInput.root));
-    this.root.appendChild(this.simOptionsDiv);
-    this.root.appendChild(ui.div(this.sketcher.root, {style: {position: 'relative'}}));
+
+    this.searchTypeButton = ui.button(this.searchType, () => {
+      this.onShowOptionsChanged();
+    });
+    $(this.searchTypeButton).addClass('search-type-icon');
+
+    this.sketcherDiv.append(this.sketcher.root);
+    this.emptySketcherDiv.append(this.searchTypeInput.root);
+    this.emptySketcherDiv.append(this.sketcherDiv);
+    this.similarityOptionsDiv.append(this.fpInput.root);
+    this.similarityOptionsDiv.append(this.similarityCutOffInput.root);
+    this.root.appendChild(this.searchOptionsDiv);
+    this.root.appendChild(this.emptySketcherDiv);
     this.root.appendChild(this.loader);
+    this.root.classList.add('chem-filter');
   }
 
   get _debounceTime(): number {
@@ -161,7 +170,15 @@ export class SubstructureFilter extends DG.Filter {
         this.sketcher.root.append(this.errorDiv);
         return;
       });
-    }
+    };
+    //this fix is required for Marvin JS sync between filter panel and hamburger menu 
+    ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+      if (this.sketcher._mode === DG.chem.SKETCHER_MODE.INPLACE) {
+        this.root.appendChild(this.emptySketcherDiv);
+        this.root.append(this.sketcher.root);
+        this.searchOptionsDiv.append(this.searchTypeInput.root);
+      }
+    });
     super.attach(dataFrame);
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name ?? '';
@@ -304,6 +321,7 @@ export class SubstructureFilter extends DG.Filter {
   async _onSketchChanged(): Promise<void> {
     const newMolFile = this.sketcher.getMolFile();
     const newSmarts = await this.sketcher.getSmarts();
+    this.updateFilterUiOnSketcherChanged(newMolFile);
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
@@ -361,6 +379,49 @@ export class SubstructureFilter extends DG.Filter {
   updateExternalSketcher() {
     if (this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL)
       this.sketcher.updateExtSketcherContent(); //updating image in minimized sketcher panel
+  }
+
+  updateFilterUiOnSketcherChanged(newMolFile: string){
+    if (this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE) {
+      if (!!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile)){
+        this.removeChildIfExists(this.root, this.emptySketcherDiv, 'empty-filter');
+        this.root.appendChild(this.sketcherDiv);
+        this.sketcher.root.appendChild(this.searchTypeButton);
+      }
+      else {
+        this.emptySketcherDiv.append(this.searchTypeInput.root);
+        this.emptySketcherDiv.append(this.sketcherDiv);
+        this.root.append(this.emptySketcherDiv);
+        this.removeChildIfExists(this.sketcher.root, this.searchTypeButton, 'search-type-icon');
+      }
+    }
+  }
+
+  removeChildIfExists(parent: HTMLElement, child: HTMLElement, className: string) {
+    if (parent.getElementsByClassName(className).length)
+      parent.removeChild(child);
+  }
+
+  onSearchTypeChanged() {
+    this.searchType = this.searchTypeInput.value;
+    this.searchTypeButton.innerText = this.searchType;
+    if (this.searchType === SubstructureSearchType.IS_SIMILAR)
+      this.searchOptionsDiv.append(this.similarityOptionsDiv);
+    else
+      this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
+    if (!this.syncEvent)
+      this.searchTypeChanged.next();
+  }
+
+  onShowOptionsChanged() {
+    this.showOptions = !this.showOptions;
+    if (this.showOptions) {
+      this.root.prepend(this.searchOptionsDiv);
+      this.searchOptionsDiv.append(this.searchTypeInput.root);
+      if (this.searchType === SubstructureSearchType.IS_SIMILAR)
+        this.searchOptionsDiv.append(this.similarityOptionsDiv);
+    } else
+      this.removeChildIfExists(this.root, this.searchOptionsDiv, 'filter-search-options');
   }
 
   terminatePreviousSearch() {

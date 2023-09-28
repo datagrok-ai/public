@@ -448,3 +448,23 @@
 .chem-filter-sim-cutoff-editor {
   width: 94px;
 }
+
+.search-type-icon {
+  visibility: hidden;
+  font-size: 10px;
+  position: absolute;
+  top: 0px;
+}
+
+.chem-filter:hover .search-type-icon {
+  visibility: visible;
+}
+
+.empty-filter {
+  gap: 5px;
+}
+
+.chem-filter-similarity-options {
+  margin-bottom: 3px;
+  gap: 5px;
+}
