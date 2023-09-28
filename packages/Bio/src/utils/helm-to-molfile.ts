@@ -104,9 +104,11 @@ class MolfileWrapper {
     this.atomLines = lines.slice(atomBlockIdx, atomBlockIdx + atomCount);
     this.bondLines = lines.slice(atomBlockIdx + atomCount, atomBlockIdx + atomCount + bondCount);
 
-    this.rgpIdToAtomicIdxMap = this.getRGroupIdToAtomicIdxMap();
+    this.rgpIdToAtomicIdxMap = this.getRGroupIdToAtomicIdxMap(lines);
 
     this.shiftR1GroupToOrigin();
+    if (this.rgpIdToAtomicIdxMap[2])
+      this.alignR2AlongX();
   }
 
   private atomLines: string[];
@@ -117,9 +119,11 @@ class MolfileWrapper {
     this.atomLines = this.atomLines.map((line: string) => {
       const x = parseFloat(line.substring(0, 10));
       const y = parseFloat(line.substring(10, 20));
-      const newX = (x + shift.x).toFixed(4);
-      const newY = (y + shift.y).toFixed(4);
-      const newLine = `${newX.toString().padStart(10, ' ')}${newY.toString().padStart(10, ' ')}${line.substring(20)}`;
+      const newX = x + shift.x;
+      const newY = y + shift.y;
+      if (isNaN(newX) || isNaN(newY))
+        throw new Error(`Cannot shift coordinates by ${shift.x}, ${shift.y}`);
+      const newLine = `${newX.toFixed(4).padStart(10, ' ')}${newY.toFixed(4).padStart(10, ' ')}${line.substring(20)}`;
       return newLine;
     });
   }
@@ -130,7 +134,9 @@ class MolfileWrapper {
       const y = parseFloat(line.substring(10, 20));
       const newX = x * Math.cos(angle) - y * Math.sin(angle);
       const newY = x * Math.sin(angle) + y * Math.cos(angle);
-      const newLine = line.replace(x.toString(), newX.toString()).replace(y.toString(), newY.toString());
+      if (isNaN(newX) || isNaN(newY))
+        throw new Error(`Cannot rotate coordinates by ${angle}`);
+      const newLine = `${newX.toFixed(4).padStart(10, ' ')}${newY.toFixed(4).padStart(10, ' ')}${line.substring(20)}`;
       return newLine;
     });
   }
@@ -165,8 +171,8 @@ class MolfileWrapper {
       }).filter((idx) => idx !== undefined) as number[];
   }
 
-  private getRGroupIdToAtomicIdxMap(): {[key: number]: number} {
-    const rgroupLines = this.molfileV2K.split('\n').filter((line: string) => line.startsWith('M  RGP'));
+  private getRGroupIdToAtomicIdxMap(lines: string[]): {[key: number]: number} {
+    const rgroupLines = lines.filter((line: string) => line.startsWith('M  RGP'));
 
     const map: {[key: number]: number} = {};
     rgroupLines.forEach((line: string) => {
@@ -177,6 +183,18 @@ class MolfileWrapper {
         atomIdxToRgpIdxList[i / 2] = [indices[i + 1], indices[i] - 1];
       const mapPart = Object.fromEntries(atomIdxToRgpIdxList);
       Object.assign(map, mapPart);
+    });
+
+    const atomAliasLinesIndices = lines.map((line: string, idx: number) => {
+      if (line.startsWith('A  '))
+        return idx;
+    }).filter((idx) => idx !== undefined) as number[];
+    const atomAliasLines = atomAliasLinesIndices.map((idx) => lines[idx]);
+    const atomAliasTextLines = atomAliasLinesIndices.map((idx) => lines[idx + 1]);
+    atomAliasLines.forEach((line: string, idx: number) => {
+      const rgpAtomIdx = parseInt(line.split(/\s+/)[1]) - 1;
+      const rgpId = parseInt(atomAliasTextLines[idx].substring(1));
+      map[rgpId] = rgpAtomIdx;
     });
 
     const rGroupAtomicIndices = this.getRGroupAtomicIndices();
@@ -204,10 +222,19 @@ class MolfileWrapper {
     return attachmentIdx;
   }
 
-  shiftR1GroupToOrigin(): void {
+  private shiftR1GroupToOrigin(): void {
     const r1Idx = this.getRGroupAtomicIdxById(1);
     const {x, y} = this.getAtomCoordinatesByIdx(r1Idx);
     this.shiftCoordinates({x: -x, y: -y});
+  }
+
+  private alignR2AlongX(): void {
+    const r2Coordinates = this.getAtomCoordinatesByIdx(this.getRGroupAtomicIdxById(2));
+    const tan = r2Coordinates.y / r2Coordinates.x;
+    const angle = Math.atan(tan);
+    if (isNaN(angle))
+      throw new Error(`Cannot calculate angle for R2 group`);
+    this.rotateCoordinates(-angle);
   }
 }
 
@@ -351,6 +378,7 @@ class PolymerWrapper {
     const newLineChar = '\n';
     const blockList = [molfileHeader, countsLine, atomLines.join(newLineChar), bondLines.join(newLineChar), molfileEnd];
     const molfile = blockList.join(newLineChar);
+    console.log('molfile:', molfile);
     return molfile;
   }
 }
