@@ -44,7 +44,6 @@ export class SubstructureFilter extends DG.Filter {
   onSketcherChangedSubs?: Subscription[] = [];
   active: boolean = true;
   syncEvent = false;
-  requestedFilter = false; // required for filters sync
   filterId: number;
   tableName: string = '';
   errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`,
@@ -260,15 +259,14 @@ export class SubstructureFilter extends DG.Filter {
 
   applyFilter(): void {
     // console.log(`in apply filter ${this.sketcher.getMolFile()}`)
-    if (this.dataFrame && this.bitset && !this.isDetached && this.requestedFilter) {
+    if (this.dataFrame && this.bitset && !this.isDetached) {
       this.dataFrame.filter.and(this.bitset);
-      this.dataFrame.rows.addFilterState(this.saveState());
-      this.column!.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{
-        molecule: this.currentMolfile,
-        isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
-      }]);
-      this.active = true;
-      this.requestedFilter = false;
+        this.dataFrame.rows.addFilterState(this.saveState());
+        this.column!.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{
+          molecule: this.currentMolfile,
+          isSuperstructure: this.searchType === SubstructureSearchType.INCLUDED_IN
+        }]);
+        this.active = true;
     }
   }
 
@@ -336,7 +334,6 @@ export class SubstructureFilter extends DG.Filter {
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
         molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
         tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
-      this.requestedFilter = true;
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${_convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
@@ -360,7 +357,6 @@ export class SubstructureFilter extends DG.Filter {
         this.batchResultObservable?.unsubscribe();
         this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
-          this.requestedFilter = true;
           this.dataFrame?.rows.requestFilter();
             this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
         });
