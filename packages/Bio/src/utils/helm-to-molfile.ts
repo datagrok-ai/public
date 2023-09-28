@@ -8,6 +8,9 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 
+const HELM_SECTION_SEPARATOR = '$';
+const HELM_ITEM_SEPARATOR = '|';
+
 export class HelmToMolfileConverter {
   constructor(private helmColumn: DG.Column<string>) {
     this.helmColumn = helmColumn;
@@ -35,17 +38,13 @@ export class HelmToMolfileConverter {
 
   private getPolymerMolfile(helm: string, polymerGraph: string): string {
     const meta = new MonomerMetadataManager(polymerGraph);
-    try {
-      const polymerWrapper = new PolymerWrapper(helm);
-      meta.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
-        const shift = meta.getMonomerShifts(monomerIdx);
-        polymerWrapper.addShiftedMonomer(monomerSymbol, shift);
-      });
-      const polymerMolfile = polymerWrapper.compileToMolfile();
-      return polymerMolfile;
-    } catch (err) {
-      return '';
-    }
+    const polymerWrapper = new PolymerWrapper(helm);
+    meta.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
+      const shift = meta.getMonomerShifts(monomerIdx);
+      polymerWrapper.addShiftedMonomer(monomerSymbol, shift);
+    });
+    const polymerMolfile = polymerWrapper.compileToMolfile();
+    return polymerMolfile;
   }
 }
 
@@ -69,11 +68,12 @@ class MonomerMetadataManager {
 
 class MonomerWrapper {
   constructor(
-    monomerSymbol:string,
+    monomerSymbol: string,
+    polymerType: HELM_POLYMER_TYPE,
     // id: {polymer: number, monomer: number}
   ) {
     const monomerLib = MonomerLibHelper.instance.getBioLib();
-    const monomer = monomerLib.getMonomer(HELM_POLYMER_TYPE.PEPTIDE, monomerSymbol);
+    const monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);
     this.molfileWrapper = new MolfileWrapper(monomer.molfile);
@@ -198,37 +198,23 @@ class SimplePolymer {
 }
 
 class ConnectionList {
-  constructor(private connectionList: string) { }
-}
-
-
-class Helm {
-  constructor(private helm: string) {
-    const helmSections = this.helm.split('$');
-    const separator = '|';
-    const simplePolymers = helmSections[0].split(separator);
-    console.log('simplePolymers:', simplePolymers);
-    this.simplePolymers = simplePolymers
-      .map((item) => new SimplePolymer(item));
-    this.connectionList = helmSections[1].split(separator);
-    // this.validateHelm();
+  constructor(private connectionList: string) {
+    const splitted = connectionList.split(HELM_ITEM_SEPARATOR);
+    splitted.forEach((connectionItem: string) => this.validateConnectionItem(connectionItem));
   }
 
-  private simplePolymers: SimplePolymer[];
-  private connectionList: string[];
-
-  private validateHelm(): void {
-    this.connectionList.forEach((connectionItem: string) => {
-      if (!connectionItem.match(/PEPTIDE[0-9]+,PEPTIDE[0-9]+,[0-9]+:R[0-9]+-[0-9]+:R[0-9]+/))
-        throw new Error(`Cannot parse connection item from ${connectionItem}`);
-    });
+  private validateConnectionItem(connectionItem: string): void {
+    const allowedType = `(${HELM_POLYMER_TYPE.PEPTIDE}|${HELM_POLYMER_TYPE.RNA})`;
+    const regex = new RegExp(`${allowedType}[0-9]+,${allowedType}[0-9]+,[0-9]+:R[0-9]+-[0-9]+:R[0-9]+`, 'g');
+    if (!connectionItem.match(regex))
+      throw new Error(`Cannot parse connection item from ${connectionItem}`);
   }
 
-  getConnectionMap() {
-    const connectionDataList = this.connectionList.map(
-      (connectionItem: string) => this.getConnectionData(connectionItem)
-    );
-  }
+  // getConnectionMap() {
+  //   const connectionDataList = this.connectionList.map(
+  //     (connectionItem: string) => this.getConnectionData(connectionItem)
+  //   );
+  // }
 
   private getConnectionData(connectionItem: string): {[key: string]: {[key: string]: number}} {
     const splitted = connectionItem.split(',');
@@ -248,20 +234,42 @@ class Helm {
   }
 }
 
+
+class Helm {
+  constructor(private helm: string) {
+    const helmSections = this.helm.split(HELM_SECTION_SEPARATOR);
+    const simplePolymers = helmSections[0].split(HELM_ITEM_SEPARATOR);
+    this.simplePolymers = simplePolymers
+      .map((item) => new SimplePolymer(item));
+    if (helmSections[1] !== '')
+      this.connectionList = new ConnectionList(helmSections[1]);
+  }
+
+  get polymerType(): HELM_POLYMER_TYPE {
+    const polymerType = this.simplePolymers[0].polymerType;
+    return polymerType as HELM_POLYMER_TYPE;
+  }
+
+  private simplePolymers: SimplePolymer[];
+  private connectionList?: ConnectionList;
+}
+
 class PolymerWrapper {
   constructor(helm: string) {
     this.helm = new Helm(helm);
+    this.polymerType = this.helm.polymerType;
   }
 
   private monomerWrappers: MonomerWrapper[] = [];
   private helm: Helm;
+  private polymerType: HELM_POLYMER_TYPE;
 
   addShiftedMonomer(
     monomerSymbol: string,
     shift: {x: number, y: number},
     // id: {polymer: number, monomer: number}
   ): void {
-    const monomerWrapper = new MonomerWrapper(monomerSymbol);
+    const monomerWrapper = new MonomerWrapper(monomerSymbol, this.polymerType);
     monomerWrapper.shiftCoordinates(shift);
     this.monomerWrappers.push(monomerWrapper);
   }
