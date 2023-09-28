@@ -85,14 +85,15 @@ class MonomerWrapper {
     this.molfileWrapper.shiftCoordinates(shift);
   }
 
-  getMolfileData(bondShift: number): {atomLines: string[], bondLines: string[]} {
-    return this.molfileWrapper.getData(bondShift);
+  getMolfileAtomAndBondLines(bondShift: number): {atomLines: string[], bondLines: string[]} {
+    return this.molfileWrapper.getAtomAndBondLines(bondShift);
   }
 }
 
 class MolfileWrapper {
   constructor(private molfileV2K: string) {
     this.molfileV2K = molfileV2K;
+
     const lines = this.molfileV2K.split('\n');
     const atomCountIdx = {begin: 0, end: 3};
     const bondCountIdx = {begin: 3, end: 6};
@@ -102,11 +103,14 @@ class MolfileWrapper {
     const bondCount = parseInt(lines[countsLineIdx].substring(bondCountIdx.begin, bondCountIdx.end));
     this.atomLines = lines.slice(atomBlockIdx, atomBlockIdx + atomCount);
     this.bondLines = lines.slice(atomBlockIdx + atomCount, atomBlockIdx + atomCount + bondCount);
+
     this.rgpIdToAtomicIdxMap = this.getRGroupIdToAtomicIdxMap();
+
+    this.shiftR1GroupToOrigin();
   }
 
-  atomLines: string[];
-  bondLines: string[];
+  private atomLines: string[];
+  private bondLines: string[];
   private rgpIdToAtomicIdxMap: {[key: number]: number} = {};
 
   shiftCoordinates(shift: {x: number, y: number}): void {
@@ -141,9 +145,16 @@ class MolfileWrapper {
     });
   }
 
-  getData(bondShift: number): {atomLines: string[], bondLines: string[]} {
+  getAtomAndBondLines(bondShift: number): {atomLines: string[], bondLines: string[]} {
     this.shiftBondNumbers(bondShift);
     return {atomLines: this.atomLines, bondLines: this.bondLines};
+  }
+
+  getAtomCoordinatesByIdx(atomicIdx: number): {x: number, y: number} {
+    const molfileHandler = MolfileHandler.getInstance(this.molfileV2K);
+    const x = molfileHandler.x[atomicIdx];
+    const y = molfileHandler.y[atomicIdx];
+    return {x, y};
   }
 
   private getRGroupAtomicIndices(): number[] {
@@ -155,7 +166,7 @@ class MolfileWrapper {
   }
 
   private getRGroupIdToAtomicIdxMap(): {[key: number]: number} {
-    const rgroupLines = this.atomLines.filter((line: string) => line.startsWith('M  RGP'));
+    const rgroupLines = this.molfileV2K.split('\n').filter((line: string) => line.startsWith('M  RGP'));
 
     const map: {[key: number]: number} = {};
     rgroupLines.forEach((line: string) => {
@@ -163,34 +174,24 @@ class MolfileWrapper {
         .slice(3).map((item) => parseInt(item));
       const atomIdxToRgpIdxList = new Array<[number, number]>(indices.length / 2);
       for (let i = 0; i < indices.length; i += 2)
-        atomIdxToRgpIdxList[i / 2] = [indices[i], indices[i + 1]];
+        atomIdxToRgpIdxList[i / 2] = [indices[i + 1], indices[i] - 1];
       const mapPart = Object.fromEntries(atomIdxToRgpIdxList);
       Object.assign(map, mapPart);
     });
 
     const rGroupAtomicIndices = this.getRGroupAtomicIndices();
-    rGroupAtomicIndices.forEach((atomicIdx: number) => {
-      if (!map[atomicIdx])
-        throw new Error(`Cannot find RGroup id for atom ${atomicIdx}`);
-    });
+    const unaccounted = rGroupAtomicIndices.filter((idx) => !Object.values(map).includes(idx));
+    if (unaccounted.length !== 0)
+      throw new Error(`Unaccounted R group indices: ${unaccounted}`);
 
     return map;
-  }
-
-  getRGroupCoordinatesById(rgroupId: number): {x: number, y: number} {
-    const atomicIdx = this.rgpIdToAtomicIdxMap[rgroupId];
-    const line = this.atomLines[atomicIdx];
-    const x = parseFloat(line.substring(0, 10));
-    const y = parseFloat(line.substring(10, 20));
-    return {x, y};
   }
 
   getRGroupAtomicIdxById(rgroupId: number): number {
     return this.rgpIdToAtomicIdxMap[rgroupId];
   }
 
-  /** find idx of the atom attached to the specified Rgroup  */
-  getAttachmentAtomIdxByRGroup(rgroupId: number): number {
+  getAttachmentAtomByRGroupId(rgroupId: number): number {
     const rGroupAtomicIdx = this.getRGroupAtomicIdxById(rgroupId);
     const molfileHandler = MolfileHandler.getInstance(this.molfileV2K);
     const allBondedPairs = molfileHandler.pairsOfBondedAtoms;
@@ -201,6 +202,12 @@ class MolfileWrapper {
     if (!attachmentIdx)
       throw new Error(`Cannot find attachment atom for RGP ${rgroupId}`);
     return attachmentIdx;
+  }
+
+  shiftR1GroupToOrigin(): void {
+    const r1Idx = this.getRGroupAtomicIdxById(1);
+    const {x, y} = this.getAtomCoordinatesByIdx(r1Idx);
+    this.shiftCoordinates({x: -x, y: -y});
   }
 }
 
@@ -327,7 +334,7 @@ class PolymerWrapper {
     const bondLines: string[] = [];
     this.monomerWrappers.forEach((monomerWrapper: MonomerWrapper) => {
       const bondShift = atomLines.length;
-      const {atomLines: atomLinesPart, bondLines: bondLinesPart} = monomerWrapper.getMolfileData(bondShift);
+      const {atomLines: atomLinesPart, bondLines: bondLinesPart} = monomerWrapper.getMolfileAtomAndBondLines(bondShift);
       atomLines.push(...atomLinesPart);
       bondLines.push(...bondLinesPart);
     });
