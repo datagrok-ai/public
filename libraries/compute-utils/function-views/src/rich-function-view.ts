@@ -7,16 +7,19 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable} from 'rxjs';
+import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest, identity} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
-import {startWith} from 'rxjs/operators';
+import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike} from '../../shared-components/src/FuncCallInput';
+import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase} from '../../shared-components/src/FuncCallInput';
+import {getValidationIcon} from '../../shared-components/src/validation';
 
 const FILE_INPUT_TYPE = 'file';
+const VALIDATION_DEBOUNCE_TIME = 250;
+const RUN_WAIT_TIME = 500;
 
 export type InputVariants = DG.InputBase | FuncCallInput;
 
@@ -54,17 +57,31 @@ const syncParams = {
   [SYNC_FIELD.INPUTS]: 'inputParams',
   [SYNC_FIELD.OUTPUTS]: 'outputParams',
 } as const;
+
+interface ValidationRequestPayload {
+  field?: string,
+  isRevalidation: boolean,
+  isNewOutput?: boolean,
+  context?: any,
+}
+
 export class RichFunctionView extends FunctionView {
-  // emitted when runButton disability should be checked
-  private checkDisability = new Subject();
+  private validationRequests = new Subject<ValidationRequestPayload>();
+  private validationUpdates = new Subject<null>();
+  private runRequests = new Subject<null>();
 
   // stores the running state
   private isRunning = new BehaviorSubject(false);
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
-  private inputsOverride: Record<string, FuncCallInput> = {};
-  private inputsMap: Record<string, FuncCallInput> = {};
+
+  private inputsOverride: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+  private inputsMap: Record<string, FuncCallInput | FuncCallInputValidated> = {};
+
+  // validators
+  private validators: Record<string, Validator> = {};
+  private validationState: Record<string, ValidationResult | undefined> = {};
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -76,7 +93,7 @@ export class RichFunctionView extends FunctionView {
 
   constructor(
     initValue: string | DG.FuncCall,
-    public options: { historyEnabled: boolean, isTabbed: boolean} =
+    public options: {historyEnabled: boolean, isTabbed: boolean} =
     {historyEnabled: true, isTabbed: false},
   ) {
     super(initValue, options);
@@ -84,10 +101,72 @@ export class RichFunctionView extends FunctionView {
 
   protected async onFuncCallReady() {
     await this.loadInputsOverrides();
+    await this.loadInputsValidators();
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
 
-    if (this.runningOnStart && this.isRunnable()) await this.doRun();
+
+    const fcReplacedSub = this.funcCallReplaced.subscribe(() => this.validationRequests.next({isRevalidation: false}));
+    this.subs.push(fcReplacedSub);
+
+    const validationSub = this.validationRequests.pipe(
+      groupBy((payload) => payload.field),
+      mergeMap((fieldValidations$) => {
+        return fieldValidations$.pipe(
+          tap((payload) => this.setValidationPending(payload.field)),
+          switchMap((payload) => {
+            const controller = new AbortController();
+            const signal = controller.signal;
+            let done = false;
+            const obs$ = new Observable<Record<string, ValidationResult | undefined>>((observer) => {
+              const sub = from(this.runValidation({...payload}, signal)).subscribe((val) => {
+                done = true;
+                observer.next(val);
+              });
+              return () => {
+                if (!done)
+                  controller.abort();
+                sub.unsubscribe();
+              };
+            });
+            return obs$.pipe(
+              tap((results) => {
+                this.setValidationResults(results);
+                this.runRevalidations(payload, results);
+                this.validationUpdates.next(null);
+              }),
+              mapTo(payload),
+            );
+          }));
+      }),
+    ).subscribe((payload) => {
+      if (payload.field && this.runningOnInput && this.isRunnable())
+        this.doRun();
+    });
+    this.subs.push(validationSub);
+
+    // waiting for debounce and validation after enter is pressed
+    const runSub = combineLatest([
+      this.runRequests.pipe(
+        switchMap(() => of(false).pipe(
+          delay(RUN_WAIT_TIME),
+          startWith(true),
+        ))),
+      this.validationUpdates.pipe(debounceTime(0)),
+    ]).pipe(
+      filter(([needToRun]) => needToRun && this.isRunnable())
+    ).subscribe(() => this.doRun());
+    this.subs.push(runSub);
+
+    // always run validations on start
+    const controller = new AbortController();
+    const results = await this.runValidation({isRevalidation: false}, controller.signal);
+    this.setValidationResults(results);
+    this.runRevalidations({isRevalidation: false}, results);
+    this.validationUpdates.next(null);
+
+    if (this.runningOnStart && this.isRunnable())
+      await this.doRun();
   }
 
   protected prevOpenedTab = null as DG.TabPane | null;
@@ -96,7 +175,8 @@ export class RichFunctionView extends FunctionView {
    * @param runFunc
    */
   public override onBeforeRun(): Promise<void> {
-    this.prevOpenedTab = Object.keys(this.categoryToDfParamMap.inputs).includes(this.outputsTabsElem.currentPane.name) ? null: this.outputsTabsElem.currentPane;
+    if (this.outputsTabsElem.currentPane)
+      this.prevOpenedTab = Object.keys(this.categoryToDfParamMap.inputs).includes(this.outputsTabsElem.currentPane.name) ? null: this.outputsTabsElem.currentPane;
 
     return Promise.resolve();
   }
@@ -133,11 +213,11 @@ export class RichFunctionView extends FunctionView {
 
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
-    const disabilitySub = this.checkDisability.subscribe(() => {
+    const validationSub = this.validationUpdates.pipe().subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
-    this.subs.push(disabilitySub);
+    this.subs.push(validationSub);
 
     return runButton;
   }
@@ -154,10 +234,26 @@ export class RichFunctionView extends FunctionView {
     }));
   }
 
+  public async loadInputsValidators() {
+    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    await Promise.all(inputParams.map(async (param) => {
+      if (param.property.options.validator) {
+        const func: DG.Func = await grok.functions.eval(param.property.options.validator);
+        const call = func.prepare({params: JSON.parse(param.property.options.validatorOptions || '{}')});
+        await call.call();
+        this.validators[param.name] = call.outputs.validator;
+      }
+    }));
+  }
+
+  private keepOutput() {
+    return this.func?.options['keepOutput'] === 'true';
+  }
+
   private getSaveButton(name = 'Save') {
     const saveButton = ui.bigButton(name, async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
 
-    this.isUploadMode.subscribe((newValue) => {
+    const uploadSub = this.isUploadMode.subscribe((newValue) => {
       this.buildRibbonPanels();
       if (this.runningOnInput) return;
 
@@ -166,6 +262,8 @@ export class RichFunctionView extends FunctionView {
       else
         $(saveButton).hide();
     });
+    this.subs.push(uploadSub);
+
     if (!this.runningOnInput || this.options.isTabbed) $(saveButton).hide();
 
     return saveButton;
@@ -174,7 +272,9 @@ export class RichFunctionView extends FunctionView {
   private getStandardButtons(): HTMLElement[] {
     const runButton = this.getRunButton();
     const runButtonWrapper = ui.div([runButton]);
-    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    ui.tooltip.bind(
+      runButtonWrapper,
+      () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : this.getValidationMessage()) : '');
     const saveButton = this.getSaveButton();
 
     if (this.runningOnInput) $(runButtonWrapper).hide();
@@ -276,11 +376,16 @@ export class RichFunctionView extends FunctionView {
     });
 
     const experimentalDataSwitch = ui.switchInput('', this.isUploadMode.value, (v: boolean) => this.isUploadMode.next(v));
-    this.isUploadMode.subscribe((newValue) => {
+    const uploadSub = this.isUploadMode.subscribe((newValue) => {
       experimentalDataSwitch.notify = false;
       experimentalDataSwitch.value = newValue,
       experimentalDataSwitch.notify = true;
+      if (newValue)
+        $(outputFormDiv).show();
+      else
+        $(outputFormDiv).hide();
     });
+    this.subs.push(uploadSub);
 
     const form = ui.divV([
       inputFormDiv,
@@ -290,13 +395,6 @@ export class RichFunctionView extends FunctionView {
       ]: [],
       controlsForm,
     ], 'ui-box rfv-form');
-
-    this.isUploadMode.subscribe((newValue) => {
-      if (newValue)
-        $(outputFormDiv).show();
-      else
-        $(outputFormDiv).hide();
-    });
 
     return {
       inputBlock: form,
@@ -390,42 +488,33 @@ export class RichFunctionView extends FunctionView {
         });
 
         const reactiveViewers = promisedViewers.map((promisedViewer, viewerIdx) => promisedViewer.then((loadedViewer) => {
-          const subscribeOnFcChanges = () => {
+          const updateViewerSource = async () => {
             const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
-            const updateViewerSource = async () => {
-              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+            this.showOutputTabsElem();
 
-              this.showOutputTabsElem();
-
-              if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
-                loadedViewer.dataFrame = currentParam.value;
-                loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-              } else {
-                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
-                const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
-                newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
-                loadedViewer.root.replaceWith(newViewer.root);
-                loadedViewer = newViewer;
-              }
-              this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
-            };
-
-            const paramSub = currentParam.onChanged.subscribe(async () => {
-              await updateViewerSource();
-            });
-
-            this.funcCallReplaced.subscribe(async () => {
-              await updateViewerSource();
-            });
-
-            this.subs.push(paramSub);
+            if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
+              loadedViewer.dataFrame = currentParam.value;
+              loadedViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
+            } else {
+              // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
+              const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
+              newViewer.setOptions(parsedTabDfProps[dfIndex][viewerIdx]);
+              loadedViewer.root.replaceWith(newViewer.root);
+              loadedViewer = newViewer;
+            }
+            this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
           };
 
-          subscribeOnFcChanges();
-          this.subs.push(
-            this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-          );
+          const paramSub = this.funcCallReplaced.pipe(
+            startWith(null),
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged.pipe(startWith(null));
+            }),
+            skip(1),
+          ).subscribe(updateViewerSource);
+          this.subs.push(paramSub);
 
           return loadedViewer;
         }));
@@ -434,23 +523,18 @@ export class RichFunctionView extends FunctionView {
         prevDfBlockTitle = dfBlockTitle;
 
         if (isInputTab) {
-          const subscribeOnFcChanges = () => {
-            const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
-
-            const paramSub = currentParam.onChanged.subscribe(() => {
-              this.showOutputTabsElem();
-              Object.keys(this.categoryToDfParamMap.inputs).forEach((inputTabName) => {
-                $(this.outputsTabsElem.getPane(inputTabName).header).show();
-              });
+          const inputTabSub = this.funcCallReplaced.pipe(
+            switchMap(() => {
+              const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
+              return currentParam.onChanged;
+            }),
+          ).subscribe(() => {
+            this.showOutputTabsElem();
+            Object.keys(this.categoryToDfParamMap.inputs).forEach((inputTabName) => {
+              $(this.outputsTabsElem.getPane(inputTabName).header).show();
             });
-
-            this.subs.push(paramSub);
-          };
-
-          subscribeOnFcChanges();
-          this.subs.push(
-            this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-          );
+          });
+          this.subs.push(inputTabSub);
         }
 
         const wrappedViewers = reactiveViewers.map((promisedViewer, viewerIndex) => {
@@ -498,31 +582,17 @@ export class RichFunctionView extends FunctionView {
 
       let scalarsTable = generateScalarsTable();
 
-      tabScalarProps.forEach((tabScalarProp) => {
-        const subscribeOnFcChanges = () => {
-          const paramSub = this.funcCall.outputParams[tabScalarProp.name].onChanged.subscribe(() => {
-            const newScalarsTable = generateScalarsTable();
-            scalarsTable.replaceWith(newScalarsTable);
-            scalarsTable = newScalarsTable;
-
-
-            $(this.outputsTabsElem.getPane(tabLabel).header).show();
-          });
-
-          this.funcCallReplaced.subscribe(() => {
-            const newScalarsTable = generateScalarsTable();
-            scalarsTable.replaceWith(newScalarsTable);
-            scalarsTable = newScalarsTable;
-          });
-
-          this.subs.push(paramSub);
-        };
-
-        subscribeOnFcChanges();
-        this.subs.push(
-          this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-        );
+      const tableSub = this.funcCallReplaced.pipe(
+        switchMap(() => merge(tabScalarProps.map((tabScalarProp) => this.funcCall.outputParams[tabScalarProp.name].onChanged))),
+        startWith(null),
+        debounceTime(0),
+      ).subscribe(() => {
+        const newScalarsTable = generateScalarsTable();
+        scalarsTable.replaceWith(newScalarsTable);
+        scalarsTable = newScalarsTable;
+        $(this.outputsTabsElem.getPane(tabLabel).header).show();
       });
+      this.subs.push(tableSub);
 
       this.outputsTabsElem.addPane(tabLabel, () => {
         return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
@@ -590,7 +660,6 @@ export class RichFunctionView extends FunctionView {
 
   public async doRun(): Promise<void> {
     this.isRunning.next(true);
-    this.checkDisability.next();
     try {
       await this.run();
     } catch (e: any) {
@@ -598,7 +667,7 @@ export class RichFunctionView extends FunctionView {
       console.log(e);
     } finally {
       this.isRunning.next(false);
-      this.checkDisability.next();
+      this.validationRequests.next({isRevalidation: false, isNewOutput: true});
     }
   }
 
@@ -679,7 +748,6 @@ export class RichFunctionView extends FunctionView {
     inputs.style.paddingTop = '0px';
     inputs.style.paddingLeft = '0px';
     inputs.style.maxWidth = '100%';
-    this.checkDisability.next();
 
     return inputs;
   }
@@ -699,8 +767,7 @@ export class RichFunctionView extends FunctionView {
     if (this.inputsOverride[val.property.name])
       return this.inputsOverride[val.property.name];
 
-    if (
-      prop.propertyType === DG.TYPE.STRING && prop.options.choices)
+    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices)
       return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
@@ -721,7 +788,7 @@ export class RichFunctionView extends FunctionView {
   private bindOnHotkey(t: InputVariants) {
     if (isInputBase(t)) {
       t.input.onkeydown = async (ev) => {
-        if (ev.key == 'Enter' && this.isRunnable()) this.doRun();
+        if (ev.key == 'Enter') this.runRequests.next();
       };
     }
   }
@@ -760,8 +827,10 @@ export class RichFunctionView extends FunctionView {
     if (this.foldedCategories.includes(prop.category))
       this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), t];
 
-    if (isInputBase(t))
+    if (isInputBase(t)) {
       this.inputBaseAdditionalRenderHandler(val, t);
+      this.injectInputBaseValidation(t);
+    }
 
     inputsDiv.append(t.root);
   }
@@ -780,38 +849,57 @@ export class RichFunctionView extends FunctionView {
     if (prop.options['units']) t.addPostfix(prop.options['units']);
   }
 
+  private injectInputBaseValidation(t: DG.InputBase) {
+    const validationIndicator = ui.div('', {style: {display: 'flex'}});
+    t.addOptions(validationIndicator);
+    function setValidation(messages: ValidationResultBase | undefined) {
+      while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
+      const icon = getValidationIcon(messages);
+      if (icon)
+        validationIndicator.appendChild(icon);
+
+      t.input.classList.remove('d4-invalid');
+      t.input.classList.remove('d4-partially-invalid');
+      if (messages?.errors)
+        t.input.classList.add('d4-invalid');
+      else if (messages?.warnings)
+        t.input.classList.add('d4-partially-invalid');
+    }
+    (t as any).setValidation = setValidation;
+  }
+
   private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
-    this.syncFuncCallReplaced(t, val, fields);
+    this.syncFuncCallReplaced(t, val.name, fields);
     this.syncOnInput(t, val, fields);
   }
 
-  private syncFuncCallReplaced(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    const prop = val.property;
-    const name = val.name;
-    // don't use val directly, get a fresh one, since it will be replaced with fc
-    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      const newValue = this.funcCall[field][name] ?? prop.defaultValue ?? null;
+  private syncFuncCallReplaced(t: InputVariants, name: string, field: SyncFields) {
+    const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
+      const newParam = this.funcCall[syncParams[field]][name];
+      const newValue = this.funcCall[field][name] ?? newParam.property.defaultValue ?? null;
       t.notify = false;
       t.value = newValue;
       t.notify = true;
       this.funcCall[field][name] = newValue;
-      const newParam = this.funcCall[syncParams[field]][name];
-      this.syncValOnChanged(t, newParam, field);
       this.setInputState(t, this.funcCall.options['editState']?.[name]);
     });
-    this.subs.push(sub);
-  }
+    this.subs.push(sub1);
 
-  private syncValOnChanged(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    const sub = val.onChanged.subscribe(() => {
-      const newValue = this.funcCall[field][val.name];
-      // there is no notify for DG.FuncCallParam, so we need to
-      // check if the value is not the same for floats, otherwise we
-      // will overwrite a user input with a lower precicsion decimal
-      // representation
+    const param$ = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const newParam = this.funcCall[syncParams[field]][name];
+        return newParam.onChanged.pipe(mapTo(newParam));
+      }));
+
+    const sub2 = param$.subscribe((newParam) => {
+      const newValue = this.funcCall[field][newParam.name];
+      // we need to check if the value is not the same for floats,
+      // otherwise we will overwrite a user input with a lower
+      // precicsion decimal representation
       if (
-        ((val.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
-          val.property.propertyType !== DG.TYPE.FLOAT
+        ((newParam.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
+          newParam.property.propertyType !== DG.TYPE.FLOAT
       ) {
         t.notify = false;
         t.value = newValue;
@@ -819,50 +907,131 @@ export class RichFunctionView extends FunctionView {
       }
       if (field === SYNC_FIELD.INPUTS) {
         this.hideOutdatedOutput();
-        this.checkDisability.next();
-
-        if (this.runningOnInput && this.isRunnable()) this.doRun();
+        this.validationRequests.next({field: newParam.name, isRevalidation: false});
       }
     });
+    this.subs.push(sub2);
 
-    this.subs.push(sub);
-
-    if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
-      const subscribeForInteriorMut = () => {
-        if (!val.value) return;
-        const sub = val.value.onDataChanged.subscribe(async () => {
-          if (this.runningOnInput && this.isRunnable()) this.doRun();
-        });
-        this.subs.push(sub);
-      };
-
-      val.onChanged.subscribe(() => {
-        subscribeForInteriorMut();
-      });
-
-      subscribeForInteriorMut();
-    }
+    // handling mutations of dataframes
+    const sub3 = param$.pipe(
+      filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
+      switchMap<DG.FuncCallParam, Observable<DG.FuncCallParam>>((param) => param.value.onDataChanged.pipe(mapTo(param))),
+    ).subscribe((param) => {
+      this.validationRequests.next({field: param.name, isRevalidation: false});
+    });
+    this.subs.push(sub3);
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    DG.debounce(getObservable(t.onInput.bind(t)), 350).subscribe(() => {
+    const sub = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
 
       this.funcCall[field][val.name] = t.value;
-      if (isInputBase(t)) {
-        if (t.value === null)
-          setTimeout(() => t.input.classList.add('d4-invalid'), 100);
-        else
-          t.input.classList.remove('d4-invalid');
-      }
-      this.checkDisability.next();
-      this.hideOutdatedOutput();
     });
+    this.subs.push(sub);
   }
 
-  private isRunnable() {
-    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning.value;
+  public isRunnable() {
+    if (this.isRunning.value)
+      return false;
+
+    return this.isValid();
+  }
+
+  public isValid() {
+    for (const [_, v] of Object.entries(this.validationState)) {
+      if (!isValidationPassed(v))
+        return false;
+    }
+    return true;
+  }
+
+  public getValidationState() {
+    return this.validationState;
+  }
+
+  public getValidationMessage() {
+    const msgs: string[] = [];
+    for (const [name, v] of Object.entries(this.validationState)) {
+      if (!isValidationPassed(v))
+        msgs.push(`${name}: ${getErrorMessage(v)}`);
+    }
+    return msgs.join('\n');
+  }
+
+  private async runValidation(payload: ValidationRequestPayload, signal: AbortSignal) {
+    const inputName = payload.field;
+    const inputNames = this.getValidatedNames(inputName);
+
+    const validationItems = await Promise.all(inputNames.map(async (name) => {
+      const v = this.funcCall.inputs[name];
+      // not allowing null anywhere
+      const standardMsgs = await nonNullValidator(v, {
+        param: name,
+        funcCall: this._funcCall!,
+        lastCall: this.lastCall,
+        signal,
+        isNewOutput: !!payload.isNewOutput,
+        isRevalidation: payload.isRevalidation,
+      });
+      if (standardMsgs)
+        return [name, standardMsgs] as const;
+
+      const customValidator = this.validators[name];
+      if (customValidator) {
+        const customMsgs = await customValidator(v, {
+          param: name,
+          funcCall: this._funcCall!,
+          lastCall: this.lastCall,
+          signal,
+          isNewOutput: !!payload.isNewOutput,
+          isRevalidation: payload.isRevalidation,
+          context: payload.context,
+        });
+        return [name, customMsgs] as const;
+      }
+      return [name, undefined] as const;
+    }));
+    return Object.fromEntries(validationItems);
+  }
+
+  private setValidationPending(inputName?: string) {
+    const inputNames = this.getValidatedNames(inputName);
+    for (const name of inputNames) {
+      this.validationState[name] = makePendingValidationResult();
+      const input = this.inputsMap[name];
+      if (isFuncCallInputValidated(input))
+        input.setValidation(makePendingValidationResult());
+    }
+    this.validationUpdates.next(null);
+  }
+
+  private setValidationResults(results: Record<string, ValidationResult | undefined>) {
+    for (const [inputName, validationMessages] of Object.entries(results)) {
+      this.validationState[inputName] = validationMessages;
+      const input = this.inputsMap[inputName];
+      if (isFuncCallInputValidated(input))
+        input.setValidation(validationMessages);
+    }
+  }
+
+  private runRevalidations(payload: ValidationRequestPayload, results: Record<string, ValidationResult | undefined>) {
+    // allow only 1 level of revalidations
+    if (payload.isRevalidation)
+      return;
+    for (const [, result] of Object.entries(results)) {
+      if (result?.revalidate) {
+        for (const field of result.revalidate)
+          this.validationRequests.next({field, context: result.context, isRevalidation: true});
+      }
+    }
+  }
+
+  private getValidatedNames(inputName?: string): string[] {
+    if (inputName)
+      return [inputName];
+    return [...this.funcCall.inputs.keys()];
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
@@ -879,6 +1048,8 @@ export class RichFunctionView extends FunctionView {
   }
 
   private hideOutdatedOutput() {
+    if (this.keepOutput())
+      return;
     this.outputsTabsElem.panes
       .filter((tab) => Object.keys(this.categoryToDfParamMap.outputs).includes(tab.name))
       .forEach((tab) => $(tab.header).hide());
