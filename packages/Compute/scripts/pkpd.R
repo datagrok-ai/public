@@ -18,7 +18,6 @@
 #meta.runOnOpen: true
 #meta.runOnInput: true
 
-
 require("ggplot2")
 require("RxODE")
 

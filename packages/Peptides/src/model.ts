@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {pickUpPalette, TAGS as bioTAGS, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
@@ -266,8 +266,16 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${splitByMonomerFlag}${flag ? 1 : 0}`;
   }
 
-  get isMonomerPositionSelectionEmpty(): boolean {
+  get isMutationCliffsSelectionEmpty(): boolean {
     for (const monomerList of Object.values(this.mutationCliffsSelection)) {
+      if (monomerList.length !== 0)
+        return false;
+    }
+    return true;
+  }
+
+  get isInvariantMapSelectionEmpty(): boolean {
+    for (const monomerList of Object.values(this.invariantMapSelection)) {
       if (monomerList.length !== 0)
         return false;
     }
@@ -453,29 +461,19 @@ export class PeptidesModel {
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
-    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel).root);
+    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel));
 
     return acc;
   }
 
   updateGrid(): void {
     this.joinDataFrames();
-
     this.createScaledCol();
-
-    this.initInvariantMapSelection({notify: false});
-    this.initMutationCliffsSelection({notify: false});
-    this.initClusterSelection({notify: false});
-
     this.setWebLogoInteraction();
     this.webLogoBounds = {};
-
     this.setCellRenderers();
-
     this.setTooltips();
-
     this.setBitsetCallback();
-
     this.setGridProperties();
   }
 
@@ -535,13 +533,27 @@ export class PeptidesModel {
     sourceGrid.columns.setOrder([scaledCol.name]);
   }
 
-  calculateMonomerPositionStatistics(): MonomerPositionStats {
-    const positionColumns = this.splitSeqDf.columns.toList();
-    const sourceDfLen = this.df.rowCount;
+  calculateMonomerPositionStatistics(options: {isFiltered?: boolean, columns?: string[]} = {}): MonomerPositionStats {
+    options.isFiltered ??= false;
     const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
-    const activityColData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
+    let activityColData: Float64Array = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData() as Float64Array;
+    let positionColumns = this.splitSeqDf.columns.toList();
+    let sourceDfLen = this.df.rowCount;
+
+    if (options.isFiltered) {
+      sourceDfLen = this.df.filter.trueCount;
+      const tempActivityData = new Float64Array(sourceDfLen);
+      const selectedIndexes = this.df.filter.getSelectedIndexes();
+      for (let i = 0; i < sourceDfLen; ++i)
+        tempActivityData[i] = activityColData[selectedIndexes[i]];
+      activityColData = tempActivityData;
+      positionColumns = this.splitSeqDf.clone(this.df.filter).columns.toList();
+    }
+    options.columns ??= positionColumns.map((col) => col.name);
 
     for (const posCol of positionColumns) {
+      if (!options.columns.includes(posCol.name))
+        continue;
       const posColData = posCol.getRawData();
       const posColCateogries = posCol.categories;
       const currentPositionObject = {general: {}} as PositionStats & {general: SummaryStats};
@@ -740,10 +752,8 @@ export class PeptidesModel {
       const bar = `${monomerPosition.positionOrClusterType} = ${monomerPosition.monomerOrCluster}`;
       if (this.cachedWebLogoTooltip.bar === bar)
         ui.tooltip.show(this.cachedWebLogoTooltip.tooltip!, ev.clientX, ev.clientY);
-      else {
-        this.cachedWebLogoTooltip = {bar: bar,
-          tooltip: this.showTooltipAt(monomerPosition, ev.clientX, ev.clientY)};
-      }
+      else
+        this.cachedWebLogoTooltip = {bar: bar, tooltip: this.showTooltipAt(monomerPosition, ev.clientX, ev.clientY)};
     }
   }
 
@@ -763,20 +773,22 @@ export class PeptidesModel {
 
         //TODO: optimize
         if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
-          const stats = this.monomerPositionStats[col.name];
+          const isDfFiltered = this.df.filter.anyFalse;
+          const stats = (isDfFiltered ? this.calculateMonomerPositionStatistics({isFiltered: true, columns: [col.name]}) :
+            this.monomerPositionStats)[col.name];
           if (!stats)
             return;
           //TODO: precalc on stats creation
           const sortedStatsOrder = Object.keys(stats).sort((a, b) => {
             if (a === '' || a === '-')
-              return -1;
-            else if (b === '' || b === '-')
               return +1;
+            else if (b === '' || b === '-')
+              return -1;
             return 0;
           }).filter((v) => v !== 'general');
 
           this.webLogoBounds[col.name] = CR.drawLogoInBounds(ctx, bounds, stats, col.name, sortedStatsOrder,
-            this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
+            this.df.filter.trueCount, this.cp, this.headerSelectedMonomers[col.name]);
           gcArgs.preventDefault();
         }
       } catch (e) {
@@ -951,20 +963,21 @@ export class PeptidesModel {
 
     const showAccordion = (): void => {
       const acc = this.createAccordion();
-      if (acc !== null) {
-        grok.shell.o = acc.root;
-        for (const pane of acc.panes)
-          pane.expanded = true;
-      }
+      if (acc === null)
+        return;
+      grok.shell.o = acc.root;
+      for (const pane of acc.panes)
+        pane.expanded = true;
     };
 
-    selection.onChanged.subscribe(() => {
+    DG.debounce(selection.onChanged, 500).subscribe(() => {
       if (!this.isUserChangedSelection)
         selection.copyFrom(getLatestSelection(), false);
       showAccordion();
+      this.isUserChangedSelection = true;
     });
 
-    filter.onChanged.subscribe(() => {
+    DG.debounce(filter.onChanged, 500).subscribe(() => {
       const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
       if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
         lstViewer.createLogoSummaryTableGrid();
@@ -972,6 +985,7 @@ export class PeptidesModel {
       }
       showAccordion();
     });
+
     this.isBitsetChangedInitialized = true;
   }
 
@@ -981,7 +995,6 @@ export class PeptidesModel {
     if (fireFilterChanged)
       this.df.filter.fireChanged();
     this.headerSelectedMonomers = calculateSelected(this.df);
-    this.isUserChangedSelection = true;
   }
 
   setGridProperties(props?: DG.IGridLookSettings): void {
@@ -991,6 +1004,20 @@ export class PeptidesModel {
     sourceGridProps.allowEdit = props?.allowEdit ?? false;
     sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
+    const positionCols = this.splitSeqDf.columns;
+    let maxWidth = 10;
+    const canvasContext = sourceGrid.canvas.getContext('2d');
+    for (const positionCol of positionCols) {
+      // Longest category
+      const maxCategory = monomerToShort(positionCol.categories.reduce((a, b) => a.length > b.length ? a : b), 6);
+      // Measure text width of longest category
+      const width = Math.ceil(canvasContext!.measureText(maxCategory).width);
+      maxWidth = Math.max(maxWidth, width);
+    }
+    setTimeout(() => {
+      for (const positionCol of positionCols)
+        sourceGrid.col(positionCol.name)!.width = maxWidth + 15;
+    }, 1000);
   }
 
   closeViewer(viewerType: VIEWER_TYPE): void {

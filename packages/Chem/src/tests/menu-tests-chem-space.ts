@@ -10,6 +10,7 @@ import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import { MALFORMED_DATA_WARNING_CLASS } from '../constants';
 
 const {jStat} = require('jstat');
 
@@ -45,18 +46,20 @@ category('top menu chem space', async () => {
   test('chemSpace.emptyValues', async () => {
     const sarSmallEmptyRows = await readDataframe('tests/sar-small_empty_vals.csv');
     await _testChemSpaceReturnsResult(sarSmallEmptyRows, 'smiles');
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('chemSpace.malformedData', async () => {
     const testSmilesMalformed = await readDataframe('tests/Test_smiles_malformed.csv');
     DG.Balloon.closeAll();
     await _testChemSpaceReturnsResult(testSmilesMalformed, 'canonical_smiles');
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
-      'cannot find warning balloon', 1000);
+      await awaitCheck(() => {
+        return document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
+        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis'
+      },
+      'cannot find warning balloon', 5000);
     } finally {DG.Balloon.closeAll();}
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('TSNE', async () => {
     await _testDimensionalityReducer(spgi100.col('Structure')!, DimReductionMethods.T_SNE);

@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import '../../css/chem.css';
 import {Fingerprint} from '../utils/chem-common';
+import { Subject } from 'rxjs';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
@@ -18,7 +19,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   limit: number;
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
-  fingerprintChoices = [Fingerprint.Morgan];
+  fingerprintChoices = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
+    Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
   sizesMap: {[key: string]: {[key: string]: number}} = {
     'small': {height: 60, width: 120},
     'normal': {height: 100, width: 200},
@@ -30,6 +32,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   metricsDiv: HTMLElement | null;
   moleculeProperties: string[];
   applyColorTo: string;
+  renderCompleted = new Subject<void>();
+  isComputing = false;
 
   constructor(name: string, col?: DG.Column) {
     super();
@@ -82,6 +86,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     await this.render(true);
   }
 
+
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
     if (!this.initialized)
@@ -114,12 +119,23 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.metricsDiv!.appendChild(metricsButton);
   }
 
-  async render(compute = true) {
+  async render(computeData = true): Promise<void> {
+    try {
+      await this.renderInternal(computeData);
+    } finally {
+      if (this.isComputing) {
+        this.isComputing = false;
+        this.renderCompleted.next();
+      }
+    }
+  }
+
+  async renderInternal(compute = true) {
 
   }
 
   beforeRender() {
-    if (!this.initialized)
+    if (!this.initialized || !this.dataFrame)
       return false;
     if (this.dataFrame && this.moleculeColumnName &&
           this.dataFrame.col(this.moleculeColumnName)?.semType !== DG.SEMTYPE.MOLECULE) {

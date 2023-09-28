@@ -186,3 +186,17 @@
     width: 6px !important;
     bottom: 15px !important;
 }
+
+body.dartium .power-pack-widgets-host.ui-div .power-pack-widget-host {
+    min-width: 250px!important;
+    max-width: 400px;
+    flex-shrink: 0;
+    margin: 0 10px 10px 0;
+    flex-grow: 1;
+}
+
+body.dartium .power-pack-widgets-host.ui-div {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}

@@ -13,8 +13,7 @@ class ChemblPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectChembl(col) {
-    const chembl = Array.from(col.values()).filter((val) => val.startsWith('CHEMBL'));
-    if (chembl.length == col.length)
+    if (DG.Detector.sampleCategories(col, (s) => s.startsWith('CHEMBL'), 1))
       return 'chembl';
     return null;
   }

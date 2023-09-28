@@ -17,14 +17,6 @@ Datagrok product on AWS Marketplace uses BYOL (Bring Your Own License) pricing m
 
 1. Open [Datagrok product](https://aws.amazon.com/marketplace/pp/prodview-uqum2jw2yvp52) on AWS Marketplace > Continue to Subscribe > Accept terms. Wait until the subscription request is processed, and then Continue to Configuration.
 
-   <!-- markdownlint-disable no-bare-urls -->
-   :::info
-
-   Datagrok product has yet to be publicly available on AWS Marketplace. To request early access, please contact support@datagrok.ai.
-
-   :::
-   <!-- markdownlint-enable no-bare-urls -->
-
 2. Choose one of the fulfillment options from the list, and click Continue to launch.
 
 3. To start deployment, click on the **CloudFormation** deployment template. Quick create stack page opens.
@@ -49,23 +41,19 @@ Datagrok product on AWS Marketplace uses BYOL (Bring Your Own License) pricing m
    If you chose the fulfillment option with manual DNS, remember to create CNAME DNS records for CVM and Datagrok Load Balancers.
    To get the Load Balancer endpoints for DNS record:
    
-   1. Go to stack Resources. Type 'LoadBalancer' in the search field. Find internet-facing load balancers: _LoadBalancerCvm_, _LoadBalancerDatagrok_. Open _Physical ID_ for LoadBalancerCvm, LoadBalancerDatagrok. A new tab with the selected load balancer opens. Copy _DNS name_.
-
-      ![marketplace-get-dns.gif](marketplace-get-dns.gif)
-
+   1. Go to stack Outputs. Copy values for _DatagrokLoadBalancerDNSName_ and _CvmLoadBalancerDNSName_.
    2. Use copied DNS names to create CNAME DNS records, for example
-      * Host: datagrok.example.com, Target: LoadBalancerDatagrok DNS name
-      * Host: cvm.example.com, Target: LoadBalancerCvm DNS name
+      * Host: datagrok.example.com, Target: DatagrokLoadBalancerDNSName
+      * Host: cvm.example.com, Target: CvmLoadBalancerDNSName
 
    </details>
 
    ![marketplace.gif](marketplace.gif)
 
 6. Enter the platform using the `admin` user. To get the password:
-   1. Go to stack Resources. Type 'Cluster' in the search field. Find Datagrok Cluster: _Cluster_. Open _Physical ID_ for Cluster. A new tab with the selected cluster opens.
-   2. Go to Tasks. Click on _datagrok_ task definition revision. Task definition opens.
-   3. Select _datagrok_ container. From environment variables, copy the value of `ADMIN_PASSWORD`. It is a password for the first login.
-   4. To increase security, [change the password for the admin user](../complete-setup/configure-auth.md) on the first login. Datagrok will ignore the admin password from environment variables on subsequent restarts.
+   1. Go to stack Outputs. Find _DatagrokAdminPassword_ and click on the link to open AWS Secret Manager.
+   2. Click '_Retrieve secret value_' and copy _password_. It is a generated password for the first admin login.
+   3. To increase security, [change the password for the admin user](../complete-setup/configure-auth.md) on the first login. Datagrok will ignore the admin password from secrets on subsequent restarts.
 
    ![marketplace-get-pass.gif](marketplace-get-pass.gif)
 

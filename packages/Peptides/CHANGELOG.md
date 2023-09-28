@@ -1,5 +1,26 @@
 # Peptides changelog
 
+## 1.13.4 (WIP)
+
+### Features
+
+* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+* Added icon to expand grids in property panel to fullscreen.
+
+### Bug Fixes
+
+* Fixed Distribution panel labels.
+
+## 1.13.3 (2023-09-20)
+
+### Features
+
+* WebLogo now reacts to filtering.
+
+### Bug Fixes
+
+* Fixed distribution panel throwing error when selection matches filter.
+
 ## 1.13.2 (2023-09-14)
 
 ### Bug Fixes

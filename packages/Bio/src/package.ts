@@ -98,6 +98,7 @@ export class SeqPaletteCustom implements SeqPalette {
 
 //tags: init
 export async function initBio() {
+  _package.logger.debug('Bio: initBio(), started');
   const module = await grok.functions.call('Chem:getRdKitModule');
   await Promise.all([
     (async () => { await MonomerLibHelper.instance.loadLibraries(); })(),
@@ -132,6 +133,8 @@ export async function initBio() {
     palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
 
   hydrophobPalette = new SeqPaletteCustom(palette);
+
+  _package.logger.debug('Bio: initBio(), completed');
 }
 
 //name: sequenceTooltip
@@ -162,13 +165,6 @@ export function getBioLib(): IMonomerLib {
 //input: column seqCol {semType: Macromolecule}
 //output: widget result
 export function getRegionPanel(seqCol: DG.Column<string>): DG.Widget {
-  // const host = ui.divV([
-  //   ui.inputs([
-  //     ui.stringInput('Region', ''),
-  //   ]),
-  //   ui.button('Ok', () => {})
-  // ]);
-  // return DG.Widget.fromRoot(host);
   const funcName: string = 'getRegionTopMenu';
   const funcList = DG.Func.find({package: _package.name, name: funcName});
   if (funcList.length !== 1) throw new Error(`Package '${_package.name}' func '${funcName}' not found`);
@@ -357,7 +353,7 @@ export function getRegion(
 }
 
 //top-menu: Bio | Convert | Get Region...
-//name: Get Region
+//name: Get Region Top Menu
 //description: Get sequences for a region specified from a Macromolecule
 //input: dataframe table                           [Input data table]
 //input: column sequence  {semType: Macromolecule} [Sequence column]
@@ -463,12 +459,13 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
+//input: double sparseMatrixThreshold = 0.8 [Similarity Threshold for sparse matrix calculation]
 //input: object options {optional: true}
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(
   table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto,
-  plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions,
+  plotEmbeddings: boolean, sparseMatrixThreshold?: number, options?: IUMAPOptions | ITSNEOptions,
 ): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
@@ -484,7 +481,8 @@ export async function sequenceSpaceTopMenu(
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames,
-    options: options,
+    options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.8,
+      usingSparseMatrix: table.rowCount > 20000},
   };
 
   const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
@@ -784,7 +782,7 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
 }
 
-//top-menu: Bio | Search | Similarity
+//top-menu: Bio | Search | Similarity Search
 //name: similaritySearch
 //description: Finds similar sequences
 //output: viewer result
@@ -802,7 +800,7 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
 }
 
-//top-menu: Bio | Search | Diversity
+//top-menu: Bio | Search | Diversity Search
 //name: diversitySearch
 //description: Finds the most diverse sequences
 //output: viewer result
@@ -823,7 +821,7 @@ export function searchSubsequenceEditor(call: DG.FuncCall) {
     new SubstructureSearchDialog(columns);
 }
 
-//top-menu: Bio | Search | Subsequence...
+//top-menu: Bio | Search | Subsequence Search ...
 //name: Subsequence Search
 //input: column macromolecules
 //editor: Bio:SearchSubsequenceEditor
@@ -996,4 +994,13 @@ export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG
 //output: widget result
 export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   return _getEnumeratorWidget(molColumn);
+}
+
+//top-menu: Bio | Convert | SDF to JSON Library...
+//name: SDF to JSON Library
+//input: dataframe table
+export async function sdfToJsonLib(table: DG.DataFrame) {
+  const _jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
+  const jsonMonomerLibrary = JSON.stringify(_jsonMonomerLibrary);
+  DG.Utils.download(`${table.name}.json`, jsonMonomerLibrary);
 }

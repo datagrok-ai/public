@@ -9,7 +9,11 @@ const unlockFunctionForKey: any = {};
 export enum Fingerprint {
   Morgan = 'Morgan',
   RDKit = 'RDKit',
-  Pattern = 'Pattern'
+  Pattern = 'Pattern',
+  //Avalon = 'Avalon',
+  MACCS = 'MACCS',
+  AtomPair = 'AtomPair',
+  TopologicalTorsion = 'TopologicalTorsion'
 }
 
 // By https://github.com/mistval/locko

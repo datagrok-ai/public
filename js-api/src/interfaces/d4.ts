@@ -389,6 +389,7 @@ export interface IScatterPlotLookSettings {
 
   markerType: string;
 
+  // -1 default - automatic sizing based on current dataframe
   markerDefaultSize: number;
 
   markerOpacity: number;
@@ -581,7 +582,7 @@ export interface ILineChartLookSettings {
   yColumnNames: Array<string>;
 
   /// A categorical column by which lines are split
-  splitColumnName: string;
+  splitColumnNames: Array<string>;
 
   showYAxis: boolean;
 
@@ -1281,6 +1282,9 @@ export interface IGridLookSettings {
   /// Whether the context menu is shown
   showContextMenu: boolean;
 
+  /// Whether to show notifications when the user tries to edit a read-only table
+  showReadOnlyNotifications: boolean;
+
   frozenColumns: number;
 
   showCurrentCellOutline: boolean;
@@ -1349,6 +1353,9 @@ export interface IGridLookSettings {
   marginRight: number;
 
   marginBottom: number;
+
+  /// Determines whether newly added columns are added to the grid
+  syncNewColumns: boolean;
 
   colorScheme: Array<number>;
 
@@ -1447,6 +1454,10 @@ export interface ITrellisPlotLookSettings {
   syncMouseOverRow: boolean;
 
   packCategories: boolean;
+
+  useTiledView: boolean;
+
+  tilesPerRow: number;
 
   autoLayout: boolean;
 
@@ -1941,11 +1952,13 @@ export interface IPivotViewerLookSettings {
   /// Determines the rows used in pivot viewer.
   showHeader: boolean;
 
-  columnsColumnNames: Array<string>;
+  pivotColumnNames: Array<string>;
 
-  rowsColumnNames: Array<string>;
+  groupByColumnNames: Array<string>;
 
-  measures: Array<string>;
+  aggregateColumnNames: Array<string>;
+
+  aggregateAggTypes: Array<string>;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

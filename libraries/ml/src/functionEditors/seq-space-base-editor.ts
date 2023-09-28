@@ -16,6 +16,7 @@ export class SequenceSpaceBaseFuncEditor {
     molColInput: DG.InputBase;
     molColInputRoot: HTMLElement;
     methodInput: DG.InputBase;
+    similarityThresholdInput: DG.InputBase;
     methodSettingsIcon: HTMLElement;
     methodSettingsDiv = ui.inputs([]);
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
@@ -46,7 +47,11 @@ export class SequenceSpaceBaseFuncEditor {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         }
+        this.displaySimilarityThresholdInput(semtype);
       });
+
+      this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0.5);
+      ui.tooltip.bind(this.similarityThresholdInput.root, 'Similarity threshold for sparse matrix creation.');
   
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
@@ -61,6 +66,12 @@ export class SequenceSpaceBaseFuncEditor {
       let settingsOpened = false;
 
       this.similarityMetricInput = ui.choiceInput('Similarity', BitArrayMetricsNames.Tanimoto, SEQ_SPACE_SIMILARITY_METRICS);
+      if (semtype !== DG.SEMTYPE.MOLECULE) {
+        this.similarityMetricInput.root.style.display = 'none';
+      }
+      setTimeout(() => {
+        this.displaySimilarityThresholdInput(semtype);
+      });
     }
   
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {
@@ -80,5 +91,18 @@ export class SequenceSpaceBaseFuncEditor {
         this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
         ui.empty(this.molColInputRoot);
         Array.from(this.molColInput.root.children).forEach((it) => this.molColInputRoot.append(it));
+        this.displaySimilarityThresholdInput(semtype);
+    }
+
+    displaySimilarityThresholdInput(semtype: DG.SemType) {
+      if(semtype === DG.SEMTYPE.MOLECULE) {
+        this.similarityThresholdInput.root.style.display = 'none';
+        return;
+      }
+      if (this.tableInput.value && (this.tableInput.value as DG.DataFrame).rowCount > 20000 && this.methodInput.value === DimReductionMethods.UMAP) {
+        this.similarityThresholdInput.root.style.display = 'block';
+      } else {
+        this.similarityThresholdInput.root.style.display = 'none';
+      }
     }
   }

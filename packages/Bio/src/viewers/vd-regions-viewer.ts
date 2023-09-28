@@ -7,6 +7,7 @@ import {fromEvent, Unsubscribable} from 'rxjs';
 import {
   IVdRegionsViewer,
   VdRegion, VdRegionType,
+  VdRegionsProps, VdRegionsPropsDefault,
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
 import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
@@ -55,10 +56,16 @@ export enum PROPS {
   regionTypes = 'regionTypes',
   chains = 'chains',
 
-  // -- Style --
+  // -- Layout --
+  fitWidth = 'fitWidth',
   positionWidth = 'positionWidth',
   positionHeight = 'positionHeight',
+
+  // -- Behavior --
+  filterSource = 'filterSource',
 }
+
+const defaults: VdRegionsProps = VdRegionsPropsDefault;
 
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
@@ -80,31 +87,39 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // public sequenceColumnNamePostfix: string;
 
   public skipEmptyPositions: boolean;
-  /* A value of zero means autofit to the width. */
+  public fitWidth: boolean;
   public positionWidth: number;
   public positionHeight: PositionHeight;
+
+  public filterSource: FilterSources;
 
   constructor() {
     super();
 
     // -- Data --
-    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, false,
+    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, defaults.skipEmptyPositions,
       {category: PROPS_CATS.DATA});
 
     // To prevent ambiguous numbering scheme in MLB
-    this.regionTypes = this.stringList(PROPS.regionTypes, [vrt.CDR], {
+    this.regionTypes = this.stringList(PROPS.regionTypes, defaults.regionTypes, {
       category: PROPS_CATS.DATA, choices: Object.values(vrt).filter((t) => t != vrt.Unknown)
     }) as VdRegionType[];
-    this.chains = this.stringList(PROPS.chains, ['Heavy', 'Light'],
+    this.chains = this.stringList(PROPS.chains, defaults.chains,
       {category: PROPS_CATS.DATA, choices: ['Heavy', 'Light']});
 
     // -- Layout --
-    this.positionWidth = this.float(PROPS.positionWidth, 16, {
+    this.fitWidth = this.bool(PROPS.fitWidth, defaults.fitWidth,
+      {category: PROPS_CATS.LAYOUT});
+    this.positionWidth = this.float(PROPS.positionWidth, defaults.positionWidth, {
       category: PROPS_CATS.LAYOUT, editor: 'slider', min: 0, max: 64,
-      description: 'Internal WebLogo viewers property width of position. A value of zero means autofit to the width.'
+      description: 'Internal WebLogo viewers property width of position.'
     });
-    this.positionHeight = this.string(PROPS.positionHeight, PositionHeight.Entropy,
+    this.positionHeight = this.string(PROPS.positionHeight, defaults.positionHeight,
       {category: PROPS_CATS.LAYOUT, choices: Object.keys(PositionHeight)}) as PositionHeight;
+
+    // -- Behavior --
+    this.filterSource = this.string(PROPS.filterSource, defaults.filterSource,
+      {category: PROPS_CATS.BEHAVIOR, choices: Object.values(FilterSources)}) as FilterSources;
   }
 
   public async init() {
@@ -178,6 +193,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
         this.calcSize();
         break;
 
+      case PROPS.fitWidth:
       case PROPS.positionWidth:
         this.calcSize();
         break;
@@ -185,9 +201,13 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       case PROPS.positionHeight:
         for (let orderI = 0; orderI < this.logos.length; ++orderI) {
           for (const chain of this.chains)
-            this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: this.positionWidth});
+            this.logos[orderI][chain].setOptions({[wlPROPS.positionHeight]: this.positionHeight});
         }
         this.calcSize();
+        break;
+
+      case PROPS.filterSource:
+        this.filterSourceInput.value = this.filterSource;
         break;
 
       default:
@@ -237,7 +257,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
-  private filterSourceInput: DG.InputBase<boolean | null> | null = null;
+  private filterSourceInput!: DG.InputBase<FilterSources | null>;
   private mainLayout: HTMLTableElement | null = null;
   private logos: { [chain: string]: WebLogoViewer }[] = [];
 
@@ -274,7 +294,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       for (const chain of this.chains) {
         const region: VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
-        logoPromiseList.push((async () => {
+        logoPromiseList.push((async (): Promise<[number, string, WebLogoViewer]> => {
           const wl: WebLogoViewer = await this.dataFrame.plot.fromType('WebLogo', {
             sequenceColumnName: region!.sequenceColumnName,
             startPositionName: region!.positionStartName,
@@ -343,12 +363,13 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.mainLayout.style.height = '100%';
     // this.mainLayout.style.border = '1px solid black';
 
-    this.filterSourceInput = ui.boolInput('', false, this.filterSourceInputOnValueChanged.bind(this));
+    this.filterSourceInput = ui.choiceInput<FilterSources>('Data source', defaults.filterSource,
+      Object.values(FilterSources), this.filterSourceInputOnValueChanged.bind(this));
     this.filterSourceInput.root.style.position = 'absolute';
-    this.filterSourceInput.root.style.left = '10px';
-    this.filterSourceInput.root.style.top = '-3px';
+    this.filterSourceInput.root.style.right = '9px';
+    this.filterSourceInput.root.style.top = '-4px';
     //this.filterSourceInput.setTooltip('Check to filter sequences for selected VRs'); // TODO: GROK-13614
-    ui.tooltip.bind(this.filterSourceInput.input, 'Check to filter sequences for selected VRs');
+    //ui.tooltip.bind(this.filterSourceInput.input, 'Check to filter sequences for selected VRs');
 
     const _color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
     this.host = ui.div([this.mainLayout, this.filterSourceInput!.root],
@@ -381,7 +402,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
         totalPos += Math.max(...this.chains.map((chain) => this.logos[orderI][chain].Length));
       }
 
-      if (this.positionWidth === 0) {
+      if (this.fitWidth) {
         if (this.logos.length > 0 && totalPos > 0) {
           const leftPad = 22/* Chain label */;
           const rightPad = 6 + 6 + 1;
@@ -392,16 +413,18 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
           for (let orderI = 0; orderI < this.logos.length; orderI++) {
             for (const chain of this.chains) {
               const wl = this.logos[orderI][chain];
-              wl.setOptions({[wlPROPS.positionWidth]: fitPositionWidth});
+              wl.setOptions({[wlPROPS.positionWidth]: (fitPositionWidth - wl.positionMarginValue)});
               wl.root.style.width = `${fitPositionWidth * wl.Length}px`;
             }
           }
         }
+        this.host.style.setProperty('overflow', 'hidden', 'important');
       } else {
         for (let orderI = 0; orderI < this.logos.length; orderI++) {
           for (const chain of this.chains)
             this.logos[orderI][chain].setOptions({[wlPROPS.positionWidth]: this.positionWidth});
         }
+        this.host.style.removeProperty('overflow');
       }
 
       if (this.positionWidth === 0)
@@ -431,15 +454,20 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   private filterSourceInputOnValueChanged(): void {
-    const filterSource: FilterSources = this.filterSourceInput!.value == true ?
-      FilterSources.Selected : FilterSources.Filtered;
+    const filterSourceValue = this.filterSourceInput.value;
+    // Using promise to prevent 'Bad state: Cannot fire new event. Controller is already firing an event'
+    this.viewPromise = this.viewPromise.then(() => {
+      if (this.filterSource !== filterSourceValue) {
+        this.props.getProperty(PROPS.filterSource).set(this, filterSourceValue); // to update value in property panel
 
-    for (let orderI = 0; orderI < this.logos.length; orderI++) {
-      for (let chainI = 0; chainI < this.chains.length; chainI++) {
-        const chain: string = this.chains[chainI];
-        const wl: DG.JsViewer = this.logos[orderI][chain];
-        wl.setOptions({[wlPROPS.filterSource]: filterSource});
+        for (let orderI = 0; orderI < this.logos.length; orderI++) {
+          for (let chainI = 0; chainI < this.chains.length; chainI++) {
+            const chain: string = this.chains[chainI];
+            const wl: DG.JsViewer = this.logos[orderI][chain];
+            wl.setOptions({[wlPROPS.filterSource]: this.filterSource});
+          }
+        }
       }
-    }
+    });
   }
 }

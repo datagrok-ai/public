@@ -116,3 +116,57 @@ export async function demoBioreactor(): Promise<any>  {
 
   showHelpPanel(); 
 }
+
+//name: Bioreactor (the final point results)
+//description: Controlled fab-arm exchange mechanism simulation.
+//tags: VSA
+//input: double initial = 0.0 {caption: Initial; category: Time, min}
+//input: double final = 1000.0 {caption: Final; category: Time, min}
+//input: double step = 0.1 {caption: Step; category: Time, min}
+//input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values} 
+//input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values}
+//input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values}
+//input: double _KKredInitial = 0.1 {units: mmol/L; caption: KK reduced (KKred); category: Initial values}
+//input: double _FfreeInitial = 0.0 {units: mmol/L; caption: F free (Ffree); category: Initial values}
+//input: double _KfreeInitial = 0.0 {units: mmol/L; caption: K free (Kfree); category: Initial values}
+//input: double _FKredInitial = 0.0 {units: mmol/L; caption: FK reduced (FKred); category: Initial values}
+//input: double _FKoxInitial = 0.0 {units: mmol/L; caption: FK oxidized (FKox); category: Initial values}
+//input: double _MEAthiolInitial = 15.0 {units: mmol/L; caption: MEAthiol (MEA); category: Initial values}
+//input: double _CO2Initial = 0.12 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Initial values}
+//input: double _yO2PInitial = 0.209 {units: atm; caption: Atm headspace (yO2P); category: Initial values}
+//input: double _CYSTInitial = 0.0 {units: mmol/L; caption: Cystamine (CYST); category: Initial values}
+//input: double _VLInitial = 7.2 {units: L; caption: Liquid volume (VL); category: Initial values}
+//input: double _qinVal = 1.0 {units: L/min; caption: Gas to headspace; category: Parameters}
+//input: double _yO2inVal = 0.21 {units: ; caption: Oxygen mole fraction; category: Parameters}
+//input: double _HVal = 1.3 {units: mmol/(L atm); caption: Henry's law constant; category: Parameters}
+//input: double _TVal = 300.0 {units: K; caption: System temperature; category: Parameters}
+//input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
+//input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
+//input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
+//output: dataframe result {caption: Solution; viewer: Grid}
+//editor: Compute:RichFunctionViewEditor
+export async function BioreactorFinalResults(initial: number, final: number, step: number,
+  _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
+  _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
+  _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CYSTInitial: number, 
+  _VLInitial: number, _qinVal: number, _yO2inVal: number, _HVal: number, _TVal: number, 
+  _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<DG.DataFrame>
+{
+  const globalSolution = await _simulateBioreactor(initial, final, step,
+    _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 
+    _KfreeInitial, _FKredInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, 
+    _yO2PInitial, _CYSTInitial, _VLInitial, _qinVal, _yO2inVal, 
+    _HVal, _TVal, _RVal, _PVal, _TimeToSwitchVal);
+  
+  const columns = globalSolution.columns.toList();
+
+  const lastRowIndex = columns[0].length - 1;
+
+  const finalPointResults = DG.DataFrame.create(1);
+  
+  for (const col of columns)
+    finalPointResults.columns.add(DG.Column.fromFloat32Array(col.name, 
+      new Float32Array([col.getRawData()[lastRowIndex]])));
+
+  return finalPointResults;
+}

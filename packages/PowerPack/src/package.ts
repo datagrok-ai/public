@@ -44,11 +44,10 @@ export function _distributionProfiler(): DistributionProfilerViewer {
 }
 
 //name: welcomeView
-//tags: autostart
 //meta.autostartImmediate: true
-export function _welcomeView(): void {
-  if (_properties['showWelcomeView'])
-    welcomeView();
+//output: view home
+export function _welcomeView(): DG.View | undefined {
+  return welcomeView();
 }
 
 //output: widget result

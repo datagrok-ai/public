@@ -56,7 +56,7 @@ export interface FuncMetadata extends Indexable {
 }
 
 export interface FuncParam {
-  name?: string,
+  name: string,
   type: string,
 }
 

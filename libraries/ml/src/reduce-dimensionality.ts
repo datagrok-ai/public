@@ -1,5 +1,4 @@
 /* eslint-disable max-len */
-import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
 import {
   Options,
@@ -16,11 +15,19 @@ import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {Measure, KnownMetrics, AvailableMetrics,
   isBitArrayMetric, AvailableDataTypes} from './typed-metrics/typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {UMAPParameters} from 'umap-js';
+import {UMAPParameters, UMAP} from './umap';
 import {DistanceMatrix, DistanceMatrixService, distanceMatrixProxy, dmLinearIndex} from './distance-matrix';
+import { SparseMatrixService } from './distance-matrix/sparse-matrix-service';
+
+export type SparseMatrixTransferType = {
+  i: Int32Array,
+  j: Int32Array,
+  distance: Float32Array,
+}
 
 export interface IReduceDimensionalityResult {
   distance?: Float32Array;
+  sparseMatrix?: Map<number, Map<number, number>>;
   embedding: Matrix;
 }
 
@@ -36,6 +43,10 @@ export interface IUMAPOptions {
   nNeighbors?: number;
   spread?: number;
   minDist?: number;
+  sparseMatrixThreshold?: number;
+  preCalculateDistanceMatrix?: boolean;
+  usingSparseMatrix?: boolean;
+  sparseMatrix?: SparseMatrixTransferType;
 }
 
 export interface ITSNEOptions {
@@ -137,7 +148,12 @@ class TSNEReducer extends Reducer {
   }
 }
 
-export type UmapOptions = Options & UMAPParameters & {preCalculateDistanceMatrix?: boolean};
+export type UmapOptions = Options & UMAPParameters & {
+  preCalculateDistanceMatrix?: boolean,
+  usingSparseMatrix?: boolean,
+  sparseMatrixThreshold?: number,
+  sparseMatrix?: SparseMatrixTransferType
+};
 
 /**
  * Implements UMAP dimensionality reduction.
@@ -146,13 +162,17 @@ export type UmapOptions = Options & UMAPParameters & {preCalculateDistanceMatrix
  * @extends {Reducer}
  */
 class UMAPReducer extends Reducer {
-  protected reducer: umj.UMAP;
+  protected reducer: UMAP;
   protected distanceFname: KnownMetrics;
   protected distanceFn: Function;
-  protected vectors: number[][];
+  protected vectors: number[];
   protected distanceMatrix?: Float32Array;
   protected usingDistanceMatrix: boolean;
+  protected sparseMatrix?: Map<number, Map<number, number>>;
   protected dmIndexFunc: (i: number, j: number) => number;
+  protected usingSparseMatrix: boolean;
+  protected sparseMatrixThreshold: number;
+  protected transferedSparseMatrix?: SparseMatrixTransferType;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -163,20 +183,26 @@ class UMAPReducer extends Reducer {
     assert('distanceFname' in options);
     assert('distanceFn' in options);
     this.distanceFn = options.distanceFn!;
+    this.usingSparseMatrix = !!options.usingSparseMatrix || !!options.sparseMatrix;
+    this.sparseMatrixThreshold = options.sparseMatrixThreshold ?? 0.8;
+    this.transferedSparseMatrix = options.sparseMatrix;
 
     this.distanceFname = options.distanceFname!;
     this.dmIndexFunc = dmLinearIndex(this.data.length);
     //Umap uses vector indexing, so we need to create an array of vectors as indeces.
-    this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
-    this.usingDistanceMatrix = !(!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS);
-    if (!this.usingDistanceMatrix)
-      options.distanceFn = this._encodedDistance.bind(this);
-    else
+    this.vectors = new Array(this.data.length).fill(0).map((_, i) => i);
+    this.usingDistanceMatrix = !((!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS)
+      || this.usingSparseMatrix);
+    if (this.usingDistanceMatrix)
       options.distanceFn = this._encodedDistanceMatrix.bind(this);
+    else if (this.usingSparseMatrix)
+      options.distanceFn = this._encodedSparseMatrix.bind(this);
+    else
+      options.distanceFn = this._encodedDistance.bind(this);
 
     if (this.data.length < 15)
       options.nNeighbors = this.data.length - 1;
-    this.reducer = new umj.UMAP(options);
+    this.reducer = new UMAP(options);
     // this.reducer.distanceFn = this._encodedDistance.bind(this);
   }
 
@@ -189,16 +215,20 @@ class UMAPReducer extends Reducer {
    * @return {number} Distance metric.
    * @memberof UMAPReducer
    */
-  protected _encodedDistanceMatrix(a: number[], b: number[]): number {
-    if (a[0] === b[0])
+  protected _encodedDistanceMatrix(a: number, b: number): number {
+    if (a === b)
       return 0;
-    if (a[0] > b[0])
-      return this.distanceMatrix![this.dmIndexFunc(b[0], a[0])];
-    return this.distanceMatrix![this.dmIndexFunc(a[0], b[0])];
+    if (a > b)
+      return this.distanceMatrix![this.dmIndexFunc(b, a)];
+    return this.distanceMatrix![this.dmIndexFunc(a, b)];
   }
 
-  protected _encodedDistance(a: number[], b: number[]): number {
-    return this.distanceFn(this.data[a[0]], this.data[b[0]]);
+  protected _encodedSparseMatrix(a: number, b: number): number {
+    return this.sparseMatrix!.get(a)?.get(b) ?? this.sparseMatrix!.get(b)?.get(a) ?? 1;
+  }
+
+  protected _encodedDistance(a: number, b: number): number {
+    return this.distanceFn(this.data[a], this.data[b]);
   }
 
   /**
@@ -220,6 +250,22 @@ class UMAPReducer extends Reducer {
         }
       })() :
         (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); return ret.data; })();
+    } else if (this.usingSparseMatrix) {
+          console.time('sparse matrix')
+          const res = this.transferedSparseMatrix ?? await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold);
+          console.timeEnd('sparse matrix')
+          console.time('sparse matrix to map')
+          this.sparseMatrix = new Map<number, Map<number, number>>();
+          for (let i = 0; i < res.i.length; ++i) {
+            const first = res.i[i];
+            const second = res.j[i];
+            const distance = res.distance[i];
+            if (!this.sparseMatrix.has(first))
+              this.sparseMatrix.set(first, new Map<number, number>());
+            this.sparseMatrix.get(first)!.set(second, distance);
+          }
+          console.timeEnd('sparse matrix to map')
+        
     }
     const embedding = this.reducer.fit(this.vectors);
 

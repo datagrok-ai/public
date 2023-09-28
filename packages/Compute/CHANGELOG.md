@@ -1,5 +1,15 @@
 # Compute changelog
 
+## 1.15.0 (2023-09-25)
+
+### Fixed bugs
+
+- RFV: Fixed inputs layout inside of foldable categories
+
+### Features
+
+- RFV: Sensitivity analysis is added
+
 ## 1.14.3 (2023-09-08)
 
 ### Fixed bugs
