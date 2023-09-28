@@ -33,6 +33,25 @@ export interface IHighlightTagInfo {
   alighByFirstSubtruct: boolean,
 }
 
+export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
+  if (color) {
+    const colorArr = hexToPercentRgb(color);
+    const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
+    if (substrToTakeAtomsFrom.atoms) {
+      for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+        mainSubstr.highlightAtomColors ??= {};
+        mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+      };
+    }
+    if (substrToTakeAtomsFrom.bonds) {
+      for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+        mainSubstr.highlightBondColors ??= {};
+        mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+      };
+    }
+  }
+}
+
 export class GridCellRendererProxy extends DG.GridCellRenderer {
   renderer: DG.GridCellRenderer;
   _cellType: string;
@@ -159,7 +178,7 @@ M  END
                   substruct.atoms = [];
                 if (!substruct.bonds)
                   substruct.bonds = [];
-                this._addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
+                _addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
               }
           }
         }
@@ -176,7 +195,7 @@ M  END
                   substruct.bonds = [];
                 this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
                 this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
-                this._addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
+                _addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
               };
             }
           }
@@ -214,25 +233,6 @@ M  END
       if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
       toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
     };
-  }
-
-  _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
-    if (color) {
-      const colorArr = hexToPercentRgb(color);
-      const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-      if (substrToTakeAtomsFrom.atoms) {
-        for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-          mainSubstr.highlightAtomColors ??= {};
-          mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-        };
-      }
-      if (substrToTakeAtomsFrom.bonds) {
-        for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-          mainSubstr.highlightBondColors ??= {};
-          mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-        };
-      }
-    }
   }
 
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
