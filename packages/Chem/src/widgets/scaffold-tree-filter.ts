@@ -26,7 +26,7 @@ function clearNotIcon(viewer: ScaffoldTreeViewer, tree: DG.TreeViewNode[]) {
 export class ScaffoldTreeFilter extends DG.Filter {
   viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
   savedTree: string = '';
-  scaffolds: IColoredScaffold[] = [];
+  colorCodedScaffolds: IColoredScaffold[] = [];
 
   constructor() {
     super();
@@ -55,8 +55,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => !this.isFiltering), debounce((_) => interval(100)))
       .subscribe((_) => {
-        //delete this.column!.temp[FILTER_SCAFFOLD_TAG];
-        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
+        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.viewer.colorCodedScaffolds));
         this.viewer.updateFilters(this.isFiltering);
       }),
     );
@@ -69,7 +68,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   saveState(): any {
     const state = super.saveState();
     state.savedTree = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.viewer.tree));
-    state.scaffolds = this.viewer.scaffolds;
+    state.colorCodedScaffolds = this.viewer.colorCodedScaffolds;
     return state;
   }
 
@@ -81,8 +80,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
     if (state.savedTree) {
       this.viewer.loadTreeStr(state.savedTree);
     }
-    if (state.scaffolds) {
-      this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(state.scaffolds));
+    if (state.colorCodedScaffolds) {
+      this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(state.colorCodedScaffolds));
+      this.viewer.colorCodedScaffolds = state.colorCodedScaffolds;
     }
   }
 

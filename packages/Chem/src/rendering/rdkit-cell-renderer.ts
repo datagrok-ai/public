@@ -154,6 +154,13 @@ M  END
                 mol.straighten_depiction(true);
             } else
               substruct = JSON.parse(substructString);
+              if (scaffolds[0].color) {
+                if (!substruct.atoms)
+                  substruct.atoms = [];
+                if (!substruct.bonds)
+                  substruct.bonds = [];
+                this._addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
+              }
           }
         }
         for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
