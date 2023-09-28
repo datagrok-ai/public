@@ -61,6 +61,7 @@ ARG BRANCH
 ARG COMMIT_PUBLIC
 LABEL branch=$BRANCH
 LABEL commit-public=$COMMIT_PUBLIC
+LABEL version="release"
 
 RUN echo "Branch main: $BRANCH" > ${HOME_DIR}/git-info.txt ; \
 echo "Commit public: $COMMIT_PUBLIC" >> ${HOME_DIR}/git-info.txt
