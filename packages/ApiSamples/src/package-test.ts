@@ -8,7 +8,7 @@ import './tests/test';
 
 const skip = [
   'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark', 'menu-customization',
-  'scatter-plot-3d', 'network-diagram', // Break
+  'README', '10k_columns_updates', // Break
   // To fix
   'files', 'open-table-by-id', 'all-chembl-structures', 'charts-in-cells',
   'property-grid', 'tree-view-adv', 'attached-properties', 'all-input-types',

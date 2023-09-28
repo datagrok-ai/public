@@ -507,6 +507,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
 
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
+
     this.renderCurves(g, x, y, w, h, data);
   }
 

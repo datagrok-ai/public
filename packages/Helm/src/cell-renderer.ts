@@ -8,7 +8,9 @@ import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-render
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm} from './utils';
-import {HelmMonomerPlacer} from './helm-monomer-placer';
+import {IEditor, HelmMonomerPlacer} from './helm-monomer-placer';
+
+// import {_package} from './package'; // NullError: method not found: '_package' on null
 
 const enum tempTAGS {
   helmSumMaxLengthWords = 'helm-sum-maxLengthWords',
@@ -22,7 +24,120 @@ const helmGapStartRe = /\{(\*\.)+/g;
 const helmGapIntRe = /\.(\*\.)+/g;
 const helmGapEndRe = /(\.\*)+\}/g;
 
-type TempType = { [tagName: string]: any };
+function getHoveredMonomerFromEditor(
+  argsX: number, argsY: number, gridCell: DG.GridCell, editor: IEditor
+): string | null {
+  let hoveredMonomerSymbol: string | null = null;
+
+  /** @return {[number, number]} [atom, distance] */
+  function getNearest(excluded: (number | undefined)[]): [number | undefined, number | undefined] {
+    let atom: number | undefined = undefined;
+    let distance: number | undefined = undefined;
+    for (let atomI = 0; atomI < editor.m.atoms.length; ++atomI) {
+      if (!excluded.includes(atomI)) {
+        const aX: number = editor.m.atoms[atomI].p.x;
+        const aY: number = editor.m.atoms[atomI].p.y;
+        const distanceToAtomI: number = Math.sqrt((argsX - aX) ** 2 + (argsY - aY) ** 2);
+        if (distance === undefined || distance > distanceToAtomI) {
+          atom = atomI;
+          distance = distanceToAtomI;
+        }
+      }
+    }
+    return [atom, distance];
+  }
+
+  const [firstAtomI, firstDistance] = getNearest([]);
+  const [secondAtomI, secondDistance] = getNearest([firstAtomI]);
+
+  // for (let atomI = 0; atomI < editor.m.atoms.length; ++atomI) {
+  //   const aX: number = editor.m.atoms[atomI].p.x;
+  //   const aY: number = editor.m.atoms[atomI].p.y;
+  //   const distanceToAtomI: number = Math.sqrt((argsX - aX) ** 2 + (argsY - aY) ** 2);
+  //   if (firstDistance === undefined || firstDistance > distanceToAtomI) {
+  //     secondAtomI = firstAtomI;
+  //     firstAtomI = atomI;
+  //
+  //     secondDistance = firstDistance;
+  //     firstDistance = distanceToAtomI;
+  //   }
+  // }
+
+  if (firstAtomI !== undefined && firstDistance !== undefined) {
+    if (secondAtomI !== undefined && secondDistance !== undefined) {
+      if (firstDistance < secondDistance * 0.45)
+        hoveredMonomerSymbol = editor.m.atoms[firstAtomI].elem;
+    } else {
+      if (firstDistance < 0.35 * gridCell.bounds.height)
+        hoveredMonomerSymbol = editor.m.atoms[firstAtomI].elem;
+    }
+  }
+  return hoveredMonomerSymbol;
+}
+
+function getHoveredMonomerFallback(
+  argsX: number, _argsY: number, gridCell: DG.GridCell, helmPlacer: HelmMonomerPlacer
+): string | null {
+  let hoveredMonomerSymbol: string | null = null;
+  const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
+  const maxIndex = Object.values(lengths).length - 1;
+  let left = 0;
+  let right = maxIndex;
+  let found = false;
+  let iterCount: number = 0;
+
+  let mid = 0;
+  if (argsX > sumLengths[0]) {
+    while (!found && iterCount < sumLengths.length) {
+      mid = Math.floor((right + left) / 2);
+      if (argsX >= sumLengths[mid] && argsX <= sumLengths[mid + 1]) {
+        left = mid;
+        found = true;
+      } else if (argsX < sumLengths[mid])
+        right = mid - 1;
+      else if (argsX > sumLengths[mid + 1])
+        left = mid + 1;
+
+      if (left == right)
+        found = true;
+
+      iterCount++;
+    }
+  }
+  left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
+  if (left >= 0)
+    hoveredMonomerSymbol = allParts[left];
+  return hoveredMonomerSymbol;
+}
+
+// window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
+// /** get the text width in pixels */
+// // @ts-ignore
+// window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
+//   const rawNode = this.rawNode;
+//   const oldParent = rawNode.parentNode;
+//   const _measurementNode = rawNode.cloneNode(true);
+//   _measurementNode.style.visibility = 'hidden';
+//
+//   // solution to the "orphan issue" in FF
+//   let _width = 0;
+//   const _text = _measurementNode.firstChild.nodeValue;
+//   oldParent.appendChild(_measurementNode);
+//
+//   // solution to the "orphan issue" in Opera
+//   // (nodeValue == "" hangs firefox)
+//   if (_text != '') {
+//     while (!_width) { // <-- hangs
+//       //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
+//       if (_measurementNode.getBBox)
+//         _width = parseInt(_measurementNode.getBBox().width);
+//       else
+//         _width = 68;
+//     }
+//   }
+//   oldParent.removeChild(_measurementNode);
+//   return _width;
+// };
 
 /** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
  * in case of missed monomers presented, draws linear sequences aligned in width per monomer.
@@ -43,65 +158,63 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       try { tableCol = gridCell.tableColumn; } catch { }
       if (!tableCol) return;
 
-      const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
-      const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
-
-      const maxIndex = Object.values(lengths).length - 1;
       const argsX = e.offsetX - gridCell.bounds.x;
-      let left = 0;
-      let right = maxIndex;
-      let found = false;
-      let iterCount: number = 0;
+      const argsY = e.offsetY - gridCell.bounds.y;
 
-      let mid = 0;
-      if (argsX > sumLengths[0]) {
-        while (!found && iterCount < sumLengths.length) {
-          mid = Math.floor((right + left) / 2);
-          if (argsX >= sumLengths[mid] && argsX <= sumLengths[mid + 1]) {
-            left = mid;
-            found = true;
-          } else if (argsX < sumLengths[mid])
-            right = mid - 1;
-          else if (argsX > sumLengths[mid + 1])
-            left = mid + 1;
-
-          if (left == right)
-            found = true;
-
-          iterCount++;
-        }
+      const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
+      const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
+      const hoveredMonomerSymbol = editor ? getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor) :
+        getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
+      if (!hoveredMonomerSymbol) {
+        ui.tooltip.hide();
+        return;
       }
-      left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
 
       const seq: string = !gridCell.cell.value ? '' : gridCell.cell.value
         .replaceAll(helmGapStartRe, '{').replaceAll(helmGapIntRe, '.').replaceAll(helmGapEndRe, '}')
         .replace('{*}', '{}');
       const monomerList = parseHelm(seq);
-      const monomers = new Set<string>(monomerList);
       const missedMonomers = findMonomers(monomerList);
 
-      const tooltipMessage: HTMLElement[] = [];
-      for (const [part, partI] of wu.enumerate(allParts)) {
-        if (missedMonomers.has(part)) {
-          tooltipMessage[partI] = ui.divV([
-            ui.divText(`Monomer ${allParts[partI]} not found.`),
-            ui.divText('Open the Context Panel, then expand Manage Libraries')
-          ]);
-        } else if (monomers.has(part)) {
-          const elList = [ui.div(part)];
-          const monomer = helmPlacer.getMonomer(part);
-          if (monomer) {
-            const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-            const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
-            elList.push(monomerSvg);
-          }
-          tooltipMessage[partI] = ui.divV(elList);
+      if (missedMonomers.has(hoveredMonomerSymbol)) {
+        ui.tooltip.show(ui.divV([
+          ui.divText(`Monomer ${hoveredMonomerSymbol} not found.`),
+          ui.divText('Open the Context Panel, then expand Manage Libraries'),
+        ]), e.x + 16, e.y + 16);
+      } else {
+        const monomer = helmPlacer.getMonomer(hoveredMonomerSymbol);
+        if (monomer) {
+          const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+          const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
+          ui.tooltip.show(ui.divV([
+            ui.divText(hoveredMonomerSymbol),
+            monomerSvg,
+          ]), e.x + 16, e.y + 16);
         }
       }
 
-      (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) ?
-        ui.tooltip.show(tooltipMessage[left], e.x + 16, e.y + 16) :
-        ui.tooltip.hide();
+      // const tooltipMessage: HTMLElement[] = [];
+      // for (const [part, partI] of wu.enumerate(allParts)) {
+      //   if (missedMonomers.has(part)) {
+      //     tooltipMessage[partI] = ui.divV([
+      //       ui.divText(`Monomer ${allParts[partI]} not found.`),
+      //       ui.divText('Open the Context Panel, then expand Manage Libraries')
+      //     ]);
+      //   } else if (monomers.has(part)) {
+      //     const elList = [ui.div(part)];
+      //     const monomer = helmPlacer.getMonomer(part);
+      //     if (monomer) {
+      //       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+      //       const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
+      //       elList.push(monomerSvg);
+      //     }
+      //     tooltipMessage[partI] = ui.divV(elList);
+      //   }
+      // }
+      //
+      // (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) ?
+      //   ui.tooltip.show(tooltipMessage[left], e.x + 16, e.y + 16) :
+      //   ui.tooltip.hide();
     } catch (err: any) {
       const errMsg: string = errorToConsole(err);
       console.error('Helm: HelmCellRenderer.onMouseMove() error:\n' + errMsg);
@@ -132,13 +245,16 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
 
       if (missedMonomers.size == 0) {
-        helmPlacer.skipCell(gridCell.tableRowIndex!);
-        const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
+        // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
+        const host = gridCell.element = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
         host.setAttribute('dataformat', 'helm');
         host.setAttribute('data', seq /* gaps skipped */);
-        gridCell.element = host;
-        //@ts-ignore
-        const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
+
+        // Recreate editor to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
+        const editor = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true}) as IEditor;
+        helmPlacer.setEditor(gridCell.tableRowIndex!, editor);
+
+        helmPlacer.skipCell(gridCell.tableRowIndex!);
         return;
       }
 

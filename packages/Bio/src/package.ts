@@ -995,3 +995,12 @@ export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG
 export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   return _getEnumeratorWidget(molColumn);
 }
+
+//top-menu: Bio | Convert | SDF to JSON Library...
+//name: SDF to JSON Library
+//input: dataframe table
+export async function sdfToJsonLib(table: DG.DataFrame) {
+  const _jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
+  const jsonMonomerLibrary = JSON.stringify(_jsonMonomerLibrary);
+  DG.Utils.download(`${table.name}.json`, jsonMonomerLibrary);
+}

@@ -2,6 +2,10 @@
 
 ## 5.39.0 (WIP)
 
+### Features
+
+* Add VdRegionsViewer .`filterSource` property.
+
 ### Bug fixes
 
 * Fix getSplitterWithSeparator for empty seq.

@@ -1,4 +1,6 @@
-import { KnownMetrics } from "../typed-metrics";
+import { getSimilarityFromDistance } from "../distance-metrics-methods";
+import { BitArrayMetricsNames, KnownMetrics, Measure } from "../typed-metrics";
+import { isNil } from "./utils";
 
 export class SparseMatrixService {
     private _workerCount: number;
@@ -41,5 +43,38 @@ export class SparseMatrixService {
         offset += res.i.length;
       }
       return {i, j, distance};
+    }
+
+    public static calcSync<T> (values: Array<T> | ArrayLike<T>, fnName: KnownMetrics, distanceFn: Function, threshold: number) {
+      const i: number[] = [];
+      const j: number[] = [];
+      const distances: number[] = [];
+      let cnt = 0;
+      let mi = 0;
+      let mj = 0;
+      const fullSize = values.length * (values.length - 1) / 2;
+      while (cnt < fullSize) {
+        //const value = seq1List[mi] && seq1List[mj] ? hamming(seq1List[mi], seq1List[mj]) : 0;
+        const value = !isNil(values[mi]) && !isNil(values[mj]) ?
+          distanceFn(values[mi], values[mj]) : 1;
+        const similarity = Object.values(BitArrayMetricsNames).some((a) => a === fnName) ? getSimilarityFromDistance(value) : 1 - value;
+        if (similarity >= threshold) {
+          i.push(mi);
+          j.push(mj);
+          distances.push(value);
+        }
+        cnt++;
+        mj++;
+        if (mj === values.length) {
+          mi++;
+          mj = mi + 1;
+        }
+      }
+    
+      const iArray = new Int32Array(i);
+      const jArray = new Int32Array(j);
+      const distanceArray = new Float32Array(distances);
+
+      return {i: iArray, j: jArray, distance: distanceArray};
     }
 }

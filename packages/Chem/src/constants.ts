@@ -33,7 +33,7 @@ export const getTerminateEventName =
 export const getSearchProgressEventName =
   (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
-export const ALIGN_BY_SCAFFOLD_TAG = 'chem-scaffold';
+export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
 export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';
 export enum SubstructureSearchType {
@@ -45,3 +45,5 @@ export enum SubstructureSearchType {
 export const FILTER_TYPE_TAG = '.filter-type'
 export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
+export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';
+export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning'

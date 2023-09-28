@@ -6,6 +6,9 @@ A bar chart presents grouped data as rectangular bars with lengths proportional 
 Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed
 for categorical values.
 
+> Developers: To add the viewer from the console, use:
+ `grok.shell.tv.addViewer('Bar chart');`
+
 |                |                                   |
 |----------------|-----------------------------------|
 | Click on a bar | [Select or filter](../viewers/viewers.md) |

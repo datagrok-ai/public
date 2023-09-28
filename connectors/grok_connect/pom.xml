@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grok_connect</artifactId>
-    <version>2.1.8</version>
+    <version>2.1.9</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>connectors</groupId>
         <artifactId>build</artifactId>
-        <version>2.1.8</version>
+        <version>2.1.9</version>
     </parent>
 
     <properties>
@@ -202,9 +202,9 @@
         <dependency>
             <groupId>software.aws</groupId>
             <artifactId>neptune</artifactId>
-            <version>2.0.0</version>
+            <version>3.0.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/neptune-jdbc-2.0.0-all.jar</systemPath>
+            <systemPath>${project.basedir}/lib/amazon-neptune-jdbc-driver-3.0.0-all.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.osisoft</groupId>

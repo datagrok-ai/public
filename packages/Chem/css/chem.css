@@ -264,11 +264,11 @@
 }
 
 .mol-host > :last-child {
-  right: 5px;
+  right: 10px;
 }
 
 .mol-host > :first-child {
-  left: 50px;
+  left: 55px;
 }
 
 .scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
@@ -467,4 +467,31 @@
 .chem-filter-similarity-options {
   margin-bottom: 3px;
   gap: 5px;
+}
+
+.color-icon.color-is-set {
+  visibility: visible;
+}
+
+.palette-icon.color-is-not-set {
+  visibility: hidden;
+}
+
+.palette-icon.color-is-set {
+  visibility: hidden;
+}
+
+.palette-icon.color-is-set:hover {
+  visibility: visible;
+}
+
+.canvas-container {
+  position: relative;
+  width: 100%;
+}
+
+.disable-icon {
+  pointer-events: none;
+  color: var(--grey-4)!important;
+  cursor:default!important;
 }

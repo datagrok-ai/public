@@ -1,8 +1,19 @@
 # Peptides changelog
 
-## 1.13.4 (WIP)
+## 1.14.1 (2023-09-28)
+
+### Bug Fixes
+
+* Fixed a bug when filtering single cluster would break Logo Summary Table.
+
+## 1.14.0 (2023-09-28)
 
 ### Features
+
+* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+* Added icon to expand grids in property panel to fullscreen.
+
+### Bug Fixes
 
 * Fixed Distribution panel labels.
 

@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {ScaffoldTreeViewer, BitwiseOp} from './scaffold-tree';
 import {filter, debounce} from 'rxjs/operators';
 import {interval} from 'rxjs';
-import { FILTER_SCAFFOLD_TAG } from '../constants';
+import { SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
+import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
 
 const COLUMN_NAME_CHANGED = 'column-name-changed';
 
@@ -25,6 +26,7 @@ function clearNotIcon(viewer: ScaffoldTreeViewer, tree: DG.TreeViewNode[]) {
 export class ScaffoldTreeFilter extends DG.Filter {
   viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
   savedTree: string = '';
+  colorCodedScaffolds: IColoredScaffold[] = [];
 
   constructor() {
     super();
@@ -53,7 +55,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => !this.isFiltering), debounce((_) => interval(100)))
       .subscribe((_) => {
-        delete this.column!.temp[FILTER_SCAFFOLD_TAG];
+        this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.viewer.colorCodedScaffolds));
         this.viewer.updateFilters(this.isFiltering);
       }),
     );
@@ -66,6 +68,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   saveState(): any {
     const state = super.saveState();
     state.savedTree = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.viewer.tree));
+    state.colorCodedScaffolds = this.viewer.colorCodedScaffolds;
     return state;
   }
 
@@ -74,7 +77,13 @@ export class ScaffoldTreeFilter extends DG.Filter {
     grok.events.fireCustomEvent(COLUMN_NAME_CHANGED, {
       colName: state.columnName,
     });
-    if (state.savedTree) this.viewer.loadTreeStr(state.savedTree);
+    if (state.savedTree) {
+      this.viewer.loadTreeStr(state.savedTree);
+    }
+    if (state.colorCodedScaffolds) {
+      this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(state.colorCodedScaffolds));
+      this.viewer.colorCodedScaffolds = state.colorCodedScaffolds;
+    }
   }
 
   applyFilter(): void {
@@ -83,6 +92,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
   detach(): void {
     super.detach();
     this.viewer.clearFilters();
+    this.viewer.molCol!.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
+     grok.shell.tv.dataFrame.fireValuesChanged();
   }
 
   createViewer(dataFrame: DG.DataFrame) {

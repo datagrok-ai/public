@@ -29,6 +29,8 @@ export class LogoSummaryTable extends DG.JsViewer {
   webLogoMode: string;
   membersRatioThreshold: number;
   bitsets: DG.BitSet[] = [];
+  keyPress: boolean = false;
+  currentRowIndex: number | null = null;
 
   constructor() {
     super();
@@ -133,6 +135,8 @@ export class LogoSummaryTable extends DG.JsViewer {
       const customClustCol = customClustColList[rowIdx];
       customLSTClustCol.set(rowIdx, customClustCol.name);
       const bitArray = BitArray.fromUint32Array(filteredDfRowCount, customClustCol.getRawData() as Uint32Array);
+      if (bitArray.allFalse || bitArray.allTrue)
+        continue;
       const bsMask = DG.BitSet.fromBytes(bitArray.buffer.buffer, filteredDfRowCount);
 
       const stats: Stats = isDfFiltered ? getStats(activityColData, bitArray) :
@@ -183,6 +187,8 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     for (let rowIdx = 0; rowIdx < origLSTLen; ++rowIdx) {
       const mask = origClustMasks[rowIdx];
+      if (mask.allFalse || mask.allTrue)
+        continue;
       const bsMask = DG.BitSet.fromBytes(mask.buffer.buffer, filteredDfRowCount);
 
       const stats = isDfFiltered ? getStats(activityColData, mask) :
@@ -296,18 +302,30 @@ export class LogoSummaryTable extends DG.JsViewer {
       }
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
-    this.viewerGrid.root.addEventListener('click', (ev) => {
-      const cell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (!cell || !cell.isTableCell || cell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
+    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell) => {
+      if (!gridCell.isTableCell)
         return;
 
-      summaryTable.currentRowIdx = -1;
+      try {
+        if (!this.keyPress || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
+          return;
+        if (this.currentRowIndex !== null && this.currentRowIndex !== -1)
+          this.model.modifyClusterSelection(this.getCluster(this.viewerGrid.cell(C.LST_COLUMN_NAMES.CLUSTER, this.currentRowIndex)), {shiftPressed: true, ctrlPressed: true}, false);
 
-      const selection = {
-        monomerOrCluster: cell.cell.value as string,
-        positionOrClusterType: wu(this.model.customClusters).some((col) => col.name === cell.cell.value) ?
-          CLUSTER_TYPE.CUSTOM : CLUSTER_TYPE.ORIGINAL,
-      };
+        this.model.modifyClusterSelection(this.getCluster(gridCell), {shiftPressed: true, ctrlPressed: false});
+        this.viewerGrid.invalidate();
+      } finally {
+        this.keyPress = false;
+        this.currentRowIndex = gridCell.gridRow;
+      }
+    });
+    this.viewerGrid.root.addEventListener('keydown', (ev) => this.keyPress = ev.key.startsWith('Arrow'));
+    this.viewerGrid.root.addEventListener('click', (ev) => {
+      const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
+      if (!gridCell || !gridCell.isTableCell || gridCell.tableColumn?.name !== C.LST_COLUMN_NAMES.CLUSTER)
+        return;
+
+      const selection = this.getCluster(gridCell);
       this.model.modifyClusterSelection(selection, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       this.viewerGrid.invalidate();
     });
@@ -329,6 +347,8 @@ export class LogoSummaryTable extends DG.JsViewer {
     gridProps.allowRowSelection = false;
     gridProps.allowBlockSelection = false;
     gridProps.allowColSelection = false;
+    gridProps.showRowHeader = false;
+    gridProps.showCurrentRowIndicator = false;
 
     return this.viewerGrid;
   }
@@ -390,10 +410,8 @@ export class LogoSummaryTable extends DG.JsViewer {
 
   removeCluster(): void {
     const lss = this.model.clusterSelection[CLUSTER_TYPE.CUSTOM];
-    // const customClusters = wu(this.model.customClusters).map((cluster) => cluster.name).toArray();
 
     // // Names of the clusters to remove
-    // const clustNames = lss.filter((cluster) => customClusters.includes(cluster));
     if (lss.length === 0)
       return grok.shell.warning('No custom clusters selected to be removed');
 

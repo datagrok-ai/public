@@ -2,6 +2,10 @@
 
 ## 2.11.0 (WIP)
 
+### Features 
+
+* Add VdRegionsViewer `filterSource` property.
+
 ### Bug fixes
 
 * Fix GetRegion to detect semantic type and renderer for created column.

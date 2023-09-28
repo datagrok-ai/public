@@ -47,11 +47,11 @@ export class SequenceSpaceBaseFuncEditor {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         }
-        this.displaySimilarityThresholdInput();
+        this.displaySimilarityThresholdInput(semtype);
       });
 
       this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0.5);
-
+      ui.tooltip.bind(this.similarityThresholdInput.root, 'Similarity threshold for sparse matrix creation.');
   
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
@@ -70,7 +70,7 @@ export class SequenceSpaceBaseFuncEditor {
         this.similarityMetricInput.root.style.display = 'none';
       }
       setTimeout(() => {
-        this.displaySimilarityThresholdInput();
+        this.displaySimilarityThresholdInput(semtype);
       });
     }
   
@@ -91,10 +91,14 @@ export class SequenceSpaceBaseFuncEditor {
         this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
         ui.empty(this.molColInputRoot);
         Array.from(this.molColInput.root.children).forEach((it) => this.molColInputRoot.append(it));
-        this.displaySimilarityThresholdInput();
+        this.displaySimilarityThresholdInput(semtype);
     }
 
-    displaySimilarityThresholdInput() {
+    displaySimilarityThresholdInput(semtype: DG.SemType) {
+      if(semtype === DG.SEMTYPE.MOLECULE) {
+        this.similarityThresholdInput.root.style.display = 'none';
+        return;
+      }
       if (this.tableInput.value && (this.tableInput.value as DG.DataFrame).rowCount > 20000 && this.methodInput.value === DimReductionMethods.UMAP) {
         this.similarityThresholdInput.root.style.display = 'block';
       } else {
