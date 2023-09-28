@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.14.1 (2023-09-28)
+
+### Bug Fixes
+
+* Fixed a bug when filtering single cluster would break Logo Summary Table.
+
 ## 1.14.0 (2023-09-28)
 
 ### Features
