@@ -39,7 +39,7 @@ export class CustomSketcherInput {
         this.sketcher.syncCurrentObject = false;
         if (molecule) {
             this.molecule = molecule;
-            isSmarts(molecule) ? this.sketcher.setSmarts(molecule) : this.sketcher.setMolFile(molecule);
+            isSmarts(molecule) ? this.sketcher.setSmarts(molecule) : this.sketcher.setSmiles(molecule);
         }
         this.root = ui.div(this.sketcher.root, 'chem-col-highlight-sketcher-input');
         this.root.addEventListener('click', e => {
@@ -49,7 +49,7 @@ export class CustomSketcherInput {
             }
         }, true);
         this.sketcher.onChanged.subscribe(async () => {
-            this.molecule = isSmarts(this.molecule!) ? await this.sketcher.getSmarts() : this.sketcher.getMolFile();
+            this.molecule = isSmarts(this.molecule!) ? await this.sketcher.getSmarts() : this.sketcher.getSmiles();
             this.onChangeFunc();
         });
     }

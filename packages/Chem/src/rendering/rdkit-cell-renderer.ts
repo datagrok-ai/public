@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG } from '../constants';
+import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
 import { hexToPercentRgb } from '../utils/chem-common';
 
 export interface ISubstruct {
@@ -26,6 +26,30 @@ interface IMolRenderingInfo {
 export interface IColoredScaffold {
   molecule: string,
   color?: string
+}
+
+export interface IHighlightTagInfo {
+  scaffolds?: IColoredScaffold[],
+  alighByFirstSubtruct: boolean,
+}
+
+export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
+  if (color) {
+    const colorArr = hexToPercentRgb(color);
+    const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
+    if (substrToTakeAtomsFrom.atoms) {
+      for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+        mainSubstr.highlightAtomColors ??= {};
+        mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+      };
+    }
+    if (substrToTakeAtomsFrom.bonds) {
+      for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+        mainSubstr.highlightBondColors ??= {};
+        mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+      };
+    }
+  }
 }
 
 export class GridCellRendererProxy extends DG.GridCellRenderer {
@@ -94,13 +118,13 @@ M  END
   }
 
   _fetchMolGetOrCreate(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
-    details: object = {}, multiScaffold: boolean): IMolRenderingInfo {
+    details: object = {}, alignByFirstSubstr: boolean): IMolRenderingInfo {
     let molCtx: IMolContext;
     let mol = null;
     let substruct: ISubstruct = {};
     if ((details as any).isSubstructure) {
       if (molString.includes(' H ') || molString.includes('V3000')) {
-        molCtx = getMolSafe(molString, {mergeQueryHs: true}, _rdKitModule);
+        molCtx = getMolSafe(molString, { mergeQueryHs: true }, _rdKitModule);
         mol = molCtx.mol;
       } else {
         try {
@@ -112,7 +136,7 @@ M  END
             mol = null;
           }
         }
-        molCtx = {mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false};
+        molCtx = { mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false };
       }
     } else {
       molCtx = getMolSafe(molString, details, _rdKitModule);
@@ -122,19 +146,19 @@ M  END
     if (mol !== null) {
       try {
         let molHasOwnCoords = (mol.has_coords() > 0);
-        const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule): null;
-         if (scaffoldIsMolBlock && !multiScaffold) {
+        const scaffoldIsMolBlock = scaffolds.length ? DG.chem.isMolBlock(scaffolds[0].molecule) : null;
+        const alignedByFirstSubstr = scaffoldIsMolBlock && alignByFirstSubstr;
+        if (alignedByFirstSubstr) {
           const rdKitScaffoldMolCtx = this._fetchMol(scaffolds[0].molecule, [], molRegenerateCoords, false,
-            {mergeQueryHs: true, isSubstructure: true}, multiScaffold).molCtx;
+            { mergeQueryHs: true, isSubstructure: true }, false).molCtx;
           const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;
           if (rdKitScaffoldMol) {
             rdKitScaffoldMol.normalize_depiction(0);
             if (molHasOwnCoords)
               mol.normalize_depiction(0);
-
-            let substructJson = '';
+            let substructString = '';
             try {
-              substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
+              substructString = mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
                 useCoordGen: true,
                 allowRGroups: true,
                 acceptFailure: false,
@@ -143,30 +167,36 @@ M  END
             } catch {
               // exceptions should not be thrown anymore by RDKit, but let's play safe
             }
-            if (substructJson === '') {
+            if (substructString === '') {
               substruct = {};
               if (molHasOwnCoords)
                 mol.straighten_depiction(true);
             } else
-              substruct = JSON.parse(substructJson);
-          }
-        } else {
-          for (let i = 0; i < scaffolds.length; i++) {
-            const substructMol = this._fetchMol(scaffolds[i].molecule, [], molRegenerateCoords, false,
-              {mergeQueryHs: true, isSubstructure: true}, multiScaffold).molCtx.mol;          
-            if (substructMol) {
-              const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(substructMol!));
-              if (matchedAtomsAndBonds.length) {
-                for (let j = 0; j < matchedAtomsAndBonds.length; j++) {
-                  if (!substruct.atoms)
-                    substruct.atoms = [];
-                  if (!substruct.bonds)
-                    substruct.bonds = [];
-                  this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
-                  this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
-                  this._addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
-                };
+              substruct = JSON.parse(substructString);
+              if (scaffolds[0].color) {
+                if (!substruct.atoms)
+                  substruct.atoms = [];
+                if (!substruct.bonds)
+                  substruct.bonds = [];
+                _addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
               }
+          }
+        }
+        for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
+          const substructMol = this._fetchMol(scaffolds[i].molecule, [], molRegenerateCoords, false,
+            { mergeQueryHs: true, isSubstructure: true }, false).molCtx.mol;
+          if (substructMol) {
+            const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(substructMol!));
+            if (matchedAtomsAndBonds.length) {
+              for (let j = 0; j < matchedAtomsAndBonds.length; j++) {
+                if (!substruct.atoms)
+                  substruct.atoms = [];
+                if (!substruct.bonds)
+                  substruct.bonds = [];
+                this._addAtomsOrBonds(matchedAtomsAndBonds[j].atoms!, substruct.atoms!);
+                this._addAtomsOrBonds(matchedAtomsAndBonds[j].bonds!, substruct.bonds!);
+                _addColorsToBondsAndAtoms(substruct, scaffolds[i].color, matchedAtomsAndBonds[j]);
+              };
             }
           }
         }
@@ -203,25 +233,6 @@ M  END
       if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
       toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
     };
-  }
-
-  _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
-    if (color) {
-      const colorArr = hexToPercentRgb(color);
-      const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-      if (substrToTakeAtomsFrom.atoms) {
-        for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-          mainSubstr.highlightAtomColors ??= {};
-          mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-        };
-      }
-      if (substrToTakeAtomsFrom.bonds) {
-        for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-          mainSubstr.highlightBondColors ??= {};
-          mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-        };
-      }
-    }
   }
 
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
@@ -342,47 +353,56 @@ M  END
     }
 
     const colTemp = gridCell.cell.column.temp;
-
-    const singleScaffoldHighlightMolString = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
-    const singleScaffoldFilterMolString = this._initScaffoldString(colTemp, FILTER_SCAFFOLD_TAG); //expected molBlock
-    const multipleScaffoldMolString = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
-    const singleScaffoldMolString = singleScaffoldFilterMolString.length ? singleScaffoldFilterMolString :
-      singleScaffoldHighlightMolString.length ? singleScaffoldHighlightMolString : multipleScaffoldMolString;
-    const multiScaffold = !singleScaffoldFilterMolString.length && !singleScaffoldHighlightMolString.length;
+    const highlightInfo = this.getHighlightTagInfo(colTemp, gridCell);
+    
     // TODO: make both filtering scaffold and single highlight scaffold appear
 
-    if (singleScaffoldMolString && singleScaffoldMolString.length) {
+    if (highlightInfo.scaffolds) {
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, singleScaffoldMolString, true, false, false, cellStyle, multiScaffold);
+        molString, highlightInfo.scaffolds, true, false, false, cellStyle, highlightInfo.alighByFirstSubtruct);
+    } else
+      this.highlightByScaffoldCol(g, x, y, w, h, gridCell, cellStyle, colTemp, molString);
+  }
+
+  getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
+    const filter = this._initScaffoldString(colTemp, FILTER_SCAFFOLD_TAG); //expected molBlock
+    const align = this._initScaffoldString(colTemp, ALIGN_BY_SCAFFOLD_TAG);
+    const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
+    const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
+    const alignByStructure = !!(filter.length || align.length || scaffoldTreeHighlight.length);
+    const scaffolds = filter.length ? filter : align.length ? align : scaffoldTreeHighlight.length ? scaffoldTreeHighlight : highlight;
+    return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
+  }
+
+  highlightByScaffoldCol(g: any, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle, colTemp: any, molString: string): void {
+    let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
+    let scaffoldRegenerateCoords = false;
+    const df = gridCell.cell.dataFrame;
+    let rowScaffoldCol = null;
+
+    // if given, take the 'scaffold-col' col
+    if (colTemp && colTemp['scaffold-col']) {
+      const rowScaffoldColName = colTemp['scaffold-col'];
+      const rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
+      if (rowScaffoldColProbe !== null) {
+        const scaffoldColTemp = rowScaffoldColProbe.temp;
+        scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp['regenerate-coords'] === 'true';
+        molRegenerateCoords = scaffoldRegenerateCoords;
+        rowScaffoldCol = rowScaffoldColProbe;
+      }
+    }
+
+    if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
+      // regular drawing
+      this._drawMolecule(x, y, w, h, g.canvas, molString, [], false, molRegenerateCoords, false, cellStyle, false);
     } else {
-      let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
-      let scaffoldRegenerateCoords = false;
-      const df = gridCell.cell.dataFrame;
-      let rowScaffoldCol = null;
-
-      // if given, take the 'scaffold-col' col
-      if (colTemp && colTemp['scaffold-col']) {
-        const rowScaffoldColName = colTemp['scaffold-col'];
-        const rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
-        if (rowScaffoldColProbe !== null) {
-          const scaffoldColTemp = rowScaffoldColProbe.temp;
-          scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp['regenerate-coords'] === 'true';
-          molRegenerateCoords = scaffoldRegenerateCoords;
-          rowScaffoldCol = rowScaffoldColProbe;
-        }
-      }
-
-      if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
-        // regular drawing
-        this._drawMolecule(x, y, w, h, g.canvas, molString, [], false, molRegenerateCoords, false, cellStyle, false);
-      } else {
-        // drawing with a per-row scaffold
-        const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
-        const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
-        const highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
-        this._drawMolecule(x, y, w, h, g.canvas,
-          molString, [{molecule: scaffoldMolString}], highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, false);
-      }
+      // drawing with a per-row scaffold
+      const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
+      const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
+      const highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
+      this._drawMolecule(x, y, w, h, g.canvas,
+        molString, [{molecule: scaffoldMolString}], highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, false);
     }
   }
 }

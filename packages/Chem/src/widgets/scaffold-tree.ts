@@ -3,14 +3,16 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
 import {_rdKitModule, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
-import {getMolSafe} from '../utils/mol-creation_rdkit';
+import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {chem} from 'datagrok-api/grok';
 import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UNITS} from 'datagrok-api/dg';
 import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from '../chem-searches';
-import {_package, getScaffoldTree} from '../package';
+import {_package, getScaffoldTree, isSmarts} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { FILTER_SCAFFOLD_TAG } from '../constants';
+import {SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
+import { IColoredScaffold, ISubstruct, _addColorsToBondsAndAtoms } from '../rendering/rdkit-cell-renderer';
+import { hexToPercentRgb } from '../utils/chem-common';
 
 let attached = false;
 
@@ -22,6 +24,8 @@ export enum BitwiseOp {
 interface INode {
   scaffold?: string;
   child_nodes?: INode[];
+  chosenColor?: string;
+  parentColor?: string; 
 }
 
 interface ITreeNode {
@@ -34,6 +38,8 @@ interface ITreeNode {
   orphans: boolean;
   labelDiv: HTMLDivElement;
   canvas: Element;
+  chosenColor?: string;
+  parentColor?: string;
 }
 
 interface Size {
@@ -103,6 +109,26 @@ function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
 function enableToolbar(thisViewer: ScaffoldTreeViewer): void {
   const toolbar = thisViewer.root.querySelector('.chem-scaffold-tree-toolbar ') as HTMLElement;
   toolbar.classList.toggle('empty-tree', thisViewer.tree.items.length === 0);
+}
+
+function enableColorIcon(colorIcon: HTMLElement, colorIsSet: boolean) {
+  colorIcon.classList.toggle('color-is-set', colorIsSet);
+}
+
+function disablePaletteIcon(paletteIcon: HTMLElement) {
+  paletteIcon.classList.toggle('color-is-not-set', true);
+}
+
+function removeElementByMolecule(array: IColoredScaffold[], moleculeToRemove: string) {
+  const indexToRemove = array.findIndex((item) => item.molecule === moleculeToRemove);
+  if (indexToRemove !== -1)
+    array.splice(indexToRemove, 1);
+}
+
+function removeElementByColor(array: IColoredScaffold[], colorToRemove: string) {
+  const indexToRemove = array.findIndex((item) => item.color === colorToRemove);
+  if (indexToRemove !== -1)
+    array.splice(indexToRemove, 1);
 }
 
 function filterNodesIter(rootGroup: TreeViewGroup, recordCount : number, hitsThresh: number) {
@@ -236,7 +262,7 @@ let offscreen : OffscreenCanvas | null = null;
 let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
 
 
-function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false): HTMLDivElement {
+function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false, viewer: ScaffoldTreeViewer | undefined, tooltip: boolean = false, color: string | null = null, substructure: string | null = null): HTMLDivElement {
   const r = window.devicePixelRatio;
   if (offscreen === null || offscreen.width !== Math.floor(width*r) || offscreen.height !== Math.floor(height*r)) {
     offscreen = new OffscreenCanvas(Math.floor(width*r), Math.floor(height*r));
@@ -254,12 +280,21 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     const lineWidth = tm.width;
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
-    molStr = processUnits(molStr);
-    const molCtx = getMolSafe(molStr, {}, _rdKitModule);
-    const mol = molCtx.mol;
-    if (mol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, null);
+    substructure = substructure !== null ? substructure : molStr;
+    const molCtx = getQueryMolSafe(molStr, '', _rdKitModule);
+    const substrCtx = getQueryMolSafe(substructure, '', _rdKitModule);
+    const substrMol = substrCtx;
+    const mol = molCtx;
+    if (mol !== null && substrMol !== null && color !== null) {
+      const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
+      _addColorsToBondsAndAtoms(matchedAtomsAndBonds[0], color);
+      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, matchedAtomsAndBonds[0] === undefined ? null : matchedAtomsAndBonds[0]);
       mol.delete();
+      substrMol.delete();
+    } else if (mol !== null && substrMol !== null) {
+      drawRdKitMoleculeToOffscreenCanvas({mol, kekulize: true, isQMol: true, useMolBlockWedging: mol.has_coords() === 2}, offscreen.width, offscreen.height, offscreen, null);
+      mol.delete();
+      substrMol.delete();
     }
   }
 
@@ -269,10 +304,9 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   $(moleculeHost).addClass('chem-canvas');
   moleculeHost.width = (viewer!.resizable && !tooltip) ? (viewer!.sizesMap['extra'].width) * r : width * r;
   moleculeHost.height = (viewer!.resizable && !tooltip) ? (viewer!.sizesMap['extra'].height) * r : height * r;
+  moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
   moleculeHost.style.width = '100%';
   moleculeHost.style.height = '';
-  moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
-
   return ui.divH([ui.div(moleculeHost, 'mol-host')], 'chem-mol-box');
 }
 
@@ -299,6 +333,18 @@ function getNotIcon(group: TreeViewGroup) : HTMLElement | null {
   if (c.length === 0)
     c = molHost.getElementsByClassName('fa-not-equal');
 
+  return c.length === 0 ? null : c[0] as HTMLElement;
+}
+
+function getColorIcon(group: TreeViewGroup): HTMLElement | null {
+  const molHost: HTMLElement = group.captionLabel;
+  let c = molHost.getElementsByClassName('fa-circle');
+  return c.length === 0 ? null : c[0] as HTMLElement;
+}
+
+function getPaletteIcon(group: TreeViewGroup): HTMLElement | null {
+  const molHost: HTMLElement = group.captionLabel;
+  let c = molHost.getElementsByClassName('fa-palette');
   return c.length === 0 ? null : c[0] as HTMLElement;
 }
 
@@ -329,6 +375,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   wrapper: SketcherDialogWrapper | null = null;
   molCol: DG.Column | null = null;
   molColumns: Array<DG.Column[]> = [];
+  colorCodedScaffolds: IColoredScaffold[] = [];
+  checkedScaffolds: IColoredScaffold[] = [];
   molColumnIdx: number = -1;
   tableIdx: number = -1;
   threshold: number;
@@ -342,7 +390,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   dataFrameSwitchgInProgress: boolean = false;
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
-  allowGenerate: boolean;
+  smartsExist: boolean = false;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -363,6 +411,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     'extra': {height: 120, width: 300},
   };
   size: string;
+  allowGenerate: boolean;
 
   constructor() {
     super();
@@ -662,8 +711,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.progressBar.update(50, 'Initializing Tree..: 50% completed');
 
     const thisViewer = this;
-    ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
-      return thisViewer.createGroup(molStr, rootGroup, false);
+    ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null, parentColor: string | null) => {
+      return thisViewer.createGroup(molStr, rootGroup, false, chosenColor, parentColor);
     });
 
     await updateVisibleNodesHits(this); //first visible N nodes
@@ -680,6 +729,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     updateAllNodesHits(this, () => thisViewer.filterTree(thisViewer.threshold)); //this will run asynchronously
+    this.updateTag();
   }
 
   get molColumn(): DG.Column | null {
@@ -698,7 +748,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.wrapper = SketcherDialogWrapper.create('Edit Scaffold...', 'Save', group,
       async (molStrSketcher: string, node: TreeViewGroup, errorMsg: string | null) => {
         ui.empty(node.captionLabel);
-        const molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer);
+        let molHost: HTMLDivElement;
+        const groupValue = value(group);
+        const chosenColor = groupValue.chosenColor;
+        const parentColor = groupValue.parentColor;
+        const finalColor = chosenColor ?? parentColor;
+        if (finalColor) {
+          const substructure = chosenColor ? molStrSketcher : this.getParentSmilesIterative(group);
+          molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer, false, finalColor, substructure);
+          removeElementByMolecule(this.colorCodedScaffolds, groupValue.smiles);
+          this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {molecule: substructure, color: finalColor};
+          if (group.children)
+            thisViewer.setColorToChildren(group.children, finalColor!, molStrSketcher);
+        } else {
+          molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer);
+        }
         this.addIcons(molHost, group, undefined, molStrSketcher);
         node.captionLabel.appendChild(molHost);
         const iconRoot = getFlagIcon(node);
@@ -714,6 +778,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (!valid)
         iconRoot!.setAttribute('tooltip', errorMsg);
 
+      if (finalColor)
+        this.makeColorIconActive(group, finalColor!);
+      
       thisViewer.filterTree(thisViewer.threshold);
       thisViewer.wrapper?.close();
       thisViewer.wrapper = null;
@@ -781,6 +848,28 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           enableNodeExtendArrow(parent, true);
         }
 
+        if (child !== null && parent.value !== null) {
+          const parentValue = value(parent);
+          const childValue = value(child);
+
+          let substructure: string;
+          if (parentValue.chosenColor) {
+            substructure = value(parent).smiles;
+          } else if (parentValue.parentColor) {
+            substructure = this.getParentSmilesIterative(parent);
+          } else {
+            substructure = molStrSketcher;
+          }
+      
+          const color = parentValue.chosenColor ?? parentValue.parentColor;
+          thisViewer.highlightCanvas(child, color!, substructure);
+        
+          if (color) {
+            thisViewer.makeColorIconActive(child, color);
+            childValue.parentColor = color;
+          }
+        }
+        
         //orphans
         //buildOrphans(thisViewer.tree);
         //thisViewer.clearOrphanFolders(thisViewer.tree);
@@ -825,6 +914,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree));
     this.treeEncodeUpdateInProgress = false;
 
+    this.colorCodedScaffolds = [];
+    this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+
     this.updateUI();
   }
 
@@ -833,8 +925,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
 
     this.bitset = null;
-    if (this.molColumn !== null)
-      delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
+    if (this.molColumn !== null) {
+      removeElementByColor(this.colorCodedScaffolds, '');
+      this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
+    }
 
     this.checkBoxesUpdateInProgress = true;
     const checkedNodes = this.tree.items.filter((v) => v.checked);
@@ -853,7 +947,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
-    delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
+    this.molColumn.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.colorCodedScaffolds));
     this.bitset!.setAll(false, false);
     this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -882,22 +976,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (checkedNodes.length === 1) {
-      const molStr = value(checkedNodes[0]).smiles;
-      if (molStr !== undefined) {
-        let molArom;
-        try {
-          molArom = _rdKitModule.get_qmol(molStr);
-          //@ts-ignore
-          molArom.convert_to_aromatic_form();
-          this.molColumn.temp[FILTER_SCAFFOLD_TAG] = molArom.get_molblock();
-        } catch (e) {
-        } finally {
-          molArom?.delete();
-        }
-      }
-    } else delete this.molColumn.temp[FILTER_SCAFFOLD_TAG];
-
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
 
@@ -906,8 +984,33 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let tmpBitset = DG.BitSet.create(this.molColumn.length);
 
     let isNot = false;
-    for (let n = 0; n < checkedNodes.length; ++n) {
+    
+    this.checkedScaffolds = [];
+    removeElementByColor(this.colorCodedScaffolds, '');
+    for (let n = 0; n < checkedNodes.length; ++n) { //going through all checked nodes, perform filtering and highlight
       const nodeBitset = value(checkedNodes[n]).bitset;
+      const molStr = value(checkedNodes[n]).smiles;
+      if (molStr !== undefined) {
+        let molArom;
+        try {
+          molArom = _rdKitModule.get_qmol(processUnits(molStr));
+          if (value(checkedNodes[n]).chosenColor) {
+            removeElementByMolecule(this.colorCodedScaffolds, molStr);
+            this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {
+              molecule: molStr,
+              color: (value(checkedNodes[n]).chosenColor) ?? ''
+            };
+          }
+          this.checkedScaffolds[this.checkedScaffolds.length] = {
+            molecule:  molStr,
+            color: (value(checkedNodes[n]).chosenColor) ?? ''
+          };
+        } catch (e) {
+        } finally {
+          molArom?.delete();
+        }
+      }
+      
       if (nodeBitset === null)
         continue;
 
@@ -918,19 +1021,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       this.bitset = this.bitOperation === BitwiseOp.AND ? this.bitset.and(tmpBitset) : this.bitset.or(tmpBitset);
     }
-
+    this.updateTag();
     this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
 
   private async filterByStruct(strMol: string) {
     if (this.molColumn != null && strMol !== null) {
-      const mol = getMol(strMol);
-      if (mol !== null) {
-        const molFile = mol.get_molblock();
-        mol.delete();
-        this.molColumn.temp[FILTER_SCAFFOLD_TAG] = molFile;
-      }
       const bitset = await handleMalformedStructures(this.molColumn, strMol);
       if (this.bitset === null)
         this.bitset = bitset;
@@ -944,6 +1041,176 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
+  highlightCanvas(group: DG.TreeViewGroup, color: string | null, smiles: string | null = null) {
+    const canvas = group.root.querySelectorAll('.chem-canvas')[0];
+    const molHostDiv = renderMolecule(
+      value(group).smiles, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, this, false, color, smiles
+      );
+    const coloredCanvas = molHostDiv.querySelectorAll('.chem-canvas')[0];
+    canvas.replaceWith(coloredCanvas);
+  }
+
+  makeColorIconActive(group: DG.TreeViewGroup, color: string | null) {
+    const colorIcon = getColorIcon(group);
+    const paletteIcon = getPaletteIcon(group);
+    colorIcon!.classList.remove('fal');
+    colorIcon!.classList.add('fas');
+    colorIcon!.style.cssText += ('color: ' + color + ' !important');
+    paletteIcon!.classList.remove('color-is-not-set');
+    enableColorIcon(colorIcon!, true);
+  }
+
+  makeColorIconInactive(group: DG.TreeViewGroup) {
+    const paletteIcon = getPaletteIcon(group);
+    const colorIcon = getColorIcon(group);
+    colorIcon!.classList.remove('fas');
+    colorIcon!.classList.add('fal');
+    enableColorIcon(colorIcon!, false);
+    disablePaletteIcon(paletteIcon!);
+  }
+
+  getParentSmilesIterative(group: DG.TreeViewGroup | DG.TreeViewNode): any {
+    if (!group)
+      return null;
+
+    const stack = [];
+    stack[stack.length] = group;
+
+    while (stack.length > 0) {
+      const currentNode = stack.pop();
+      if (!currentNode)
+        continue;
+
+      const parentNode = toJs(currentNode.parent);
+      if (!parentNode || parentNode.value === null)
+        continue;
+
+      const childParentColor = value(currentNode).parentColor;
+      const parentTreeNode = parentNode.value as ITreeNode;
+
+      if (parentTreeNode.chosenColor === childParentColor)
+        return parentTreeNode.smiles; 
+      stack[stack.length] = parentNode;
+    }
+    return null;
+  }
+
+  setColorToChildren(tree: DG.TreeViewNode[], chosenColor: string | null, smiles: string) {
+    for (const group of tree) {
+      if (group instanceof DG.TreeViewGroup) {
+        const groupValue = value(group);
+  
+        if (chosenColor !== null)
+          groupValue.parentColor = chosenColor;
+        else
+          delete groupValue.parentColor;
+  
+        if (!groupValue.chosenColor) {
+          this.makeColorIconActive(group, chosenColor),
+          this.highlightCanvas(group, chosenColor, smiles)
+        }
+  
+        if (group.children)
+          this.setColorToChildren(group.children, chosenColor, smiles);
+      }
+    }
+  }
+
+  removeColorFromChildren(tree: DG.TreeViewNode[], chosenColor: string, parentColor: string | null, smiles: string) {
+    for (const group of tree) {
+      if (group instanceof DG.TreeViewGroup) {
+        const groupValue = value(group);
+        const color = parentColor ?? null;
+
+        if (chosenColor === groupValue.parentColor) {
+          if (!groupValue.chosenColor) {
+            groupValue.parentColor = color!;
+  
+            if (!groupValue.parentColor && !groupValue.chosenColor)
+              this.makeColorIconInactive(group);
+            else
+              this.makeColorIconActive(group, color);
+  
+            this.highlightCanvas(group, color, smiles);
+          } else {
+            groupValue.parentColor = color!;
+          }
+        }
+  
+        if (group.children)
+          this.removeColorFromChildren(group.children, chosenColor, parentColor, smiles);
+      }
+    }
+  }
+
+  setColorToHighlight(group: TreeViewGroup, chosenColor: string): void {
+    const smiles = (group.value as ITreeNode).smiles;
+    const colorIcon = getColorIcon(group);
+    const colorIsSet = colorIcon?.classList.contains('fal');
+    
+    if (colorIsSet)
+      this.setHighlightAndColor(group, smiles, chosenColor);
+    else
+      this.resetHighlightAndColor(group, colorIcon!, smiles, chosenColor);
+  }
+
+  resetHighlightAndColor(group: TreeViewGroup, colorIcon: HTMLElement, smiles: string, chosenColor: string) {
+    const groupValue = value(group);
+    const color = groupValue.parentColor;
+    colorIcon!.style.cssText += ('color: ' + color + ' !important');
+  
+    if (groupValue.chosenColor)
+      delete groupValue.chosenColor;
+    else
+      delete groupValue.parentColor;
+  
+    if (!groupValue.parentColor && !groupValue.chosenColor)
+      this.makeColorIconInactive(group);
+    else
+      this.makeColorIconActive(group, color!);
+  
+    const substr = this.getParentSmilesIterative(group);
+    this.highlightCanvas(group, color!, substr);
+    const index = this.checkedScaffolds.findIndex((item) => item.molecule === smiles);
+    if (index !== -1) {
+      if (!substr)
+        removeElementByMolecule(this.checkedScaffolds, smiles);
+      removeElementByMolecule(this.colorCodedScaffolds, smiles);
+      this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {molecule: smiles, color: ''};
+    } else {
+      removeElementByMolecule(this.colorCodedScaffolds, smiles);
+    }
+
+    this.updateTag();
+    this.removeColorFromChildren(group.children, chosenColor, color!, substr);
+  }
+
+  setHighlightAndColor(group: TreeViewGroup, smiles: string, chosenColor: string): void {
+    this.makeColorIconActive(group, chosenColor);
+    this.highlightCanvas(group, chosenColor, smiles);
+
+    if (this.colorCodedScaffolds.length > 0)
+      removeElementByMolecule(this.colorCodedScaffolds, smiles);
+    this.colorCodedScaffolds[this.colorCodedScaffolds.length] = { molecule: smiles, color: chosenColor };
+    this.updateTag();
+    this.setColorToChildren(group.children, chosenColor, smiles);
+  }
+
+  updateTag() {
+    let updatedTag: string;
+    const colorCodedString = JSON.stringify(this.colorCodedScaffolds);
+    const checkedString = JSON.stringify(this.checkedScaffolds);
+    if (this.colorCodedScaffolds.length > 0 && this.checkedScaffolds.length > 0) {
+      updatedTag = checkedString.slice(0, -1) + ',' + colorCodedString.slice(1);
+    } else if (this.colorCodedScaffolds.length > 0) {
+      updatedTag = colorCodedString;
+    } else {
+      updatedTag = checkedString;
+    }  
+    this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
+    grok.shell.tv.dataFrame.fireValuesChanged();
+  }
+  
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
     if ((group.value as ITreeNode).bitwiseNot === isNot)
       return;
@@ -967,11 +1234,48 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
+  updateColorIcon(colorIcon: HTMLElement, chosenColor: string) {
+    colorIcon.classList.add('fal');
+    colorIcon.classList.add('scaffold-tree-circle');
+    colorIcon.classList.add('color-icon');
+    colorIcon!.style.cssText += ('color: ' + chosenColor + ' !important');
+  }
+
   addIcons(molHost: HTMLDivElement, group: TreeViewGroup, label?: string, molStrSketcher?: string): void {
     const thisViewer = this;
+    const groupValue = group.value as ITreeNode;
     const notIcon = ui.iconFA('equals',
       () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
       'Exclude structures containing this scaffold');
+
+    let chosenColor: string = '#2057b6';
+    const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
+      chosenColor = value;
+    });
+    const paletteIcon = ui.iconFA('palette', () => {
+      ui.dialog('Choose color')
+      .add(colorPicker)
+      .onOK(() => {
+        chosenColor = colorPicker.stringValue;
+        this.updateColorIcon(colorIcon, chosenColor);
+        groupValue.chosenColor = chosenColor;
+        this.setColorToHighlight(group, chosenColor);
+      })
+      .show()
+    }, 'Choose color to highlight');
+    paletteIcon.classList.add('palette-icon');
+    disablePaletteIcon(paletteIcon);
+
+    const colorIcon = ui.iconFA('circle', async () => {
+      if (!groupValue.chosenColor)
+        groupValue.chosenColor = chosenColor;
+      chosenColor = groupValue.chosenColor!;
+      thisViewer.setColorToHighlight(group, chosenColor);
+    }, 'Assigns color to the scaffold');
+    this.updateColorIcon(colorIcon, chosenColor);
+
+    colorIcon.onclick = (e) => e.stopImmediatePropagation();
+    colorIcon.onmousedown = (e) => e.stopImmediatePropagation();
     notIcon.onclick = (e) => e.stopImmediatePropagation();
     notIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
@@ -981,7 +1285,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(value(group).smiles, 300, 200, undefined, thisViewer, true), e.clientX, e.clientY);
     zoomIcon.onmouseleave = (e) => ui.tooltip.hide();
 
-    const iconsDivLeft = ui.divV([notIcon, zoomIcon], 'chem-mol-box-info-buttons');
+    const iconsDivLeft = ui.divV([notIcon, colorIcon, paletteIcon, zoomIcon], 'chem-mol-box-info-buttons');
 
     const iconsDiv = ui.divV([
       ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
@@ -1035,13 +1339,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
 
-  private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false) : TreeViewGroup | null {
+  private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, chosenColor: string | null = null, parentColor: string | null = null) : TreeViewGroup | null {
     if (this.molColumn === null)
       return null;
 
     const thisViewer = this;
     const bitset = DG.BitSet.create(this.molColumn.length);
-    const molHost = renderMolecule(molStr, this.sizesMap[this.size].width, this.sizesMap[this.size].height, skipDraw, thisViewer);
+    const color = chosenColor ?? parentColor;
+    const molHost = renderMolecule(molStr, this.sizesMap[this.size].width, this.sizesMap[this.size].height, skipDraw, thisViewer, false, color);
     const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset: null, bitwiseNot: false});
     this.addIcons(molHost, group, undefined, molStr);
 
@@ -1051,6 +1356,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (!thisViewer.checkBoxesUpdateInProgress && node.value !== null)
         thisViewer.updateFilters();
     });
+
+    if (color) {
+      this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {molecule: molStr, color: color};
+      this.makeColorIconActive(group, color);
+      if (chosenColor)
+        value(group).chosenColor = chosenColor; 
+      if (parentColor)
+        value(group).parentColor = parentColor;
+    }
 
     return group;
   }
@@ -1257,6 +1571,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
         thisViewer.checkBoxesUpdateInProgress = true;
         this.selectGroup();
+        node.checked = true;
         thisViewer.checkBoxesUpdateInProgress = false;
         thisViewer.resetFilters();
         thisViewer.updateFilters();
@@ -1440,11 +1755,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   static serializeTree(rootGroup: TreeViewGroup): INode {
     const jsonNode: INode = {};
-    if (value(rootGroup))
-      jsonNode.scaffold = value(rootGroup).smiles;
+    const rootGroupValue = value(rootGroup);
+    if (rootGroupValue) {
+      jsonNode.scaffold = rootGroupValue.smiles;
+      if (rootGroupValue.chosenColor)
+        jsonNode.chosenColor = rootGroupValue.chosenColor;
+      if (rootGroupValue.parentColor)
+        jsonNode.parentColor = rootGroupValue.parentColor;
+    }
     jsonNode.child_nodes = new Array(rootGroup.children.length);
 
-    for (let i = 0; i < rootGroup.children.length; ++i)
+    for (let i = 0; i < rootGroup.children.length; ++i) 
       jsonNode.child_nodes[i] = ScaffoldTreeViewer.serializeTree(rootGroup.children[i] as TreeViewGroup);
 
     return jsonNode;
@@ -1454,8 +1775,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let countNodes = 0;
     for (let n = 0; n < json.length; ++n) {
       countNodes += ScaffoldTreeViewer
-        .deserializeTree(json[n], treeRoot, (molStr: string, rootGroup: TreeViewGroup, countNodes: number) => {
-          return createGroup(molStr, rootGroup, countNodes);
+        .deserializeTree(json[n], treeRoot, (molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null, parentColor: string | null, countNodes: number) => {
+          return createGroup(molStr, rootGroup, chosenColor, parentColor, countNodes);
         }, 0);
     }
     return countNodes;
@@ -1463,12 +1784,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   static deserializeTree(json: INode, rootGroup: TreeViewGroup, createGroup: Function, countNodes: number) : number {
     const molStr = json.scaffold;
+    const chosenColor = json.chosenColor;
+    const parentColor = json.parentColor;
     if (molStr === null || molStr === undefined) {
       _package.logger.error('Scaffold is null or undefined.');
       return countNodes;
     }
 
-    const group: TreeViewGroup = createGroup(molStr, rootGroup, countNodes);
+    const group: TreeViewGroup = createGroup(molStr, rootGroup, chosenColor, parentColor, countNodes);
     if (group === null)
       return countNodes;
 
@@ -1479,7 +1802,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     for (let n = 0; n < json.child_nodes.length; ++n)
       countNodes += ScaffoldTreeViewer.deserializeTree(json.child_nodes[n], group, createGroup, countNodes);
-
 
     ++countNodes;
     if (group.children.length === 0)
