@@ -997,12 +997,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           if (value(checkedNodes[n]).chosenColor) {
             removeElementByMolecule(this.colorCodedScaffolds, molStr);
             this.colorCodedScaffolds[this.colorCodedScaffolds.length] = {
-              molecule: molStr,//isSmarts(molStr) ? molStr : molArom.get_molblock(),
+              molecule: molStr,
               color: (value(checkedNodes[n]).chosenColor) ?? ''
             };
           }
           this.checkedScaffolds[this.checkedScaffolds.length] = {
-            molecule:  molStr,//isSmarts(molStr) ? molStr : molArom.get_molblock(),
+            molecule:  molStr,
             color: (value(checkedNodes[n]).chosenColor) ?? ''
           };
         } catch (e) {
