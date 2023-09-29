@@ -221,7 +221,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
   ui.dialog({title: 'Sequence Space'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {
-      return call.func.prepare(funcEditor.funcParams).call(true);
+      return call.func.prepare(funcEditor.funcParams).call();
     })
     .show();
 }
@@ -471,55 +471,93 @@ export async function sequenceSpaceTopMenu(
   // Otherwise, dialog is freezing
   await delay(10);
   if (!checkInputColumnUI(macroMolecule, 'Sequence space')) return;
+  let scatterPlot: DG.ScatterPlotViewer | undefined = undefined;
+  const pg = DG.TaskBarProgressIndicator.create('Initializing sequence space ...');
+  // function for progress of umap
+  try {
+    function progressFunc(_nEpoch: number, epochsLength: number, embeddings: number[][]) {
+      let embedXCol: DG.Column | null = null;
+      let embedYCol: DG.Column | null = null;
+      if (!table.columns.names().includes(embedColsNames[0])) {
+        embedXCol = table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
+        embedYCol = table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
+        if (plotEmbeddings) {
+          scatterPlot = grok.shell
+            .tableView(table.name)
+            .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+        }
+      } else {
+        embedXCol = table.columns.byName(embedColsNames[0]);
+        embedYCol = table.columns.byName(embedColsNames[1]);
+      }
 
-  const embedColsNames = getEmbeddingColsNames(table);
-  const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
-  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, macroMolecule);
+      embedXCol.init((i) => embeddings[i][0]);
+      embedYCol.init((i) => embeddings[i][1]);
+      const progress = (_nEpoch / epochsLength * 100);
+      pg.update(progress, `Running sequence space ... ${progress.toFixed(0)}%`);
+    }
+    const embedColsNames = getEmbeddingColsNames(table);
+    const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
+    const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, macroMolecule);
 
-  const chemSpaceParams: ISequenceSpaceParams = {
-    seqCol: withoutEmptyValues.col(macroMolecule.name)!,
-    methodName: methodName,
-    similarityMetric: similarityMetric,
-    embedAxesNames: embedColsNames,
-    options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.8,
-      usingSparseMatrix: table.rowCount > 20000},
-  };
+    const chemSpaceParams: ISequenceSpaceParams = {
+      seqCol: withoutEmptyValues.col(macroMolecule.name)!,
+      methodName: methodName,
+      similarityMetric: similarityMetric,
+      embedAxesNames: embedColsNames,
+      options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.8,
+        usingSparseMatrix: table.rowCount > 20000},
+    };
 
-  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
-  // number of rows which will be processed relatively fast
-  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
-  if (table.rowCount > allowedRowCount) {
-    grok.shell.warning(`Too many rows, maximum for sequence space is ${allowedRowCount}`);
-    return;
-  }
+    const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
+    // number of rows which will be processed relatively fast
+    const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+    if (table.rowCount > allowedRowCount) {
+      grok.shell.warning(`Too many rows, maximum for sequence space is ${allowedRowCount}`);
+      return;
+    }
 
-  if (table.rowCount > fastRowCount) {
-    ui.dialog().add(ui.divText(`Sequence space analysis might take several minutes.
+    if (table.rowCount > fastRowCount) {
+      ui.dialog().add(ui.divText(`Sequence space analysis might take several minutes.
     Do you want to continue?`))
-      .onOK(async () => {
-        const progressBar = DG.TaskBarProgressIndicator.create(`Running Sequence space...`);
-        const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
-        progressBar.close();
-        return processResult(sequenceSpaceRes);
-      })
-      .show();
-  } else {
-    const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
-    return processResult(sequenceSpaceRes);
-  }
+        .onOK(async () => {
+          const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams, progressFunc);
+          pg.close();
+          return processResult(sequenceSpaceRes);
+        })
+        .onCancel(() => { pg.close(); })
+        .show();
+    } else {
+      const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams, progressFunc);
+      pg.close();
+      return processResult(sequenceSpaceRes);
+    }
 
-  function processResult(sequenceSpaceRes: ISequenceSpaceResult): DG.ScatterPlotViewer | undefined {
-    const embeddings = sequenceSpaceRes.coordinates;
-    for (const col of embeddings) {
-      const listValues = col.toList();
-      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-      table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
+    function processResult(sequenceSpaceRes: ISequenceSpaceResult): DG.ScatterPlotViewer | undefined {
+      const embeddings = sequenceSpaceRes.coordinates;
+      for (const col of embeddings) {
+        const listValues = col.toList();
+        emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+        let embedCol = table.columns.byName(col.name);
+        if (!embedCol) {
+          embedCol = DG.Column.float(col.name, col.length);
+          table.columns.add(embedCol);
+        }
+        embedCol.init((i) => listValues[i]);
+      //table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
+      }
+      if (plotEmbeddings) {
+        if (!scatterPlot) {
+          scatterPlot = grok.shell
+            .tableView(table.name)
+            .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+        }
+        return scatterPlot;
+      }
     }
-    if (plotEmbeddings) {
-      return grok.shell
-        .tableView(table.name)
-        .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
-    }
+  } catch (e) {
+    console.error(e);
+    pg.close();
   }
 
 

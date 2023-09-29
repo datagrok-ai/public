@@ -53,7 +53,9 @@ export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpacePar
   return result;
 }
 
-export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
+export async function getSequenceSpace(spaceParams: ISequenceSpaceParams,
+  progressFunc?: (epochNum: number, epochsLength: number, embedding: number[][]) => void
+): Promise<ISequenceSpaceResult> {
   const ncUH = UnitsHandler.getOrCreate(spaceParams.seqCol);
 
   const distanceFName = ncUH.isMsa() ? MmDistanceFunctionsNames.HAMMING : MmDistanceFunctionsNames.LEVENSHTEIN;
@@ -87,7 +89,7 @@ export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promi
     spaceParams.methodName,
     distanceFName,
     spaceParams.options,
-    true);
+    true, progressFunc);
   const cols: DG.Column[] = spaceParams.embedAxesNames.map(
     (name: string, index: number) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
   return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
