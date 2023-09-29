@@ -27,4 +27,4 @@ To export logs you need to create connection to AWS and configure **Log Export B
    
 ## To disable log sending
 
-   1. Toggle **Enabled** in the **Log Export Block**. It disables log sending without the need to remove the form.
+   1. Toggle **Enabled** in the **Log Export Block**. It disables log sending without the need to remove the block.
