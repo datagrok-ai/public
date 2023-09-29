@@ -200,8 +200,8 @@
             <systemPath>${project.basedir}/lib/AthenaJDBC42-2.0.35.1000.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>software.aws</groupId>
-            <artifactId>neptune</artifactId>
+            <groupId>software.amazon.neptune</groupId>
+            <artifactId>amazon-neptune-jdbc-driver</artifactId>
             <version>3.0.0</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/amazon-neptune-jdbc-driver-3.0.0-all.jar</systemPath>
