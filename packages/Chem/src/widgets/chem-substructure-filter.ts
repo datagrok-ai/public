@@ -37,7 +37,7 @@ interface ISubstructureFilterState {
 }
 
 interface IApplyFilterSync{
-  activeFiltersCounter: number;
+  totalSubstrFiltersOnCol: number[];
   activeFilterId?: number;
   applyFilterCallsCounter: number;
 }
@@ -245,11 +245,6 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs?.push(searchTypeChanged.subscribe(async (_: any) => {
       await this._onSketchChanged();
     }));
-
-    const applyFilterSyncTag: IApplyFilterSync = this.column?.getTag(CHEM_APPLY_FILTER_SYNC) ?
-       JSON.parse(this.column!.getTag(CHEM_APPLY_FILTER_SYNC)!) : {activeFiltersCounter: 0, applyFilterCallsCounter: 0};
-    applyFilterSyncTag.activeFiltersCounter += 1;
-    this.column!.setTag(CHEM_APPLY_FILTER_SYNC, JSON.stringify(applyFilterSyncTag));
   }
 
   refresh() {
@@ -300,6 +295,13 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to load filter state. */
   applyState(state: any): void {
     super.applyState(state);
+
+    const applyFilterSyncTag: IApplyFilterSync = this.column?.getTag(CHEM_APPLY_FILTER_SYNC) ?
+    JSON.parse(this.column!.getTag(CHEM_APPLY_FILTER_SYNC)!) : {totalSubstrFiltersOnCol: [], applyFilterCallsCounter: 0};
+    if (!applyFilterSyncTag.totalSubstrFiltersOnCol.includes(this.filterId))
+      applyFilterSyncTag.totalSubstrFiltersOnCol.push(this.filterId);
+    this.column!.setTag(CHEM_APPLY_FILTER_SYNC, JSON.stringify(applyFilterSyncTag));
+
     if (!this.initListeners) {
       this.initListeners = true;
       this.terminateEventName = getTerminateEventName(this.tableName, this.columnName!);
@@ -343,7 +345,7 @@ export class SubstructureFilter extends DG.Filter {
     if (!this.isFiltering) {
       this.currentMolfile = newMolFile;
       this.bitset = !this.active ?
-        DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null;//TODO
+        DG.BitSet.fromBytes((await this.getFilterBitset())!.buffer.buffer, this.column!.length) : null; //TODO
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.terminatePreviousSearch();
@@ -386,7 +388,7 @@ export class SubstructureFilter extends DG.Filter {
   updateApplyFilterSyncTag(add = true): boolean {
     const applyFilterSyncTag: IApplyFilterSync = JSON.parse(this.column!.getTag(CHEM_APPLY_FILTER_SYNC)!);
     if (add) {
-      applyFilterSyncTag.applyFilterCallsCounter = applyFilterSyncTag.activeFiltersCounter;
+      applyFilterSyncTag.applyFilterCallsCounter = applyFilterSyncTag.totalSubstrFiltersOnCol.length;
       applyFilterSyncTag.activeFilterId = this.filterId;
     } else {
       if (applyFilterSyncTag.applyFilterCallsCounter === 0)
