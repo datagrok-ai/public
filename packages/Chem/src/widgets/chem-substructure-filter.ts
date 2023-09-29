@@ -15,7 +15,7 @@ import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {AVAILABLE_FPS, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, SubstructureSearchType, getSearchProgressEventName, getTerminateEventName} from '../constants';
+import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, SubstructureSearchType, getSearchProgressEventName, getTerminateEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
 import { Fingerprint } from '../utils/chem-common';
@@ -34,6 +34,12 @@ interface ISubstructureFilterState {
   searchType: SubstructureSearchType;
   simCutOff: number;
   fp: Fingerprint
+}
+
+interface IApplyFilterSync{
+  activeFiltersCounter: number;
+  activeFilterId?: number;
+  applyFilterCallsCounter: number;
 }
 
 export class SubstructureFilter extends DG.Filter {
@@ -70,7 +76,7 @@ export class SubstructureFilter extends DG.Filter {
   similarityOptionsDiv = ui.divH([], 'chem-filter-similarity-options');
   sketcherDiv = ui.div('', {style: {position: 'relative', width: '100%'}})
   emptySketcherDiv = ui.divH([], 'empty-filter');
-  searchTypeButton: HTMLButtonElement;
+  optionsIcon: HTMLElement;
   searchTypeChanged = new Subject();
   searchOptionsDiv = ui.div('', 'filter-search-options');
   showOptions = false;
@@ -135,10 +141,10 @@ export class SubstructureFilter extends DG.Filter {
     ui.tooltip.bind((this.similarityCutOffInput.root.getElementsByClassName('ui-input-slider')[0] as HTMLElement)!, 'Similarity cutoff');
 
 
-    this.searchTypeButton = ui.button(this.searchType, () => {
+    this.optionsIcon = ui.icons.settings(() => {
       this.onShowOptionsChanged();
     });
-    $(this.searchTypeButton).addClass('search-type-icon');
+    $(this.optionsIcon).addClass('search-options-icon');
 
     this.sketcherDiv.append(this.sketcher.root);
     this.emptySketcherDiv.append(this.searchTypeInput.root);
@@ -174,9 +180,10 @@ export class SubstructureFilter extends DG.Filter {
     //this fix is required for Marvin JS sync between filter panel and hamburger menu 
     ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
       if (this.sketcher._mode === DG.chem.SKETCHER_MODE.INPLACE) {
-        this.root.appendChild(this.emptySketcherDiv);
         this.root.append(this.sketcher.root);
         this.searchOptionsDiv.append(this.searchTypeInput.root);
+      } else {
+        this.updateFilterUiOnSketcherChanged(this.currentMolfile);
       }
     });
     super.attach(dataFrame);
@@ -210,7 +217,7 @@ export class SubstructureFilter extends DG.Filter {
         this.similarityCutOffInput.value = state.simCutOff;
         this.fpInput.value = state.fp;
         this.sketcher.setMolFile(state.molblock!);
-        this.updateExternalSketcher();
+        this.updateFilterUiOnSketcherChanged(state.molblock!);
       }
     }));
     this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
@@ -238,6 +245,11 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs?.push(searchTypeChanged.subscribe(async (_: any) => {
       await this._onSketchChanged();
     }));
+
+    const applyFilterSyncTag: IApplyFilterSync = this.column?.getTag(CHEM_APPLY_FILTER_SYNC) ?
+       JSON.parse(this.column!.getTag(CHEM_APPLY_FILTER_SYNC)!) : {activeFiltersCounter: 0, applyFilterCallsCounter: 0};
+    applyFilterSyncTag.activeFiltersCounter += 1;
+    this.column!.setTag(CHEM_APPLY_FILTER_SYNC, JSON.stringify(applyFilterSyncTag));
   }
 
   refresh() {
@@ -251,6 +263,9 @@ export class SubstructureFilter extends DG.Filter {
       this.finishSearch(smarts ?? '');
       this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
     });
+    grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: DG.BitSet.create(this.dataFrame!.rowCount).setAll(true),
+      molblock: DG.WHITE_MOLBLOCK, colName: this.columnName, filterId: this.filterId, 
+      tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
     super.detach();
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
@@ -258,7 +273,8 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter(): void {
-    // console.log(`in apply filter ${this.sketcher.getMolFile()}`)
+    if (!this.updateApplyFilterSyncTag(false))
+      return;
     if (this.dataFrame && this.bitset && !this.isDetached) {
       this.dataFrame.filter.and(this.bitset);
         this.dataFrame.rows.addFilterState(this.saveState());
@@ -320,7 +336,8 @@ export class SubstructureFilter extends DG.Filter {
   async _onSketchChanged(): Promise<void> {
     const newMolFile = this.sketcher.getMolFile();
     const newSmarts = await this.sketcher.getSmarts();
-    this.updateFilterUiOnSketcherChanged(newMolFile);
+    if (this.currentMolfile !== newMolFile)
+      this.updateFilterUiOnSketcherChanged(newMolFile);
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
@@ -351,12 +368,12 @@ export class SubstructureFilter extends DG.Filter {
         grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
           molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
           tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
-
         const bitArray = await this.getFilterBitset();
         this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
         this.batchResultObservable?.unsubscribe();
         this.batchResultObservable = grok.events.onCustomEvent(this.progressEventName).subscribe((progress: number) => {
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
+          this.updateApplyFilterSyncTag();
           this.dataFrame?.rows.requestFilter();
             this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
         });
@@ -366,8 +383,23 @@ export class SubstructureFilter extends DG.Filter {
     }
   }
 
+  updateApplyFilterSyncTag(add = true): boolean {
+    const applyFilterSyncTag: IApplyFilterSync = JSON.parse(this.column!.getTag(CHEM_APPLY_FILTER_SYNC)!);
+    if (add) {
+      applyFilterSyncTag.applyFilterCallsCounter = applyFilterSyncTag.activeFiltersCounter;
+      applyFilterSyncTag.activeFilterId = this.filterId;
+    } else {
+      if (applyFilterSyncTag.applyFilterCallsCounter === 0)
+        return true;
+      applyFilterSyncTag.applyFilterCallsCounter -=1;
+      if (this.filterId === applyFilterSyncTag.activeFilterId)
+        return true;
+    }
+    this.column!.setTag(CHEM_APPLY_FILTER_SYNC, JSON.stringify(applyFilterSyncTag));
+    return false;
+  }
+
   async getFilterBitset(): Promise<BitArray> {
-    console.log(`getFilterBitset currentSearches: ${this.currentSearches}`);
     const smarts = await this.sketcher.getSmarts();
     return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, false, false,
       this.searchType, this.similarityCutOff, this.fp);
@@ -384,15 +416,22 @@ export class SubstructureFilter extends DG.Filter {
       if (!!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile)){
         this.removeChildIfExists(this.root, this.emptySketcherDiv, 'empty-filter');
         this.root.appendChild(this.sketcherDiv);
-        this.sketcher.root.appendChild(this.searchTypeButton);
-        if (this.searchType !== SubstructureSearchType.IS_SIMILAR || !this.showOptions)
-          this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
+        if (this.searchType === SubstructureSearchType.CONTAINS) {
+          this.sketcher.root.appendChild(this.optionsIcon);
+        } else {
+          this.root.prepend(this.searchOptionsDiv);
+          this.searchOptionsDiv.append(this.searchTypeInput.root);
+          if (this.searchType === SubstructureSearchType.IS_SIMILAR)
+            this.searchOptionsDiv.append(this.similarityOptionsDiv);
+          else
+            this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
+        }
       }
       else {
         this.emptySketcherDiv.append(this.searchTypeInput.root);
         this.emptySketcherDiv.append(this.sketcherDiv);
         this.root.append(this.emptySketcherDiv);
-        this.removeChildIfExists(this.sketcher.root, this.searchTypeButton, 'search-type-icon');
+        this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'search-options-icon');
         if (this.searchType !== SubstructureSearchType.IS_SIMILAR)
           this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
       }
@@ -406,7 +445,8 @@ export class SubstructureFilter extends DG.Filter {
 
   onSearchTypeChanged() {
     this.searchType = this.searchTypeInput.value;
-    this.searchTypeButton.innerText = this.searchType;
+    if (this.searchType !== SubstructureSearchType.CONTAINS)
+      this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'search-options-icon');
     if (this.searchType === SubstructureSearchType.IS_SIMILAR)
       this.searchOptionsDiv.append(this.similarityOptionsDiv);
     else
@@ -420,8 +460,6 @@ export class SubstructureFilter extends DG.Filter {
     if (this.showOptions) {
       this.root.prepend(this.searchOptionsDiv);
       this.searchOptionsDiv.append(this.searchTypeInput.root);
-      if (this.searchType === SubstructureSearchType.IS_SIMILAR)
-        this.searchOptionsDiv.append(this.similarityOptionsDiv);
     } else
       this.removeChildIfExists(this.root, this.searchOptionsDiv, 'filter-search-options');
   }

@@ -449,14 +449,15 @@
   width: 94px;
 }
 
-.search-type-icon {
+.search-options-icon {
   visibility: hidden;
-  font-size: 10px;
   position: absolute;
-  top: 0px;
+  top: 12px;
+  left: 10px;
+  font-size: 16px;
 }
 
-.chem-filter:hover .search-type-icon {
+.chem-filter:hover .search-options-icon {
   visibility: visible;
 }
 
@@ -494,4 +495,9 @@
   pointer-events: none;
   color: var(--grey-4)!important;
   cursor:default!important;
+}
+
+.sketch-link {
+  border: none!important;
+  color: var(--blue-1);
 }

@@ -48,3 +48,4 @@ export const FILTER_TYPE_TAG = '.filter-type'
 export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
 export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';
+export const CHEM_APPLY_FILTER_SYNC = '.chem-apply-filter-sync';
