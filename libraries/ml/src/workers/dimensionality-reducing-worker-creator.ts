@@ -11,7 +11,9 @@ import {IReduceDimensionalityResult} from '../reduce-dimensionality';
  * @return {Promise<IReduceDimensionalityResult>} Resulting embedding and distance matrix.
  */
 export async function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
-  options?: any, parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
+  options?: any, parallelDistanceWorkers?: boolean,
+  progressFunc?: (epoch: number, epochsLength: number, embedding: number[][]) => void
+): Promise<IReduceDimensionalityResult> {
   return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
     worker.postMessage({
@@ -21,7 +23,11 @@ export async function createDimensinalityReducingWorker(dataMetric: ValidTypes, 
       options: options,
       parallelDistanceWorkers: parallelDistanceWorkers,
     });
-    worker.onmessage = ({data: {error, distance, embedding}}) => {
+    worker.onmessage = ({data: {error, distance, embedding, epochNum, epochsLength}}) => {
+      if (epochNum && epochsLength) {
+        progressFunc && progressFunc(epochNum, epochsLength, embedding);
+        return;
+      }
       if (error)
         reject(error);
       else

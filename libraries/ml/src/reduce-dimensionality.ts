@@ -47,6 +47,7 @@ export interface IUMAPOptions {
   preCalculateDistanceMatrix?: boolean;
   usingSparseMatrix?: boolean;
   sparseMatrix?: SparseMatrixTransferType;
+  progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
 }
 
 export interface ITSNEOptions {
@@ -152,7 +153,8 @@ export type UmapOptions = Options & UMAPParameters & {
   preCalculateDistanceMatrix?: boolean,
   usingSparseMatrix?: boolean,
   sparseMatrixThreshold?: number,
-  sparseMatrix?: SparseMatrixTransferType
+  sparseMatrix?: SparseMatrixTransferType,
+  progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void,
 };
 
 /**
@@ -173,6 +175,7 @@ class UMAPReducer extends Reducer {
   protected usingSparseMatrix: boolean;
   protected sparseMatrixThreshold: number;
   protected transferedSparseMatrix?: SparseMatrixTransferType;
+  protected progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -186,6 +189,7 @@ class UMAPReducer extends Reducer {
     this.usingSparseMatrix = !!options.usingSparseMatrix || !!options.sparseMatrix;
     this.sparseMatrixThreshold = options.sparseMatrixThreshold ?? 0.8;
     this.transferedSparseMatrix = options.sparseMatrix;
+    this.progressFunc = options.progressFunc;
 
     this.distanceFname = options.distanceFname!;
     this.dmIndexFunc = dmLinearIndex(this.data.length);
@@ -267,7 +271,10 @@ class UMAPReducer extends Reducer {
           console.timeEnd('sparse matrix to map')
         
     }
-    const embedding = this.reducer.fit(this.vectors);
+    const embedding = await this.reducer.fitAsync(this.vectors, (epoc) => {
+      if (this.progressFunc)
+        this.progressFunc(epoc, this.reducer.getNEpochs(), this.reducer.getEmbedding());
+    });
 
     function arrayCast2Coordinates(data: number[][]): Coordinates {
       return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));

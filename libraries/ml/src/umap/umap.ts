@@ -1066,11 +1066,15 @@ export class UMAP {
    * Gets the number of epochs for optimizing the projection.
    * NOTE: This heuristic differs from the python version
    */
-  private getNEpochs() {
+  public getNEpochs() {
     const graph = this.graph;
 
     if (this.nEpochs > 0) {
       return this.nEpochs;
+    }
+
+    if (!graph) {
+      return 200;
     }
 
     const length = graph.nRows;
