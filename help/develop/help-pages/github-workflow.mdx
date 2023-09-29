@@ -12,13 +12,13 @@ import TabItem from '@theme/TabItem';
 
 [Docusaurus](https://docusaurus.io/) is an optimized site generator. Docusaurus
 is a project for building, deploying, and maintaining open source project
-websites easily.
+websites.
 
 ### 1. Install the latest stable NodeJS
 
 Use instructions from the official
 [Node JS](https://nodejs.org/en/download) installation page.
-After installation check that the npm version is at least `v9.x.x`:
+After installation, check that the npm version is at least `v9.x.x`:
 
 ```shell
 npm --version
@@ -50,7 +50,7 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
    Markdownlint [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
 
 3. [Configure autofix for issues](https://github.com/DavidAnson/vscode-markdownlint#fix)
-4. Show markdownlint warnings using the shortcut: `Ctrl+Shift+M`/`Ctrl+Shift+M`/`⇧⌘M`
+4. Show markdownlint warnings using the shortcut: `Ctrl+Shift+M`/`⇧⌘M`
 
 ```mdx-code-block
 </TabItem>
@@ -65,7 +65,7 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
 
 2. Add MarkdownLint as [External Tool](https://www.jetbrains.com/help/idea/configuring-third-party-tools.html#local-ext-tools). `Preferences > Tools > External Tools > + (Add)`
    1. Name: `MarkdownLint`
-   2. Description: `MarkdownLint CLI with enabled fix`
+   2. Description: `MarkdownLint CLI with the enabled fix.`
    3. Program: `markdownlint-cli2-fix`
    4. Arguments: `$FilePath$`
    5. Working Directory: `$Projectpath$`
@@ -74,15 +74,13 @@ we use [markdownlint](https://github.com/DavidAnson/markdownlint).
 
    ![idea-markdownlint.png](idea-markdownlint.png)
 
-3. Now, to run MarkdownLint on the current file, you can click `Tools > External Tools > MarkdownLint`.
+3. To run MarkdownLint on the current file, click `Tools > External Tools > MarkdownLint`.
 
-4. _(Optional)_ To run MarkdownLint easier you can [add an icon to the toolbar](https://www.jetbrains.com/help/idea/customize-actions-menus-and-toolbars.html#customize-menus-and-toolbars). 
-   `Preferences > Appearance & Behavior > Menus and Toolbars > Main Toolbar > Toolbar Run Actions > + > Add Action... > External Tools > External Tools > MarkdownLint > OK`. 
-   Now, you can run Markdownlint from the toolbar using the icon.
+4. _(Optional)_ To run MarkdownLint easier, [add an icon to the toolbar](https://www.jetbrains.com/help/idea/customize-actions-menus-and-toolbars.html#customize-menus-and-toolbars). 
+   `Preferences > Appearance & Behavior > Menus and Toolbars > Main Toolbar > Toolbar Run Actions > + > Add Action... > External Tools > External Tools > MarkdownLint > OK`.    
 
-5. _(Optional)_ To run MarkdownLint easier you can [add a shortcut](https://www.jetbrains.com/help/idea/configuring-keyboard-and-mouse-shortcuts.html). 
-   `Preferences > Keymap > External Tools > MarkdownLint > Right click > Add Keyboard Shortcut > Set the shortcut you like, for example, Ctrl+Shift+M/⌘⇧M`. 
-   Now, you can run Markdownlint using the shortcut.
+5. _(Optional)_ To run MarkdownLint easier, [add a shortcut](https://www.jetbrains.com/help/idea/configuring-keyboard-and-mouse-shortcuts.html). 
+   `Preferences > Keymap > External Tools > MarkdownLint > Right click > Add Keyboard Shortcut > Set the shortcut you like, for example, Ctrl+Shift+M/⌘⇧M`.    
 
 ```mdx-code-block
 </TabItem>
@@ -224,12 +222,12 @@ npm run start-debug
 </Tabs>
 ```
 
-If the command does not work use `docusaurus start --config docusaurus-debug.config.js`.
+If the command does not work, use `docusaurus start --config docusaurus-debug.config.js`.
 Docusaurus will be available at [http://localhost:3000](http://localhost:3000).
 
 ### 3. Make changes
 
-Now you can proceed with the documentation editing.
+Now, you can proceed with the documentation editing.
 Docusaurus will recompile the documentation on every change you make,
 so you will instantly see all the improvements you have made to the documentation.
 If you don't see your changes immediately, reload the page.
@@ -278,7 +276,7 @@ hyperlink --check-anchors build/ --sources ../help/
 </Tabs>
 ```
 
-If the command `npm run build` does not work use `docusaurus build`.
+If the command `npm run build` does not work, use `docusaurus build`.
 
 ### 7. Commit and push your changes
 
@@ -296,7 +294,7 @@ Finally, create a pull request to merge your changes to the master branch.
   using [Docusaurus](https://docusaurus.io/)
   * The result HTML help pages are also available as GitHub Actions artifact: `docusaurus`
 * Then [Hyperlink](https://github.com/untitaker/hyperlink) checks the result HTML files.
-* If the checks are finished successfully and the changes are in the master branch,  GitHub Actions will deploy the documentation to the server.
+* If the checks are finished successfully, and the changes are in the master branch,  GitHub Actions will deploy the documentation to the server.
   * 'Deploy to server' step contains detailed information about changes that are made on the server.
 * Finally, GitHub Actions performs Typesense DocSearch Scrape to update indexes for search in the wiki
 
