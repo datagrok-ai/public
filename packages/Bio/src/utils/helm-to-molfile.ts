@@ -10,6 +10,10 @@ import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 
 const HELM_SECTION_SEPARATOR = '$';
 const HELM_ITEM_SEPARATOR = '|';
+const enum HELM_MONOMER_TYPE {
+  BACKBONE = 'backbone',
+  BRANCH = 'branch',
+}
 
 export class HelmToMolfileConverter {
   constructor(private helmColumn: DG.Column<string>) {
@@ -37,7 +41,7 @@ export class HelmToMolfileConverter {
   }
 
   private getPolymerMolfile(helm: string, polymerGraph: string): string {
-    const meta = new MonomerMetadataManager(polymerGraph);
+    const meta = new MonomerPositionDataManager(polymerGraph);
     const polymerWrapper = new PolymerWrapper(helm);
     meta.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
       const shift = meta.getMonomerShifts(monomerIdx);
@@ -48,9 +52,9 @@ export class HelmToMolfileConverter {
   }
 }
 
-class MonomerMetadataManager {
-  constructor(helmCoordinates: string) {
-    this.molfileHandler = MolfileHandler.getInstance(helmCoordinates);
+class MonomerPositionDataManager {
+  constructor(helmCoordinatesPseudoMolfile: string) {
+    this.molfileHandler = MolfileHandler.getInstance(helmCoordinatesPseudoMolfile);
   }
 
   private molfileHandler: MolfileHandlerBase;
@@ -68,15 +72,15 @@ class MonomerMetadataManager {
 
 class MonomerWrapper {
   constructor(
-    monomerSymbol: string,
-    polymerType: HELM_POLYMER_TYPE,
+    private monomerSymbol: string,
+    private polymerType: HELM_POLYMER_TYPE,
     // id: {polymer: number, monomer: number}
   ) {
     const monomerLib = MonomerLibHelper.instance.getBioLib();
     const monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);
-    this.molfileWrapper = new MolfileWrapper(monomer.molfile);
+    this.molfileWrapper = new MolfileWrapper(monomer.molfile, monomerSymbol);
   }
 
   private molfileWrapper: MolfileWrapper;
@@ -91,7 +95,7 @@ class MonomerWrapper {
 }
 
 class MolfileWrapper {
-  constructor(private molfileV2K: string) {
+  constructor(private molfileV2K: string, private monomerSymbol: string) {
     this.molfileV2K = molfileV2K;
 
     const lines = this.molfileV2K.split('\n');
@@ -105,10 +109,7 @@ class MolfileWrapper {
     this.bondLines = lines.slice(atomBlockIdx + atomCount, atomBlockIdx + atomCount + bondCount);
 
     this.rgpIdToAtomicIdxMap = this.getRGroupIdToAtomicIdxMap(lines);
-
-    this.shiftR1GroupToOrigin();
-    if (this.rgpIdToAtomicIdxMap[2])
-      this.alignR2AlongX();
+    this.shiftMonomerToDefaultPosition();
   }
 
   private atomLines: string[];
@@ -134,8 +135,6 @@ class MolfileWrapper {
       const y = parseFloat(line.substring(10, 20));
       const newX = x * Math.cos(angle) - y * Math.sin(angle);
       const newY = x * Math.sin(angle) + y * Math.cos(angle);
-      if (isNaN(newX) || isNaN(newY))
-        throw new Error(`Cannot rotate coordinates by ${angle}`);
       const newLine = `${newX.toFixed(4).padStart(10, ' ')}${newY.toFixed(4).padStart(10, ' ')}${line.substring(20)}`;
       return newLine;
     });
@@ -215,10 +214,10 @@ class MolfileWrapper {
     const allBondedPairs = molfileHandler.pairsOfBondedAtoms;
     const bondedPairWithRGP = allBondedPairs.find((pair) => pair.includes(rGroupAtomicIdx));
     if (!bondedPairWithRGP)
-      throw new Error(`Cannot find bonded pair with RGP ${rgroupId}`);
+      throw new Error(`Cannot find bonded pair with RGP ${rgroupId} for monomer ${this.monomerSymbol}`);
     const attachmentIdx = bondedPairWithRGP.find((idx) => idx !== rGroupAtomicIdx);
     if (!attachmentIdx)
-      throw new Error(`Cannot find attachment atom for RGP ${rgroupId}`);
+      throw new Error(`Cannot find attachment atom for RGP ${rgroupId} for monomer ${this.monomerSymbol}`);
     return attachmentIdx;
   }
 
@@ -233,8 +232,13 @@ class MolfileWrapper {
     const tan = r2Coordinates.y / r2Coordinates.x;
     const angle = Math.atan(tan);
     if (isNaN(angle))
-      throw new Error(`Cannot calculate angle for R2 group`);
+      throw new Error(`Cannot calculate angle for R2 group for monomer ${this.monomerSymbol}`);
     this.rotateCoordinates(-angle);
+  }
+
+  private shiftMonomerToDefaultPosition(): void {
+    this.shiftR1GroupToOrigin();
+    this.alignR2AlongX();
   }
 }
 
@@ -250,10 +254,6 @@ class SimplePolymer {
   get fullId(): string {
     return this.polymerType + this.id.toString();
   }
-
-  // getMonomerList(simplePolymer: string): string[] {
-  //   return simplePolymer.replace(/PEPTIDE[0-9]+{|}/g, '').split('.');
-  // }
 
   private getPolymerType(): string {
     const regex = new RegExp(
@@ -273,6 +273,23 @@ class SimplePolymer {
       throw new Error(`Cannot parse simple polymer id from ${this.simplePolymer}`);
     const id = parseInt(match[1]);
     return id;
+  }
+
+  private getMonomersData(): {monomers: string[], monomerTypes: HELM_MONOMER_TYPE[]} {
+    const helmWrapperRegex = new RegExp(`${this.polymerType}${this.id}{|}`, 'g');
+    const monomerGroups = this.simplePolymer.replace(helmWrapperRegex, '').split('.');
+    const monomerList: string[] = [];
+    const monomerTypeList: HELM_MONOMER_TYPE[] = [];
+    monomerGroups.forEach((monomerGroup) => {
+      const splitted = monomerGroup.split(/\(|\)/)
+        .map((el) => el.replace(/[\[\]]/g, ''));
+      monomerList.push(...splitted);
+      const monomerTypes = splitted.map(
+        (_, idx) => (idx % 2 === 0) ? HELM_MONOMER_TYPE.BACKBONE : HELM_MONOMER_TYPE.BRANCH
+      );
+      monomerTypeList.push(...monomerTypes);
+    });
+    return {monomers: monomerList, monomerTypes: monomerTypeList};
   }
 
   // list of structs: monomer #, monomer symbol, monomer type (backbone/branch)
