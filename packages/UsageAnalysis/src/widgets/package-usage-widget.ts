@@ -2,17 +2,32 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+import ColorHash from 'color-hash';
+
+const colorHash = new ColorHash();
+
 export class PackageUsageWidget extends DG.Widget {
   date: string = 'this week';
   groupsP: Promise<DG.Group[]> = grok.dapi.groups.getGroupsLookup('All users');
 
   constructor(pack: DG.Package) {
-    const scatter = ui.box(null, {style: {maxHeight: '100px'}});
-    const line = ui.box(null, {style: {maxHeight: '100px'}});
-    super(ui.box(ui.splitV([scatter, line], {classes: 'ua-widget ua-package-widget'})));
+    const scatter = ui.box(null, {style: {maxHeight: '100px', marginTop: '10px'}});
+    const line = ui.box(null, {style: {maxHeight: '70px'}});
+    super(ui.box(ui.splitV([line, scatter], {classes: 'ua-widget ua-package-widget'})));
 
     const df = this.groupsP.then((groups) => grok.data.query('UsageAnalysis:PackagesUsage',
-      {date: this.date, groups: [groups[0].id], packages: [pack.name]}));
+      {date: this.date, groups: [groups[0].id], packages: [pack.name]})).then((dataFrame: DG.DataFrame) => {
+      dataFrame.tags[DG.TAGS.TOOLTIP] = 'user\ncount\ntime_start\ntime_end';
+      if (dataFrame.columns.byName('count') != null)
+        dataFrame.columns.byName('count').tags['format'] = '#';
+      const userColumn = dataFrame.columns.byName('user');
+      if (userColumn != null) {
+        const users: {[key: string]: string} = {};
+        userColumn.categories.forEach((u: string) => {users[u] = colorHash.hex(u);});
+        userColumn.meta.colors.setCategorical(users);
+      }
+      return dataFrame;
+    });
 
     scatter.appendChild(ui.waitBox(async () => {
       return DG.Viewer.scatterPlot(await df, scatterStyle).root;
@@ -65,6 +80,9 @@ const lineStyle = {
   'showAggrSelectors': false,
   'showSplitSelector': false,
   'showYAxis': false,
+  'showXAxis': false,
   'showMarkers': 'Never',
   'autoLayout': false,
+  'lineWidth': 2,
+  // 'chartTypes': ['Area Chart'],
 };

@@ -74,8 +74,8 @@
 }
 
 .ua-package-widget {
-  height: 200px;
-  min-width: 400px !important;
+  height: 180px;
+  max-width: 400px !important;
 }
 
 .ua-markup label {

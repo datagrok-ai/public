@@ -13,9 +13,6 @@ import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detecto
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
-const UAlink = ui.link('', () => grok.functions.eval('UsageAnalysis:usageAnalysisApp()'),
-  'Open Usage Analysis');
-UAlink.style.marginLeft = '3px';
 
 export let c: DG.FuncCall;
 
@@ -57,11 +54,17 @@ export function describeCurrentObj(): void {
         try {
           widget = (await renderPackageUsagePanel(ent)).root;
         } catch (e) {
-          widget = ui.divText('Error on loading. Is the latest version of the Usage Analysis installed?',
+          widget = ui.divText('Error on loading. Is the latest version of Usage Analysis installed?',
             {style: {color: 'var(--failure)'}});
         }
         return widget;
       }));
+      const UAlink = ui.link('', async () => {
+        grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${
+          (await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
+        grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
+      }, 'Open Usage Analysis');
+      UAlink.style.marginLeft = '3px';
       const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
       header.appendChild(UAlink);
     }
