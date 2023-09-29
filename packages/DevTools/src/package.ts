@@ -13,7 +13,6 @@ import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detecto
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
-
 export let c: DG.FuncCall;
 
 //name: renderDevPanel
@@ -22,14 +21,6 @@ export let c: DG.FuncCall;
 //output: widget panel
 export function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
   return _renderDevPanel(ent, minifiedClassNameMap);
-}
-
-//name: renderPackageUsagePanel
-//tags: dev-tools
-//input: object ent
-//output: widget panel
-export function renderPackageUsagePanel(ent: DG.Package): Promise<DG.Widget> {
-  return grok.functions.call('UsageAnalysis:packageUsageWidget', {package: ent});
 }
 
 //friendlyName: DevTools
@@ -42,32 +33,13 @@ export function _makeInspectorPanel(): DG.Widget {
 //tags: autostart
 export function describeCurrentObj(): void {
   minifiedClassNameMap = getMinifiedClassNameMap();
+
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null || !hasSupportedType(ent, minifiedClassNameMap)) return;
     const devPane = acc.getPane('Dev');
     if (!devPane)
       acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));
-    if (ent.constructor.name === 'Package') {
-      const pane = acc.addPane('Usage', () => ui.wait(async () => {
-        let widget: HTMLElement;
-        try {
-          widget = (await renderPackageUsagePanel(ent)).root;
-        } catch (e) {
-          widget = ui.divText('Error on loading. Is the latest version of Usage Analysis installed?',
-            {style: {color: 'var(--failure)'}});
-        }
-        return widget;
-      }));
-      const UAlink = ui.link('', async () => {
-        grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${
-          (await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
-        grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
-      }, 'Open Usage Analysis');
-      UAlink.style.marginLeft = '3px';
-      const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
-      header.appendChild(UAlink);
-    }
   });
 
   grok.events.onContextMenu.subscribe((args) => {

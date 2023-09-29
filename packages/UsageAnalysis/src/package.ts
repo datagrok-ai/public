@@ -31,6 +31,32 @@ export function packageUsageWidget(pack: DG.Package): DG.Widget {
   return new PackageUsageWidget(pack);
 }
 
+//tags: autostart
+export function describeCurrentObj(): void {
+  grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+    const ent = acc.context;
+    if (ent != null && ent.constructor.name === 'Package') {
+      const pane = acc.addPane('Usage', () => ui.wait(async () => {
+        let widget: HTMLElement;
+        try {
+          widget = packageUsageWidget(ent).root;
+        } catch (e) {
+          widget = ui.divText('Error on loading', {style: {color: 'var(--failure)'}});
+        }
+        return widget;
+      }));
+      const UAlink = ui.link('', async () => {
+        grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${
+          (await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
+        grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
+      }, 'Open Usage Analysis');
+      UAlink.style.marginLeft = '3px';
+      const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement;
+      header.appendChild(UAlink);
+    }
+  });
+}
+
 //name: Create JIRA ticket
 //description: Creates JIRA ticket using current error log
 //tags: panel, widgets
