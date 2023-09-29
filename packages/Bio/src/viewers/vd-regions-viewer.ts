@@ -303,6 +303,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
             skipEmptyPositions: this.skipEmptyPositions,
             positionWidth: this.positionWidth,
             positionHeight: this.positionHeight,
+            filterSource: this.filterSource,
           }) as WebLogoViewer;
           wl.onSizeChanged.subscribe(() => { this.calcSize(); });
           return [orderI, chain, wl];
@@ -363,7 +364,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.mainLayout.style.height = '100%';
     // this.mainLayout.style.border = '1px solid black';
 
-    this.filterSourceInput = ui.choiceInput<FilterSources>('Data source', defaults.filterSource,
+    this.filterSourceInput = ui.choiceInput<FilterSources>('Data source', this.filterSource,
       Object.values(FilterSources), this.filterSourceInputOnValueChanged.bind(this));
     this.filterSourceInput.root.style.position = 'absolute';
     this.filterSourceInput.root.style.right = '9px';
