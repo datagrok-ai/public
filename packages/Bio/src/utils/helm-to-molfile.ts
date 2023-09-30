@@ -15,7 +15,7 @@ const enum HELM_MONOMER_TYPE {
   BRANCH,
 }
 
-type BondData = {
+type Bond = {
   /** Global (for complex polymer) or local (for simple polymer) monomer id  */
   monomerId: number,
   rGroupId: number
@@ -30,7 +30,6 @@ export class HelmToMolfileConverter {
     const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
-        // console.log('pseudomol:', pseudoMolfile);
         const helm = this.helmColumn.get(idx);
         if (!helm)
           return '';
@@ -257,7 +256,6 @@ class SimplePolymer {
     const {monomers, monomerTypes} = this.extractMonomerSymbolsAndTypes();
     this.monomers = monomers;
     this.monomerTypes = monomerTypes;
-    // console.log(`${simplePolymer}:`, this.getBondData());
   }
 
   polymerType: string;
@@ -307,8 +305,8 @@ class SimplePolymer {
     return {monomers: monomerList, monomerTypes: monomerTypeList};
   }
 
-  getBondData(): BondData[][] {
-    const result: BondData[][] = [];
+  getBondData(): Bond[][] {
+    const result: Bond[][] = [];
     const backboneMonomerIndices = this.monomerTypes.map((type, idx) => {
       if (type === HELM_MONOMER_TYPE.BACKBONE)
         return idx;
@@ -350,9 +348,10 @@ class ConnectionList {
       throw new Error(`Cannot parse connection item from ${connectionItem}`);
   }
 
-  getConnectionData(): {[polymerId: string]: BondData}[] {
-    const result: {[polymerId: string]: BondData}[] = [];
+  getConnectionData(): {polymerId: string, bond: Bond}[][] {
+    const result: {polymerId: string, bond: Bond}[][] = [];
     this.connectionItems.forEach((connectionItem: string) => {
+      const pair: {polymerId: string, bond: Bond}[] = [];
       const splitted = connectionItem.split(',');
       splitted[2].split('-').forEach((item, idx) => {
         const polymerId = splitted[idx];
@@ -360,8 +359,9 @@ class ConnectionList {
         const monomerId = parseInt(data[0]);
         const rGroupId = parseInt(data[1].slice(1));
         const bondData = {monomerId, rGroupId};
-        result.push({[polymerId]: bondData});
+        pair.push({polymerId, bond: bondData});
       });
+      result.push(pair);
     });
     return result;
   }
@@ -375,7 +375,11 @@ class Helm {
       .map((item) => new SimplePolymer(item));
     if (helmSections[1] !== '')
       this.connectionList = new ConnectionList(helmSections[1]);
+    this.bondData = this.getBondData();
+    console.log(`${this.helm}:`, this.bondData);
   }
+
+  private bondData: Bond[][];
 
   toString() {
     return this.helm;
@@ -389,8 +393,48 @@ class Helm {
   private simplePolymers: SimplePolymer[];
   private connectionList?: ConnectionList;
 
-  private getBondMetadata(): BondData[][] {
-    const result: BondData[][] = [];
+  private shiftBondMonomerIds(shift: number, bonds: Bond[][]): void {
+    bonds.forEach((bond) => {
+      bond.forEach((bondPart) => {
+        bondPart.monomerId += shift;
+      });
+    });
+  }
+
+  private getMonomerIdShifts(): {[simplePolymerId: string]: number} {
+    const result: {[simplePolymerId: string]: number} = {};
+    let shift = 0;
+    this.simplePolymers.forEach((simplePolymer) => {
+      result[simplePolymer.fullId] = shift;
+      shift += simplePolymer.monomers.length;
+    });
+    console.log(`${this.helm}:`, result);
+    return result;
+  }
+
+  private getBondData(): Bond[][] {
+    const shifts = this.getMonomerIdShifts();
+    const result: Bond[][] = [];
+    this.simplePolymers.forEach((simplePolymer) => {
+      const bondData = simplePolymer.getBondData();
+      const shift = shifts[simplePolymer.fullId];
+      this.shiftBondMonomerIds(shift, bondData);
+      result.push(...bondData);
+    });
+    if (this.connectionList) {
+      const connectionData = this.connectionList.getConnectionData();
+      connectionData.forEach((connection) => {
+        const data: Bond[] = [];
+        connection.forEach((connectionItem) => {
+          const shift = shifts[connectionItem.polymerId];
+          const bond = connectionItem.bond;
+          bond.monomerId += shift;
+          data.push(bond);
+        });
+        result.push(data);
+        console.log(`${connection} added pair:`, data);
+      });
+    }
     return result;
   }
 }
@@ -438,7 +482,6 @@ class Polymer {
     const newLineChar = '\n';
     const blockList = [molfileHeader, countsLine, atomLines.join(newLineChar), bondLines.join(newLineChar), molfileEnd];
     const molfile = blockList.join(newLineChar);
-    // console.log('molfile:', molfile);
     return molfile;
   }
 }
