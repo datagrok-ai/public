@@ -11,8 +11,14 @@ import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 const HELM_SECTION_SEPARATOR = '$';
 const HELM_ITEM_SEPARATOR = '|';
 const enum HELM_MONOMER_TYPE {
-  BACKBONE = 'backbone',
-  BRANCH = 'branch',
+  BACKBONE,
+  BRANCH,
+}
+
+type BondData = {
+  /** Global (for complex polymer) or local (for simple polymer) monomer id  */
+  monomerId: number,
+  rGroupId: number
 }
 
 export class HelmToMolfileConverter {
@@ -20,10 +26,11 @@ export class HelmToMolfileConverter {
     this.helmColumn = helmColumn;
   }
 
-  async convertToMolfile(): Promise<DG.Column<string>> {
+  async convertToMolfileColumn(): Promise<DG.Column<string>> {
     const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
+        // console.log('pseudomol:', pseudoMolfile);
         const helm = this.helmColumn.get(idx);
         if (!helm)
           return '';
@@ -34,7 +41,7 @@ export class HelmToMolfileConverter {
     return molfileColumn;
   }
 
-  async getPolymerGraphColumn(): Promise<DG.Column<string>> {
+  private async getPolymerGraphColumn(): Promise<DG.Column<string>> {
     const polymerGraphColumn: DG.Column<string> =
       await grok.functions.call('HELM:getMolfiles', {col: this.helmColumn});
     return polymerGraphColumn;
@@ -42,12 +49,12 @@ export class HelmToMolfileConverter {
 
   private getPolymerMolfile(helm: string, polymerGraph: string): string {
     const meta = new MonomerPositionDataManager(polymerGraph);
-    const polymerWrapper = new PolymerWrapper(helm);
+    const polymer = new Polymer(helm);
     meta.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
       const shift = meta.getMonomerShifts(monomerIdx);
-      polymerWrapper.addShiftedMonomer(monomerSymbol, shift);
+      polymer.addShiftedMonomer(monomerSymbol, shift);
     });
-    const polymerMolfile = polymerWrapper.compileToMolfile();
+    const polymerMolfile = polymer.compileToMolfile();
     return polymerMolfile;
   }
 }
@@ -238,7 +245,8 @@ class MolfileWrapper {
 
   private shiftMonomerToDefaultPosition(): void {
     this.shiftR1GroupToOrigin();
-    this.alignR2AlongX();
+    if (this.rgpIdToAtomicIdxMap[2])
+      this.alignR2AlongX();
   }
 }
 
@@ -246,10 +254,16 @@ class SimplePolymer {
   constructor(private simplePolymer: string) {
     this.polymerType = this.getPolymerType();
     this.id = this.getId();
+    const {monomers, monomerTypes} = this.extractMonomerSymbolsAndTypes();
+    this.monomers = monomers;
+    this.monomerTypes = monomerTypes;
+    // console.log(`${simplePolymer}:`, this.getBondData());
   }
 
   polymerType: string;
   id: number;
+  monomers: string[];
+  monomerTypes: HELM_MONOMER_TYPE[];
 
   get fullId(): string {
     return this.polymerType + this.id.toString();
@@ -275,7 +289,7 @@ class SimplePolymer {
     return id;
   }
 
-  private getMonomersData(): {monomers: string[], monomerTypes: HELM_MONOMER_TYPE[]} {
+  private extractMonomerSymbolsAndTypes(): {monomers: string[], monomerTypes: HELM_MONOMER_TYPE[]} {
     const helmWrapperRegex = new RegExp(`${this.polymerType}${this.id}{|}`, 'g');
     const monomerGroups = this.simplePolymer.replace(helmWrapperRegex, '').split('.');
     const monomerList: string[] = [];
@@ -284,6 +298,7 @@ class SimplePolymer {
       const splitted = monomerGroup.split(/\(|\)/)
         .map((el) => el.replace(/[\[\]]/g, ''));
       monomerList.push(...splitted);
+      // WARNING: only the groups of the form r(A)p, as in RNA, are supported
       const monomerTypes = splitted.map(
         (_, idx) => (idx % 2 === 0) ? HELM_MONOMER_TYPE.BACKBONE : HELM_MONOMER_TYPE.BRANCH
       );
@@ -292,14 +307,41 @@ class SimplePolymer {
     return {monomers: monomerList, monomerTypes: monomerTypeList};
   }
 
-  // list of structs: monomer #, monomer symbol, monomer type (backbone/branch)
+  getBondData(): BondData[][] {
+    const result: BondData[][] = [];
+    const backboneMonomerIndices = this.monomerTypes.map((type, idx) => {
+      if (type === HELM_MONOMER_TYPE.BACKBONE)
+        return idx;
+    }
+    ).filter((idx) => idx !== undefined) as number[];
+    const branchMonomerIndices = this.monomerTypes.map((type, idx) => {
+      if (type === HELM_MONOMER_TYPE.BRANCH)
+        return idx;
+    }
+    ).filter((idx) => idx !== undefined) as number[];
+    for (let i = 0; i < backboneMonomerIndices.length - 1; i++) {
+      const backboneIdx = backboneMonomerIndices[i];
+      const nextBackboneIdx = backboneMonomerIndices[i + 1];
+      result.push([{monomerId: backboneIdx, rGroupId: 2}, {monomerId: nextBackboneIdx, rGroupId: 1}]);
+    }
+    for (let i = 0; i < branchMonomerIndices.length; i++) {
+      const branchIdx = branchMonomerIndices[i];
+      const backboneIdx = branchIdx - 1;
+      result.push([{monomerId: backboneIdx, rGroupId: 3}, {monomerId: branchIdx, rGroupId: 1}]);
+    }
+    return result;
+  }
 }
 
 class ConnectionList {
-  constructor(private connectionList: string) {
+  constructor(connectionList: string) {
     const splitted = connectionList.split(HELM_ITEM_SEPARATOR);
     splitted.forEach((connectionItem: string) => this.validateConnectionItem(connectionItem));
+    this.connectionItems = splitted;
+    console.log(`${connectionList}:`, this.getConnectionData());
   }
+
+  private connectionItems: string[];
 
   private validateConnectionItem(connectionItem: string): void {
     const allowedType = `(${HELM_POLYMER_TYPE.PEPTIDE}|${HELM_POLYMER_TYPE.RNA})`;
@@ -308,30 +350,22 @@ class ConnectionList {
       throw new Error(`Cannot parse connection item from ${connectionItem}`);
   }
 
-  // getConnectionMap() {
-  //   const connectionDataList = this.connectionList.map(
-  //     (connectionItem: string) => this.getConnectionData(connectionItem)
-  //   );
-  // }
-
-  private getConnectionData(connectionItem: string): {[key: string]: {[key: string]: number}} {
-    const splitted = connectionItem.split(',');
-    const keys = ['source', 'target'];
-    const data: {[key: string]: {[key: string]: number}} = {};
-    splitted.forEach((item: string, idx: number) => {
-      const polymerId = parseInt(item.replace('PEPTIDE', ''));
-      data[keys[idx]]['polymerId'] = polymerId;
+  getConnectionData(): {[polymerId: string]: BondData}[] {
+    const result: {[polymerId: string]: BondData}[] = [];
+    this.connectionItems.forEach((connectionItem: string) => {
+      const splitted = connectionItem.split(',');
+      splitted[2].split('-').forEach((item, idx) => {
+        const polymerId = splitted[idx];
+        const data = item.split(':');
+        const monomerId = parseInt(data[0]);
+        const rGroupId = parseInt(data[1].slice(1));
+        const bondData = {monomerId, rGroupId};
+        result.push({[polymerId]: bondData});
+      });
     });
-    const attachmentData = splitted[2].split('-');
-    keys.forEach((key: string, idx: number) => {
-      const parts = attachmentData[idx].split(':');
-      data[key]['monomerPosition'] = parseInt(parts[0]);
-      data[key]['attachment'] = parseInt(parts[1].replace('R', ''));
-    });
-    return data;
+    return result;
   }
 }
-
 
 class Helm {
   constructor(private helm: string) {
@@ -343,6 +377,10 @@ class Helm {
       this.connectionList = new ConnectionList(helmSections[1]);
   }
 
+  toString() {
+    return this.helm;
+  }
+
   get polymerType(): HELM_POLYMER_TYPE {
     const polymerType = this.simplePolymers[0].polymerType;
     return polymerType as HELM_POLYMER_TYPE;
@@ -350,9 +388,14 @@ class Helm {
 
   private simplePolymers: SimplePolymer[];
   private connectionList?: ConnectionList;
+
+  private getBondMetadata(): BondData[][] {
+    const result: BondData[][] = [];
+    return result;
+  }
 }
 
-class PolymerWrapper {
+class Polymer {
   constructor(helm: string) {
     this.helm = new Helm(helm);
     this.polymerType = this.helm.polymerType;
@@ -384,7 +427,7 @@ class PolymerWrapper {
     });
     const atomCount = atomLines.length;
     if (atomCount > 999)
-      throw new Error(`Atom count is ${atomCount} and exceeds 999`);
+      throw new Error(`Atom count in polymer ${this.helm.toString()} is ${atomCount} and exceeds 999`);
     const bondCount = bondLines.length;
     const countsLine = `${
       atomCount.toString().padStart(3, ' ')
@@ -395,7 +438,7 @@ class PolymerWrapper {
     const newLineChar = '\n';
     const blockList = [molfileHeader, countsLine, atomLines.join(newLineChar), bondLines.join(newLineChar), molfileEnd];
     const molfile = blockList.join(newLineChar);
-    console.log('molfile:', molfile);
+    // console.log('molfile:', molfile);
     return molfile;
   }
 }
