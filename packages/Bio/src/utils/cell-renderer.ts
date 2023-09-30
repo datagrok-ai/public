@@ -138,6 +138,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     // Now the renderer requires data frame table Column underlying GridColumn
     const grid = gridCell.grid;
     const tableCol: DG.Column = gridCell.cell.column;
+    if (!grid || !tableCol) return;
+
     const tableColTemp: TempType = tableCol.temp;
 
     // Cell renderer settings
