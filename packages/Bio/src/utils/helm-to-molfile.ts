@@ -16,8 +16,9 @@ const enum HELM_MONOMER_TYPE {
 }
 
 type Bond = {
-  /** Global (for complex polymer) or local (for simple polymer) monomer id  */
-  monomerId: number,
+  /** Global (for complex polymer) or local (for simple polymer) monomer index, starting from 0 */
+  monomerIdx: number,
+  /** RGroup id, starting from 1  */
   rGroupId: number
 }
 
@@ -320,12 +321,12 @@ class SimplePolymer {
     for (let i = 0; i < backboneMonomerIndices.length - 1; i++) {
       const backboneIdx = backboneMonomerIndices[i];
       const nextBackboneIdx = backboneMonomerIndices[i + 1];
-      result.push([{monomerId: backboneIdx, rGroupId: 2}, {monomerId: nextBackboneIdx, rGroupId: 1}]);
+      result.push([{monomerIdx: backboneIdx, rGroupId: 2}, {monomerIdx: nextBackboneIdx, rGroupId: 1}]);
     }
     for (let i = 0; i < branchMonomerIndices.length; i++) {
       const branchIdx = branchMonomerIndices[i];
       const backboneIdx = branchIdx - 1;
-      result.push([{monomerId: backboneIdx, rGroupId: 3}, {monomerId: branchIdx, rGroupId: 1}]);
+      result.push([{monomerIdx: backboneIdx, rGroupId: 3}, {monomerIdx: branchIdx, rGroupId: 1}]);
     }
     return result;
   }
@@ -356,9 +357,10 @@ class ConnectionList {
       splitted[2].split('-').forEach((item, idx) => {
         const polymerId = splitted[idx];
         const data = item.split(':');
-        const monomerId = parseInt(data[0]);
+        // WARNING: monomer idx starts from 0
+        const monomerIdx = parseInt(data[0]) - 1;
         const rGroupId = parseInt(data[1].slice(1));
-        const bondData = {monomerId, rGroupId};
+        const bondData = {monomerIdx, rGroupId};
         pair.push({polymerId, bond: bondData});
       });
       result.push(pair);
@@ -396,7 +398,7 @@ class Helm {
   private shiftBondMonomerIds(shift: number, bonds: Bond[][]): void {
     bonds.forEach((bond) => {
       bond.forEach((bondPart) => {
-        bondPart.monomerId += shift;
+        bondPart.monomerIdx += shift;
       });
     });
   }
@@ -428,7 +430,7 @@ class Helm {
         connection.forEach((connectionItem) => {
           const shift = shifts[connectionItem.polymerId];
           const bond = connectionItem.bond;
-          bond.monomerId += shift;
+          bond.monomerIdx += shift;
           data.push(bond);
         });
         result.push(data);
