@@ -199,8 +199,8 @@ export class SubstructureFilter extends DG.Filter {
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
       {
+        this.searchTypeInput.value = SubstructureSearchType.CONTAINS;
         this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
-        this.updateExternalSketcher();
       }
     }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
@@ -209,7 +209,7 @@ export class SubstructureFilter extends DG.Filter {
         If base sketcher is initialized, it will fire onChange event */      
         if (this.currentSearches.size > 0)
           grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
-        if (this.sketcher.sketcher?.isInitialized)
+        if (this.sketcher.sketcher?.isInitialized || this.sketcher._mode == DG.chem.SKETCHER_MODE.INPLACE) 
           this.syncEvent = true;
         this.currentMolfile = state.molblock!;
         this.bitset = state.bitset!;
@@ -317,7 +317,7 @@ export class SubstructureFilter extends DG.Filter {
     if (state.molBlock) {
       this.currentMolfile = state.molBlock;
       this.sketcher.setMolFile(state.molBlock);
-      this.updateExternalSketcher();
+      this.updateFilterUiOnSketcherChanged(this.currentMolfile);
     }
     if (state.searchType)
       this.searchTypeInput.value = state.searchType;
@@ -413,7 +413,6 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   updateFilterUiOnSketcherChanged(newMolFile: string){
-    this.sketcher.updateExtSketcherContent();
     if (this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE) {
       if (!!newMolFile && !chem.Sketcher.isEmptyMolfile(newMolFile)){
         this.removeChildIfExists(this.root, this.emptySketcherDiv, 'empty-filter');
@@ -438,6 +437,7 @@ export class SubstructureFilter extends DG.Filter {
           this.removeChildIfExists(this.searchOptionsDiv, this.similarityOptionsDiv, 'chem-filter-similarity-options');
       }
     }
+    this.updateExternalSketcher();
   }
 
   removeChildIfExists(parent: HTMLElement, child: HTMLElement, className: string) {
