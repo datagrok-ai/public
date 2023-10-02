@@ -6,8 +6,8 @@ on:
         description: 'Packages separated by spaces'
         required: true
         type: string
-  schedule:
-    - cron: '0 * * * *'
+#  schedule:
+#    - cron: '0 * * * *'
 
 jobs:
   package-names:
