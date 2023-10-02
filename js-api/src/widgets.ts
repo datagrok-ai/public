@@ -1871,11 +1871,10 @@ export class DropDown {
 
     this._label = label;
     this._element = createElement();
-
-    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
+    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
     this._dropDownElement.style.visibility = 'hidden';
 
-    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+    this.root = ui.div([this._dropDownElement, this._label], 'ui-drop-down-root');
 
     this._initEventListeners();
   }
