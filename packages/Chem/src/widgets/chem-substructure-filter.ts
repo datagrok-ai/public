@@ -313,7 +313,7 @@ export class SubstructureFilter extends DG.Filter {
     }
     this.active = state.active ?? true;
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
-      state.molBlock = (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule;
+      state.molBlock ??= (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule;
     if (state.molBlock) {
       this.currentMolfile = state.molBlock;
       this.sketcher.setMolFile(state.molBlock);
