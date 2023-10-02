@@ -1,0 +1,61 @@
+name: "Unskip package tests if task is done"
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages separated by spaces'
+        required: true
+        type: string
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  package-names:
+    name: Get packages with skipped tests
+    runs-on: ubuntu-22.04
+    outputs:
+      deleted_skip_reason_packages: ${{ steps.Deleted_skipReason_packages.outputs.deleted_skip_reason_packages}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - name: Get packages with tests
+        id: packages_with_tests
+        run: |
+          PACKAGES_TEST=''
+          PACKAGES=${ls -la | grep '^d' | awk '{print $9}'}
+          for package in $PACKAGES; do
+            if [ -d "$package/src/tests" ] && grep -rq "skipReason: 'GROK-.*: .*'" "$package/src/tests"; then
+                PACKAGES_TEST+= "$package"
+            fi
+          done
+          echo "Jira_skipReason_packages=$PACKAGES_TEST" >> $GITHUB_OUTPUT
+        working-directory: packages
+      - name: Get packages with deleted skipReason in tests
+        id: Deleted_skipReason_packages
+        run: |
+          apt update && apt install -y curl
+          deleted_skip_reason_packages=''
+          for package in ${{ steps.test-package.outcome.Jira_skipReason_packages }}; do
+            files=($(grep -ro "skipReason: 'GROK-.*: .*'" "$package/src/tests" | awk -F: '{print $1}'))
+            issues=($(grep -ro "skipReason: 'GROK-.*: .*'" "$package/src/tests" | awk -F: '{print $3}'))
+            for ((i=0; i<${#files[@]}; i++)); do
+              file=${files[$i]}
+              issue=$(echo "${issues[$i]}" | cut -c2-)
+              if [[ $(curl -u ${{ secrets.JIRA_LOGIN }}:${{ secrets.JIRA_TOKEN }} -X GET -H "Content-Type: application/json" https://reddata.atlassian.net/rest/api/2/issue/$issue?fields=status | jq -r '.fields.status.name') == "Done" ]] || [[ $(curl -u ${{ secrets.JIRA_LOGIN }}:${{ secrets.JIRA_TOKEN }} -X GET -H "Content-Type: application/json" https://reddata.atlassian.net/rest/api/2/issue/$issue?fields=status | jq -r '.fields.status.name') == "Won't fix" ]]; then
+                 skipreasons=()
+                 while IFS= read -r line; do
+                     skipreasons+=("$line")
+                 done < <(grep -ro "skipReason: 'GROK-.*: .*'" "$package/src/tests/$file")
+                 for reason in "${skipreasons[@]}"; do
+                     sed -i "s/{\$reason}//" "$package/src/tests/$file"
+                     echo deleted skipReason $reason in package $package in test-file $file
+                 done
+                 deleted_skip_reason_packages+=$package
+              fi
+            done
+          done
+          echo "deleted_skip_reason_packages=$deleted_skip_reason_packages" >> $GITHUB_OUTPUT
+        working-directory: packages
+
