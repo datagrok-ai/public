@@ -211,9 +211,11 @@ export function similar(query: string): DG.Widget {
   const divElements = [] as HTMLDivElement[];
 
   for (let i = 1; i < closest.length; ++i) {
-    divElements.push(ui.divText('# ' + (closest[i] + 1).toString()));
-    divElements.push(ui.divText(source.get(closest[i])));
-    divElements.push(ui.divText('------'));
+    const divElem = ui.divText(source.get(closest[i]));
+    divElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name)};
+    divElements.push(divElem);
+    divElements.push(ui.h3(''));
+    ui.tooltip.bind(divElem, 'Click to navigate.');
   }
 
   const wgt = new DG.Widget(ui.divV(divElements));
