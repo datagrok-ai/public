@@ -5,7 +5,7 @@ import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas, getUncommonAtomsAndBonds} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {convertMolNotation, getRdKitModule} from '../package';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
