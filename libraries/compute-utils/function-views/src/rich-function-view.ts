@@ -7,15 +7,15 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest, identity} from 'rxjs';
+import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase, isInputLockable} from '../../shared-components/src/FuncCallInput';
-import {getValidationIcon} from '../../shared-components/src/validation';
+import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, ValidationResultBase, getValidationIcon} from '../../shared/validation';
+import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared/input-wrappers';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
