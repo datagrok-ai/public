@@ -1220,9 +1220,9 @@ export class RichFunctionView extends FunctionView {
   }
 
   private getValidatedNames(inputName?: string): string[] {
-    if (inputName)
-      return [inputName];
-    return [...this.funcCall.inputs.keys()];
+    // Validations are disabled for restricted/disabled inputs
+    return (inputName ? [inputName]: [...this.funcCall.inputs.keys()])
+      .filter((inputName) => !this.getInputLockState(inputName) || this.getInputLockState(inputName) === INPUT_STATE.USER_INPUT);
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
