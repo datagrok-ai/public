@@ -9,7 +9,7 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import './css/model-card.css';
 import { ImportScriptGeneratorApp } from './import-script-generator/view';
-import { ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-components/src/FuncCallInput';
+import { ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult } from '@datagrok-libraries/compute-utils/shared-utils/validation';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -34,7 +34,7 @@ export function importScriptGenerator(){
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
-//output: viewer
+//output: viewer result
 export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }

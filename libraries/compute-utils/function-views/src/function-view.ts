@@ -7,10 +7,10 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
-import {RunComparisonView} from './run-comparison-view';
-import {CARD_VIEW_TYPE} from './shared/consts';
-import {deepCopy} from './shared/utils';
+import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
+import {deepCopy} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
+import {RunComparisonView} from './run-comparison-view';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);

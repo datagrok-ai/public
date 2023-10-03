@@ -7,15 +7,15 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest, identity} from 'rxjs';
-import '../css/rich-function-view.css';
-import {UiUtils} from '../../shared-components';
-import {FunctionView} from './function-view';
+import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
 import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
-import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput, SubscriptionLike, Validator, ValidationResult, nonNullValidator, isValidationPassed, FuncCallInputValidated, isFuncCallInputValidated, getErrorMessage, makePendingValidationResult, ValidationResultBase} from '../../shared-components/src/FuncCallInput';
-import {getValidationIcon} from '../../shared-components/src/validation';
+import {UiUtils} from '../../shared-components';
+import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult} from '../../shared-utils/validation';
+import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation} from '../../shared-utils/utils';
+import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
+import '../css/rich-function-view.css';
+import {FunctionView} from './function-view';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -154,7 +154,7 @@ export class RichFunctionView extends FunctionView {
         ))),
       this.validationUpdates.pipe(debounceTime(0)),
     ]).pipe(
-      filter(([needToRun]) => needToRun && this.isRunnable())
+      filter(([needToRun]) => needToRun && this.isRunnable()),
     ).subscribe(() => this.doRun());
     this.subs.push(runSub);
 
@@ -671,8 +671,7 @@ export class RichFunctionView extends FunctionView {
     return this.inputsMap[name];
   }
 
-  // TODO: implement warn if really needed
-  public setInput(name: string, value: any, state: 'default' | 'disabled' | 'warn' = 'disabled') {
+  public setInput(name: string, value: any, state: INPUT_STATE = INPUT_STATE.DISABLED) {
     const input = this.getInput(name);
     if (!input)
       throw new Error(`No input named ${name}`);
@@ -680,21 +679,32 @@ export class RichFunctionView extends FunctionView {
     // input value will not be synced, since doesn't trigger on
     // onInput for inputBase
     this.funcCall.inputs[name] = value;
-    this.setInputState(input, state);
-    if (state !== 'default') {
-      this.funcCall.options['editState'] = {
-        ...this.funcCall.options['editState'],
-        [name]: state,
-      };
-    }
+    this.setInputLockState(input, name, value, state);
   }
 
-  private setInputState(input: FuncCallInput, state?: string) {
-    if (state === 'disabled')
-      input.enabled = false;
+  private setInputLockState(input: FuncCallInput, paramName: string, value: any, state?: INPUT_STATE) {
+    // if the state is undefined, it is common input with no special state.
+    // thus, no need to save it.
+    if (state)
+      this.saveInputLockState(paramName, value, state);
 
-    if (state === 'default' || !state)
-      input.enabled = true;
+    if (!isInputLockable(input)) return;
+
+    if (state === INPUT_STATE.DISABLED)
+      input.setDisabled();
+
+    if (state === INPUT_STATE.RESTRICTED)
+      input.setRestricted();
+
+    if (state === INPUT_STATE.INCONSISTENT && value !== this.getRestrictedValue(paramName))
+      input.setInconsistentWarn();
+
+    if (state === INPUT_STATE.INCONSISTENT && value === this.getRestrictedValue(paramName))
+      input.setInconsistent();
+  }
+
+  private getRestrictedValue(paramName: string) {
+    return this.funcCall.options[RESTRICTED_PATH]?.[paramName];
   }
 
   private renderOutputForm(): HTMLElement {
@@ -726,7 +736,7 @@ export class RichFunctionView extends FunctionView {
         }
         this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
-        this.disableInputsOnRun(input);
+        this.disableInputsOnRun(val.property.name, input);
         if (field === SYNC_FIELD.INPUTS)
           this.bindOnHotkey(input);
 
@@ -737,7 +747,7 @@ export class RichFunctionView extends FunctionView {
 
     Object.keys(this.foldedCategoryInputs)
       .forEach((key) =>
-        this.foldedCategoryInputs[key].forEach((t) => $(t.root).hide()),
+        this.foldedCategoryInputs[key].forEach((t) => $(t.input.root).hide()),
       );
 
     inputs.classList.remove('ui-panel');
@@ -748,8 +758,10 @@ export class RichFunctionView extends FunctionView {
     return inputs;
   }
 
-  private disableInputsOnRun(t: InputVariants) {
+  private disableInputsOnRun(paramName: string, t: InputVariants) {
     const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
+      if (this.getInputLockState(paramName) !== INPUT_STATE.USER_INPUT && this.getInputLockState(paramName)) return;
+
       if (isRunning)
         t.enabled = false;
       else
@@ -793,80 +805,173 @@ export class RichFunctionView extends FunctionView {
     return JSON.parse(this.func.options['foldedCategories'] ?? '[]');
   }
 
-  private foldedCategoryInputs = {} as Record<string, InputVariants[]>;
+  private foldedCategoryInputs = {} as Record<string, {paramName: string, input: InputVariants}[]>;
+
+  private getCategoryWarningIcon(category: string) {
+    const warningIcon = ui.iconFA('exclamation-circle', null, 'This category has inconsistent inputs');
+    $(warningIcon).css({'color': `var(--orange-2)`, 'padding-left': '5px'}).hide();
+
+    const sub = this.funcCallReplaced.subscribe(() => {
+      if (this.foldedCategoryInputs[category].some((e) =>
+        this.getInputLockState(e.paramName) === INPUT_STATE.INCONSISTENT &&
+        e.input.value !== this.getRestrictedValue(e.paramName),
+      ))
+        $(warningIcon).show();
+      else
+        $(warningIcon).hide();
+    });
+    this.subs.push(sub);
+    return warningIcon;
+  }
 
   private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants, prevCategory: string) {
     const prop = val.property;
 
     if (prop.category !== prevCategory) {
       if (this.foldedCategories.includes(prop.category)) {
+        const warningIcon = this.getCategoryWarningIcon(prop.category);
+
         const chevronToOpen = ui.iconFA('chevron-right', () => {
           $(chevronToClose).show();
           $(chevronToOpen).hide();
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).show());
+          $(warningIcon).hide();
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.input.root).show());
         }, 'Open category');
         $(chevronToOpen).css('padding-right', '5px');
         const chevronToClose = ui.iconFA('chevron-down', () => {
           $(chevronToClose).hide();
           $(chevronToOpen).show();
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).hide());
+          if (this.foldedCategoryInputs[prop.category].some((e) =>
+            this.getInputLockState(e.paramName) === INPUT_STATE.INCONSISTENT &&
+            e.input.value !== this.getRestrictedValue(e.paramName),
+          ))
+            $(warningIcon).show();
+          else
+            $(warningIcon).hide();
+
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.input.root).hide());
         }, 'Close category');
         $(chevronToClose).css('padding-right', '5px');
 
         //@ts-ignore
-        inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(prop.category, {style: {'display': 'inline'}})], {style: {'width': '100%'}}));
+        inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(prop.category, {style: {'display': 'inline'}}), warningIcon], {style: {'width': '100%'}}));
         $(chevronToClose).hide();
       } else
         inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
     }
 
     if (this.foldedCategories.includes(prop.category))
-      this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), t];
+      this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), {paramName: val.property.name, input: t}];
+
+    this.injectLockIcons(val, t);
+    injectLockStates(t);
 
     if (isInputBase(t)) {
-      this.inputBaseAdditionalRenderHandler(val, t);
-      this.injectInputBaseValidation(t);
+      inputBaseAdditionalRenderHandler(val, t);
+      this.bindTooltips(val, t);
+      injectInputBaseValidation(t);
     }
 
     inputsDiv.append(t.root);
   }
 
-  private inputBaseAdditionalRenderHandler(val: DG.FuncCallParam, t: DG.InputBase) {
-    const prop = val.property;
+  private bindTooltips(param: DG.FuncCallParam, t: DG.InputBase) {
+    const paramName = param.property.name;
 
-    $(t.root).css({
-      'width': `${prop.options['block'] ?? '100'}%`,
-      'box-sizing': 'border-box',
-      'padding-right': '5px',
+    ui.tooltip.bind(t.root, () => {
+      const desc = param.property.description ? `${param.property.description}.`: null;
+
+      const getExplanation = () => {
+        if (this.getInputLockState(paramName) === INPUT_STATE.DISABLED) return `Input is disabled to prevent inconsistency.`;
+        if (this.getInputLockState(paramName) === INPUT_STATE.INCONSISTENT && t.value !== this.getRestrictedValue(paramName))
+          return `The entered value is inconsistent to the computed value.`;
+        if (this.getInputLockState(paramName) === INPUT_STATE.RESTRICTED) return `The value is dependent and computed automatically. Click to edit`;
+
+        return null;
+      };
+      const exp = getExplanation();
+
+      return ui.divV([
+        ...desc ? [ui.divText(desc)]: [],
+        ...exp ? [ui.divText(exp)]: [],
+      ], {style: {'max-width': '300px'}});
     });
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-    t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-    if (prop.options['units']) t.addPostfix(prop.options['units']);
   }
 
-  private injectInputBaseValidation(t: DG.InputBase) {
-    const validationIndicator = ui.div('', {style: {display: 'flex'}});
-    t.addOptions(validationIndicator);
-    function setValidation(messages: ValidationResultBase | undefined) {
-      while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
-      const icon = getValidationIcon(messages);
-      if (icon)
-        validationIndicator.appendChild(icon);
+  private injectLockIcons(param: DG.FuncCallParam, t: FuncCallInput) {
+    const paramName = param.property.name;
 
-      t.input.classList.remove('d4-invalid');
-      t.input.classList.remove('d4-partially-invalid');
-      if (messages?.errors)
-        t.input.classList.add('d4-invalid');
-      else if (messages?.warnings)
-        t.input.classList.add('d4-partially-invalid');
+    t.root.addEventListener('click', () => {
+      if (this.getInputLockState(paramName) === INPUT_STATE.RESTRICTED)
+        this.setInputLockState(t, param.name, param.value, INPUT_STATE.INCONSISTENT);
+    });
+
+    const lockIcon = ui.iconFA('lock');
+    $(lockIcon).addClass('rfv-icon-lock');
+    $(lockIcon).css({color: `var(--grey-2)`});
+
+    const unlockIcon = ui.iconFA('lock-open');
+    $(unlockIcon).addClass('rfv-icon-unlock');
+    $(unlockIcon).css({color: `var(--grey-2)`});
+
+    const resetIcon = ui.iconFA('undo', (e: MouseEvent) => {
+      this.setInputLockState(t, param.name, this.getRestrictedValue(paramName), INPUT_STATE.RESTRICTED);
+      this.funcCall.inputs[paramName] = this.getRestrictedValue(paramName);
+      e.stopPropagation();
+    }, 'Reset value to computed value');
+    $(resetIcon).addClass('rfv-icon-undo');
+    $(resetIcon).css({color: `var(--blue-2)`});
+
+    const warningIcon = ui.iconFA('exclamation-circle', null);
+    ui.tooltip.bind(warningIcon, () => `Current value is incosistent. Computed value was ${DG.TYPES_SCALAR.has(param.property.propertyType) ? this.getRestrictedValue(paramName): 'different'}`);
+    $(warningIcon).addClass('rfv-icon-warning');
+    $(warningIcon).css({color: `var(--orange-2)`});
+
+    function defaultPlaceLockStateIcons(
+      lockIcon: HTMLElement,
+      unlockIcon: HTMLElement,
+      resetIcon: HTMLElement,
+      warningIcon: HTMLElement,
+    ) {
+      // If custom input is not DG.InputBase instance then do nothing
+      if (!isInputBase(t)) return;
+
+      t.addOptions(lockIcon);
+      t.addOptions(unlockIcon);
+      t.addOptions(resetIcon);
+      t.addOptions(warningIcon);
     }
-    (t as any).setValidation = setValidation;
+
+    const tAny = (t as any);
+    // if no custom place for lock state icons is provided then use default placing
+    if (!tAny.placeLockStateIcons)
+      tAny.placeLockStateIcons = defaultPlaceLockStateIcons;
+    tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
   }
 
   private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
     this.syncFuncCallReplaced(t, val.name, fields);
     this.syncOnInput(t, val, fields);
+  }
+
+  private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
+    if (state === INPUT_STATE.RESTRICTED) {
+      this.funcCall.options[RESTRICTED_PATH] = {
+        ...this.funcCall.options[RESTRICTED_PATH],
+        [paramName]: value instanceof DG.DataFrame ? value.clone(): value,
+      };
+    }
+
+    if (state) {
+      this.funcCall.options[EDIT_STATE_PATH] = {
+        ...this.funcCall.options[EDIT_STATE_PATH],
+        [paramName]: state,
+      };
+    }
+  }
+
+  private getInputLockState(paramName: string): INPUT_STATE | undefined {
+    return this.funcCall.options[EDIT_STATE_PATH]?.[paramName];
   }
 
   private syncFuncCallReplaced(t: InputVariants, name: string, field: SyncFields) {
@@ -877,7 +982,7 @@ export class RichFunctionView extends FunctionView {
       t.value = newValue;
       t.notify = true;
       this.funcCall[field][name] = newValue;
-      this.setInputState(t, this.funcCall.options['editState']?.[name]);
+      this.setInputLockState(t, name, newValue, this.getInputLockState(name));
     });
     this.subs.push(sub1);
 
@@ -904,6 +1009,11 @@ export class RichFunctionView extends FunctionView {
       if (field === SYNC_FIELD.INPUTS) {
         this.hideOutdatedOutput();
         this.validationRequests.next({field: newParam.name, isRevalidation: false});
+
+        const savedInputState = this.getInputLockState(newParam.name);
+        // if the source is not user input, then it is computed and should be restricted
+        if (!savedInputState)
+          this.setInputLockState(t, name, newValue, INPUT_STATE.RESTRICTED);
       }
     });
     this.subs.push(sub2);
@@ -922,6 +1032,16 @@ export class RichFunctionView extends FunctionView {
     const sub = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
+
+      // Setting value source BEFORE setting funccall field - for callback to know source
+      const currentInputState = this.getInputLockState(val.name);
+      const newValue = (currentInputState !== INPUT_STATE.RESTRICTED) ? t.value : this.getRestrictedValue(val.property.name);
+      this.setInputLockState(
+        t,
+        val.name,
+        newValue,
+        currentInputState ?? INPUT_STATE.USER_INPUT,
+      );
 
       this.funcCall[field][val.name] = t.value;
     });
@@ -1025,9 +1145,9 @@ export class RichFunctionView extends FunctionView {
   }
 
   private getValidatedNames(inputName?: string): string[] {
-    if (inputName)
-      return [inputName];
-    return [...this.funcCall.inputs.keys()];
+    // Validations are disabled for restricted/disabled inputs
+    return (inputName ? [inputName]: [...this.funcCall.inputs.keys()])
+      .filter((inputName) => !this.getInputLockState(inputName) || this.getInputLockState(inputName) === INPUT_STATE.USER_INPUT);
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {

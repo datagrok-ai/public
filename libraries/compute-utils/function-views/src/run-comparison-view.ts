@@ -3,8 +3,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
-import {getPropViewers} from './shared/utils';
+import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {getPropViewers} from '../../shared-utils/utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const RUN_ID_COL_LABEL = 'RunId' as const;
