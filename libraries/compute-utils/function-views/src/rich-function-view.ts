@@ -8,14 +8,14 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
-import '../css/rich-function-view.css';
-import {UiUtils} from '../../shared-components';
-import {FunctionView} from './function-view';
 import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
-import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, ValidationResultBase, getValidationIcon} from '../../shared/validation';
-import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared/input-wrappers';
+import {UiUtils} from '../../shared-components';
+import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult} from '../../shared-utils/validation';
+import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation} from '../../shared-utils/utils';
+import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
+import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
+import '../css/rich-function-view.css';
+import {FunctionView} from './function-view';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -868,12 +868,12 @@ export class RichFunctionView extends FunctionView {
       this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), {paramName: val.property.name, input: t}];
 
     this.injectLockIcons(val, t);
-    this.injectLockStates(val, t);
+    injectLockStates(t);
 
     if (isInputBase(t)) {
-      this.inputBaseAdditionalRenderHandler(val, t);
+      inputBaseAdditionalRenderHandler(val, t);
       this.bindTooltips(val, t);
-      this.injectInputBaseValidation(t);
+      injectInputBaseValidation(t);
     }
 
     inputsDiv.append(t.root);
@@ -951,77 +951,6 @@ export class RichFunctionView extends FunctionView {
     if (!tAny.placeLockStateIcons)
       tAny.placeLockStateIcons = defaultPlaceLockStateIcons;
     tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
-  }
-
-  private injectLockStates(param: DG.FuncCallParam, input: FuncCallInput) {
-    // if custom lock state methods are available then use them
-    if (isInputLockable(input)) return;
-
-    function setDisabledDefault() {
-      input.enabled = false;
-      $(input.root).removeClass('rfv-inconsistent-input rfv-inconsistent-warning-input');
-      $(input.root).removeClass('rfv-restricted-input');
-    }
-
-    function setRestrictedDefault() {
-      input.enabled = false;
-      $(input.root).removeClass('rfv-inconsistent-input rfv-inconsistent-warning-input');
-      $(input.root).addClass('rfv-restricted-input');
-    }
-
-    function setInconsistentWarnDefault() {
-      input.enabled = true;
-      $(input.root).addClass('rfv-inconsistent-warning-input');
-
-      $(input.root).addClass('rfv-inconsistent-input');
-      $(input.root).removeClass('rfv-restricted-input');
-    }
-
-    function setInconsistentDefault() {
-      input.enabled = true;
-      $(input.root).removeClass('rfv-inconsistent-warning-input');
-
-      $(input.root).addClass('rfv-inconsistent-input');
-      $(input.root).removeClass('rfv-restricted-input');
-    }
-
-    const inputAny = input as any;
-    inputAny.setDisabled = setDisabledDefault;
-    inputAny.setRestricted = setRestrictedDefault;
-    inputAny.setInconsistentWarn = setInconsistentWarnDefault;
-    inputAny.setInconsistent = setInconsistentDefault;
-  }
-
-  private inputBaseAdditionalRenderHandler(val: DG.FuncCallParam, t: DG.InputBase) {
-    const prop = val.property;
-
-    $(t.root).css({
-      'width': `${prop.options['block'] ?? '100'}%`,
-      'box-sizing': 'border-box',
-    });
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
-    t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
-    if (prop.options['units']) t.addPostfix(prop.options['units']);
-  }
-
-  private injectInputBaseValidation(t: DG.InputBase) {
-    const validationIndicator = ui.div('', {style: {display: 'flex'}});
-    t.addOptions(validationIndicator);
-    function setValidation(messages: ValidationResultBase | undefined) {
-      while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
-      const icon = getValidationIcon(messages);
-      if (icon)
-        validationIndicator.appendChild(icon);
-
-      t.input.classList.remove('d4-invalid');
-      t.input.classList.remove('d4-partially-invalid');
-      if (messages?.errors)
-        t.input.classList.add('d4-invalid');
-      else if (messages?.warnings)
-        t.input.classList.add('d4-partially-invalid');
-    }
-    (t as any).setValidation = setValidation;
   }
 
   private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {

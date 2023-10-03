@@ -7,14 +7,14 @@ import {Subject, BehaviorSubject, combineLatest, merge} from 'rxjs';
 import {debounceTime, filter, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
+import {historyUtils} from '../../history-utils';
+import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
+import {deepCopy} from '../../shared-utils/utils';
+import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
-import {historyUtils} from '../../history-utils';
-import '../css/pipeline-view.css';
 import {RunComparisonView} from './run-comparison-view';
-import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from './shared/consts';
-import {RichFunctionView} from './rich-function-view';
-import {deepCopy} from './shared/utils';
+import '../css/pipeline-view.css';
 
 type StepState = {
   func: DG.Func,
