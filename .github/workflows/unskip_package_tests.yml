@@ -10,7 +10,7 @@ on:
 #    - cron: '0 * * * *'
 
 jobs:
-  package-names:
+  check_skipped_tests:
     name: Get packages with skipped tests
     runs-on: ubuntu-22.04
     outputs:
@@ -71,4 +71,45 @@ jobs:
           Workflow ${{ github.workflow }} ${{ github.run_number }}
           https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
         working-directory: packages
+  matrix:
+    name: Transform packages to matrix
+    runs-on: ubuntu-22.04
+    needs: check_skipped_tests
+    if: needs.check_skipped_tests.outputs.deleted_skip_reason_packages != ''
+    outputs:
+      matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
+    steps:
+      - name: Generate matrix
+        id: generate-matrix
+        run: |
+          MATRIX_PUBLISH_JSON="["
+          for PACKAGE in $(echo ${{ needs.check_skipped_tests.outputs.deleted_skip_reason_packages }} | sort -u); do
+            DIR="packages/${PACKAGE}"
+            if [ -f "${DIR}/package.json" ]; then
+              MATRIX_PUBLISH_JSON+="{\"package\": \"${PACKAGE}\""
+              MATRIX_PUBLISH_JSON+="}"
+            fi
+          done
+          MATRIX_PUBLISH_JSON="${MATRIX_PUBLISH_JSON//\}\{/\}, \{}"
+          MATRIX_PUBLISH_JSON+="]"
+          PUBLISH_JSON="{\"include\": ${MATRIX_PUBLISH_JSON}}"
+          echo "matrix_publish=${PUBLISH_JSON}" >> $GITHUB_OUTPUT
+  test_packages:
+    name: Testing packages with uskipped tests 
+    runs-on: ubuntu-22.04
+    needs: 
+      - check_skipped_tests
+      - matrix
+    if: needs.check_skipped_tests.outputs.deleted_skip_reason_packages
+    env:
+      HOST: GitHubAction
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
+    steps:
+      - name: Run datagrok stand
+        id: datagrok-image
+        run: |
+          
+
 
