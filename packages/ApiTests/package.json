@@ -72,12 +72,6 @@
       "nullable": false
     },
     {
-      "name": "BIG_INT",
-      "propertyType": "int",
-      "defaultValue": 1,
-      "nullable": false
-    },
-    {
       "name": "FLOAT",
       "propertyType": "int",
       "defaultValue": 1.234,
