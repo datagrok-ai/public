@@ -14,12 +14,13 @@ jobs:
     name: Get packages with skipped tests
     runs-on: ubuntu-22.04
     outputs:
-      deleted_skip_reason_packages: ${{ steps.Deleted_skipReason_packages.outputs.deleted_skip_reason_packages}}
+      deleted_skip_reason_packages: ${{ steps.deleted_skipReason_packages.outputs.deleted_skip_reason_packages}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
+          token: ${{ secrets.WRITE_TOKEN }}
       - name: Get packages with tests
         id: packages_with_tests
         run: |
@@ -33,7 +34,7 @@ jobs:
           echo "Jira_skipReason_packages=$PACKAGES_TEST" >> $GITHUB_OUTPUT
         working-directory: packages
       - name: Get packages with deleted skipReason in tests
-        id: Deleted_skipReason_packages
+        id: deleted_skipReason_packages
         run: |
           apt update && apt install -y curl
           deleted_skip_reason_packages=''
@@ -57,5 +58,17 @@ jobs:
             done
           done
           echo "deleted_skip_reason_packages=$deleted_skip_reason_packages" >> $GITHUB_OUTPUT
+        working-directory: packages
+      - name: Commit changes
+        id: commit_unskip
+        if: steps.deleted_skipReason_packages.outputs.deleted_skip_reason_packages != ''
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "GitHub Actions: Unskip tests for packages ${{ steps.deleted_skipReason_packages.outputs.deleted_skip_reason_packages }}
+
+          Workflow ${{ github.workflow }} ${{ github.run_number }}
+          https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}"
         working-directory: packages
 
