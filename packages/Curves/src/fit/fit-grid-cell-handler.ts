@@ -9,7 +9,7 @@ import {
   getDataFrameChartOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, mergeProperties} from './fit-renderer';
+import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties} from './fit-renderer';
 import {MultiCurveViewer} from './multi-curve-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 
@@ -158,6 +158,8 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
               delete series[propertyName as keyof IFitSeriesOptions];
               isSeriesChanged = true;
             }
+          if (chartData.seriesOptions)
+            delete chartData.seriesOptions[propertyName as keyof IFitSeriesOptions];
           if (!isSeriesChanged) return value;
         }
         return JSON.stringify(chartData);
@@ -201,6 +203,28 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       changeCurvesOptions(gridCell, inputBase, SERIES_OPTIONS, switchLevelInput.value)};
     const chartOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
+
+    if (!isColorValid(dfChartOptions.seriesOptions?.pointColor) && !isColorValid(columnChartOptions.seriesOptions?.pointColor)) {
+      if (chartData.seriesOptions) {
+        if (!isColorValid(chartData.seriesOptions.pointColor))
+          chartData.seriesOptions.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+      else {
+        if (!isColorValid(chartData.series ? chartData.series![0].pointColor : ''))
+          chartData.series![0].pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+    }
+
+    if (!isColorValid(dfChartOptions.seriesOptions?.fitLineColor) && !isColorValid(columnChartOptions.seriesOptions?.fitLineColor)) {
+      if (chartData.seriesOptions) {
+        if (!isColorValid(chartData.seriesOptions.fitLineColor))
+          chartData.seriesOptions.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+      else {
+        if (!isColorValid(chartData.series ? chartData.series![0].fitLineColor : ''))
+          chartData.series![0].fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+    }
 
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
