@@ -201,6 +201,7 @@ M  END
             }
           }
         }
+        molCtx.useMolBlockWedging = (mol.has_coords() === 2);
         if (mol.has_coords() === 0 || molRegenerateCoords) {
           mol.set_new_coords(molRegenerateCoords);
           molHasOwnCoords = false;
@@ -210,8 +211,6 @@ M  END
           mol.straighten_depiction(molHasOwnCoords);
         } else if (!molHasOwnCoords)
           mol.normalize_depiction(0);
-
-        molCtx.useMolBlockWedging = (mol.has_coords() === 2);
       } catch (e) {
         console.error(
           'In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `' + molString + '`');
