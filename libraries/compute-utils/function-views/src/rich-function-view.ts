@@ -676,8 +676,6 @@ export class RichFunctionView extends FunctionView {
     if (!input)
       throw new Error(`No input named ${name}`);
 
-    // input value will not be synced, since doesn't trigger on
-    // onInput for inputBase
     this.funcCall.inputs[name] = value;
     this.setInputLockState(input, name, value, state);
   }
