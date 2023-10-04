@@ -1,15 +1,38 @@
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {DataQuery} from 'datagrok-api/dg';
+import {DataQuery, toDart} from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {getCallTime} from '../benchmarks/benchmark';
 
-category('Cache', () => {
+category('Client cache', () => {
+  before(async () => {
+    await grok.functions.clientCache.start();
+  });
+
+  test('Scalars cache test', async () => {
+    await grok.functions.clientCache.clear();
+    await basicCacheTest('PostgresqlScalarCacheTestClient');
+  });
+
+  test('TestNormal table cache test', async () => {
+    await grok.functions.clientCache.clear();
+    await basicCacheTest('PostgresqlTestCacheTableNormalClient');
+  });
+
+  test('Performance: 5 heavy DataQuery with no cache', async () => {
+    return await runHeavy(false);
+  }, {timeout: 300000});
+
+  test('Performance: 5 heavy DataQuery with cache', async () => {
+    return await runHeavy(true);
+  }, {timeout: 300000});
+});
+
+category('Server cache', () => {
   const testConnections: String[] = ['PostgreSQLDBTests', 'PostgreSQLDBTestsCached'];
 
   before(async () => {
     await cleanCache(testConnections);
-    await grok.functions.clientCache.clear();
   });
 
   test('Scalars cache test', async () => await basicCacheTest('PostgresqlScalarCacheTest'));
@@ -47,7 +70,6 @@ category('Cache', () => {
 
   after(async () => {
     await cleanCache(testConnections);
-    await grok.functions.clientCache.clear();
   });
 });
 
@@ -70,11 +92,9 @@ async function invalidationCacheTest(dataQuery: DataQuery, days: number): Promis
 
 async function basicCacheTest(query: string): Promise<void> {
   const dataQuery = await grok.functions.eval(`Dbtests:${query}`);
-  const funcCall1 = dataQuery.prepare();
-  const firstExecutionTime = await getCallTime(funcCall1);
+  const firstExecutionTime = await getCallTime(dataQuery.prepare());
   await delay(100);
-  const funcCall2 = dataQuery.prepare();
-  const secondExecutionTime = await getCallTime(funcCall2);
+  const secondExecutionTime = await getCallTime(dataQuery.prepare());
   expect(firstExecutionTime > secondExecutionTime * 2, true,
     `The first execution time ${firstExecutionTime} ms
         is no more than twice the second execution time ${secondExecutionTime} ms for ${query}`);
@@ -84,5 +104,37 @@ async function cleanCache(connections: String[]): Promise<void> {
   for (const conn of connections) {
     await grok.functions.call('DropConnectionCache',
       {connection: await grok.dapi.connections.filter(`name="${conn}"`).first()});
+  }
+}
+
+async function runHeavy(cache: boolean) {
+  try {
+    let queryName;
+    if (!cache) {
+      grok.functions.clientCache.stop();
+      queryName = 'NotCachedHeavy';
+    } else {
+      await grok.functions.clientCache.clear();
+      queryName = 'CachedHeavy';
+    }
+
+    const results = [];
+    const dataQuery = await grok.functions.eval(`Dbtests:${queryName}`);
+    if (cache)
+      await dataQuery.prepare().call();
+    for (let i = 0; i < 5; i++) {
+      const start = Date.now();
+      await dataQuery.prepare().call();
+      results.push(Date.now() - start);
+    }
+
+    const sum = results.reduce((p, c) => p + c, 0);
+    return toDart({'Average time': sum / results.length,
+      'Min time': Math.min(...results), 'Max time': Math.max(...results)});
+  } catch (e) {
+    grok.log.error(e);
+  } finally {
+    if (cache)
+      await grok.functions.clientCache.clear();
   }
 }
