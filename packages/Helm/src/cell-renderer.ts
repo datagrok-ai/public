@@ -8,7 +8,8 @@ import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-render
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {findMonomers, parseHelm} from './utils';
-import {IEditor, HelmMonomerPlacer} from './helm-monomer-placer';
+import {IEditor, HelmMonomerPlacer, IEditorMolAtom, ISeqMonomer} from './helm-monomer-placer';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/index';
 
 // import {_package} from './package'; // NullError: method not found: '_package' on null
 
@@ -24,10 +25,41 @@ const helmGapStartRe = /\{(\*\.)+/g;
 const helmGapIntRe = /\.(\*\.)+/g;
 const helmGapEndRe = /(\.\*)+\}/g;
 
+function getSeqMonomerFromHelm(
+  helmPrefix: string, symbol: string, monomerLib: IMonomerLib
+): ISeqMonomer {
+  let resSeqMonomer: ISeqMonomer | undefined = undefined;
+  for (const polymerType of monomerLib.getPolymerTypes()) {
+    if (helmPrefix.startsWith(polymerType))
+      resSeqMonomer = {symbol: symbol, polymerType: polymerType};
+  }
+  if (!resSeqMonomer)
+    resSeqMonomer = {symbol: symbol};
+  return resSeqMonomer;
+}
+
+function getSeqMonomerFromHelmAtom(atom: IEditorMolAtom): ISeqMonomer {
+  let polymerType: string | undefined = undefined;
+  // @ts-ignore
+  switch (atom.bio.type) {
+    case 'HELM_BASE':
+    case 'HELM_SUGAR': // r - ribose, d - deoxyribose
+    case 'HELM_LINKER': // p - phosphate
+      polymerType = 'RNA';
+      break;
+    case 'HELM_AA':
+      polymerType = 'PEPTIDE';
+      break;
+    default:
+      polymerType = 'PEPTIDE';
+  }
+  return {symbol: atom.elem, polymerType: polymerType};
+}
+
 function getHoveredMonomerFromEditor(
   argsX: number, argsY: number, gridCell: DG.GridCell, editor: IEditor
-): string | null {
-  let hoveredMonomerSymbol: string | null = null;
+): ISeqMonomer | null {
+  let hoveredSeqMonomer: ISeqMonomer | null = null;
 
   /** @return {[number, number]} [atom, distance] */
   function getNearest(excluded: (number | undefined)[]): [number | undefined, number | undefined] {
@@ -64,21 +96,23 @@ function getHoveredMonomerFromEditor(
   // }
 
   if (firstAtomI !== undefined && firstDistance !== undefined) {
+    const firstAtom = editor.m.atoms[firstAtomI];
+    const firstSeqMonomer = getSeqMonomerFromHelmAtom(firstAtom);
     if (secondAtomI !== undefined && secondDistance !== undefined) {
       if (firstDistance < secondDistance * 0.45)
-        hoveredMonomerSymbol = editor.m.atoms[firstAtomI].elem;
+        hoveredSeqMonomer = firstSeqMonomer;
     } else {
       if (firstDistance < 0.35 * gridCell.bounds.height)
-        hoveredMonomerSymbol = editor.m.atoms[firstAtomI].elem;
+        hoveredSeqMonomer = firstSeqMonomer;
     }
   }
-  return hoveredMonomerSymbol;
+  return hoveredSeqMonomer;
 }
 
 function getHoveredMonomerFallback(
   argsX: number, _argsY: number, gridCell: DG.GridCell, helmPlacer: HelmMonomerPlacer
-): string | null {
-  let hoveredMonomerSymbol: string | null = null;
+): ISeqMonomer | null {
+  let hoveredSeqMonomer: ISeqMonomer | null = null;
   const [allParts, lengths, sumLengths] = helmPlacer.getCellAllPartsLengths(gridCell.tableRowIndex!);
   const maxIndex = Object.values(lengths).length - 1;
   let left = 0;
@@ -106,38 +140,39 @@ function getHoveredMonomerFallback(
   }
   left = (argsX >= sumLengths[left]) ? left : left - 1; // correct left to between sumLengths
   if (left >= 0)
-    hoveredMonomerSymbol = allParts[left];
-  return hoveredMonomerSymbol;
+    hoveredSeqMonomer = getSeqMonomerFromHelm(allParts[0], allParts[left], helmPlacer.monomerLib);
+  return hoveredSeqMonomer;
 }
 
-// window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
-// /** get the text width in pixels */
-// // @ts-ignore
-// window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
-//   const rawNode = this.rawNode;
-//   const oldParent = rawNode.parentNode;
-//   const _measurementNode = rawNode.cloneNode(true);
-//   _measurementNode.style.visibility = 'hidden';
-//
-//   // solution to the "orphan issue" in FF
-//   let _width = 0;
-//   const _text = _measurementNode.firstChild.nodeValue;
-//   oldParent.appendChild(_measurementNode);
-//
-//   // solution to the "orphan issue" in Opera
-//   // (nodeValue == "" hangs firefox)
-//   if (_text != '') {
-//     while (!_width) { // <-- hangs
-//       //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
-//       if (_measurementNode.getBBox)
-//         _width = parseInt(_measurementNode.getBBox().width);
-//       else
-//         _width = 68;
-//     }
-//   }
-//   oldParent.removeChild(_measurementNode);
-//   return _width;
-// };
+// patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
+/** get the text width in pixels */
+// @ts-ignore
+window.dojox.gfx.svg.Text.prototype.getTextWidth = function() {
+  const rawNode = this.rawNode;
+  const oldParent = rawNode.parentNode;
+  const _measurementNode = rawNode.cloneNode(true);
+  _measurementNode.style.visibility = 'hidden';
+
+  // solution to the "orphan issue" in FF
+  let _width = 0;
+  const _text = _measurementNode.firstChild.nodeValue;
+  oldParent.appendChild(_measurementNode);
+
+  // solution to the "orphan issue" in Opera
+  // (nodeValue == "" hangs firefox)
+  if (_text != '') {
+    let watchdogCounter = 100;
+    while (!_width && --watchdogCounter > 0) { // <-- hangs
+      //Yang: work around svgweb bug 417 -- http://code.google.com/p/svgweb/issues/detail?id=417
+      if (_measurementNode.getBBox)
+        _width = parseInt(_measurementNode.getBBox().width);
+      else
+        _width = 68;
+    }
+  }
+  oldParent.removeChild(_measurementNode);
+  return _width;
+};
 
 /** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
  * in case of missed monomers presented, draws linear sequences aligned in width per monomer.
@@ -163,9 +198,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
       const helmPlacer = HelmMonomerPlacer.getOrCreate(tableCol);
       const editor: IEditor | null = helmPlacer.getEditor(gridCell.tableRowIndex!);
-      const hoveredMonomerSymbol = editor ? getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor) :
+      const seqMonomer: ISeqMonomer | null = editor ? getHoveredMonomerFromEditor(argsX, argsY, gridCell, editor) :
         getHoveredMonomerFallback(argsX, argsY, gridCell, helmPlacer);
-      if (!hoveredMonomerSymbol) {
+      if (!seqMonomer) {
         ui.tooltip.hide();
         return;
       }
@@ -176,18 +211,18 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       const monomerList = parseHelm(seq);
       const missedMonomers = findMonomers(monomerList);
 
-      if (missedMonomers.has(hoveredMonomerSymbol)) {
+      if (missedMonomers.has(seqMonomer.symbol)) {
         ui.tooltip.show(ui.divV([
-          ui.divText(`Monomer ${hoveredMonomerSymbol} not found.`),
+          ui.divText(`Monomer ${seqMonomer.symbol} not found.`),
           ui.divText('Open the Context Panel, then expand Manage Libraries'),
         ]), e.x + 16, e.y + 16);
       } else {
-        const monomer = helmPlacer.getMonomer(hoveredMonomerSymbol);
+        const monomer = helmPlacer.getMonomer(seqMonomer);
         if (monomer) {
           const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
           const monomerSvg = grok.chem.svgMol(monomer.smiles, undefined, undefined, options);
           ui.tooltip.show(ui.divV([
-            ui.divText(hoveredMonomerSymbol),
+            ui.divText(seqMonomer.symbol),
             monomerSvg,
           ]), e.x + 16, e.y + 16);
         }
@@ -218,6 +253,9 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
     } catch (err: any) {
       const errMsg: string = errorToConsole(err);
       console.error('Helm: HelmCellRenderer.onMouseMove() error:\n' + errMsg);
+    } finally {
+      e.preventDefault();
+      e.stopPropagation();
     }
   }
 
@@ -246,7 +284,8 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
 
       if (missedMonomers.size == 0) {
         // Recreate host to avoid hanging in window.dojox.gfx.svg.Text.prototype.getTextWidth
-        const host = gridCell.element = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
+        const host = gridCell.element = ui.div([],
+          {style: {width: `${w - 2}px`, height: `${h - 2}px`, margin: `${1}px`, backgroundColor: '#FFE0E0'}});
         host.setAttribute('dataformat', 'helm');
         host.setAttribute('data', seq /* gaps skipped */);
 

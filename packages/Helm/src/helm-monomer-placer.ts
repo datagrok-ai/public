@@ -35,12 +35,17 @@ export interface IEditorPoint {
   get y(): number;
 }
 
-export class HelmMonomerPlacer {
-  private _allPartsList: (string[] | null)[];
-  private _lengthsList: (number[] | null)[];
-  private _editorList: (IEditor | null)[];
+export interface ISeqMonomer {
+  symbol: string,
+  polymerType?: string
+}
 
-  private monomerLib: IMonomerLib;
+export class HelmMonomerPlacer {
+  private readonly _allPartsList: (string[] | null)[];
+  private readonly _lengthsList: (number[] | null)[];
+  private readonly _editorList: (IEditor | null)[];
+
+  public readonly monomerLib: IMonomerLib;
 
   public monomerCharWidth: number = 7;
   public leftPadding: number = 5;
@@ -95,11 +100,15 @@ export class HelmMonomerPlacer {
     return seq ? getParts(monomerList, seq) : [];
   }
 
-  getMonomer(monomerSymbol: any): Monomer | null {
+  getMonomer(monomer: ISeqMonomer): Monomer | null {
     let res: Monomer | null = null;
-    for (const polymerType of this.monomerLib.getPolymerTypes()) {
-      res = this.monomerLib.getMonomer(polymerType, monomerSymbol);
-      if (res) break;
+    if (monomer.polymerType)
+      res = this.monomerLib.getMonomer(monomer.polymerType, monomer.symbol);
+    else {
+      for (const polymerType of this.monomerLib.getPolymerTypes()) {
+        res = this.monomerLib.getMonomer(polymerType, monomer.symbol);
+        if (res) break;
+      }
     }
     return res;
   }
