@@ -8,6 +8,8 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 
+const MAX_ATOM_COUNT = 999;
+
 const HELM_SECTION_SEPARATOR = '$';
 const HELM_ITEM_SEPARATOR = '|';
 const enum HELM_MONOMER_TYPE {
@@ -52,7 +54,7 @@ export class HelmToMolfileConverter {
     const polymer = new Polymer(helm);
     meta.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
       const shift = meta.getMonomerShifts(monomerIdx);
-      polymer.addShiftedMonomer(monomerSymbol, shift);
+      polymer.addShiftedMonomer(monomerSymbol, monomerIdx, shift);
     });
     const polymerMolfile = polymer.compileToMolfile();
     return polymerMolfile;
@@ -80,8 +82,8 @@ class MonomerPositionDataManager {
 class MonomerWrapper {
   constructor(
     private monomerSymbol: string,
-    private polymerType: HELM_POLYMER_TYPE,
-    // id: {polymer: number, monomer: number}
+    private atomNumberShift: number,
+    polymerType: HELM_POLYMER_TYPE,
   ) {
     const monomerLib = MonomerLibHelper.instance.getBioLib();
     const monomer = monomerLib.getMonomer(polymerType, monomerSymbol);
@@ -96,8 +98,31 @@ class MonomerWrapper {
     this.molfileWrapper.shiftCoordinates(shift);
   }
 
-  getMolfileAtomAndBondLines(bondShift: number): {atomLines: string[], bondLines: string[]} {
-    return this.molfileWrapper.getAtomAndBondLines(bondShift);
+  get atomLines(): string[] {
+    return this.molfileWrapper.getAtomAndBondLines().atomLines;
+  }
+
+  get bondLines(): string[] {
+    const bonds = this.molfileWrapper.getShiftedBonds(this.atomNumberShift);
+    console.log(`new bond numbers`, bonds);
+    return this.molfileWrapper.getAtomAndBondLines(bonds).bondLines;
+  }
+
+  deleteRGroups(rGroupIds: number[]): void {
+    this.molfileWrapper.removeRGroupsFromAtomBlock(rGroupIds);
+  }
+
+  replaceRGroupWithAttachmentAtom(rGroupId: number, attachmentAtomIdx: number): void {
+    this.molfileWrapper.replaceRGroupWithAttachmentAtom(rGroupId, attachmentAtomIdx);
+  };
+
+  getAttachmentAtomByRGroupId(rGroupId: number): number {
+    const attachmentAtom = this.molfileWrapper.getAttachmentAtomByRGroupId(rGroupId);
+    return attachmentAtom + this.atomNumberShift;
+  }
+
+  deleteBondLineWithSpecifiedRGroup(rGroupId: number): void {
+    this.molfileWrapper.deleteBondLineWithSpecifiedRGroup(rGroupId);
   }
 }
 
@@ -117,11 +142,31 @@ class MolfileWrapper {
 
     this.rgpIdToAtomicIdxMap = this.getRGroupIdToAtomicIdxMap(lines);
     this.shiftMonomerToDefaultPosition();
+    this.bondedAtoms = this.getBondedAtoms();
   }
 
   private atomLines: string[];
   private bondLines: string[];
+  private bondedAtoms: number[][] = [];
   private rgpIdToAtomicIdxMap: {[key: number]: number} = {};
+
+  deleteBondLineWithSpecifiedRGroup(rGroupId: number): void {
+    const bondLineIdxToBeDeleted = this.bondedAtoms.map((bondedPair, idx) => {
+      if (bondedPair.some((atomId) => atomId === -rGroupId))
+        return idx;
+    }).filter((idx) => idx !== undefined) as number[];
+    this.deleteSpecifiedBondLines(bondLineIdxToBeDeleted);
+  }
+
+  private deleteSpecifiedBondLines(bondLineIdxToBeDeleted: number[]): void {
+    this.bondLines = this.bondLines.filter((_, idx) => !bondLineIdxToBeDeleted.includes(idx));
+    this.bondedAtoms = this.bondedAtoms.filter((_, idx) => !bondLineIdxToBeDeleted.includes(idx));
+  }
+
+  private getBondedAtoms(): number[][] {
+    const bonds = MolfileHandler.getInstance(this.molfileV2K).pairsOfBondedAtoms;
+    return bonds.map((pair) => Array.from(pair));
+  }
 
   shiftCoordinates(shift: {x: number, y: number}): void {
     this.atomLines = this.atomLines.map((line: string) => {
@@ -147,19 +192,28 @@ class MolfileWrapper {
     });
   }
 
-  shiftBondNumbers(shift: number): void {
-    this.bondLines = this.bondLines.map((line: string) => {
-      const bond1 = parseInt(line.substring(0, 3));
-      const bond2 = parseInt(line.substring(3, 6));
-      const newBond1 = bond1 + shift;
-      const newBond2 = bond2 + shift;
-      return `${newBond1.toString().padStart(3, ' ')}${newBond2.toString().padStart(3, ' ')}${line.substring(6)}`;
+  getShiftedBonds(shift: number): number[][] {
+    return this.bondedAtoms.map((bondedPair) => {
+      return bondedPair.map((atomId) => atomId + shift);
     });
   }
 
-  getAtomAndBondLines(bondShift: number): {atomLines: string[], bondLines: string[]} {
-    this.shiftBondNumbers(bondShift);
+  getAtomAndBondLines(newBondedAtoms?: number[][]): {atomLines: string[], bondLines: string[]} {
+    const bondedAtoms = newBondedAtoms ? newBondedAtoms : this.bondedAtoms;
+    this.bondLines = this.bondLines.map((line: string, idx) => {
+      const newBond1 = bondedAtoms[idx][0];
+      const newBond2 = bondedAtoms[idx][1];
+      return `${newBond1.toString().padStart(3, ' ')}${newBond2.toString().padStart(3, ' ')}${line.substring(6)}`;
+    });
     return {atomLines: this.atomLines, bondLines: this.bondLines};
+  }
+
+  replaceRGroupWithAttachmentAtom(rGroupId: number, externalAtom: number): void {
+    const bondIdx = this.bondedAtoms.findIndex((bondedPair) => {
+      return bondedPair.includes(-rGroupId);
+    });
+    const attachmentAtom = this.bondedAtoms[bondIdx].find((atomId) => atomId !== -rGroupId)!;
+    this.bondedAtoms[bondIdx] = [externalAtom, attachmentAtom];
   }
 
   getAtomCoordinatesByIdx(atomicIdx: number): {x: number, y: number} {
@@ -207,25 +261,24 @@ class MolfileWrapper {
     const unaccounted = rGroupAtomicIndices.filter((idx) => !Object.values(map).includes(idx));
     if (unaccounted.length !== 0)
       throw new Error(`Unaccounted R group indices: ${unaccounted}`);
-
     return map;
   }
 
-  getRGroupAtomicIdxById(rgroupId: number): number {
+  private getRGroupAtomicIdxById(rgroupId: number): number {
     return this.rgpIdToAtomicIdxMap[rgroupId];
   }
 
   getAttachmentAtomByRGroupId(rgroupId: number): number {
-    const rGroupAtomicIdx = this.getRGroupAtomicIdxById(rgroupId);
-    const molfileHandler = MolfileHandler.getInstance(this.molfileV2K);
-    const allBondedPairs = molfileHandler.pairsOfBondedAtoms;
-    const bondedPairWithRGP = allBondedPairs.find((pair) => pair.includes(rGroupAtomicIdx));
-    if (!bondedPairWithRGP)
-      throw new Error(`Cannot find bonded pair with RGP ${rgroupId} for monomer ${this.monomerSymbol}`);
-    const attachmentIdx = bondedPairWithRGP.find((idx) => idx !== rGroupAtomicIdx);
-    if (!attachmentIdx)
+    let result = -1;
+    for (const bondedPair of this.bondedAtoms) {
+      if (bondedPair.includes(-rgroupId)) {
+        result = bondedPair.find((idx) => idx !== -rgroupId)!;
+        break;
+      }
+    }
+    if (result === -1)
       throw new Error(`Cannot find attachment atom for RGP ${rgroupId} for monomer ${this.monomerSymbol}`);
-    return attachmentIdx;
+    return result;
   }
 
   private shiftR1GroupToOrigin(): void {
@@ -247,6 +300,43 @@ class MolfileWrapper {
     this.shiftR1GroupToOrigin();
     if (this.rgpIdToAtomicIdxMap[2])
       this.alignR2AlongX();
+  }
+
+  removeRGroupsFromAtomBlock(rGroupIds: number[]): void {
+    const rGroupIdsToAtomicIdx = new Map<number, number>();
+    rGroupIds.forEach((rgroupId) => {
+      const atomicIdx = this.getRGroupAtomicIdxById(rgroupId);
+      if (atomicIdx !== undefined)
+        rGroupIdsToAtomicIdx.set(rgroupId, atomicIdx);
+      else
+        throw new Error(`Cannot find atomic index for R group ${rgroupId} for monomer ${this.monomerSymbol}`);
+    });
+    const rGroupAtomicIndices = Array.from(rGroupIdsToAtomicIdx.values());
+    this.atomLines = this.atomLines.filter((_, idx) => {
+      return !rGroupAtomicIndices.includes(idx);
+    });
+    rGroupIds.forEach((rGroupId) => {
+      let isAdded = false;
+      const rGroupAtomicIdx = rGroupIdsToAtomicIdx.get(rGroupId)!;
+      this.bondedAtoms = this.bondedAtoms.map((bondedPair, idx) => {
+        return bondedPair.map((atomId) => {
+          if (atomId - 1 > rGroupAtomicIdx)
+            return atomId - 1;
+          if (atomId - 1 === rGroupAtomicIdx) {
+            if (isAdded)
+              throw new Error(`R group ${rGroupId} is already handled`);
+            // WARNING: atomId is 1-based
+            isAdded = true;
+            return -rGroupId;
+          }
+          return atomId;
+        });
+      });
+      for (const [key, value] of rGroupIdsToAtomicIdx.entries()) {
+        if (value > rGroupAtomicIdx)
+          rGroupIdsToAtomicIdx.set(key, value - 1);
+      };
+    });
   }
 }
 
@@ -337,7 +427,6 @@ class ConnectionList {
     const splitted = connectionList.split(HELM_ITEM_SEPARATOR);
     splitted.forEach((connectionItem: string) => this.validateConnectionItem(connectionItem));
     this.connectionItems = splitted;
-    console.log(`${connectionList}:`, this.getConnectionData());
   }
 
   private connectionItems: string[];
@@ -378,10 +467,9 @@ class Helm {
     if (helmSections[1] !== '')
       this.connectionList = new ConnectionList(helmSections[1]);
     this.bondData = this.getBondData();
-    console.log(`${this.helm}:`, this.bondData);
   }
 
-  private bondData: Bond[][];
+  readonly bondData: Bond[][];
 
   toString() {
     return this.helm;
@@ -410,7 +498,6 @@ class Helm {
       result[simplePolymer.fullId] = shift;
       shift += simplePolymer.monomers.length;
     });
-    console.log(`${this.helm}:`, result);
     return result;
   }
 
@@ -434,7 +521,6 @@ class Helm {
           data.push(bond);
         });
         result.push(data);
-        console.log(`${connection} added pair:`, data);
       });
     }
     return result;
@@ -445,35 +531,76 @@ class Polymer {
   constructor(helm: string) {
     this.helm = new Helm(helm);
     this.polymerType = this.helm.polymerType;
+
+    this.rGroupsToRemove = new Map<number, number[]>();
+    this.helm.bondData.forEach((bond) => {
+      bond.forEach((bondPart) => {
+        const monomerIdx = bondPart.monomerIdx;
+        const rGroupId = bondPart.rGroupId;
+        if (!this.rGroupsToRemove.get(monomerIdx))
+          this.rGroupsToRemove.set(monomerIdx, []);
+        this.rGroupsToRemove.get(monomerIdx)!.push(rGroupId);
+      });
+    });
   }
 
   private monomerWrappers: MonomerWrapper[] = [];
+  private atomNumberShift = 0;
   private helm: Helm;
   private polymerType: HELM_POLYMER_TYPE;
+  private rGroupsToRemove: Map<number, number[]>;
 
   addShiftedMonomer(
     monomerSymbol: string,
+    monomerIdx: number,
     shift: {x: number, y: number},
-    // id: {polymer: number, monomer: number}
   ): void {
-    const monomerWrapper = new MonomerWrapper(monomerSymbol, this.polymerType);
+    const monomerWrapper = new MonomerWrapper(monomerSymbol, this.atomNumberShift, this.polymerType);
     monomerWrapper.shiftCoordinates(shift);
+
+    if (this.rGroupsToRemove.has(monomerIdx))
+      monomerWrapper.deleteRGroups(this.rGroupsToRemove.get(monomerIdx)!);
+
     this.monomerWrappers.push(monomerWrapper);
+
+    this.atomNumberShift += monomerWrapper.atomLines.length;
+  }
+
+  restoreBondsBetweenMonomers(): void {
+    this.helm.bondData.forEach((bond) => {
+      const bondPart1 = bond[0];
+      const bondPart2 = bond[1];
+      const monomerIdx1 = bondPart1.monomerIdx;
+      const monomerIdx2 = bondPart2.monomerIdx;
+      const rGroupId1 = bondPart1.rGroupId;
+      const rGroupId2 = bondPart2.rGroupId;
+      const monomerWrapper1 = this.monomerWrappers[monomerIdx1];
+      const monomerWrapper2 = this.monomerWrappers[monomerIdx2];
+      // const attachmentAtom1 = monomerWrapper1.getAttachmentAtomByRGroupId(rGroupId1);
+      const attachmentAtom2 = monomerWrapper2.getAttachmentAtomByRGroupId(rGroupId2);
+      monomerWrapper1.replaceRGroupWithAttachmentAtom(rGroupId1, attachmentAtom2);
+      monomerWrapper2.deleteBondLineWithSpecifiedRGroup(rGroupId2);
+    });
   }
 
   compileToMolfile(): string {
     const molfileHeader = '\nDatagrok\n';
     const atomLines: string[] = [];
     const bondLines: string[] = [];
+    this.restoreBondsBetweenMonomers();
+    console.log('restoring for:', this.helm.toString());
     this.monomerWrappers.forEach((monomerWrapper: MonomerWrapper) => {
-      const bondShift = atomLines.length;
-      const {atomLines: atomLinesPart, bondLines: bondLinesPart} = monomerWrapper.getMolfileAtomAndBondLines(bondShift);
-      atomLines.push(...atomLinesPart);
-      bondLines.push(...bondLinesPart);
+      console.log(`atom lines`, monomerWrapper.atomLines);
+      atomLines.push(...monomerWrapper.atomLines);
+      console.log(`bond lines`, monomerWrapper.bondLines);
+      bondLines.push(...monomerWrapper.bondLines);
     });
     const atomCount = atomLines.length;
-    if (atomCount > 999)
-      throw new Error(`Atom count in polymer ${this.helm.toString()} is ${atomCount} and exceeds 999`);
+    if (atomCount > MAX_ATOM_COUNT) {
+      throw new Error(
+        `Atom count in polymer ${this.helm.toString()} is ${atomCount} and exceeds ${MAX_ATOM_COUNT}`
+      );
+    }
     const bondCount = bondLines.length;
     const countsLine = `${
       atomCount.toString().padStart(3, ' ')
