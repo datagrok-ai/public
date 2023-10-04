@@ -16,14 +16,12 @@ To export logs you need to create connection to AWS and configure **Log Export B
 
 ## To configure **Log Export Blocks**
 
-  1. Go to **Settings** > **Logger** > **Export logs to CloudWatch**. Click **Add new export block** link. The **Log Export Block** appears. It consists of several fields where you can specify the level, type of logs, as well parameters by which events will be filtered and sent to the Log group and stream. Moreover, you can configure maximum number of log events in a batch. 
+1. Go to **Settings** > **Logger** > **Export logs to CloudWatch**. Click **Add new export block** link. The **Log Export Block** appears. It consists of several fields where you can specify the level, type of logs, as well parameters by which events will be filtered and sent to the Log group and stream. Moreover, you can configure maximum number of log events in a batch. 
     <br />You can create several Log Export Blocks to export different types of logs to different Log groups or streams. Log sending is done in the order of forms. So it's better to put more specific cases above more generalized ones.
 
    ![How to find CW settings](./log-export-cw.gif "Export logs to CloudWatch")
-
-  2. Fill out **Log Export Block** with the necessary information and choose the appropriate connection to **AWS**.
-  
-  3. Click **Apply** button. It schedules the job which exports log events every minute. 
+2. Fill out **Log Export Block** with the necessary information and choose the appropriate connection to **AWS**.
+3. Click **Apply** button. It schedules the job which exports log events every minute. 
    
 ## To disable log sending
 
