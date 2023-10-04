@@ -1,27 +1,27 @@
 import {ValidationResultBase} from './validation';
 
 export interface SubscriptionLike {
-    unsubscribe(): void;
-  }
+  unsubscribe(): void;
+}
 
 export interface FuncCallInput<T = any> {
-    root: HTMLElement;
-    value: T | null | undefined;
-    notify: boolean;
-    enabled: boolean;
-    onInput: (cb: Function) => SubscriptionLike;
-  }
+  root: HTMLElement;
+  value: T | null | undefined;
+  notify: boolean;
+  enabled: boolean;
+  onInput: (cb: Function) => SubscriptionLike;
+}
 
 export interface FuncCallInputValidated<T = any> extends FuncCallInput<T> {
-    setValidation: (messages?: ValidationResultBase) => void;
-  }
+  setValidation: (messages?: ValidationResultBase) => void;
+}
 
 export interface FuncCallInputLockable<T = any> extends FuncCallInput<T> {
-    setDisabled: () => void;
-    setRestricted: () => void;
-    setInconsistentWarn: () => void;
-    setInconsistent: () => void;
-  }
+  setDisabled: () => void;
+  setRestricted: () => void;
+  setInconsistentWarn: () => void;
+  setInconsistent: () => void;
+}
 
 export type InputFactory = (params: any) => { input: FuncCallInput | FuncCallInputValidated };
 
@@ -36,8 +36,8 @@ export function isFuncCallInputValidated<T = any>(arg: any): arg is FuncCallInpu
 
 export function isInputLockable(arg: any): arg is FuncCallInputLockable {
   return arg?.setDisabled &&
-      arg?.setRestricted &&
-      arg?.setInconsistent &&
-      arg?.setInconsistentWarn &&
-      isFuncCallInput(arg);
+    arg?.setRestricted &&
+    arg?.setInconsistent &&
+    arg?.setInconsistentWarn &&
+    isFuncCallInput(arg);
 }

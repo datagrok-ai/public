@@ -582,7 +582,7 @@ export class RichFunctionView extends FunctionView {
 
       let scalarsTable = generateScalarsTable();
 
-      const tableSub = merge(this.funcCallReplaced, this.isRunning.pipe(filter(x => x === false), skip(1))).subscribe(() => {
+      const tableSub = merge(this.funcCallReplaced, this.isRunning.pipe(filter((x) => x === false), skip(1))).subscribe(() => {
         const newScalarsTable = generateScalarsTable();
         scalarsTable.replaceWith(newScalarsTable);
         scalarsTable = newScalarsTable;
