@@ -20,7 +20,8 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
                 'molecule': (item: ItemType) => {
                     return new CustomSketcherInput(item.molecule);
                 },
-            }
+            },
+            newItemFunction: () => ({color: '#00FF00'}),
         });
 
     itemsGrid.onItemAdded.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
