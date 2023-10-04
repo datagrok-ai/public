@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
+import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_TAG, REGENERATE_COORDS, SCAFFOLD_TREE_HIGHLIGHT, HIGHLIGHT_BY_SCAFFOLD_COL } from '../constants';
 import { hexToPercentRgb } from '../utils/chem-common';
 
 export interface ISubstruct {
@@ -376,18 +376,18 @@ M  END
 
   highlightByScaffoldCol(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle, colTemp: any, molString: string): void {
-    let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
+    let molRegenerateCoords = colTemp && colTemp[REGENERATE_COORDS] === 'true';
     let scaffoldRegenerateCoords = false;
     const df = gridCell.cell.dataFrame;
     let rowScaffoldCol = null;
 
     // if given, take the 'scaffold-col' col
-    if (colTemp && colTemp['scaffold-col']) {
-      const rowScaffoldColName = colTemp['scaffold-col'];
+    if (colTemp && colTemp[SCAFFOLD_COL]) {
+      const rowScaffoldColName = colTemp[SCAFFOLD_COL];
       const rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
       if (rowScaffoldColProbe !== null) {
         const scaffoldColTemp = rowScaffoldColProbe.temp;
-        scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp['regenerate-coords'] === 'true';
+        scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp[REGENERATE_COORDS] === 'true';
         molRegenerateCoords = scaffoldRegenerateCoords;
         rowScaffoldCol = rowScaffoldColProbe;
       }
@@ -400,7 +400,7 @@ M  END
       // drawing with a per-row scaffold
       const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
       const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
-      const highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
+      const highlightScaffold = colTemp && colTemp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true';
       this._drawMolecule(x, y, w, h, g.canvas,
         molString, [{molecule: scaffoldMolString}], highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, true);
     }

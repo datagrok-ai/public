@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ALIGN_BY_SCAFFOLD_TAG } from '../constants';
+import { ALIGN_BY_SCAFFOLD_TAG, SCAFFOLD_COL, REGENERATE_COORDS, HIGHLIGHT_BY_SCAFFOLD_COL } from '../constants';
 
 enum StructureFilterType {
   Sketch = 'Sketch',
@@ -16,7 +16,7 @@ enum StructureFilterType {
  *  */
 export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   const NONE = 'None';
-  const scaffoldColName = col.temp['scaffold-col'] ?? NONE;
+  const scaffoldColName = col.temp[SCAFFOLD_COL] ?? NONE;
 
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
@@ -28,23 +28,23 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     scaffoldColName,
     [NONE].concat([...columnsSet].sort()),
     (s: string) => {
-      col.temp['scaffold-col'] = s === NONE ? null : s;
+      col.temp[SCAFFOLD_COL] = s === NONE ? null : s;
       col.dataFrame.fireValuesChanged();
     });
   scaffoldColumnChoice.setTooltip('Align structures to a scaffold defined in another column');
 
   const highlightScaffoldsCheckbox = ui.boolInput('Highlight scaffold',
-    col?.temp && col.temp['highlight-scaffold'] === 'true',
+    col?.temp && col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true',
     (v: any) => {
-      col.temp['highlight-scaffold'] = v.toString();
+      col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] = v.toString();
       col.dataFrame.fireValuesChanged();
     });
   highlightScaffoldsCheckbox.setTooltip('Highlight scaffold defined above');
 
   const regenerateCoordsCheckbox = ui.boolInput('Regen coords',
-    col?.temp && col.temp['regenerate-coords'] === 'true',
+    col?.temp && col.temp[REGENERATE_COORDS] === 'true',
     (v: any) => {
-      col.temp['regenerate-coords'] = v.toString();
+      col.temp[REGENERATE_COORDS] = v.toString();
       col.dataFrame.fireValuesChanged();
     });
   regenerateCoordsCheckbox.setTooltip('Force regeneration of coordinates even for MOLBLOCKS');

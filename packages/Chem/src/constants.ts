@@ -33,8 +33,11 @@ export const getTerminateEventName =
 export const getSearchProgressEventName =
   (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
-export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold';
+export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.chem-scaffold-highlight';
+export const SCAFFOLD_COL = 'scaffold-col';
+export const HIGHLIGHT_BY_SCAFFOLD_COL = 'highlight-scaffold-col';
+export const REGENERATE_COORDS = 'regenerate-coords';
 export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';
 export enum SubstructureSearchType {
   EXACT_MATCH = 'Exact',
