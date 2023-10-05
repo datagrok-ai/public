@@ -31,9 +31,9 @@ export class SparseMatrix {
   readonly nCols: number = 0;
 
   constructor(
-    private rows: number[] | Int32Array,
-    private cols: number[] | Int32Array,
-    private values: number[] | Float32Array,
+    rows: number[] | Int32Array,
+    cols: number[] | Int32Array,
+    values: number[] | Float32Array,
     dims: number[]
   ) {
     if (rows.length !== cols.length || rows.length !== values.length) {
@@ -109,18 +109,18 @@ export class SparseMatrix {
   }
 
   getRows(): number[] {
-   // return Array.from(this.entries, ([key, value]) => value.row);
-    return this.rows as unknown as number[];
+   return Array.from(this.entries, ([key, value]) => value.row);
+   // return this.rows as unknown as number[];
   }
 
   getCols(): number[]{
-   // return Array.from(this.entries, ([key, value]) => value.col);
-    return this.cols as unknown as number[];
+   return Array.from(this.entries, ([key, value]) => value.col);
+   // return this.cols as unknown as number[];
   }
 
   getValues(): number[] {
-   // return Array.from(this.entries, ([key, value]) => value.value);
-  return this.values as unknown as number[];
+  return Array.from(this.entries, ([key, value]) => value.value);
+  //return this.values as unknown as number[];
   }
 
   forEach(fn: (value: number, row: number, col: number) => void): void {
