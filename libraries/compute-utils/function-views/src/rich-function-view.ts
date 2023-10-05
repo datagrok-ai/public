@@ -159,11 +159,8 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(runSub);
 
     // always run validations on start
-    const controller = new AbortController();
-    const results = await this.runValidation({isRevalidation: false}, controller.signal);
-    this.setValidationResults(results);
-    this.runRevalidations({isRevalidation: false}, results);
-    this.validationUpdates.next(null);
+    if (!this.isHistorical)
+      this.validationRequests.next({isRevalidation: false});
 
     if (this.runningOnStart && this.isRunnable())
       await this.doRun();
@@ -733,10 +730,11 @@ export class RichFunctionView extends FunctionView {
           return;
         }
         this.inputsMap[val.property.name] = input;
-        this.syncInput(val, input, field);
-        this.disableInputsOnRun(val.property.name, input);
-        if (field === SYNC_FIELD.INPUTS)
+        if (field === SYNC_FIELD.INPUTS) {
+          this.syncInput(val, input, field);
+          this.disableInputsOnRun(val.property.name, input);
           this.bindOnHotkey(input);
+        }
 
         this.renderInput(inputs, val, input, prevCategory);
         this.afterInputPropertyRender.next({prop, input: input});
