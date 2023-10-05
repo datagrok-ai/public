@@ -31,9 +31,9 @@ export class SparseMatrix {
   readonly nCols: number = 0;
 
   constructor(
-    rows: number[],
-    cols: number[],
-    values: number[],
+    private rows: number[] | Int32Array,
+    private cols: number[] | Int32Array,
+    private values: number[] | Float32Array,
     dims: number[]
   ) {
     if (rows.length !== cols.length || rows.length !== values.length) {
@@ -76,7 +76,7 @@ export class SparseMatrix {
   }
 
   get(row: number, col: number, defaultValue = 0) {
-    this.checkDims(row, col);
+    //this.checkDims(row, col);
     const key = this.makeKey(row, col);
     if (this.entries.has(key)) {
       return this.entries.get(key)!.value;
@@ -86,9 +86,10 @@ export class SparseMatrix {
   }
 
   getAll(ordered = true): { value: number; row: number; col: number }[] {
-    const rowColValues: Entry[] = [];
+    const rowColValues: Entry[] = new Array(this.entries.size).fill(null);
+    let i = 0;
     this.entries.forEach(value => {
-      rowColValues.push(value);
+      rowColValues[i++] = value;
     });
     if (ordered) {
       // Ordering the result isn't required for processing but it does make it easier to write tests
@@ -108,15 +109,18 @@ export class SparseMatrix {
   }
 
   getRows(): number[] {
-    return Array.from(this.entries, ([key, value]) => value.row);
+   // return Array.from(this.entries, ([key, value]) => value.row);
+    return this.rows as unknown as number[];
   }
 
-  getCols(): number[] {
-    return Array.from(this.entries, ([key, value]) => value.col);
+  getCols(): number[]{
+   // return Array.from(this.entries, ([key, value]) => value.col);
+    return this.cols as unknown as number[];
   }
 
   getValues(): number[] {
-    return Array.from(this.entries, ([key, value]) => value.value);
+   // return Array.from(this.entries, ([key, value]) => value.value);
+  return this.values as unknown as number[];
   }
 
   forEach(fn: (value: number, row: number, col: number) => void): void {
@@ -124,12 +128,13 @@ export class SparseMatrix {
   }
 
   map(fn: (value: number, row: number, col: number) => number): SparseMatrix {
-    let vals: number[] = [];
+    const vals = new Float32Array(this.entries.size);
+    let i = 0
     this.entries.forEach(value => {
-      vals.push(fn(value.value, value.row, value.col));
+      vals[i++] = fn(value.value, value.row, value.col);
     });
     const dims = [this.nRows, this.nCols];
-    return new SparseMatrix(this.getRows(), this.getCols(), vals, dims);
+    return new SparseMatrix(this.getRows(), this.getCols(), vals as unknown as number[], dims);
   }
 
   toArray() {
@@ -148,16 +153,17 @@ export class SparseMatrix {
  * Transpose a sparse matrix
  */
 export function transpose(matrix: SparseMatrix): SparseMatrix {
-  const cols: number[] = [];
-  const rows: number[] = [];
-  const vals: number[] = [];
+  const oldRows = matrix.getRows();
+  const oldCols = matrix.getCols();
+  const oldVals = matrix.getValues();
+  const matlen = oldCols.length;
+  const cols = new Int32Array(matlen);
+  const rows = new Int32Array(matlen);
+  const vals = new Float32Array(matlen);
 
-  matrix.forEach((value, row, col) => {
-    cols.push(row);
-    rows.push(col);
-    vals.push(value);
-  });
-
+  cols.set(oldRows);
+  rows.set(oldCols);
+  vals.set(oldVals);
   const dims = [matrix.nCols, matrix.nRows];
   return new SparseMatrix(rows, cols, vals, dims);
 }
@@ -316,7 +322,6 @@ function elementWise(
     const nextValue = op(a.get(row, col), b.get(row, col));
     vals.push(nextValue);
   };
-
   const valuesA = a.getValues();
   const rowsA = a.getRows();
   const colsA = a.getCols();
