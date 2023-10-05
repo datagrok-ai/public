@@ -19,7 +19,7 @@ export interface FuncCallInputValidated<T = any> extends FuncCallInput<T> {
 export interface FuncCallInputLockable<T = any> extends FuncCallInput<T> {
   setDisabled: () => void;
   setRestricted: () => void;
-  setInconsistentWarn: () => void;
+  setRestrictedUnlocked: () => void;
   setInconsistent: () => void;
 }
 
@@ -37,7 +37,7 @@ export function isFuncCallInputValidated<T = any>(arg: any): arg is FuncCallInpu
 export function isInputLockable(arg: any): arg is FuncCallInputLockable {
   return arg?.setDisabled &&
     arg?.setRestricted &&
+    arg?.setRestrictedUnlocked &&
     arg?.setInconsistent &&
-    arg?.setInconsistentWarn &&
     isFuncCallInput(arg);
 }

@@ -55,9 +55,4 @@ export enum ABILITY_STATE {
   DISABLED = 'disabled',
 }
 
-export enum INPUT_STATE {
-  DISABLED = 'disabled',
-  RESTRICTED = 'restricted',
-  INCONSISTENT = 'inconsistent',
-  USER_INPUT = 'user input',
-}
+export type INPUT_STATE = 'disabled' | 'restricted' | 'restricted unlocked' | 'inconsistent' | 'user input';

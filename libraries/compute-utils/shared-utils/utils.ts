@@ -59,36 +59,36 @@ export const injectLockStates = (input: FuncCallInput) => {
 
   function setDisabledDefault() {
     input.enabled = false;
-    $(input.root).removeClass('rfv-inconsistent-input rfv-inconsistent-warning-input');
+    $(input.root).removeClass('rfv-restricted-unlocked-input');
+    $(input.root).removeClass('rfv-inconsistent-input');
     $(input.root).removeClass('rfv-restricted-input');
   }
 
   function setRestrictedDefault() {
     input.enabled = false;
-    $(input.root).removeClass('rfv-inconsistent-input rfv-inconsistent-warning-input');
     $(input.root).addClass('rfv-restricted-input');
+    $(input.root).removeClass('rfv-restricted-unlocked-input');
+    $(input.root).removeClass('rfv-inconsistent-input');
   }
 
-  function setInconsistentWarnDefault() {
+  function setRestrictedUnlockedDefault() {
     input.enabled = true;
-    $(input.root).addClass('rfv-inconsistent-warning-input');
-
-    $(input.root).addClass('rfv-inconsistent-input');
+    $(input.root).addClass('rfv-restricted-unlocked-input');
     $(input.root).removeClass('rfv-restricted-input');
+    $(input.root).removeClass('rfv-inconsistent-input');
   }
 
   function setInconsistentDefault() {
     input.enabled = true;
-    $(input.root).removeClass('rfv-inconsistent-warning-input');
-
     $(input.root).addClass('rfv-inconsistent-input');
     $(input.root).removeClass('rfv-restricted-input');
+    $(input.root).removeClass('rfv-restricted-unlocked-input');
   }
 
   const inputAny = input as any;
   inputAny.setDisabled = setDisabledDefault;
   inputAny.setRestricted = setRestrictedDefault;
-  inputAny.setInconsistentWarn = setInconsistentWarnDefault;
+  inputAny.setRestrictedUnlocked = setRestrictedUnlockedDefault;
   inputAny.setInconsistent = setInconsistentDefault;
 };
 

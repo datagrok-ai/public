@@ -89,12 +89,8 @@ export namespace historyUtils {
 
       const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
         .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-      for (const input of dfInputs) {
+      for (const input of dfInputs)
         pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
-
-        const restrictedValue = pulledRun.options['restrictedValues']?.[input.name];
-        if (restrictedValue) pulledRun.options['restrictedValues'][input.name] = await grok.dapi.tables.getTable(restrictedValue);
-      }
     }
 
     return pulledRun;
@@ -119,15 +115,6 @@ export namespace historyUtils {
     for (const input of dfInputs) {
       callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
-
-      const restrictedValue = callToSave.options['restrictedValues']?.[input.name];
-      if (restrictedValue) {
-        const id = await grok.dapi.tables.uploadDataFrame(restrictedValue.clone());
-        callToSave.options['restrictedValues'] = {
-          ...callToSave.options['restrictedValues'],
-          [input.name]: id,
-        };
-      }
     }
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
