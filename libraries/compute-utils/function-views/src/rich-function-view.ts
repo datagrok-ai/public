@@ -159,8 +159,13 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(runSub);
 
     // always run validations on start
-    if (!this.isHistorical)
-      this.validationRequests.next({isRevalidation: false});
+    if (!this.isHistorical) {
+      const controller = new AbortController();
+      const results = await this.runValidation({isRevalidation: false}, controller.signal);
+      this.setValidationResults(results);
+      this.runRevalidations({isRevalidation: false}, results);
+      this.validationUpdates.next(null);
+    }
 
     if (this.runningOnStart && this.isRunnable())
       await this.doRun();
