@@ -1,5 +1,15 @@
 # Peptides changelog
 
+## 1.14.2 (WIP)
+
+### Features
+
+* Added viewer help.
+
+### Bug Fixes
+
+* Fixed WebLogo in header margin width.
+
 ## 1.14.1 (2023-09-28)
 
 ### Bug Fixes
