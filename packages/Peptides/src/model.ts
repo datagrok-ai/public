@@ -418,7 +418,7 @@ export class PeptidesModel {
   }
 
   createAccordion(): DG.Accordion | null {
-    const trueModel: PeptidesModel | undefined = grok.shell.t.temp[PeptidesModel.modelName];
+    const trueModel: PeptidesModel | undefined = grok.shell.t?.temp[PeptidesModel.modelName];
     if (!trueModel)
       return null;
 

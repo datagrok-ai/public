@@ -9,6 +9,7 @@ import {PeptidesModel, PositionStats, VIEWER_TYPE} from '../model';
 import wu from 'wu';
 import {SelectionItem} from '../utils/types';
 import {Stats} from '../utils/statistics';
+import {_package} from '../package';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -166,9 +167,17 @@ export class MonomerPosition extends DG.JsViewer {
         this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
 
       this.viewerGrid.invalidate();
+
+      this.showHelp();
     });
 
     setViewerGridProps(this.viewerGrid, false);
+  }
+
+  showHelp(): void {
+    _package.files.readAsText('help/monomer-position.md').then((text) => {
+      grok.shell.windows.help.showHelp(ui.markdown(text));
+    }).catch((e) => grok.log.error(e));
   }
 
   getMonomerPosition(gridCell: DG.GridCell): SelectionItem {
@@ -186,6 +195,7 @@ export class MonomerPosition extends DG.JsViewer {
           invariantMapMode.value = false;
           mutationCliffsMode.value = true;
           this.mode = SELECTION_MODE.MUTATION_CLIFFS;
+          this.showHelp();
         });
         mutationCliffsMode.setTooltip('Statistically significant changes in activity');
         const invariantMapMode = ui.boolInput(SELECTION_MODE.INVARIANT_MAP, this.mode === SELECTION_MODE.INVARIANT_MAP);
@@ -193,6 +203,7 @@ export class MonomerPosition extends DG.JsViewer {
           mutationCliffsMode.value = false;
           invariantMapMode.value = true;
           this.mode = SELECTION_MODE.INVARIANT_MAP;
+          this.showHelp();
         });
         invariantMapMode.setTooltip('Number of sequences having monomer-position');
         const setDefaultProperties = (input: DG.InputBase): void => {
@@ -380,6 +391,10 @@ export class MostPotentResidues extends DG.JsViewer {
         return;
       this.model.modifyMutationCliffsSelection(monomerPosition, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       this.viewerGrid.invalidate();
+
+      _package.files.readAsText('help/most-potent-residues.md').then((text) => {
+        grok.shell.windows.help.showHelp(ui.markdown(text));
+      }).catch((e) => grok.log.error(e));
     });
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';

@@ -13,6 +13,7 @@ import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '
 import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SelectionItem} from '../utils/types';
+import {_package} from '../package';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
@@ -328,6 +329,10 @@ export class LogoSummaryTable extends DG.JsViewer {
       const selection = this.getCluster(gridCell);
       this.model.modifyClusterSelection(selection, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       this.viewerGrid.invalidate();
+
+      _package.files.readAsText('help/logo-summary-table.md').then((text) => {
+        grok.shell.windows.help.showHelp(ui.markdown(text));
+      }).catch((e) => grok.log.error(e));
     });
     this.viewerGrid.onCellTooltip((gridCell, x, y) => {
       if (!gridCell.isTableCell) {
