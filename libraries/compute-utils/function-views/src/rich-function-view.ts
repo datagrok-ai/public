@@ -993,12 +993,13 @@ export class RichFunctionView extends FunctionView {
 
     const sub2 = param$.subscribe((newParam) => {
       const newValue = this.funcCall[field][newParam.name];
+      const propertyType = newParam.property.propertyType;
       // we need to check if the value is not the same for floats,
       // otherwise we will overwrite a user input with a lower
       // precicsion decimal representation
       if (
-        ((newParam.property.propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
-          newParam.property.propertyType !== DG.TYPE.FLOAT
+        ((propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
+          propertyType !== DG.TYPE.FLOAT
       ) {
         t.notify = false;
         t.value = newValue;
@@ -1009,9 +1010,13 @@ export class RichFunctionView extends FunctionView {
         this.validationRequests.next({field: newParam.name, isRevalidation: false});
 
         const savedInputState = this.getInputLockState(newParam.name);
-        // if the source is not user input, then it is computed and should be restricted
-        if (!savedInputState)
-          this.setInputLockState(t, name, newValue, INPUT_STATE.RESTRICTED);
+        // if the source is not user input, then it is computed and should be restricted (disabled in case of DF)
+        if (!savedInputState) {
+          this.setInputLockState(
+            t, name, newValue,
+            propertyType === DG.TYPE.DATA_FRAME ? INPUT_STATE.DISABLED: INPUT_STATE.RESTRICTED,
+          );
+        }
       }
     });
     this.subs.push(sub2);
