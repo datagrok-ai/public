@@ -435,7 +435,7 @@ export function searchSubstructureEditor(call: DG.FuncCall): void {
 
 
 //top-menu: Chem | Search | Substructure Search...
-//name: Diversity Search
+//name: Substructure Search
 //input: column molecules { semType: Molecule }
 //editor: Chem:SearchSubstructureEditor
 export function SubstructureSearchTopMenu(molecules: DG.Column): void {
