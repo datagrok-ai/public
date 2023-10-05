@@ -29,9 +29,9 @@ category('Packages: Properties', () => {
     await changeProp('STRING', 'value2');
   }, {skipReason: 'GROK-14019'});
 
-  after(async () => {
-    await _package.setProperties({INT: 1, BIG_INT: 1, FLOAT: 1.234, NUM: 1, BOOL: true, STRING: 'value1'});
-  });
+  // after(async () => {
+  //   await _package.setProperties({INT: 1, BIG_INT: 1, FLOAT: 1.234, NUM: 1, BOOL: true, STRING: 'value1'});
+  // });
 });
 
 async function changeProp(name: string, value: any): Promise<void> {

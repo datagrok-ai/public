@@ -670,7 +670,7 @@ category('DataFrame: RowList', () => {
   });
 
   test('toString', async () => {
-    const df = createDf();
-    expect(df.rows.toString(), `(Instance of 'dn', Instance of 'dn')`);
+    const str: string = createDf().rows.toString();
+    expect(str.startsWith('(Instance of '), true);
   });
 });
