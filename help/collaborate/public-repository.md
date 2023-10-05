@@ -15,7 +15,7 @@ very extensible, and almost anything could be implemented as a package:
 * Visualizations, such as [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet/README.md)
 * Importing and previewing files, such as
   [SQLite](https://github.com/datagrok-ai/public/tree/master/packages/SQLite),
-  [PDF](https://github.com/datagrok-ai/public/tree/master/packages/PdfViewer/README.md), or
+  [PDF](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors/README.md), or
   [CIF](https://github.com/datagrok-ai/public/tree/master/packages/NglViewer/README.md)
 * Scientific methods implemented in R, Python, or Julia
 * File metadata extractors, such as [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika/README.md)
