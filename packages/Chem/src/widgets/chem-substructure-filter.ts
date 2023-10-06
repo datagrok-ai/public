@@ -15,7 +15,8 @@ import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, SubstructureSearchType, getSearchProgressEventName, getTerminateEventName} from '../constants';
+import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
+  SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import { IColoredScaffold } from '../rendering/rdkit-cell-renderer';
 import { Fingerprint } from '../utils/chem-common';
@@ -87,7 +88,8 @@ export class SubstructureFilter extends DG.Filter {
   get filterSummary(): string {
     const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
       getRdKitModule());
-    return `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}`;
+    return this.searchType === SubstructureSearchType.IS_SIMILAR ?
+      `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}` : `${smarts}_${this.searchType}`;
   }
 
   get isFiltering(): boolean {
@@ -255,7 +257,7 @@ export class SubstructureFilter extends DG.Filter {
   detach() {
     this.sketcher.getSmarts().then((smarts) => {
       this.terminatePreviousSearch();
-      this.finishSearch(smarts ?? '');
+      this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
       this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
     });
     grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: DG.BitSet.create(this.dataFrame!.rowCount).setAll(true),
@@ -349,7 +351,7 @@ export class SubstructureFilter extends DG.Filter {
       if (this.column?.temp[FILTER_SCAFFOLD_TAG])
         delete this.column.temp[FILTER_SCAFFOLD_TAG];
       this.terminatePreviousSearch();
-      this.finishSearch(newSmarts ?? '');
+      this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
         molblock: this.currentMolfile, colName: this.columnName, filterId: this.filterId, 
         tableName: this.tableName, searchType: this.searchType, simCutOff: this.similarityCutOff, fp: this.fp});
@@ -363,7 +365,7 @@ export class SubstructureFilter extends DG.Filter {
     } else {
       this.terminatePreviousSearch();
       this.currentMolfile = newMolFile;
-      this.currentSearches.add(newSmarts ?? '');
+      this.currentSearches.add(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
       this.calculating = true;
       this.progressBar ??= DG.TaskBarProgressIndicator.create(`Starting substructure search...`);
       try {
@@ -380,7 +382,7 @@ export class SubstructureFilter extends DG.Filter {
             this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
         });
       } catch {
-        this.finishSearch(newSmarts ?? '');
+        this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));
       }
     }
   }
@@ -402,7 +404,8 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   async getFilterBitset(): Promise<BitArray> {
-    const smarts = await this.sketcher.getSmarts();
+    const smarts = !this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
+      _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
     return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, false, false,
       this.searchType, this.similarityCutOff, this.fp);
   }
@@ -471,7 +474,7 @@ export class SubstructureFilter extends DG.Filter {
       grok.events.fireCustomEvent(this.terminateEventName, this.currentSearches.values().next().value);
   }
 
-  finishSearch(queryMol: string) {
+  finishSearch(queryMolAndType: string) {
     const finish = () => {
       if (this.currentSearches.size === 0) {
         this.calculating = false;
@@ -481,11 +484,11 @@ export class SubstructureFilter extends DG.Filter {
         console.log(`Unsubscribed from batchResultObservable  Filter ${this.filterId}`);
       }
     };
-    if (this.currentSearches.has(queryMol)) {
-      this.currentSearches.delete(queryMol);
+    if (this.currentSearches.has(queryMolAndType)) {
+      this.currentSearches.delete(queryMolAndType);
       finish();
     }
-    if (queryMol == null && this.currentSearches.size === 1) {
+    if (queryMolAndType == null && this.currentSearches.size === 1) {
       const v = this.currentSearches.values().next().value;
       if (v != null)
         this.currentSearches.delete(v);

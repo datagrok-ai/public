@@ -212,7 +212,7 @@ export namespace chem {
     }
 
     async getSmarts(): Promise<string | null> {
-      return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : !this._smarts === undefined ?
+      return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : this._smarts === null ?
         this._smiles !== null ? convert(this._smiles, Notation.Smiles, Notation.Smarts) :
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smarts) : '' : this._smarts;
     }
