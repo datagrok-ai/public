@@ -177,6 +177,7 @@ class UMAPReducer extends Reducer {
   protected sparseMatrixThreshold: number;
   protected transferedSparseMatrix?: SparseMatrixTransferType;
   protected progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
+  protected distanceFnArgs?: {[_: string]: any};
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -186,6 +187,7 @@ class UMAPReducer extends Reducer {
     super(options);
     assert('distanceFname' in options);
     assert('distanceFn' in options);
+    this.distanceFnArgs = options?.distanceFnArgs;
     this.distanceFn = options.distanceFn!;
     this.usingSparseMatrix = !!options.usingSparseMatrix || !!options.sparseMatrix;
     this.sparseMatrixThreshold = options.sparseMatrixThreshold ?? 0.8;
@@ -246,7 +248,7 @@ class UMAPReducer extends Reducer {
       this.distanceMatrix = parallelDistanceWorkers ? await (async () => {
         const matrixService = new DistanceMatrixService(true, false);
         try {
-          const dist = await matrixService.calc(this.data, this.distanceFname);
+          const dist = await matrixService.calc(this.data, this.distanceFname, true, this.distanceFnArgs);
           matrixService.terminate();
           return dist;
         } catch (e) {
@@ -263,7 +265,8 @@ class UMAPReducer extends Reducer {
     } else if (this.usingSparseMatrix) {
           console.time('sparse matrix');
           let res: {[K in keyof SparseMatrixTransferType]: SparseMatrixTransferType[K] | null} | null
-            = this.transferedSparseMatrix ?? await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold);
+            = this.transferedSparseMatrix ??
+              await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold, this.distanceFnArgs);
           console.timeEnd('sparse matrix');
 
           const knnRes = getKnnGraph(res.i!, res.j!, res.distance!, this.reducer.neighbors, this.data.length);
@@ -422,7 +425,7 @@ export class DimensionalityReducer {
    * @memberof DimensionalityReducer
    */
   constructor(data: any[], method: KnownMethods, metric: KnownMetrics, options?: Options) {
-    const measure = new Measure(metric).getMeasure();
+    const measure = new Measure(metric).getMeasure(options?.distanceFnArgs);
     let specOptions = {};
 
     if (isBitArrayMetric(metric)) {
