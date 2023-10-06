@@ -89,6 +89,8 @@ jobs:
               MATRIX_PUBLISH_JSON+="{\"package\": \"${PACKAGE}\""
               current_version="$(jq -r '.version' "${DIR}/package.json")"
               MATRIX_PUBLISH_JSON+=", \"version\": \"${current_version}\""
+              author="$(jq -r '.author.email' "${DIR}/package.json")"
+              MATRIX_PUBLISH_JSON+=", \"author\": \"${author}\""
               dependencies="$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
               MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
@@ -154,5 +156,178 @@ jobs:
           echo "Notify about version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$DATAGROK_VERSION SHA=$docker_sha docker version was used for tests"
           df -h
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@x
+      - name: npm version
+        run: npm version
+      - name: Do npm install for packages
+        run: npm install
+        id: install
+        working-directory: packages/${{ matrix.package }}
+      - name: js api dependency for unpublished dependencies
+        if: ${{ matrix.unpublished_deps != '' }}
+        run: npm install
+        working-directory: ./js-api
+      - name: install unpublished dependencies
+        if: ${{ matrix.unpublished_deps != '' }}
+        run: |
+          crnt=$(pwd)
+          for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
+            cd $(awk -F'=' '{print $2}' <<<$dep)
+            echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
+            npm install
+            cd $crnt
+          done
+        working-directory: packages/${{ matrix.package }}
+      - name: webpack cache
+        uses: actions/cache@v3
+        with:
+          path: packages/${{ matrix.package }}/node_modules/.cache/webpack/
+          key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
+          restore-keys: |
+            ${{ matrix.package }}-master-webpack-build
+      - name: Build package
+        id: build
+        run: npm run build
+        working-directory: packages/${{ matrix.package }}
+      - name: Install datagrok tools
+        id: datagrok-tools
+        run: npm install -g datagrok-tools@latest
+      - name: Wait for Datagrok to become available
+        timeout-minutes: 5
+        run: |
+          until .github/scripts/check-output.sh "curl -s http://127.0.0.1:8080/api/info/server" '"Http Server"'
+          do
+            sleep 1
+            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            echo -e "\nRetrying..."
+          done
+          curl -s http://127.0.0.1:8080/api/info/server
+          curl -s http://127.0.0.1:8080/api/admin/health
+      - name: Create configuration for grok command-line tool
+        run: |
+          grok config add --default --alias ${HOST} --server 'http://127.0.0.1:8080/api' --key admin
+          cat /home/runner/.grok/config.yaml
+      - name: Install Grok Dependencies before package publish to Datagrok
+        run: |
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
+          if [ -n "$grok_deps" ]; then
+            for dep in $grok_deps; do
+              current_dir=$(pwd)
+              cd node_modules/$dep
+              count=0
+              retries=5
+              echo "Publishing $dep to ${HOST}..."
+              until grok publish ${HOST}; do
+                exit=$?
+                wait=$((2 ** count))
+                count=$((count + 1))
+                if [ $count -lt "$retries" ]; then
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' for $dep in $wait seconds..."
+                  sleep $wait
+                else
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}' for $dep."
+                  exit $exit
+                fi
+              done
+              cd $current_dir
+            done
+          fi
+        working-directory: packages/${{ matrix.package }}
+      - name: Publish package to Datagrok
+        run: |
+          count=0
+          retries=5
+          until grok publish ${HOST}; do
+            exit=$?
+            docker logs --timestamps --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+            wait=$((2 ** count))
+            count=$((count + 1))
+            if [ "$count" -lt "$retries" ]; then
+              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
+              sleep $wait
+            else
+              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
+              exit $exit
+            fi
+          done
+        working-directory: packages/${{ matrix.package }}
+      - name: Test Package
+        continue-on-error: true
+        timeout-minutes: 15
+        id: test-package
+        run: npm run test -- --skip-build --skip-publish --record --csv --verbose
+        working-directory: packages/${{ matrix.package }}
+      - name: Upload Artifact
+        if: always() && steps.test-package.outcome != 'skipped'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package }}.test-results
+          path: |
+            packages/${{ matrix.package }}/test-record.mp4
+            packages/${{ matrix.package }}/test-report.csv
+            packages/${{ matrix.package }}/test-console-output.log
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Create error notification
+        if: failure() && steps.test-package.outcome == 'failure'
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+          echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check job output for details"
+          echo ",${{ matrix.author }}" >> authors.txt
+          content=$(tail -c +2 trololo.txt)
+          IFS=, read -ra authors <<< "$content"
+          channel_id=""
+          for author in "${authors[@]}"; do
+            channel_id+=,$(echo "$EMAIL_SLACK_ID" | jq -r ".$author")
+          done
+          channel_ids="${channel_id:1}"
+          echo "::add-mask::$channel_ids"
+          echo SLACK_CHANNEL=$channel_ids >> $GITHUB_ENV
 
+      - name: Prepare Slack Message
+        run: |
+          jobs=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            ${{ github.event.workflow_run.jobs_url }})          
+          header="GitHub Workflow <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }} ${{ github.event.workflow_run.run_number }}> failed:"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+          echo -e "SLACK_MESSAGE_BODY=$(jq -r '(.jobs[] | select(.conclusion == "failure") | {job: .name, step: (.steps[] | select(.conclusion == "failure").name), url: .html_url}) | "• <" + (.url) + "|" + (.job) + " / " + (.step) +  ">"' <<<$jobs)" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV          
 
+      - name: Send to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ matrix.package }} has been failed after auto unskip tests. ${{ env.SLACK_MESSAGE_CONTEXT }}"
+                        }
+                    }
+                    
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
