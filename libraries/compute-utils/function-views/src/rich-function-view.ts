@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
-import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
+import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult} from '../../shared-utils/validation';
 import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet} from '../../shared-utils/utils';
@@ -989,18 +989,13 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(sub1);
 
-    const param$ = this.funcCallReplaced.pipe(
+    const sub2 = this.funcCallReplaced.pipe(
       startWith(true),
       switchMap(() => {
         const newParam = this.funcCall[syncParams[field]][name];
-        return merge(
-          newParam.onChanged.pipe(mapTo(newParam)),
-          ...newParam.property.propertyType === DG.TYPE.DATA_FRAME && newParam.value ?
-            [(newParam.value as DG.DataFrame).onDataChanged.pipe(mapTo(newParam))]:[],
-        );
-      }));
-
-    const sub2 = param$.subscribe((newParam) => {
+        return newParam.onChanged.pipe(mapTo(newParam));
+      }),
+    ).subscribe((newParam) => {
       const newValue = this.funcCall[field][newParam.name];
       const propertyType = newParam.property.propertyType;
       // we need to check if the value is not the same for floats,
@@ -1029,9 +1024,16 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub2);
 
     // handling mutations of dataframes
-    const sub3 = param$.pipe(
+    const sub3 = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const newParam = this.funcCall[syncParams[field]][name];
+        return newParam.onChanged.pipe(mapTo(newParam), startWith(newParam));
+      }),
       filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
-      switchMap<DG.FuncCallParam, Observable<DG.FuncCallParam>>((param) => param.value.onDataChanged.pipe(mapTo(param))),
+      switchMap<DG.FuncCallParam, Observable<DG.FuncCallParam>>(
+        (param) => param.value.onDataChanged.pipe(mapTo(param)),
+      ),
     ).subscribe((param) => {
       this.validationRequests.next({field: param.name, isRevalidation: false});
     });
