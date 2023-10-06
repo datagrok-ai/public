@@ -176,7 +176,7 @@ To run any of above searches:
 
 1. Click **Filter** icon on a toolbox. The filter panel opens. The default search type is `Contains`. Change the search type by selecting from a dropdown list.
 
-2. Click on the `Click to edit` pane for the desired column. The molecule sketcher opens
+2. Click `Click to edit` pane for the desired column. The molecule sketcher opens
 
 3. Sketch some substructure. The search starts immediately.
 
@@ -185,6 +185,33 @@ To run any of above searches:
 In case of `Contains` the search options are hidden by default. To open them hover over molecule and click the **settings** icon.
 
 ![open search options](help/open_search_options.gif)
+
+## Molecule fragments highlight
+
+We offer highlighting of multiple molecule fragments inside one molecule structure. Multiple fragments can be highlighted with different colors.
+
+To add a fragment use:
+
+* Context panel
+
+  1. Click molecule column header and go to `context panel`
+  2. Go to `Chemistry` -> `Highlight`
+  3. To add or modify a fragment click `Click to edit`. Molecule sketcher opens. Sketch some structure. It is highlighted immediately in the column.
+  4. To modify color use **color picker**
+  5. To save fragment use **+** icon.
+  6. To remove saved fragments use **trash** icon.
+
+  ![highlight fragments](help/highlight_fragments.gif)
+
+* Structural alerts widget
+
+  1. Select molecule cell and go to `context panel`
+  2. Go to `Biology` -> `Structural Alerts`
+  3. Hover over alert and click `more` icon. In the popup menu select `Highlight fragment` and choose color. Fragment is highlighted in the column.
+  4. To edit or remove fragment use editor from previous 'Context panel' point.
+  This feature allows to easily monitor your dataset for structural alerts.
+
+  ![add structural alert highlight](help/add_structural_alert_highlight.gif)
 
 See also:
 
