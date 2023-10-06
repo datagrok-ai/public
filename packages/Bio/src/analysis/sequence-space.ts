@@ -3,7 +3,9 @@ import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/s
 import {BitArrayMetrics, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
+import {mmDistanceFunctionArgs} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {calculateMonomerSimilarity} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import * as grok from 'datagrok-api/grok';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
@@ -58,36 +60,52 @@ export async function getSequenceSpace(spaceParams: ISequenceSpaceParams,
 ): Promise<ISequenceSpaceResult> {
   const ncUH = UnitsHandler.getOrCreate(spaceParams.seqCol);
 
-  const distanceFName = ncUH.isMsa() ? MmDistanceFunctionsNames.HAMMING : MmDistanceFunctionsNames.LEVENSHTEIN;
+  //const distanceFName = ncUH.isMsa() ? MmDistanceFunctionsNames.HAMMING : MmDistanceFunctionsNames.LEVENSHTEIN;
   const seqList = spaceParams.seqCol.toList();
-  if (ncUH.getAlphabetIsMultichar()) {
-    const splitter = ncUH.getSplitter();
-    const seqColLength = seqList.length;
-    let charCodeCounter = 36;
-    const charCodeMap = new Map<string, string>();
-    for (let i = 0; i < seqColLength; i++) {
-      const seq = seqList[i];
-      if (seqList[i] === null || spaceParams.seqCol.isNone(i)) {
-        seqList[i] = null;
-        continue;
-      }
-      seqList[i] = '';
-      const splittedSeq = splitter(seq);
-      for (let j = 0; j < splittedSeq.length; j++) {
-        const char = splittedSeq[j];
-        if (!charCodeMap.has(char)) {
-          charCodeMap.set(char, String.fromCharCode(charCodeCounter));
-          charCodeCounter++;
-        }
-        seqList[i] += charCodeMap.get(char)!;
-      }
+
+  const splitter = ncUH.getSplitter();
+  const seqColLength = seqList.length;
+  let charCodeCounter = 36;
+  const charCodeMap = new Map<string, string>();
+  for (let i = 0; i < seqColLength; i++) {
+    const seq = seqList[i];
+    if (seqList[i] === null || spaceParams.seqCol.isNone(i)) {
+      seqList[i] = null;
+      continue;
     }
+    seqList[i] = '';
+    const splittedSeq = splitter(seq);
+    for (let j = 0; j < splittedSeq.length; j++) {
+      const char = splittedSeq[j];
+      if (!charCodeMap.has(char)) {
+        charCodeMap.set(char, String.fromCharCode(charCodeCounter));
+        charCodeCounter++;
+      }
+      seqList[i] += charCodeMap.get(char)!;
+    }
+  }
+
+  if (spaceParams.similarityMetric === MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE) {
+    const monomers = Array.from(charCodeMap.keys());
+    const monomerRes = await calculateMonomerSimilarity(monomers);
+    // the susbstitution matrix contains similarity, but we need distances
+    monomerRes.scoringMatrix.forEach((row, i) => {
+      row.forEach((val, j) => {
+        monomerRes.scoringMatrix[i][j] = 1 - val;
+      });
+    });
+    const monomerHashToMatrixMap: {[_: string]: number} = {};
+    Object.entries(monomerRes.alphabetIndexes).forEach(([key, value]) => {
+      monomerHashToMatrixMap[charCodeMap.get(key)!] = value;
+    });
+    spaceParams.options.distanceFnArgs = {scoringMatrix: monomerRes.scoringMatrix,
+      alphabetIndexes: monomerHashToMatrixMap} satisfies mmDistanceFunctionArgs;
   }
 
   const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
     seqList,
     spaceParams.methodName,
-    distanceFName,
+    spaceParams.similarityMetric,
     spaceParams.options,
     true, progressFunc);
   const cols: DG.Column[] = spaceParams.embedAxesNames.map(
