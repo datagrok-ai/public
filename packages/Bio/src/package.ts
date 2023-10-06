@@ -457,14 +457,14 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: dataframe table
 //input: column molecules { semType: Macromolecule }
 //input: string methodName { choices:["UMAP", "t-SNE"] }
-//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
+//input: string similarityMetric { choices:["Hamming", "Levenshtein", "Monomer chemical distance"] }
 //input: bool plotEmbeddings = true
 //input: double sparseMatrixThreshold = 0.8 [Similarity Threshold for sparse matrix calculation]
 //input: object options {optional: true}
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(
   table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
-  similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto,
+  similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN,
   plotEmbeddings: boolean, sparseMatrixThreshold?: number, options?: IUMAPOptions | ITSNEOptions,
 ): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
