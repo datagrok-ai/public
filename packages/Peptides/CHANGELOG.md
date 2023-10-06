@@ -5,6 +5,7 @@
 ### Features
 
 * Added viewer help.
+* Added Sequence Space viewer.
 
 ### Bug Fixes
 
