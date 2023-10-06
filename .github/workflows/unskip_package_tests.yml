@@ -294,6 +294,7 @@ jobs:
           echo SLACK_CHANNEL=$channel_ids >> $GITHUB_ENV
 
       - name: Prepare Slack Message
+        if: steps.test-package.outcome == 'failure'
         run: |
           jobs=$(curl -L \
             -H "Accept: application/vnd.github+json" \
@@ -306,6 +307,7 @@ jobs:
 
       - name: Send to Slack
         id: slack
+        if: steps.test-package.outcome == 'failure'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ env.SLACK_CHANNEL }}
