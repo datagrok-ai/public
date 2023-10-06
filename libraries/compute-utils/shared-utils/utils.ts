@@ -1,9 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import $ from 'cash-dom';
 import wu from 'wu';
+import ExcelJS from 'exceljs';
+import html2canvas from 'html2canvas';
+import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import {FuncCallInput, isInputLockable} from './input-wrappers';
 import {ValidationResultBase, getValidationIcon} from './validation';
 
@@ -123,3 +125,49 @@ export const injectInputBaseValidation = (t: DG.InputBase) => {
   }
   (t as any).setValidation = setValidation;
 };
+
+export const scalarsToSheet =
+  (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
+    sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
+    scalars.forEach((scalar) => {
+      sheet.addRow([scalar.caption, scalar.value, scalar.units]);
+    });
+
+    sheet.getColumn(1).width = Math.max(
+      ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
+    ) * 1.2;
+    sheet.getColumn(2).width = Math.max(...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
+    sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
+  };
+
+let dfCounter = 0;
+export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: number, row?: number) => {
+  const columnKey = sheet.getColumn(column ?? 1).letter;
+  const tableConfig = {
+    name: `ID_${dfCounter.toString()}`,
+    ref: `${columnKey}${row ?? 1}`,
+    columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
+    rows: new Array(df.rowCount).fill(0).map((_, idx) => [...df.row(idx).cells].map((cell) => cell.value)),
+  };
+  sheet.addTable(tableConfig);
+  sheet.columns.forEach((col) => {
+    col.width = 25;
+    col.alignment = {wrapText: true};
+  });
+  dfCounter++;
+};
+
+export const plotToSheet =
+  async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
+    const canvas = await html2canvas(plot as HTMLElement, {logging: false});
+    const dataUrl = canvas.toDataURL('image/png');
+
+    const imageId = exportWb.addImage({
+      base64: dataUrl,
+      extension: 'png',
+    });
+    sheet.addImage(imageId, {
+      tl: {col: columnForImage, row: rowForImage},
+      ext: {width: canvas.width, height: canvas.height},
+    });
+  };

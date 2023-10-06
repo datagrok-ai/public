@@ -11,7 +11,7 @@ import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} fr
 import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult} from '../../shared-utils/validation';
-import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation} from '../../shared-utils/utils';
+import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -223,7 +223,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async loadInputsOverrides() {
-    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    const inputParams = [...this.funcCall.inputParams.values()];
     await Promise.all(inputParams.map(async (param) => {
       if (param.property.options.input) {
         const func: DG.Func = await grok.functions.eval(param.property.options.input);
@@ -235,7 +235,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async loadInputsValidators() {
-    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    const inputParams = [...this.funcCall.inputParams.values()];
     await Promise.all(inputParams.map(async (param) => {
       if (param.property.options.validator) {
         const func: DG.Func = await grok.functions.eval(param.property.options.validator);
@@ -727,8 +727,8 @@ export class RichFunctionView extends FunctionView {
     });
 
     let prevCategory = 'Misc';
-    const params = this.funcCall[syncParams[field]].values() as DG.FuncCallParam[];
-    wu(params as DG.FuncCallParam[])
+    const params = this.funcCall[syncParams[field]].values();
+    wu(params)
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;
@@ -745,7 +745,8 @@ export class RichFunctionView extends FunctionView {
           this.bindOnHotkey(input);
         }
 
-        this.renderInput(inputs, val, input, prevCategory);
+        this.renderCategory(inputs, val.property.category, prevCategory);
+        this.renderInput(inputs, val, input);
         this.afterInputPropertyRender.next({prop, input: input});
         prevCategory = prop.category;
       });
@@ -829,38 +830,40 @@ export class RichFunctionView extends FunctionView {
     return warningIcon;
   }
 
-  private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants, prevCategory: string) {
-    const prop = val.property;
+  private renderCategory(inputsDiv: HTMLDivElement, currentCategory: string, prevCategory: string) {
+    if (currentCategory === prevCategory) return;
 
-    if (prop.category !== prevCategory) {
-      if (this.foldedCategories.includes(prop.category)) {
-        const warningIcon = this.getCategoryWarningIcon(prop.category);
+    if (this.foldedCategories.includes(currentCategory)) {
+      const warningIcon = this.getCategoryWarningIcon(currentCategory);
 
-        const chevronToOpen = ui.iconFA('chevron-right', () => {
-          $(chevronToClose).show();
-          $(chevronToOpen).hide();
-          $(warningIcon).hide();
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.input.root).show());
-        }, 'Open category');
-        $(chevronToOpen).css('padding-right', '5px');
-        const chevronToClose = ui.iconFA('chevron-down', () => {
-          $(chevronToClose).hide();
-          $(chevronToOpen).show();
-          if (this.foldedCategoryInputs[prop.category].some((e) => this.getInputLockState(e.paramName) === 'inconsistent'))
-            $(warningIcon).show();
-          else
-            $(warningIcon).hide();
-
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.input.root).hide());
-        }, 'Close category');
-        $(chevronToClose).css('padding-right', '5px');
-
-        //@ts-ignore
-        inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(prop.category, {style: {'display': 'inline'}}), warningIcon], {style: {'width': '100%'}}));
+      const chevronToOpen = ui.iconFA('chevron-right', () => {
+        $(chevronToClose).show();
+        $(chevronToOpen).hide();
+        $(warningIcon).hide();
+        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).show());
+      }, 'Open category');
+      $(chevronToOpen).css('padding-right', '5px');
+      const chevronToClose = ui.iconFA('chevron-down', () => {
         $(chevronToClose).hide();
-      } else
-        inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-    }
+        $(chevronToOpen).show();
+        if (this.foldedCategoryInputs[currentCategory].some((e) => this.getInputLockState(e.paramName) === 'inconsistent'))
+          $(warningIcon).show();
+        else
+          $(warningIcon).hide();
+
+        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).hide());
+      }, 'Close category');
+      $(chevronToClose).css('padding-right', '5px');
+
+      //@ts-ignore
+      inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(currentCategory, {style: {'display': 'inline'}}), warningIcon], {style: {'width': '100%'}}));
+      $(chevronToClose).hide();
+    } else
+      inputsDiv.append(ui.h2(currentCategory, {style: {'width': '100%'}}));
+  }
+
+  private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants) {
+    const prop = val.property;
 
     if (this.foldedCategories.includes(prop.category))
       this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), {paramName: val.property.name, input: t}];
@@ -990,7 +993,11 @@ export class RichFunctionView extends FunctionView {
       startWith(true),
       switchMap(() => {
         const newParam = this.funcCall[syncParams[field]][name];
-        return newParam.onChanged.pipe(mapTo(newParam));
+        return merge(
+          newParam.onChanged.pipe(mapTo(newParam)),
+          ...newParam.property.propertyType === DG.TYPE.DATA_FRAME && newParam.value ?
+            [(newParam.value as DG.DataFrame).onDataChanged.pipe(mapTo(newParam))]:[],
+        );
       }));
 
     const sub2 = param$.subscribe((newParam) => {
@@ -1412,47 +1419,3 @@ export class RichFunctionView extends FunctionView {
     filename: this.defaultExportFilename,
   };
 }
-
-const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
-  sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
-  scalars.forEach((scalar) => {
-    sheet.addRow([scalar.caption, scalar.value, scalar.units]);
-  });
-
-  sheet.getColumn(1).width = Math.max(
-    ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
-  ) * 1.2;
-  sheet.getColumn(2).width = Math.max(...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
-  sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
-};
-
-let dfCounter = 0;
-const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: number, row?: number) => {
-  const columnKey = sheet.getColumn(column ?? 1).letter;
-  const tableConfig = {
-    name: `ID_${dfCounter.toString()}`,
-    ref: `${columnKey}${row ?? 1}`,
-    columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
-    rows: new Array(df.rowCount).fill(0).map((_, idx) => [...df.row(idx).cells].map((cell) => cell.value)),
-  };
-  sheet.addTable(tableConfig);
-  sheet.columns.forEach((col) => {
-    col.width = 25;
-    col.alignment = {wrapText: true};
-  });
-  dfCounter++;
-};
-
-const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
-  const canvas = await html2canvas(plot as HTMLElement, {logging: false});
-  const dataUrl = canvas.toDataURL('image/png');
-
-  const imageId = exportWb.addImage({
-    base64: dataUrl,
-    extension: 'png',
-  });
-  sheet.addImage(imageId, {
-    tl: {col: columnForImage, row: rowForImage},
-    ext: {width: canvas.width, height: canvas.height},
-  });
-};
