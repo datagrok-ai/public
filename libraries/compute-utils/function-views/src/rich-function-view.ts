@@ -8,10 +8,10 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
-import {debounceTime, delay, filter, groupBy, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
+import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
 import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult} from '../../shared-utils/validation';
-import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation} from '../../shared-utils/utils';
+import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
@@ -223,7 +223,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async loadInputsOverrides() {
-    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    const inputParams = [...this.funcCall.inputParams.values()];
     await Promise.all(inputParams.map(async (param) => {
       if (param.property.options.input) {
         const func: DG.Func = await grok.functions.eval(param.property.options.input);
@@ -235,7 +235,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async loadInputsValidators() {
-    const inputParams = [...this.funcCall.inputParams.values()] as DG.FuncCallParam[];
+    const inputParams = [...this.funcCall.inputParams.values()];
     await Promise.all(inputParams.map(async (param) => {
       if (param.property.options.validator) {
         const func: DG.Func = await grok.functions.eval(param.property.options.validator);
@@ -671,10 +671,16 @@ export class RichFunctionView extends FunctionView {
     return this.inputsMap[name];
   }
 
-  public setInput(name: string, value: any, state: INPUT_STATE = INPUT_STATE.DISABLED) {
+  public setInput(name: string, value: any, state: 'disabled' | 'restricted' | 'user input' = 'restricted' ) {
     const input = this.getInput(name);
     if (!input)
       throw new Error(`No input named ${name}`);
+
+    if (
+      this.funcCall.inputParams[name].property.propertyType === DG.TYPE.DATA_FRAME &&
+      state === 'restricted'
+    )
+      throw new Error(`Param ${name} is dataframe. Restricted state is not supported for them.`);
 
     this.funcCall.inputs[name] = value;
     this.setInputLockState(input, name, value, state);
@@ -688,16 +694,16 @@ export class RichFunctionView extends FunctionView {
 
     if (!isInputLockable(input)) return;
 
-    if (state === INPUT_STATE.DISABLED)
+    if (state === 'disabled')
       input.setDisabled();
 
-    if (state === INPUT_STATE.RESTRICTED)
+    if (state === 'restricted')
       input.setRestricted();
 
-    if (state === INPUT_STATE.INCONSISTENT && value !== this.getRestrictedValue(paramName))
-      input.setInconsistentWarn();
+    if (state === 'restricted unlocked')
+      input.setRestrictedUnlocked();
 
-    if (state === INPUT_STATE.INCONSISTENT && value === this.getRestrictedValue(paramName))
+    if (state === 'inconsistent')
       input.setInconsistent();
   }
 
@@ -721,8 +727,8 @@ export class RichFunctionView extends FunctionView {
     });
 
     let prevCategory = 'Misc';
-    const params = this.funcCall[syncParams[field]].values() as DG.FuncCallParam[];
-    wu(params as DG.FuncCallParam[])
+    const params = this.funcCall[syncParams[field]].values();
+    wu(params)
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;
@@ -733,12 +739,14 @@ export class RichFunctionView extends FunctionView {
           return;
         }
         this.inputsMap[val.property.name] = input;
-        this.syncInput(val, input, field);
-        this.disableInputsOnRun(val.property.name, input);
-        if (field === SYNC_FIELD.INPUTS)
+        if (field === SYNC_FIELD.INPUTS) {
+          this.syncInput(val, input, field);
+          this.disableInputsOnRun(val.property.name, input);
           this.bindOnHotkey(input);
+        }
 
-        this.renderInput(inputs, val, input, prevCategory);
+        this.renderCategory(inputs, val.property.category, prevCategory);
+        this.renderInput(inputs, val, input);
         this.afterInputPropertyRender.next({prop, input: input});
         prevCategory = prop.category;
       });
@@ -758,7 +766,7 @@ export class RichFunctionView extends FunctionView {
 
   private disableInputsOnRun(paramName: string, t: InputVariants) {
     const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
-      if (this.getInputLockState(paramName) !== INPUT_STATE.USER_INPUT && this.getInputLockState(paramName)) return;
+      if (this.getInputLockState(paramName) !== 'user input' && this.getInputLockState(paramName)) return;
 
       if (isRunning)
         t.enabled = false;
@@ -811,7 +819,7 @@ export class RichFunctionView extends FunctionView {
 
     const sub = this.funcCallReplaced.subscribe(() => {
       if (this.foldedCategoryInputs[category].some((e) =>
-        this.getInputLockState(e.paramName) === INPUT_STATE.INCONSISTENT &&
+        this.getInputLockState(e.paramName) === 'inconsistent' &&
         e.input.value !== this.getRestrictedValue(e.paramName),
       ))
         $(warningIcon).show();
@@ -822,41 +830,40 @@ export class RichFunctionView extends FunctionView {
     return warningIcon;
   }
 
-  private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants, prevCategory: string) {
-    const prop = val.property;
+  private renderCategory(inputsDiv: HTMLDivElement, currentCategory: string, prevCategory: string) {
+    if (currentCategory === prevCategory) return;
 
-    if (prop.category !== prevCategory) {
-      if (this.foldedCategories.includes(prop.category)) {
-        const warningIcon = this.getCategoryWarningIcon(prop.category);
+    if (this.foldedCategories.includes(currentCategory)) {
+      const warningIcon = this.getCategoryWarningIcon(currentCategory);
 
-        const chevronToOpen = ui.iconFA('chevron-right', () => {
-          $(chevronToClose).show();
-          $(chevronToOpen).hide();
-          $(warningIcon).hide();
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.input.root).show());
-        }, 'Open category');
-        $(chevronToOpen).css('padding-right', '5px');
-        const chevronToClose = ui.iconFA('chevron-down', () => {
-          $(chevronToClose).hide();
-          $(chevronToOpen).show();
-          if (this.foldedCategoryInputs[prop.category].some((e) =>
-            this.getInputLockState(e.paramName) === INPUT_STATE.INCONSISTENT &&
-            e.input.value !== this.getRestrictedValue(e.paramName),
-          ))
-            $(warningIcon).show();
-          else
-            $(warningIcon).hide();
-
-          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.input.root).hide());
-        }, 'Close category');
-        $(chevronToClose).css('padding-right', '5px');
-
-        //@ts-ignore
-        inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(prop.category, {style: {'display': 'inline'}}), warningIcon], {style: {'width': '100%'}}));
+      const chevronToOpen = ui.iconFA('chevron-right', () => {
+        $(chevronToClose).show();
+        $(chevronToOpen).hide();
+        $(warningIcon).hide();
+        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).show());
+      }, 'Open category');
+      $(chevronToOpen).css('padding-right', '5px');
+      const chevronToClose = ui.iconFA('chevron-down', () => {
         $(chevronToClose).hide();
-      } else
-        inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
-    }
+        $(chevronToOpen).show();
+        if (this.foldedCategoryInputs[currentCategory].some((e) => this.getInputLockState(e.paramName) === 'inconsistent'))
+          $(warningIcon).show();
+        else
+          $(warningIcon).hide();
+
+        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).hide());
+      }, 'Close category');
+      $(chevronToClose).css('padding-right', '5px');
+
+      //@ts-ignore
+      inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(currentCategory, {style: {'display': 'inline'}}), warningIcon], {style: {'width': '100%'}}));
+      $(chevronToClose).hide();
+    } else
+      inputsDiv.append(ui.h2(currentCategory, {style: {'width': '100%'}}));
+  }
+
+  private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants) {
+    const prop = val.property;
 
     if (this.foldedCategories.includes(prop.category))
       this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), {paramName: val.property.name, input: t}];
@@ -880,10 +887,9 @@ export class RichFunctionView extends FunctionView {
       const desc = param.property.description ? `${param.property.description}.`: null;
 
       const getExplanation = () => {
-        if (this.getInputLockState(paramName) === INPUT_STATE.DISABLED) return `Input is disabled to prevent inconsistency.`;
-        if (this.getInputLockState(paramName) === INPUT_STATE.INCONSISTENT && t.value !== this.getRestrictedValue(paramName))
-          return `The entered value is inconsistent to the computed value.`;
-        if (this.getInputLockState(paramName) === INPUT_STATE.RESTRICTED) return `The value is dependent and computed automatically. Click to edit`;
+        if (this.getInputLockState(paramName) === 'disabled') return `Input is disabled to prevent inconsistency.`;
+        if (this.getInputLockState(paramName) === 'inconsistent') return `The entered value is inconsistent to the computed value.`;
+        if (this.getInputLockState(paramName) === 'restricted') return `The value is dependent and computed automatically. Click to edit`;
 
         return null;
       };
@@ -900,8 +906,8 @@ export class RichFunctionView extends FunctionView {
     const paramName = param.property.name;
 
     t.root.addEventListener('click', () => {
-      if (this.getInputLockState(paramName) === INPUT_STATE.RESTRICTED)
-        this.setInputLockState(t, param.name, param.value, INPUT_STATE.INCONSISTENT);
+      if (this.getInputLockState(paramName) === 'restricted')
+        this.setInputLockState(t, param.name, param.value, 'restricted unlocked');
     });
 
     const lockIcon = ui.iconFA('lock');
@@ -913,8 +919,7 @@ export class RichFunctionView extends FunctionView {
     $(unlockIcon).css({color: `var(--grey-2)`});
 
     const resetIcon = ui.iconFA('undo', (e: MouseEvent) => {
-      this.setInputLockState(t, param.name, this.getRestrictedValue(paramName), INPUT_STATE.RESTRICTED);
-      this.funcCall.inputs[paramName] = this.getRestrictedValue(paramName);
+      this.setInput(param.name, this.getRestrictedValue(paramName), 'restricted');
       e.stopPropagation();
     }, 'Reset value to computed value');
     $(resetIcon).addClass('rfv-icon-undo');
@@ -953,10 +958,10 @@ export class RichFunctionView extends FunctionView {
   }
 
   private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
-    if (state === INPUT_STATE.RESTRICTED) {
+    if (state === 'restricted') {
       this.funcCall.options[RESTRICTED_PATH] = {
         ...this.funcCall.options[RESTRICTED_PATH],
-        [paramName]: value instanceof DG.DataFrame ? value.clone(): value,
+        [paramName]: value,
       };
     }
 
@@ -984,14 +989,13 @@ export class RichFunctionView extends FunctionView {
     });
     this.subs.push(sub1);
 
-    const param$ = this.funcCallReplaced.pipe(
+    const sub2 = this.funcCallReplaced.pipe(
       startWith(true),
       switchMap(() => {
         const newParam = this.funcCall[syncParams[field]][name];
         return newParam.onChanged.pipe(mapTo(newParam));
-      }));
-
-    const sub2 = param$.subscribe((newParam) => {
+      }),
+    ).subscribe((newParam) => {
       const newValue = this.funcCall[field][newParam.name];
       const propertyType = newParam.property.propertyType;
       // we need to check if the value is not the same for floats,
@@ -1009,12 +1013,10 @@ export class RichFunctionView extends FunctionView {
         this.hideOutdatedOutput();
         this.validationRequests.next({field: newParam.name, isRevalidation: false});
 
-        const savedInputState = this.getInputLockState(newParam.name);
-        // if the source is not user input, then it is computed and should be restricted (disabled in case of DF)
-        if (!savedInputState) {
-          this.setInputLockState(
-            t, name, newValue,
-            propertyType === DG.TYPE.DATA_FRAME ? INPUT_STATE.DISABLED: INPUT_STATE.RESTRICTED,
+        const currentState = this.getInputLockState(newParam.name);
+        if (currentState === 'restricted unlocked' || currentState === 'inconsistent') {
+          this.setInputLockState(t, newParam.name, newValue,
+            newValue === this.getRestrictedValue(newParam.name) ? 'restricted unlocked' : 'inconsistent',
           );
         }
       }
@@ -1022,9 +1024,16 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub2);
 
     // handling mutations of dataframes
-    const sub3 = param$.pipe(
+    const sub3 = this.funcCallReplaced.pipe(
+      startWith(true),
+      switchMap(() => {
+        const newParam = this.funcCall[syncParams[field]][name];
+        return newParam.onChanged.pipe(mapTo(newParam), startWith(newParam));
+      }),
       filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
-      switchMap<DG.FuncCallParam, Observable<DG.FuncCallParam>>((param) => param.value.onDataChanged.pipe(mapTo(param))),
+      switchMap<DG.FuncCallParam, Observable<DG.FuncCallParam>>(
+        (param) => param.value.onDataChanged.pipe(mapTo(param)),
+      ),
     ).subscribe((param) => {
       this.validationRequests.next({field: param.name, isRevalidation: false});
     });
@@ -1035,16 +1044,6 @@ export class RichFunctionView extends FunctionView {
     const sub = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
-
-      // Setting value source BEFORE setting funccall field - for callback to know source
-      const currentInputState = this.getInputLockState(val.name);
-      const newValue = (currentInputState !== INPUT_STATE.RESTRICTED) ? t.value : this.getRestrictedValue(val.property.name);
-      this.setInputLockState(
-        t,
-        val.name,
-        newValue,
-        currentInputState ?? INPUT_STATE.USER_INPUT,
-      );
 
       this.funcCall[field][val.name] = t.value;
     });
@@ -1148,9 +1147,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private getValidatedNames(inputName?: string): string[] {
-    // Validations are disabled for restricted/disabled inputs
-    return (inputName ? [inputName]: [...this.funcCall.inputs.keys()])
-      .filter((inputName) => !this.getInputLockState(inputName) || this.getInputLockState(inputName) === INPUT_STATE.USER_INPUT);
+    return (inputName ? [inputName]: [...this.funcCall.inputs.keys()]);
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
@@ -1424,47 +1421,3 @@ export class RichFunctionView extends FunctionView {
     filename: this.defaultExportFilename,
   };
 }
-
-const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
-  sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
-  scalars.forEach((scalar) => {
-    sheet.addRow([scalar.caption, scalar.value, scalar.units]);
-  });
-
-  sheet.getColumn(1).width = Math.max(
-    ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
-  ) * 1.2;
-  sheet.getColumn(2).width = Math.max(...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
-  sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
-};
-
-let dfCounter = 0;
-const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: number, row?: number) => {
-  const columnKey = sheet.getColumn(column ?? 1).letter;
-  const tableConfig = {
-    name: `ID_${dfCounter.toString()}`,
-    ref: `${columnKey}${row ?? 1}`,
-    columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
-    rows: new Array(df.rowCount).fill(0).map((_, idx) => [...df.row(idx).cells].map((cell) => cell.value)),
-  };
-  sheet.addTable(tableConfig);
-  sheet.columns.forEach((col) => {
-    col.width = 25;
-    col.alignment = {wrapText: true};
-  });
-  dfCounter++;
-};
-
-const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
-  const canvas = await html2canvas(plot as HTMLElement, {logging: false});
-  const dataUrl = canvas.toDataURL('image/png');
-
-  const imageId = exportWb.addImage({
-    base64: dataUrl,
-    extension: 'png',
-  });
-  sheet.addImage(imageId, {
-    tl: {col: columnForImage, row: rowForImage},
-    ext: {width: canvas.width, height: canvas.height},
-  });
-};
