@@ -1102,8 +1102,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (const group of tree) {
       if (group instanceof DG.TreeViewGroup && !isOrphans(group)) {
         const groupValue = value(group);
-
-        const parentColor = (toJs(group.parent).value as ITreeNode).chosenColor ?? (toJs(group.parent).value as ITreeNode).parentColor;      
+        const parent = toJs(group.parent).value as ITreeNode;
+        const parentColor = parent.chosenColor ?? parent.parentColor;      
         groupValue.parentColor = parentColor;
         
         
@@ -1578,29 +1578,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           thisViewer.treeEncodeUpdateInProgress = false;
         });
     });
-
-    /*this.tree.onSelected.subscribe((node: DG.TreeViewNode) => {
-      if (node.value !== null) {
-        if (value(node).bitset === undefined)
-          return;
-
-        thisViewer.checkBoxesUpdateInProgress = true;
-        this.selectGroup(node);
-        thisViewer.checkBoxesUpdateInProgress = false;
-        thisViewer.resetFilters();
-        thisViewer.updateFilters();
-        const molFile = value(node).smiles;
-        if (this.allowGenerate) {
-          setTimeout(() =>
-            grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK), 50);
-        }
-      }
-      //update the sketcher if open
-      if (thisViewer.wrapper === null)
-        return;
-
-      thisViewer.wrapper.node = (node as DG.TreeViewGroup);
-    });*/
 
     this.tree.onChildNodeExpandedChanged.subscribe((group: DG.TreeViewGroup) => {
       const isFolder = value(group).orphans;
