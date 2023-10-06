@@ -161,6 +161,31 @@ Here is an example:
 
 ![substructure search](help/substructure_search.gif)
 
+## Other search types
+
+We offer the following search types:
+
+* Contains (search by substructure)
+* Not contains
+* Included in (search by superstructure)
+* Not included in
+* Exact (search by exact structure match)
+* Similar (search by similarity score)
+
+To run any of above searches:
+
+1. Click **Filter** icon on a toolbox. The filter panel opens. The default search type is `Contains`. Change the search type by selecting from a dropdown list.
+
+2. Click on the `Click to edit` pane for the desired column. The molecule sketcher opens
+
+3. Sketch some substructure. The search starts immediately.
+
+![switch search types](help/switch_search_type.gif)
+
+In case of `Contains` the search options are hidden by default. To open them hover over molecule and click the **settings** icon.
+
+![open search options](help/open_search_options.gif)
+
 See also:
 
 * [Cheminformatics predictive modeling](https://datagrok.ai/help/datagrok/solutions/domains/chem/#qsar-and-qspr-modeling)
