@@ -671,7 +671,7 @@ export class RichFunctionView extends FunctionView {
     return this.inputsMap[name];
   }
 
-  public setInput(name: string, value: any, state: 'disabled' | 'restricted' | 'user input' = 'restricted' ) {
+  public setInput(name: string, value: any, state?: 'disabled' | 'restricted' | 'user input') {
     const input = this.getInput(name);
     if (!input)
       throw new Error(`No input named ${name}`);
@@ -681,6 +681,9 @@ export class RichFunctionView extends FunctionView {
       state === 'restricted'
     )
       throw new Error(`Param ${name} is dataframe. Restricted state is not supported for them.`);
+
+    if (!state)
+      state = (this.funcCall.inputParams[name].property.propertyType === DG.TYPE.DATA_FRAME) ? 'disabled': 'restricted';
 
     this.funcCall.inputs[name] = value;
     this.setInputLockState(input, name, value, state);
