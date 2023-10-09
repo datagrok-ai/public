@@ -4,8 +4,8 @@
   "version": "1.0.3",
   "description": "PKPD simulations tools",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Viktor Makarichev",
+    "email": "vmakarichev@datagrok.ai"
   },
   "fullName": "SimPKPD",
   "repository": {
