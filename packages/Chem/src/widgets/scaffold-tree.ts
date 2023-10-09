@@ -969,7 +969,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.molColumn?.dataFrame.selection.andNot(bitset);
   }
 
-  updateFilters(): void {
+  updateFilters(triggerRequestFilter = true): void {
     if (this.molColumn === null)
       return;
 
@@ -1025,7 +1025,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.bitset = this.bitOperation === BitwiseOp.AND ? this.bitset.and(tmpBitset) : this.bitset.or(tmpBitset);
     }
     this.updateTag();
-    this.dataFrame.rows.requestFilter();
+    if (triggerRequestFilter)
+      this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
 

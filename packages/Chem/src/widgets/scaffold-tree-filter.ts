@@ -58,7 +58,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
           this.viewer.bitset = null;
           this.dataFrame!.rows.requestFilter();
         } else {
-          this.viewer.updateFilters();
+          this.viewer.updateFilters(false);
         }
       }),
     );
