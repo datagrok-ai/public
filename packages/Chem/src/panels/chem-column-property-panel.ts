@@ -29,7 +29,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     [NONE].concat([...columnsSet].sort()),
     (s: string) => {
       col.temp[SCAFFOLD_COL] = s === NONE ? null : s;
-      col.dataFrame.fireValuesChanged();
+      col.dataFrame?.fireValuesChanged();
     });
   scaffoldColumnChoice.setTooltip('Align structures to a scaffold defined in another column');
 
@@ -37,7 +37,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     col?.temp && col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true',
     (v: any) => {
       col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] = v.toString();
-      col.dataFrame.fireValuesChanged();
+      col.dataFrame?.fireValuesChanged();
     });
   highlightScaffoldsCheckbox.setTooltip('Highlight scaffold defined above');
 
@@ -45,7 +45,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     col?.temp && col.temp[REGENERATE_COORDS] === 'true',
     (v: any) => {
       col.temp[REGENERATE_COORDS] = v.toString();
-      col.dataFrame.fireValuesChanged();
+      col.dataFrame?.fireValuesChanged();
     });
   regenerateCoordsCheckbox.setTooltip('Force regeneration of coordinates even for MOLBLOCKS');
 
@@ -77,7 +77,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     const molFile = sketcher.getMolFile();
     col.tags[ALIGN_BY_SCAFFOLD_TAG] = molFile;
     col.temp[ALIGN_BY_SCAFFOLD_TAG] = molFile;
-    col.dataFrame.fireValuesChanged();
+    col.dataFrame?.fireValuesChanged();
   });
   sketcher.root.classList.add('ui-input-editor');
   sketcher.root.style.marginTop = '3px';

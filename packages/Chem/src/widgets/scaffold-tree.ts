@@ -1212,7 +1212,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       updatedTag = checkedString;
     }  
     this.molColumn!.setTag(SCAFFOLD_TREE_HIGHLIGHT, updatedTag);
-    grok.shell.tv.dataFrame.fireValuesChanged();
+    grok.shell.tv.dataFrame?.fireValuesChanged();
   }
   
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
