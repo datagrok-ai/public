@@ -26,6 +26,10 @@ category('Client cache', () => {
   test('Performance: 5 heavy DataQuery with cache', async () => {
     return await runHeavy(true);
   }, {timeout: 300000});
+
+  after(async () => {
+    await grok.functions.clientCache.clear();
+  });
 });
 
 category('Server cache', () => {
@@ -133,8 +137,5 @@ async function runHeavy(cache: boolean) {
       'Min time': Math.min(...results), 'Max time': Math.max(...results)});
   } catch (e) {
     grok.log.error(e);
-  } finally {
-    if (cache)
-      await grok.functions.clientCache.clear();
   }
 }

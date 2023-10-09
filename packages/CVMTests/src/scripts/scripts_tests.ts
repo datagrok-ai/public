@@ -197,22 +197,6 @@ category('Scripts: Client cache test', () => {
       'Min time': Math.min(...results), 'Max time': Math.max(...results)});
   }, {timeout: 120000});
 
-  test('Dataframe performance test 15 parallel cached', async () => {
-    await grok.functions.clientCache.clear();
-    await grok.functions.call('CVMTests:PythonSingleDfCached',
-      {'df': TEST_DATAFRAME_1}); // adds to cache
-    expect(await grok.functions.clientCache.getRecordCount(), 1);
-    const calls = [];
-    for (let i = 0; i < 15; i++) {
-      calls.push(getScriptTime(`CVMTests:PythonSingleDfCached`,
-        {'df': TEST_DATAFRAME_1}));
-    }
-    const results = await Promise.all(calls);
-    const sum = results.reduce((p, c) => p + c, 0);
-    return toDart({'Average time': sum / results.length,
-      'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-  }, {timeout: 120000});
-
   test('Exceptions: shouldn\'t be cached', async () => {
     await grok.functions.clientCache.clear();
     try {

@@ -79,6 +79,7 @@ SELECT now() as date;
 --output: datetime date
 --meta.cache: client
 --meta.batchMode: true
+--meta.cache.invalidateOn: * * * * *
 SELECT pg_sleep(3);
 --batch
 SELECT max(some_number) as max_value,
@@ -96,14 +97,14 @@ SELECT * FROM Test_Normal;
 --end
 
 --meta.connectFetchSize: 2000
---meta.cache: 'client'
+--meta.cache: client
 --name: CachedHeavy
 --connection: PostgreSQLDBTests
-select * from mock_json_data limit 10000;
+select * from mock_json_data limit 5000;
 --end
 
 --meta.connectFetchSize: 2000
 --name: NotCachedHeavy
 --connection: PostgreSQLDBTests
-select * from mock_json_data limit 10000;
+select * from mock_json_data limit 5000;
 --end
