@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/simpkpd",
   "friendlyName": "SimPKPD",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "PKPD simulations tools",
   "author": {
     "name": "Viktor Makarichev",
@@ -30,8 +30,7 @@
     "typescript": "^5.0.4",
     "webpack": "latest",
     "webpack-cli": "latest"
-  },
-  "sources": [],
+  },  
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
@@ -46,5 +45,9 @@
   "canView": [
     "All users"
   ],
-  "category": "Health"
+  "category": "Health",
+  "sources": [
+    "wasm/TwoCompartmentPK.js",
+    "wasm/OneCompartmentPK.js"
+  ]
 }
