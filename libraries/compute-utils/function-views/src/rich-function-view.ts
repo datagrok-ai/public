@@ -10,7 +10,7 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable, merge, from, of, combineLatest} from 'rxjs';
 import {debounceTime, delay, filter, groupBy, map, mapTo, mergeMap, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {UiUtils} from '../../shared-components';
-import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult} from '../../shared-utils/validation';
+import {Validator, ValidationResult, nonNullValidator, isValidationPassed, getErrorMessage, makePendingValidationResult, mergeValidationResults} from '../../shared-utils/validation';
 import {getFuncRunLabel, boundImportFunction, getPropViewers, injectLockStates, inputBaseAdditionalRenderHandler, injectInputBaseValidation, dfToSheet, plotToSheet, scalarsToSheet} from '../../shared-utils/utils';
 import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
@@ -1096,12 +1096,10 @@ export class RichFunctionView extends FunctionView {
         isNewOutput: !!payload.isNewOutput,
         isRevalidation: payload.isRevalidation,
       });
-      if (standardMsgs)
-        return [name, standardMsgs] as const;
-
+      let customMsgs;
       const customValidator = this.validators[name];
       if (customValidator) {
-        const customMsgs = await customValidator(v, {
+        customMsgs = await customValidator(v, {
           param: name,
           funcCall: this._funcCall!,
           lastCall: this.lastCall,
@@ -1110,9 +1108,8 @@ export class RichFunctionView extends FunctionView {
           isRevalidation: payload.isRevalidation,
           context: payload.context,
         });
-        return [name, customMsgs] as const;
       }
-      return [name, undefined] as const;
+      return [name, mergeValidationResults(standardMsgs, customMsgs)] as const;
     }));
     return Object.fromEntries(validationItems);
   }

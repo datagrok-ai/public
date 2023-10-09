@@ -118,9 +118,9 @@ export const injectInputBaseValidation = (t: DG.InputBase) => {
 
     t.input.classList.remove('d4-invalid');
     t.input.classList.remove('d4-partially-invalid');
-    if (messages?.errors)
+    if (messages?.errors && messages.errors.length)
       t.input.classList.add('d4-invalid');
-    else if (messages?.warnings)
+    else if (messages?.warnings && messages.warnings.length)
       t.input.classList.add('d4-partially-invalid');
   }
   (t as any).setValidation = setValidation;
@@ -136,8 +136,10 @@ export const scalarsToSheet =
     sheet.getColumn(1).width = Math.max(
       ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
     ) * 1.2;
-    sheet.getColumn(2).width = Math.max(...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
-    sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
+    sheet.getColumn(2).width = Math.max(
+      ...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
+    sheet.getColumn(3).width = Math.max(
+      ...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
   };
 
 let dfCounter = 0;
@@ -158,7 +160,8 @@ export const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: n
 };
 
 export const plotToSheet =
-  async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
+  async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement,
+    columnForImage: number, rowForImage: number = 0) => {
     const canvas = await html2canvas(plot as HTMLElement, {logging: false});
     const dataUrl = canvas.toDataURL('image/png');
 

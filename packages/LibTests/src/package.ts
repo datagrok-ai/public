@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 // eslint-disable-next-line
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-components/src/FuncCallInput';
+import {FuncCallInput} from '@datagrok-libraries/compute-utils/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
 import equal from 'deep-equal';
@@ -28,9 +28,9 @@ class InputMock implements FuncCallInput {
   }
 
   get value() {
-    if (!this._value.value) 
+    if (!this._value.value)
       return '';
-    
+
     return JSON.stringify(this._value.value);
   }
 

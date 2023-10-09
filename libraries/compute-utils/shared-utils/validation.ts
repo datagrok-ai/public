@@ -41,10 +41,10 @@ export function getErrorMessage(result?: ValidationResult) {
 }
 
 export interface ValidationPayload {
-    errors?: (string | Advice)[],
-    warnings?: (string | Advice)[],
-    notifications?: (string | Advice)[],
-  }
+  errors?: (string | Advice)[],
+  warnings?: (string | Advice)[],
+  notifications?: (string | Advice)[],
+}
 
 export function makeValidationResult(payload?: ValidationPayload): ValidationResultBase {
   const wrapper = (item: string | Advice) => typeof item === 'string' ? makeAdvice(item) : item;
@@ -53,6 +53,25 @@ export function makeValidationResult(payload?: ValidationPayload): ValidationRes
     warnings: payload?.warnings?.map((warn) => wrapper(warn)),
     notifications: payload?.notifications?.map((note) => wrapper(note)),
   };
+}
+
+export function mergeValidationResults(...results: (ValidationResult | undefined)[]): ValidationResult {
+  const errors = [];
+  const warnings = [];
+  const notifications = [];
+  const revalidate = [];
+  let context = {};
+
+  for (const result of results) {
+    if (result) {
+      errors.push(...(result.errors ?? []));
+      warnings.push(...(result.warnings ?? []));
+      notifications.push(...(result.notifications ?? []));
+      revalidate.push(...(result.revalidate ?? []));
+      context = {...context, ...(result.context ?? {})};
+    }
+  }
+  return {errors, warnings, notifications, revalidate, context};
 }
 
 export function makePendingValidationResult(): ValidationResult {
@@ -89,14 +108,14 @@ export function getValidationIcon(messages: ValidationResultBase | undefined) {
   if (messages?.pending)
     icon = ui.iconFA('spinner', () => {displayValidation(messages, icon, popover);});
 
-  if (messages?.errors) {
-    icon = ui.iconFA('exclamation', () => {displayValidation(messages, icon, popover);});
+  if (messages?.errors && messages.errors.length) {
+    icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);});
     icon.style.color = 'var(--red-3)';
-  } else if (messages?.warnings) {
-    icon = ui.iconFA('exclamation', () => {displayValidation(messages, icon, popover);});
+  } else if (messages?.warnings && messages.warnings.length) {
+    icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);});
     icon.style.color = 'var(--orange-2)';
-  } else if (messages?.notifications) {
-    icon = ui.iconFA('info', () => {displayValidation(messages, icon, popover);} );
+  } else if (messages?.notifications && messages.notifications.length) {
+    icon = ui.iconFA('info-circle', () => {displayValidation(messages, icon, popover);} );
     icon.style.color = 'var(--blue-1)';
   }
   if (icon)
@@ -116,7 +135,7 @@ function displayValidation(messages: ValidationResultBase, icon: HTMLElement, po
   if (popover && icon) {
     alignPopover(icon, popover);
     while (popover.firstChild && popover.removeChild(popover.firstChild));
-    const content = renderDynamicHelp(messages);
+    const content = renderValidationResults(messages);
     popover.appendChild(content);
     popover.showPopover();
   }
@@ -140,13 +159,14 @@ function stylePopover(popover: HTMLElement): void {
   popover.style.maxWidth = '500px';
 }
 
-function renderDynamicHelp(messages: ValidationResultBase) {
+function renderValidationResults(messages: ValidationResultBase) {
   const root = ui.div('', {style: {display: 'flex', flexDirection: 'column'}});
-  for (const [category, advices] of Object.entries(messages)) {
-    const icon = getAdviceIcon(category);
-    if (!icon || !advices)
+  for (const category of ['errors', 'warnings', 'notifications'] as const) {
+    const advices = messages[category];
+    if (!advices?.length)
       continue;
     for (const advice of advices as Advice[]) {
+      const icon = getAdviceIcon(category);
       root.appendChild(ui.span([
         icon,
         advice.description,
@@ -161,13 +181,13 @@ function renderDynamicHelp(messages: ValidationResultBase) {
 function getAdviceIcon(category: string) {
   let icon: HTMLElement | undefined;
   if (category === 'errors') {
-    icon = ui.iconFA('exclamation');
+    icon = ui.iconFA('exclamation-circle');
     icon.style.color = 'var(--red-3)';
   } else if (category === 'warnings') {
-    icon = ui.iconFA('exclamation');
+    icon = ui.iconFA('exclamation-circle');
     icon.style.color = 'var(--orange-2)';
   } else if (category === 'notifications') {
-    icon = ui.iconFA('info');
+    icon = ui.iconFA('info-circle');
     icon.style.color = 'var(--blue-1)';
   }
   if (icon) {
@@ -177,4 +197,3 @@ function getAdviceIcon(category: string) {
   }
   return icon;
 }
-
