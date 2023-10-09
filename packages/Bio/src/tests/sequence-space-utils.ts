@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {expect} from '@datagrok-libraries/utils/src/test';
-import {sequenceSpaceTopMenu} from '../package';
+import {BYPASS_LARGE_DATA_WARNING, sequenceSpaceTopMenu} from '../package';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
@@ -14,6 +14,7 @@ export async function _testSequenceSpaceReturnsResult(
   if (semType)
     col.semType = semType;
 
-  const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true);
+  const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true,
+    0.6, {[`${BYPASS_LARGE_DATA_WARNING}`]: true});
   expect(sp != null, true);
 }
