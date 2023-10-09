@@ -49,7 +49,8 @@ export abstract class ComputationView extends FunctionView {
     await super.onFuncCallReady();
     await this.getPackageUrls();
     this.buildRibbonMenu();
-    this.changeViewName(this.parentCall!.func.friendlyName);
+    if (this.parentCall?.func)
+      this.changeViewName(this.parentCall.func.friendlyName);
   }
 
   /** Override to customize getting mocks
