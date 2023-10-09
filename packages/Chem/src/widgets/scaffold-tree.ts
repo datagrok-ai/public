@@ -393,6 +393,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
   smartsExist: boolean = false;
+  current?: DG.TreeViewNode;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -735,6 +736,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     updateAllNodesHits(this, () => thisViewer.filterTree(thisViewer.threshold)); //this will run asynchronously
+    this.updateFilters();
     this.updateTag();
   }
 
@@ -1375,11 +1377,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     molHost.onclick = (e) => {
-      thisViewer.checkBoxesUpdateInProgress = true;
-      this.selectGroup(group);
-      thisViewer.checkBoxesUpdateInProgress = false;
-      thisViewer.resetFilters();
-      thisViewer.updateFilters();
+      this.makeNodeActiveAndFilter(group);
     }
 
     return group;
@@ -1458,6 +1456,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   changeCanvasSize(molString: string, canvas: any, width: number, height: number): void {
     const newMolHost = renderMolecule(molString, width, height, undefined, undefined);
     canvas.replaceWith(newMolHost);
+  }
+
+  makeNodeActiveAndFilter(node: DG.TreeViewNode) {
+    this.checkBoxesUpdateInProgress = true;
+    this.selectGroup(node);
+    this.checkBoxesUpdateInProgress = false;
+    this.resetFilters();
+    this.updateFilters();
   }
 
   onPropertyChanged(p: DG.Property): void {
@@ -1595,6 +1601,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           }
         }
       }
+    });
+
+    this.tree.root.onkeyup = (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        if (this.current) {
+          this.makeNodeActiveAndFilter(this.current);
+        }
+      }
+    }
+
+    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
+      this.current = node;
     });
 
     this.tree.onNodeMouseEnter.subscribe((node: DG.TreeViewNode) => {
