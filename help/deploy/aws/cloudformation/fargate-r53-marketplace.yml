@@ -1859,7 +1859,7 @@ Resources:
       - Field: path-pattern
         PathPatternConfig:
           Values:
-          - /jupyter/*
+          - /notebook/*
       ListenerArn:
         Ref: CvmTCP8090IntListener
       Priority: 6
@@ -1899,7 +1899,7 @@ Resources:
       - Field: path-pattern
         PathPatternConfig:
           Values:
-          - /jupyter/*
+          - /notebook/*
       ListenerArn:
         Ref: CvmTCP443Listener
       Priority: 6
@@ -2949,7 +2949,7 @@ Resources:
           \                'cvmUrl': oldSettings['settings']['cvmUrl'],\n        \
           \        'h2oUrl': oldSettings['settings']['h2oUrl'],\n                'cvmUrlClient':\
           \ f\"https://{cvmClient}\",\n                'cvmSplit': oldSettings['settings']['cvmSplit'],\n\
-          \                'jupyterGatewayToken': oldSettings['settings']['jupyterGatewayToken']\n\
+          \                'jupyterToken': oldSettings['settings']['jupyterToken']\n\
           \            }\n\n            setSettings = http.request(\"POST\", f'{host}/api/admin/plugins/scripts/settings',\n\
           \                                       body=json.dumps(new_settings),\n\
           \                                       headers={'Authorization': auth,\
