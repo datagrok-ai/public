@@ -415,6 +415,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   };
   size: string;
   allowGenerate: boolean;
+  applyFilter: boolean = true;
 
   constructor() {
     super();
@@ -1628,10 +1629,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       dataFrame.rows.highlight(null);
     });
 
-    this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
-      if (thisViewer.bitset != null)
-        dataFrame.filter.and(thisViewer.bitset);
-    }));
+    if (this.applyFilter) {
+      this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
+        if (thisViewer.bitset != null)
+          dataFrame.filter.and(thisViewer.bitset);
+      }));
+    }
 
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
       const tooltip = args.args.element;

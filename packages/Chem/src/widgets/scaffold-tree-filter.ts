@@ -51,15 +51,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name;
     this.subs.push(this.dataFrame!.onRowsFiltering
-      .pipe(debounce((_) => interval(100)))
-      .subscribe((_) => { 
+      .pipe(filter((_) => this.column != null && !this.isFiltering))
+      .subscribe((_) => {
         this.column!.setTag(SCAFFOLD_TREE_HIGHLIGHT, JSON.stringify(this.viewer.colorCodedScaffolds));
-        if (!this.isFiltering) {
-          this.viewer.bitset = null;
-          this.dataFrame!.rows.requestFilter();
-        } else {
-          this.viewer.updateFilters(false);
-        }
       }),
     );
     this.subs.push(grok.events.onCustomEvent(COLUMN_NAME_CHANGED).subscribe((state: IScaffoldFilterState) => {
@@ -89,8 +83,13 @@ export class ScaffoldTreeFilter extends DG.Filter {
   }
 
   applyFilter(): void {
+    if (this.dataFrame && this.viewer.bitset && !this.isDetached) {
+      this.viewer.updateFilters(false);
+      this.dataFrame!.filter.and(this.viewer.bitset!);
+      this.dataFrame!.rows.addFilterState(this.saveState());
+    }
   }
-
+  
   detach(): void {
     super.detach();
     this.viewer.clearFilters();
@@ -101,6 +100,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   createViewer(dataFrame: DG.DataFrame) {
     this.viewer.allowGenerate = false;
     this.viewer.size = 'extra';
+    this.viewer.applyFilter = false;
     this.viewer.resizable = true;
     this.viewer.molCol = this.column;
     this.viewer.MoleculeColumn = this.columnName!;
