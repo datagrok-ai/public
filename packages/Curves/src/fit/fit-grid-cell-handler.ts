@@ -40,7 +40,7 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesN
       const fitResult = getSeriesStatistics(chartData.series![0], getSeriesFitFunction(chartData.series![0]));
       return p.get(fitResult);
     });
-  grid.dataFrame.columns.add(column);
+  grid.dataFrame.columns.insert(column, chartColumn.idx);
 }
 
 function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, options: string): void {
