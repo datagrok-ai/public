@@ -264,17 +264,21 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-        if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
-          this.calculating = true;
-          extractor
-            .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
-            .then((mol) => {
-              mol ? this.setMolecule(mol) : this.setMolecule('');
-              this.calculating = false;
-            });
+        try{
+          if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
+            this.calculating = true;
+            extractor
+              .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
+              .then((mol) => {
+                mol ? this.setMolecule(mol) : this.setMolecule('');
+                this.calculating = false;
+              });
+          }
+          else
+            this.setMolecule(x);
+        } catch {
+          this.setMolecule('');
         }
-        else
-          this.setMolecule(x);
     }
 
     constructor(mode?: SKETCHER_MODE) {
