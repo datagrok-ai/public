@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// Import for call wasm runtime-system
-import { initSolvers, simulateOneCompartmentPK, simulateTwoCompartmentPK } from '../wasm/solving-tools';
+import { initSolvers } from '../wasm/solving-tools';
+import { simPKPD } from './pk-pd-tools';
 
 export const _package = new DG.Package();
 
@@ -87,35 +87,25 @@ export async function simulate(
   });
 }
 
-//name: New PKPD
-//description: PK/PD simulation via WebAutoSolver
+//name: PK-PD
+//description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation
 //tags: model
-//input: string compartments = '2 compartment PK' {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]} 
-//input: double initial = 0.0 {caption: initial; category: time, hours}
-//input: double final = 12.0 {caption: final; category: time, hours}
-//input: double step = 0.01 {caption: step; category: time, hours}
-//input: double _depotInitial = 0.0 {units: ; caption: depot; category: initial values}
-//input: double _centrInitial = 0.0 {units: ; caption: centr; category: initial values}
-//input: double _periInitial = 0.0 {units: ; caption: peri; category: initial values}
-//input: double _effInitial = 1.0 {units: ; caption: eff; category: initial values}
-//input: double _KAVal = 0.3 {units: ; caption: KA; category: parameters}
-//input: double _CLVal = 2.0 {units: ; caption: CL; category: parameters}
-//input: double _V2Val = 4.0 {units: ; caption: V2; category: parameters}
-//input: double _QVal = 1.0 {units: ; caption: Q; category: parameters}
-//input: double _V3Val = 30.0 {units: ; caption: V3; category: parameters}
-//input: double _KinVal = 0.2 {units: ; caption: Kin; category: parameters}
-//input: double _KoutVal = 0.2 {units: ; caption: Kout; category: parameters}
-//input: double _EC50Val = 8.0 {units: ; caption: EC50; category: parameters}
-//output: dataframe dfSolution {caption: Solution; viewer: Line chart(x: "t", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//input: string compartments = "2 compartment PK" {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]} [Pharmacokinetic model.]
+//input: double dose = 10000.0 {units: um; caption: dose; category: Dosing} [Dosage.]
+//input: int dosesCount = 10 {caption: count; category: Dosing} [Number of doses.]
+//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing} [Dosing interval.]
+//input: double _KAVal = 0.3 {units: ; caption: rate constant; category: PK parameters} [Rate constant.]
+//input: double _CLVal = 2.0 {units: ; caption: clearance; category: PK parameters} [Clearance.]
+//input: double _V2Val = 4.0 {units: ; caption: central volume; category: PK parameters} [Central compartment volume.]
+//input: double _QVal = 1.0 {units: ; caption: intercompartmental rate; category: PK parameters} [Intercompartmental rate.]
+//input: double _V3Val = 30.0 {units: ; caption: peripheral volume; category: PK parameters} [Peripheral compartment volume.]
+//input: double effRate = 0.2 {units: ; caption: effective rate; category: PD parameters} [Effective compartment rate.]
+//input: double _EC50Val = 8.0 {units: ; caption: effect; category: PD parameters} [EC50.]
+//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]") | Grid(block: 50) }
 //editor: Compute:RichFunctionViewEditor
-export async function simPKPD(compartments: string,
-  initial: number, final: number, step: number,
-  _depotInitial: number, _centrInitial: number, _periInitial: number, _effInitial: number, 
-  _KAVal: number, _CLVal: number, _V2Val: number, _QVal: number, _V3Val: number, _KinVal: number, _KoutVal: number, _EC50Val: number): Promise<DG.DataFrame>
+export async function simulatePKPD(compartments: string,
+  dose: number, dosesCount: number, doseInterval: number,
+  _KAVal: number, _CLVal: number, _V2Val: number, _QVal: number, _V3Val: number, effRate: number, _EC50Val: number): Promise<DG.DataFrame>
 {
-  const simFn = (compartments === '1 compartment PK') ? simulateOneCompartmentPK : simulateTwoCompartmentPK;
-
-  return simFn(initial, final, step,
-    _depotInitial, _centrInitial, _periInitial, _effInitial, 
-    _KAVal, _CLVal, _V2Val, _QVal, _V3Val, _KinVal, _KoutVal, _EC50Val);
+  return simPKPD(compartments, dose, dosesCount, doseInterval, _KAVal, _CLVal, _V2Val, _QVal, _V3Val, effRate, effRate, _EC50Val);
 }
