@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {expect} from '@datagrok-libraries/utils/src/test';
-import {activityCliffs} from '../package';
+import {activityCliffs, BYPASS_LARGE_DATA_WARNING} from '../package';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: number, method: DimReductionMethods,
@@ -10,7 +10,7 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: nu
   await grok.data.detectSemanticTypes(df);
   const scatterPlot = await activityCliffs(
     df, df.getCol(colName), df.getCol('activity'),
-    90, method);
+    90, method, {[`${BYPASS_LARGE_DATA_WARNING}`]: true});
   // const scatterPlot = (await grok.functions.call('Bio:activityCliffs', {
   //   table: df, molecules: df.getCol(colName), activities: df.getCol('Activity'),
   //   similarity: 50, methodName: method

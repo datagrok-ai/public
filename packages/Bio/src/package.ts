@@ -69,9 +69,13 @@ import {_getEnumeratorWidget, _setPeptideColumn} from './utils/enumerator-tools'
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
+import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
+  from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
+import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 
 export const _package = new BioPackage();
 
+export const BYPASS_LARGE_DATA_WARNING = 'bypassLargeDataWarning';
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
 
@@ -382,7 +386,7 @@ export async function getRegionTopMenu(
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: DimReductionMethods, options?: IUMAPOptions | ITSNEOptions,
+  similarity: number, methodName: DimReductionMethods, options?: (IUMAPOptions | ITSNEOptions) & Options,
 ): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUI(macroMolecule, 'Activity Cliffs'))
     return;
@@ -435,7 +439,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     return;
   }
 
-  if (df.rowCount > fastRowCount) {
+  if (df.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
@@ -465,7 +469,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 export async function sequenceSpaceTopMenu(
   table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = MmDistanceFunctionsNames.LEVENSHTEIN,
-  plotEmbeddings: boolean, sparseMatrixThreshold?: number, options?: IUMAPOptions | ITSNEOptions,
+  plotEmbeddings: boolean, sparseMatrixThreshold?: number, options?: (IUMAPOptions | ITSNEOptions) & Options,
 ): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
@@ -517,20 +521,41 @@ export async function sequenceSpaceTopMenu(
       return;
     }
 
-    if (table.rowCount > fastRowCount) {
+    async function getSeqSpace() {
+      let resolveF: Function | null = null;
+
+      const sub = grok.events.onViewerClosed.subscribe((args) => {
+        const v = args.args.viewer as unknown as DG.Viewer<any>;
+        if (v?.getOptions()?.look?.title && scatterPlot?.getOptions()?.look?.title &&
+          v?.getOptions()?.look?.title === scatterPlot?.getOptions()?.look?.title) {
+          grok.events.fireCustomEvent(DIMENSIONALITY_REDUCER_TERMINATE_EVENT, {});
+          sub.unsubscribe();
+          resolveF?.();
+          pg.close();
+        }
+      });
+      const sequenceSpaceResPromise = new Promise<ISequenceSpaceResult | undefined>(async (resolve) => {
+        resolveF = resolve;
+        const res = await getSequenceSpace(chemSpaceParams,
+          options?.[BYPASS_LARGE_DATA_WARNING] ? undefined : progressFunc);
+        resolve(res);
+      });
+      const sequenceSpaceRes = await sequenceSpaceResPromise;
+      pg.close();
+      sub.unsubscribe();
+      return sequenceSpaceRes ? processResult(sequenceSpaceRes) : sequenceSpaceRes;
+    }
+
+    if (table.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
       ui.dialog().add(ui.divText(`Sequence space analysis might take several minutes.
     Do you want to continue?`))
         .onOK(async () => {
-          const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams, progressFunc);
-          pg.close();
-          return processResult(sequenceSpaceRes);
+          await getSeqSpace();
         })
         .onCancel(() => { pg.close(); })
         .show();
     } else {
-      const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams, progressFunc);
-      pg.close();
-      return processResult(sequenceSpaceRes);
+      return await getSeqSpace();
     }
 
     function processResult(sequenceSpaceRes: ISequenceSpaceResult): DG.ScatterPlotViewer | undefined {
@@ -540,7 +565,7 @@ export async function sequenceSpaceTopMenu(
         emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
         let embedCol = table.columns.byName(col.name);
         if (!embedCol) {
-          embedCol = DG.Column.float(col.name, col.length);
+          embedCol = DG.Column.float(col.name, listValues.length);
           table.columns.add(embedCol);
         }
         embedCol.init((i) => listValues[i]);

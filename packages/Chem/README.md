@@ -213,6 +213,28 @@ To add a fragment use:
 
   ![add structural alert highlight](help/add_structural_alert_highlight.gif)
 
+## Scaffold Tree
+
+We have seamlessly integrated Scaffold Tree with molecule fragments highlighting. To utilize this feature, we have introduced two icons:
+
+* **Circle** icon. Click to toggle the color on and off.
+* **Palette** icon. Click to open the dialog with color picker. The icon serves for applying and modifying the color.
+
+Here are some important rules:
+
+* When you select a color, it automatically extends to all child nodes. However, note that more specific structures, closer to the leaves, will take precedence.
+* When you turn the color off, the node inherits its color from the parent.
+
+Scaffolds are highlighted both in the column and viewer for the convenience.
+
+In addition, we updated and improved the existing functionality:
+
+* When you add a new scaffold to an existing tree, it inherits the parent's node color.
+* When you save the tree to disk, the color coding, logical operations and icons state are saved alongside with the tree.
+* When you open the saved tree, it retrieves colors, operations etc.
+
+![add scaffold tree highlight](help/scaffold_tree_highlight.gif)
+
 See also:
 
 * [Cheminformatics predictive modeling](https://datagrok.ai/help/datagrok/solutions/domains/chem/#qsar-and-qspr-modeling)
