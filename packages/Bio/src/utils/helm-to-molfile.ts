@@ -6,12 +6,14 @@ import {MonomerLibHelper} from './monomer-lib';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
-import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 
 const MAX_ATOM_COUNT = 999;
 
 const HELM_SECTION_SEPARATOR = '$';
 const HELM_ITEM_SEPARATOR = '|';
+const R_GROUP_ELEMENT_SYMBOL = 'R#';
+const HYDROGEN_SYMBOL = 'H';
 const enum HELM_MONOMER_TYPE {
   BACKBONE,
   BRANCH,
@@ -88,7 +90,6 @@ class GlobalMonomerPositionHandler {
 class MonomerWrapper {
   constructor(
     monomerSymbol: string,
-    // private atomNumberShift: number,
     polymerType: HELM_POLYMER_TYPE,
   ) {
     const monomerLib = MonomerLibHelper.instance.getBioLib();
@@ -96,9 +97,18 @@ class MonomerWrapper {
     if (!monomer)
       throw new Error(`Monomer ${monomerSymbol} is not found in the library`);
     this.molfileWrapper = new MolfileWrapper(monomer.molfile, monomerSymbol);
+    this.capGroupElements = monomer.rgroups.map((rgroup) => {
+      const smiles = rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] ||
+        // WARNING: ignore because both key variants coexist in HELM Core Library!
+        // @ts-ignore
+        rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE];
+      // extract the element symbol
+      return smiles.replace(/(\[|\]|\*|:|\d)/g, '');
+    });
   }
 
   private molfileWrapper: MolfileWrapper;
+  private capGroupElements: string[] = [];
 
   shiftCoordinates(shift: {x: number, y: number}): void {
     this.molfileWrapper.shiftCoordinates(shift);
@@ -114,6 +124,10 @@ class MonomerWrapper {
 
   removeBondedRGroups(rGroupIds: number[]): void {
     this.molfileWrapper.removeRGroups(rGroupIds);
+  }
+
+  capTrailingRGroups(): void {
+    this.molfileWrapper.capRGroups(this.capGroupElements);
   }
 
   replaceRGroupWithAttachmentAtom(rGroupId: number, attachmentAtomIdx: number): void {
@@ -161,7 +175,6 @@ class RGroupHandler {
     const rGroupAtomicIndices = Array.from(this.rGroupIdToAtomicIndexMap.entries()).filter(
       ([rGroupId, _]) => rGroupIds.includes(rGroupId)
     ).map(([_, atomicIdx]) => atomicIdx);
-
     this.atoms.deleteAtoms(rGroupAtomicIndices);
 
     rGroupIds.forEach((rGroupId) => {
@@ -258,6 +271,18 @@ class RGroupHandler {
       throw new Error(`Cannot find position for R group ${rgroupId}`);
     const {bondLineIdx, nodeIdx} = position;
     return this.bonds.bondedAtoms[bondLineIdx][(nodeIdx + 1) % 2];
+  }
+
+  capRGroups(capGroupElements: string[]): void {
+    this.rGroupIdToAtomicIndexMap.forEach((atomicIdx, rGroupId) => {
+      const element = capGroupElements[rGroupId - 1];
+      if (element === HYDROGEN_SYMBOL) {
+        this.removeRGroups([rGroupId]);
+        this.deleteBondLineWithSpecifiedRGroup(rGroupId);
+      } else {
+        this.atoms.replaceElementSymbol(atomicIdx, element);
+      }
+    });
   }
 }
 
@@ -358,6 +383,10 @@ class MolfileAtoms {
     });
   }
 
+  replaceElementSymbol(atomIdx: number, newElementSymbol: string): void {
+    this.rawAtomLines[atomIdx] = this.rawAtomLines[atomIdx].replace(R_GROUP_ELEMENT_SYMBOL, newElementSymbol);
+  }
+
   deleteAtoms(indices: number[]): void {
     this.coordinates = this.coordinates.filter((_, idx) => !indices.includes(idx));
     this.rawAtomLines = this.rawAtomLines.filter((_, idx) => !indices.includes(idx));
@@ -387,7 +416,7 @@ class MolfileAtoms {
 
   getRGroupAtomicIndices(): number[] {
     return this.rawAtomLines.map((line: string, idx: number) => {
-      if (line.includes('R#'))
+      if (line.includes(R_GROUP_ELEMENT_SYMBOL))
         return idx;
     }).filter((idx) => idx !== undefined) as number[];
   }
@@ -489,6 +518,10 @@ class MolfileWrapper {
 
   shiftBonds(shift: number): void {
     this.bonds.shift(shift);
+  }
+
+  capRGroups(capGroupElements: string[]): void {
+    this.rGroups.capRGroups(capGroupElements);
   }
 }
 
@@ -737,6 +770,7 @@ class Polymer {
     this.monomerWrappers.forEach((monomerWrapper, monomerIdx) => {
       if (this.bondedRGroupsMap.has(monomerIdx))
         monomerWrapper.removeBondedRGroups(this.bondedRGroupsMap.get(monomerIdx)!);
+      monomerWrapper.capTrailingRGroups();
     });
   }
 
@@ -750,19 +784,15 @@ class Polymer {
     return atomNumberShifts;
   }
 
-  private restoreBondsBetweenMonomers(atomNumberShifts: number[]): void {
+  private restoreBondsBetweenMonomers(): void {
     this.helm.bondData.forEach((bond) => {
-      const bondPart1 = bond[0];
-      const bondPart2 = bond[1];
-      const monomerIdx1 = bondPart1.monomerIdx;
-      const monomerIdx2 = bondPart2.monomerIdx;
-      const rGroupId1 = bondPart1.rGroupId;
-      const rGroupId2 = bondPart2.rGroupId;
-      const monomerWrapper1 = this.monomerWrappers[monomerIdx1];
-      const monomerWrapper2 = this.monomerWrappers[monomerIdx2];
-      const attachmentAtom2 = monomerWrapper2.getAttachmentAtomByRGroupId(rGroupId2);
-      monomerWrapper1.replaceRGroupWithAttachmentAtom(rGroupId1, attachmentAtom2);
-      monomerWrapper2.deleteBondLineWithSpecifiedRGroup(rGroupId2);
+      const monomerIdx = bond.map((bondPart) => bondPart.monomerIdx);
+      const rGroupId = bond.map((bondPart) => bondPart.rGroupId);
+      const monomer = monomerIdx.map((idx) => this.monomerWrappers[idx]);
+
+      const attachmentAtom = monomer[1].getAttachmentAtomByRGroupId(rGroupId[1]);
+      monomer[0].replaceRGroupWithAttachmentAtom(rGroupId[0], attachmentAtom);
+      monomer[1].deleteBondLineWithSpecifiedRGroup(rGroupId[1]);
     });
   }
 
@@ -778,7 +808,7 @@ class Polymer {
       monomerWrapper.shiftBonds(atomNumberShifts[idx]);
     });
 
-    this.restoreBondsBetweenMonomers(atomNumberShifts);
+    this.restoreBondsBetweenMonomers();
 
     this.monomerWrappers.forEach((monomerWrapper) => {
       atomLines.push(...monomerWrapper.getAtomLines());
