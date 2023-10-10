@@ -3,13 +3,13 @@
     height: initial !important;
 }
 
-.hit-triage-compute-dialog-pane-header{
+.hit-triage-compute-dialog-pane-header {
     display: flex;
     align-items: center;
     justify-content: end;
 }
 
-.hit-triage-compute-dialog-host > .d4-tab-host.d4-tab-vertical > .d4-tab-header-stripe > .d4-tab-header.hit-triage-compute-dialog-pane-header {
+.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header {
     border: none;
     border-left: 4px solid transparent;
     border-radius: 1px;
@@ -19,12 +19,12 @@
     flex-direction: row-reverse;
 }
 
-.hit-triage-compute-dialog-host > .d4-tab-host.d4-tab-vertical > .d4-tab-header-stripe > .d4-tab-header.hit-triage-compute-dialog-pane-header.selected {
+.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header.selected {
     border-left: 4px solid var(--blue-1);
     background-color: #f2f2f5;
 }
 
-.hit-triage-compute-dialog-host > .d4-tab-host.d4-tab-vertical > .d4-tab-header-stripe > .d4-tab-header.hit-triage-compute-dialog-pane-header > span {
+.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header>span {
     padding: 0 4px;
 }
 
@@ -33,40 +33,10 @@ table.hit-triage-table {
     width: calc(100% - 20px);
 }
 
-table.hit-triage-table tr {
-    border: 1px solid black;
-}
-
-table.hit-triage-table tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-table.hit-triage-table tr td:not(:last-child) {
-    border-right: 1px solid black;
-}
-
 .hit-triage-table-container {
     max-width: 600px;
     max-height: 500px;
     overflow-y: scroll;
-}
-
-.hit-triage-download-button {
-    color: #2083d5;
-      margin-left: 4px;
-      font-weight: 600;
-}
-
-.hit-triage-new-campaign-accordeon .d4-accordion-pane, .hit-triage-new-template-accordeon .d4-accordion-pane {
-    border-bottom: 1px solid gray;
-}
-
-.hit-triage-new-campaign-accordeon .d4-accordion-pane-header, .hit-triage-new-template-accordeon .d4-accordion-pane-header {
-    font-weight: bold;
-}
-
-.hit-triage-accordeon-cancel-button {
-    margin-left: 10px;
 }
 
 .hit-triage-error-div {
@@ -79,55 +49,50 @@ table.hit-triage-table tr td:not(:last-child) {
     margin-right: 5px;
 }
 
-.hit-triage-add-campaign-field-button {
-    aspect-ratio: 1;
-    align-self: start;
-    margin-top: 15px;
- }
+.hit-triage-new-template-functions-input > .ui-box {
+    height: unset !important;
+}
 
- .hit-triage-new-template-functions-input {
+.hit-triage-new-template-functions-input {
     max-height: 200px;
     max-width: unset !important;
     overflow-y: scroll;
- }
+}
 
- .hit-triage-new-template-functions-input > .d4-tab-host {
+
+.hit-triage-new-template-functions-input > .d4-tab-host {
     width: 100% !important;
- }
+}
 
- .hit-triage-compute-dialog-host {
+.hit-triage-compute-dialog-host {
     max-height: 550px;
     max-width: 500px;
- }
+}
 
- .hit-triage-compute-dialog-descriptors-group {
+.hit-triage-compute-dialog-descriptors-group {
     margin-left: 16px;
- }
+}
 
- .hit-triage-campaign-field-div {
-    align-items: center;
-    border-top: 1px solid gray;
-    width: fit-content;
- }
- .hit-triage-campaign-field-div:last-child {
-    border-bottom: 1px solid gray;
- }
-
- .oy-scroll {
+.oy-scroll {
     overflow-y: scroll;
- }
+}
 
- .hit-triage-start-new-campaign-button {
-    align-self: start;
- }
+.d4-ribbon-name .ui-breadcrumbs {
+	overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+	flex-wrap: nowrap;
+    padding: 0;
+}
 
-.hit-triage-templates-input-div {
-    align-items: center;
-    padding-bottom: 10px;
-    border-bottom: 1px solid gray;
-  }
+.d4-ribbon-name .ui-breadcrumbs i {
+	padding: 0 6px;
+	font-size: 10px;
+	font-weight: bold;
+}
 
-.hit-triage-additional-fields-title{
-    margin-bottom: 8px;
-    font-weight: bold;
+.d4-ribbon-name .ui-breadcrumbs-element:first-child {
+	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

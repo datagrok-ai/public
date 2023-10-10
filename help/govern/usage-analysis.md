@@ -2,24 +2,24 @@
 title: "Usage Analysis"
 ---
 
-Datagrok is a universal data platform that enables users to perform broad range of tasks, ranging from the self-service
-data analytics to using custom applications on top of the platform. In this environment, it is important to understand
-how exactly the platform is being used. Here are some of the reasons for doing so:
+Users to perform wide range of tasks, from the self-service
+data analytics to using custom applications on top of the platform. It is important to understand
+how exactly they use the platform. With this knowledge you can:
 
-* UX improvements
+* Improve UX
   * Remove unused menu items, etc
-* Understanding your users better
+* Understand your users better
   * Cluster usage by usage patterns
   * Correlate usage patterns with the organizational groups
-* Data history tracking
+* Track data history
   * Track origin of datasets
   * See history of modifications
-  * See all actions performed with an object (Activity tab)
-* Performance analysis
+  * See all actions performed with an object
+* Analyze performance
   * See how long each operation takes
-* Function usage analysis
-  * Analyze function usage as a table of users, timestamps, inputs and outputs
-* Error tracking
+* Analyze function usage
+  * Get a table of users, timestamps, inputs and outputs for functions
+* Track errors
   * See all errors across the platform
   * See which actions are causing the errors
 

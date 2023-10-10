@@ -35,7 +35,7 @@ class StPackage extends DG.Package {
       this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
     } catch (err: any) {
       const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-      throw new Error('Sequence Translator: Loading monomer library error: ' + errMsg);
+      throw new Error('Loading monomer library: ' + errMsg);
     } finally {
       pi.close();
     }

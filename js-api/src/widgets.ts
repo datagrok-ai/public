@@ -1096,6 +1096,12 @@ export class InputBase<T = any> {
     api.grok_InputBase_AddPatternMenu(this.dart, pattern);
   }
 
+  /** Adds a validator that accepts a string representation of the edited value
+   * and returns null if valid, or error message if invalid*/
+  addValidator(validator: (value: string) => string | null): void {
+    api.grok_InputBase_AddValidator(this.dart, validator);
+  }
+
   /** Sets the tooltip */
   setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): InputBase<T> {
     api.grok_InputBase_SetTooltip(this.dart, msg, tooltipCheck);
@@ -1865,11 +1871,10 @@ export class DropDown {
 
     this._label = label;
     this._element = createElement();
-
-    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
+    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
     this._dropDownElement.style.visibility = 'hidden';
 
-    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+    this.root = ui.div([this._dropDownElement, this._label], 'ui-drop-down-root');
 
     this._initEventListeners();
   }

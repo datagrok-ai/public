@@ -238,6 +238,7 @@ inner join event_types t on t.id = e.event_type_id and t.source = 'usage' and t.
 left join event_parameter_values v1 inner join event_parameters p1 on p1.id = v1.parameter_id and p1.name = 'success' on v1.event_id = e.id
 left join event_parameter_values v4 inner join event_parameters p4 on p4.id = v4.parameter_id and p4.name = 'skipped' on v4.event_id = e.id
 where e.event_time::date BETWEEN now()::date - 1 and now()::date
+order by e.description, date, e.event_time desc
 ),
 filled as (select res.date,
 count(*) filter (where status = 'passed') as passed,

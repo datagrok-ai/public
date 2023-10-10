@@ -1,5 +1,20 @@
 # Helm changelog
 
+## 2.2.0 (WIP)
+
+### Features
+
+* Show tooltips on monomers rendered with WebEditor.
+
+### Bug fixes
+
+* Fix Helm cell renderer, allowing to render with gaps by skipping.
+* Fix message WebEditor not supporting Helm with gaps.
+* Prevent display tooltip by fallback cell renderer while WebEditor renders.
+* Reset monomer placer on monomer lib changed.
+* Fix Pistoia Helm WebEditor settings for case-sensitive monomer libs.
+* Fix cell renderer monomer tooltip for polymer type
+
 ## 2.1.16 (2023-07-21)
 
 This release focuses on stability.

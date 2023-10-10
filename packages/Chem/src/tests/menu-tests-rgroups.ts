@@ -143,8 +143,9 @@ M  END
   });
 
   test('rgroups.malformedInput', async () => {
-    await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
-  }, {skipReason: '#1491'});
+    const res = await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
+    expect(res.rowCount, 0);
+  });
 
   after(async () => {
     grok.shell.closeAll();

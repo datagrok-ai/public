@@ -48,7 +48,7 @@ function getHelmToCodeDict(infoObj: CodesInfo) {
   const result: {[key: string]: string | string[]} = {};
   Object.values(infoObj).forEach((obj: {[code: string]: string}) => {
     Object.entries(obj).forEach(([code, helm]) => {
-      const key = helm.replace(/\)p/g, ')');
+      const key = helm.replace(/\)p/g, ')').replace(/\]p/g, ']');
       if (result[key] === undefined) {
         result[key] = [code];
       } else {
@@ -76,6 +76,7 @@ function helmToFormat(helmSequence: string, targetFormat: string): string {
     return helmCodes.includes(match) ? dict[match] :
       (match === 'p' || match === '.') ? match : '?';
   }).replace(/\?+/g, UNKNOWN_SYMBOL).replace(/p\.|\./g, '');
+  result = result.replace(/<empty>/g, '');
   // remove double slash in LCMS codes
   result = result.replace(/\/\//g, '/');
   return result;
@@ -103,5 +104,6 @@ function formatToHelm(sequence: string, sourceFormat: string): string {
   if (helm[helm.length - 1] === PHOSPHATE_SYMBOL)
     helm = helm.slice(0, -1);
   helm = helm.replace(phosphateRegExp, (match, group) => group);
+  helm = helm.replace(/<empty>/g, '');
   return `${HELM_WRAPPER.LEFT + helm + HELM_WRAPPER.RIGHT}`;
 }

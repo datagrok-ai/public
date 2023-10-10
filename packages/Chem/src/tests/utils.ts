@@ -37,6 +37,10 @@ export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   const col = df.columns.byName(colName);
   const bitSet: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
   expect(bitSet !== null, true);
+  checkBitSetIndices(bitSet, trueIndices);
+}
+
+export function checkBitSetIndices(bitSet: DG.BitSet, trueIndices: number[]) {
   const bitsetString = bitSet.toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {

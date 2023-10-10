@@ -9,7 +9,7 @@
 //input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties}
 //input: double heatTransferCoeff = 8.3 {caption: Heat transfer coefficient; units: W/(m² * C); category: Object properties}
 //input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation}
-//output: dataframe simulation {caption: Temp. vs time dependency; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
+//output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
 //output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
 //output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
 //output: double tempDiff {caption: Temperature difference; units: C; category: Calculations}
@@ -17,6 +17,7 @@
 //meta.uploadMode: true
 //meta.runOnOpen: true
 //meta.runOnInput: true
+//meta.foldedCategories: ["Object properties"]
 
 timeToCool = undefined;
 

@@ -9,7 +9,6 @@ Datagrok server installation consists of two big blocks:
   * [Datlas](#datlas) - Datagrok application server
   * [Database](#database)
   * [Persistent file storage](#storage)
-  * [ElasticSearch](#elasticsearch)
   * [Credentials Management Service](../../govern/security.md#credentials)
   * [Grok Connect](../../access/access.md#data-connection)
   * [Nginx](https://www.nginx.com/) server
@@ -81,7 +80,6 @@ Datagrok components are:
 * [Datlas](#datlas) - Datagrok application server
 * [Database](#database)
 * [Persistent file storage](#storage)
-* [ElasticSearch](#elasticsearch)
 * [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
   separate container with a separate database.
 * [Grok Connect](../../access/access.md#data-connection). Separate container with Java-based data connectors to 20+ databases.
@@ -297,14 +295,6 @@ of our coding conventions, is fit and tuned for our goals, and lets us do the fo
 * Work with property metadata and use it to optimize queries in runtime
 * Free-text filtering (SQL-like language)
 * ORM can extract object fields from a database without mapping them to objects
-
-### ElasticSearch
-
-[ElasticSearch](https://www.elastic.co/) provides Datagrok's full-text search. It searches in Wiki, forums, and
-datasets.
-
-ElasticSearch is configured with default settings. The Datlas application is the only one that uses it, so ElasticSearch
-does not need to be exposed outside the Datagrok docker container.
 
 ## Compute components
 

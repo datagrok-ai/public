@@ -73,6 +73,11 @@
   justify-content: flex-end;
 }
 
+.ua-package-widget {
+  height: 180px;
+  max-width: 400px !important;
+}
+
 .ua-markup label {
   margin-left: 22px !important;
 }
@@ -80,6 +85,7 @@
 .ua-cards.ui-div {
   flex-direction: row;
   display: flex;
+  align-items: flex-start;
 }
 
 .ua-cards .ua-card .grok-wait {
@@ -96,6 +102,7 @@
   flex-direction: column;
   justify-content: center;
   position: relative;
+  padding: 8px;
 }
 
 .ua-test-card {

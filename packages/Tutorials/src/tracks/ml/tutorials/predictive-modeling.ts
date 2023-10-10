@@ -16,7 +16,7 @@ export class PredictiveModelingTutorial extends Tutorial {
   }
   get steps() { return 26; }
 
-  helpUrl: string = 'https://datagrok.ai/help/learn/predictive-modeling';
+  helpUrl: string = 'https://datagrok.ai/help/learn';
   prerequisites: TutorialPrerequisites = {jupyter: true, h2o: true};
 
   protected async _run() {

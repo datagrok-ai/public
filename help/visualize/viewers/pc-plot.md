@@ -12,6 +12,9 @@ time, and therefore do not have a natural order. Therefore, different axis arran
 To change columns, set "Column Names" via the context panel. To rearrange columns, drag column name into the desired
 location.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('PC plot');`
+
 General:
 
 |                    |                     |

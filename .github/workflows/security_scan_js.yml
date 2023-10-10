@@ -35,6 +35,7 @@ jobs:
         uses: github/codeql-action/init@v2
         with:
           languages: 'javascript'
+          trap-caching: false
       - name: Autobuild
         uses: github/codeql-action/autobuild@v2
       - name: Perform CodeQL Analysis

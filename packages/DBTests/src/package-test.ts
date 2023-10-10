@@ -101,6 +101,8 @@ export async function testConnections(): Promise<DG.DataFrame> {
   return df;
 }
 
+const skip = ['Redshift', 'Athena'];
+
 //tags: init
 export async function initTests() {
   const connections = await grok.dapi.connections.list();
@@ -110,7 +112,7 @@ export async function initTests() {
         const res = await c.test();
         if (res !== 'ok')
           throw new Error(res);
-      });
+      }, skip.includes(c.dart.z) ? {skipReason: 'SKIP'} : undefined);
     });
   }
 }

@@ -1,6 +1,6 @@
 # ApiTests
 
-ApiTests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+ApiTests is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
 
 To add tests for Datagrok's JS API:
 

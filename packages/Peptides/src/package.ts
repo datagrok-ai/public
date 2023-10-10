@@ -8,7 +8,6 @@ import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MonomerPosition, MostPotentResidues} from './viewers/sar-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {IDendrogramService, getDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
@@ -90,7 +89,7 @@ export function Peptides(): void {
   ]);
 }
 
-//top-menu: Bio | SAR | Peptides...
+//top-menu: Bio | Analyze | SAR...
 //name: Bio Peptides
 export function peptidesDialog(): DG.Dialog {
   const analyzeObject = analyzePeptidesUI(grok.shell.t);
@@ -174,7 +173,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //name: Macromolecule SAR Analysis
 //description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
-//meta.isDemoScript: True
+//meta.isDemoScript: False
 export async function macromoleculeSarFastaDemo(): Promise<void> {
   return macromoleculeSarFastaDemoUI();
 }

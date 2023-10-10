@@ -23,12 +23,17 @@ export enum BitArrayMetricsNames {
     Euclidean = 'Euclidean',
   }
 
+export enum IntArrayMetricsNames {
+  TanimotoIntArray = 'TanimotoIntArray',
+}
+
 export enum DistanceMetricsSubjects {
     Vector = 'Vector',
     String = 'String',
     BitArray = 'BitArray',
     MacroMolecule = 'MacroMolecule',
     Number = 'Number',
+    IntArray = 'IntArray',
   }
 
 export enum NumberMetricsNames {

@@ -69,111 +69,112 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
   }
 
-  async render(computeData = true): Promise<void> {
+  async renderInternal(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
-      return;
-    if (this.moleculeColumn) {
-      const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
-      this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData && !this.gridSelect && this.followCurrentRow) {
-        this.error = '';
-        this.root.classList.remove(`chem-malformed-molecule-error`);
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
-          this.error = 'Empty';
-          this.closeWithError(progressBar);
-          return;
-        }
-        try {
-          const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-            this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
-            this.fingerprint as Fingerprint);
-          if (!df) {
-            this.error = 'Malformed';
-            this.closeWithError(progressBar);
-            return;
-          }
-          this.molCol = df.getCol('smiles');
-          this.idxs = df.getCol('indexes');
-          this.scores = df.getCol('score');
-        } catch (e: any) {
-          grok.shell.error(e.message);
-          return;
-        } finally {
-          progressBar.close();
-        }
-      } else if (this.gridSelect)
-        this.gridSelect = false;
-      if (this.error) {
+    return;
+  if (this.moleculeColumn && this.dataFrame) {
+    const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
+    this.curIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
+    if (computeData && !this.gridSelect && this.followCurrentRow) {
+      this.isComputing = true;
+      this.error = '';
+      this.root.classList.remove(`chem-malformed-molecule-error`);
+      this.targetMoleculeIdx = this.dataFrame.currentRowIdx == -1 ? 0 : this.dataFrame.currentRowIdx;
+      if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
+        this.error = 'Empty';
         this.closeWithError(progressBar);
         return;
       }
-      this.clearResults();
-      const panel = [];
-      const grids = [];
-      let cnt = 0; let cnt2 = 0;
-      panel[cnt++] = this.metricsDiv;
-      if (this.molCol && this.idxs && this.scores) {
-        if (this.isEditedFromSketcher) {
-          const label = this.sketchButton;
-          const grid = ui.div([
-            renderMolecule(
-              this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label]);
-          let divClass = 'd4-flex-col';
+      try {
+        const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
+          this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff,
+          this.fingerprint as Fingerprint);
+        if (!df) {
+          this.error = 'Malformed';
+          this.closeWithError(progressBar);
+          return;
+        }
+        this.molCol = df.getCol('smiles');
+        this.idxs = df.getCol('indexes');
+        this.scores = df.getCol('score');
+      } catch (e: any) {
+        grok.shell.error(e.message);
+        return;
+      } finally {
+        progressBar.close();
+      }
+    } else if (this.gridSelect)
+      this.gridSelect = false;
+    if (this.error) {
+      this.closeWithError(progressBar);
+      return;
+    }
+    this.clearResults();
+    const panel = [];
+    const grids = [];
+    let cnt = 0; let cnt2 = 0;
+    panel[cnt++] = this.metricsDiv;
+    if (this.molCol && this.idxs && this.scores) {
+      if (this.isEditedFromSketcher) {
+        const label = this.sketchButton;
+        const grid = ui.div([
+          renderMolecule(
+            this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+          label], {style: {position: 'relative'}});
+        let divClass = 'd4-flex-col';
+        divClass += ' d4-current';
+        grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
+        $(grid).addClass(divClass);
+        grids[cnt2++] = grid;
+      }
+      for (let i = 0; i < this.molCol.length; ++i) {
+        const idx = this.idxs.get(i);
+        const similarity = this.scores.get(i).toPrecision(2);
+        const refMolecule = this.isReferenceMolecule(idx);
+        const label = refMolecule ? this.sketchButton : ui.div();
+        const molProps = this.createMoleculePropertiesDiv(idx, refMolecule, similarity);
+        const grid = ui.div([
+          renderMolecule(
+            this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+          label,
+          molProps], {style: {position: 'relative'}});
+        let divClass = 'd4-flex-col';
+        if (idx == this.curIdx) {
+          divClass += ' d4-current';
+          grid.style.backgroundColor = '#ddffd9';
+        }
+        if (idx == this.targetMoleculeIdx && !this.isEditedFromSketcher) {
           divClass += ' d4-current';
           grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
-          $(grid).addClass(divClass);
-          grids[cnt2++] = grid;
         }
-        for (let i = 0; i < this.molCol.length; ++i) {
-          const idx = this.idxs.get(i);
-          const similarity = this.scores.get(i).toPrecision(2);
-          const refMolecule = this.isReferenceMolecule(idx);
-          const label = refMolecule ? this.sketchButton : ui.div();
-          const molProps = this.createMoleculePropertiesDiv(idx, refMolecule, similarity);
-          const grid = ui.div([
-            renderMolecule(
-              this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label,
-            molProps]);
-          let divClass = 'd4-flex-col';
-          if (idx == this.curIdx) {
-            divClass += ' d4-current';
-            grid.style.backgroundColor = '#ddffd9';
-          }
-          if (idx == this.targetMoleculeIdx && !this.isEditedFromSketcher) {
-            divClass += ' d4-current';
-            grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
-          }
-          if (this.dataFrame!.selection.get(idx)) {
-            divClass += ' d4-selected';
-            if (divClass == 'd4-flex-col d4-selected')
-              grid.style.backgroundColor = '#f8f8df';
-            else
-              grid.style.backgroundColor = '#d3f8bd';
-          }
-          $(grid).addClass(divClass);
-          grid.addEventListener('click', (event: MouseEvent) => {
-            if (this.dataFrame && this.idxs) {
-              if (event.shiftKey || event.altKey)
-                this.dataFrame.selection.set(idx, true);
-              else if (event.metaKey) {
-                const selected = this.dataFrame.selection;
-                this.dataFrame.selection.set(idx, !selected.get(idx));
-              } else {
-                this.dataFrame.currentRowIdx = idx;
-                this.gridSelect = true;
-              }
+        if (this.dataFrame?.selection.get(idx)) {
+          divClass += ' d4-selected';
+          if (divClass == 'd4-flex-col d4-selected')
+            grid.style.backgroundColor = '#f8f8df';
+          else
+            grid.style.backgroundColor = '#d3f8bd';
+        }
+        $(grid).addClass(divClass);
+        grid.addEventListener('click', (event: MouseEvent) => {
+          if (this.dataFrame && this.idxs) {
+            if (event.shiftKey || event.altKey)
+              this.dataFrame.selection.set(idx, true);
+            else if (event.metaKey) {
+              const selected = this.dataFrame.selection;
+              this.dataFrame.selection.set(idx, !selected.get(idx));
+            } else {
+              this.dataFrame.currentRowIdx = idx;
+              this.gridSelect = true;
             }
-          });
-          grids[cnt2++] = grid;
-        }
+          }
+        });
+        grids[cnt2++] = grid;
       }
-      panel[cnt++] = ui.divH(grids, 'chem-viewer-grid');
-      this.root.appendChild(ui.panel([ui.divV(panel)]));
-      progressBar.close();
     }
+    panel[cnt++] = ui.divH(grids, 'chem-viewer-grid');
+    this.root.appendChild(ui.panel([ui.divV(panel)]));
+    progressBar.close();
+  }
   }
 
   closeWithError(progressBar: DG.TaskBarProgressIndicator) {

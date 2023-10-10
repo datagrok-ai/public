@@ -19,15 +19,15 @@ category('sequenceSpace', async () => {
     );
     testFastaTableView = grok.shell.addTableView(testFastaDf);
     await _testSequenceSpaceReturnsResult(testFastaDf, DimReductionMethods.UMAP, 'sequence');
-    grok.shell.closeTable(testFastaDf);
-    testFastaTableView.close();
+    //grok.shell.closeTable(testFastaDf);
+    //testFastaTableView.close();
   });
 
   test('sequenceSpaceWithEmptyRows', async () => {
     testHelmWithEmptyRows = await readDataframe('tests/100_3_clustests_empty_vals.csv');
     testHelmWithEmptyRowsTableView = grok.shell.addTableView(testHelmWithEmptyRows);
     await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, DimReductionMethods.UMAP, 'sequence');
-    grok.shell.closeTable(testHelmWithEmptyRows);
-    testHelmWithEmptyRowsTableView.close();
+    //grok.shell.closeTable(testHelmWithEmptyRows);
+    //testHelmWithEmptyRowsTableView.close();
   });
 });

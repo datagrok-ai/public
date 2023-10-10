@@ -43,7 +43,7 @@ category('Distance', async () => {
   test('protein-distance-function', async () => {
     const uh = await _initMacromoleculeColumn(protTable);
     const distFunc = uh.getDistanceFunctionName();
-    expect(distFunc, MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH);
+    expect(distFunc, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('DNA-distance-function', async () => {

@@ -7,15 +7,15 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject, BehaviorSubject, Observable} from 'rxjs';
 import '../css/rich-function-view.css';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import {startWith} from 'rxjs/operators';
 import {EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
-import {FuncCallInput} from '../../shared-components/src/FuncCallInput';
-import {FileInput} from '../../shared-components/src/file-input';
+import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
+import {FuncCallInput, SubscriptionLike} from '../../shared-components/src/FuncCallInput';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -23,8 +23,16 @@ export type InputVariants = DG.InputBase | FuncCallInput;
 
 function isInputBase(input: FuncCallInput): input is DG.InputBase {
   const inputAny = input as any;
-  return input instanceof FileInput ||
-    (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
+  return (inputAny.dart && DG.toJs(inputAny.dart) instanceof DG.InputBase);
+}
+
+function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
+  return new Observable((observer: any) => {
+    const sub = onInput((val: T) => {
+      observer.next(val);
+    });
+    return () => sub.unsubscribe();
+  });
 }
 
 export interface AfterInputRenderPayload {
@@ -52,7 +60,7 @@ export class RichFunctionView extends FunctionView {
   private checkDisability = new Subject();
 
   // stores the running state
-  private isRunning = false;
+  private isRunning = new BehaviorSubject(false);
 
   // stores simulation or upload mode flag
   private isUploadMode = new BehaviorSubject<boolean>(false);
@@ -100,6 +108,9 @@ export class RichFunctionView extends FunctionView {
    */
   public override onAfterRun(): Promise<void> {
     this.showOutputTabsElem();
+    this.outputsTabsElem.panes.forEach((tab) => {
+      $(tab.header).show();
+    });
 
     if (this.prevOpenedTab) {
       this.outputsTabsElem.currentPane = this.prevOpenedTab;
@@ -164,7 +175,7 @@ export class RichFunctionView extends FunctionView {
   private getStandardButtons(): HTMLElement[] {
     const runButton = this.getRunButton();
     const runButtonWrapper = ui.div([runButton]);
-    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+    ui.tooltip.bind(runButtonWrapper, () => runButton.disabled ? (this.isRunning.value ? 'Computations are in progress' : 'Some inputs are invalid') : '');
     const saveButton = this.getSaveButton();
 
     if (this.runningOnInput) $(runButtonWrapper).hide();
@@ -210,7 +221,7 @@ export class RichFunctionView extends FunctionView {
 
     ui.tools.handleResize(inputBlock, () => {
       if (([
-        ...Array.from(inputForm.childNodes),
+        ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
         ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
       ]).some((child) => $(child).width() < 250) ||
       $(inputBlock).width() < 350) {
@@ -330,12 +341,15 @@ export class RichFunctionView extends FunctionView {
       ...this.isUploadMode.value ? ['d4-current']: [],
     );
 
+    const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
+
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
         ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
+        sensitivityAnalysis,
       ],
     ];
 
@@ -387,7 +401,6 @@ export class RichFunctionView extends FunctionView {
               const currentParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
               this.showOutputTabsElem();
-              $(this.outputsTabsElem.getPane(tabLabel).header).show();
 
               if (Object.values(viewerTypesMapping).includes(loadedViewer.type)) {
                 loadedViewer.dataFrame = currentParam.value;
@@ -421,7 +434,7 @@ export class RichFunctionView extends FunctionView {
           return loadedViewer;
         }));
 
-        const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: '';
+        const dfBlockTitle: string = (prevDfBlockTitle !== (dfProp.options['caption'] ?? dfProp.name)) ? dfProp.options['caption'] ?? dfProp.name: ' ';
         prevDfBlockTitle = dfBlockTitle;
 
         if (isInputTab) {
@@ -453,7 +466,7 @@ export class RichFunctionView extends FunctionView {
           });
 
           return ui.divV([
-            ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
+            ui.h2(viewerIndex === 0 ? dfBlockTitle: ' ', {style: {'white-space': 'pre'}}),
             viewerRoot,
           ], {style: {...blockWidth ? {
             'width': `${blockWidth}%`,
@@ -482,9 +495,7 @@ export class RichFunctionView extends FunctionView {
             ];
           },
         ).root;
-        $(table).css({
-          'max-width': '400px',
-        });
+        $(table).addClass('rfv-scalar-table');
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -518,7 +529,7 @@ export class RichFunctionView extends FunctionView {
       });
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [scalarsTable]: []]);
       });
     });
 
@@ -582,7 +593,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async doRun(): Promise<void> {
-    this.isRunning = true;
+    this.isRunning.next(true);
     this.checkDisability.next();
     try {
       await this.run();
@@ -590,7 +601,7 @@ export class RichFunctionView extends FunctionView {
       grok.shell.error(e.toString());
       console.log(e);
     } finally {
-      this.isRunning = false;
+      this.isRunning.next(false);
       this.checkDisability.next();
     }
   }
@@ -610,8 +621,10 @@ export class RichFunctionView extends FunctionView {
     this.funcCall.inputs[name] = value;
     this.setInputState(input, state);
     if (state !== 'default') {
-      const param: DG.FuncCallParam = this.funcCall.inputParams[name];
-      param.aux.editState = state;
+      this.funcCall.options['editState'] = {
+        ...this.funcCall.options['editState'],
+        [name]: state,
+      };
     }
   }
 
@@ -625,6 +638,10 @@ export class RichFunctionView extends FunctionView {
 
   private renderOutputForm(): HTMLElement {
     return this.renderIOForm(SYNC_FIELD.OUTPUTS);
+  }
+
+  private async onSALaunch(): Promise<void> {
+    await SensitivityAnalysis.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {
@@ -652,6 +669,7 @@ export class RichFunctionView extends FunctionView {
         }
         this.inputsMap[val.property.name] = input;
         this.syncInput(val, input, field);
+        this.disableInputsOnRun(input);
         if (field === SYNC_FIELD.INPUTS)
           this.bindOnHotkey(input);
 
@@ -659,6 +677,11 @@ export class RichFunctionView extends FunctionView {
         this.afterInputPropertyRender.next({prop, input: input});
         prevCategory = prop.category;
       });
+
+    Object.keys(this.foldedCategoryInputs)
+      .forEach((key) =>
+        this.foldedCategoryInputs[key].forEach((t) => $(t.root).hide()),
+      );
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
@@ -669,12 +692,23 @@ export class RichFunctionView extends FunctionView {
     return inputs;
   }
 
+  private disableInputsOnRun(t: InputVariants) {
+    const disableOnRunSub = this.isRunning.subscribe((isRunning) => {
+      if (isRunning)
+        t.enabled = false;
+      else
+        t.enabled = true;
+    });
+    this.subs.push(disableOnRunSub);
+  }
+
   private getInputForVal(val: DG.FuncCallParam): InputVariants | null {
     const prop = val.property;
     if (this.inputsOverride[val.property.name])
       return this.inputsOverride[val.property.name];
 
-    if (prop.propertyType === DG.TYPE.STRING && prop.options.choices)
+    if (
+      prop.propertyType === DG.TYPE.STRING && prop.options.choices)
       return ui.choiceInput(prop.caption ?? prop.name, prop.defaultValue, JSON.parse(prop.options.choices));
 
     switch (prop.propertyType as any) {
@@ -700,11 +734,39 @@ export class RichFunctionView extends FunctionView {
     }
   }
 
+  private get foldedCategories(): string[] {
+    return JSON.parse(this.func.options['foldedCategories'] ?? '[]');
+  }
+
+  private foldedCategoryInputs = {} as Record<string, InputVariants[]>;
+
   private renderInput(inputsDiv: HTMLDivElement, val: DG.FuncCallParam, t: InputVariants, prevCategory: string) {
     const prop = val.property;
 
-    if (prop.category !== prevCategory)
-      inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+    if (prop.category !== prevCategory) {
+      if (this.foldedCategories.includes(prop.category)) {
+        const chevronToOpen = ui.iconFA('chevron-right', () => {
+          $(chevronToClose).show();
+          $(chevronToOpen).hide();
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).css({'display': 'inherit'}));
+        }, 'Open category');
+        $(chevronToOpen).css('padding-right', '5px');
+        const chevronToClose = ui.iconFA('chevron-down', () => {
+          $(chevronToClose).hide();
+          $(chevronToOpen).show();
+          (this.foldedCategoryInputs[prop.category] ?? []).forEach((t) => $(t.root).hide());
+        }, 'Close category');
+        $(chevronToClose).css('padding-right', '5px');
+
+        //@ts-ignore
+        inputsDiv.append(ui.h2([chevronToOpen, chevronToClose, ui.h2(prop.category, {style: {'display': 'inline'}})], {style: {'width': '100%'}}));
+        $(chevronToClose).hide();
+      } else
+        inputsDiv.append(ui.h2(prop.category, {style: {'width': '100%'}}));
+    }
+
+    if (this.foldedCategories.includes(prop.category))
+      this.foldedCategoryInputs[prop.category] = [...(this.foldedCategoryInputs[prop.category] ?? []), t];
 
     if (isInputBase(t))
       this.inputBaseAdditionalRenderHandler(val, t);
@@ -737,11 +799,13 @@ export class RichFunctionView extends FunctionView {
     // don't use val directly, get a fresh one, since it will be replaced with fc
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newValue = this.funcCall[field][name] ?? prop.defaultValue ?? null;
+      t.notify = false;
       t.value = newValue;
+      t.notify = true;
       this.funcCall[field][name] = newValue;
       const newParam = this.funcCall[syncParams[field]][name];
       this.syncValOnChanged(t, newParam, field);
-      this.setInputState(t, newParam.aux.editState);
+      this.setInputState(t, this.funcCall.options['editState']?.[name]);
     });
     this.subs.push(sub);
   }
@@ -789,7 +853,10 @@ export class RichFunctionView extends FunctionView {
   }
 
   private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    t.onInput(() => {
+    DG.debounce(getObservable(t.onInput.bind(t)), 350).subscribe(() => {
+      if (this.isHistorical.value)
+        this.isHistorical.next(false);
+
       this.funcCall[field][val.name] = t.value;
       if (isInputBase(t)) {
         if (t.value === null)
@@ -803,7 +870,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private isRunnable() {
-    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
+    return (wu(this.funcCall.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning.value;
   }
 
   private async saveExperimentalRun(expFuncCall: DG.FuncCall) {
@@ -1089,18 +1156,21 @@ const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, va
   sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
 };
 
-const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column: number = 0, row: number = 0) => {
-  for (let i= 0; i < df.columns.names().length; i++) {
-    sheet.getCell(1 + row, 1 + i + column).value = df.columns.byIndex(i).name;
-    sheet.getColumn(1 + i + column).width = Math.max(
-      ...df.columns.byIndex(i).categories.map((category) => category.toString().length),
-      df.columns.byIndex(i).name.length,
-    ) * 1.2;
-  }
-  for (let dfColumn = 0; dfColumn < df.columns.length; dfColumn++) {
-    for (let i = 0; i < df.rowCount; i++)
-      sheet.getCell(i + 2 + row, 1 + column+dfColumn).value = df.columns.byIndex(dfColumn).get(i);
-  }
+let dfCounter = 0;
+const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column?: number, row?: number) => {
+  const columnKey = sheet.getColumn(column ?? 1).letter;
+  const tableConfig = {
+    name: `ID_${dfCounter.toString()}`,
+    ref: `${columnKey}${row ?? 1}`,
+    columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
+    rows: new Array(df.rowCount).fill(0).map((_, idx) => [...df.row(idx).cells].map((cell) => cell.value)),
+  };
+  sheet.addTable(tableConfig);
+  sheet.columns.forEach((col) => {
+    col.width = 25;
+    col.alignment = {wrapText: true};
+  });
+  dfCounter++;
 };
 
 const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {

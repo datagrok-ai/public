@@ -16,7 +16,7 @@ export function isFragment(molString: string) {
     return !!molString.match(/\[.?:|\*.?\]/g);
 }
 
-export function isSmarts(molString: string): boolean {
+export function _isSmarts(molString: string): boolean {
   if (isMolBlock(molString))
     return MolfileHandler.getInstance(molString).isQuery();
   else
@@ -74,11 +74,11 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
       }
     }
   } else { // not a molblock
-    try {
+     try {
       queryMol = rdKitModule.get_qmol(queryMolString);
     } catch (e) { }
     if (queryMol !== null) {
-      const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
+      const mol = rdKitModule.get_mol(queryMolString, '{"mergeQueryHs":true}');
       if (mol !== null) { // check the qmol is proper
         const match = mol.get_substruct_match(queryMol);
         if (match === '{}') {
@@ -90,7 +90,10 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
     } else { // failover to queryMolBlockFailover
       // possibly get rid of fall-over in future
       queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, rdKitModule).mol;
-    }
+    } 
+
+   // queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
+    //queryMol?.convert_to_aromatic_form();
   }
   return queryMol;
 }

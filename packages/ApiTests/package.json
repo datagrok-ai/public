@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.7.9",
+  "version": "1.7.10",
   "author": {
     "name": "Anna Muzychyna",
     "email": "amuzychyna@datagrok.ai"
@@ -63,5 +63,37 @@
   "canView": [
     "All users"
   ],
-  "category": "Development"
+  "category": "Development",
+  "properties": [
+    {
+      "name": "INT",
+      "propertyType": "int",
+      "defaultValue": 1,
+      "nullable": false
+    },
+    {
+      "name": "FLOAT",
+      "propertyType": "int",
+      "defaultValue": 1.234,
+      "nullable": false
+    },
+    {
+      "name": "NUM",
+      "propertyType": "int",
+      "defaultValue": 1,
+      "nullable": false
+    },
+    {
+      "name": "BOOL",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    },
+    {
+      "name": "STRING",
+      "propertyType": "string",
+      "defaultValue": "value1",
+      "nullable": false
+    }
+  ]
 }

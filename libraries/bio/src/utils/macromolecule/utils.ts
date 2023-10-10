@@ -79,7 +79,7 @@ export function splitterAsFastaSimple(seq: any): string[] {
  */
 export function getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
   return (seq: string) => {
-    return seq.split(separator, limit);
+    return !seq ? [] : seq.split(separator, limit);
   };
 }
 
@@ -112,6 +112,24 @@ export function splitterAsHelm(seq: any): string[] {
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */
 export type MonomerToShortFunc = (monomerLabel: string, limit: number) => string;
 
+/** Get splitter method to split sequences to monomers (required for MacromoleculeDifferenceCellRenderer)
+ * @param {string} units
+ * @param {string} separator
+ * @param limit
+ * @return {SplitterFunc}
+ */
+export function getSplitter(units: string, separator: string, limit: number | undefined = undefined): SplitterFunc {
+  if (units.toLowerCase().startsWith(NOTATION.FASTA))
+    return splitterAsFasta;
+  else if (units.toLowerCase().startsWith(NOTATION.SEPARATOR))
+    return getSplitterWithSeparator(separator, limit);
+  else if (units.toLowerCase().startsWith(NOTATION.HELM))
+    return splitterAsHelm;
+  else
+    throw new Error(`Unexpected units ${units} .`);
+
+  // TODO: Splitter for HELM
+}
 
 /** Generate splitter function for sequence column
  * @param {DG.Column} col

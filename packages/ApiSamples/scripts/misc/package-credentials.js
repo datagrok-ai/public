@@ -2,7 +2,5 @@
 //help-url: https://datagrok.ai/help/develop/develop#packages
 // Read more about package credentials: https://datagrok.ai/help/develop/how-to/manage-credentials
 
-let p = new DG.Package();
-p.name = "ApiSamples";
-
-p.getCredentials().then((c) => grok.shell.info(c.parameters['test']));
+let p = await grok.dapi.packages.filter('Api Samples').first();
+p.getCredentials().then((c) => grok.shell.info(c ? c : 'Credentials are not set.'));

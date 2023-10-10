@@ -1,0 +1,24 @@
+.featuresCard {
+  height:'300px';
+  position:'relative';
+  height: 100%;
+}
+
+.featuresCard a {
+  text-decoration: none;
+}
+
+.featuresCard a {
+  color: inherit;
+}
+
+.featuresCard:hover {
+  cursor: pointer;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15) !important;
+  color: var(--blue-1)!important;
+  text-decoration: none;
+  transition-duration: 300ms;
+}
+.featuresCard > *:hover {
+  text-decoration: none;
+}

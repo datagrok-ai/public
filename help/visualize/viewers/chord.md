@@ -17,6 +17,9 @@ between the entities.
 To create a **Chord** viewer, navigate to the **Main Menu**
 and select **Add > Javascript Viewers > Chord**.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Chord')`
+
 When you add a chord viewer in Datagrok, the platform selects three columns:
 
 * A categorical "From" column

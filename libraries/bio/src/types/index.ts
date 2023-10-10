@@ -33,6 +33,7 @@ export interface IMonomerLib {
   get error(): string | undefined;
   getMonomer(polymerType: string, monomerSymbol: string): Monomer | null;
   getMonomerMolsByPolymerType(polymerType: string): { [monomerSymbol: string]: string } | null;
+  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: string, element?: string): string[];
   getMonomerSymbolsByType(polymerType: string): string[];
   getPolymerTypes(): string[];
   update(lib: IMonomerLib): void;

@@ -16,6 +16,9 @@ location.
 1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
 1. In the dialog, select **Tree viewer**.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Tree');`
+
 When you add a tree viewer, Datagrok chooses two categorical columns with the
 least number of categories. They form the initial hierarchy of the tree viewer.
 

@@ -2,12 +2,12 @@
   "name": "@datagrok/api-samples",
   "version": "1.0.7",
   "author": {
-    "name": "Alexander Paramonov",
-    "email": "aparamonov@datagrok.ai"
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
   },
   "servicePackage": true,
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.4",
+    "@datagrok-libraries/utils": "^4.1.14",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.16.0",
     "dayjs": "latest",

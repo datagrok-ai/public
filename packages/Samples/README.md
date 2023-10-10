@@ -1,6 +1,6 @@
 # Demo
 
-Demo is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+Demo is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
 
 See also:
 
@@ -11,5 +11,5 @@ See also:
 * [Octave](https://octave.org/)
 * [Python](https://www.python.org/)
 * [R](https://www.r-project.org/)
-* [Datagrok JavaScript API](https://datagrok.ai/help/develop/js-api)
-* [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Datagrok JavaScript API](https://datagrok.ai/help/develop/packages/js-api)
+* [Packages](https://datagrok.ai/help/develop/#packages)

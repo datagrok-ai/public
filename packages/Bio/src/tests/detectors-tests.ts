@@ -38,6 +38,7 @@ category('detectors', () => {
     sepUn1 = 'sepUn1',
     sepUn2 = 'sepUn2',
     sepMsaDna1 = 'sepMsaDna1',
+    sepMsaUnWEmpty = 'sepMsaUnWEmpty',
     fastaMsaDna1 = 'fastaMsaDna1',
     fastaMsaPt1 = 'fastaMsaPt1',
   }
@@ -109,6 +110,11 @@ rut12/rty/her2/abc/cfr3//wert/rut12`;
 A-C--G-T--C-T
 C-A-C--T--G-T
 A-C-C-G-T-A-C-T`;
+    [csvTests.sepMsaUnWEmpty]: string = `seq
+m1-M-m3-mon4-mon5-N-T-MON8-N9
+m1-mon2-m3-mon4-mon5-Num--MON8-N9
+
+mon1-M-mon3-mon4-mon5---MON8-N9`;
     [csvTests.fastaMsaDna1]: string = `seq
 AC-GT-CT
 CAC-T-GT
@@ -233,6 +239,11 @@ MWRSWY-CKHP`;
   test('FastaUn', async () => {
     await _testPos(readCsv(csvTests.fastaUn), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 12, true);
+  });
+
+  test('SepMsaUnWEmpty', async () => {
+    await _testPos(readCsv(csvTests.sepMsaUnWEmpty), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true);
   });
   test('FastaMsaDna1', async () => {
     await _testPos(readCsv(csvTests.fastaMsaDna1), 'seq',

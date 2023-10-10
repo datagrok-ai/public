@@ -6,4 +6,4 @@ See also:
 
 * [Viewers](https://datagrok.ai/help/visualize/viewers)
 * [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)
-* [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Packages](https://datagrok.ai/help/develop/#packages)

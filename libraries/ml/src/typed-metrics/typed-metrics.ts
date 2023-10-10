@@ -15,6 +15,7 @@ import {
   sokalDistance,
   tanimotoDistance,
   numericDistance,
+  tanimotoDistanceIntArray,
 } from '../distance-metrics-methods';
 
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
@@ -22,7 +23,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 import {DistanceMetricsSubjects, BitArrayMetricsNames,
-  StringMetricsNames, VectorMetricsNames, NumberMetricsNames} from './consts';
+  StringMetricsNames, VectorMetricsNames, NumberMetricsNames, IntArrayMetricsNames} from './consts';
 
 
 export const vectorDistanceMetricsMethods: { [name: string]: (x: Vector, y: Vector) => number } = {
@@ -48,6 +49,10 @@ export const bitArrayDistanceMetricsMethods: { [name: string]: (x: BitArray, y: 
   [BitArrayMetricsNames.Sokal]: sokalDistance,
   [BitArrayMetricsNames.Hamming]: hammingDistance,
   [BitArrayMetricsNames.Euclidean]: euclideanDistance,
+};
+
+export const intArrayDistanceMetricsMethods: { [name: string]: (x: Uint32Array, y: Uint32Array) => number } = {
+  [IntArrayMetricsNames.TanimotoIntArray]: tanimotoDistanceIntArray,
 };
 
 export const numberDistanceMetricsMethods: { [name: string]: (x: number, y: number) => number } = {
@@ -79,9 +84,13 @@ export const AvailableMetrics = {
     [MmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[MmDistanceFunctionsNames.HAMMING],
     [MmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[MmDistanceFunctionsNames.LEVENSHTEIN],
     [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
+    [MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE]: mmDistanceFunctions[MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE],
   },
   [DistanceMetricsSubjects.Number]: {
     [NumberMetricsNames.NumericDistance]: numberDistanceMetricsMethods[NumberMetricsNames.NumericDistance],
+  },
+  [DistanceMetricsSubjects.IntArray]: {
+    [IntArrayMetricsNames.TanimotoIntArray]: intArrayDistanceMetricsMethods[IntArrayMetricsNames.TanimotoIntArray],
   }
 };
 
@@ -98,7 +107,7 @@ export type VectorMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubject
 export type StringMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.String];
 export type BitArrayMetrics = keyof typeof AvailableMetrics[DistanceMetricsSubjects.BitArray];
 export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics |
-  MmDistanceFunctionsNames | NumberMetricsNames;
+  MmDistanceFunctionsNames | NumberMetricsNames | IntArrayMetricsNames;
 
 export type ValidTypes =
   { data: string[], metric: StringMetrics | MmDistanceFunctionsNames } |

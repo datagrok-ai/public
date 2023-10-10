@@ -51,7 +51,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 
 8. Multivariate analysis:
 
-* Open PLS dialog (Tools | Data Science | Multivariate Analysis (PLS)...)
+* Open PLS dialog (ML | Analyze | Multivariate Analysis...)
 * Select table "train" in Table selector
 * Select features: around 10 from statistics including "population_density", "
   us_population_low_income", "us_housing_units_one_person"
@@ -85,7 +85,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 
 10. Create model:
 
-* Open "Predictive Modelling" dialog (Tools | Predictive modeling | Train)
+* Open "Predictive Modelling" dialog (ML | Models | Train)
 * Select "Method": "Distributed Random Forest"
 * Select "Features": "population_density", "us_population_low_income", "us_housing_units_one_person"
     + some more
@@ -101,7 +101,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 12. Apply model on "research" table
 
 * Convert Coordinates to statistics
-* Open "Predictive Modeling Browser" (Tools | Predictive modeling | Browse Models)
+* Open "Predictive Modeling Browser" (ML | Models | Browse Models)
 * Search for trained model (applicable model will be at the top of list, or use search by defined previously name)
 
 13. Open Google maps view to visualize results on map

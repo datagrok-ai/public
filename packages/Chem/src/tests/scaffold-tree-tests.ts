@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, test, before, after, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, after, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
@@ -25,10 +25,12 @@ category('scaffold tree', () => {
     tv.addViewer(ScaffoldTreeViewer.TYPE);
     await awaitCheck(() => Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE).length > 0,
       'cannot create viewer', 3000);
-    const stviewer = Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0];
+    const stviewer = Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0] as ScaffoldTreeViewer;
     await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
       'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 60000);
-  }, {timeout: 90000, skipReason: 'GROK-13428'});
+    await delay(2000); //need to scaffold to finish generation
+    tv.close();
+  }, {timeout: 180000});
 
   after(async () => {
     grok.shell.closeAll();

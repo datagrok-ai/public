@@ -221,7 +221,7 @@ export namespace chem {
     }
 
     async getSmarts(): Promise<string | null> {
-      return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : !this._smarts === undefined ?
+      return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : this._smarts === null ?
         this._smiles !== null ? convert(this._smiles, Notation.Smiles, Notation.Smarts) :
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smarts) : '' : this._smarts;
     }
@@ -246,7 +246,7 @@ export namespace chem {
 
     /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats */
     setMolecule(molString: string, substructure: boolean = false): void {
-      if (substructure)
+      if (substructure || isSmarts(molString))
         this.setSmarts(molString);
       else if (isMolBlock(molString))
         this.setMolFile(molString);
@@ -264,7 +264,7 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
-      const index = extractors.map(it => it.name).indexOf('nameToSmiles');
+      const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
       const el = extractors.splice(index, 1)[0];
       extractors.splice(extractors.length, 0, el);
 
@@ -702,7 +702,7 @@ export namespace chem {
    * */
   export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
     return await grok.functions.call('Chem:FindRGroups', {
-      column, table, core, prefix: 'R'
+      molecules: column, df: table, core: core, prefix: 'R'
     });
   }
 
@@ -713,10 +713,13 @@ export namespace chem {
    * @param {Column} column - Column with SMILES to analyze.
    * @returns {Promise<string>}
    * */
-  export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false): Promise<string> {
+  export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false,
+    exactAtomSearch = true, exactBondSearch = true): Promise<string> {
     return await grok.functions.call('Chem:FindMCS', {
       'molecules': column,
       'df': table,
+      'exactAtomSearch': exactAtomSearch,
+      'exactBondSearch': exactBondSearch,
       'returnSmarts': returnSmarts
     });
   }
@@ -817,6 +820,17 @@ export namespace chem {
     funcCall.callSync();
     const resultBool = funcCall.getOutputParamValue();
     return resultBool;
+  }
+
+  export function isSmarts(s: string): boolean {
+    const isSmartsFunc = Func.find({package: 'Chem', name: 'isSmarts'});
+    if (isSmartsFunc.length) {
+      const funcCall: FuncCall = isSmartsFunc[0].prepare({s});
+      funcCall.callSync();
+      const resultBool = funcCall.getOutputParamValue();
+      return resultBool;
+    }
+    return false;
   }
 
   export function smilesFromSmartsWarning(): string {

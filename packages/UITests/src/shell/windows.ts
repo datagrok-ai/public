@@ -1,13 +1,9 @@
-import {after, before, category, delay, test} from '@datagrok-libraries/utils/src/test';
+import {category, delay, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
 
 category('Shell: Windows', () => {
-  before(async () => {
-    grok.shell.addTableView(grok.data.demo.demog(10));
-  });
-
   test('ShowColumns', async () => {
     await checkSwitch('showColumns', '.d4-root.d4-column-grid');
   });
@@ -21,7 +17,12 @@ category('Shell: Windows', () => {
     await checkSwitch('showProperties', '.grok-prop-panel');
   });
   test('ShowRibbon', async () => {
-    await checkSwitch('showRibbon', '.d4-ribbon');
+    grok.shell.windows.simpleMode = true;
+    try {
+      await checkSwitch('showRibbon', '.d4-ribbon');
+    } finally {
+      grok.shell.windows.simpleMode = false;
+    }
   });
   test('ShowSidebar', async () => {
     await checkSwitch('showSidebar', '.layout-sidebar');
@@ -41,11 +42,7 @@ category('Shell: Windows', () => {
   test('SimpleMode', async () => {
     await checkSwitch('simpleMode', '.d4-app-root:not(.d4-show-menu)');
   });
-
-  after(async () => {
-    grok.shell.closeAll();
-  });
-}, {clear: false});
+});
 
 function checkElementVisible(selector: string, exists: boolean = true): void {
   const e = document.body.querySelector(selector);

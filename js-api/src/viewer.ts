@@ -443,6 +443,10 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
+  getStates(columnName: string, filterType: String): Array<Object> {
+    return api.grok_FilterGroup_GetStates(this.dart, columnName, filterType);
+  }
+
   add<T extends FilterState>(state: T) {
     api.grok_FilterGroup_Add(this.dart, state);
   }

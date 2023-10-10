@@ -2,17 +2,6 @@
   position: relative;
 }
 
-.ui-form .fi-drop-area .icon {
-	padding-top: 10px;
-}
-
-.ui-form-condensed .fi-drop-area .icon {
-	padding-top: 0px;
-  position: absolute;
-  top: 35px;
-  right: 10px;
-}
-
 .fi-drop-area .default {
   color: var(--grey-2);
 }

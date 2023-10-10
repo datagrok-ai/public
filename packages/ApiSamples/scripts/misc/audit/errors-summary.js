@@ -1,4 +1,2 @@
-let view = grok.shell.newView('Usage');
-
-grok.data.query('UsageAnalysis:ErrorsSummaryOnDate', {'date': 'this year'})
-  .then(t => grok.shell.addTableView(t));
+grok.data.query('UsageAnalysis:TopPackageErrors', {date: 'this week', users: ['all']})
+  .then((t) => grok.shell.addTableView(t));

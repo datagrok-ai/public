@@ -1,5 +1,23 @@
 # Charts changelog
 
+## 1.2.2 (2023-09-19)
+
+### Bug Fixes
+
+* [#2096](https://github.com/datagrok-ai/public/issues/2096): Sunburst: Add different click types (make work for Mac keyboard shortcuts)
+
+## 1.2.1 (2023-08-24)
+
+### Bug Fixes
+
+* [#2292](https://github.com/datagrok-ai/public/issues/2292): Suburst: Doesn't respond on table switching
+
+## 1.2.0 (2023-08-17)
+
+### Bug Fixes
+
+* [#2098](https://github.com/datagrok-ai/public/issues/2098): Sunburst: Fixed an error when clicking on the root node
+
 ## 1.1.1 (2023-08-02)
 
 ### Features

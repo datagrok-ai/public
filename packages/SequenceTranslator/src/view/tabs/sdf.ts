@@ -26,9 +26,10 @@ const STRANDS = ['ss', 'as', 'as2'] as const;
 export class SdfTabUI {
   constructor() {
     this.onInput = new rxjs.Subject<string>();
+    this.onInvalidInput = new rxjs.Subject<string>();
     this.inputBase = Object.fromEntries(
       STRANDS.map(
-        (key) => [key, ui.textInput('', DEFAULT_AXOLABS_INPUT, () => { this.onInput.next(); })]
+        (key) => [key, ui.textInput('', '', () => { this.onInput.next(); })]
       )
     );
     this.useChiralInput = ui.boolInput('Use chiral', true);
@@ -43,9 +44,14 @@ export class SdfTabUI {
     DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       await this.updateMoleculeImg();
     });
+
+    DG.debounce<string>(this.onInvalidInput, 1000).subscribe(async () => {
+      grok.shell.warning('Insert Sense strand');
+    });
   }
 
   private onInput: rxjs.Subject<string>;
+  private onInvalidInput: rxjs.Subject<string>;
   private useChiralInput: DG.InputBase<boolean | null>;
   private saveAllStrandsInput: DG.InputBase<boolean | null>;
   private inputBase: {[key: string]: DG.InputBase<string>};
@@ -90,15 +96,21 @@ export class SdfTabUI {
 
     const directionChoiceInput = Object.fromEntries(
       STRANDS.map(
-        (key) => [key, ui.choiceInput(
-          `${key.toUpperCase()} direction`, DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
-        )]
+        (key, idx) => {
+          const selected = (idx === 0) ? DIRECTION.STRAIGHT : DIRECTION.INVERSE;
+          return [key, ui.choiceInput(
+            `${key.toUpperCase()} direction`, selected, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
+          )]
+        }
       )
     );
 
-    STRANDS.forEach((strand) => {
+    STRANDS.forEach((strand, idx) => {
       directionChoiceInput[strand].onChanged(() => {
-        this.directionInversion[strand] = directionChoiceInput[strand].value === DIRECTION.INVERSE;
+        let value = directionChoiceInput[strand].value === DIRECTION.INVERSE;
+        // warning: the next line is necessary until the legacy notion of direction used in the molfile generation gets fixed
+        if (idx > 0) { value = !value; }
+        this.directionInversion[strand] = value;
         this.onInput.next();
       });
     });
@@ -142,14 +154,22 @@ export class SdfTabUI {
 
   private getStrandData() {
     return Object.fromEntries(
-      STRANDS.map((strand) => [strand, {
-        strand: this.inputBase[strand].value.replace(/\s*/g, ''),
-        invert: this.directionInversion[strand]
-      }])
+      STRANDS.map((strand, idx) => {
+        let invert = this.directionInversion[strand];
+        return [strand, {
+          strand: this.inputBase[strand].value.replace(/\s*/g, ''),
+          invert: invert
+        }]
+      })
     );
   }
 
   private getMolfile(ss: StrandData, as: StrandData, as2: StrandData): string {
+    // if (ss.strand === '' && (as.strand !== '' || as2.strand !== '')) {
+    //   this.onInvalidInput.next();
+    //   return '';
+    // }
+
     return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!);
   }
 

@@ -2,6 +2,11 @@
 title: "Line chart"
 ---
 
+Line chart shows data points as connected line segments. It is commonly used to track trends, changes over time, and compare multiple data series. 
+
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Line chart');`
+
 General:
 
 |                       |                 |

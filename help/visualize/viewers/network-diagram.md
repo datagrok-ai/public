@@ -6,6 +6,9 @@ Network diagram is used to visualize graphs, where values of the specified two c
 edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply
 to the values that represent an edge or a node.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Network diagram');`
+
 General:
 
 |             |              |

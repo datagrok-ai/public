@@ -22,7 +22,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
     this.diverseColumnLabel = this.string('diverseColumnLabel', null);
   }
 
-  async render(computeData = true): Promise<void> {
+  override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.dataFrame) {

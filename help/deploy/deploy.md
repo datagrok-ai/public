@@ -2,8 +2,7 @@
 title: "Deployment"
 ---
 
-[The Datagrok installation](../develop/under-the-hood/infrastructure.md) is based on Docker and consists of [core](../develop/under-the-hood/infrastructure.md#datagrok-components) containers, [compute](../develop/under-the-hood/infrastructure.md#compute-components) containers, a PostgreSQL [database](../develop/under-the-hood/infrastructure.md#database) for storing metadata,
-and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) for storing files.
+To deploy Datagrok services, you can use [Docker containers](https://www.docker.com/resources/what-container/#:~:text=A%20Docker%20container%20image%20is,tools%2C%20system%20libraries%20and%20settings.). Datagrok consists of [core](../develop/under-the-hood/infrastructure.md#datagrok-components) containers, [compute](../develop/under-the-hood/infrastructure.md#compute-components) containers, a PostgreSQL [database](../develop/under-the-hood/infrastructure.md#database) to store metadata, and [persistent file storage](../develop/under-the-hood/infrastructure.md#storage) to store files.
 
 Using Docker containers, you can deploy Datagrok on many environments, such as container services in the cloud providers, for example, [AWS ECS](#aws-deployment), [Kubernetes](#kubernetes-deployment), [bare-metal machines](#regular-machine-deployment), [virtual machines](#regular-machine-deployment), and so on.
 
@@ -39,8 +38,7 @@ sh deploy.sh
 ## AWS deployment
 
 We strongly recommend using [AWS ECS](https://aws.amazon.com/ecs/) for the Datagrok deployment. It provides a highly
-scalable, fast container management service that makes it easy to manage application components. You can go completely
-serverless using the [AWS Fargate engine](https://aws.amazon.com/fargate/), which will reduce efforts on service support.
+scalable, fast container management service that makes it easy to manage application components.
 
 We prepared three options for effortless and secure deployments to AWS:
 
@@ -50,9 +48,7 @@ We prepared three options for effortless and secure deployments to AWS:
 
 ## Kubernetes deployment
 
-[Kubernetes](https://kubernetes.io/) is software for scaling and managing applications in Docker containers. It is an extensive system with complex architecture. Kubernetes provides you with a framework to run distributed systems resiliently. No matter where you host the Kubernetes cluster, on-premises or in the cloud, for example, [AWS EKS](https://aws.amazon.com/eks/), you deploy services to the Kubernetes in an easy and consistent way.
-
-To deploy Datagrok in Kubernetes, you can use our prepared [deployment scripts and ingress configuration](https://github.com/datagrok-ai/public/tree/master/help/deploy/k8s).
+To deploy Datagrok to [Kubernetes](https://kubernetes.io/), we prepared [deployment scripts and ingress configuration](https://github.com/datagrok-ai/public/tree/master/help/deploy/k8s). It creates namespace and allocate all the necessary resources.
 
 ## Regular machine deployment
 
@@ -64,4 +60,4 @@ After the deployment, open the platform to complete the setup:
 
 1. [Configure authentication](complete-setup/configure-auth.md)
 2. [Configure SMTP](complete-setup/configure-smtp.md)
-3. [Install packages](complete-setup/install-package.md)
+3. [Install packages](complete-setup/install-packages.md)
