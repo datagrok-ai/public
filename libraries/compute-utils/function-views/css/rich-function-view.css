@@ -22,7 +22,7 @@
 }
 
 /* Show undo icon if input is on inconstent state and hovered */
-.ui-input-root.rfv-restricted-unlocked-input:hover .rfv-icon-undo {
+.ui-input-root.rfv-restricted-unlocked-input:hover .rfv-icon-undo, .ui-input-root.rfv-inconsistent-input:hover .rfv-icon-undo {
     display: inherit;
 }
 
