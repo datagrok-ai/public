@@ -372,13 +372,25 @@ export class MmpAnalysis {
     const mcsMol = module.get_qmol(mcs!);
     const substruct1 = getUncommonAtomsAndBonds(molecule1, mcsMol, module);
     const substruct2 = getUncommonAtomsAndBonds(molecule2, mcsMol, module);
-    // getUncommonAtomsAndBonds();
 
+    const mol1 = module.get_mol(molecule1);
+    const mol2 = module.get_mol(molecule2);
 
-    drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol1, molecule1, '',
+    mol2.generate_aligned_coords(mol1, JSON.stringify({
+      useCoordGen: true,
+      allowRGroups: true,
+      acceptFailure: false,
+      alignOnly: true,
+    }));
+
+    drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol1, mol1.get_molblock(), '',
       {normalizeDepiction: true, straightenDepiction: true}, substruct1);
-    drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol2, molecule2, '',
+    drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol2, mol2.get_molblock(), '',
       {normalizeDepiction: true, straightenDepiction: true}, substruct2);
+
+    mcsMol.delete;
+    mol1.delete;
+    mol2.delete;
   }
 
   refreshFilterAllPairs() {

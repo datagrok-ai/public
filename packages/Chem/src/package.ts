@@ -1353,3 +1353,23 @@ export async function demoDatabases(): Promise<void> {
 export async function demoScaffold(): Promise<void> {
   _demoScaffoldTree();
 }
+
+//top-menu: Chem | BBBB
+//name: BBBB
+export async function BBBB(): Promise<void> {
+  let df = await grok.data.files.openTable('Demo:Files/chem/smiles_500K.zip');
+  const details = JSON.stringify({sanitize: false});
+  const time1 = Date.now();
+  const rdkit = getRdKitModule();
+  for (let i = 0; i < df.rowCount; i++) {
+    let mol;
+    try {
+      mol = rdkit.get_mol(df.col('smiles')!.get(i), details);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      mol?.delete();
+    }
+  }
+  console.log(`******************${Date.now() - time1}`);
+}
