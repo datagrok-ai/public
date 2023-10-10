@@ -99,3 +99,36 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
     DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
   ]);
 }
+
+export function addExpandIcon(grid: DG.Grid): void {
+  const fullscreenIcon = ui.iconFA('expand-alt', () => {
+    const fullscreenGrid = grid.dataFrame.plot.grid();
+    setGridProps(fullscreenGrid);
+    fullscreenGrid.root.style.height = '100%';
+    const pairsFullscreenDialog = ui.dialog(grid.dataFrame.name);
+    pairsFullscreenDialog.add(fullscreenGrid.root);
+    pairsFullscreenDialog.showModal(true);
+    fullscreenGrid.invalidate();
+  });
+  grid.root.appendChild(fullscreenIcon);
+  fullscreenIcon.style.position = 'absolute';
+  fullscreenIcon.style.right = '0px';
+  fullscreenIcon.style.top = '0px';
+  fullscreenIcon.style.visibility = 'hidden';
+  grid.root.addEventListener('mouseenter', (_) => {
+    fullscreenIcon.style.visibility = 'visible';
+  });
+  grid.root.addEventListener('mouseleave', (_) => {
+    fullscreenIcon.style.visibility = 'hidden';
+  });
+}
+
+export function setGridProps(grid: DG.Grid): void {
+  grid.props.allowEdit = false;
+  grid.props.allowRowSelection = false;
+  grid.props.allowBlockSelection = false;
+  grid.props.allowColSelection = false;
+  grid.props.showRowHeader = false;
+  grid.props.showCurrentRowIndicator = false;
+  grid.root.style.width = '100%';
+}

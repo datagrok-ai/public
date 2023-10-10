@@ -8,6 +8,9 @@ or [Spearman's rank correlation coefficient](https://en.wikipedia.org/wiki/Spear
 . Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding
 scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Correlation plot');`
+
 General:
 
 |                     |              |

@@ -13,7 +13,7 @@ export class DistanceMatrixService {
     };
 
     public async calc<T>(values: Array<T> | ArrayLike<T>, fnName: KnownMetrics,
-      normalize = true): Promise<Float32Array> {
+      normalize = true, opts?: {[_: string]: any}): Promise<Float32Array> {
       return new Promise(async (resolve, reject) => {
         try {
           const len = values.length;
@@ -37,7 +37,7 @@ export class DistanceMatrixService {
               endRow = len - 2 - Math.floor(Math.sqrt(-8 * end + 4 * len * (len - 1) - 7) / 2 - 0.5);
               endCol = end - len * endRow + Math.floor((endRow + 1) * (endRow + 2) / 2);
             }
-            this._workers[i].postMessage({values, fnName, startRow, startCol, chunckSize: end - start});
+            this._workers[i].postMessage({values, fnName, startRow, startCol, chunckSize: end - start, opts});
             promises[i] = new Promise((resolveWorker, rejectWorker) => {
               this._workers[i].onmessage = ({data: {error, distanceMatrixData, min, max}}): void => {
                 this._terminateOnComplete && this._workers[i].terminate();

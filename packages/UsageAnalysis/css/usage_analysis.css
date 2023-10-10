@@ -73,6 +73,11 @@
   justify-content: flex-end;
 }
 
+.ua-package-widget {
+  height: 180px;
+  max-width: 400px !important;
+}
+
 .ua-markup label {
   margin-left: 22px !important;
 }

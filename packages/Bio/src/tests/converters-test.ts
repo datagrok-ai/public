@@ -62,9 +62,9 @@ A/C/G/T/C
 C/A/G/T/G/T
 T/T/C/A/A/C`,
     helmDna: `seq
-DNA1{D(A)P.D(C)P.D(G)P.D(T)P.D(C)P}$$$$
-DNA1{D(C)P.D(A)P.D(G)P.D(T)P.D(G)P.D(T)P}$$$$
-DNA1{D(T)P.D(T)P.D(C)P.D(A)P.D(A)P.D(C)P}$$$$`,
+RNA1{d(A)p.d(C)p.d(G)p.d(T)p.d(C)p}$$$$
+RNA1{d(C)p.d(A)p.d(G)p.d(T)p.d(G)p.d(T)p}$$$$
+RNA1{d(T)p.d(T)p.d(C)p.d(A)p.d(A)p.d(C)p}$$$$`,
     fastaRna: `seq
 ACGUC
 CAGUGU
@@ -74,9 +74,9 @@ A*C*G*U*C
 C*A*G*U*G*U
 U*U*C*A*A*C`,
     helmRna: `seq
-RNA1{R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$$
-RNA1{R(C)P.R(A)P.R(G)P.R(U)P.R(G)P.R(U)P}$$$$
-RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$$`,
+RNA1{r(A)p.r(C)p.r(G)p.r(U)p.r(C)p}$$$$
+RNA1{r(C)p.r(A)p.r(G)p.r(U)p.r(G)p.r(U)p}$$$$
+RNA1{r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p}$$$$`,
     fastaGaps: `seq
 FW-PH-EYY
 FYNRQWYV-
@@ -103,17 +103,17 @@ PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D}$$$$
 PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$
 PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$`,
     helmLoneDeoxyribose: `seq
-DNA1{D(A).D(C).D(G).D(T).D(C)}$$$$
-DNA1{D(C).D(A).D(G).D(T).D(G).D(T)P}$$$$
-DNA1{D(T).D(T).D(C).D(A).D(A).D(C)P}$$$$`,
+RNA1{d(A).d(C).d(G).d(T).d(C)}$$$$
+RNA1{d(C).d(A).d(G).d(T).d(G).d(T)p}$$$$
+RNA1{d(T).d(T).d(C).d(A).d(A).d(C)p}$$$$`,
     helmLoneRibose: `seq
-RNA1{R(A).R(C).R(G).R(U).R(C)}$$$$
-RNA1{R(C).R(A).R(G).R(U).R(G).R(U)P}$$$$
-RNA1{R(U).R(U).R(C).R(A).R(A).R(C)P}$$$$`,
+RNA1{r(A).r(C).r(G).r(U).r(C)}$$$$
+RNA1{r(C).r(A).r(G).r(U).r(G).r(U)p}$$$$
+RNA1{r(U).r(U).r(C).r(A).r(A).r(C)p}$$$$`,
     helmLonePhosphorus: `seq
-RNA1{P.P.R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$$
-RNA1{P.P.R(C)P.R(A)P.P.R(G)P.R(U)P.R(G)P.R(U)P}$$$$
-RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$$`,
+RNA1{p.p.r(A)p.r(C)p.r(G)p.r(U)p.r(C)p}$$$$
+RNA1{p.p.r(C)p.r(A)p.p.r(G)p.r(U)p.r(G)p.r(U)p}$$$$
+RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p.p}$$$$`,
   };
 
   /** Also detects semantic types

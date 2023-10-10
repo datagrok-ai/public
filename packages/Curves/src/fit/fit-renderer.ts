@@ -122,6 +122,13 @@ export function layoutChart(rect: DG.Rect, showAxesLabels: boolean, showTitle: b
   ];
 }
 
+/** Checks if the color is valid */
+export function isColorValid(color: string | null | undefined): boolean {
+  if (color === undefined || color === null || color === '')
+    return false;
+  return DG.Color.fromHtml(color) !== undefined;
+}
+
 /** Performs candlestick border drawing */
 function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentValue: number, transform: Viewport): void {
   g.moveTo(transform.xToScreen(x) - (CANDLESTICK_BORDER_PX_SIZE / 2), transform.yToScreen(adjacentValue));
@@ -506,6 +513,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
 
     this.renderCurves(g, x, y, w, h, data);
   }

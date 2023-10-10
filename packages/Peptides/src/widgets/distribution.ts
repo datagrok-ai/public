@@ -181,7 +181,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   };
 
   const setDefaultProperties = (input: DG.InputBase): void => {
-    input.enabled = !model.isMonomerPositionSelectionEmpty;
+    input.enabled = !model.isMutationCliffsSelectionEmpty;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
     $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
     $(input.captionLabel).addClass('ui-label-right');
@@ -189,12 +189,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
   let defaultValuePos = model.splitByPos;
   let defaultValueMonomer = model.splitByMonomer;
-  if (!model.isClusterSelectionEmpty && model.isMonomerPositionSelectionEmpty) {
+  if (!model.isClusterSelectionEmpty && model.isMutationCliffsSelectionEmpty) {
     defaultValuePos = false;
     defaultValueMonomer = false;
   }
 
-  const splitByPosition = ui.boolInput('Split by position', defaultValuePos, updateDistributionHost);  
+  const splitByPosition = ui.boolInput('Split by position', defaultValuePos, updateDistributionHost);
   splitByPosition.setTooltip('Constructs distribution for each position separately');
   setDefaultProperties(splitByPosition);
   $(splitByPosition.root).css('margin-right', '10px');

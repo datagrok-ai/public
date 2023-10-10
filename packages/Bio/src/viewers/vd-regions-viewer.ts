@@ -60,6 +60,9 @@ export enum PROPS {
   fitWidth = 'fitWidth',
   positionWidth = 'positionWidth',
   positionHeight = 'positionHeight',
+
+  // -- Behavior --
+  filterSource = 'filterSource',
 }
 
 const defaults: VdRegionsProps = VdRegionsPropsDefault;
@@ -88,6 +91,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   public positionWidth: number;
   public positionHeight: PositionHeight;
 
+  public filterSource: FilterSources;
+
   constructor() {
     super();
 
@@ -111,6 +116,10 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     });
     this.positionHeight = this.string(PROPS.positionHeight, defaults.positionHeight,
       {category: PROPS_CATS.LAYOUT, choices: Object.keys(PositionHeight)}) as PositionHeight;
+
+    // -- Behavior --
+    this.filterSource = this.string(PROPS.filterSource, defaults.filterSource,
+      {category: PROPS_CATS.BEHAVIOR, choices: Object.values(FilterSources)}) as FilterSources;
   }
 
   public async init() {
@@ -197,6 +206,10 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
         this.calcSize();
         break;
 
+      case PROPS.filterSource:
+        this.filterSourceInput.value = this.filterSource;
+        break;
+
       default:
         this.setData(this.dataFrame, this.regions); // onPropertyChanged
         break;
@@ -244,7 +257,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
-  private filterSourceInput: DG.InputBase<boolean | null> | null = null;
+  private filterSourceInput!: DG.InputBase<FilterSources | null>;
   private mainLayout: HTMLTableElement | null = null;
   private logos: { [chain: string]: WebLogoViewer }[] = [];
 
@@ -290,6 +303,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
             skipEmptyPositions: this.skipEmptyPositions,
             positionWidth: this.positionWidth,
             positionHeight: this.positionHeight,
+            filterSource: this.filterSource,
           }) as WebLogoViewer;
           wl.onSizeChanged.subscribe(() => { this.calcSize(); });
           return [orderI, chain, wl];
@@ -350,12 +364,13 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.mainLayout.style.height = '100%';
     // this.mainLayout.style.border = '1px solid black';
 
-    this.filterSourceInput = ui.boolInput('', false, this.filterSourceInputOnValueChanged.bind(this));
+    this.filterSourceInput = ui.choiceInput<FilterSources>('Data source', this.filterSource,
+      Object.values(FilterSources), this.filterSourceInputOnValueChanged.bind(this));
     this.filterSourceInput.root.style.position = 'absolute';
-    this.filterSourceInput.root.style.left = '10px';
-    this.filterSourceInput.root.style.top = '-3px';
+    this.filterSourceInput.root.style.right = '9px';
+    this.filterSourceInput.root.style.top = '-4px';
     //this.filterSourceInput.setTooltip('Check to filter sequences for selected VRs'); // TODO: GROK-13614
-    ui.tooltip.bind(this.filterSourceInput.input, 'Check to filter sequences for selected VRs');
+    //ui.tooltip.bind(this.filterSourceInput.input, 'Check to filter sequences for selected VRs');
 
     const _color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
     this.host = ui.div([this.mainLayout, this.filterSourceInput!.root],
@@ -440,15 +455,20 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   private filterSourceInputOnValueChanged(): void {
-    const filterSource: FilterSources = this.filterSourceInput!.value == true ?
-      FilterSources.Selected : FilterSources.Filtered;
+    const filterSourceValue = this.filterSourceInput.value;
+    // Using promise to prevent 'Bad state: Cannot fire new event. Controller is already firing an event'
+    this.viewPromise = this.viewPromise.then(() => {
+      if (this.filterSource !== filterSourceValue) {
+        this.props.getProperty(PROPS.filterSource).set(this, filterSourceValue); // to update value in property panel
 
-    for (let orderI = 0; orderI < this.logos.length; orderI++) {
-      for (let chainI = 0; chainI < this.chains.length; chainI++) {
-        const chain: string = this.chains[chainI];
-        const wl: DG.JsViewer = this.logos[orderI][chain];
-        wl.setOptions({[wlPROPS.filterSource]: filterSource});
+        for (let orderI = 0; orderI < this.logos.length; orderI++) {
+          for (let chainI = 0; chainI < this.chains.length; chainI++) {
+            const chain: string = this.chains[chainI];
+            const wl: DG.JsViewer = this.logos[orderI][chain];
+            wl.setOptions({[wlPROPS.filterSource]: this.filterSource});
+          }
+        }
       }
-    }
+    });
   }
 }

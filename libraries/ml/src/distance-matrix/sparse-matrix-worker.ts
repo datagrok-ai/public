@@ -5,8 +5,7 @@ onmessage = async (event) => {
     {values: string[], startIdx: number, endIdx: number, threshold: number, fnName: KnownMetrics, opts: any} = event.data;
   const i: number[] = [];
   const j: number[] = [];
-  const similarity: number[] = [];
-  await new Promise((resolve) => setTimeout(resolve, 20000));
+  const distances: number[] = [];
   const chunkSize = endIdx - startIdx;
   //const mi = startRow;
   //const mj = startCol;
@@ -24,7 +23,7 @@ onmessage = async (event) => {
     if (1 - value >= threshold) {
       i.push(mi);
       j.push(mj);
-      similarity.push(value);
+      distances.push(value);
     }
     cnt++;
     mj++;
@@ -36,6 +35,6 @@ onmessage = async (event) => {
 
   const iArray = new Int32Array(i);
   const jArray = new Int32Array(j);
-  const similarityArray = new Float32Array(similarity);
-  postMessage({i: iArray, j: jArray, similarity: similarityArray});
+  const distanceArray = new Float32Array(distances);
+  postMessage({i: iArray, j: jArray, distance: distanceArray});
 };

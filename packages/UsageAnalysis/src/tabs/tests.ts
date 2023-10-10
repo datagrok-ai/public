@@ -7,10 +7,11 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 
 const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
+const filters = ui.box();
+filters.style.maxWidth = '250px';
 
 export class TestsView extends UaView {
   loader = ui.div([ui.loader()], 'grok-wait');
-  static filters: HTMLElement = ui.box();
   cardFilter: string | null = null;
   filterGroup: DG.FilterGroup | undefined = undefined;
 
@@ -34,10 +35,11 @@ export class TestsView extends UaView {
       const df: DG.DataFrame = await grok.data.query('UsageAnalysis:TestsToday');
       df.getCol('status').colors.setCategorical(colors);
       df.getCol('id').name = '~id';
-      if (TestsView.filters.children.length) TestsView.filters = ui.box();
-      const filters = DG.Viewer.filters(df, filtersStyle);
-      this.filterGroup = new DG.FilterGroup(filters.dart);
-      TestsView.filters.appendChild(filters.root);
+      if (filters.children.length)
+        filters.innerHTML = '';
+      const filters_ = DG.Viewer.filters(df, filtersStyle);
+      this.filterGroup = new DG.FilterGroup(filters_.dart);
+      filters.appendChild(filters_.root);
       df.onCurrentRowChanged.subscribe(async () => {
         const row = df.currentRow;
         const acc = DG.Accordion.create();
@@ -130,10 +132,9 @@ export class TestsView extends UaView {
       cardsView.append(card);
     }
 
-    this.root.append(ui.splitV([
+    this.root.append(ui.splitH([filters, ui.splitV([
       ui.splitH([ui.box(cardsView, {style: {flexGrow: 0, flexBasis: '35%'}}), chart], {style: {maxHeight: '150px'}}),
-      grid,
-    ], null, true));
+      grid], null, true)]));
   }
 }
 

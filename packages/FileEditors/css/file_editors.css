@@ -1,0 +1,7 @@
+.fe-pdf-preview {
+  overflow-y: scroll;
+}
+
+.fe-docx-preview > style {
+  display: revert !important;
+}
