@@ -8,7 +8,11 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 
-const MAX_ATOM_COUNT = 999;
+const enum V2K_CONST {
+  MAX_ATOM_COUNT = 999,
+  RGP_LINE_START = 'M  RGP',
+  ATOM_ALIAS_LINE_START = 'A  ',
+}
 
 const HELM_SECTION_SEPARATOR = '$';
 const HELM_ITEM_SEPARATOR = '|';
@@ -165,7 +169,7 @@ class RGroupHandler {
     return atomicIdx === undefined ? null : atomicIdx;
   }
 
-  removeRGroups(rGroupIds: number[]): void {
+  private removeRGroupsFromAtomBlock(rGroupIds: number[]): void {
     rGroupIds.forEach((rgroupId) => {
       const atomicIdx = this.rGroupIdToAtomicIndexMap.get(rgroupId);
       if (atomicIdx === undefined)
@@ -176,43 +180,63 @@ class RGroupHandler {
       ([rGroupId, _]) => rGroupIds.includes(rGroupId)
     ).map(([_, atomicIdx]) => atomicIdx);
     this.atoms.deleteAtoms(rGroupAtomicIndices);
+  }
+
+  removeRGroups(rGroupIds: number[]): void {
+    this.removeRGroupsFromAtomBlock(rGroupIds);
 
     rGroupIds.forEach((rGroupId) => {
-      const rGroupAtomicIdx = this.rGroupIdToAtomicIndexMap.get(rGroupId)!;
-
-      if (this.rGroupBondPositionMap.has(rGroupId))
-        throw new Error(`R group ${rGroupId} is already handled`);
-
-      const positions = this.bonds.getPositionsInBonds(rGroupAtomicIdx + 1);
-      if (positions.length === 0)
-        throw new Error(`Cannot find position for R group ${rGroupId}`);
-      if (positions.length > 1)
-        throw new Error(`More than one position for R group ${rGroupId}`);
-
-      const rGroupPosition = positions[0];
-      this.rGroupBondPositionMap.set(rGroupId, rGroupPosition);
-
-      this.bonds.replacePositionsInBondsByDummy([rGroupPosition]);
-      this.bonds.removeAtomIdFromBonds(rGroupAtomicIdx + 1);
-
-      this.rGroupIdToAtomicIndexMap.delete(rGroupId);
-      for (const [rGroupId, atomIdx] of this.rGroupIdToAtomicIndexMap) {
-        if (atomIdx > rGroupAtomicIdx)
-          this.rGroupIdToAtomicIndexMap.set(rGroupId, atomIdx - 1);
-      };
+      const dummyPosition = this.replaceRGroupInBondsByDummy(rGroupId);
+      this.rGroupBondPositionMap.set(rGroupId, dummyPosition);
     });
   }
 
-  private getRGroupIdToAtomicIdxMap(lines: string[]): Map<number, number> {
-    const rgroupLines = lines.filter((line: string) => line.startsWith('M  RGP'));
+  /** Replace RGroups by -1, update associated maps, and return the position in
+   * bond block */
+  private replaceRGroupInBondsByDummy(rGroupId: number): PositionInBonds {
+    const rGroupAtomicIdx = this.rGroupIdToAtomicIndexMap.get(rGroupId)!;
 
-    const map = new Map<number, number>();
-    rgroupLines.forEach((line: string) => {
-      const indices = line.split(/\s+/).filter((item) => item)
+    if (this.rGroupBondPositionMap.has(rGroupId))
+      throw new Error(`R group ${rGroupId} is already handled`);
+
+    const positions = this.bonds.getPositionsInBonds(rGroupAtomicIdx + 1);
+    if (positions.length === 0)
+      throw new Error(`Cannot find position for R group ${rGroupId}`);
+    if (positions.length > 1)
+      throw new Error(`More than one position for R group ${rGroupId}`);
+
+    const rGroupPosition = positions[0];
+
+    this.bonds.replacePositionsInBondsByDummy([rGroupPosition]);
+    this.bonds.removeAtomIdFromBonds(rGroupAtomicIdx + 1);
+    this.removeRGroupFromAtomicIdxMap(rGroupId, rGroupAtomicIdx);
+
+    return rGroupPosition;
+  }
+
+  private removeRGroupFromAtomicIdxMap(deletedId: number, deletedAtomicIdx: number): void {
+    this.rGroupIdToAtomicIndexMap.delete(deletedId);
+    for (const [rGroupId, rGroupAtomicIdx] of this.rGroupIdToAtomicIndexMap) {
+      if (rGroupAtomicIdx > deletedAtomicIdx)
+        this.rGroupIdToAtomicIndexMap.set(rGroupId, rGroupAtomicIdx - 1);
+    }
+  }
+
+  private getRGroupIdToAtomicIdxMap(lines: string[]): Map<number, number> {
+    function getAtomIdxToRgpIdxList(rgpLine: string): [number, number][] {
+      const indices = rgpLine.split(/\s+/).filter((item) => item)
         .slice(3).map((item) => parseInt(item));
       const atomIdxToRgpIdxList = new Array<[number, number]>(indices.length / 2);
       for (let i = 0; i < indices.length; i += 2)
         atomIdxToRgpIdxList[i / 2] = [indices[i + 1], indices[i] - 1];
+      return atomIdxToRgpIdxList;
+    }
+
+    const map = new Map<number, number>();
+
+    const rgroupLines = lines.filter((line: string) => line.startsWith(V2K_CONST.RGP_LINE_START));
+    rgroupLines.forEach((line: string) => {
+      const atomIdxToRgpIdxList = getAtomIdxToRgpIdxList(line);
       for (const [key, value] of atomIdxToRgpIdxList) {
         if (map.has(key))
           throw new Error(`R group ${key} is already in the map`);
@@ -221,7 +245,7 @@ class RGroupHandler {
     });
 
     const atomAliasLinesIndices = lines.map((line: string, idx: number) => {
-      if (line.startsWith('A  '))
+      if (line.startsWith(V2K_CONST.ATOM_ALIAS_LINE_START))
         return idx;
     }).filter((idx) => idx !== undefined) as number[];
     const atomAliasLines = atomAliasLinesIndices.map((idx) => lines[idx]);
@@ -238,6 +262,7 @@ class RGroupHandler {
     const unaccounted = rGroupAtomicIndices.filter((idx) => !Array.from(map.values()).includes(idx));
     if (unaccounted.length !== 0)
       throw new Error(`Unaccounted R group indices: ${unaccounted}`);
+
     return map;
   }
 
@@ -273,6 +298,7 @@ class RGroupHandler {
     return this.bonds.bondedAtoms[bondLineIdx][(nodeIdx + 1) % 2];
   }
 
+  /** WARNING: capping RGRoups and deletion of the bonded ones don't commute */
   capRGroups(capGroupElements: string[]): void {
     this.rGroupIdToAtomicIndexMap.forEach((atomicIdx, rGroupId) => {
       const element = capGroupElements[rGroupId - 1];
@@ -302,11 +328,11 @@ class MolfileBonds {
   /** Get bond lines with new values for bonded atoms  */
   getBondLines(): string[] {
     return this.bondedPairs.map((bondedPair, idx) => {
-      const bond1 = bondedPair[0];
-      const bond2 = bondedPair[1];
-      return `${ bond1.toString().padStart(3, ' ')}${
-        bond2.toString().padStart(3, ' ')}${
-        this.rawBondLines[idx].substring(6)}`;
+      if (bondedPair.some((atom) => atom === -1))
+        throw new Error(`Bonded pair ${bondedPair} contains -1`);
+      return `${bondedPair[0].toString().padStart(3, ' ')}${
+        bondedPair[1].toString().padStart(3, ' ')
+      }${this.rawBondLines[idx].substring(6)}`;
     });
   }
 
@@ -463,14 +489,7 @@ class MolfileWrapper {
   }
 
   getBondLines(): string[] {
-    // filter out by bonded atoms not containing -1
-    // TODO: remove filtering as a temporary workaround for the case when the bond is not
-    // connected to any atom, e.g. in case of a dangling R grouph
-    // return this.bonds.getBondLines(0);
-    return this.bonds.getBondLines().filter((_, idx) => {
-      const bondedAtoms = this.bonds.bondedAtoms[idx];
-      return !bondedAtoms.includes(-1);
-    });
+    return this.bonds.getBondLines();
   }
 
   getAtomLines(): string[] {
@@ -766,7 +785,7 @@ class Polymer {
     this.monomerWrappers.push(monomerWrapper);
   }
 
-  private deleteBondedRGroups(): void {
+  private removeRGroups(): void {
     this.monomerWrappers.forEach((monomerWrapper, monomerIdx) => {
       if (this.bondedRGroupsMap.has(monomerIdx))
         monomerWrapper.removeBondedRGroups(this.bondedRGroupsMap.get(monomerIdx)!);
@@ -801,7 +820,7 @@ class Polymer {
     const atomLines: string[] = [];
     const bondLines: string[] = [];
 
-    this.deleteBondedRGroups();
+    this.removeRGroups();
 
     const atomNumberShifts = this.getAtomNumberShifts();
     this.monomerWrappers.forEach((monomerWrapper, idx) => {
@@ -816,9 +835,9 @@ class Polymer {
     });
 
     const atomCount = atomLines.length;
-    if (atomCount > MAX_ATOM_COUNT) {
+    if (atomCount > V2K_CONST.MAX_ATOM_COUNT) {
       throw new Error(
-        `Atom count in polymer ${this.helm.toString()} is ${atomCount} and exceeds ${MAX_ATOM_COUNT}`
+        `Atom count in polymer ${this.helm.toString()} is ${atomCount} and exceeds ${V2K_CONST.MAX_ATOM_COUNT}`
       );
     }
 
