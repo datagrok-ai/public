@@ -404,7 +404,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   async getFilterBitset(): Promise<BitArray> {
-    const smarts = !this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
+    const smarts = this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
       _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
     return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, false, false,
       this.searchType, this.similarityCutOff, this.fp);
