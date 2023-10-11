@@ -40,6 +40,8 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series:
         return null;
       const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+      if (chartData.series![seriesNumber] === undefined)
+        return null;
       const fitResult = getSeriesStatistics(chartData.series![seriesNumber], getSeriesFitFunction(chartData.series![seriesNumber]));
       return p.get(fitResult);
     });
