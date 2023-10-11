@@ -26,18 +26,21 @@ enum MANIPULATION_LEVEL {
 };
 
 
-function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesNumber: number): void {
+function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series: IFitSeries, seriesNumber: number): void {
   const grid = chartColumn.grid;
-  const column = DG.Column.float(p.name, chartColumn.column?.length);
+  const column = DG.Column.float(`${chartColumn.name}_${series.name}_${p.name}`, chartColumn.column?.length);
   column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
   column.tags[SERIES_NUMBER_TAG] = seriesNumber;
   column.tags[STATISTICS_TAG] = p.name;
 
   column
     .init((i) => {
-      const chartData = getChartData(
-        DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
-      const fitResult = getSeriesStatistics(chartData.series![0], getSeriesFitFunction(chartData.series![0]));
+      const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
+      if (gridCell.cell.value === '')
+        return null;
+      const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+        convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+      const fitResult = getSeriesStatistics(chartData.series![seriesNumber], getSeriesFitFunction(chartData.series![seriesNumber]));
       return p.get(fitResult);
     });
   grid.dataFrame.columns.insert(column, chartColumn.idx);
@@ -259,7 +262,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
           ui.input.form(seriesStatistics, statisticsProperties, {
             onCreated: (input) => input.root.appendChild(
               ui.iconFA('plus',
-                () => addStatisticsColumn(gridCell.gridColumn, input.property, i),
+                () => addStatisticsColumn(gridCell.gridColumn, input.property, series, i),
                 `Calculate ${input.property.name} for the whole column`))
           })
         ]));

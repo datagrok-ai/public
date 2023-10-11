@@ -312,7 +312,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           if (columns) {
             const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
             for (const column of columns) {
-              column.set(gridCell.cell.rowIndex, stats[column.name as keyof FitStatistics]);
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
             }
           }
           // temporarily works only for JSON structure
