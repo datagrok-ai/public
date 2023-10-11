@@ -33,6 +33,7 @@ export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): H
   }
   const grid = newTable.plot.grid();
   grid.props.showRowHeader = false;
+  grid.root.style.maxWidth = '100%';
 
   DG.debounce(ui.onSizeChanged(grid.root), 50).subscribe((_) => {
     const panel = grid.root.parentElement;
