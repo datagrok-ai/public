@@ -310,6 +310,16 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn':
             gridCell.cell.column.name, '.seriesNumber': i});
           if (columns) {
+            if (data.series![i].parameters) {
+              if (data.chartOptions?.logX)
+                if (data.series![i].parameters![2] > 0)
+                  data.series![i].parameters![2] = Math.log10(data.series![i].parameters![2]);
+            }
+            else {
+              const fitFunc = getSeriesFitFunction(data.series![i]);
+              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+              data.series![i].parameters = fitSeries(data.series![i], fitFunc, chartLogOptions).parameters;
+            }
             const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
             for (const column of columns) {
               column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
@@ -361,6 +371,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     const screenBounds = new DG.Rect(x, y, w, h).inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
     const showAxes = screenBounds.width >= MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT;
+    // make bigger sizes
     const showAxesLabels = w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT
       && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
     const showTitle = w >= MIN_TITLE_PX_WIDTH && h >= MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
@@ -371,6 +382,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (dataBounds.y <= 0 && data.chartOptions) data.chartOptions.logY = false;
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
+    // make thinner
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
     const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
 
