@@ -279,11 +279,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    grok.shell.o = gridCell;
-
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
+
+    grok.shell.o = gridCell;
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
     const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
