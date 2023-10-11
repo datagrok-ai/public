@@ -10,7 +10,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties} from './fit-renderer';
-import {MultiCurveViewer} from './multi-curve-viewer';
+import {CellRenderViewer} from './cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 
 
@@ -273,7 +273,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       return host;
     });
 
-    acc.addPane('Chart', () => MultiCurveViewer.fromChartData(chartData).root);
+    acc.addPane('Chart', () => CellRenderViewer.fromGridCell(gridCell).root);
 
     return acc.root;
   }
