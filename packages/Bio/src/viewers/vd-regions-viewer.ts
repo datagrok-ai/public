@@ -224,7 +224,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
   public setData(regions: VdRegion[]) {
-    const setDataInId = ++this.setDataInCount;
+    // const setDataInId = ++this.setDataInCount;
     _package.logger.debug('Bio: VdRegionsViewer.setData(), in, ' +
       // `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
       `regions.length = ${regions.length}`

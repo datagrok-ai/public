@@ -386,7 +386,7 @@ export async function getRegionTopMenu(
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<string>, activities: DG.Column,
-  similarity: number, methodName: DimReductionMethods, options?: IUMAPOptions | ITSNEOptions,
+  similarity: number, methodName: DimReductionMethods, options?: (IUMAPOptions | ITSNEOptions) & Options,
 ): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUI(macroMolecule, 'Activity Cliffs'))
     return;
