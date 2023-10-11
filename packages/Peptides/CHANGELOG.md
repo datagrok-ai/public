@@ -6,6 +6,7 @@
 
 * Added viewer help.
 * Added Sequence Space viewer.
+* Selection panel columns now inherti width from main table.
 
 ### Bug Fixes
 
