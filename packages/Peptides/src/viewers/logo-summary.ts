@@ -385,7 +385,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     this.bitsets.push(currentSelection.clone());
 
-    const newClusterName = viewerDfCols.getUnusedName('New Cluster');
+    const newClusterName = this.model.df.columns.getUnusedName('New Cluster');
     const aggregatedValues: {[colName: string]: number} = {};
     const aggColsEntries = Object.entries(this.model.settings.columns ?? {});
     for (const [colName, aggFn] of aggColsEntries) {

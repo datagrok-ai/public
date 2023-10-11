@@ -524,6 +524,7 @@ export class PeptidesModel {
       const newColCat = newCol.categories;
       const newColData = newCol.getRawData();
       col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
+      col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
       CR.setMonomerRenderer(col, this.alphabet);
     }
     this.df.name = name;
@@ -1182,6 +1183,7 @@ export class PeptidesModel {
   addNewCluster(clusterName: string): void {
     const newClusterCol = DG.Column.fromBitSet(clusterName, this.getCompoundBitset());
     newClusterCol.setTag(C.TAGS.CUSTOM_CLUSTER, '1');
+    newClusterCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
     this.df.columns.add(newClusterCol);
     this.analysisView.grid.col(newClusterCol.name)!.visible = false;
   }

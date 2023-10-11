@@ -16,6 +16,7 @@
 * Fixed LST rows not resizable.
 * Fixed selection inconsistency.
 * Fixed Most Potent Residues keyboar navigation.
+* Fixed analysis not starting when there are columns of the same name.
 
 ## 1.14.1 (2023-09-28)
 

@@ -165,8 +165,13 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     const newDf = DG.DataFrame.create(currentDf.rowCount);
     const newDfCols = newDf.columns;
     newDfCols.add(scaledCol);
-    for (const col of currentDf.columns)
-      newDfCols.add(col);
+    for (const col of currentDf.columns) {
+      if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
+        if (col.name === scaledCol.name)
+          col.name = currentDf.columns.getUnusedName(col.name);
+        newDfCols.add(col);
+      }
+    }
 
     newDf.name = 'Peptides analysis';
     const settings: type.PeptidesSettings = {
