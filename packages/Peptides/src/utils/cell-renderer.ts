@@ -86,7 +86,7 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
-  canvasContext.fillStyle = '#000';
+  canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
   const monomerSelection = invariantMapSelection[currentPosition];

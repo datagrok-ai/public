@@ -7,6 +7,7 @@
 * Added viewer help.
 * Added Sequence Space viewer.
 * Selection panel columns now inherti width from main table.
+* Invarian Map cell values now rendered with contrast color relative to background.
 
 ### Bug Fixes
 
