@@ -1329,6 +1329,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).smiles = molStrSketcher!;
         value(group).bitset = bitset;
         value(group).labelDiv = newLabelDiv;
+        this.updateFilters();
       });
     }
     
