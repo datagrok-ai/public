@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.1.4 (WIP)
+## 1.1.4 (2023-10-11)
 
 Implemented ANOVA.
 
