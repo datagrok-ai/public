@@ -129,7 +129,7 @@ export class MonomerPosition extends DG.JsViewer {
       return this.model.showTooltip(monomerPosition, x, y, true);
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
-    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+    DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
         if (!this.keyPressed)
           return;
@@ -362,7 +362,7 @@ export class MostPotentResidues extends DG.JsViewer {
         return false;
       return this.model.showTooltip(monomerPosition, x, y, true);
     });
-    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+    DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
         if ((this.keyPressed && mostPotentResiduesDf.currentCol.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE) || !this.keyPressed)
           return;

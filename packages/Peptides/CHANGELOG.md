@@ -12,6 +12,7 @@
 * Fixed WebLogo in header margin width.
 * Widgets in Context panel will now fill all the available width.
 * Fixed LST rows not resizable.
+* Fixed selection inconsistency.
 
 ## 1.14.1 (2023-09-28)
 

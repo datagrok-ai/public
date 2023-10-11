@@ -303,7 +303,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       }
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
-    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell) => {
+    DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell) => {
       if (!gridCell.isTableCell)
         return;
 

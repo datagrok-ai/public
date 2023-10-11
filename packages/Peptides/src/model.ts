@@ -92,6 +92,7 @@ export class PeptidesModel {
   subs: rxjs.Subscription[] = [];
   isHighlighting: boolean = false;
   latestSelectionItem: (type.SelectionItem & {kind: SELECTION_MODE | 'Cluster'}) | null = null;
+  controlFire: boolean = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -974,14 +975,22 @@ export class PeptidesModel {
         pane.expanded = true;
     };
 
-    DG.debounce(selection.onChanged, 500).subscribe(() => {
+    selection.onChanged.subscribe(() => {
+      if (this.controlFire) {
+        this.controlFire = false;
+        return;
+      }
       if (!this.isUserChangedSelection)
         selection.copyFrom(getLatestSelection(), false);
       showAccordion();
       this.isUserChangedSelection = true;
     });
 
-    DG.debounce(filter.onChanged, 500).subscribe(() => {
+    filter.onChanged.subscribe(() => {
+      if (this.controlFire) {
+        this.controlFire = false;
+        return;
+      }
       const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
       if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
         lstViewer.createLogoSummaryTableGrid();
@@ -998,6 +1007,13 @@ export class PeptidesModel {
     this.df.selection.fireChanged();
     if (fireFilterChanged)
       this.df.filter.fireChanged();
+
+    // Fire bitset changed event again to update UI
+    this.controlFire = true;
+    this.df.selection.fireChanged();
+    if (fireFilterChanged)
+      this.df.filter.fireChanged();
+
     this.headerSelectedMonomers = calculateSelected(this.df);
   }
 
