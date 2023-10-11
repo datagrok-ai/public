@@ -34,6 +34,7 @@ import {
 
 import {convertXMLToIFitChartData} from './fit-parser';
 import {CellRenderViewer} from './cell-render-viewer';
+import { calculateSeriesStats, getChartDataAggrStats } from './fit-grid-cell-handler';
 
 
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
@@ -307,24 +308,19 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
           p.outlier = !p.outlier;
-          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn':
-            gridCell.cell.column.name, '.seriesNumber': i});
+          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
           if (columns) {
-            if (data.series![i].parameters) {
-              if (data.chartOptions?.logX)
-                if (data.series![i].parameters![2] > 0)
-                  data.series![i].parameters![2] = Math.log10(data.series![i].parameters![2]);
-            }
-            else {
-              const fitFunc = getSeriesFitFunction(data.series![i]);
-              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
-              data.series![i].parameters = fitSeries(data.series![i], fitFunc, chartLogOptions).parameters;
-            }
-            const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
             for (const column of columns) {
-              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
+              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+              const stats = column.tags['.seriesAggregation'] !== null ?
+                getChartDataAggrStats(data, column.tags['.seriesAggregation']) :
+                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], chartLogOptions) : null;
+              if (stats === null)
+                continue;
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);  
             }
           }
+          
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;

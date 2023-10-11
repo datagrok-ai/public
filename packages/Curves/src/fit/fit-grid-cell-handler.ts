@@ -9,7 +9,7 @@ import {
   getDataFrameChartOptions,
   LogOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties} from './fit-renderer';
 import {CellRenderViewer} from './cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -17,6 +17,7 @@ import {convertXMLToIFitChartData} from './fit-parser';
 
 const SOURCE_COLUMN_TAG = '.sourceColumn';
 const SERIES_NUMBER_TAG = '.seriesNumber';
+const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
 const CHART_OPTIONS = 'chartOptions';
 const SERIES_OPTIONS = 'seriesOptions';
@@ -25,7 +26,65 @@ enum MANIPULATION_LEVEL {
   COLUMN = 'Column',
   CELL = 'Cell'
 };
+const AGGREGATION_TYPES: {[key: string]: string} = {
+  'count': 'totalCount',
+  'nulls': 'missingValueCount',
+  'unique': 'uniqueCount',
+  'values': 'valueCount',
+  'min': 'min',
+  'max': 'max',
+  'sum': 'sum',
+  'avg': 'avg',
+  'stdev': 'stdev',
+  'variance': 'variance',
+  'skew': 'skew',
+  'kurt': 'kurt',
+  'med': 'med',
+  'q1': 'q1',
+  'q2': 'q2',
+  'q3': 'q3'
+};
 
+
+export function calculateSeriesStats(series: IFitSeries, chartLogOptions: LogOptions): FitStatistics {
+  const fitFunction = getSeriesFitFunction(series);
+  if (series.parameters) {
+    if (chartLogOptions.logX)
+      if (series.parameters[2] > 0)
+        series.parameters[2] = Math.log10(series.parameters[2]);
+  }
+  else 
+    series.parameters = fitSeries(series, fitFunction, chartLogOptions).parameters;
+
+  const seriesStatistics = getSeriesStatistics(series, fitFunction);
+  return seriesStatistics;
+}
+
+export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string): FitStatistics {
+  const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
+  const rSquaredValues: number[] = [], aucValues: number[] = [], interceptXValues: number[] =  [], interceptYValues: number[] = [],
+    slopeValues: number[] = [], topValues: number[] = [], bottomValues: number[] = [];
+  for (let i = 0; i < chartData.series?.length!; i++) {
+    const seriesStats = calculateSeriesStats(chartData.series![i], chartLogOptions);
+    rSquaredValues[i] = seriesStats.rSquared!;
+    aucValues[i] = seriesStats.auc!;
+    interceptXValues[i] = seriesStats.interceptX;
+    interceptYValues[i] = seriesStats.interceptY;
+    slopeValues[i] = seriesStats.slope;
+    topValues[i] = seriesStats.top!;
+    bottomValues[i] = seriesStats.bottom!;
+  }
+
+  return {
+    rSquared: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'rSquared', rSquaredValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    auc: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'auc', aucValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    interceptX: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'interceptX', interceptXValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    interceptY: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'interceptY', interceptYValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    slope: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'slope', slopeValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    top: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'top', topValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
+    bottom: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'bottom', bottomValues).stats[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
+  };
+}
 
 function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series: IFitSeries, seriesNumber: number): void {
   const grid = chartColumn.grid;
@@ -33,6 +92,7 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series:
   column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
   column.tags[SERIES_NUMBER_TAG] = seriesNumber;
   column.tags[STATISTICS_TAG] = p.name;
+
 // accordions for runs
 // combobox - series -> all or aggregated, in all we have all the series, then combobox with aggr
   column
@@ -44,18 +104,28 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series:
         convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
       if (chartData.series![seriesNumber] === undefined)
         return null;
-      if (chartData.series![seriesNumber].parameters) {
-        if (chartData.chartOptions?.logX)
-          if (chartData.series![seriesNumber].parameters![2] > 0)
-            chartData.series![seriesNumber].parameters![2] = Math.log10(chartData.series![seriesNumber].parameters![2]);
-      }
-      else {
-        const fitFunc = getSeriesFitFunction(chartData.series![seriesNumber]);
-        const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-        chartData.series![seriesNumber].parameters = fitSeries(chartData.series![seriesNumber], fitFunc, chartLogOptions).parameters;
-      }
+      const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
+      const fitResult = calculateSeriesStats(chartData.series![seriesNumber], chartLogOptions);
+      return p.get(fitResult);
+    });
+  grid.dataFrame.columns.insert(column, chartColumn.idx);
+}
 
-      const fitResult = getSeriesStatistics(chartData.series![seriesNumber], getSeriesFitFunction(chartData.series![seriesNumber]));
+function addAggrStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, aggrType: string): void {
+  const grid = chartColumn.grid;
+  const column = DG.Column.float(`${chartColumn.name}_${aggrType}_${p.name}`, chartColumn.column?.length);
+  column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
+  column.tags[SERIES_AGGREGATION_TAG] = aggrType;
+  column.tags[STATISTICS_TAG] = p.name;
+
+  column
+    .init((i) => {
+      const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
+      if (gridCell.cell.value === '')
+        return null;
+      const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+        convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+      const fitResult = getChartDataAggrStats(chartData, aggrType);
       return p.get(fitResult);
     });
   grid.dataFrame.columns.insert(column, chartColumn.idx);
@@ -261,36 +331,56 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       ui.input.form(chartData.chartOptions, fitChartDataProperties, chartOptionsRefresh),
     ]));
 
-    acc.addPane('Fit', () => {
-      const host = ui.divV([]);
+    const seriesStatsProperty = DG.Property.js('series', DG.TYPE.STRING,
+      {description: 'Controls whether to show series statistics or aggregated statistics',
+        defaultValue: 'All', choices: ['all', 'aggregated'], nullable: false});
+    const seriesStatsInput = ui.input.forProperty(seriesStatsProperty, null, {onValueChanged(input) {
+      acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
+    }});
+    const aggrTypeProperty = DG.Property.js('aggregation type', DG.TYPE.STRING,
+      {description: 'Controls which aggregation to use on the series statistics',
+        defaultValue: 'med', choices: Object.values(DG.STATS), nullable: false});
+    const aggrTypeInput = ui.input.forProperty(aggrTypeProperty, null, {onValueChanged(input) {
+      acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
+    }});
 
-      const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-      for (let i = 0; i < chartData.series!.length; i++) {
-        const series = chartData.series![i];
-        const fitFunction = getSeriesFitFunction(chartData.series![i]);
-        if (series.parameters) {
-          if (chartData.chartOptions?.logX)
-            if (series.parameters[2] > 0)
-              series.parameters[2] = Math.log10(series.parameters[2]);
+    function createFitPane(): HTMLElement {
+      const host = ui.divV(seriesStatsInput.stringValue === 'aggregated' ? [seriesStatsInput.root, aggrTypeInput.root] : [seriesStatsInput.root]);
+      if (seriesStatsInput.stringValue === 'all') {
+        const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
+        for (let i = 0; i < chartData.series!.length; i++) {
+          const series = chartData.series![i];
+          const seriesStatistics = calculateSeriesStats(series, chartLogOptions);
+  
+          const color = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
+            series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+          host.appendChild(ui.panel([
+            ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
+            ui.input.form(seriesStatistics, statisticsProperties, {
+              onCreated: (input) => input.root.appendChild(
+                ui.iconFA('plus', () => addStatisticsColumn(gridCell.gridColumn, input.property, series, i),
+                  `Calculate ${input.property.name} for the whole column`))
+            })
+          ]));
         }
-        else 
-          series.parameters = fitSeries(series, fitFunction, chartLogOptions).parameters;
-
-        const seriesStatistics = getSeriesStatistics(series, fitFunction);
-        const color = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
-          series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+      }
+      else {
+        const seriesStatistics = getChartDataAggrStats(chartData, aggrTypeInput.stringValue);
         host.appendChild(ui.panel([
-          ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
-          ui.input.form(seriesStatistics, statisticsProperties, {
-            onCreated: (input) => input.root.appendChild(
-              ui.iconFA('plus',
-                () => addStatisticsColumn(gridCell.gridColumn, input.property, series, i),
-                `Calculate ${input.property.name} for the whole column`))
-          })
-        ]));
+            ui.h1(`series ${aggrTypeInput.stringValue}`),
+            ui.input.form(seriesStatistics, statisticsProperties, {
+              onCreated: (input) => input.root.appendChild(
+                ui.iconFA('plus', () => addAggrStatisticsColumn(gridCell.gridColumn, input.property, aggrTypeInput.stringValue),
+                  `Calculate ${input.property.name} for the whole column`))
+            })
+          ]));
       }
 
       return host;
+    }
+
+    acc.addPane('Fit', () => {
+      return createFitPane();
     });
 
     acc.addPane('Chart', () => CellRenderViewer.fromGridCell(gridCell).root);
