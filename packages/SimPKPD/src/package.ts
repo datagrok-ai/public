@@ -13,84 +13,10 @@ export async function init(): Promise<void> {
   await initSolvers();
 }
 
-//name: Simulation PKPD
-//tags: app
-export async function sim() {
-  const dosage = ui.floatInput('Dosage, um', 1000, () => recalculate());
-  const doseInterval = ui.floatInput('Dose intrval, h', 12, () => recalculate());
-  const compartments = ui.choiceInput('Model ', '2 compartment PK', ['2 compartment PK', '1 compartment PK'], () => recalculate());
-  const clearance = ui.floatInput('Clearance', 2, () => recalculate());
-  const rateConstant = ui.floatInput('Rate', 0.3, () => recalculate());
-  const centralV = ui.floatInput('Central volume', 4, () => recalculate());
-  const perV = ui.floatInput('Peripheral volume', 30, () => recalculate());
-  const interRate = ui.floatInput('Intercompartmental rate', 1, () => recalculate());
-  const effRate = ui.floatInput('Effective rate', 0.2, () => recalculate());
-  const effect = ui.floatInput('EC50', 8, () => recalculate());
-
-  let t = await simulate(dosage.value!, doseInterval.value!, compartments.value!,
-  clearance.value!, rateConstant.value!, centralV.value!,
-  perV.value!, interRate.value!, effRate.value!, effect.value!);
-
-  let lc = DG.Viewer.lineChart(t);
-
-  let recalculate = async (): Promise<void> => {
-    t = await simulate(
-      dosage.value!, doseInterval.value!, compartments.value!,
-      clearance.value!, rateConstant.value!, centralV.value!,
-      perV.value!, interRate.value!, effRate.value!, effect.value!);
-
-    lc.dataFrame = t;
-  }
-
-  const v = grok.shell.newView('SimPKPD', [
-    ui.panel([
-      ui.div([
-        ui.div([
-          ui.divH([ui.h1('Inputs')]),
-          ui.divV([
-            dosage,
-            doseInterval,
-            compartments,
-            clearance,
-            rateConstant,
-            centralV,
-            perV,
-            interRate,
-            effRate,
-            effect
-          ], 'ui-form'),
-        ], 'ui-form'),
-      ], 'ui-form'),
-    ])
-  ]);
-  v.box = true;
-
-  v.append(lc);
-}
-
-export async function simulate(
-  dosage: number, doseInterval: number, compartments: string,
-  clearance: number, rateConstant: number, centralV: number,
-  perV: number, interRate: number, effRate: number, effect: number): Promise<DG.DataFrame> {
-  return await grok.functions.call(
-    "Simpkpd:pkpd", {
-    'dosage': dosage,
-    'doseInterval': doseInterval,
-    'compartments': compartments,
-    'clearance': clearance,
-    'rateConstant': rateConstant,
-    'centralV': centralV,
-    'perV': perV,
-    'interRate': interRate,
-    'effRate': effRate,
-    'effect': effect
-  });
-}
-
 //name: PK-PD
 //description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation.
 //tags: model
-//input: string compartments = "2 compartment PK" {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]} [Pharmacokinetic model.]
+//input: string compartments = 2 compartment PK {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]} [Pharmacokinetic model.]
 //input: double dose = 10000.0 {units: um; caption: dose; category: Dosing} [Dosage.]
 //input: int dosesCount = 10 {caption: count; category: Dosing} [Number of doses.]
 //input: double doseInterval = 12 {units: h; caption: interval; category: Dosing} [Dosing interval.]
@@ -112,6 +38,7 @@ export async function simulatePKPD(compartments: string,
 
 //name: PKPD Demo
 //description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation.
+//input: string compartments = 2 compartment PK {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]} [Pharmacokinetic model.]
 //input: double dose = 10000.0 {units: um; caption: dose; category: Dosing} [Dosage.]
 //input: int dosesCount = 10 {caption: count; category: Dosing} [Number of doses.]
 //input: double doseInterval = 12 {units: h; caption: interval; category: Dosing} [Dosing interval.]
@@ -125,10 +52,10 @@ export async function simulatePKPD(compartments: string,
 //output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnStart: true
-export async function simulatePkPdDemo(dose: number, dosesCount: number, doseInterval: number,
+export async function simulatePkPdDemo(compartments: string, dose: number, dosesCount: number, doseInterval: number,
   _KAVal: number, _CLVal: number, _V2Val: number, _QVal: number, _V3Val: number, effRate: number, _EC50Val: number): Promise<DG.DataFrame>
 {
-  const res = await simPKPD('2 compartment PK', dose, dosesCount, doseInterval, _KAVal, _CLVal, _V2Val, _QVal, _V3Val, effRate, effRate, _EC50Val);
+  const res = await simPKPD(compartments, dose, dosesCount, doseInterval, _KAVal, _CLVal, _V2Val, _QVal, _V3Val, effRate, effRate, _EC50Val);
 
   return DG.DataFrame.fromColumns([res.col(TIME)!, res.col(CENTR_CONC)!, res.col(EFFECT)!]);
 }

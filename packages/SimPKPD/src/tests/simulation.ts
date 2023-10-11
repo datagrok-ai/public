@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-
+/*
 import { category, test, expect, delay } from '@datagrok-libraries/utils/src/test';
 import { _package } from '../package-test';
 import { simulate } from '../package';
@@ -15,4 +15,4 @@ category('Simulation', () => {
     if (df != null)
       grok.shell.closeTable(df);
   });
-});
+});*/
