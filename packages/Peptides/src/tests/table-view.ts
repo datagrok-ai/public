@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {CLUSTER_TYPE, PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -38,6 +38,8 @@ category('Table view', () => {
 
     await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Tooltip', async () => {
     expect(model.showMonomerTooltip(firstPair.monomerOrCluster, 0, 0), true,

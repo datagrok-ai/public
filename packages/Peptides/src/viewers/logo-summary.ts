@@ -352,7 +352,6 @@ export class LogoSummaryTable extends DG.JsViewer {
     gridProps.allowRowSelection = false;
     gridProps.allowBlockSelection = false;
     gridProps.allowColSelection = false;
-    gridProps.showRowHeader = false;
     gridProps.showCurrentRowIndicator = false;
 
     return this.viewerGrid;
