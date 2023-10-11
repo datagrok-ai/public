@@ -25,10 +25,10 @@ const CENTR = 'Central';
 const PERI_T = 'peri(t)';
 const PERI = 'Peripheral';
 const EFF_T = 'eff(t)';
-const EFFECT = 'Effect';
+export const EFFECT = 'Effect';
 const T_COL = 't';
-const TIME = 'Time [h]';
-const CENTR_CONC = 'Central concentration';
+export const TIME = 'Time [h]';
+export const CENTR_CONC = 'Central concentration';
 const PER_CONC = 'Peripheral concentration';
 const POINTS_COUNTER = 100;
 

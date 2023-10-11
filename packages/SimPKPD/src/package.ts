@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { initSolvers } from '../wasm/solving-tools';
-import { simPKPD } from './pk-pd-tools';
+import { simPKPD, TIME, EFFECT, CENTR_CONC } from './pk-pd-tools';
 
 export const _package = new DG.Package();
 
@@ -88,7 +88,7 @@ export async function simulate(
 }
 
 //name: PK-PD
-//description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation
+//description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation.
 //tags: model
 //input: string compartments = "2 compartment PK" {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]} [Pharmacokinetic model.]
 //input: double dose = 10000.0 {units: um; caption: dose; category: Dosing} [Dosage.]
@@ -107,5 +107,64 @@ export async function simulatePKPD(compartments: string,
   dose: number, dosesCount: number, doseInterval: number,
   _KAVal: number, _CLVal: number, _V2Val: number, _QVal: number, _V3Val: number, effRate: number, _EC50Val: number): Promise<DG.DataFrame>
 {
-  return simPKPD(compartments, dose, dosesCount, doseInterval, _KAVal, _CLVal, _V2Val, _QVal, _V3Val, effRate, effRate, _EC50Val);
+  return await simPKPD(compartments, dose, dosesCount, doseInterval, _KAVal, _CLVal, _V2Val, _QVal, _V3Val, effRate, effRate, _EC50Val);
+}
+
+//name: PKPD Demo
+//description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation.
+//input: double dose = 10000.0 {units: um; caption: dose; category: Dosing} [Dosage.]
+//input: int dosesCount = 10 {caption: count; category: Dosing} [Number of doses.]
+//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing} [Dosing interval.]
+//input: double _KAVal = 0.3 {units: ; caption: rate constant; category: PK parameters} [Rate constant.]
+//input: double _CLVal = 2.0 {units: ; caption: clearance; category: PK parameters} [Clearance.]
+//input: double _V2Val = 4.0 {units: ; caption: central volume; category: PK parameters} [Central compartment volume.]
+//input: double _QVal = 1.0 {units: ; caption: intercompartmental rate; category: PK parameters} [Intercompartmental rate.]
+//input: double _V3Val = 30.0 {units: ; caption: peripheral volume; category: PK parameters} [Peripheral compartment volume.]
+//input: double effRate = 0.2 {units: ; caption: effective rate; category: PD parameters} [Effective compartment rate.]
+//input: double _EC50Val = 8.0 {units: ; caption: effect; category: PD parameters} [EC50.]
+//output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100) }
+//editor: Compute:RichFunctionViewEditor
+//meta.runOnStart: true
+export async function simulatePkPdDemo(dose: number, dosesCount: number, doseInterval: number,
+  _KAVal: number, _CLVal: number, _V2Val: number, _QVal: number, _V3Val: number, effRate: number, _EC50Val: number): Promise<DG.DataFrame>
+{
+  const res = await simPKPD('2 compartment PK', dose, dosesCount, doseInterval, _KAVal, _CLVal, _V2Val, _QVal, _V3Val, effRate, effRate, _EC50Val);
+
+  return DG.DataFrame.fromColumns([res.col(TIME)!, res.col(CENTR_CONC)!, res.col(EFFECT)!]);
+}
+
+//name: PK-PD Simulation Demo
+//description: In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation.
+//meta.demoPath: Compute | PK-PD modeling
+//test: demoSimPKPD() //wait: 100
+export async function demoSimPKPD(): Promise<any>  {
+  const doeSimpleFunc: DG.Func = await grok.functions.eval('SimPKPD:simulatePkPdDemo');
+  const doeSimpleFuncCall = doeSimpleFunc.prepare();
+    
+  const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
+  const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
+  openModelFuncCall.call();
+
+// @ts-ignore
+  grok.shell.windows.help.visible = true;
+
+  const info = `# Try
+  Vary inputs and press "RUN"
+  # No-code
+  Complex phenomena simulators are provided by Datagrok WebAutosolver tool.
+  # Model
+  Only declarative equations description is required.
+  # Essence
+  Two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
+  # Performance
+  Nonlinear system of differential equations within a few milliseconds.`;
+
+// @ts-ignore
+  grok.shell.windows.help.showHelp(ui.markdown(info));
+  
+// @ts-ignore
+  grok.shell.windows.context.visible = true;
+
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showProperties = false; 
 }
