@@ -49,7 +49,7 @@ category('detectorsBenchmark', () => {
   async function detectMacromoleculeBenchmark(
     maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
   ): Promise<number> {
-    return await benchmark<DG.FuncCall, DG.Column>(10,
+    return await benchmark<DG.FuncCall, DG.Column>(maxET,
       (): DG.FuncCall => {
         const col: DG.Column = generate(notation, [...getAlphabet(alphabet)], length, count, separator);
         const funcCall: DG.FuncCall = detectFunc.prepare({col: col});
