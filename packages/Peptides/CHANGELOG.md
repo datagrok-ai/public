@@ -15,6 +15,7 @@
 * Widgets in Context panel will now fill all the available width.
 * Fixed LST rows not resizable.
 * Fixed selection inconsistency.
+* Fixed Most Potent Residues keyboar navigation.
 
 ## 1.14.1 (2023-09-28)
 
