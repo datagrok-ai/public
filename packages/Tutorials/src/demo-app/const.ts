@@ -222,6 +222,9 @@ export const DEMO_APP_HIERARCHY = {
 				{
 					name: 'Multivariate analysis',
 				},
+				{
+					name: 'PK-PD modeling',
+				},
 			]
 		},
 		{
