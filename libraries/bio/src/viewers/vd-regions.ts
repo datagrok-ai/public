@@ -52,7 +52,8 @@ export type VdRegionsProps = Required<typeof VdRegionsPropsDefault>;
 export interface IVdRegionsViewer extends VdRegionsProps, IViewer {
   init(): Promise<void>;
 
-  setData(mlbDf: DG.DataFrame, regions: VdRegion[]): void;
+  /** List of regions referencing the column with sequences by {@link VdRegion.sequenceColumnName }. */
+  setData(regions: VdRegion[]): void;
 }
 
 declare module 'datagrok-api/dg' {

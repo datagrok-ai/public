@@ -522,7 +522,7 @@ export class UnitsHandler {
    * @param {string | null} tgtSeparator   Possible separator
    * @return {DG.Column}                Converted column
    */
-  public convert(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column {
+  public convert(tgtNotation: NOTATION, tgtSeparator?: string): DG.Column<string> {
     const convert: ConvertFunc = this.getConverter(tgtNotation, tgtSeparator);
     const newColumn = this.getNewColumn(tgtNotation, tgtSeparator);
     // assign the values to the newly created empty column

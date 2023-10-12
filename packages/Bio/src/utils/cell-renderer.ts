@@ -27,6 +27,7 @@ import * as C from './constants';
 import {_package, getBioLib} from '../package';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {errInfo} from './err-info';
 
 
 type TempType = { [tagName: string]: any };
@@ -136,7 +137,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
-    const grid = gridCell.grid;
+    let grid: DG.Grid | undefined = undefined;
+    try { grid = gridCell.grid; } catch (err: any) {
+      grid = undefined;
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
+    }
     const tableCol: DG.Column = gridCell.cell.column;
     if (!grid || !tableCol) return;
 

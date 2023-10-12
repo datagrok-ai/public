@@ -148,11 +148,10 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   override detach(): void {
-    if (this.setDataInProgress) return;
-
     const superDetach = super.detach.bind(this);
     this.detachPromise = this.detachPromise.then(async () => { // detach
       await this.viewPromise;
+      if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
@@ -164,37 +163,44 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   // -- Data --
 
   setData(purpose: string): void {
-    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
     _package.logger.debug(`NglViewer.setData(purpose='${purpose}') `);
 
     this.viewPromise = this.viewPromise.then(async () => { // setData
-      if (this.viewed) {
-        await this.destroyView('setData');
-        this.viewed = false;
-      }
-    }).then(async () => {
-      await this.detachPromise;
-      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
+      if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
+      try {
+        if (this.viewed) {
+          await this.destroyView('setData');
+          this.viewed = false;
+        }
 
-      // -- PDB data --
-      let pdbTag: string = pdbTAGS.PDB;
-      if (this.pdbTag) pdbTag = this.pdbTag;
-      this.pdbStr = this.dataFrame.getTag(pdbTag);
-      if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+        await this.detachPromise;
+        // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-      // -- Ligand --
-      if (!this.ligandColumnName) {
-        const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-        if (molCol)
-          this.ligandColumnName = molCol.name;
+        // -- PDB data --
+        let pdbTag: string = pdbTAGS.PDB;
+        if (this.pdbTag) pdbTag = this.pdbTag;
+        this.pdbStr = this.dataFrame.getTag(pdbTag);
+        if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+
+        // -- Ligand --
+        if (!this.ligandColumnName) {
+          const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+          if (molCol)
+            this.ligandColumnName = molCol.name;
+        }
+
+        if (!this.viewed) {
+          await this.buildView('setData').then(() => { this._onAfterBuildView.next(); });
+          this.viewed = true;
+        }
+      } catch (err: any) {
+        const errMsg = err instanceof Error ? err.message : err.toString();
+        const stack = err instanceof Error ? err.stack : undefined;
+        grok.shell.error(errMsg);
+        _package.logger.error(errMsg, undefined, stack);
+      } finally {
+        this.setDataInProgress = false;
       }
-    }).then(async () => {
-      if (!this.viewed) {
-        await this.buildView('setData').then(() => { this._onAfterBuildView.next(); });
-        this.viewed = true;
-      }
-    }).finally(() => {
-      this.setDataInProgress = false;
     });
   }
 

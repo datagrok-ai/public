@@ -387,7 +387,7 @@ export async function getRegionTopMenu(
 //input: object options {optional: true}
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
-export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
+export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<string>, activities: DG.Column,
   similarity: number, methodName: DimReductionMethods, options?: (IUMAPOptions | ITSNEOptions) & Options,
 ): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUI(macroMolecule, 'Activity Cliffs'))
@@ -497,8 +497,8 @@ export async function sequenceSpaceTopMenu(
         embedYCol = table.columns.byName(embedColsNames[1]);
       }
 
-      embedXCol.init((i) => embeddings[i][0]);
-      embedYCol.init((i) => embeddings[i][1]);
+      embedXCol.init((i) => embeddings[i] ? embeddings[i][0] : undefined);
+      embedYCol.init((i) => embeddings[i] ? embeddings[i][1] : undefined);
       const progress = (_nEpoch / epochsLength * 100);
       pg.update(progress, `Running sequence space ... ${progress.toFixed(0)}%`);
     }
@@ -615,7 +615,7 @@ export async function sequenceSpaceTopMenu(
         sp = (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
     }
   } */
-};
+}
 
 //top-menu: Bio | Convert | To Atomic Level...
 //name: To Atomic Level

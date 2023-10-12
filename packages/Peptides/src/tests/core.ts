@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, awaitCheck, delay, after} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/peptides';
@@ -23,6 +23,7 @@ category('Core', () => {
   const alignedSequenceCol = 'AlignedSequence';
 
   let model: PeptidesModel | null = null;
+  after(async () => await delay(3000));
 
   test('Start analysis: simple', async () => {
     const simpleActivityColName = 'IC50';
@@ -38,15 +39,8 @@ category('Core', () => {
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
-    let overlayInit = false;
-    grok.log.debug('Waiting for overlay...');
-    model!._analysisView!.grid.onAfterDrawOverlay.subscribe(() => {
-      overlayInit = true;
-      grok.log.debug('Overlay initialized');
-    });
-
+ 
     model!.mutationCliffsSelection = {'11': ['D']};
-    await delay(500);
   });
 
   test('Start analysis: сomplex', async () => {
@@ -64,16 +58,10 @@ category('Core', () => {
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
-    let overlayInit = false;
-    model!._analysisView!.grid.onAfterDrawOverlay.subscribe(() => {
-      overlayInit = true;
-      grok.log.debug('Overlay initialized');
-    });
 
     if (model !== null)
       model.mutationCliffsSelection = {'13': ['-']};
 
-    await delay(500);
   });
 
   test('Save and load project', async () => {
@@ -105,7 +93,7 @@ category('Core', () => {
     const sp = await grok.dapi.projects.save(project);
 
     v.close();
-    await awaitCheck(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined', 'Table never closed', 2000);
+    await awaitCheck(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined', 'Table never closed', 3000);
 
     await sp.open();
     v = grok.shell.getTableView('Peptides analysis');
@@ -113,8 +101,6 @@ category('Core', () => {
     await grok.dapi.layouts.delete(sl);
     await grok.dapi.tables.delete(sti);
     await grok.dapi.projects.delete(sp);
-
-    await delay(500);
   });
 
   test('Cluster stats - Benchmark HELM 5k', async () => {

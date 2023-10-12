@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, delay, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
 import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {_package} from '../package-test';
@@ -49,6 +49,8 @@ category('Viewers: Monomer-Position', () => {
 
     await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Tooltip', async () => {
     const cellCoordinates = {col: '9', row: 6};
@@ -102,6 +104,8 @@ category('Viewers: Most Potent Residues', () => {
     await delay(500);
   });
 
+  after(async () => await delay(3000));
+
   test('Tooltip', async () => {
     const cellCoordinates = {col: 'Diff', row: 6};
     const gc = mprViewer.viewerGrid.cell(cellCoordinates.col, cellCoordinates.row);
@@ -138,6 +142,8 @@ category('Viewers: Logo Summary Table', () => {
 
     await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Properties', async () => {
     // Change Logo Summary Table Web Logo Mode property to full

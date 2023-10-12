@@ -303,7 +303,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       }
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
-    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell) => {
+    DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell) => {
       if (!gridCell.isTableCell)
         return;
 
@@ -352,7 +352,6 @@ export class LogoSummaryTable extends DG.JsViewer {
     gridProps.allowRowSelection = false;
     gridProps.allowBlockSelection = false;
     gridProps.allowColSelection = false;
-    gridProps.showRowHeader = false;
     gridProps.showCurrentRowIndicator = false;
 
     return this.viewerGrid;
@@ -386,7 +385,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     this.bitsets.push(currentSelection.clone());
 
-    const newClusterName = viewerDfCols.getUnusedName('New Cluster');
+    const newClusterName = this.model.df.columns.getUnusedName('New Cluster');
     const aggregatedValues: {[colName: string]: number} = {};
     const aggColsEntries = Object.entries(this.model.settings.columns ?? {});
     for (const [colName, aggFn] of aggColsEntries) {
