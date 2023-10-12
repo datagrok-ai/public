@@ -379,6 +379,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   molColumns: Array<DG.Column[]> = [];
   colorCodedScaffolds: IColoredScaffold[] = [];
   checkedScaffolds: IColoredScaffold[] = [];
+  availableColors: number[] = DG.Color.categoricalPalette;
   molColumnIdx: number = -1;
   tableIdx: number = -1;
   threshold: number;
@@ -1252,7 +1253,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
       'Exclude structures containing this scaffold');
 
-    let chosenColor: string = '#2057b6';
+    let chosenColor = DG.Color.toHtml(this.availableColors[0]);
+    var first = this.availableColors.shift();
+    this.availableColors[this.availableColors.length] = first!;
+    
     const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
       chosenColor = value;
     });
@@ -1668,6 +1672,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.molColPropObserver = null;
 
     this.clearFilters();
+    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
     super.detach();
   }
 
