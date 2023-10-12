@@ -23,7 +23,6 @@ category('Core', () => {
   const alignedSequenceCol = 'AlignedSequence';
 
   let model: PeptidesModel | null = null;
-  after(async () => await delay(3000));
 
   test('Start analysis: simple', async () => {
     const simpleActivityColName = 'IC50';
@@ -41,6 +40,7 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true, 'Model is null');
  
     model!.mutationCliffsSelection = {'11': ['D']};
+    await delay(3000)
   });
 
   test('Start analysis: сomplex', async () => {
@@ -59,9 +59,8 @@ category('Core', () => {
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
 
-    if (model !== null)
-      model.mutationCliffsSelection = {'13': ['-']};
-
+    model!.mutationCliffsSelection = {'13': ['-']};
+    await delay(3000)
   });
 
   test('Save and load project', async () => {
