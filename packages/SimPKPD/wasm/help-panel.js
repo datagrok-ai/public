@@ -13,7 +13,10 @@ export function showHelpPanel() {
   # Essence
   One- and two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
   # Performance
-  Nonlinear system of differential equations within a few milliseconds.`;
+  Nonlinear system of differential equations within a few milliseconds.
+  # Learn more
+  * [Compute](https://datagrok.ai/help/compute/)
+  * [PK-PD](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046/)`;
 
   grok.shell.windows.help.showHelp(ui.markdown(info));
   
