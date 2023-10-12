@@ -544,6 +544,12 @@ export interface ILineChartLookSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
+  /// Deprecated, use splitColumnNames instead
+  splitColumnName: string;
+
+  /// A categorical column by which lines are split
+  splitColumnNames: Array<string>;
+
   /// Defines a Y column for the chart on the bottom used for zooming
   overviewColumnName: string;
 
@@ -580,9 +586,6 @@ export interface ILineChartLookSettings {
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
   yColumnNames: Array<string>;
-
-  /// A categorical column by which lines are split
-  splitColumnNames: Array<string>;
 
   showYAxis: boolean;
 
@@ -1211,7 +1214,13 @@ export interface IGridLookSettings {
   /// Indicates current row with the *Current Row Color*.
   showCurrentRowIndicator: boolean;
 
-  pinnedRows: Array<number>;
+  sortByColumnNames: Array<string>;
+
+  sortTypes: Array<boolean>;
+
+  pinnedRowColumnNames: Array<string>;
+
+  pinnedRowValues: Array<string>;
 
   /// Indicates whether the control is in the grid or heatmap mode.
   /// Typically, you don't need to change it manually.
@@ -1856,6 +1865,15 @@ export interface INetworkDiagramLookSettings {
   hoverColor: number;
 
   showColumnSelectors: boolean;
+
+  selectRowsOnClick: boolean;
+
+  selectEdgesOnClick: boolean;
+
+  /// Loads external data; called when you double-click on a node.
+  /// The specified function gets called with the node value as a single argument.
+  /// Its signature: `dataframe expand(dynamic nodeId)`.
+  onNodeExpandFunction: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

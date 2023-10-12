@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
-import {getSeparator} from '../utils/misc';
+import {addExpandIcon, getSeparator, setGridProps} from '../utils/misc';
 import {renderCellSelection} from '../utils/cell-renderer';
 
 export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
@@ -76,6 +76,7 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~toIdx', toIdxArray);
   const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~fromIdx', fromIdxArray);
   const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
+  pairsTable.name = 'Mutation Cliff pairs';
 
   const aminoToInput = ui.stringInput('Mutated to:', '', () => {
     const substitutedToAar = aminoToInput.stringValue;
@@ -87,21 +88,40 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   aminoToInput.setTooltip('Monomer to which the mutation was made');
 
   const pairsGrid = pairsTable.plot.grid();
-  pairsGrid.props.allowEdit = false;
-  pairsGrid.props.allowRowSelection = false;
-  pairsGrid.props.allowBlockSelection = false;
-  pairsGrid.props.allowColSelection = false;
-  pairsGrid.root.style.width = '100%';
+  setGridProps(pairsGrid);
   pairsGrid.root.style.height = '150px';
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
   substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
 
+  let keyPress = false;
+  let lastSelectedIndex: number | null = null;
   const pairsSelectedIndexes: number[] = [];
+  pairsGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+    try {
+      const rowIdx = gridCell.tableRowIndex;
+      if (!keyPress)
+        return;
+      if (rowIdx === null)
+        return;
+      if (lastSelectedIndex !== null)
+        pairsSelectedIndexes.splice(pairsSelectedIndexes.indexOf(lastSelectedIndex), 1);
+
+      if (!pairsSelectedIndexes.includes(rowIdx)) {
+        pairsSelectedIndexes.push(rowIdx);
+        pairsGrid.invalidate();
+      }
+      uniqueSequencesTable.filter.fireChanged();
+    } finally {
+      keyPress = false;
+      lastSelectedIndex = gridCell.tableRowIndex;
+    }
+  });
+  pairsGrid.root.addEventListener('keydown', (event) => keyPress = event.key.startsWith('Arrow'));
   pairsGrid.root.addEventListener('click', (event) => {
     const gridCell = pairsGrid.hitTest(event.offsetX, event.offsetY);
-    if (gridCell === null || gridCell.tableRowIndex === null)
+    if (!gridCell || gridCell.tableRowIndex === null)
       return;
 
     const rowIdx = gridCell.tableRowIndex;
@@ -116,7 +136,6 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
         pairsSelectedIndexes.splice(rowIdxIdx, 1);
     }
     uniqueSequencesTable.filter.fireChanged();
-    gridCell.cell.dataFrame.currentRowIdx = -1;
     pairsGrid.invalidate();
   });
   pairsGrid.onCellRender.subscribe((gcArgs) => {
@@ -137,17 +156,14 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   }
 
   const uniqueSequencesTable = table.clone(uniqueSequencesBitSet, columnNames);
+  uniqueSequencesTable.name = 'Unique sequences that form Mutation Cliffs pairs';
   const seqIdxCol = uniqueSequencesTable.columns.addNewInt('~seqIdx');
   const seqIdxColData = seqIdxCol.getRawData();
   const selectedIndexes = uniqueSequencesBitSet.getSelectedIndexes();
   seqIdxCol.init((idx) => selectedIndexes[idx]);
   const uniqueSequencesGrid = uniqueSequencesTable.plot.grid();
-  uniqueSequencesGrid.props.allowEdit = false;
-  uniqueSequencesGrid.props.allowRowSelection = false;
-  uniqueSequencesGrid.props.allowBlockSelection = false;
-  uniqueSequencesGrid.props.allowColSelection = false;
+  setGridProps(uniqueSequencesGrid);
   uniqueSequencesGrid.props.rowHeight = 20;
-  uniqueSequencesGrid.root.style.width = '100%';
   uniqueSequencesGrid.root.style.height = '250px';
   uniqueSequencesTable.filter.onChanged.subscribe(() => {
     const uniqueSelectedIndexes: number[] = [];
@@ -158,6 +174,9 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
     uniqueSequencesTable.filter.init(
       (idx) => pairsSelectedIndexes.length === 0 || uniqueSelectedIndexes.includes(seqIdxColData[idx]), false);
   });
+
+  addExpandIcon(pairsGrid);
+  addExpandIcon(uniqueSequencesGrid);
 
   return new DG.Widget(ui.divV([aminoToInput.root, pairsGrid.root, uniqueSequencesGrid.root], {style: {width: '100%'}}));
 }

@@ -125,3 +125,12 @@ export const dummyMonomer = {
 // range of hex nubers used in PepSea library to endode monomers
 export const MONOMER_ENCODE_MIN = 0x100;
 export const MONOMER_ENCODE_MAX = 0x40A;
+
+export const RIBOSE_SYMBOL = 'r';
+export const DEOXYRIBOSE_SYMBOL = 'd';
+export const PHOSPHATE_SYMBOL = 'p';
+export const HELM_WRAPPERS_REGEXP = new RegExp(
+  `[${RIBOSE_SYMBOL}${DEOXYRIBOSE_SYMBOL}]\\((\\w)\\)${PHOSPHATE_SYMBOL}?`,
+  'g'
+);
+

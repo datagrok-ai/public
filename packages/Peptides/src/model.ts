@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {pickUpPalette, TAGS as bioTAGS, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
@@ -32,6 +32,10 @@ import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './packag
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
+
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -266,8 +270,16 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${splitByMonomerFlag}${flag ? 1 : 0}`;
   }
 
-  get isMonomerPositionSelectionEmpty(): boolean {
+  get isMutationCliffsSelectionEmpty(): boolean {
     for (const monomerList of Object.values(this.mutationCliffsSelection)) {
+      if (monomerList.length !== 0)
+        return false;
+    }
+    return true;
+  }
+
+  get isInvariantMapSelectionEmpty(): boolean {
+    for (const monomerList of Object.values(this.invariantMapSelection)) {
       if (monomerList.length !== 0)
         return false;
     }
@@ -410,7 +422,7 @@ export class PeptidesModel {
   }
 
   createAccordion(): DG.Accordion | null {
-    const trueModel: PeptidesModel | undefined = grok.shell.t.temp[PeptidesModel.modelName];
+    const trueModel: PeptidesModel | undefined = grok.shell.t?.temp[PeptidesModel.modelName];
     if (!trueModel)
       return null;
 
@@ -453,29 +465,19 @@ export class PeptidesModel {
     const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliffs pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
     acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
-    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel).root);
+    acc.addPane('Selection', () => getSelectionWidget(trueModel.df, trueModel));
 
     return acc;
   }
 
   updateGrid(): void {
     this.joinDataFrames();
-
     this.createScaledCol();
-
-    this.initInvariantMapSelection({notify: false});
-    this.initMutationCliffsSelection({notify: false});
-    this.initClusterSelection({notify: false});
-
     this.setWebLogoInteraction();
     this.webLogoBounds = {};
-
     this.setCellRenderers();
-
     this.setTooltips();
-
     this.setBitsetCallback();
-
     this.setGridProperties();
   }
 
@@ -965,20 +967,21 @@ export class PeptidesModel {
 
     const showAccordion = (): void => {
       const acc = this.createAccordion();
-      if (acc !== null) {
-        grok.shell.o = acc.root;
-        for (const pane of acc.panes)
-          pane.expanded = true;
-      }
+      if (acc === null)
+        return;
+      grok.shell.o = acc.root;
+      for (const pane of acc.panes)
+        pane.expanded = true;
     };
 
-    selection.onChanged.subscribe(() => {
+    DG.debounce(selection.onChanged, 500).subscribe(() => {
       if (!this.isUserChangedSelection)
         selection.copyFrom(getLatestSelection(), false);
       showAccordion();
+      this.isUserChangedSelection = true;
     });
 
-    filter.onChanged.subscribe(() => {
+    DG.debounce(filter.onChanged, 500).subscribe(() => {
       const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
       if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
         lstViewer.createLogoSummaryTableGrid();
@@ -986,6 +989,7 @@ export class PeptidesModel {
       }
       showAccordion();
     });
+
     this.isBitsetChangedInitialized = true;
   }
 
@@ -995,7 +999,6 @@ export class PeptidesModel {
     if (fireFilterChanged)
       this.df.filter.fireChanged();
     this.headerSelectedMonomers = calculateSelected(this.df);
-    this.isUserChangedSelection = true;
   }
 
   setGridProperties(props?: DG.IGridLookSettings): void {
@@ -1005,6 +1008,20 @@ export class PeptidesModel {
     sourceGridProps.allowEdit = props?.allowEdit ?? false;
     sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
+    const positionCols = this.splitSeqDf.columns;
+    let maxWidth = 10;
+    const canvasContext = sourceGrid.canvas.getContext('2d');
+    for (const positionCol of positionCols) {
+      // Longest category
+      const maxCategory = monomerToShort(positionCol.categories.reduce((a, b) => a.length > b.length ? a : b), 6);
+      // Measure text width of longest category
+      const width = Math.ceil(canvasContext!.measureText(maxCategory).width);
+      maxWidth = Math.max(maxWidth, width);
+    }
+    setTimeout(() => {
+      for (const positionCol of positionCols)
+        sourceGrid.col(positionCol.name)!.width = maxWidth + 15;
+    }, 1000);
   }
 
   closeViewer(viewerType: VIEWER_TYPE): void {
@@ -1216,5 +1233,18 @@ export class PeptidesModel {
       }
     }
     return selection;
+  }
+
+  async addSequenceSpace(): Promise<void> {
+    const seqSpaceParams: {table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
+      similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames, plotEmbeddings: boolean,
+      sparseMatrixThreshold?: number, options?: IUMAPOptions | ITSNEOptions} =
+      {table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName!), methodName: DimReductionMethods.UMAP,
+        similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE, plotEmbeddings: true, sparseMatrixThreshold: 0.8,
+        options: {}};
+    const seqSpaceViewer: DG.ScatterPlotViewer | undefined = await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
+    if (typeof seqSpaceViewer === 'undefined')
+      return;
+    this.analysisView.dockManager.dock(seqSpaceViewer, DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE), 'Sequence space');
   }
 }

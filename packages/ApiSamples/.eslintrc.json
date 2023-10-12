@@ -38,6 +38,10 @@
       }
     ],
     "block-spacing": 2,
-    "eol-last":"off"
+    "eol-last":"off",
+    "arrow-parens":"off",
+    "prefer-const":"off",
+    "comma-dangle":"off",
+    "guard-for-in":"off"
   }
 }

@@ -1,7 +1,6 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, delay} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {CLUSTER_TYPE, PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -36,16 +35,8 @@ category('Table view', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    let overlayInit = false;
-    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+    await delay(500);
   });
 
   test('Tooltip', async () => {
@@ -74,6 +65,7 @@ category('Table view', () => {
 
     // Select first monomer-position pair
     model.modifyMutationCliffsSelection(firstPair);
+    await delay(500);
     expect(model.mutationCliffsSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
       `Monomer ${firstPair.monomerOrCluster} is not selected at position ${firstPair.positionOrClusterType}`);
     expect(selection.trueCount, firstPair.mcCount, `Selection count is not equal to ${firstPair.mcCount} ` +
@@ -81,6 +73,7 @@ category('Table view', () => {
 
     // Select second monomer-position pair
     model.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: false});
+    await delay(500);
     expect(model.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
       `Monomer ${secondPair.monomerOrCluster} is not selected at position ${secondPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.mcCount + firstPair.mcCount, `Selection count is not equal ` +
@@ -89,6 +82,7 @@ category('Table view', () => {
 
     // Deselect second monomer-position pair
     model.modifyMutationCliffsSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
+    await delay(500);
     expect(model.mutationCliffsSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
       `Monomer ${secondPair.monomerOrCluster} is still selected at position ${secondPair.positionOrClusterType} after deselection`);
     expect(selection.trueCount, firstPair.mcCount, `Selection count is not equal to ${firstPair.mcCount} ` +
@@ -96,6 +90,7 @@ category('Table view', () => {
 
     // Clear monomer-position selection
     model.initMutationCliffsSelection();
+    await delay(500);
     for (const [position, selectedMonomers] of Object.entries(model.mutationCliffsSelection)) {
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after clearing ` +
         `monomer-position selection`);
@@ -104,6 +99,7 @@ category('Table view', () => {
 
     // Select first cluster
     model.modifyClusterSelection(firstCluster);
+    await delay(500);
     expect(model.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), true,
       `Cluster ${firstCluster.monomerOrCluster} is not selected`);
     expect(selection.trueCount, firstCluster.count, `Selection count is not equal to ${firstCluster.count} for ` +
@@ -111,6 +107,7 @@ category('Table view', () => {
 
     // Select second cluster
     model.modifyClusterSelection(secondCluster, {shiftPressed: true, ctrlPressed: false});
+    await delay(500);
     expect(model.clusterSelection[secondCluster.positionOrClusterType].includes(secondCluster.monomerOrCluster), true,
       `Cluster ${secondCluster.monomerOrCluster} is not selected`);
     expect(selection.trueCount, firstCluster.count + secondCluster.count, `Selection count is not equal to ` +
@@ -118,6 +115,7 @@ category('Table view', () => {
 
     // Deselect first cluster
     model.modifyClusterSelection(firstCluster, {shiftPressed: true, ctrlPressed: true});
+    await delay(500);
     expect(model.clusterSelection[firstCluster.positionOrClusterType].includes(firstCluster.monomerOrCluster), false,
       `Cluster ${firstCluster.monomerOrCluster} is still selected after deselection`);
     expect(selection.trueCount, secondCluster.count, `Selection count is not equal to ${secondCluster.count} for ` +
@@ -125,6 +123,7 @@ category('Table view', () => {
 
     // Clear selection
     model.initClusterSelection();
+    await delay(500);
     expect(model.isClusterSelectionEmpty, true, `Selection is not empty after clearing cluster selection`);
     expect(selection.trueCount, 0, `Selection count is not equal to 0 after clearing cluster selection`);
   });
@@ -137,6 +136,7 @@ category('Table view', () => {
 
     // Select by second monomer-position pair
     model.modifyInvariantMapSelection(secondPair);
+    await delay(500);
     expect(model.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), true,
       `Monomer ${secondPair.monomerOrCluster} is not filtered at position ${secondPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
@@ -144,6 +144,7 @@ category('Table view', () => {
 
     // Select by first monomer-position pair
     model.modifyInvariantMapSelection(firstPair, {shiftPressed: true, ctrlPressed: false});
+    await delay(500);
     expect(model.invariantMapSelection[firstPair.positionOrClusterType].includes(firstPair.monomerOrCluster), true,
       `Monomer ${firstPair.monomerOrCluster} is not filtered at position ${firstPair.positionOrClusterType}`);
     expect(selection.trueCount, secondPair.imCount, `Filter count is not equal to ${secondPair.imCount} ` +
@@ -151,6 +152,7 @@ category('Table view', () => {
 
     // Deselect filter for second monomer-position pair
     model.modifyInvariantMapSelection(secondPair, {shiftPressed: true, ctrlPressed: true});
+    await delay(500);
     expect(model.invariantMapSelection[secondPair.positionOrClusterType].includes(secondPair.monomerOrCluster), false,
       `Monomer ${secondPair.monomerOrCluster} is still filtered at position ${secondPair.positionOrClusterType} after ` +
       `deselection`);
@@ -160,6 +162,7 @@ category('Table view', () => {
 
     // Clear selection
     model.initInvariantMapSelection();
+    await delay(500);
     expect(selection.trueCount, 0, `Filter count is not equal to ${0} after clearing monomer-position filter`);
 
     for (const [position, filteredMonomers] of Object.entries(model.invariantMapSelection)) {

@@ -57,7 +57,7 @@ export class ItemsGrid {
     this._root = ui.divV([],
       {style: {
         display: 'grid', gridTemplateColumns: `repeat(${this.properties.length}, 1fr)`,
-        alignItems: 'center', gap: '12px'}});
+        alignItems: 'center', gap: '12px'}, classes: 'ui-items-grid'});
     this._items = items;
     this.render();
   }
@@ -88,7 +88,7 @@ export class ItemsGrid {
     }
 
     if (this.options.allowAdd) {
-      const newEditor = this.getItemDiv(undefined, true);
+      const newEditor = this.getItemDiv(this.options.newItemFunction?.() ?? undefined, true);
       for (const editor of newEditor)
         this._root.appendChild(editor);
     }
@@ -105,7 +105,7 @@ export class ItemsGrid {
       const input = this.options.customInputs?.[prop.name] ? this.options.customInputs[prop.name](item) :
         ui.input.forProperty(prop, item);
       editors.push(this.options.horizontalInputNames ? input.root : this.hideLabel(input.root));
-      if (prop.propertyType !== DG.TYPE.BOOL)
+      if (prop.propertyType !== DG.TYPE.BOOL && prop.name.toLowerCase() !== 'color')
         input.input && (input.input.style.width = '100%');
       inputsMap[prop.name] = input;
       input.onChanged(() => {

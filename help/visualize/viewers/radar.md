@@ -28,6 +28,9 @@ summary column](grid.md#row-summary-columns) of [grid](grid.md).
   1. Right-click a grid viewer. The context menu appears.
   1. Select **Add** > **Summary columns** > **Radar**.
 
+> Developers: To add the viewer from the console, use:
+ `grok.shell.tv.addViewer('Radar');` 
+
 Initially, a radar viewer picks up the first 20 numerical columns in the
 corresponding table. For each column, it forms an axis and calculates the min
 and max percentiles (5th and 95th). As row values, percentiles are also

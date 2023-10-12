@@ -7,31 +7,31 @@ import {_package} from '../package-test';
 category('Packages: Properties', () => {
   test('INT', async () => {
     await changeProp('INT', 10);
-  }, {skipReason: 'skip'});
+  }, {skipReason: 'GROK-14019'});
 
   test('BIG_INT', async () => {
     await changeProp('BIG_INT', 10);
-  }, {skipReason: 'skip'});
+  }, {skipReason: 'GROK-14019'});
 
   test('FLOAT', async () => {
     await changeProp('FLOAT', 10.567);
-  }, {skipReason: 'skip'});
+  }, {skipReason: 'GROK-14019'});
 
   test('NUM', async () => {
     await changeProp('NUM', 1.234);
-  }, {skipReason: 'skip'});
+  }, {skipReason: 'GROK-14019'});
 
   test('BOOL', async () => {
     await changeProp('BOOL', false);
-  }, {skipReason: 'skip'});
+  }, {skipReason: 'GROK-14019'});
 
   test('STRING', async () => {
     await changeProp('STRING', 'value2');
-  }, {skipReason: 'skip'});
+  }, {skipReason: 'GROK-14019'});
 
-  after(async () => {
-    await _package.setProperties({INT: 1, BIG_INT: 1, FLOAT: 1.234, NUM: 1, BOOL: true, STRING: 'value1'});
-  });
+  // after(async () => {
+  //   await _package.setProperties({INT: 1, BIG_INT: 1, FLOAT: 1.234, NUM: 1, BOOL: true, STRING: 'value1'});
+  // });
 });
 
 async function changeProp(name: string, value: any): Promise<void> {

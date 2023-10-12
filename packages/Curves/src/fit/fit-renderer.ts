@@ -122,6 +122,13 @@ export function layoutChart(rect: DG.Rect, showAxesLabels: boolean, showTitle: b
   ];
 }
 
+/** Checks if the color is valid */
+export function isColorValid(color: string | null | undefined): boolean {
+  if (color === undefined || color === null || color === '')
+    return false;
+  return DG.Color.fromHtml(color) !== undefined;
+}
+
 /** Performs candlestick border drawing */
 function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentValue: number, transform: Viewport): void {
   g.moveTo(transform.xToScreen(x) - (CANDLESTICK_BORDER_PX_SIZE / 2), transform.yToScreen(adjacentValue));
@@ -272,11 +279,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    grok.shell.o = gridCell;
-
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
+
+    grok.shell.o = gridCell;
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
     const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
@@ -302,7 +312,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           if (columns) {
             const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
             for (const column of columns) {
-              column.set(gridCell.cell.rowIndex, stats[column.name as keyof FitStatistics]);
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);
             }
           }
           // temporarily works only for JSON structure
@@ -506,6 +516,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
 
     this.renderCurves(g, x, y, w, h, data);
   }

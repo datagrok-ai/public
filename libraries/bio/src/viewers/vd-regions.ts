@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {IViewer} from './viewer';
-import {PositionHeight} from './web-logo';
+import {FilterSources, PositionHeight, WebLogoPropsDefault} from './web-logo';
 
 // Data structures for V-Domain regions of antibodies
 
@@ -42,6 +42,8 @@ export const VdRegionsPropsDefault = new class {
   fitWidth: boolean = false;
   positionWidth: number = 16;
   positionHeight: PositionHeight = PositionHeight.Entropy;
+
+  filterSource: FilterSources = WebLogoPropsDefault.filterSource;
 }();
 
 export type VdRegionsProps = Required<typeof VdRegionsPropsDefault>;
@@ -50,7 +52,8 @@ export type VdRegionsProps = Required<typeof VdRegionsPropsDefault>;
 export interface IVdRegionsViewer extends VdRegionsProps, IViewer {
   init(): Promise<void>;
 
-  setData(mlbDf: DG.DataFrame, regions: VdRegion[]): void;
+  /** List of regions referencing the column with sequences by {@link VdRegion.sequenceColumnName }. */
+  setData(regions: VdRegion[]): void;
 }
 
 declare module 'datagrok-api/dg' {

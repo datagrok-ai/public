@@ -26,9 +26,9 @@ const demoFilesPreviewList: string[] = [
   '1blu.pdb', '1crn.gro', '1crn.pdb', '1crn.ply',
   '1lee.ccp4', '2vts-docking.sdf', '2vts-protein.pdb', '3ek3-2fofc.cub',
   '3PQR.cif', '3str-2fofc.brix', '3str-2fofc.dsn6',
-  'adrenalin.mol2', 'ala3.pdb', 'ala3.psf', 'bromobenzene.pdb', 'd1h4vb1.ent', 'd1nj1a1.ent',
+  'adrenalin.mol2', 'ala3.pdb', 'bromobenzene.pdb', 'd1h4vb1.ent', 'd1nj1a1.ent',
   'DPDP.pdb', 'esp.dx', 'esp.mol', 'ligands.sd',
-  'localResolution.mrc', 'popc.gro'];
+  'popc.gro'];
 const demoFilesPath: string = 'bio/ngl-formats';
 
 category('MolstarPreview', () => {

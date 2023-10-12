@@ -9,8 +9,8 @@ import {
   getDataFrameChartOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, FIT_CELL_TYPE, TAG_FIT, IFitChartData, IFitSeries, IFitChartOptions, FIT_SEM_TYPE, IFitSeriesOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, mergeProperties} from './fit-renderer';
-import {MultiCurveViewer} from './multi-curve-viewer';
+import {TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX, getChartData, isColorValid, mergeProperties} from './fit-renderer';
+import {CellRenderViewer} from './cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
 
 
@@ -26,21 +26,26 @@ enum MANIPULATION_LEVEL {
 };
 
 
-function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, seriesNumber: number): void {
+function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property, series: IFitSeries, seriesNumber: number): void {
   const grid = chartColumn.grid;
-  const column = DG.Column.float(p.name, chartColumn.column?.length);
+  const column = DG.Column.float(`${chartColumn.name}_${series.name}_${p.name}`, chartColumn.column?.length);
   column.tags[SOURCE_COLUMN_TAG] = chartColumn.name;
   column.tags[SERIES_NUMBER_TAG] = seriesNumber;
   column.tags[STATISTICS_TAG] = p.name;
 
   column
     .init((i) => {
-      const chartData = getChartData(
-        DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
-      const fitResult = getSeriesStatistics(chartData.series![0], getSeriesFitFunction(chartData.series![0]));
+      const gridCell = DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i));
+      if (gridCell.cell.value === '')
+        return null;
+      const chartData = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX ?
+        convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+      if (chartData.series![seriesNumber] === undefined)
+        return null;
+      const fitResult = getSeriesStatistics(chartData.series![seriesNumber], getSeriesFitFunction(chartData.series![seriesNumber]));
       return p.get(fitResult);
     });
-  grid.dataFrame.columns.add(column);
+  grid.dataFrame.columns.insert(column, chartColumn.idx);
 }
 
 function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, options: string): void {
@@ -158,6 +163,8 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
               delete series[propertyName as keyof IFitSeriesOptions];
               isSeriesChanged = true;
             }
+          if (chartData.seriesOptions)
+            delete chartData.seriesOptions[propertyName as keyof IFitSeriesOptions];
           if (!isSeriesChanged) return value;
         }
         return JSON.stringify(chartData);
@@ -202,6 +209,28 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const chartOptionsRefresh = {onValueChanged: (inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
 
+    if (!isColorValid(dfChartOptions.seriesOptions?.pointColor) && !isColorValid(columnChartOptions.seriesOptions?.pointColor)) {
+      if (chartData.seriesOptions) {
+        if (!isColorValid(chartData.seriesOptions.pointColor))
+          chartData.seriesOptions.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+      else {
+        if (!isColorValid(chartData.series ? chartData.series![0].pointColor : ''))
+          chartData.series![0].pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+    }
+
+    if (!isColorValid(dfChartOptions.seriesOptions?.fitLineColor) && !isColorValid(columnChartOptions.seriesOptions?.fitLineColor)) {
+      if (chartData.seriesOptions) {
+        if (!isColorValid(chartData.seriesOptions.fitLineColor))
+          chartData.seriesOptions.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+      else {
+        if (!isColorValid(chartData.series ? chartData.series![0].fitLineColor : ''))
+          chartData.series![0].fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+      }
+    }
+
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
     mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
@@ -235,7 +264,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
           ui.input.form(seriesStatistics, statisticsProperties, {
             onCreated: (input) => input.root.appendChild(
               ui.iconFA('plus',
-                () => addStatisticsColumn(gridCell.gridColumn, input.property, i),
+                () => addStatisticsColumn(gridCell.gridColumn, input.property, series, i),
                 `Calculate ${input.property.name} for the whole column`))
           })
         ]));
@@ -244,7 +273,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       return host;
     });
 
-    acc.addPane('Chart', () => MultiCurveViewer.fromChartData(chartData).root);
+    acc.addPane('Chart', () => CellRenderViewer.fromGridCell(gridCell).root);
 
     return acc.root;
   }

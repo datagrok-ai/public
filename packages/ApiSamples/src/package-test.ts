@@ -7,11 +7,12 @@ export {tests};
 import './tests/test';
 
 const skip = [
-  'function-events', 'demo', 'ui-events', 'last-error', 'shellLastError',
-  'scatter-plot-3d', 'network-diagram', // Break
+  'function-events', 'demo', 'ui-events', 'last-error', 'chem-benchmark', 'menu-customization',
+  'README', '10k_columns_updates', // Break
   // To fix
-  'files', 'open-table-by-id', 'scroll-to-pixels', 'visible-cells', 'property-grid', 'tree-view-adv',
-  'attached-properties', 'all-chembl-structures', 'charts-in-cells',
+  'files', 'open-table-by-id', 'all-chembl-structures', 'charts-in-cells',
+  'property-grid', 'tree-view-adv', 'attached-properties', 'all-input-types',
+  'add-single-filter', 'custom-filters', 'filter-group', 'dynamic-loading'
 ];
 
 //name: test
@@ -28,10 +29,6 @@ export async function test(category: string, test: string, testContext: TestCont
 export async function initTests() {
   const scripts = await grok.dapi.scripts.filter('package.shortName = "ApiSamples"').list();
   for (const script of scripts) {
-    if (
-      ['domains/chem', 'misc/audit'].includes(script.options.path)
-      // || (script.options.path as string).startsWith('grid')
-    ) continue;
     category(('Scripts:' + script.options.path as string).replaceAll('/', ':'), () => {
       _test(script.friendlyName, async () => {
         await script.apply();

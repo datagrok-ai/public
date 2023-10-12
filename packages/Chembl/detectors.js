@@ -1,5 +1,13 @@
 class ChemblPackageDetectors extends DG.Package {
 
+  //meta.role: semValueExtractor
+  //input: string s
+  //output: semantic_value result
+  detectChemblId(s) {
+    if (s.startsWith('CHEMBL'))
+      return DG.SemanticValue.fromValueType(s, 'chembl');
+  }
+
   //tags: semTypeDetector
   //input: column col
   //output: string semType

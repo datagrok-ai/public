@@ -1,5 +1,8 @@
 import {ValidTypes} from '../typed-metrics/typed-metrics';
 import {IReduceDimensionalityResult} from '../reduce-dimensionality';
+import * as grok from 'datagrok-api/grok';
+
+export const DIMENSIONALITY_REDUCER_TERMINATE_EVENT = 'dimensionality-reducer-terminate-event';
 
 /**
  * A worker to perform dimensionality reduction.
@@ -11,7 +14,9 @@ import {IReduceDimensionalityResult} from '../reduce-dimensionality';
  * @return {Promise<IReduceDimensionalityResult>} Resulting embedding and distance matrix.
  */
 export async function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
-  options?: any, parallelDistanceWorkers?: boolean): Promise<IReduceDimensionalityResult> {
+  options?: any, parallelDistanceWorkers?: boolean,
+  progressFunc?: (epoch: number, epochsLength: number, embedding: number[][]) => void
+): Promise<IReduceDimensionalityResult> {
   return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
     worker.postMessage({
@@ -21,7 +26,19 @@ export async function createDimensinalityReducingWorker(dataMetric: ValidTypes, 
       options: options,
       parallelDistanceWorkers: parallelDistanceWorkers,
     });
-    worker.onmessage = ({data: {error, distance, embedding}}) => {
+    const terminateSub = grok.events.onCustomEvent(DIMENSIONALITY_REDUCER_TERMINATE_EVENT).subscribe(() => {
+      try {
+        worker?.terminate();
+      } finally {
+        terminateSub.unsubscribe();
+      }
+    });
+    worker.onmessage = ({data: {error, distance, embedding, epochNum, epochsLength}}) => {
+      if (epochNum && epochsLength) {
+        progressFunc && progressFunc(epochNum, epochsLength, embedding);
+        return;
+      }
+      terminateSub.unsubscribe();
       if (error)
         reject(error);
       else

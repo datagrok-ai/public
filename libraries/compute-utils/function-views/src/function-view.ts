@@ -256,10 +256,9 @@ export abstract class FunctionView extends DG.ViewBase {
     const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
 
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
-    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
+    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, this.func, {
       parentView: cardView,
       parentCall,
-      configFunc: this.func,
     });
     grok.shell.addView(v);
   }
@@ -446,7 +445,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await historyUtils.loadRun(funcCallId);
-    this.lastCall = pulledRun;
+    this.lastCall = deepCopy(pulledRun);
     this.linkFunccall(pulledRun);
     this.isHistorical.next(true);
     await this.onAfterLoadRun(pulledRun);

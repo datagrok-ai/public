@@ -212,6 +212,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       await model.addLogoSummaryTable();
     await model.addMonomerPosition();
     await model.addMostPotentResidues();
+
+    model.addSequenceSpace();
   } else
     grok.shell.error('The activity column must be of numeric type!');
   progress.close();

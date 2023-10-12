@@ -387,7 +387,7 @@ export function checkChangelog(packagePath: string, json: PackageFile) {
   regex = /^## \d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\)$/;
   for (const h of h2) {
     if (!regex.test(h))
-      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)\n`);
+      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<yyyy-mm-dd> | WIP)\n`);
   }
   regex = /^## (\d+\.\d+\.\d+)/;
   const v1 = h2[0].match(regex)?.[1];

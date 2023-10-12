@@ -114,18 +114,19 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   drawOptions.symbolStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
-  drawOptions.marginVertical ??= 5;
-  drawOptions.marginHorizontal ??= 5;
+  drawOptions.marginVertical ??= 2;
+  drawOptions.marginHorizontal ??= 2;
+  drawOptions.selectionWidth ??= 1;
   drawOptions.textHeight ??= 13;
   drawOptions.headerStyle ??= `bold ${drawOptions.textHeight * pr}px Roboto, Roboto Local, sans-serif`;
 
   const totalSpace = (sortedOrder.length - 1) * drawOptions.upperLetterAscent; // Total space between letters
   const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpace - 1.25 * drawOptions.textHeight) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
-  const barWidth = (bounds.width - leftShift * 2) * pr;
+  const barWidth = (bounds.width - (leftShift + drawOptions.marginHorizontal)) * pr;
   const xStart = (bounds.x + leftShift) * pr;
-  const selectionWidth = 4 * pr;
-  const xSelection = (bounds.x + 3) * pr;
+  const selectionWidth = Math.min(drawOptions.selectionWidth * pr, 1);
+  const xSelection = (bounds.x + 1) * pr;
   let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
   const monomerBounds: { [monomer: string]: DG.Rect } = {};

@@ -6,6 +6,7 @@ let tv = grok.shell.addTableView(t);
 tv.grid.columns.byName('ic50').cellType = 'html';
 tv.grid.columns.byName('hist').cellType = 'html';
 tv.grid.columns.byName('ic50').width = 300;
+tv.grid.columns.byName('hist').width = 300;
 
 const lineOptions = {
   xColumnName: 'concentration [ug/ml]',

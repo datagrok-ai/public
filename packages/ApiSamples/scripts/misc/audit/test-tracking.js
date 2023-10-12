@@ -1,4 +1,2 @@
-let view = grok.shell.newView('Usage');
-
-grok.data.query('TestTrack:ManualActivityByDate', {'date': 'today'})
-  .then(t => view.append(DG.Viewer.grid(t).root));
+const df = await grok.data.query('UsageAnalysis:TestsToday');
+grok.shell.addTableView(df);

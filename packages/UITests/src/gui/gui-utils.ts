@@ -68,14 +68,12 @@ export function isDialogPresent(dialogTitle: string): boolean {
 }
 
 export function checkDialog(dialogTitle: string): boolean {
-  let check = false;
-  for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
-    if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle) {
-      check = true;
-      break;
-    }
+  const dialogs = DG.Dialog.getOpenDialogs();
+  for (const d of dialogs) {
+    if (d.title === dialogTitle)
+      return true;
   }
-  return check;
+  return false;
 }
 
 export function returnDialog(dialogTitle: string): DG.Dialog | undefined {
