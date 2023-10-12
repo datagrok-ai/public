@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { initSolvers } from '../wasm/solving-tools';
+import { showHelpPanel } from '../wasm/help-panel';
 import { simPKPD, TIME, EFFECT, CENTR_CONC } from './pk-pd-tools';
 
 export const _package = new DG.Package();
@@ -75,26 +76,5 @@ export async function demoSimPKPD(): Promise<any>  {
   const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
   openModelFuncCall.call();
 
-// @ts-ignore
-  grok.shell.windows.help.visible = true;
-
-  const info = `# Try
-  Vary inputs and press "RUN".
-  # No-code
-  Complex phenomena simulators are provided by Datagrok WebAutosolver tool.
-  # Model
-  Only declarative equations description is required.
-  # Essence
-  One- and two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
-  # Performance
-  Nonlinear system of differential equations within a few milliseconds.`;
-
-// @ts-ignore
-  grok.shell.windows.help.showHelp(ui.markdown(info));
-  
-// @ts-ignore
-  grok.shell.windows.context.visible = true;
-
-  grok.shell.windows.showContextPanel = false;
-  grok.shell.windows.showProperties = false; 
+  showHelpPanel();
 }

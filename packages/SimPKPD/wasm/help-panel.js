@@ -1,0 +1,24 @@
+// Help pannels
+
+export function showHelpPanel() {
+
+  grok.shell.windows.help.visible = true;
+
+  const info = `# Try
+  Vary inputs and press "RUN".
+  # No-code
+  Complex phenomena simulators are provided by Datagrok WebAutosolver tool.
+  # Model
+  Only declarative equations description is required.
+  # Essence
+  One- and two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
+  # Performance
+  Nonlinear system of differential equations within a few milliseconds.`;
+
+  grok.shell.windows.help.showHelp(ui.markdown(info));
+  
+  grok.shell.windows.context.visible = true;  
+  grok.shell.windows.showContextPanel = false;
+  grok.shell.windows.showProperties = false;
+  grok.shell.windows.help.visible = true;
+}
