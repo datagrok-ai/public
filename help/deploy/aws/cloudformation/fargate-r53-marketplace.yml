@@ -130,7 +130,7 @@ Parameters:
       endpoints.
     Type: AWS::Route53::HostedZone::Id
   DatagrokVersion:
-    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge|jupyter
     Default: 1.16.3
     Description: Enter Datagrok docker image version.
     Type: String
@@ -468,6 +468,8 @@ Resources:
       LoadBalancerAttributes:
       - Key: routing.http.drop_invalid_header_fields.enabled
         Value: 'true'
+      - Key: idle_timeout.timeout_seconds
+        Value: 900
       Name:
         Fn::Sub: ${AWS::StackName}-datagrok-cvm
       Scheme:
@@ -497,6 +499,8 @@ Resources:
       LoadBalancerAttributes:
       - Key: routing.http.drop_invalid_header_fields.enabled
         Value: 'true'
+      - Key: idle_timeout.timeout_seconds
+        Value: 900
       Name:
         Fn::Sub: ${AWS::StackName}-dg-cvm-int
       Scheme: internal
@@ -1511,8 +1515,6 @@ Resources:
     - CvmTCP80Listener
     - CvmTCP443Listener
     - CvmTCP8090IntListener
-    - DatagrokJupyterTCP5005ListenerRule
-    - DatagrokJupyterTCP5005IntListenerRule
     - DatagrokJupyterTCP8889ListenerRule
     - DatagrokJupyterTCP8889IntListenerRule
     Properties:
@@ -1529,17 +1531,9 @@ Resources:
       LaunchType: FARGATE
       LoadBalancers:
       - ContainerName: jupyter_notebook
-        ContainerPort: 5005
-        TargetGroupArn:
-          Ref: DatagrokJupyterTCP5005TargetGroup
-      - ContainerName: jupyter_notebook
         ContainerPort: 8889
         TargetGroupArn:
           Ref: DatagrokJupyterTCP8889TargetGroup
-      - ContainerName: jupyter_notebook
-        ContainerPort: 5005
-        TargetGroupArn:
-          Ref: DatagrokJupyterTCP5005IntTargetGroup
       - ContainerName: jupyter_notebook
         ContainerPort: 8889
         TargetGroupArn:
@@ -1648,16 +1642,13 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: jupyter_notebook
-        MemoryReservation: 2048
+        MemoryReservation: 512
         Name: jupyter_notebook
         PortMappings:
-        - ContainerPort: 5005
-          HostPort: 5005
-          Protocol: tcp
         - ContainerPort: 8889
           HostPort: 8889
           Protocol: tcp
-      Cpu: '1024'
+      Cpu: '512'
       EphemeralStorage:
         SizeInGiB: 50
       ExecutionRoleArn:
@@ -1665,8 +1656,8 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
-      Memory: '3072'
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern
+      Memory: '1024'
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
@@ -2009,7 +2000,7 @@ Resources:
         - Arn
       Family:
         Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
-      Memory: '3072'
+      Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - FARGATE
