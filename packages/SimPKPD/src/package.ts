@@ -29,6 +29,7 @@ export async function init(): Promise<void> {
 //input: double _EC50Val = 8.0 {units: ; caption: effect; category: PD parameters} [EC50.]
 //output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]") | Grid(block: 50) }
 //editor: Compute:RichFunctionViewEditor
+//meta.runOnOpen: true
 export async function simulatePKPD(compartments: string,
   dose: number, dosesCount: number, doseInterval: number,
   _KAVal: number, _CLVal: number, _V2Val: number, _QVal: number, _V3Val: number, effRate: number, _EC50Val: number): Promise<DG.DataFrame>
@@ -51,7 +52,7 @@ export async function simulatePKPD(compartments: string,
 //input: double _EC50Val = 8.0 {units: ; caption: effect; category: PD parameters} [EC50.]
 //output: dataframe simResults {caption: PK-PD simulation; viewer: Line chart(xColumnName: "Time [h]", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
-//meta.runOnStart: true
+//meta.runOnOpen: true
 export async function simulatePkPdDemo(compartments: string, dose: number, dosesCount: number, doseInterval: number,
   _KAVal: number, _CLVal: number, _V2Val: number, _QVal: number, _V3Val: number, effRate: number, _EC50Val: number): Promise<DG.DataFrame>
 {
@@ -76,13 +77,13 @@ export async function demoSimPKPD(): Promise<any>  {
   grok.shell.windows.help.visible = true;
 
   const info = `# Try
-  Vary inputs and press "RUN"
+  Vary inputs and press "RUN".
   # No-code
   Complex phenomena simulators are provided by Datagrok WebAutosolver tool.
   # Model
   Only declarative equations description is required.
   # Essence
-  Two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
+  One- and two-compartment pharmacokinetic-pharmacodynamic (PK-PD) modeling is performed.
   # Performance
   Nonlinear system of differential equations within a few milliseconds.`;
 

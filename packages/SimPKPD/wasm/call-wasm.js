@@ -384,7 +384,7 @@ let Return = {
 };
 
 // The main tool that combines all together
-export function callWasm(module, funcName, inputs) {
+export async function callWasm(module, funcName, inputs) {
 
     let start = new Date().getTime();
 
