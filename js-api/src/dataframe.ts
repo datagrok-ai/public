@@ -1748,6 +1748,7 @@ export class Stats {
     return new Stats(api.grok_Stats_FromColumn(col.dart, toDart(mask)));
   }
 
+  /** Calculates statistics for the array of values. */
   static fromValues(values: number[] | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array): Stats {
     return new Stats(api.grok_Stats_FromValues(values));
   }
