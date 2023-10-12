@@ -15,6 +15,7 @@ export const tests: {
 } = {};
 
 const autoTestsCatName = 'Auto Tests';
+const demoCatName = 'Demo';
 const wasRegistered: {[key: string]: boolean} = {};
 export let currentCategory: string;
 
@@ -214,44 +215,61 @@ export async function initAutoTests(packageId: string, module?: any) {
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
   if (moduleTests[autoTestsCatName] !== undefined ||
-    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
+      moduleTests[demoCatName] !== undefined ||
+      Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName))) {
     wasRegistered[packageId] = true;
     return;
   }
   const moduleAutoTests = [];
+  const moduleDemo = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)|cat:\s*([^,\s]+)/g);
   for (const f of packFunctions) {
     const tests = f.options['test'];
-    if (!(tests && Array.isArray(tests) && tests.length)) continue;
-    for (let i = 0; i < tests.length; i++) {
-      const res = (tests[i] as string).matchAll(reg);
-      const map: {skip?: string, wait?: number, cat?: string} = {};
-      Array.from(res).forEach((arr) => {
-        if (arr[0].startsWith('skip')) map['skip'] = arr[1];
-        else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
-        else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
-      });
-      const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
-        const res = await grok.functions.eval(addNamespace(tests[i], f));
-        if (map.wait) await delay(map.wait);
-        // eslint-disable-next-line no-throw-literal
-        if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-      }, {skipReason: map.skip});
-      if (map.cat) {
-        const cat: string = autoTestsCatName + ': ' + map.cat;
-        test.category = cat;
-        if (moduleTests[cat] === undefined)
-          moduleTests[cat] = {tests: [], clear: true};
-        moduleTests[cat].tests.push(test);
-      } else {
-        moduleAutoTests.push(test);
+    const demo = f.options['demoPath'];
+    if ((tests && Array.isArray(tests) && tests.length)) {
+      for (let i = 0; i < tests.length; i++) {
+        const res = (tests[i] as string).matchAll(reg);
+        const map: {skip?: string, wait?: number, cat?: string} = {};
+        Array.from(res).forEach((arr) => {
+          if (arr[0].startsWith('skip')) map['skip'] = arr[1];
+          else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
+          else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
+        });
+        const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
+          const res = await grok.functions.eval(addNamespace(tests[i], f));
+          if (map.wait) await delay(map.wait);
+          // eslint-disable-next-line no-throw-literal
+          if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
+        }, {skipReason: map.skip});
+        if (map.cat) {
+          const cat: string = autoTestsCatName + ': ' + map.cat;
+          test.category = cat;
+          if (moduleTests[cat] === undefined)
+            moduleTests[cat] = {tests: [], clear: true};
+          moduleTests[cat].tests.push(test);
+        } else {
+          moduleAutoTests.push(test);
+        }
       }
+    }
+    if (demo) {
+      const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
+      const test = new Test(demoCatName, f.friendlyName, async () => {
+        grok.shell.lastError = '';
+        await f.apply();
+        await delay(wait ? wait : 1000);
+        if (grok.shell.lastError)
+          throw new Error(grok.shell.lastError);
+      });
+      moduleDemo.push(test);
     }
   }
   wasRegistered[packageId] = true;
-  if (!moduleAutoTests.length) return;
-  moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
+  if (moduleAutoTests.length)
+    moduleTests[autoTestsCatName] = {tests: moduleAutoTests, clear: true};
+  if (moduleDemo.length)
+    moduleTests[demoCatName] = {tests: moduleDemo, clear: true};
 }
 
 export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
