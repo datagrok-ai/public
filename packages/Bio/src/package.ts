@@ -60,7 +60,7 @@ import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomer
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
@@ -73,6 +73,7 @@ import {HelmToMolfileConverter} from './utils/helm-to-molfile';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import { sequenceToMolfile } from './utils/sequence-to-mol';
 
 export const _package = new BioPackage();
 
@@ -621,22 +622,11 @@ export async function sequenceSpaceTopMenu(
 //description: Converts sequences to molblocks
 //input: dataframe df [Input data table]
 //input: column macroMolecule {semType: Macromolecule}
-export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
-  if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
-    grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
-    return;
-  }
-  if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
-    return;
-  const monomerLib: IMonomerLib = (await getMonomerLibHelper()).getBioLib();
-  const atomicLevelRes = await _toAtomicLevel(df, macroMolecule, monomerLib);
-  if (atomicLevelRes.col !== null) {
-    df.columns.add(atomicLevelRes.col, true);
-    await grok.data.detectSemanticTypes(df);
-  }
-
-  if (atomicLevelRes.warnings && atomicLevelRes.warnings.length > 0)
-    grok.shell.warning(ui.list(atomicLevelRes.warnings));
+//input: bool nonlinear=false { description: Slower mode for cycling/branching HELM structures }
+export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
+  sequenceToMolfile(df, macroMolecule, nonlinear);
+  pi.close();
 }
 
 //top-menu: Bio | Analyze | MSA...
@@ -1060,21 +1050,6 @@ export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   return _getEnumeratorWidget(molColumn);
 }
 
-//name: HelmToMol
-export async function helmToMol(): Promise<void> {
-  const df = await _package.files.readCsv('./samples/helm-to-molfile.csv');
-  grok.shell.addTableView(df);
-  const helmCol = df.col('HELM');
-  if (!helmCol) {
-    grok.shell.error('HELM column not found');
-    return;
-  }
-  const converter = new HelmToMolfileConverter(helmCol);
-  const molCol = await converter.convertToMolfileColumn();
-  molCol.semType = DG.SEMTYPE.MOLECULE;
-  df.columns.add(molCol, true);
-  await grok.data.detectSemanticTypes(df);
-}
 
 //top-menu: Bio | Convert | SDF to JSON Library...
 //name: SDF to JSON Library

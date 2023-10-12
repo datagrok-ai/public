@@ -35,7 +35,7 @@ export async function demoBio03UI(): Promise<void> {
       })
       .step('To atomic level', async () => {
         const seqCol = df.getCol(seqColName);
-        await toAtomicLevel(df, seqCol);
+        await toAtomicLevel(df, seqCol, false);
       }, {
         description: 'Get atomic level structures of Macromolecules.',
         delay: 2000,

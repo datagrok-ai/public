@@ -6,7 +6,9 @@ import {MonomerLibHelper} from './monomer-lib';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
+import {RDMol, RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
+import {errorToConsole} from '@datagrok-libraries/utils';
 
 const enum V2K_CONST {
   MAX_ATOM_COUNT = 999,
@@ -36,21 +38,67 @@ type PositionInBonds = {
   nodeIdx: number,
 }
 
+/** Translate HELM column into molfile column and append to the dataframe */
+export async function helm2mol(df: DG.DataFrame, helmCol: DG.Column<string>): Promise<void> {
+  // const df = await _package.files.readCsv('./samples/helm-to-molfile.csv');
+  // grok.shell.addTableView(df);
+  // const helmCol = df.col('HELM');
+  // if (!helmCol) {
+  //   grok.shell.error('HELM column not found');
+  //   return;
+  // }
+  const converter = new HelmToMolfileConverter(helmCol, df);
+  const molCol = await converter.convertToRdKitBeautifiedMolfileColumn();
+  molCol.semType = DG.SEMTYPE.MOLECULE;
+  df.columns.add(molCol, true);
+  await grok.data.detectSemanticTypes(df);
+}
+
 export class HelmToMolfileConverter {
-  constructor(private helmColumn: DG.Column<string>) {
+  constructor(private helmColumn: DG.Column<string>, private df: DG.DataFrame) {
     this.helmColumn = helmColumn;
   }
 
-  async convertToMolfileColumn(): Promise<DG.Column<string>> {
+  async convertToRdKitBeautifiedMolfileColumn(): Promise<DG.Column<string>> {
+    const molfilesV2K = (await this.convertToMolfileV2KColumn()).toList();
+    const smiles = molfilesV2K.map((mol) => DG.chem.convert(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles));
+    const rdKitModule: RDModule = await grok.functions.call('Chem:getRdKitModule');
+    const beautifiedMols = smiles.map((item) =>{
+      if (item === '')
+        return null;
+      const mol = rdKitModule.get_mol(item);
+      if (!mol)
+        return null;
+      mol.normalize_depiction(1);
+      mol.straighten_depiction(true);
+      return mol;
+    }
+    );
+    const columnName = this.df.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
+    return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
+      if (mol === null)
+        return '';
+      return mol.get_molblock();
+    }));
+  }
+
+  async convertToMolfileV2KColumn(): Promise<DG.Column<string>> {
     const polymerGraphColumn: DG.Column<string> = await this.getPolymerGraphColumn();
     const molfileList = polymerGraphColumn.toList().map(
       (pseudoMolfile: string, idx: number) => {
         const helm = this.helmColumn.get(idx);
         if (!helm)
           return '';
-        return this.getPolymerMolfile(helm, pseudoMolfile);
+        let result = '';
+        try {
+          result = this.getPolymerMolfile(helm, pseudoMolfile);
+        } catch (err) {
+          errorToConsole(err);
+        } finally {
+          return result;
+        }
       });
-    const molfileColName = this.helmColumn.dataFrame.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
+    const molfileColName = this.df.columns.getUnusedName(`molfileV2K(${this.helmColumn.name})`);
     const molfileColumn = DG.Column.fromList('string', molfileColName, molfileList);
     return molfileColumn;
   }
