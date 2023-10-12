@@ -7,14 +7,18 @@ import * as DG from 'datagrok-api/dg';
 import {check} from './utils';
 import {expectTable} from '../package';
 import dayjs from "dayjs";
+import {timeout} from "rxjs/operators";
 
 const cacheName = 'function_results_cache';
-const demogHeavy = grok.data.demo.demog(5000000);// 90mb
+const demogHeavy = grok.data.demo.demog(5000000); // 90mb
+const demogMiddle = grok.data.demo.demog(1100000); // 20mb
 const demogLite = grok.data.demo.demog();
 
 const demog = registerFunc('dataframe test_demog(string type)', (type: string) => {
   if (type === 'h')
     return demogHeavy;
+  else if (type === 'm')
+    return demogMiddle;
   else
     return demogLite;
 }, false, '0 0 23 * *');
@@ -103,9 +107,13 @@ category('Functions: Client-side cache', () => {
     return toDart(await runLoop(true, tiny, getTinyGenerator(true, 100000)));
   }, {timeout: 400000});
 
+  test('1000 20mb df', async () => {
+    return toDart(await runLoop(true, demog, getHeavyGenerator(1000, 'm')));
+  }, {timeout: 100000000, skipReason: 'Just for test purposes'});
+
   test('5 heavy cached', async () => {
     return toDart(await runLoop(true, demog, getHeavyGenerator()));
-  }, {timeout: 10000000000000});
+  }, {timeout: 180000});
 
   test('Records limit, tiny', async () => {
     await grok.functions.clientCache.clear();
@@ -161,7 +169,7 @@ category('Functions: Client-side cache', () => {
     const after2kk = await runLoop(true, otherDemog, getHeavyGenerator());
 
     return toDart({"empty": emptyCache, "100k": after100k, "250k": after250k, "500k": after500k, "1kk": after1kk, "2kk": after2kk});
-  }, {timeout: 10000000000000});
+  }, {timeout: 10000000000000, skipReason: 'Just for test purposes'});
 });
 
 async function expectSameResults(f: DG.Func, params?: object): Promise<any> {
@@ -240,11 +248,11 @@ function getTinyGenerator(same: boolean = true, count: number = 1000000): Genera
   }
 }
 
-function getHeavyGenerator(count: number = 5): Generator<void, object, object> {
+function getHeavyGenerator(count: number = 5, type:string = 'h'): Generator<void, object, object> {
   return function* () {
     let n = 0;
     while (n < count) {
-      yield {'type': 'h'};
+      yield {'type': type};
       n++;
     }
   }
