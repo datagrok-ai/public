@@ -2,9 +2,10 @@
 
 ## 2.11.0 (WIP)
 
-### Features 
+### Features
 
 * Add VdRegionsViewer `filterSource` property.
+* Add ToAtomicLevel for non-linear HELM strcutures.
 
 ### Bug fixes
 
