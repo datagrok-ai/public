@@ -12,6 +12,7 @@ import {
 import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+import {errInfo} from '../utils/err-info';
 
 import {_package} from '../package';
 
@@ -153,15 +154,18 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   override detach() {
     const superDetach = super.detach.bind(this);
-    this.detachPromise = this.detachPromise.then(async () => { // detach
-      await this.viewPromise;
+    this.viewPromise = this.viewPromise.then(async () => { // detach
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
       }
       superDetach();
-    });
+    })
+      .catch((err: any) => {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+      });
   }
 
   override onTableAttached() {
@@ -247,9 +251,6 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
           this.viewed = false;
         }
 
-        await this.detachPromise;
-        // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
-
         // -- Data --
         this.regions = regions;
 
@@ -261,10 +262,9 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
           this.viewed = true;
         }
       } catch (err: any) {
-        const errMsg = err instanceof Error ? err.message : err.toString();
-        const stack = err instanceof Error ? err.stack : undefined;
+        const [errMsg, errStack] = errInfo(err);
         grok.shell.error(errMsg);
-        _package.logger.error(errMsg, undefined, stack);
+        _package.logger.error(errMsg, undefined, errStack);
       } finally {
         // _package.logger.debug('Bio: VdRegionsViewer.setData(), finally, ' +
         //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
@@ -277,7 +277,6 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
-  private detachPromise: Promise<void> = Promise.resolve();
   private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
