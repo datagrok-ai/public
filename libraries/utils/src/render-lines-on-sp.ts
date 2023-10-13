@@ -7,6 +7,7 @@ export enum LineDirection {
 }
 
 export type ILineOpts = {
+    points: Uint32Array;
     id: number;
     color?: string;
     directionCol?: string
@@ -15,18 +16,12 @@ export type ILineOpts = {
     width?: number;
 }
 
-export type ILines = {
-    pairs: Uint32Array[];
-    linesStyles: ILineOpts[];
-}
-
-
 export class ScatterPlotLinesRenderer {
     sp: DG.ScatterPlotViewer;
     xAxis: string;
     yAxis: string;
     currentLineIdx = -1;
-    lines: ILines;
+    lines: ILineOpts[];
     lineClicked = new Subject<number>();
     lineHover = new Subject<number>();
     canvas: HTMLCanvasElement;
@@ -43,7 +38,7 @@ export class ScatterPlotLinesRenderer {
         this.sp.render(this.canvas.getContext('2d') as CanvasRenderingContext2D);
     }
 
-    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILines) {
+    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILineOpts[]) {
         this.sp = sp;
         this.xAxis = xAxis;
         this.yAxis = yAxis;
@@ -73,18 +68,16 @@ export class ScatterPlotLinesRenderer {
         const x = this.sp.dataFrame!.columns.byName(this.xAxis);
         const y = this.sp.dataFrame!.columns.byName(this.yAxis);
         const linesPerPairCounter: { [key: string]: number } = {};
-        for (let i = 0; i < this.lines.pairs.length; i++) {
-            const pair = this.lines.pairs[i];
-            const lineOpts = this.lines.linesStyles[i];
-            if (this.sp.dataFrame.filter.get(pair[0]) && this.sp.dataFrame.filter.get(pair[1])) {
-                const pointFrom = this.sp.worldToScreen(x.get(pair[0]), y.get(pair[0]));
+        for (let lineOpts of this.lines) {
+            if (this.sp.dataFrame.filter.get(lineOpts.points[0]) && this.sp.dataFrame.filter.get(lineOpts.points[1])) {
+                const pointFrom = this.sp.worldToScreen(x.get(lineOpts.points[0]), y.get(lineOpts.points[0]));
                 const aX = pointFrom?.x;
                 const aY = pointFrom?.y;
-                const pointTo = this.sp.worldToScreen(x.get(pair[1]), y.get(pair[1]));
+                const pointTo = this.sp.worldToScreen(x.get(lineOpts.points[1]), y.get(lineOpts.points[1]));
                 const bX = pointTo?.x;
                 const bY = pointTo?.y;
                 if (aX && aY && bX && bY) {
-                    const pairStr = this.getStringPair(pair[0], pair[1]);
+                    const pairStr = this.getStringPair(lineOpts.points[0], lineOpts.points[1]);
                     !linesPerPairCounter[pairStr] ? linesPerPairCounter[pairStr] = 1 : linesPerPairCounter[pairStr]++;
                     const line = new Path2D();
                     this.paths[lineOpts.id] = line;
@@ -101,7 +94,7 @@ export class ScatterPlotLinesRenderer {
                     }
                     line.quadraticCurveTo(midPoint.x, midPoint.y, bX, bY);
                     if (lineOpts.directionCol) {
-                        const arrowPoint = this.getArrowPoint(lineOpts, pair[0], pair[1], pointFrom, pointTo);
+                        const arrowPoint = this.getArrowPoint(lineOpts, lineOpts.points[0], lineOpts.points[1], pointFrom, pointTo);
                         if (arrowPoint)
                             this.canvasArrow(line, arrowPoint.x, arrowPoint.y, midPoint.x, midPoint.y);
                     }
@@ -115,13 +108,13 @@ export class ScatterPlotLinesRenderer {
     }
 
     countLinesPerPairAndSort(): void {
-        for (let i = 0; i < this.lines.pairs.length; i++) {
-            const pair = this.lines.pairs[i];
+        for (let i = 0; i < this.lines.length; i++) {
+            const pair = this.lines[i].points;
             const p1 = pair[0] > pair[1] ? pair[1] : pair[0];
             const p2 = pair[0] > pair[1] ? pair[0] : pair[1];
             pair[0] = p1;
             pair[1] = p2;
-            const pairStr = `${this.lines.pairs[i][0]}#${this.lines.pairs[i][1]}`;
+            const pairStr = `${this.lines[i].points[0]}#${this.lines[i].points[1]}`;
             if (!this.numberOfLinesPerPair[pairStr])
                 this.numberOfLinesPerPair[pairStr] = 1;
             else
@@ -155,7 +148,7 @@ export class ScatterPlotLinesRenderer {
         const dist = Math.sqrt(dx * dx + dy * dy);
         dx /= dist;
         dy /= dist;
-        const perpendicularLen = 50 * Math.floor(idx / 2) + 50;
+        const perpendicularLen = 50 * Math.ceil(idx / 2);
         return idx % 2 === 0 ?
             new DG.Point(x2 + (perpendicularLen / 2) * dy, y2 - (perpendicularLen / 2) * dx) :
             new DG.Point(x2 - (perpendicularLen / 2) * dy, y2 + (perpendicularLen / 2) * dx);
