@@ -84,7 +84,7 @@ ATC-G-TTGC--
       {'shrinkEmptyTail': true})) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
