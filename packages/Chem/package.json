@@ -102,5 +102,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "meta": {
+    "dartium": false,
+    "browserFeatures": ["wasm"]
+  }
 }
