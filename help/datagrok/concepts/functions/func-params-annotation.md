@@ -6,74 +6,73 @@ There are various types of [functions](functions.md) such as [scripts](../../../
 [queries](../../../access/access.md#data-query). What is common to all of them is the annotation of parameters. This is part of
 the mechanism that enables universal support for functions in the platform.
 
-A function annotation is a multi-line comment that is placed above the function declaration and contains information
-about the function name, role, input and output parameters, and so on. The parameter annotation is part of the function
-annotation.
+A function annotation, also known as a header, is a multi-line comment that is placed above the function declaration.
+It contains information about the function name, role, as well as function inputs and outputs. Inputs and outputs
+can have metadata associated with them as well.
 
-## Header parameters
+## Function
 
 There are general parameters common to all functions, as well as parameters specific to certain function types. Not all
 general parameters are required, the list of parameters depends on the function
 [type](#parameters-specific-to-function-type), [role](../../../develop/function-roles.md), and so on.
 
-### Common parameters
+<details> <summary> Simple python script </summary> <div>
 
-| Parameter   | Description                                                                         |
-|-------------|-------------------------------------------------------------------------------------|
-| name        | Name                                                                                |
-| description | Description                                                                         |
-| tags        | Tags (see also `DG.TAGS`)                                                           |
-| input       | Input parameter                                                                     |
-| output      | Output parameter                                                                    |
-| help-url    | Datagrok's Wiki URL                                                                 |
-| reference   | Reference to a research paper, Wikipedia article, Git repository, etc.              |
-| top-menu    | Top menu path separated with pipes ("\|")                                           |
+```python
+#language: python
+#name: GetCellNumber
+#description: Calculates number of cells in the table
+#tags: demo
+#input: dataframe table [Data table]
+#output: int count [Number of cells in table]
+count = table.shape[0] * table.shape[1]
+```
+</div> </details>
 
-### Parameters specific to function type
+These are the common parameters for all functions:
+* `name`: shows up in the user interface
+* `description`: shows up in a function tooltip
+* `tags`: comma-separated tags that you can use in search
+* `help-url`: help that shows up when you click on the "?" in the function dialog
+* `reference`: Reference to a research paper, Wikipedia article, Git repository, etc.
+* `top-menu`: Top menu path separated with pipes (`|`), such as `Chem | Gasteiger Charges`
 
-| Type       | Parameter   | Description                                                                                             |
-|------------|-------------|---------------------------------------------------------------------------------------------------------|
-| Script     | language    | Script language (see the list of [supported languages](../../../compute/scripting.md#supported-languages)) |
-| Script     | sample      | Name of a sample file                                                                                   |
-| Script     | environment | Environment name                                                                                        |
-| Script, info panel | condition   | Function applicability conditions                                                               |
-| Query      | connection  | Connection name                                                                                         |
+Some parameters are specific to script language and/or technology:
+* Script
+  * `language`: script language, so that Datagrok knows how to execute it
+  * `environment`: [script environment](../../../compute/scripting.md#environments) (Conda environment for python, etc)
+  * `sample`: path to a sample data csv file. When defined, a `*` icon appears on the ribbon panel that loads it. 
+* Script-based info panels
+  * `condition`: GrokScript condition that gets evaluated to decide whether to show the panel for the object
+* Query
+  * `connection`: Name of the db connection that the query should use
 
-:::tip Tip
+To add additional parameters, use the `meta.` prefix. They can be used for dynamically searching for
+the functions of interest.
 
-You can also add custom parameters using the `meta.` prefix. For example, `meta.icon` or `meta.ext`.
 
-:::
+## Inputs and outputs
 
-### Inputs and outputs
-
-The syntax for defining input and output parameters looks like this:
+Each input and output definition take one line that starts with the comment, followed 
+by type, name, optional default value, options, and optional description, just like here:
 
 ```
-<comment symbol><direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]
+#input: string country {choices: ["USA", "Canada"]} [Country to ship from]
+#input: double weight
+#output: double price
 ```
 
-1. **direction** - parameter direction:
-    1. input
-    2. output
-2. **type** - parameter type:
-    * **int** - integer (scalar)
-    * **double** - float (scalar)
-    * **bool** - boolean (scalar)
-    * **string** - string (scalar)
-    * **dataframe** - dataframe
-    * **column** - column from selected table
-    * **column_list** - list of columns from selected table
-    * **datetime** - datetime
-    * **graphics** - graphics
-    * **file** - file, variable in the function body contains path to file
-    * **blob** - blob, variable in the function body contains path to binary file
-    * **list<T\>** - list of objects of type T (support depends on function type)
-3. **name** - parameter name that will be used in the function body. Optional for a graphical output.
-4. **value** - default value. For scalar inputs, it corresponds to a value; for graphics outputs, it is used as index of
-   graphical element. Optional.
-5. **options** - the list of options as key-value pairs. It is used to enhance the UI of a function call. Optional.
-6. **description** - brief description for a parameter that appears in UI. Optional.
+### Supported types
+
+Datagrok supports the following types in all scripting languages: 
+
+* Scalars: `int`, `double`, `bool`, `string`, `datetime`
+* Table: `dataframe`, `column`, `column_list`
+* Collections: `list` (typically of strings)
+* `graphics`: typically a function output. See [example]()
+* `file`: when the script is executed, contains a string with the path to a file
+* `blob`: array of bytes
+
 
 ### Options
 
