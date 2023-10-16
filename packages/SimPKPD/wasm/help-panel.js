@@ -5,7 +5,7 @@ export function showHelpPanel() {
   grok.shell.windows.help.visible = true;
 
   const info = `# Try
-  Vary inputs and press "RUN".
+  Interactive results when changing inputs.
   # No-code
   Complex phenomena simulators are provided by Datagrok WebAutosolver tool.
   # Model

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import { initSolvers } from '../wasm/solving-tools';
 import { showHelpPanel } from '../wasm/help-panel';
-import { simPKPD, TIME, EFFECT, CENTR_CONC } from './pk-pd-tools';
+import { simPKPD } from './pk-pd-tools';
 
 export const _package = new DG.Package();
 
@@ -19,8 +19,8 @@ export async function init(): Promise<void> {
 //tags: model
 //input: string compartments = 2 compartment PK {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]}
 //input: double dose = 10000.0 {units: um; caption: dose; category: Dosing} [Dosage.]
-//input: int dosesCount = 10 {caption: count; category: Dosing} [Number of doses.]
-//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; editor: 'slider'; min: 0; max: 100; showSlider: true} [Dosing interval.]
+//input: int dosesCount = 10 {caption: count; category: Dosing; min: 1; max: 1000} [Number of doses.]
+//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; min: 0; max: 100} [Dosing interval.]
 //input: double _KAVal = 0.3 {units: ; caption: rate constant; category: PK parameters}
 //input: double _CLVal = 2.0 {units: ; caption: clearance; category: PK parameters}
 //input: double _V2Val = 4.0 {units: ; caption: central volume; category: PK parameters} [Central compartment volume.]
@@ -43,8 +43,8 @@ export async function simulatePKPD(compartments: string,
 //description: Pharmacokinetic-Pharmacodynamic (PK-PD) simulation.
 //input: string compartments = 2 compartment PK {category: PK model; choices: ["1 compartment PK", "2 compartment PK"]}
 //input: double dose = 10000.0 {units: um; caption: dose; category: Dosing} [Dosage.]
-//input: int dosesCount = 10 {caption: count; category: Dosing} [Number of doses.]
-//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing} [Dosing interval.]
+//input: int dosesCount = 10 {caption: count; category: Dosing; min: 1; max: 1000} [Number of doses.]
+//input: double doseInterval = 12 {units: h; caption: interval; category: Dosing; min: 1; max: 1000} [Dosing interval.]
 //input: double _KAVal = 0.3 {units: ; caption: rate constant; category: PK parameters}
 //input: double _CLVal = 2.0 {units: ; caption: clearance; category: PK parameters}
 //input: double _V2Val = 4.0 {units: ; caption: central volume; category: PK parameters} [Central compartment volume.]
