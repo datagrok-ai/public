@@ -26,6 +26,15 @@ const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
 let id = 0;
 
+const searchTypeHints  = {
+  [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
+  [SubstructureSearchType.INCLUDED_IN]: 'search structures for which sketched pattern is a superstructure',
+  [SubstructureSearchType.NOT_CONTAINS]: 'search structures which DO NOT contain sketched pattern as a substructure',
+  [SubstructureSearchType.NOT_INCLUDED_IN]: 'search structures for which sketched pattern is NOT a superstructure',
+  [SubstructureSearchType.EXACT_MATCH]: 'search structures which exactly match sketched pattern',
+  [SubstructureSearchType.IS_SIMILAR]: 'search structures similar to sketched pattern',
+}
+
 interface ISubstructureFilterState {
   bitset?: DG.BitSet;
   molblock?: string;
@@ -110,6 +119,10 @@ export class SubstructureFilter extends DG.Filter {
 
     this.searchTypeInput = ui.choiceInput('', this.searchType, this.searchTypes, () => { 
       this.onSearchTypeChanged();
+    });
+    ui.tooltip.bind(this.searchTypeInput.input, () => {
+      console.log(`in tooltip`);
+      return searchTypeHints[this.searchTypeInput.value as SubstructureSearchType]
     });
 
     this.fpInput = ui.choiceInput('FP', this.fp, this.fpsTypes, () => {
