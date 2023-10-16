@@ -33,11 +33,12 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
         continue;
 
       let substCounterFlag = false;
-      const tempData: MutationCliffInfo[] = [];
+      const tempData: MutationCliffInfo[] = new Array(monomerInfoArray.length);
+      let tempDataIdx = 0;
       for (const monomerInfo of monomerInfoArray) {
-        const seq1category = monomerInfo.rawData[seq1Idx];
-        const seq2category = monomerInfo.rawData[seq2Idx];
-        if (seq1category === seq2category)
+        const seq1categoryIdx = monomerInfo.rawData[seq1Idx];
+        const seq2categoryIdx = monomerInfo.rawData[seq2Idx];
+        if (seq1categoryIdx === seq2categoryIdx)
           continue;
 
         substCounter++;
@@ -45,19 +46,21 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
         if (substCounterFlag)
           break;
 
-        tempData.push({
+        tempData[tempDataIdx++] ={
           pos: monomerInfo.name,
-          seq1monomer: monomerInfo.cat![seq1category],
-          seq2monomer: monomerInfo.cat![seq2category],
+          seq1monomer: monomerInfo.cat![seq1categoryIdx],
+          seq2monomer: monomerInfo.cat![seq2categoryIdx],
           seq1Idx: seq1Idx,
           seq2Idx: seq2Idx,
-        });
+        };
       }
 
       if (substCounterFlag || substCounter === 0)
         continue;
 
-      for (const tempDataElement of tempData) {
+      // Separate processing loop in case substCOunter is 0 or out of restricted range to prevent unnecessary computations
+      for (let i = 0; i < tempDataIdx; i++) {
+        const tempDataElement = tempData[i];
         //Working with seq1monomer
         const seq1monomer = tempDataElement.seq1monomer;
         if (!substitutionsInfo.has(seq1monomer))

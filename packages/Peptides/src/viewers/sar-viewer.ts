@@ -367,7 +367,7 @@ export class MostPotentResidues extends DG.JsViewer {
           return;
         const monomerPosition = this.getMonomerPosition(gridCell);
         if (this.currentGridRowIdx !== null) {
-          const previousMonomerPosition = this.getMonomerPosition(this.viewerGrid.cell("Diff", this.currentGridRowIdx));
+          const previousMonomerPosition = this.getMonomerPosition(this.viewerGrid.cell('Diff', this.currentGridRowIdx));
           this.model.modifyMutationCliffsSelection(previousMonomerPosition, {shiftPressed: true, ctrlPressed: true}, false);
         }
         if (this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
