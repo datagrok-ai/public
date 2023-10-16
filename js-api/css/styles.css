@@ -22,7 +22,7 @@
   visibility: hidden;
 }
 
-.invalid-molecule-warning {
+.chem-invalid-molecule-warning {
   color: var(--red-3);
   position: relative;
   left: 60px;

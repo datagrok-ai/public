@@ -63,7 +63,7 @@ import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1357,17 +1357,17 @@ export async function demoScaffold(): Promise<void> {
 //name: validateMolecule
 //input: string s
 //output: object result
-export function validateMolecule(s: string): DG.chem.IValidationRes {
-  let logHandle;
-  let mol;
+export function validateMolecule(s: string): string | null {
+  let logHandle: RDLog | null = null;
+  let mol: RDMol | null = null;;
   try {
     logHandle = _rdKitModule.set_log_capture("rdApp.error");
     mol = getMolSafe(s, {}, _rdKitModule, true).mol;
-    let logBuffer = logHandle.get_buffer();
-    logHandle.clear_buffer();
+    let logBuffer = logHandle?.get_buffer();
+    logHandle?.clear_buffer();
     if (!mol && !logBuffer)
       logBuffer = 'unknown error';
-    return {error: logBuffer};
+    return logBuffer ?? null;
   } finally {
     logHandle?.delete();
     mol?.delete();

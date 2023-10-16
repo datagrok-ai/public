@@ -134,10 +134,11 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
         s.molInput.value = exampleSmiles;
         s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
       }, 1000);
-    } else setTimeout(() => s.setSmiles(malformed ? malformedSmiles : exampleSmiles), 1000);
+    } else 
+    setTimeout(() => s.setSmiles(malformed ? malformedSmiles : exampleSmiles), 1000);
     if (malformed) {
       await awaitCheck(() => {
-        const elements = d.root.getElementsByClassName('invalid-molecule-warning');
+        const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
       }, 'error div has not been created', 10000, 500);    
     } else {
@@ -178,10 +179,11 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
         s.molInput.value = molfile;
         s.molInput.dispatchEvent(evt);
       }, 1000);
-    } else setTimeout(() => s.setMolFile(malformed ? malformedMolblock : molfile), 1000);
+    } else 
+      setTimeout(() => s.setMolFile(malformed ? malformedMolblock : molfile), 1000);
     if (malformed) {
       await awaitCheck(() => {
-        const elements = d.root.getElementsByClassName('invalid-molecule-warning');
+        const elements = d.root.getElementsByClassName('chem-invalid-molecule-warning');
         return elements.length > 0 && elements[0].children.length > 0 && elements[0].children[0].textContent === 'Malformed molecule';
       }, 'error div has not been created', 10000, 500);     
     } else {

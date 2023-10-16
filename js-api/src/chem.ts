@@ -3,7 +3,7 @@
  * @module chem
  * */
 import {BitSet, Column, DataFrame} from './dataframe';
-import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, UNITS} from './const';
+import {SEMTYPE, UNITS} from './const';
 import {Subject, Subscription} from 'rxjs';
 import {Menu, Widget} from './widgets';
 import {Func} from './entities';
@@ -41,10 +41,6 @@ export namespace chem {
   export let SKETCHER_LOCAL_STORAGE = 'sketcher';
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
-
-  export interface IValidationRes {
-    error?: string;
-  }
 
   export enum Notation {
     Smiles = 'smiles',
@@ -128,7 +124,7 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
-    invalidMoleculeWarning = ui.div('', 'invalid-molecule-warning');
+    invalidMoleculeWarning = ui.div('', 'chem-invalid-molecule-warning');
     host: HTMLDivElement = ui.box(null, 'grok-sketcher chem-sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
@@ -155,7 +151,9 @@ export namespace chem {
     resized = false;
     _sketcherTypeChanged = false;
     _autoResized = true;
-    _validationFunc: ((molecule: string) => IValidationRes) | null = null;
+    _validationFunc: ((molecule: string) => string | null) = (s) => null;
+    error: string | null = null;
+    errorDiv = ui.divText('Malformed molecule');
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -298,11 +296,11 @@ export namespace chem {
     }
 
     validate(x: string): void {
-      const error = this._validationFunc ? this._validationFunc(x).error : undefined;
-      this.updateInvalidMoleculeWarning(error);
+      this.error = this._validationFunc(x);
+      this.updateInvalidMoleculeWarning();
     }
 
-    constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => IValidationRes) {
+    constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => string | null) {
       super(ui.div());
       if (mode)
         this._mode = mode;
@@ -311,6 +309,7 @@ export namespace chem {
       this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link');
       this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
+      ui.tooltip.bind(this.errorDiv, () => this.error);
       if (validationFunc)
         this._validationFunc = validationFunc;
       setTimeout(() => this.createSketcher(), 100);
@@ -395,12 +394,10 @@ export namespace chem {
       return clearButton;
     }
 
-    updateInvalidMoleculeWarning(error?: string) {
+    updateInvalidMoleculeWarning() {
       ui.empty(this.invalidMoleculeWarning);
-      if(error) {
-        const errorDiv = ui.divText('Malformed molecule');
-        ui.tooltip.bind(errorDiv, error);
-        this.invalidMoleculeWarning.append(errorDiv);
+      if (this.error) {
+        this.invalidMoleculeWarning.append(this.errorDiv);
       }
     }
 
