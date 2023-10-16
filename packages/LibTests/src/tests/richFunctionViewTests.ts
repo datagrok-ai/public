@@ -358,22 +358,40 @@ category('RichFunctionView Validation', async () => {
           "errors": [
             {
               "description": "Missing value"
+            },
+            {
+              "description": "Out of range [1, 10] value: null"
             }
-          ]
+          ],
+          "warnings": [],
+          "notifications": [],
+          "revalidate": [],
+          "context": {}
         },
         "b": {
           "errors": [
             {
               "description": "Missing value"
+            },
+            {
+              "description": "Out of range [20, 100] value: null"
             }
-          ]
+          ],
+          "warnings": [],
+          "notifications": [],
+          "revalidate": [],
+          "context": {}
         },
         "x": {
+          "errors": [],
           "warnings": [
             {
               "description": "Try non-null value"
             }
-          ]
+          ],
+          "notifications": [],
+          "revalidate": [],
+          "context": {}
         }
       }
     );
