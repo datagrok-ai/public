@@ -11,7 +11,7 @@ Datagrok uses [IndexedDb](https://www.w3.org/TR/IndexedDB/) for client-side cach
 * Maximum cache size for the function is 100 MB.
 * Maximum record count in the **Client-side cache** is 100000.
 
-### To enable Client-side cache:
+### To enable Client-side cache
 
 1. Go to **Settings** > **Cache**.
 2. Toggle **Client-side cache** switch.
@@ -24,7 +24,7 @@ Datagrok uses [IndexedDb](https://www.w3.org/TR/IndexedDB/) for client-side cach
 Datagrok stores the results of functions in a relational database as server-side caching. It doesn't have any limitations on size or type of parameters 
 and will be used when **Client-side cache** is not suitable.
 
-### To enable Server-side cache:
+### To enable Server-side cache
 
 1. Go to **Settings** > **Cache**.
 2. Toggle **Server-side cache** switch.
@@ -34,7 +34,7 @@ and will be used when **Client-side cache** is not suitable.
 
 You can apply cache to almost all types of functions. But it really shines with [DataQueries](../access/access.md#data-query) and [Scripts](../compute/scripting.md).
 
-### To apply cache for a particular function:
+### To apply cache for a particular function
 
 1. Add `meta.cache` annotation parameter in a function header. This parameter can take several values:
    * `client` - to use only **Client-side cache**
@@ -56,7 +56,7 @@ For example:
 ...
 ```
 
-### To apply cache for all queries under the specific connection:
+### To apply cache for all queries under the specific connection
 
 1. Right-click the connection, select **Edit...** and toggle **Cache Results**. This will activate both client-side and server-side cache.
 2. Optionally fill in the **Invalidate On** field.
