@@ -11,9 +11,6 @@ export interface RDModule {
   get_rxn(reactionString: string, options?: string): RDReaction;
   get_mcs_as_mol(mols: MolList, details?: string): RDMol;
   get_mcs_as_smarts(mols: MolList, details?: string): string;
-  _malloc(size: number): any;
-  _free(buf: any): any;
-  writeArrayToMemory(arr: any, buff:any): any;
   set_log_tee(logName: string): RDLog;
   set_log_capture(logName: string): RDLog;
   MolList: MolListConstructor;
