@@ -124,7 +124,7 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
-    host: HTMLDivElement = ui.box(null, 'grok-sketcher sketcher-host');
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher chem-sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -175,8 +175,16 @@ export namespace chem {
       return this._sketcherTypeChanged;
     }
 
-    get calculating(): boolean {return this.loader.style.display == 'initial';}
-    set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
+    get calculating(): boolean {return this.loader.classList.contains('chem-sketcher-loader-show');}
+    set calculating(value: boolean) {
+      if (value) {
+        this.loader.classList.add('chem-sketcher-loader-show');
+        this.loader.classList.remove('chem-sketcher-loader-hide');
+      } else {
+        this.loader.classList.add('chem-sketcher-loader-hide');
+        this.loader.classList.remove('chem-sketcher-loader-show');
+      }
+    }
 
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
@@ -286,8 +294,8 @@ export namespace chem {
         this._mode = mode;
       this.root.style.height = '100%';
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
-      this.emptySketcherLink = ui.divText('Click to edit', 'sketch-link');
-      this.loader.classList.add('chem-sketcher-loader');
+      this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link');
+      this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       setTimeout(() => this.createSketcher(), 100);
     }
@@ -364,7 +372,7 @@ export namespace chem {
         this.updateExtSketcherContent();
       });
       ui.tooltip.bind(clearButton, 'Clear sketcher');
-      clearButton.classList.add('clear-button');
+      clearButton.classList.add('chem-clear-sketcher-button');
       clearButton.onmouseover = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseenter = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseout = () => {clearButton.style.visibility = 'hidden';};
