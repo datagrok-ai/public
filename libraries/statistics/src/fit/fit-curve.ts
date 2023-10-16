@@ -231,13 +231,14 @@ export const fitSeriesProperties: Property[] = [
   Property.js('errorModel', TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
     choices: ['constant', 'proportional'], nullable: false}),
   Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
-    'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true, defaultValue: false}),
+    'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
   Property.js('showFitLine', TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
-  Property.js('showPoints', TYPE.STRING,
+  Property.js('showPoints', TYPE.STRING, // rewrite description
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
   Property.js('showCurveConfidenceInterval', TYPE.BOOL,
-    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false}),
+    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
+      caption: 'Confidence interval'}),
   Property.js('markerType', TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
     choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
       'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false}),
@@ -677,5 +678,5 @@ function objectiveNormalProportional(targetFunc: (params: number[], x: number) =
   for (let i = 0; i < residuesSquares.length; i++)
     likelihood += residuesSquares[i] / sigmaSq + Math.log(2 * pi * sigmaSq);
 
-  return {value: -likelihood, const: sigma, mult: 0};
+  return {value: -likelihood, const: 0, mult: sigma};
 }

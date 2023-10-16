@@ -209,14 +209,6 @@ export const DEMO_APP_HIERARCHY = {
 			]
 		},
 		{
-			name: 'Bioreactors',
-			children: [
-				{
-					name: 'Simulate bioreactor',
-				},
-			]
-		},
-		{
 			name: 'Compute',
 			children: [
 				{
@@ -224,6 +216,9 @@ export const DEMO_APP_HIERARCHY = {
 				},
 				{
 					name: 'PK-PD modeling',
+				},
+				{
+					name: 'Bioreactor',
 				},
 			]
 		},

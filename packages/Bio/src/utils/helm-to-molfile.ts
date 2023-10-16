@@ -2,13 +2,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {MonomerLibHelper} from './monomer-lib';
 
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {RDMol, RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
-import {errorToConsole} from '@datagrok-libraries/utils';
+
+import {MonomerLibHelper} from './monomer-lib';
+import {errInfo} from './err-info';
+
+import {_package} from '../package';
 
 const enum V2K_CONST {
   MAX_ATOM_COUNT = 999,
@@ -92,8 +95,9 @@ export class HelmToMolfileConverter {
         let result = '';
         try {
           result = this.getPolymerMolfile(helm, pseudoMolfile);
-        } catch (err) {
-          errorToConsole(err);
+        } catch (err: any) {
+          const [errMsg, errStack] = errInfo(err);
+          _package.logger.error(errMsg, undefined, errStack);
         } finally {
           return result;
         }

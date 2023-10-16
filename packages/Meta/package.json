@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.96",
+  "version": "3.6.1",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -618,6 +618,12 @@
           "datagrok-api": "^1.16.0"
         },
         "1.8.0": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.8.1": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.8.2": {
           "datagrok-api": "^1.16.0"
         }
       },
@@ -2437,6 +2443,9 @@
         },
         "2.10.24": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.10.25": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3104,6 +3113,9 @@
         },
         "1.1.3": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.1.4": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Simulation of controlled fab-arm exchange mechanism",
@@ -3262,6 +3274,9 @@
           "datagrok-api": "^1.16.0"
         },
         "1.2.9": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.2.10": {
           "datagrok-api": "^1.16.0"
         }
       },

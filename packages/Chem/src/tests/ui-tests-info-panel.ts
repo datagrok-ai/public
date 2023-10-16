@@ -99,11 +99,11 @@ category('UI info panel', () => {
     await awaitPanel(pp, '3D Structure', 3000);
     const s3d = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === '3D Structure') as HTMLElement;
-    if (!s3d.classList.contains('expanded')) s3d.click();
+    if (!s3d?.classList.contains('expanded')) s3d?.click();
     await awaitCheck(() => (s3d.nextSibling as HTMLElement).querySelector('canvas') !== null,
       'canvas with structure was not rendered in the panel', 10000);
-    s3d.click(); await delay(100);
-    v.close();
+    s3d?.click(); await delay(100);
+    v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
@@ -118,11 +118,11 @@ category('UI info panel', () => {
     await awaitPanel(pp, 'Properties', 10000);
     const p = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Properties') as HTMLElement;
-    if (!p.classList.contains('expanded')) p.click();
+    if (!p?.classList.contains('expanded')) p.click();
     await awaitCheck(() => (p.nextSibling as HTMLElement).querySelector('table') !== null,
       'table with properties was not rendered in the panel', 3000);
-    p.click(); await delay(100);
-    v.close();
+    p?.click(); await delay(100);
+    v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
