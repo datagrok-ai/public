@@ -29,7 +29,7 @@ jobs:
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 
