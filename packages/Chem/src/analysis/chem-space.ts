@@ -11,6 +11,8 @@ import {DimReductionMethods, IReduceDimensionalityResult, ITSNEOptions, IUMAPOpt
   from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
+import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
+  from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams,
@@ -89,9 +91,31 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
       embedAxesNames: [embedColsNames[0], embedColsNames[1]],
       options: options,
     };
-    const chemSpaceRes = await chemSpace(chemSpaceParams, progressFunc);
-    const embeddings = chemSpaceRes.coordinates;
+    // const chemSpaceRes = await chemSpace(chemSpaceParams, progressFunc);
+    // const embeddings = chemSpaceRes.coordinates;
 
+    let resolveF: Function | null = null;
+
+    const sub = grok.events.onViewerClosed.subscribe((args) => {
+      const v = args.args.viewer as unknown as DG.Viewer<any>;
+      if (v?.getOptions()?.look?.title && scatterPlot?.getOptions()?.look?.title &&
+          v?.getOptions()?.look?.title === scatterPlot?.getOptions()?.look?.title) {
+        grok.events.fireCustomEvent(DIMENSIONALITY_REDUCER_TERMINATE_EVENT, {});
+        sub.unsubscribe();
+        resolveF?.();
+      }
+    });
+
+    const chemSpaceResPromise = new Promise<ISequenceSpaceResult | undefined>(async (resolve) =>{
+      resolveF = resolve;
+      const r = await chemSpace(chemSpaceParams, progressFunc);
+      resolve(r);
+    });
+
+    const chemSpaceRes = await chemSpaceResPromise;
+    if (!chemSpaceRes)
+      return undefined;
+    const embeddings = chemSpaceRes.coordinates;
     if (!table.columns.names().includes(embedColsNames[0])) {
       for (const col of embeddings)
         table.columns.add(col);

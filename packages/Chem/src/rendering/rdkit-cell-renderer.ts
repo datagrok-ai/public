@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
+import { ALIGN_BY_SCAFFOLD_TAG, FILTER_SCAFFOLD_TAG, SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_TAG, REGENERATE_COORDS, SCAFFOLD_TREE_HIGHLIGHT, HIGHLIGHT_BY_SCAFFOLD_COL } from '../constants';
 import { hexToPercentRgb } from '../utils/chem-common';
 
 export interface ISubstruct {
@@ -201,6 +201,7 @@ M  END
             }
           }
         }
+        molCtx.useMolBlockWedging = (mol.has_coords() === 2);
         if (mol.has_coords() === 0 || molRegenerateCoords) {
           mol.set_new_coords(molRegenerateCoords);
           molHasOwnCoords = false;
@@ -210,8 +211,6 @@ M  END
           mol.straighten_depiction(molHasOwnCoords);
         } else if (!molHasOwnCoords)
           mol.normalize_depiction(0);
-
-        molCtx.useMolBlockWedging = (mol.has_coords() === 2);
       } catch (e) {
         console.error(
           'In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `' + molString + '`');
@@ -237,19 +236,19 @@ M  END
   }
 
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
-    scaffoldRegenerateCoords: boolean, details: object = {}, multiScaffold: boolean): IMolRenderingInfo {    
+    scaffoldRegenerateCoords: boolean, details: object = {}, alignByFirstSubstructure: boolean): IMolRenderingInfo {    
     const name = molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords +
       (Object.keys(details).length ? ' || ' + JSON.stringify(details) : '');
     return this.molCache.getOrCreate(name, (_: any) =>
-      this._fetchMolGetOrCreate(molString, scaffolds, molRegenerateCoords, details, multiScaffold));
+      this._fetchMolGetOrCreate(molString, scaffolds, molRegenerateCoords, details, alignByFirstSubstructure));
   }
 
   _rendererGetOrCreate(
     width: number, height: number, molString: string, scaffolds: IColoredScaffold[],
-    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, multiScaffold: boolean): ImageData {
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean): ImageData {
     const fetchMolObj : IMolRenderingInfo =
-      this._fetchMol(molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords, {}, multiScaffold);
+      this._fetchMol(molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords, {}, alignByFirstSubstructure);
     const rdKitMolCtx = fetchMolObj.molCtx;
     const rdKitMol = rdKitMolCtx.mol;//fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
@@ -270,18 +269,18 @@ M  END
 
   _fetchRender(
     width: number, height: number, molString: string, scaffolds: IColoredScaffold[],
-    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, multiScaffold: boolean): ImageData {
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean): ImageData {
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' + highlightScaffold + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
 
     return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
-      molString, scaffolds, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, multiScaffold));
+      molString, scaffolds, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, alignByFirstSubstructure));
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffolds: IColoredScaffold[], highlightScaffold: boolean,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, cellStyle: DG.GridCellStyle, multiScaffold: boolean): void {
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, cellStyle: DG.GridCellStyle, alignByFirstSubstructure: boolean): void {
     const vertical = cellStyle !== undefined && cellStyle !== null ? cellStyle.textVertical : false;
 
     if (vertical) {
@@ -290,7 +289,7 @@ M  END
       h -= w;
     }
     const imageData = this._fetchRender(w, h, molString, scaffolds,
-      highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, multiScaffold);
+      highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, alignByFirstSubstructure);
 
     if (vertical) {
       const ctx = onscreenCanvas.getContext('2d', {willReadFrequently: true})!;
@@ -371,24 +370,24 @@ M  END
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
     const alignByStructure = !!(filter.length || align.length || scaffoldTreeHighlight.length);
-    const scaffolds = filter.length ? filter : align.length ? align : scaffoldTreeHighlight.length ? scaffoldTreeHighlight : highlight;
+    const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
   }
 
   highlightByScaffoldCol(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle, colTemp: any, molString: string): void {
-    let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
+    let molRegenerateCoords = colTemp && colTemp[REGENERATE_COORDS] === 'true';
     let scaffoldRegenerateCoords = false;
     const df = gridCell.cell.dataFrame;
     let rowScaffoldCol = null;
 
     // if given, take the 'scaffold-col' col
-    if (colTemp && colTemp['scaffold-col']) {
-      const rowScaffoldColName = colTemp['scaffold-col'];
+    if (colTemp && colTemp[SCAFFOLD_COL]) {
+      const rowScaffoldColName = colTemp[SCAFFOLD_COL];
       const rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
       if (rowScaffoldColProbe !== null) {
         const scaffoldColTemp = rowScaffoldColProbe.temp;
-        scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp['regenerate-coords'] === 'true';
+        scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp[REGENERATE_COORDS] === 'true';
         molRegenerateCoords = scaffoldRegenerateCoords;
         rowScaffoldCol = rowScaffoldColProbe;
       }
@@ -396,14 +395,14 @@ M  END
 
     if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
       // regular drawing
-      this._drawMolecule(x, y, w, h, g.canvas, molString, [], false, molRegenerateCoords, false, cellStyle, false);
+      this._drawMolecule(x, y, w, h, g.canvas, molString, [], false, molRegenerateCoords, false, cellStyle, true);
     } else {
       // drawing with a per-row scaffold
       const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
       const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
-      const highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
+      const highlightScaffold = colTemp && colTemp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true';
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, [{molecule: scaffoldMolString}], highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, false);
+        molString, [{molecule: scaffoldMolString}], highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle, true);
     }
   }
 }

@@ -1,5 +1,15 @@
 # Chem changelog
 
+## 1.8.0 (2023-08-09)
+
+### Features
+
+* GROK-13817: Highlighting multiple substructures with different colors inside one molecule structure
+* [#2355](https://github.com/datagrok-ai/public/issues/2355): Integrate Scaffold Tree with color-coded fragments
+* GROK-13993: Fast Chemical space on large datasets (> 20k)  using sparse matrix
+* GROK-13994: Implemented filter by superstructure, exact structure, similarity score
+* GROK-13966: Exposed fingerprints options for similarity, diversity search
+
 ## 1.7.2 (2023-09-05)
 
 ### Bug Fixes
@@ -26,7 +36,7 @@
 
 ### Features
 
-* GROK-13172: Chem | implement substructure search using JSSubstructLibrary
+* GROK-13172: Chem | implement substructure search using preliminary filtration by pattern fingerprints
 
 ## 1.6.22 (2023-08-07)
 

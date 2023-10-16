@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.5.87",
+  "version": "3.5.97",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -616,6 +616,9 @@
         },
         "1.7.2": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.8.0": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -1106,6 +1109,9 @@
           "datagrok-api": "^1.16.4"
         },
         "1.14.1": {
+          "datagrok-api": "^1.16.4"
+        },
+        "1.15.0": {
           "datagrok-api": "^1.16.4"
         }
       },
@@ -1655,6 +1661,9 @@
           "datagrok-api": "^1.16.3"
         },
         "1.15.0": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.15.1": {
           "datagrok-api": "^1.16.3"
         }
       },
@@ -2419,6 +2428,18 @@
         },
         "2.10.17": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.10.22": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.23": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.24": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.25": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -3057,6 +3078,9 @@
         },
         "1.0.11": {
           "datagrok-api": "^1.15.2"
+        },
+        "1.0.12": {
+          "datagrok-api": "^1.15.2"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
@@ -3107,6 +3131,9 @@
           "datagrok-api": "latest"
         },
         "1.1.3": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.1.4": {
           "datagrok-api": "^1.16.0"
         }
       },
@@ -3235,6 +3262,9 @@
           "datagrok-api": "^1.16.0"
         },
         "1.2.8": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.2.9": {
           "datagrok-api": "^1.16.0"
         }
       },

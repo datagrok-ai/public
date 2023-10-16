@@ -113,7 +113,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
                 array.push({molecule: smartsCol.get(i), color: DG.Color.toHtml(color)! });
             }
             col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(array));
-            grok.shell.tv.dataFrame.fireValuesChanged();
+            grok.shell.tv.dataFrame?.fireValuesChanged();
           })), () => { })
 /*           menu.item('Filter by alert', () => {
             filterByAlert(grok.shell.tv.dataFrame.currentCol, smartsCol.get(i));

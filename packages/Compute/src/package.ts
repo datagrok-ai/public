@@ -33,7 +33,7 @@ export function importScriptGenerator(){
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
-//output: viewer
+//output: viewer result
 export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }

@@ -33,6 +33,10 @@ import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
 
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+
 export type SummaryStats = {
   minCount: number, maxCount: number,
   minMeanDifference: number, maxMeanDifference: number,
@@ -88,6 +92,7 @@ export class PeptidesModel {
   subs: rxjs.Subscription[] = [];
   isHighlighting: boolean = false;
   latestSelectionItem: (type.SelectionItem & {kind: SELECTION_MODE | 'Cluster'}) | null = null;
+  controlFire: boolean = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -418,7 +423,7 @@ export class PeptidesModel {
   }
 
   createAccordion(): DG.Accordion | null {
-    const trueModel: PeptidesModel | undefined = grok.shell.t.temp[PeptidesModel.modelName];
+    const trueModel: PeptidesModel | undefined = grok.shell.t?.temp[PeptidesModel.modelName];
     if (!trueModel)
       return null;
 
@@ -519,6 +524,7 @@ export class PeptidesModel {
       const newColCat = newCol.categories;
       const newColData = newCol.getRawData();
       col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
+      col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
       CR.setMonomerRenderer(col, this.alphabet);
     }
     this.df.name = name;
@@ -970,14 +976,22 @@ export class PeptidesModel {
         pane.expanded = true;
     };
 
-    DG.debounce(selection.onChanged, 500).subscribe(() => {
+    selection.onChanged.subscribe(() => {
+      if (this.controlFire) {
+        this.controlFire = false;
+        return;
+      }
       if (!this.isUserChangedSelection)
         selection.copyFrom(getLatestSelection(), false);
       showAccordion();
       this.isUserChangedSelection = true;
     });
 
-    DG.debounce(filter.onChanged, 500).subscribe(() => {
+    filter.onChanged.subscribe(() => {
+      if (this.controlFire) {
+        this.controlFire = false;
+        return;
+      }
       const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
       if (lstViewer !== null && typeof lstViewer.model !== 'undefined') {
         lstViewer.createLogoSummaryTableGrid();
@@ -994,6 +1008,13 @@ export class PeptidesModel {
     this.df.selection.fireChanged();
     if (fireFilterChanged)
       this.df.filter.fireChanged();
+
+    // Fire bitset changed event again to update UI
+    this.controlFire = true;
+    this.df.selection.fireChanged();
+    if (fireFilterChanged)
+      this.df.filter.fireChanged();
+
     this.headerSelectedMonomers = calculateSelected(this.df);
   }
 
@@ -1162,6 +1183,7 @@ export class PeptidesModel {
   addNewCluster(clusterName: string): void {
     const newClusterCol = DG.Column.fromBitSet(clusterName, this.getCompoundBitset());
     newClusterCol.setTag(C.TAGS.CUSTOM_CLUSTER, '1');
+    newClusterCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
     this.df.columns.add(newClusterCol);
     this.analysisView.grid.col(newClusterCol.name)!.visible = false;
   }
@@ -1229,5 +1251,18 @@ export class PeptidesModel {
       }
     }
     return selection;
+  }
+
+  async addSequenceSpace(): Promise<void> {
+    const seqSpaceParams: {table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
+      similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames, plotEmbeddings: boolean,
+      sparseMatrixThreshold?: number, options?: IUMAPOptions | ITSNEOptions} =
+      {table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName!), methodName: DimReductionMethods.UMAP,
+        similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE, plotEmbeddings: true, sparseMatrixThreshold: 0.8,
+        options: {}};
+    const seqSpaceViewer: DG.ScatterPlotViewer | undefined = await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
+    if (typeof seqSpaceViewer === 'undefined')
+      return;
+    this.analysisView.dockManager.dock(seqSpaceViewer, DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE), 'Sequence space');
   }
 }

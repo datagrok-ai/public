@@ -13,6 +13,7 @@ import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '
 import {getStatsSummary, prepareTableForHistogram} from '../utils/misc';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {SelectionItem} from '../utils/types';
+import {_package} from '../package';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
@@ -302,7 +303,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       }
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
-    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell) => {
+    DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell) => {
       if (!gridCell.isTableCell)
         return;
 
@@ -328,6 +329,10 @@ export class LogoSummaryTable extends DG.JsViewer {
       const selection = this.getCluster(gridCell);
       this.model.modifyClusterSelection(selection, {shiftPressed: ev.shiftKey, ctrlPressed: ev.ctrlKey});
       this.viewerGrid.invalidate();
+
+      _package.files.readAsText('help/logo-summary-table.md').then((text) => {
+        grok.shell.windows.help.showHelp(ui.markdown(text));
+      }).catch((e) => grok.log.error(e));
     });
     this.viewerGrid.onCellTooltip((gridCell, x, y) => {
       if (!gridCell.isTableCell) {
@@ -347,7 +352,6 @@ export class LogoSummaryTable extends DG.JsViewer {
     gridProps.allowRowSelection = false;
     gridProps.allowBlockSelection = false;
     gridProps.allowColSelection = false;
-    gridProps.showRowHeader = false;
     gridProps.showCurrentRowIndicator = false;
 
     return this.viewerGrid;
@@ -381,7 +385,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     this.bitsets.push(currentSelection.clone());
 
-    const newClusterName = viewerDfCols.getUnusedName('New Cluster');
+    const newClusterName = this.model.df.columns.getUnusedName('New Cluster');
     const aggregatedValues: {[colName: string]: number} = {};
     const aggColsEntries = Object.entries(this.model.settings.columns ?? {});
     for (const [colName, aggFn] of aggColsEntries) {

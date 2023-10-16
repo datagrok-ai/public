@@ -253,6 +253,10 @@ export class UMAP {
   private embedding: number[][] = [];
   private optimizationState = new OptimizationState();
 
+
+  get neighbors() {
+    return this.nNeighbors;
+  }
   constructor(params: UMAPParameters = {}) {
     const setParam = (key: keyof UMAPParameters) => {
       //@ts-ignore

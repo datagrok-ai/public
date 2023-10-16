@@ -133,7 +133,7 @@ export async function initChemAutostart(): Promise<void> { }
 //name: Chemistry | Most Diverse Structures
 //tags: tooltip
 //input: column col {semType: Molecule}
-//output: widget
+//output: widget result
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
   const version = col.version;
 
@@ -435,7 +435,7 @@ export function searchSubstructureEditor(call: DG.FuncCall): void {
 
 
 //top-menu: Chem | Search | Substructure Search...
-//name: Diversity Search
+//name: Substructure Search
 //input: column molecules { semType: Molecule }
 //editor: Chem:SearchSubstructureEditor
 export function SubstructureSearchTopMenu(molecules: DG.Column): void {

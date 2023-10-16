@@ -11,7 +11,7 @@ export class SparseMatrixService {
         .map(() => new Worker(new URL('./sparse-matrix-worker', import.meta.url)));
     }
 
-    public async calc<T>(values: Array<T> | ArrayLike<T>, fnName: KnownMetrics, threshold: number) {
+    public async calc<T>(values: Array<T> | ArrayLike<T>, fnName: KnownMetrics, threshold: number, opts?: {[_: string]: any}) {
       const matSize = values.length * (values.length - 1) / 2;
       const chunkSize = Math.floor(matSize / this._workerCount);
       const promises =
@@ -20,7 +20,7 @@ export class SparseMatrixService {
         promises[idx] = new Promise((resolveWorker, rejectWorker) => {
           const startIdx = idx * chunkSize;
           const endIdx = idx === this._workerCount - 1 ? matSize : (idx + 1) * chunkSize;
-          this._workers[idx].postMessage({values, startIdx, endIdx, threshold, fnName});
+          this._workers[idx].postMessage({values, startIdx, endIdx, threshold, fnName, opts});
           this._workers[idx].onmessage = ({data: {error, i, j, distance}}): void => {
             if (error) { rejectWorker(error); } else {
               this._workers[idx].terminate();

@@ -2,9 +2,10 @@
 
 ## 2.11.0 (WIP)
 
-### Features 
+### Features
 
 * Add VdRegionsViewer `filterSource` property.
+* Add ToAtomicLevel for non-linear HELM strcutures.
 
 ### Bug fixes
 
@@ -23,6 +24,9 @@
 * Fix WebLogo with `filterSource` of `Selection` to work from project.
 * Fix WebLogo with `filterSource` of `Selection` display all in case of empty selection.
 * Fix VdRegionsViewer for initial `filterSource`
+* Fix Macromolecule cell render to skip on closed grid
+* Fix WebLogoViewer for empty column (annotated).
+* Fix WebLogoViewer and VdRegionsViewer deadlock.
 
 ## 2.10.0 (2023-09-06)
 

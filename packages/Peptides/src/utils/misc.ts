@@ -36,7 +36,7 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
       const val = activityColData[i];
       return val === DG.FLOAT_NULL || val === DG.INT_NULL ? val : formula(val);
     });
-
+  scaledCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
   return scaledCol;
 }
 
@@ -131,4 +131,5 @@ export function setGridProps(grid: DG.Grid): void {
   grid.props.showRowHeader = false;
   grid.props.showCurrentRowIndicator = false;
   grid.root.style.width = '100%';
+  grid.root.style.maxWidth = '100%';
 }

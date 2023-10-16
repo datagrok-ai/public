@@ -17,7 +17,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import {getMolSafe} from './utils/mol-creation_rdkit';
 import {_package} from './package';
 import {IFpResult} from './rdkit-service/rdkit-service-worker-similarity';
-import {SubstructureSearchType, getSearchProgressEventName, getTerminateEventName} from './constants';
+import {SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from './constants';
 import {SubstructureSearchWithFpResult} from './rdkit-service/rdkit-service';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
@@ -319,15 +319,15 @@ export async function chemSubstructureSearchLibrary(
     };
     const fireFinishEvents = () => {
       grok.events.fireCustomEvent(searchProgressEventName, 100);
-      grok.events.fireCustomEvent(terminateEventName, molBlockFailover);
+      grok.events.fireCustomEvent(terminateEventName, getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff));
       saveProcessedColumns();
     };
     if (awaitAll) {
       await Promise.all(subFuncs.promises);
       fireFinishEvents();
     } else {
-      const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (mol: string) => {
-        if (mol === molBlockFailover) {
+      const sub = grok.events.onCustomEvent(terminateEventName).subscribe(async (molAndSearchType: string) => {
+        if (molAndSearchType === getSearchQueryAndType(molBlockFailover, searchType, fp, similarityCutOff)) {
           await rdKitService.setTerminateFlag(true);
           subFuncs!.setTerminateFlag();
           await Promise.allSettled(subFuncs.promises);

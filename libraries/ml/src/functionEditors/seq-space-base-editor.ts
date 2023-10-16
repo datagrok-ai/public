@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { DimReductionMethods, IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
-import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
+import { MACROMOLECULE_SIMILARITY_METRICS, SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
 import { BitArrayMetricsNames } from '../typed-metrics/consts';
 import { ColumnInputOptions } from '@datagrok-libraries/utils/src/type-declarations';
+import { MmDistanceFunctionsNames } from '../macromolecule-distance-functions';
 
 export const SEQ_COL_NAMES = {
     [DG.SEMTYPE.MOLECULE]: 'Molecules',
@@ -43,6 +44,7 @@ export class SequenceSpaceBaseFuncEditor {
       //@ts-ignore
       this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype), null, {filter: (col: DG.Column) => col.semType === semtype} as ColumnInputOptions);
       this.molColInputRoot = this.molColInput.root;
+      this.molColInput.onChanged(() => this.onColumnInputChanged(semtype));
       this.methodInput = ui.choiceInput('Method', DimReductionMethods.UMAP, [DimReductionMethods.UMAP, DimReductionMethods.T_SNE], () => {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
@@ -65,12 +67,13 @@ export class SequenceSpaceBaseFuncEditor {
       this.methodSettingsDiv = ui.inputs([]);
       let settingsOpened = false;
 
-      this.similarityMetricInput = ui.choiceInput('Similarity', BitArrayMetricsNames.Tanimoto, SEQ_SPACE_SIMILARITY_METRICS);
-      if (semtype !== DG.SEMTYPE.MOLECULE) {
-        this.similarityMetricInput.root.style.display = 'none';
-      }
+      this.similarityMetricInput = semtype === DG.SEMTYPE.MOLECULE ?
+        ui.choiceInput('Similarity', BitArrayMetricsNames.Tanimoto, SEQ_SPACE_SIMILARITY_METRICS) :
+        ui.choiceInput('Similarity', MmDistanceFunctionsNames.HAMMING, MACROMOLECULE_SIMILARITY_METRICS);
+
       setTimeout(() => {
         this.displaySimilarityThresholdInput(semtype);
+        this.onColumnInputChanged(semtype);
       });
     }
   
@@ -89,9 +92,22 @@ export class SequenceSpaceBaseFuncEditor {
 
     onTableInputChanged(semtype: DG.SemType) {
         this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
+        this.molColInput.onChanged(() => this.onColumnInputChanged(semtype));
         ui.empty(this.molColInputRoot);
         Array.from(this.molColInput.root.children).forEach((it) => this.molColInputRoot.append(it));
         this.displaySimilarityThresholdInput(semtype);
+        this.onColumnInputChanged(semtype);
+    }
+
+    onColumnInputChanged(semtype: DG.SemType) {
+      const col: DG.Column | null | undefined = this.molColInput.value;
+      if (!col || semtype !== DG.SEMTYPE.MACROMOLECULE) return;
+      const isMSA = (col.getTag('aligned') ?? ' ').toUpperCase().includes('MSA');
+      if(isMSA)
+        this.similarityMetricInput.value = MmDistanceFunctionsNames.HAMMING;
+      else
+        this.similarityMetricInput.value = MmDistanceFunctionsNames.LEVENSHTEIN;
+    
     }
 
     displaySimilarityThresholdInput(semtype: DG.SemType) {

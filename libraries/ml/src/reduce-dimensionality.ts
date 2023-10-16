@@ -17,7 +17,8 @@ import {Measure, KnownMetrics, AvailableMetrics,
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters, UMAP} from './umap';
 import {DistanceMatrix, DistanceMatrixService, distanceMatrixProxy, dmLinearIndex} from './distance-matrix';
-import { SparseMatrixService } from './distance-matrix/sparse-matrix-service';
+import {SparseMatrixService} from './distance-matrix/sparse-matrix-service';
+import {getKnnGraph} from './umap/knnGraph';
 
 export type SparseMatrixTransferType = {
   i: Int32Array,
@@ -176,6 +177,7 @@ class UMAPReducer extends Reducer {
   protected sparseMatrixThreshold: number;
   protected transferedSparseMatrix?: SparseMatrixTransferType;
   protected progressFunc?: (epoc: number, epochsLength: number, embeddings: number[][]) => void;
+  protected distanceFnArgs?: {[_: string]: any};
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -185,6 +187,7 @@ class UMAPReducer extends Reducer {
     super(options);
     assert('distanceFname' in options);
     assert('distanceFn' in options);
+    this.distanceFnArgs = options?.distanceFnArgs;
     this.distanceFn = options.distanceFn!;
     this.usingSparseMatrix = !!options.usingSparseMatrix || !!options.sparseMatrix;
     this.sparseMatrixThreshold = options.sparseMatrixThreshold ?? 0.8;
@@ -245,7 +248,7 @@ class UMAPReducer extends Reducer {
       this.distanceMatrix = parallelDistanceWorkers ? await (async () => {
         const matrixService = new DistanceMatrixService(true, false);
         try {
-          const dist = await matrixService.calc(this.data, this.distanceFname);
+          const dist = await matrixService.calc(this.data, this.distanceFname, true, this.distanceFnArgs);
           matrixService.terminate();
           return dist;
         } catch (e) {
@@ -253,24 +256,47 @@ class UMAPReducer extends Reducer {
           throw e;
         }
       })() :
-        (() => { const ret = DistanceMatrix.calc(this.data, (a, b) => this.distanceFn(a, b)); return ret.data; })();
+        (() => { 
+          const ret = DistanceMatrix.calc(this.data, (a, b) => {
+            const d = this.distanceFn(a, b);
+            return d;}); 
+          return ret.data; 
+        })();
     } else if (this.usingSparseMatrix) {
-          console.time('sparse matrix')
-          const res = this.transferedSparseMatrix ?? await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold);
-          console.timeEnd('sparse matrix')
+          console.time('sparse matrix');
+          let res: {[K in keyof SparseMatrixTransferType]: SparseMatrixTransferType[K] | null} | null
+            = this.transferedSparseMatrix ??
+              await new SparseMatrixService().calc(this.data, this.distanceFname, this.sparseMatrixThreshold, this.distanceFnArgs);
+          console.timeEnd('sparse matrix');
+
+          const knnRes = getKnnGraph(res.i!, res.j!, res.distance!, this.reducer.neighbors, this.data.length);
+
+          this.reducer.setPrecomputedKNN(knnRes.knnIndexes, knnRes.knnDistances);
+
           console.time('sparse matrix to map')
           this.sparseMatrix = new Map<number, Map<number, number>>();
-          for (let i = 0; i < res.i.length; ++i) {
-            const first = res.i[i];
-            const second = res.j[i];
-            const distance = res.distance[i];
+          for (let i = 0; i < res.i!.length; ++i) {
+            const first = res.i![i];
+            const second = res.j![i];
+            const distance = res.distance![i];
             if (!this.sparseMatrix.has(first))
               this.sparseMatrix.set(first, new Map<number, number>());
             this.sparseMatrix.get(first)!.set(second, distance);
           }
-          console.timeEnd('sparse matrix to map')
-        
-    }
+          console.timeEnd('sparse matrix to map');
+          res.distance = null;
+          res.i = null;
+          res.j = null;
+          res = null;
+          // needed so that garbage collector can free memory from distance matrix
+          await new Promise<void>((resolve) => {
+            setTimeout(() => {
+              resolve();
+            }, 500);
+          })
+        }
+
+    
     const embedding = await this.reducer.fitAsync(this.vectors, (epoc) => {
       if (this.progressFunc)
         this.progressFunc(epoc, this.reducer.getNEpochs(), this.reducer.getEmbedding());
@@ -399,7 +425,7 @@ export class DimensionalityReducer {
    * @memberof DimensionalityReducer
    */
   constructor(data: any[], method: KnownMethods, metric: KnownMetrics, options?: Options) {
-    const measure = new Measure(metric).getMeasure();
+    const measure = new Measure(metric).getMeasure(options?.distanceFnArgs);
     let specOptions = {};
 
     if (isBitArrayMetric(metric)) {

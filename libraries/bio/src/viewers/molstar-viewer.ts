@@ -38,7 +38,7 @@ export type MolstarDataType = {
 
 export const BiostructurePropsDefault = new class {
   // -- Data --
-  data: MolstarDataType | null = null;
+  data: string = 'null';
   pdb: string | null = null;
   pdbTag: string | null = null;
   ligandColumnName: string | null = null;

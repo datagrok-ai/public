@@ -20,10 +20,17 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
                 'molecule': (item: ItemType) => {
                     return new CustomSketcherInput(item.molecule);
                 },
-            }
+            },
+            newItemFunction: () => ({color: '#00FF00'}),
         });
 
     itemsGrid.onItemAdded.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
+    itemsGrid.onAddingItemChanged.subscribe((item) => {
+        if (itemsGrid.items.indexOf(item.item) === -1)
+            col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items.concat([item.item])))
+        if (itemsGrid.items.filter((it => item.item.molecule === it.molecule)).length > 0 && item.fieldName === 'molecule')
+            grok.shell.warning(`Current structure has been added previously`);
+    });
     itemsGrid.onItemRemoved.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
     itemsGrid.onItemChanged.subscribe(() => col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, JSON.stringify(itemsGrid.items)));
     return new DG.Widget(itemsGrid.root);

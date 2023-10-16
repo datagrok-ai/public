@@ -71,10 +71,11 @@ function drawTooltipElement(params: ITooltipAndPanelParams, element: HTMLDivElem
 }
 
 function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
+  let tooltipColsNum = Math.min(df.columns.length, 7);
   const dict: {[key: string]: string} = {};
-  for (const col of df.columns) {
-    if (col.name !== seqColName)
-      dict[col.name] = df.get(col.name, idx);
+  for (let i = 0; i < tooltipColsNum; i++) {
+    const colName = df.columns.byIndex(i).name;
+    colName !== seqColName ? dict[colName] = df.get(colName, idx) : tooltipColsNum++;
   }
   return ui.tableFromMap(dict);
 }

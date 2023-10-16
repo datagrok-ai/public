@@ -66,6 +66,6 @@ export function hexToPercentRgb(hex: string): number[] | null {
       parseInt(result[1], 16) / 256,
       parseInt(result[2], 16) / 256,
       parseInt(result[3], 16) / 256,
-      0.7
+      0.3
   ] : null;
 }

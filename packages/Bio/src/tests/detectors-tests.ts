@@ -182,7 +182,10 @@ MWRSWY-CKHP`;
           const df: DG.DataFrame = await readFile(samples[key]);
           // await grok.data.detectSemanticTypes(df);
           return df;
-        })();
+        })().catch((err: any) => {
+          delete _samplesDfs[key];
+          throw err;
+        });
       }
       return _samplesDfs[key];
     };

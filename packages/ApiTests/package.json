@@ -16,8 +16,8 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.4",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.15.4",
-    "dayjs": "latest",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.10",
     "rxjs": "^6.6.7",
     "wu": "latest"
   },
@@ -67,12 +67,6 @@
   "properties": [
     {
       "name": "INT",
-      "propertyType": "int",
-      "defaultValue": 1,
-      "nullable": false
-    },
-    {
-      "name": "BIG_INT",
       "propertyType": "int",
       "defaultValue": 1,
       "nullable": false

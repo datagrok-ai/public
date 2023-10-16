@@ -1,5 +1,8 @@
 import {ValidTypes} from '../typed-metrics/typed-metrics';
 import {IReduceDimensionalityResult} from '../reduce-dimensionality';
+import * as grok from 'datagrok-api/grok';
+
+export const DIMENSIONALITY_REDUCER_TERMINATE_EVENT = 'dimensionality-reducer-terminate-event';
 
 /**
  * A worker to perform dimensionality reduction.
@@ -23,11 +26,19 @@ export async function createDimensinalityReducingWorker(dataMetric: ValidTypes, 
       options: options,
       parallelDistanceWorkers: parallelDistanceWorkers,
     });
+    const terminateSub = grok.events.onCustomEvent(DIMENSIONALITY_REDUCER_TERMINATE_EVENT).subscribe(() => {
+      try {
+        worker?.terminate();
+      } finally {
+        terminateSub.unsubscribe();
+      }
+    });
     worker.onmessage = ({data: {error, distance, embedding, epochNum, epochsLength}}) => {
       if (epochNum && epochsLength) {
         progressFunc && progressFunc(epochNum, epochsLength, embedding);
         return;
       }
+      terminateSub.unsubscribe();
       if (error)
         reject(error);
       else

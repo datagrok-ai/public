@@ -81,12 +81,16 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, invariantMapSelection: types.Selection, cellValue: number, bound: DG.Rect,
   color: number): void {
+  //FIXME: This is a hack, because `color` value sometimes comes incomplete. E.g. we found that here `color` value is
+  // 255 and its contrast color would be black, which is not visible on blue (color code) background. The full number
+  // is actually 4278190335.
+  color = DG.Color.fromHtml(DG.Color.toHtml(color));
   canvasContext.fillStyle = DG.Color.toHtml(color);
   canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
-  canvasContext.fillStyle = '#000';
+  canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
   const monomerSelection = invariantMapSelection[currentPosition];
@@ -114,18 +118,19 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   drawOptions.symbolStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
-  drawOptions.marginVertical ??= 5;
-  drawOptions.marginHorizontal ??= 5;
+  drawOptions.marginVertical ??= 2;
+  drawOptions.marginHorizontal ??= 2;
+  drawOptions.selectionWidth ??= 1;
   drawOptions.textHeight ??= 13;
   drawOptions.headerStyle ??= `bold ${drawOptions.textHeight * pr}px Roboto, Roboto Local, sans-serif`;
 
   const totalSpace = (sortedOrder.length - 1) * drawOptions.upperLetterAscent; // Total space between letters
   const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpace - 1.25 * drawOptions.textHeight) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
-  const barWidth = (bounds.width - leftShift * 2) * pr;
+  const barWidth = (bounds.width - (leftShift + drawOptions.marginHorizontal)) * pr;
   const xStart = (bounds.x + leftShift) * pr;
-  const selectionWidth = 4 * pr;
-  const xSelection = (bounds.x + 3) * pr;
+  const selectionWidth = Math.min(drawOptions.selectionWidth * pr, 1);
+  const xSelection = (bounds.x + 1) * pr;
   let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
   const monomerBounds: { [monomer: string]: DG.Rect } = {};

@@ -445,7 +445,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await historyUtils.loadRun(funcCallId);
-    this.lastCall = pulledRun;
+    this.lastCall = deepCopy(pulledRun);
     this.linkFunccall(pulledRun);
     this.isHistorical.next(true);
     await this.onAfterLoadRun(pulledRun);

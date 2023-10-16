@@ -298,43 +298,25 @@ export class RdKitService {
         return {matches: new BitArray(batch.length, true), fpRes: fpResult};
       let finalBitArray = new BitArray(batch.length, false);
       if (searchType !== SubstructureSearchType.IS_SIMILAR) {
-        // *********** FILTERING using fingerprints
-        const superStructSearch = !!(searchType === SubstructureSearchType.INCLUDED_IN || searchType === SubstructureSearchType.NOT_INCLUDED_IN);
-        const inverseSearch = !!(searchType === SubstructureSearchType.NOT_CONTAINS || searchType === SubstructureSearchType.NOT_INCLUDED_IN);
-        const patternFpUint8Length = 256;
-        const patternFpFilterBitArray = new BitArray(batch.length, inverseSearch ? true : false);
-        checkEl:
-        for (let i = 0; i < batch.length; ++i) {
-          if (fpResult.fps[i]) {
-            for (let j = 0; j < patternFpUint8Length; ++j) {
-              const bitToCompare = superStructSearch ? fpResult.fps[i]![j] : fpRdKit[j];
-              if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare) {
-                  continue checkEl;
-              }
-            }
-            patternFpFilterBitArray.setFast(i, inverseSearch ? false : true);
-          }
-        }
-        const filteredMolecules = Array<string>(patternFpFilterBitArray.trueCount());
-        let counter = 0;
-        for (let i = -1; (i = patternFpFilterBitArray.findNext(i)) !== -1;) {
-          filteredMolecules[counter] = createSmiles ? fpResult.smiles![i]! : batch[i];
-          counter++;
-        }
+        let filteredMolecules: string[] = [];
+        let patternFpFilterBitArray: BitArray | null = null;
+        if (searchType !== SubstructureSearchType.NOT_CONTAINS && searchType !== SubstructureSearchType.NOT_INCLUDED_IN) {
+          // *********** FILTERING using fingerprints
+          patternFpFilterBitArray = this.filterByPatternFps(searchType,batch, fpRdKit, fpResult);
+          filteredMolecules = this.filterMoleculesByBitArray(patternFpFilterBitArray, batch, fpResult, createSmiles);
+        } else
+          filteredMolecules = createSmiles ? fpResult.smiles! as string[] : batch;
 
-        // *********** DONE FILTERING using fingerprints
+        // *********** DONE FILTERING using fingerprints if necessary
         // filter using substruct search on already prefiltered dataset
         const substructRes: Uint32Array = await this.parallelWorkers[workerIdx]
-          .searchSubstructure(query, queryMolBlockFailover, filteredMolecules, searchType);
+          .searchSubstructure(query, queryMolBlockFailover, filteredMolecules!, searchType);
 
         const matchesBitArray = BitArray.fromUint32Array(filteredMolecules.length, substructRes);
-        // restore the indexes of prefiltered molecules on the whole dataset
-        let matchesCounter = 0;
-        for (let i = -1; (i = patternFpFilterBitArray.findNext(i)) != -1;) {
-          if (matchesBitArray.getBit(matchesCounter))
-          finalBitArray.setBit(i, true);
-          matchesCounter++;
-        }
+        if (searchType !== SubstructureSearchType.NOT_CONTAINS && searchType !== SubstructureSearchType.NOT_INCLUDED_IN)
+          this.restorePrefilteredMoleculesIndexes(patternFpFilterBitArray!, matchesBitArray, finalBitArray);
+        else
+          finalBitArray = matchesBitArray;
       } else {
         // ************* PERFORM SIMILARITY SEARCH
         try {
@@ -357,6 +339,47 @@ export class RdKitService {
         fpRes: fpResult,
       };
     }, progressFunc);
+  }
+
+  // restore the indexes of prefiltered molecules on the whole dataset
+  restorePrefilteredMoleculesIndexes(patternFpFilterBitArray: BitArray, matchesBitArray: BitArray, finalBitArray: BitArray) {
+    // restore the indexes of prefiltered molecules on the whole dataset
+    let matchesCounter = 0;
+    for (let i = -1; (i = patternFpFilterBitArray!.findNext(i)) != -1;) {
+      if (matchesBitArray.getBit(matchesCounter))
+        finalBitArray.setBit(i, true);
+      matchesCounter++;
+    }
+  }
+
+  filterByPatternFps(searchType: SubstructureSearchType, batch: string[], fpRdKit: Uint8Array,
+    fpResult: IFpResult): BitArray {
+    const superStructSearch = !!(searchType === SubstructureSearchType.INCLUDED_IN);
+    const patternFpUint8Length = 256;
+    const patternFpFilterBitArray = new BitArray(batch.length, false);
+    checkEl:
+    for (let i = 0; i < batch.length; ++i) {
+      if (fpResult.fps[i]) {
+        for (let j = 0; j < patternFpUint8Length; ++j) {
+          const bitToCompare = superStructSearch ? fpResult.fps[i]![j] : fpRdKit[j];
+          if ((fpResult.fps[i]![j] & fpRdKit[j]) != bitToCompare) {
+            continue checkEl;
+          }
+        }
+        patternFpFilterBitArray.setFast(i, true);
+      }
+    }
+    return patternFpFilterBitArray;
+  }
+
+  filterMoleculesByBitArray(patternFpFilterBitArray: BitArray, batch: string[], fpResult: IFpResult, createSmiles?: boolean): string[] {
+    const filteredMolecules = Array<string>(patternFpFilterBitArray.trueCount());
+    let counter = 0;
+    for (let i = -1; (i = patternFpFilterBitArray.findNext(i)) !== -1;) {
+      filteredMolecules[counter] = createSmiles ? fpResult.smiles![i]! : batch[i];
+      counter++;
+    }
+    return filteredMolecules;
   }
 
 

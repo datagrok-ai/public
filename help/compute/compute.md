@@ -475,3 +475,7 @@ Solve an inverse problem: find input conditions leading to specified output cons
 6. **Functions versioning**
 
 7. **Audit**
+
+## Videos
+
+[![Compute](./compute-preview.png "Open on Youtube")](https://www.youtube.com/watch?v=EAWkUG5anJQ&t=118s)

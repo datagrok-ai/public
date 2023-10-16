@@ -1,5 +1,12 @@
 # Compute changelog
 
+## 1.15.1 (2023-10-21)
+
+### Fixed bugs
+
+- PLV: Fixed load run bug logic
+- RFV: Fixed load run bug logic
+
 ## 1.15.0 (2023-09-25)
 
 ### Fixed bugs
