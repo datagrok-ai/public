@@ -1,5 +1,49 @@
 # Peptides changelog
 
+## 1.15.0 (2023-10-12)
+
+### Features
+
+* Added Sequence Space viewer.
+* Selection panel columns now inherti width from main table.
+* Invarian Map cell values now rendered with contrast color relative to background.
+
+### Bug Fixes
+
+* Fixed WebLogo in header margin width.
+* Widgets in Context panel will now fill all the available width.
+* Fixed LST rows not resizable.
+* Fixed selection inconsistency.
+* Fixed Most Potent Residues keyboar navigation.
+* Fixed analysis not starting when there are columns of the same name.
+
+## 1.14.1 (2023-09-28)
+
+### Bug Fixes
+
+* Fixed a bug when filtering single cluster would break Logo Summary Table.
+
+## 1.14.0 (2023-09-28)
+
+### Features
+
+* Added keyboard navigation to Logo Summary Table, Monomer-Position, Most Potent Residues viewers and Mutation Cliff pairs panel.
+* Added icon to expand grids in property panel to fullscreen.
+
+### Bug Fixes
+
+* Fixed Distribution panel labels.
+
+## 1.13.3 (2023-09-20)
+
+### Features
+
+* WebLogo now reacts to filtering.
+
+### Bug Fixes
+
+* Fixed distribution panel throwing error when selection matches filter.
+
 ## 1.13.2 (2023-09-14)
 
 ### Bug Fixes

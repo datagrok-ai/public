@@ -8,11 +8,11 @@ import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 
 export class SequenceToMolfileConverter {
   constructor(
-    sequence: string, invert: boolean = false, format: string
+    sequence: string, private invert: boolean = false, format: string
   ) {
     this.lib = MonomerLibWrapper.getInstance();
     const codeToSymbolMap = this.lib.getCodeToSymbolMap(format);
-    this.parser = new MonomerSequenceParser(sequence, invert, codeToSymbolMap);
+    this.parser = new MonomerSequenceParser(sequence, codeToSymbolMap);
   }
 
   private parser: MonomerSequenceParser;
@@ -25,7 +25,24 @@ export class SequenceToMolfileConverter {
       const monomerMolfile = this.getMonomerMolfile(monomerSymbol, idx);
       monomerMolfiles.push(monomerMolfile);
     })
-    return this.getPolymerMolfile(monomerMolfiles);
+    let molfile = this.getPolymerMolfile(monomerMolfiles);
+    if (this.invert) {
+      molfile = this.reflect(molfile);
+      molfile = this.invertBondConfiguration(molfile);
+    }
+    return molfile;
+  }
+
+  private invertBondConfiguration(molfile: string): string {
+    const beginIdx = molfile.indexOf('M  V30 BEGIN BOND');
+    const endIdx = molfile.indexOf('M  V30 END BOND');
+    let bondBlock = molfile.substring(beginIdx, endIdx);
+    bondBlock = bondBlock.replace(
+      /(CFG=)([13])/g,
+      (match, group1, group2) => (group2 === '1') ? `${group1}3` : (group2 === '3') ? `${group1}1` : match
+    );
+    const result = molfile.substring(0, beginIdx) + bondBlock + molfile.substring(endIdx);
+    return result;
   }
 
   private getMonomerMolfile(monomerSymbol: string, idx: number): string {

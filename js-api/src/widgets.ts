@@ -478,14 +478,16 @@ export class Accordion extends DartWidget {
   }
 
   /** Adds a pane */
-  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null));
+  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null,
+    allowDragOut: boolean = true): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null, allowDragOut));
   }
 
   /** Adds a pane with the count indicator next to the title.
    * getCount() is executed immediately. */
-  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount));
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null,
+    allowDragOut: boolean = true): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount, allowDragOut));
   }
 
   /** Removed the specified pane. */
@@ -1871,11 +1873,10 @@ export class DropDown {
 
     this._label = label;
     this._element = createElement();
-
-    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
+    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
     this._dropDownElement.style.visibility = 'hidden';
 
-    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+    this.root = ui.div([this._dropDownElement, this._label], 'ui-drop-down-root');
 
     this._initEventListeners();
   }

@@ -1,4 +1,4 @@
-import {category, test, expect, before, testEvent, delay, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, before, testEvent, delay, expectArray, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -62,14 +62,16 @@ M  END
 
     const terminateFlag1 = 'terminate_substructure_search-tests/smiles_2_columns-smiles1';
     const terminateFlag2 = 'terminate_substructure_search-tests/smiles_2_columns-smiles2';
-    //finishing fp pre-calculation for filter1
-    await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => { },
-      () => {filter1.sketcher.setMolFile(molfile1);}, 7000);
+
+ 
     //finishing first search
-    await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => { }, () => {}, 7000);
+    await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => {},
+      () => { filter1.sketcher.setMolFile(molfile1);  }, 7000);
+
     //finishing fp pre-calculation for filter2
-    await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => { },
-      () => {filter2.sketcher.setMolFile(molfile2);}, 7000);
+    await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => {},
+      () => {filter2.sketcher.setMolFile(molfile2);}, 7000); 
+
     //finishing second search
     await testEvent(grok.events.onCustomEvent(terminateFlag2), (_) => {
       expect(df.filter.trueCount, 2);
@@ -80,22 +82,22 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('filterByOneColumn', async () => {
     await testOneColumn('tests/spgi-100.csv', 'Structure', 'c1ccccc1',
       'terminate_substructure_search-tests/spgi-100-Structure', 'oneColumn', 32);
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('malformed_filterByOneColumn', async () => {
     await testOneColumn('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'c1ccccc1',
       'terminate_substructure_search-tests/Test_smiles_malformed-canonical_smiles', 'malformed', 36);
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('empty_filterByOneColumn', async () => {
     await testOneColumn('tests/sar-small_empty_vals.csv', 'smiles', 'C1CCCCC1',
       'terminate_substructure_search-tests/sar-small_empty_vals-smiles', 'empty', 16);
-  }, {skipReason: 'GROK-12946'});
+  });
 
   test('terminatedSearch', async () => {
     const df = await readDataframe('tests/smi10K.csv');
@@ -106,10 +108,9 @@ M  END
     const terminateFlag = 'terminate_substructure_search-tests/smi10K-smiles';
     const substr1 = 'C1CCCCC1';
     const substr2 = 'CC1CCCCC1';
-    //finishing fp pre-calculation
-    await testEvent(grok.events.onCustomEvent(terminateFlag), async (_) => {
-    }, () => {filter.sketcher.setSmiles(substr1);}, 60000);
+
     //starting filtering by 1st structure
+    filter.sketcher.setSmiles(substr1);
     await delay(500);
     //terminating filtering by 1st structure
     await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
@@ -121,7 +122,7 @@ M  END
 
     sketcherDialogs.forEach((it) => it.close());
     filter.detach();
-  }, {timeout: 60000, skipReason: 'GROK-12946'});
+  }, {timeout: 60000});
 
   test('filteringMultipleDfs', async () => {
     const df1 = await readDataframe('tests/smi10K.csv');
@@ -137,10 +138,9 @@ M  END
     const terminateFlag2 = 'terminate_substructure_search-tests/smi10K (2)-smiles';
     const substr1 = 'C1CCCCC1';
     const substr2 = 'CC1CCCCC1';
-    //finishing fp pre-calculation for df1
-    await testEvent(grok.events.onCustomEvent(terminateFlag1), async (_) => {
-    }, () => {filter1.sketcher.setSmiles(substr1);}, 60000);
+
     //starting filtering by 1st structure
+    filter1.sketcher.setSmiles(substr1);
     await delay(500);
     //opening 2nd filter, sketching a molecule and waiting for 1st filter to complete
     await testEvent(grok.events.onCustomEvent(terminateFlag1), (_) => {
@@ -154,7 +154,7 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
-  }, {timeout: 60000, skipReason: 'GROK-12946'});
+  }, {timeout: 60000});
 
   test('multipleDfsWithTerminatedSearch', async () => {
     const df1 = await readDataframe('tests/smi10K.csv');
@@ -171,10 +171,9 @@ M  END
     const substr1 = 'C1CCCCC1';
     const substr2 = 'c1ccccc1';
     const substr3 = 'CC1CCCCC1';
-    //finishing fp pre-calculation for df1
-    await testEvent(grok.events.onCustomEvent(terminateFlag1), async (_) => {
-    }, () => {filter1.sketcher.setSmiles(substr1);}, 60000);
+
     //starting filtering by 1st structure
+    filter1.sketcher.setSmiles(substr1);
     await delay(500);
     //setting 1st structure to the 2nd filter
     filter2.sketcher.setSmiles(substr2);
@@ -190,7 +189,7 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
     filter1.detach();
     filter2.detach();
-  }, {timeout: 60000, skipReason: 'GROK-12946'});
+  }, {timeout: 60000});
 });
 
 async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[]):
@@ -198,10 +197,12 @@ async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: 
   const filter = new SubstructureFilter();
   filter.attach(df);
   filter.applyState({columnName: colName});
-  sketcherDialogs.push(ui.dialog().add(filter.sketcher).show());
+  sketcherDialogs.push(ui.dialog().add(filter.root).show());
+  await ui.tools.waitForElementInDom(filter.sketcher.root);
   filter.column = df.col(colName);
   filter.columnName = colName;
   filter.tableName = df.name;
+  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 5000);
   return filter;
 }
 
@@ -213,10 +214,7 @@ async function testOneColumn(dfName: string, colName: string, substructure: stri
 
   const filter = await createFilter(colName, df, sketcherDialogs);
 
-  //finishing fp pre-calculation
-  await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {},
-    () => {filter.sketcher.setSmiles(substructure);}, 7000);
-
+  filter.sketcher.setSmiles(substructure);
   await testEvent(grok.events.onCustomEvent(terminateFlag), (_) => {
     expect(df.filter.trueCount, expectedTrueCount);
     expectArray(df.filter.getBuffer(), expectedResults[expectedKey]);

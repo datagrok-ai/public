@@ -13,11 +13,39 @@ export const enum Temps {
   helmMonomerPlacer = 'bio-helmMonomerPlacer',
 }
 
-export class HelmMonomerPlacer {
-  private _allPartsList: (string[] | null)[] | null = null;
-  private _lengthsList: (number[] | null) [] | null = null;
+export interface IEditor {
+  get m(): IEditorMol;
 
-  private monomerLib: IMonomerLib;
+  redraw(): void;
+}
+
+export interface IEditorMol {
+  get atoms(): IEditorMolAtom[];
+}
+
+export interface IEditorMolAtom {
+  get p(): IEditorPoint;
+
+  get elem(): string;
+}
+
+export interface IEditorPoint {
+  get x(): number;
+
+  get y(): number;
+}
+
+export interface ISeqMonomer {
+  symbol: string,
+  polymerType?: string
+}
+
+export class HelmMonomerPlacer {
+  private readonly _allPartsList: (string[] | null)[];
+  private readonly _lengthsList: (number[] | null)[];
+  private readonly _editorList: (IEditor | null)[];
+
+  public readonly monomerLib: IMonomerLib;
 
   public monomerCharWidth: number = 7;
   public leftPadding: number = 5;
@@ -26,25 +54,20 @@ export class HelmMonomerPlacer {
     this.col.dataFrame.onDataChanged.subscribe();
     this.monomerLib = getMonomerLib();
     this.monomerLib.onChanged.subscribe(this.monomerLibOnChanged.bind(this));
+
+    this._allPartsList = new Array<string[] | null>(this.col.length).fill(null);
+    this._lengthsList = new Array<number[] | null>(this.col.length).fill(null);
+    this._editorList = new Array<IEditor | null>(this.col.length).fill(null);
   }
 
+  /** Skips cell for the fallback rendering */
   public skipCell(rowIdx: number): void {
-    if (this._allPartsList === null)
-      this._allPartsList = new Array<string[] | null>(this.col.length).fill(null);
-    if (this._lengthsList === null)
-      this._lengthsList = new Array<number[] | null>(this.col.length).fill(null);
-
     this._allPartsList[rowIdx] = [];
     this._lengthsList[rowIdx] = [];
   }
 
   /** @param rowIdx Row index of the table {@link DG.DataFrame}, HelmMonomerPlacer is {@link DG.Column} based */
   public getCellAllPartsLengths(rowIdx: number): [string[], number[], number[]] {
-    if (this._allPartsList === null)
-      this._allPartsList = new Array<string[] | null>(this.col.length).fill(null);
-    if (this._lengthsList === null)
-      this._lengthsList = new Array<number[] | null>(this.col.length).fill(null);
-
     const [allParts, lengths] = this.getCellMonomerLengthsForSeq(rowIdx);
 
     const sumLengths: number[] = new Array<number>(lengths.length + 1);
@@ -77,11 +100,15 @@ export class HelmMonomerPlacer {
     return seq ? getParts(monomerList, seq) : [];
   }
 
-  getMonomer(monomerSymbol: any): Monomer | null {
+  getMonomer(monomer: ISeqMonomer): Monomer | null {
     let res: Monomer | null = null;
-    for (const polymerType of this.monomerLib.getPolymerTypes()) {
-      res = this.monomerLib.getMonomer(polymerType, monomerSymbol);
-      if (res) break;
+    if (monomer.polymerType)
+      res = this.monomerLib.getMonomer(monomer.polymerType, monomer.symbol);
+    else {
+      for (const polymerType of this.monomerLib.getPolymerTypes()) {
+        res = this.monomerLib.getMonomer(polymerType, monomer.symbol);
+        if (res) break;
+      }
     }
     return res;
   }
@@ -89,13 +116,22 @@ export class HelmMonomerPlacer {
   // -- Handle events --
 
   private monomerLibOnChanged(_value: any): void {
-    this._lengthsList = null;
-    this._allPartsList = null;
+    this._lengthsList.fill(null);
+    this._allPartsList.fill(null);
+    this._editorList.fill(null);
     // TODO: Invalidate all grids of this.col.dataFrame
   }
 
   public static getOrCreate(col: DG.Column<string>): HelmMonomerPlacer {
     if (!(Temps.helmMonomerPlacer in col.temp)) col.temp[Temps.helmMonomerPlacer] = new HelmMonomerPlacer(col);
     return col.temp[Temps.helmMonomerPlacer];
+  }
+
+  public setEditor(tableRowIndex: number, editor: IEditor) {
+    this._editorList![tableRowIndex] = editor;
+  }
+
+  public getEditor(tableRowIndex: number): IEditor | null {
+    return this._editorList![tableRowIndex];
   }
 }

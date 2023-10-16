@@ -22,40 +22,39 @@ category('detectorsBenchmark', () => {
 
   test('fastaDnaShorts50Few50', async () => {
     await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
-  },
-  {skipReason: '#1192'});
+  });
 
   test('fastaDnaShorts50Many1E6', async () => {
     await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
-  },
-  {skipReason: '#1192'});
+  });
 
   test('fastaDnaLong1e6Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
-  },
-  {skipReason: '#1192'});
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 1E6, 50);
+  });
 
   // -- separator --
 
   test('separatorDnaShorts50Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
   });
 
   test('separatorDnaShorts50Many1E6', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');
   });
 
   test('separatorDnaLong1e6Few50', async () => {
-    detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
+    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 1E6, 50, '/');
   });
 
   async function detectMacromoleculeBenchmark(
     maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
   ): Promise<number> {
-    return await benchmark<DG.FuncCall, DG.Column>(10,
+    return await benchmark<DG.FuncCall, DG.Column>(maxET,
       (): DG.FuncCall => {
         const col: DG.Column = generate(notation, [...getAlphabet(alphabet)], length, count, separator);
         const funcCall: DG.FuncCall = detectFunc.prepare({col: col});
+        // warming up Bio
+        testDetector(funcCall);
         return funcCall;
       },
       async (funcCall: DG.FuncCall): Promise<DG.Column> => {

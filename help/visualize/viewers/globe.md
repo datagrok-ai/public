@@ -4,6 +4,9 @@ title: "Globe"
 
 Visualizes magnitude and color for data on a 3D globe using latitude and longitude.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Globe');`
+
 Controls:
 
 |                           |                        |

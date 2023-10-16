@@ -75,15 +75,7 @@ export class ViewHandler {
         }
         helpShown = true;
       }
-      if (view.name === 'Tests') {
-        grok.shell.windows.showToolbox = false;
-        this.dockFilters = grok.shell.dockManager.dock(TestsView.filters, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.12);
-      } else {
-        grok.shell.windows.showToolbox = true;
-        if (this.dockFilters)
-          grok.shell.dockManager.close(this.dockFilters);
-        this.dockFilters = null;
-      }
+      grok.shell.windows.showToolbox = view.name !== 'Tests';
     });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;

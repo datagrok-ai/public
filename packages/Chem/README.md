@@ -161,6 +161,80 @@ Here is an example:
 
 ![substructure search](help/substructure_search.gif)
 
+## Other search types
+
+We offer the following search types:
+
+* Contains (search by substructure)
+* Not contains
+* Included in (search by superstructure)
+* Not included in
+* Exact (search by exact structure match)
+* Similar (search by similarity score)
+
+To run any of above searches:
+
+1. Click **Filter** icon on a toolbox. The filter panel opens. The default search type is `Contains`. Change the search type by selecting from a dropdown list.
+
+2. Click `Click to edit` pane for the desired column. The molecule sketcher opens
+
+3. Sketch some substructure. The search starts immediately.
+
+![switch search types](help/switch_search_type.gif)
+
+In case of `Contains` the search options are hidden by default. To open them hover over molecule and click the **settings** icon.
+
+![open search options](help/open_search_options.gif)
+
+## Molecule fragments highlight
+
+We offer highlighting of multiple molecule fragments inside one molecule structure. Multiple fragments can be highlighted with different colors.
+
+To add a fragment use:
+
+* Context panel
+
+  1. Click molecule column header and go to `context panel`
+  2. Go to `Chemistry` -> `Highlight`
+  3. To add or modify a fragment click `Click to edit`. Molecule sketcher opens. Sketch some structure. It is highlighted immediately in the column.
+  4. To modify color use **color picker**
+  5. To save fragment use **+** icon.
+  6. To remove saved fragments use **trash** icon.
+
+  ![highlight fragments](help/highlight_fragments.gif)
+
+* Structural alerts widget
+
+  1. Select molecule cell and go to `context panel`
+  2. Go to `Biology` -> `Structural Alerts`
+  3. Hover over alert and click `more` icon. In the popup menu select `Highlight fragment` and choose color. Fragment is highlighted in the column.
+  4. To edit or remove fragment use editor from previous 'Context panel' point.
+  This feature allows to easily monitor your dataset for structural alerts.
+
+  ![add structural alert highlight](help/add_structural_alert_highlight.gif)
+
+## Scaffold Tree
+
+We have seamlessly integrated Scaffold Tree with molecule fragments highlighting. To utilize this feature, we have introduced two icons:
+
+* **Circle** icon. Click to toggle the color on and off.
+* **Palette** icon. Click to open the dialog with color picker. The icon serves for applying and modifying the color.
+
+Here are some important rules:
+
+* When you select a color, it automatically extends to all child nodes. However, note that more specific structures, closer to the leaves, will take precedence.
+* When you turn the color off, the node inherits its color from the parent.
+
+Scaffolds are highlighted both in the column and viewer for the convenience.
+
+In addition, we updated and improved the existing functionality:
+
+* When you add a new scaffold to an existing tree, it inherits the parent's node color.
+* When you save the tree to disk, the color coding, logical operations and icons state are saved alongside with the tree.
+* When you open the saved tree, it retrieves colors, operations etc.
+
+![add scaffold tree highlight](help/scaffold_tree_highlight.gif)
+
 See also:
 
 * [Cheminformatics predictive modeling](https://datagrok.ai/help/datagrok/solutions/domains/chem/#qsar-and-qspr-modeling)

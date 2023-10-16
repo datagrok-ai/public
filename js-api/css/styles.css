@@ -1,5 +1,5 @@
-.sketch-link {
-    border: 1px solid var(--grey-2);
+.chem-sketch-link {
+    color: var(--blue-1);
     height: 25px;
     display: flex;
     justify-content: center;
@@ -9,15 +9,25 @@
   }
   
 
-.sketcher-host {
+.chem-sketcher-host {
   width: 100%!important;
   height: 100%!important;
 }
 
-.clear-button {
+.chem-clear-sketcher-button {
   position: absolute;
   right: 0px;
   top: 0px;
   font-size: 10px;
   visibility: hidden;
+}
+
+.chem-sketcher-loader-show {
+  position: absolute!important;
+  top: 10px!important;
+  left: 7px!important;
+}
+
+.chem-sketcher-loader-hide {
+  display: none;
 }

@@ -86,3 +86,11 @@
   color: var(--orange-2);
   padding-right: 10px;
 }
+
+.dt-cd-wrapper {
+  margin-top: 10px;
+  width: 100%;
+  height: 200px;
+  border: 1px solid var(--grey-1);
+  border-radius: 2px;
+}

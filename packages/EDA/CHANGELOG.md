@@ -1,5 +1,13 @@
 # EDA changelog
 
+## 1.1.4 (2023-10-11)
+
+Implemented ANOVA.
+
+### Features
+
+* One-way ANOVA (see Top Menu > ML > Analysis of Variances (ANOVA)...)
+
 ## 1.1.3 (2023-08-24)
 
 This release is centered around enhancing user-friendliness and addressing concerns.

@@ -11,9 +11,13 @@ import {DimReductionMethods, IReduceDimensionalityResult, ITSNEOptions, IUMAPOpt
   from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
+import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
+  from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 
 
-export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
+export async function chemSpace(spaceParams: ISequenceSpaceParams,
+  progressFunc?: (epochNum: number, epochsLength: number, embedding: number[][]) => void,
+): Promise<ISequenceSpaceResult> {
   const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, false);
   const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) =>
     !el ? idx : null).filter((it) => it !== null);
@@ -25,7 +29,7 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
     fpColumn as BitArray[],
     spaceParams.methodName,
     spaceParams.similarityMetric,
-    spaceParams.options);
+    spaceParams.options, false, progressFunc);
   emptyAndMalformedIdxs.forEach((idx: number | null) => {
     setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
     if (chemSpaceResult.distance)
@@ -55,25 +59,80 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
 
 export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
-  options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
+  options?: IUMAPOptions | ITSNEOptions, progressF?: (percent: number) => void): Promise<DG.Viewer | undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
+  let scatterPlot: DG.ScatterPlotViewer | undefined = undefined;
+  try {
+    function progressFunc(_nEpoch: number, epochsLength: number, embeddings: number[][]) {
+      let embedXCol: DG.Column | null = null;
+      let embedYCol: DG.Column | null = null;
+      if (!table.columns.names().includes(embedColsNames[0])) {
+        embedXCol = table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
+        embedYCol = table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
+        if (plotEmbeddings) {
+          scatterPlot = grok.shell
+            .tableView(table.name)
+            .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+        }
+      } else {
+        embedXCol = table.columns.byName(embedColsNames[0]);
+        embedYCol = table.columns.byName(embedColsNames[1]);
+      }
 
-  const chemSpaceParams = {
-    seqCol: molecules,
-    methodName: methodName,
-    similarityMetric: similarityMetric as BitArrayMetrics,
-    embedAxesNames: [embedColsNames[0], embedColsNames[1]],
-    options: options,
-  };
-  const chemSpaceRes = await chemSpace(chemSpaceParams);
-  const embeddings = chemSpaceRes.coordinates;
+      embedXCol.init((i) => embeddings[i][0]);
+      embedYCol.init((i) => embeddings[i][1]);
+      const progress = (_nEpoch / epochsLength * 100);
+      progressF && progressF(progress);
+    }
+    const chemSpaceParams = {
+      seqCol: molecules,
+      methodName: methodName,
+      similarityMetric: similarityMetric as BitArrayMetrics,
+      embedAxesNames: [embedColsNames[0], embedColsNames[1]],
+      options: options,
+    };
+    // const chemSpaceRes = await chemSpace(chemSpaceParams, progressFunc);
+    // const embeddings = chemSpaceRes.coordinates;
 
-  for (const col of embeddings)
-    table.columns.add(col);
+    let resolveF: Function | null = null;
 
-  if (plotEmbeddings) {
-    return grok.shell
-      .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+    const sub = grok.events.onViewerClosed.subscribe((args) => {
+      const v = args.args.viewer as unknown as DG.Viewer<any>;
+      if (v?.getOptions()?.look?.title && scatterPlot?.getOptions()?.look?.title &&
+          v?.getOptions()?.look?.title === scatterPlot?.getOptions()?.look?.title) {
+        grok.events.fireCustomEvent(DIMENSIONALITY_REDUCER_TERMINATE_EVENT, {});
+        sub.unsubscribe();
+        resolveF?.();
+      }
+    });
+
+    const chemSpaceResPromise = new Promise<ISequenceSpaceResult | undefined>(async (resolve) =>{
+      resolveF = resolve;
+      const r = await chemSpace(chemSpaceParams, progressFunc);
+      resolve(r);
+    });
+
+    const chemSpaceRes = await chemSpaceResPromise;
+    if (!chemSpaceRes)
+      return undefined;
+    const embeddings = chemSpaceRes.coordinates;
+    if (!table.columns.names().includes(embedColsNames[0])) {
+      for (const col of embeddings)
+        table.columns.add(col);
+    } else {
+      for (const col of embeddings)
+        table.columns.byName(col.name).init((i) => col.get(i));
+    }
+
+    if (plotEmbeddings) {
+      if (!scatterPlot) {
+        scatterPlot = grok.shell
+          .tableView(table.name)
+          .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+      }
+      return scatterPlot;
+    }
+  } catch (e) {
+    console.error(e);
   }
 }

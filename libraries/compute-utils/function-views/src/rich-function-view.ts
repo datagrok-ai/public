@@ -16,6 +16,7 @@ import {EDIT_STATE_PATH, EXPERIMENTAL_TAG, INPUT_STATE, RESTRICTED_PATH, viewerT
 import {FuncCallInput, FuncCallInputValidated, SubscriptionLike, isFuncCallInputValidated, isInputLockable} from '../../shared-utils/input-wrappers';
 import '../css/rich-function-view.css';
 import {FunctionView} from './function-view';
+import {SensitivityAnalysisView as SensitivityAnalysis} from './sensitivity-analysis-view';
 
 const FILE_INPUT_TYPE = 'file';
 const VALIDATION_DEBOUNCE_TIME = 250;
@@ -320,7 +321,7 @@ export class RichFunctionView extends FunctionView {
 
     ui.tools.handleResize(inputBlock, () => {
       if (([
-        ...Array.from(inputForm.childNodes),
+        ...Array.from(inputForm.childNodes).filter((node) => $(node).css('display') !== 'none'),
         ...this.isUploadMode.value ? [Array.from(outputForm.childNodes)]: [],
       ]).some((child) => $(child).width() < 250) ||
       $(inputBlock).width() < 350) {
@@ -438,12 +439,15 @@ export class RichFunctionView extends FunctionView {
       ...this.isUploadMode.value ? ['d4-current']: [],
     );
 
+    const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
+
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
         ...((this.hasUploadMode && this.isUploadMode.value) || this.runningOnInput) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
+        sensitivityAnalysis,
       ],
     ];
 
@@ -716,6 +720,10 @@ export class RichFunctionView extends FunctionView {
 
   private renderOutputForm(): HTMLElement {
     return this.renderIOForm(SYNC_FIELD.OUTPUTS);
+  }
+
+  private async onSALaunch(): Promise<void> {
+    await SensitivityAnalysis.fromEmpty(this.func);
   }
 
   private renderInputForm(): HTMLElement {

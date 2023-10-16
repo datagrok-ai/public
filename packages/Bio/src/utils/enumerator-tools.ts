@@ -14,8 +14,25 @@ const LEFT_HELM_WRAPPER = 'PEPTIDE1{';
 const RIGHT_HELM_WRAPPER = '}$$$$';
 const ALL_MONOMERS = '<All>';
 
+type MetaData = {
+  leftTerminal: string,
+  rightTerminal: string,
+  transformationType: TRANSFORMATION_TYPE,
+  cyclizationType: CYCLIZATION_TYPE,
+}
+
+type ConnectionData = {
+  monomerPosition: number,
+  attachmentPoint: number,
+}
+
+const enum TRANSFORMATION_TYPE {
+  CYCLIZATION = 'Cyclization',
+}
+
 const enum CYCLIZATION_TYPE {
   NO = 'N-O',
+  NCys = 'N-Cys',
   R3 = 'R3-R3',
 }
 
@@ -32,72 +49,147 @@ export function _setPeptideColumn(col: DG.Column): void {
   // col.setTag('cell.renderer', 'sequence');
 }
 
-async function enumerator(
-  molColumn: DG.Column, cyclizationType: CYCLIZATION_TYPE, leftTerminal: string, rightTerminal: string
-): Promise<void> {
-  function hasR3Terminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
-    if (leftTerminal === ALL_MONOMERS || rightTerminal === ALL_MONOMERS)
+abstract class TransformationBase {
+  constructor(helmColumn: DG.Column<string>, meta: MetaData) {
+    this.helmColumn = helmColumn;
+    this.leftTerminal = meta.leftTerminal;
+    this.rightTerminal = meta.rightTerminal;
+  }
+
+  protected helmColumn: DG.Column<string>;
+  protected leftTerminal?: string;
+  protected rightTerminal?: string;
+
+  protected abstract hasTerminals(helm: string): boolean;
+  protected abstract getTransformedHelm(helm: string): string;
+  protected abstract getLinkedPositions(helm: string): [number, number];
+
+  transform(): string[] {
+    const resultList = this.helmColumn.toList().map((helm: string) => {
+      if (this.hasTerminals(helm))
+        return this.getTransformedHelm(helm);
+      return helm;
+    });
+    return resultList;
+  }
+}
+
+class TransformationNCys extends TransformationBase {
+  constructor(helmColumn: DG.Column<string>, meta: MetaData) {
+    super(helmColumn, meta);
+  }
+
+  protected hasTerminals(helm: string): boolean {
+    if (! helm.includes(this.rightTerminal + RIGHT_HELM_WRAPPER))
+      return false;
+    if (this.leftTerminal === ALL_MONOMERS)
       return true;
-    const positions = getLinkedR3Positions(helm);
+    return helm.includes(LEFT_HELM_WRAPPER + this.leftTerminal);
+  }
+
+  protected getLinkedPositions(helm: string): [number, number] {
+    return [1, getNumberOfMonomers(helm)];
+  }
+
+  protected getTransformedHelm(helm: string): string {
+    const positions = this.getLinkedPositions(helm);
+    const source = {monomerPosition: positions[0], attachmentPoint: 1};
+    const target = {monomerPosition: positions[1], attachmentPoint: 3};
+    return getHelmCycle(helm, source, target);
+  }
+}
+
+class TransformationNO extends TransformationBase {
+  constructor(helmColumn: DG.Column<string>, meta: MetaData) {
+    super(helmColumn, meta);
+  }
+
+  protected hasTerminals(helm: string): boolean {
+    if (this.leftTerminal === ALL_MONOMERS || this.rightTerminal === ALL_MONOMERS)
+      return true;
+    return helm.includes(LEFT_HELM_WRAPPER + this.leftTerminal) &&
+      helm.includes(this.rightTerminal + RIGHT_HELM_WRAPPER);
+  }
+
+  protected getLinkedPositions(helm: string): [number, number] {
+    return [1, getNumberOfMonomers(helm)];
+  }
+
+  protected getTransformedHelm(helm: string): string {
+    const positions = this.getLinkedPositions(helm);
+    const source = {monomerPosition: positions[0], attachmentPoint: 1};
+    const target = {monomerPosition: positions[1], attachmentPoint: 2};
+    return getHelmCycle(helm, source, target);
+  }
+}
+
+class TransformationR3 extends TransformationBase {
+  constructor(helmColumn: DG.Column<string>, meta: MetaData) {
+    super(helmColumn, meta);
+  }
+
+  protected hasTerminals(helm: string): boolean {
+    if (this.leftTerminal === ALL_MONOMERS || this.rightTerminal === ALL_MONOMERS)
+      return true;
+    const positions = this.getLinkedPositions(helm);
     return positions.every((el) => el > 0);
   }
 
-  function hasNOTerminals(helm: string, leftTerminal: string, rightTerminal: string): boolean {
-    if (leftTerminal === ALL_MONOMERS || rightTerminal === ALL_MONOMERS)
-      return true;
-    return helm.includes(LEFT_HELM_WRAPPER + leftTerminal) && helm.includes(rightTerminal + RIGHT_HELM_WRAPPER);
-  }
-
-  function applyModification(helm: string): string {
-    if (cyclizationType === CYCLIZATION_TYPE.R3)
-      return applyR3Modification(helm);
-    else
-      return applyNOModification(helm);
-  }
-
-  function applyNOModification(helm: string): string {
-    if (hasNOTerminals(helm, leftTerminal, rightTerminal))
-      return getNOCycle(helm, getLinkedNOPositions(helm));
-    return helm;
-  }
-
-  function applyR3Modification(helm: string): string {
-    if (hasR3Terminals(helm, leftTerminal, rightTerminal))
-      return getR3Cycle(helm, getLinkedR3Positions(helm));
-    return helm;
-  }
-
-  function getLinkedR3Positions(helm: string): [number, number] {
+  protected getLinkedPositions(helm: string): [number, number] {
     const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
     const monomers = seq.split('.');
-    const start = monomers.findIndex((el) => el === leftTerminal);
-    const end = monomers.findIndex((el, idx) => el === rightTerminal && idx > start);
+    const start = monomers.findIndex((el) => el === this.leftTerminal);
+    const end = monomers.findIndex((el, idx) => el === this.rightTerminal && idx > start);
     return [start + 1, end + 1];
   }
 
-  function getLinkedNOPositions(helm: string): [number, number] {
-    const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
-    const lastMonomerNumber = seq.split('.').length;
-    return [1, lastMonomerNumber];
+  protected getTransformedHelm(helm: string): string {
+    const positions = this.getLinkedPositions(helm);
+    const source = {monomerPosition: positions[0], attachmentPoint: 3};
+    const target = {monomerPosition: positions[1], attachmentPoint: 3};
+    return getHelmCycle(helm, source, target);
   }
+}
 
-  function getR3Cycle(helm: string, position: [number, number]): string {
-    const result = helm.replace(RIGHT_HELM_WRAPPER,
-      `}$PEPTIDE1,PEPTIDE1,${position[0]}:R3-${position[1]}:R3${'$'.repeat(6)}`);
-    return result;
+class PolymerTransformation {
+  private constructor() {}
+
+  static getInstance(molColumn: DG.Column<string>, meta: MetaData): TransformationBase {
+    const cyclizationType = meta.cyclizationType;
+    return (cyclizationType === CYCLIZATION_TYPE.R3) ? new TransformationR3(molColumn, meta) :
+      (cyclizationType === CYCLIZATION_TYPE.NCys) ? new TransformationNCys(molColumn, meta) :
+        new TransformationNO(molColumn, meta);
   }
+}
 
-  function getNOCycle(helm: string, position: [number, number]): string {
-    const result = helm.replace(RIGHT_HELM_WRAPPER,
-      `}$PEPTIDE1,PEPTIDE1,${position[1]}:R2-${position[0]}:R1${'$'.repeat(6)}`);
-    return result;
-  }
+function getNumberOfMonomers(helm: string): number {
+  const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
+  return seq.split('.').length;
+}
 
+function getHelmCycle(helm: string, source: ConnectionData, target: ConnectionData): string {
+  return helm.replace(RIGHT_HELM_WRAPPER,
+    `}$PEPTIDE1,PEPTIDE1,${
+      source.monomerPosition
+    }:R${
+      source.attachmentPoint
+    }-${
+      target.monomerPosition
+    }:R${
+      target.attachmentPoint
+    }${'$'.repeat(6)}`
+  );
+}
+
+async function addTransformedColumn(
+  molColumn: DG.Column<string>, meta: MetaData
+): Promise<void> {
   const df = molColumn.dataFrame;
   const uh = UnitsHandler.getOrCreate(molColumn);
   const sourceHelmCol = uh.convert(NOTATION.HELM);
-  const targetList = sourceHelmCol.toList().map((helm) => applyModification(helm));
-  const colName = df.columns.getUnusedName('Cyclization(' + molColumn.name + ')');
+  const pt = PolymerTransformation.getInstance(sourceHelmCol, meta);
+  const targetList = pt.transform();
+  const colName = df.columns.getUnusedName(`${meta.transformationType}(` + molColumn.name + ')');
   const targetHelmCol = DG.Column.fromList('string', colName, targetList);
 
   addCommonTags(targetHelmCol);
@@ -109,50 +201,91 @@ async function enumerator(
 }
 
 export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
-  function updateMonomerList(): void {
-    console.log('hi from update:');
-    if (cyclizationTypeChoice.value === cyclizationTypes[0]) {
-      console.log('hi from first branch:');
-      monomerList = [ALL_MONOMERS].concat(
+  function getMonomerList(cyclizationType: CYCLIZATION_TYPE): string[] {
+    if (cyclizationType === cyclizationTypes[0]) {
+      return [ALL_MONOMERS].concat(
         monomerLib.getMonomerSymbolsByType(HELM_POLYMER_TYPE.PEPTIDE)
       );
-    } else if (cyclizationTypeChoice.value === cyclizationTypes[1]) {
-      monomerList = [ALL_MONOMERS].concat(
+    }
+    if (cyclizationType === cyclizationTypes[1]) {
+      return [ALL_MONOMERS].concat(
         monomerLib.getMonomerSymbolsByRGroup(3, HELM_POLYMER_TYPE.PEPTIDE)
       );
-      console.log('hi from second branch:');
     }
-    leftTerminalChoice = ui.choiceInput('R1:', monomerList[0], monomerList);
-    rightTerminalChoice = ui.choiceInput('R2:', monomerList[0], monomerList);
+    return ['C'];
+  }
+
+  function updateMonomerList(): void {
+    if (cyclizationTypeChoice.value === CYCLIZATION_TYPE.NCys) {
+      monomerList1 = getMonomerList(CYCLIZATION_TYPE.NO);
+      monomerList2 = getMonomerList(CYCLIZATION_TYPE.NCys);
+    } else {
+      monomerList1 = getMonomerList(cyclizationTypeChoice.value as CYCLIZATION_TYPE);
+      monomerList2 = [...monomerList1];
+    }
+
+    leftTerminalChoice = ui.choiceInput(
+      'R1:', monomerList1[0], monomerList1, () => { onRGroupValueChange.next(); }
+    );
+    rightTerminalChoice = ui.choiceInput('R2:', monomerList2[0], monomerList2, () => { onRGroupValueChange.next(); });
+    onRGroupValueChange.next();
     ui.empty(terminalControls);
     [leftTerminalChoice, rightTerminalChoice].forEach((el) => { terminalControls.appendChild(el.root); });
   }
 
   const onCyclizationChoice = new rxjs.Subject<string>();
-  onCyclizationChoice.subscribe(() => updateMonomerList());
+  const onRGroupValueChange = new rxjs.Subject<string>();
+  onCyclizationChoice.subscribe(() => {
+    meta.cyclizationType = cyclizationTypeChoice.value!;
+    updateMonomerList();
+  });
+  onRGroupValueChange.subscribe(() => {
+    meta.rightTerminal = rightTerminalChoice.value!;
+    meta.leftTerminal = leftTerminalChoice.value!;
+  });
 
-  const modifications = ['Cyclization'];
-  const modificationChoice = ui.choiceInput('Modification', modifications[0], modifications);
 
-  const cyclizationTypes = [CYCLIZATION_TYPE.NO, CYCLIZATION_TYPE.R3];
+  const meta = {} as MetaData;
+  const transformations = [TRANSFORMATION_TYPE.CYCLIZATION];
+  const transformationChoice = ui.choiceInput(
+    'Modification', transformations[0], transformations, () => meta.transformationType = transformationChoice.value!
+  );
+
+  const cyclizationTypes = [CYCLIZATION_TYPE.NO, CYCLIZATION_TYPE.R3, CYCLIZATION_TYPE.NCys];
   const cyclizationTypeChoice = ui.choiceInput(
     'Type', cyclizationTypes[0], cyclizationTypes, () => { onCyclizationChoice.next(); }
   );
 
   const monomerLib = MonomerLibHelper.instance.getBioLib();
-  let monomerList: string[] = [];
-  let leftTerminalChoice = ui.choiceInput('R1:', monomerList[0], monomerList);
-  let rightTerminalChoice = ui.choiceInput('R2:', monomerList[0], monomerList);
+  let monomerList1: string[] = [];
+  let monomerList2: string[] = [];
+  let leftTerminalChoice = ui.choiceInput(
+    'R1:', monomerList1[0], monomerList1, () => {
+      meta.leftTerminal = leftTerminalChoice.value!;
+    }
+  );
+  let rightTerminalChoice = ui.choiceInput('R2:', monomerList2[0], monomerList2, () => {
+    meta.rightTerminal = rightTerminalChoice.value!;
+  });
   const terminalControls = ui.divV([leftTerminalChoice.root, rightTerminalChoice.root]);
+
+  function updateMeta() {
+    meta.cyclizationType = cyclizationTypeChoice.value!;
+    meta.leftTerminal = leftTerminalChoice.value!;
+    meta.rightTerminal = rightTerminalChoice.value!;
+    meta.transformationType = transformationChoice.value!;
+  }
 
   updateMonomerList();
 
+  updateMeta();
+
   const btn = ui.bigButton('Run', async () =>
-    enumerator(molColumn, cyclizationTypeChoice.value!, leftTerminalChoice.value!, rightTerminalChoice.value!)
+    addTransformedColumn(molColumn, meta)
   );
 
   const div = ui.div([
-    modificationChoice,
+    transformationChoice,
     cyclizationTypeChoice,
     terminalControls,
     btn

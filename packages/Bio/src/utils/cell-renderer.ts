@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {printLeftOrCentered, DrawStyle, TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {
   getPaletteByType,
@@ -27,6 +27,7 @@ import * as C from './constants';
 import {_package, getBioLib} from '../package';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {errInfo} from './err-info';
 
 
 type TempType = { [tagName: string]: any };
@@ -34,8 +35,8 @@ type TempType = { [tagName: string]: any };
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: MonomerToShortFunc = monomerToShort;
 
-function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number): number {
-  return grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number, dpr: number): number {
+  return !!grid ? Math.max(Math.min(grid.canvas.width / dpr - x, w)) : Math.max(g.canvas.width / dpr - x, 0);
 }
 
 export function processSequence(subParts: ISeqSplitted): [string[], boolean] {
@@ -132,12 +133,19 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ): void {
     let gapLength = 0;
     const msaGapLength = 8;
-    let maxLengthOfMonomer = 999; // in case of long monomer representation, do not limit max length
+    let maxLengthOfMonomer = 50; // in case of long monomer representation, do not limit max length
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
-    const grid = gridCell.grid;
+    let grid: DG.Grid | undefined = undefined;
+    try { grid = gridCell.grid; } catch (err: any) {
+      grid = undefined;
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
+    }
     const tableCol: DG.Column = gridCell.cell.column;
+    if (!grid || !tableCol) return;
+
     const tableColTemp: TempType = tableCol.temp;
 
     // Cell renderer settings
@@ -146,9 +154,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (monomerWidth === 'short') {
       // Renderer can start to work before Bio package initialized, in that time _package.properties is null.
       // TODO: Render function is available but package init method is not completed
-      maxLengthOfMonomer = tableColTemp[mmcrTemps.maxMonomerLength] ?? _package.properties?.MaxMonomerLength ?? 4;
+      const tagMaxMonomerLength: number = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
+      maxLengthOfMonomer =
+        (!isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties?.MaxMonomerLength) ?? 4;
     }
-
 
     let seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
     if (!seqColTemp) {
@@ -181,11 +190,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     g.save();
     try {
+      const dpr = window.devicePixelRatio;
       const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
       const value: any = gridCell.cell.value;
       const paletteType = tableCol.getTag(bioTAGS.alphabet);
       const minDistanceRenderer = 50;
-      w = getUpdatedWidth(grid, g, x, w);
+      w = getUpdatedWidth(grid, g, x, w, dpr);
       g.beginPath();
       g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
       g.clip();
@@ -262,13 +272,14 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     _cellStyle: DG.GridCellStyle): void {
+    const dpr = window.devicePixelRatio;
     const grid = gridCell.grid;
     const cell = gridCell.cell;
     const tableCol = gridCell.tableColumn as DG.Column<string>;
     const s: string = cell.value ?? '';
     const separator = tableCol.tags[bioTAGS.separator];
     const units: string = tableCol.tags[DG.TAGS.UNITS];
-    w = getUpdatedWidth(grid, g, x, w);
+    w = getUpdatedWidth(grid, g, x, w, dpr);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const splitter = getSplitter(units, separator);

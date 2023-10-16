@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
 import {DataFrame, InputBase} from 'datagrok-api/dg';
 
@@ -276,5 +277,10 @@ function getTotalViewer() {
 }
 
 function dockViewers(viewer: string, view: DG.TableView, table: DG.DataFrame) {
-  view.addViewer(DG.Viewer.fromType(viewer, table));
+  try {
+    view.addViewer(DG.Viewer.fromType(viewer, table));
+  } catch (e) {
+    grok.shell.error(`Cannot add ${viewer} for current table. Check browser console for specific errors`);
+    console.error(e);
+  }
 }

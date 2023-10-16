@@ -158,16 +158,10 @@ export class MonomerLib implements IMonomerLib {
     monomers = monomers.filter((monomer) => {
       if (!monomer?.rgroups)
         return false;
-      console.log('monomer symbol:', monomer.symbol);
       let criterion = monomer?.rgroups.length >= rGroupNumber;
-      console.log(`has rGroupNumber ${rGroupNumber}`, criterion);
       const molfileHandler = MolfileHandler.getInstance(monomer.molfile);
-      console.log(molfileHandler.atomTypes);
       const rGroupIndices = findAllIndices(molfileHandler.atomTypes, 'R#');
-      console.log('rGroup indices', rGroupIndices);
-      console.log(molfileHandler.pairsOfBondedAtoms);
       criterion &&= true;
-      console.log('criterion', criterion);
       return criterion;
     });
     return monomers.map((monomer) => monomer?.symbol!);

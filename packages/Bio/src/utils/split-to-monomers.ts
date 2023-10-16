@@ -57,6 +57,7 @@ export async function splitToMonomersUI(table: DG.DataFrame, seqCol: DG.Column<s
   for (let tempColI = 0; tempColI < tempDf.columns.length; tempColI++) {
     const tempCol = tempDf.columns.byIndex(tempColI);
     tempCol.setTag(DG.TAGS.CELL_RENDERER, 'Monomer');
+    tempCol.setTag('.use-as-filter', 'false'); // TODO: Use DG.TAGS.
   }
 
   return originalDf;
