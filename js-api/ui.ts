@@ -1847,7 +1847,7 @@ export namespace css {
   }
 
   export enum table {
-    noraml = 'css-table',
+    normal = 'css-table',
     wide = 'css-table-wide'
   }
 
