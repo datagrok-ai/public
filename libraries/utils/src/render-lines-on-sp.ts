@@ -1,31 +1,27 @@
 import * as DG from 'datagrok-api/dg';
 import { Subject } from 'rxjs';
+import BitArray from './bit-array';
 
-export enum LineDirection {
-    pointToLowerValue = 'lower',
-    pointToHigherValue = 'higher',
-}
-
-export type ILineOpts = {
-    points: Uint32Array;
-    id: number;
-    color?: string;
-    directionCol?: string
-    direction?: LineDirection;
-    opacity?: number;
-    width?: number;
+export type ILines = {
+    from: Uint32Array;
+    to: Uint32Array;
+    colors?: string[];
+    widths?: Uint32Array;
+    opacities?: Float32Array;
+    drawArrows?: BitArray;
 }
 
 export class ScatterPlotLinesRenderer {
     sp: DG.ScatterPlotViewer;
-    xAxis: string;
-    yAxis: string;
+    xAxisValues: any[];
+    yAxisValues: any[];
     currentLineIdx = -1;
-    lines: ILineOpts[];
+    lines: ILines;
     lineClicked = new Subject<number>();
     lineHover = new Subject<number>();
     canvas: HTMLCanvasElement;
-    paths: { [key: number]: Path2D } = {};
+    ctx: CanvasRenderingContext2D;
+    paths: Path2D[];
     mouseOverLineId: number | null = null;
     numberOfLinesPerPair: {[key: string]: number} = {};
 
@@ -38,13 +34,15 @@ export class ScatterPlotLinesRenderer {
         this.sp.render(this.canvas.getContext('2d') as CanvasRenderingContext2D);
     }
 
-    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILineOpts[]) {
+    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILines) {
         this.sp = sp;
-        this.xAxis = xAxis;
-        this.yAxis = yAxis;
+        this.xAxisValues = this.sp.dataFrame!.columns.byName(xAxis).toList();
+        this.yAxisValues = this.sp.dataFrame!.columns.byName(yAxis).toList();;
         this.lines = lines;
         this.canvas = this.sp.getInfo()['canvas'];
-        this.countLinesPerPairAndSort();
+        this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
+        this.paths = new Array<Path2D>(this.lines.from.length);
+        this.countLinesPerPair();
 
         this.canvas.onmousedown = () => {
             if (this.mouseOverLineId !== null)
@@ -63,77 +61,69 @@ export class ScatterPlotLinesRenderer {
             });
     }
 
+
     renderLines(): void {
-        const ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
-        const x = this.sp.dataFrame!.columns.byName(this.xAxis);
-        const y = this.sp.dataFrame!.columns.byName(this.yAxis);
+        const filterBitset = this.sp.dataFrame.filter;
         const linesPerPairCounter: { [key: string]: number } = {};
-        for (let lineOpts of this.lines) {
-            if (this.sp.dataFrame.filter.get(lineOpts.points[0]) && this.sp.dataFrame.filter.get(lineOpts.points[1])) {
-                const pointFrom = this.sp.worldToScreen(x.get(lineOpts.points[0]), y.get(lineOpts.points[0]));
+        for (let i = 0; i < this.lines.from.length; i++) {
+            if (filterBitset.get(this.lines.from[i]) && filterBitset.get(this.lines.to[i])) {
+                const pointFrom = this.sp.worldToScreen(this.xAxisValues[this.lines.from[i]], this.yAxisValues[this.lines.from[i]]);
                 const aX = pointFrom?.x;
                 const aY = pointFrom?.y;
-                const pointTo = this.sp.worldToScreen(x.get(lineOpts.points[1]), y.get(lineOpts.points[1]));
+                const pointTo = this.sp.worldToScreen(this.xAxisValues[this.lines.to[i]], this.yAxisValues[this.lines.to[i]]);
                 const bX = pointTo?.x;
                 const bY = pointTo?.y;
                 if (aX && aY && bX && bY) {
-                    const pairStr = this.getStringPair(lineOpts.points[0], lineOpts.points[1]);
+                    const pairStr = this.getStringPair(this.lines.from[i], this.lines.to[i]);
                     !linesPerPairCounter[pairStr] ? linesPerPairCounter[pairStr] = 1 : linesPerPairCounter[pairStr]++;
                     const line = new Path2D();
-                    this.paths[lineOpts.id] = line;
+                    this.paths[i] = line;
                     line.moveTo(aX!, aY!);
-                    const color = lineOpts.color ?? '0,128,0';
-                    const opacity = lineOpts.opacity ?? 1;
-                    ctx.strokeStyle = `rgba(${color},${opacity})`;
-                    ctx.lineWidth = lineOpts.width ? lineOpts.id === this.currentLineIdx ? lineOpts.width + 2 : lineOpts.width :
-                        lineOpts.id === this.currentLineIdx ? 3 : 1;
+                    const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
+                    const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
+                    this.ctx.strokeStyle = `rgba(${color},${opacity})`;
+                    this.ctx.lineWidth = this.lines.widths?.[i] ? i === this.currentLineIdx ? this.lines.widths?.[i] + 2 :
+                    this.lines.widths?.[i] : i === this.currentLineIdx ? 3 : 1;
                     let midPoint: DG.Point = this.midPoint(pointFrom, pointTo);
                     if (this.numberOfLinesPerPair[pairStr] > 1 || linesPerPairCounter[pairStr] > 1) {
                         midPoint = this.findPerpendicularPointOnCurve(linesPerPairCounter[pairStr],
                             pointFrom.x, pointFrom.y, midPoint.x, midPoint.y)
                     }
                     line.quadraticCurveTo(midPoint.x, midPoint.y, bX, bY);
-                    if (lineOpts.directionCol) {
-                        const arrowPoint = this.getArrowPoint(lineOpts, lineOpts.points[0], lineOpts.points[1], pointFrom, pointTo);
-                        if (arrowPoint)
-                            this.canvasArrow(line, arrowPoint.x, arrowPoint.y, midPoint.x, midPoint.y);
-                    }
-                    ctx.beginPath();
-                    ctx.stroke(line);
-                    ctx.closePath();
+                    if (this.lines.drawArrows?.getBit(i))
+                        this.canvasArrow(line, bX, bY, midPoint.x, midPoint.y);
+                    this.ctx.beginPath();
+                    this.ctx.stroke(line);
+                    this.ctx.closePath();
                 }
             }
         }
-
     }
 
-    countLinesPerPairAndSort(): void {
-        for (let i = 0; i < this.lines.length; i++) {
-            const pair = this.lines[i].points;
-            const p1 = pair[0] > pair[1] ? pair[1] : pair[0];
-            const p2 = pair[0] > pair[1] ? pair[0] : pair[1];
-            pair[0] = p1;
-            pair[1] = p2;
-            const pairStr = `${this.lines[i].points[0]}#${this.lines[i].points[1]}`;
-            if (!this.numberOfLinesPerPair[pairStr])
-                this.numberOfLinesPerPair[pairStr] = 1;
-            else
-                this.numberOfLinesPerPair[pairStr]++;
+    countLinesPerPair(): void {
+        for (let i = 0; i < this.lines.from.length; i++) {
+            const pairStr = this.getStringPair(this.lines.from[i], this.lines.to[i]);
+            !this.numberOfLinesPerPair[pairStr] ? this.numberOfLinesPerPair[pairStr] = 1 : this.numberOfLinesPerPair[pairStr]++;
         }
     }
 
     getStringPair(point1: number, point2: number): string {
-        return `${point1}#${point2}`;
+        let p1 = point1;
+        let p2 = point2;
+        if (point1 > point2) {
+            p1 = point2;
+            p2 = point1;
+        }
+        return `${p1}#${p2}`;
     }
 
 
     checkCoordsOnLine(x: number, y: number): number | null {
-        const ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
-        for (let id of Object.keys(this.paths).map(Number)) {
-            ctx.lineWidth = 5;
-            const inStroke = ctx.isPointInStroke(this.paths[id], x * window.devicePixelRatio, y * window.devicePixelRatio);
+        for (let i = 0; i < this.paths.length; i++) {
+            this.ctx.lineWidth = 5;
+            const inStroke = this.ctx.isPointInStroke(this.paths[i], x * window.devicePixelRatio, y * window.devicePixelRatio);
             if (inStroke)
-                return id;
+                return i;
         }
         return null;
     }
@@ -162,22 +152,6 @@ export class ScatterPlotLinesRenderer {
         path.lineTo(arrowEndX, arrowEndY);
         path.lineTo(arrowEndX - (arrowWidth * Math.sin(arrowAngle + Math.PI / 10)),
             arrowEndY - (arrowWidth * Math.cos(arrowAngle + Math.PI / 10)));
-    }
-
-    getArrowPoint(lineOpts: ILineOpts, p1: number, p2: number, pointFrom: DG.Point, pointTo: DG.Point): DG.Point | null {
-        const compareCol = this.sp.dataFrame!.col(lineOpts.directionCol!);
-        if (compareCol) {
-            const direction = lineOpts.direction ?? LineDirection.pointToHigherValue;
-            switch (direction) {
-                case LineDirection.pointToHigherValue:
-                    return compareCol.get(p1) > compareCol.get(p2) ? pointFrom : pointTo;
-                case LineDirection.pointToLowerValue:
-                    return compareCol.get(p1) > compareCol.get(p2) ? pointTo : pointFrom;
-                default:
-                    return null;
-            }
-        }
-        return null;
     }
 
 }
