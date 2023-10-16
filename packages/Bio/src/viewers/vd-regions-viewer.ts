@@ -12,6 +12,7 @@ import {
 import {FilterSources, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+import {errInfo} from '../utils/err-info';
 
 import {_package} from '../package';
 
@@ -152,21 +153,24 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   override detach() {
-    if (this.setDataInProgress) return;
     const superDetach = super.detach.bind(this);
-    this.detachPromise = this.detachPromise.then(async () => { // detach
-      await this.viewPromise;
+    this.viewPromise = this.viewPromise.then(async () => { // detach
+      if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
       }
       superDetach();
-    });
+    })
+      .catch((err: any) => {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+      });
   }
 
   override onTableAttached() {
     super.onTableAttached();
-    this.setData(this.dataFrame, this.regions);
+    this.setData(this.regions);
   }
 
   public override onPropertyChanged(property: DG.Property | null): void {
@@ -180,7 +184,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     switch (property.name) {
       case PROPS.regionTypes:
       case PROPS.chains:
-        this.setData(this.dataFrame, this.regions);
+        this.setData(this.regions);
         break;
     }
 
@@ -211,49 +215,68 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
         break;
 
       default:
-        this.setData(this.dataFrame, this.regions); // onPropertyChanged
+        this.setData(this.regions); // onPropertyChanged
         break;
     }
   }
 
   // -- Data --
 
+  // private static viewerCount = 0;
+  // private viewerId: number = ++VdRegionsViewer.viewerCount;
+  // private setDataInCount: number = 0;
+
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
-  public setData(mlbDf: DG.DataFrame, regions: VdRegion[]) {
-    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
-    _package.logger.debug('Bio: VdRegionsViewer.setData()');
+  public setData(regions: VdRegion[]) {
+    // const setDataInId = ++this.setDataInCount;
+    _package.logger.debug('Bio: VdRegionsViewer.setData(), in, ' +
+      // `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
+      `regions.length = ${regions.length}`
+    );
 
     this.viewPromise = this.viewPromise.then(async () => { // setData
-      if (this.viewed) {
-        await this.destroyView('setData');
-        this.viewed = false;
-      }
-    }).then(async () => {
-      await this.detachPromise;
-      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
+      // _package.logger.debug('Bio: VdRegionsViewer.setData(), in sync, ' +
+      //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
+      //   `regions.length = ${regions.length}`);
+      if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
+      // _package.logger.debug('Bio: VdRegionsViewer.setData(), start, ' +
+      //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
+      //   `regions.length = ${regions.length}`);
+      try {
+        if (this.viewed) {
+          // _package.logger.debug('Bio: VdRegionsViewer.setData(), destroyView, ' +
+          //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
+          //   `regions.length = ${regions.length}`);
+          await this.destroyView('setData');
+          this.viewed = false;
+        }
 
-      // -- Data --
-      this.regions = regions;
-      if (this.dataFrame.dart !== mlbDf.dart) this.dataFrame = mlbDf; // causes detach and onTableAttached
-    }).then(async () => {
-      if (!this.viewed) {
-        await this.buildView('setData');
-        this.viewed = true;
+        // -- Data --
+        this.regions = regions;
+
+        if (!this.viewed) {
+          // _package.logger.debug('Bio: VdRegionsViewer.setData(), buildView, ' +
+          //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
+          //   `regions.length = ${regions.length}`);
+          await this.buildView('setData');
+          this.viewed = true;
+        }
+      } catch (err: any) {
+        const [errMsg, errStack] = errInfo(err);
+        grok.shell.error(errMsg);
+        _package.logger.error(errMsg, undefined, errStack);
+      } finally {
+        // _package.logger.debug('Bio: VdRegionsViewer.setData(), finally, ' +
+        //   `viewerId = ${this.viewerId}, setDataInId = ${setDataInId}, ` +
+        //   `regions.length = ${regions.length}`);
+        this.setDataInProgress = false;
       }
-    }).catch((err: any) => {
-      const errMsg = err instanceof Error ? err.message : err.toString();
-      const stack = err instanceof Error ? err.stack : undefined;
-      grok.shell.error(errMsg);
-      _package.logger.error(errMsg, undefined, stack);
-    }).finally(() => {
-      this.setDataInProgress = false;
     });
   }
 
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
-  private detachPromise: Promise<void> = Promise.resolve();
   private setDataInProgress: boolean = false;
 
   private host: HTMLElement | null = null;
@@ -266,7 +289,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private async destroyView(purpose: string): Promise<void> {
     // TODO: Unsubscribe from and remove all view elements
     _package.logger.debug(`Bio: VdRegionsViewer.destroyView( mainLayout = ${!this.mainLayout ? 'none' : 'value'} ), ` +
-      `purpose = '${purpose}'`);
+      `purpose = '${purpose}', this.regions.length = ${this.regions.length}`);
     if (this.filterSourceInput) {
       //
       ui.empty(this.filterSourceInput.root);
@@ -284,7 +307,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   }
 
   private async buildView(purpose: string): Promise<void> {
-    _package.logger.debug(`Bio: VdRegionsViewer.buildView() begin, ` + `purpose = '${purpose}'`);
+    _package.logger.debug(`Bio: VdRegionsViewer.buildView() begin, ` +
+      `purpose = '${purpose}', this.regions.length = ${this.regions.length}`);
 
     const regionsFiltered: VdRegion[] = this.regions.filter((r: VdRegion) => this.regionTypes.includes(r.type));
     const orderList: number[] = Array.from(new Set(regionsFiltered.map((r) => r.order))).sort();

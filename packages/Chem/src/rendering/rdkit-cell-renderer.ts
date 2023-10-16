@@ -370,7 +370,7 @@ M  END
     const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
     const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
     const alignByStructure = !!(filter.length || align.length || scaffoldTreeHighlight.length);
-    const scaffolds = filter.length ? filter : align.length ? align : scaffoldTreeHighlight.length ? scaffoldTreeHighlight : highlight;
+    const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
   }
 

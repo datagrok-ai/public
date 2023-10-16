@@ -116,8 +116,7 @@ export class MonomerPosition extends DG.JsViewer {
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setMonomerRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
-      this.mode === SELECTION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol),
-      this.aggregation as DG.AggregationType));
+      this.mode === SELECTION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol), this.aggregation as DG.AGG));
 
     this.viewerGrid.onCellTooltip((gridCell: DG.GridCell, x: number, y: number) => {
       if (!gridCell.isTableCell) {
@@ -129,7 +128,7 @@ export class MonomerPosition extends DG.JsViewer {
       return this.model.showTooltip(monomerPosition, x, y, true);
     });
     this.viewerGrid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());
-    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+    DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
         if (!this.keyPressed)
           return;
@@ -362,13 +361,13 @@ export class MostPotentResidues extends DG.JsViewer {
         return false;
       return this.model.showTooltip(monomerPosition, x, y, true);
     });
-    this.viewerGrid.onCurrentCellChanged.subscribe((gridCell: DG.GridCell) => {
+    DG.debounce(this.viewerGrid.onCurrentCellChanged, 500).subscribe((gridCell: DG.GridCell) => {
       try {
         if ((this.keyPressed && mostPotentResiduesDf.currentCol.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE) || !this.keyPressed)
           return;
         const monomerPosition = this.getMonomerPosition(gridCell);
         if (this.currentGridRowIdx !== null) {
-          const previousMonomerPosition = this.getMonomerPosition(this.viewerGrid.cell(C.COLUMNS_NAMES.MEAN_DIFFERENCE, this.currentGridRowIdx));
+          const previousMonomerPosition = this.getMonomerPosition(this.viewerGrid.cell("Diff", this.currentGridRowIdx));
           this.model.modifyMutationCliffsSelection(previousMonomerPosition, {shiftPressed: true, ctrlPressed: true}, false);
         }
         if (this.model.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType)?.size)
@@ -420,7 +419,7 @@ export class MostPotentResidues extends DG.JsViewer {
 }
 
 function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
-  colorCol?: DG.Column<number>, colorAgg?: DG.AggregationType, renderNums?: boolean): void {
+  colorCol?: DG.Column<number>, colorAgg?: DG.AGG, renderNums?: boolean): void {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const canvasContext = args.g;
   const bound = args.bounds;

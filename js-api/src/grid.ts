@@ -582,6 +582,9 @@ export class GridCell {
   /** Gets or sets HTML element for this grid cell. */
   get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
+
+  /** Sets the grid cell value and fires onCellValueEdited if notify is true */
+  setValue(x: any, notify: boolean = true): void { api.grok_GridCell_SetValue(this.dart, x, notify); }
 }
 
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, expectFloat, awaitCheck, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE, getAggregatedColName} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -37,6 +37,8 @@ category('Model: Settings', () => {
 
     await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Activity scaling', async () => {
     const getError = (row: number, method: SCALING_METHODS): string =>

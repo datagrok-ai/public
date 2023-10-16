@@ -1,5 +1,9 @@
 # Bioreactors changelog
 
+## 1.1.4 (2023-10-16)
+
+Bioreactor demo is moved to the Compute section.
+
 ## 1.1.3 (2023-09-29)
 
 Usability is improved. Line chart legend is fixed.

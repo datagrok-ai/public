@@ -87,7 +87,7 @@ export async function Bioreactor(initial: number, final: number, step: number,
 //input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
 //output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
-//meta.runOnStart: true
+//meta.runOnOpen: true
 export async function BioreactorDemo(initial: number, final: number, step: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
   _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
@@ -104,7 +104,7 @@ export async function BioreactorDemo(initial: number, final: number, step: numbe
 
 //name: Bioreactor Demo
 //description: In-browser simulation of complex phenomena.
-//meta.demoPath: Bioreactors | Bioreactor
+//meta.demoPath: Compute | Bioreactor
 //test: demoBioreactor() //wait: 100
 export async function demoBioreactor(): Promise<any>  {
   const doeSimpleFunc: DG.Func = await grok.functions.eval('Bioreactors:BioreactorDemo');

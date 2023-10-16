@@ -128,8 +128,8 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
-    host: HTMLDivElement = ui.box(null, 'grok-sketcher sketcher-host');
     invalidMoleculeWarning = ui.div('', 'invalid-molecule-warning');
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher chem-sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -146,7 +146,7 @@ export namespace chem {
     _smarts: string | null = null;
     molFileUnits = Notation.MolBlock;
 
-
+    loader: HTMLDivElement = ui.loader();
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
     extSketcherCanvas = ui.canvas();
     inplaceSketcherDiv: HTMLDivElement | null = null;
@@ -181,6 +181,16 @@ export namespace chem {
       return this._sketcherTypeChanged;
     }
 
+    get calculating(): boolean {return this.loader.classList.contains('chem-sketcher-loader-show');}
+    set calculating(value: boolean) {
+      if (value) {
+        this.loader.classList.add('chem-sketcher-loader-show');
+        this.loader.classList.remove('chem-sketcher-loader-hide');
+      } else {
+        this.loader.classList.add('chem-sketcher-loader-hide');
+        this.loader.classList.remove('chem-sketcher-loader-show');
+      }
+    }
 
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
@@ -271,12 +281,20 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
-        extractor
-          .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
-          .then((mol) => this.setMolecule(mol));
-      else
-        this.setMolecule(x);
+          if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
+            this.calculating = true;
+            extractor
+              .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
+              .then((mol) => {
+                mol ? this.setMolecule(mol) : this.setMolecule('');
+              }).catch(() => {
+                this.setMolecule('');
+              }).finally(() => {
+                this.calculating = false;
+              });
+          }
+          else
+            this.setMolecule(x);
     }
 
     validate(x: string): void {
@@ -290,7 +308,8 @@ export namespace chem {
         this._mode = mode;
       this.root.style.height = '100%';
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
-      this.emptySketcherLink = ui.divText('Click to edit', 'sketch-link');
+      this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link');
+      this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       if (validationFunc)
         this._validationFunc = validationFunc;
@@ -369,7 +388,7 @@ export namespace chem {
         this.updateExtSketcherContent();
       });
       ui.tooltip.bind(clearButton, 'Clear sketcher');
-      clearButton.classList.add('clear-button');
+      clearButton.classList.add('chem-clear-sketcher-button');
       clearButton.onmouseover = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseenter = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseout = () => {clearButton.style.visibility = 'hidden';};
@@ -451,10 +470,6 @@ export namespace chem {
         if (this.getSmiles() !== newSmilesValue)
           this.setValue(newSmilesValue);
 
-        const currentSmiles = this.getSmiles();
-
-        if (currentSmiles !== newSmilesValue)
-          (e?.target as HTMLTextAreaElement).value = currentSmiles ?? '';
       };
 
       this.molInput.addEventListener('keydown', (e) => {
@@ -504,10 +519,12 @@ export namespace chem {
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
+      this.calculating = false;
       this.sketcherType = currentSketcherType;
 
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
+        this.loader,
         this.host,
         this.invalidMoleculeWarning], {style: {height: '90%'}});
 

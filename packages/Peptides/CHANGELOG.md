@@ -1,15 +1,21 @@
 # Peptides changelog
 
-## 1.14.2 (WIP)
+## 1.15.0 (2023-10-12)
 
 ### Features
 
-* Added viewer help.
 * Added Sequence Space viewer.
+* Selection panel columns now inherti width from main table.
+* Invarian Map cell values now rendered with contrast color relative to background.
 
 ### Bug Fixes
 
 * Fixed WebLogo in header margin width.
+* Widgets in Context panel will now fill all the available width.
+* Fixed LST rows not resizable.
+* Fixed selection inconsistency.
+* Fixed Most Potent Residues keyboar navigation.
+* Fixed analysis not starting when there are columns of the same name.
 
 ## 1.14.1 (2023-09-28)
 

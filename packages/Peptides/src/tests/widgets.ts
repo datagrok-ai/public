@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
@@ -39,6 +39,8 @@ category('Widgets: Settings', () => {
 
     await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('UI', async () => {
     const settingsElements = getSettingsDialog(model);
@@ -83,6 +85,8 @@ category('Widgets: Distribution panel', () => {
     await delay(500);
   });
 
+  after(async () => await delay(3000));
+
   test('UI', async () => {
     getDistributionWidget(model.df, model);
   });
@@ -113,6 +117,8 @@ category('Widgets: Mutation cliffs', () => {
     await delay(500);
   });
 
+  after(async () => await delay(3000));
+
   test('UI', async () => {
     mutationCliffsWidget(model.df, model);
   });
@@ -142,6 +148,8 @@ category('Widgets: Actions', () => {
 
     await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('New view', async () => {
     // Set compound bitset: filter out 2 rows and select 1 among them

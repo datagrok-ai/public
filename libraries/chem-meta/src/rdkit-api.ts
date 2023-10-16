@@ -18,7 +18,7 @@ export interface RDModule {
   set_log_capture(logName: string): RDLog;
   MolList: MolListConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
-  }
+}
 
 export interface RDMol {
   is_qmol: boolean;
