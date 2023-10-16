@@ -21,29 +21,15 @@ export class LearningWidget extends DG.Widget {
 
     let tabs = ui.tabControl();
 
-    grok.functions
-    .call("Tutorials:demoAppWidget")
-    .then((res) => {
-      tabs.addPane('DEMO',()=>res._root)
-    })
-    .catch((error) => {
-      console.log('TutorialWidget not found. \n'+error);
-    }).finally(() => {
-      tabs.addPane('VIDEO', ()=> ui.panel([videoList]));
-      tabs.addPane('WIKI', ()=> ui.panel([wikiList]));
-    }
-    );
+    tabs.addPane('VIDEO', ()=> ui.panel([videoList]));
+    tabs.addPane('WIKI', ()=> ui.panel([wikiList]));
+    const daw = DG.Func.find({name: 'demoAppWidget', package: 'Tutorials'})[0];
+    const tw = DG.Func.find({name: 'tutorialWidget', package: 'Tutorials'})[0];
+    if (daw)
+      tabs.addPane('DEMO', () => ui.waitBox(async () => (await daw.apply()).root));
+    if (tw)
+      tabs.addPane('TUTORIALS', () => ui.waitBox(async () => (await tw.apply()).root));
 
-    
-    grok.functions
-    .call("Tutorials:tutorialWidget")
-    .then((res) => {
-      tabs.addPane('TUTORIALS',()=>res._root)
-    })
-    .catch((error) => {
-      console.log('TutorialWidget not found. \n'+error);
-    });
-    
     this.root.append(tabs.root);
 
     // properties

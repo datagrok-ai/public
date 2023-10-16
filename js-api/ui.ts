@@ -717,7 +717,7 @@ export function sliderInput(name: string, value: number | null, min: number, max
   return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
 }
 
-export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
+export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): ChoiceInput<T | null> {
   return new ChoiceInput<T>(api.grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
@@ -1676,202 +1676,202 @@ export namespace css {
   }
 
   export enum alignItems {
-    start = 'align-items-start',
-    end = 'align-items-end',
-    center = 'align-items-center',
-    baseline = 'align-items-baseline',
-    stretch = 'align-items-stretch',
+    start = 'css-align-items-start',
+    end = 'css-align-items-end',
+    center = 'css-align-items-center',
+    baseline = 'css-align-items-baseline',
+    stretch = 'css-align-items-stretch',
   }
 
   export enum justifyContent {
-    start = 'justify-content-start',
-    end = 'justify-content-end',
-    center = 'justify-content-center',
-    between = 'justify-content-between',
-    around = 'justify-content-around',
+    start = 'css-justify-content-start',
+    end = 'css-justify-content-end',
+    center = 'css-justify-content-center',
+    between = 'css-justify-content-between',
+    around = 'css-justify-content-around',
   }
 
   export enum gap {
-    small = 'gap-small',
-    medium = 'gap-medium',
-    large = 'gap-large',
+    small = 'css-gap-small',
+    medium = 'css-gap-medium',
+    large = 'css-gap-large',
   }
 
   export enum margin {
-    none = 'm-none',
-    small = 'm-small',
-    medium = 'm-medium',
-    large = 'm-large',
-    auto = 'm-auto'
+    none = 'css-m-none',
+    small = 'css-m-small',
+    medium = 'css-m-medium',
+    large = 'css-m-large',
+    auto = 'css-m-auto'
   }
 
   export enum marginX {
-    none = 'mx-none',
-    small = 'mx-small',
-    medium = 'mx-medium',
-    large = 'mx-large',
-    auto = 'mx-auto'
+    none = 'css-mx-none',
+    small = 'css-mx-small',
+    medium = 'css-mx-medium',
+    large = 'css-mx-large',
+    auto = 'css-mx-auto'
   }
 
   export enum marginY {
-    none = 'my-none',
-    small = 'my-small',
-    medium = 'my-medium',
-    large = 'my-large',
-    auto = 'my-auto'
+    none = 'css-my-none',
+    small = 'css-my-small',
+    medium = 'css-my-medium',
+    large = 'css-my-large',
+    auto = 'css-my-auto'
   }
 
   export enum marginLeft {
-    none = 'ml-none',
-    small = 'ml-small',
-    medium = 'ml-medium',
-    large = 'ml-large',
-    auto = 'ml-auto'
+    none = 'css-ml-none',
+    small = 'css-ml-small',
+    medium = 'css-ml-medium',
+    large = 'css-ml-large',
+    auto = 'css-ml-auto'
   }
 
   export enum marginRight {
-    none = 'mr-none',
-    small = 'mr-small',
-    medium = 'mr-medium',
-    large = 'mr-large',
-    auto = 'mr-auto'
+    none = 'css-mr-none',
+    small = 'css-mr-small',
+    medium = 'css-mr-medium',
+    large = 'css-mr-large',
+    auto = 'css-mr-auto'
   }
 
   export enum marginTop {
-    none = 'mt-none',
-    small = 'mt-small',
-    medium = 'mt-medium',
-    large = 'mt-large',
-    auto = 'mt-auto'
+    none = 'css-mt-none',
+    small = 'css-mt-small',
+    medium = 'css-mt-medium',
+    large = 'css-mt-large',
+    auto = 'css-mt-auto'
   }
 
   export enum marginBottom {
-    none = 'mb-none',
-    small = 'mb-small',
-    medium = 'mb-medium',
-    large = 'mb-large',
-    auto = 'mb-auto'
+    none = 'css-mb-none',
+    small = 'css-mb-small',
+    medium = 'css-mb-medium',
+    large = 'css-mb-large',
+    auto = 'css-mb-auto'
   }
 
   export enum padding {
-    none = 'p-none',
-    small = 'p-small',
-    medium = 'p-medium',
-    large = 'p-large',
+    none = 'css-p-none',
+    small = 'css-p-small',
+    medium = 'css-p-medium',
+    large = 'css-p-large',
   }
 
   export enum paddingX {
-    none = 'px-none',
-    small = 'px-small',
-    medium = 'px-medium',
-    large = 'px-large',
+    none = 'css-px-none',
+    small = 'css-px-small',
+    medium = 'css-px-medium',
+    large = 'css-px-large',
   }
 
   export enum paddingY {
-    none = 'py-none',
-    small = 'py-small',
-    medium = 'py-medium',
-    large = 'py-large',
+    none = 'css-py-none',
+    small = 'css-py-small',
+    medium = 'css-py-medium',
+    large = 'css-py-large',
   }
 
   export enum paddingLeft {
-    none = 'pl-none',
-    small = 'pl-small',
-    medium = 'pl-medium',
-    large = 'pl-large',
+    none = 'css-pl-none',
+    small = 'css-pl-small',
+    medium = 'css-pl-medium',
+    large = 'css-pl-large',
   }
 
   export enum paddingRight {
-    none = 'pr-none',
-    small = 'pr-small',
-    medium = 'pr-medium',
-    large = 'pr-large',
+    none = 'css-pr-none',
+    small = 'css-pr-small',
+    medium = 'css-pr-medium',
+    large = 'css-pr-large',
   }
 
   export enum paddingTop {
-    none = 'pt-none',
-    small = 'pt-small',
-    medium = 'pt-medium',
-    large = 'pt-large',
+    none = 'css-pt-none',
+    small = 'css-pt-small',
+    medium = 'css-pt-medium',
+    large = 'css-pt-large',
   }
 
   export enum paddingBottom {
-    none = 'pb-none',
-    small = 'pb-small',
-    medium = 'pb-medium',
-    large = 'pb-large',
+    none = 'css-pb-none',
+    small = 'css-pb-small',
+    medium = 'css-pb-medium',
+    large = 'css-pb-large',
   }
 
   export enum textSize {
-    small = 'text-small',
-    medium = 'text-medium',
-    large = 'text-large',
+    small = 'css-text-small',
+    medium = 'css-text-medium',
+    large = 'css-text-large',
   }
 
   export enum textAlign {
-    left = 'text-left',
-    right = 'text-right',
-    center = 'text-center',
+    left = 'css-text-left',
+    right = 'css-text-right',
+    center = 'css-text-center',
   }
 
   export enum textWeight {
-    light = 'text-light',
-    normal = 'text-normal',
-    bolder = 'text-bolder',
-    bold = 'text-bold',
+    light = 'css-text-light',
+    normal = 'css-text-normal',
+    bolder = 'css-text-bolder',
+    bold = 'css-text-bold',
   }
 
   export enum textTransform {
-    lowercase = 'text-lowercase',
-    uppercase = 'text-uppercase',
-    capitalize = 'text-capitalize',
+    lowercase = 'css-text-lowercase',
+    uppercase = 'css-text-uppercase',
+    capitalize = 'css-text-capitalize',
   }
 
   export enum lineHeight {
-    small = 'lh-small',
-    medium = 'lh-medium',
-    large = 'lh-large',
+    small = 'css-lh-small',
+    medium = 'css-lh-medium',
+    large = 'css-lh-large',
   }
 
   export enum background {
-    none = 'bg-none',
-    white = 'bg-white',
-    light = 'bg-light',
+    none = 'css-bg-none',
+    white = 'css-bg-white',
+    light = 'css-bg-light',
   }
 
   export enum shadow {
-    none = 'shadow-none',
-    small = 'shadow-small',
-    medium = 'shado-medium',
-    large = 'shadow-large',
+    none = 'css-shadow-none',
+    small = 'css-shadow-small',
+    medium = 'css-shadow-medium',
+    large = 'css-shadow-large',
   }
 
   export enum table {
-    noraml = 'table',
-    wide = 'table-wide'
+    noraml = 'css-table',
+    wide = 'css-table-wide'
   }
 
   export enum tableSize {
-    small = 'table-small',
-    medium = 'table-medium',
-    large = 'table-large'
+    small = 'css-table-small',
+    medium = 'css-table-medium',
+    large = 'css-table-large'
   }
 
   export enum tableStyle {
-    border = 'table-border',
-    linesRow = 'table-row-lines',
-    linesCol = 'table-col-lines',
-    striped = 'table-striped'
+    border = 'css-table-border',
+    linesRow = 'css-table-row-lines',
+    linesCol = 'css-table-col-lines',
+    striped = 'css-table-striped'
   }
   
   export enum border {
-    all = 'border',
-    right = 'border-right',
-    left = 'border-left',
-    top = 'border-top',
-    bottom = 'border-bottom',
-    leftRight = 'border-left-right',
-    topBottom = 'border-top-bottom'
+    all = 'css-border',
+    right = 'css-border-right',
+    left = 'css-border-left',
+    top = 'css-border-top',
+    bottom = 'css-border-bottom',
+    leftRight = 'css-border-left-right',
+    topBottom = 'css-border-top-bottom'
   }
 
 }

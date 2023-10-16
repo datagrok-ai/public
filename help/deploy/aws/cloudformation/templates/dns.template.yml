@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "Datagrok template to deploy all components to ECS Fargate in new VPC. DNS and ACM should be configured manually."
+Description: "Datagrok template to deploy all components to ECS Fargate. DNS and ACM should be configured manually."
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -42,4 +42,4 @@ Outputs:
   #    Condition: CreateDNS
   DatagrokEndpoint:
     Description: Datagrok endpoint
-    Value: 'Create DNS records for Datagrok and CVM using stated CNAMEs as values'
+    Value: 'Create DNS records for Datagrok and CVM using stated DNS Names as CNAMEs targets'

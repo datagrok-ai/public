@@ -70,13 +70,16 @@ jobs:
               scripts="$(jq '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               dependencies="$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
 
+              job_name='Check'
               if [ ! -z "$(jq -r '. | select( has("build") == true )' <<< "$scripts")" ]; then
                 MATRIX_PUBLISH_JSON+=", \"build\": \"build\""
+                job_name='Build'
               fi
 
               if [ -n "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ] && \
                   [[ "$(jq  -r '. | select( has("skipCI") == true ).skipCI' "${DIR}/package.json")" != "true" ]]; then
                 MATRIX_PUBLISH_JSON+=", \"test\": \"test\""
+                job_name='Build, test'
               fi
 
               name="$(jq -r .name "${DIR}/package.json")"
@@ -89,6 +92,7 @@ jobs:
                     if [[ $unpublished_deps == "" ]]; then
                       publish="publish"
                       MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
+                      job_name+=' and publish to NPM'
                     else
                       echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps"
                       echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies"
@@ -114,6 +118,7 @@ jobs:
                 fi
               fi
 
+              MATRIX_PUBLISH_JSON+=", \"job_name\": \"${job_name}\""
               MATRIX_PUBLISH_JSON+="}"
             fi
           done
@@ -137,7 +142,7 @@ jobs:
           echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
 
   publish:
-    name: Test and publish to npm
+    name: "${{ matrix.package }}: ${{ matrix.job_name }}"
     needs:
       - matrix
       - common-check
@@ -311,29 +316,29 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
-#      - name: Wait for published docker to become available
-#        if: matrix.docker == 'build_docker'
-#        timeout-minutes: 5
-#        run: |
-#          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
-#          do
-#            sleep 1
-#            docker ps
-#            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
-#            echo -e "\nRetrying..."
-#          done
-#          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
-#
-#          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'" '${{ matrix.package }}'
-#          do
-#            sleep 1
-#            curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
-#            docker ps
-#            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
-#            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
-#            docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
-#            echo -e "\nRetrying..."
-#          done
+      #      - name: Wait for published docker to become available
+      #        if: matrix.docker == 'build_docker'
+      #        timeout-minutes: 5
+      #        run: |
+      #          until .github/scripts/check-output.sh "docker ps" '${{ matrix.package }}'
+      #          do
+      #            sleep 1
+      #            docker ps
+      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+      #            echo -e "\nRetrying..."
+      #          done
+      #          token=$(curl -s -X POST http://127.0.0.1:8080/api/users/login/dev/admin | jq -r .token)
+      #
+      #          until .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' 'http://127.0.0.1:8080/api/docker/containers?text=${{ matrix.package }}&limit=1'" '${{ matrix.package }}'
+      #          do
+      #            sleep 1
+      #            curl -s -H "Authorization: $token" 'http://127.0.0.1:8080/api/docker/containers'
+      #            docker ps
+      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+      #            docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=grok_spawner")
+      #            docker exec datagrok-db-1 psql -U postgres -d datagrok -c 'select * from docker_containers;'
+      #            echo -e "\nRetrying..."
+      #          done
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') }}
@@ -356,7 +361,7 @@ jobs:
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
           docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
-          echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check job output for details"
+          echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
 
       - name: Cleanup datagrok stand

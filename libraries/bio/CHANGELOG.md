@@ -2,10 +2,20 @@
 
 ## 5.39.0 (WIP)
 
+### Features
+
+* Add VdRegionsViewer .`filterSource` property.
+
 ### Bug fixes
 
 * Fix getSplitterWithSeparator for empty seq.
 * Fix MonomerPlacer getPosition for empty seq.
+* Move maxMonomerLength from column's temp to tags
+* Add property fitWidth for VdRegionsViewer
+* Fix UnitsHandler to not replace existing tags
+* Fix VdRegionsViewer fit width accounting position margin of WebLogo
+* Fix UnitsHandler to allow empty alphabet if annotated with tag.
+  Fix UnitsHandler.maxLength to be zero for empty data.
 
 ## 5.38.0 (2023-09-06)
 

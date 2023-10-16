@@ -98,9 +98,11 @@ class BioPackageDetectors extends DG.Package {
       if (col.type !== DG.TYPE.STRING) return null;
 
       const categoriesSample = [...new Set((col.length < SEQ_SAMPLE_LIMIT ?
-          wu.count(0).take(Math.min(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
-          this.sample(col, SEQ_SAMPLE_LIMIT)
-      ).map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : ''))];
+        wu.count(0).take(Math.min(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
+        this.sample(col, SEQ_SAMPLE_LIMIT))
+        .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : '')
+        .filter((seq) => seq.length !== 0/* skip empty values for detector */),
+      )];
 
       // To collect alphabet freq three strategies can be used:
       // as chars, as fasta (single or within square brackets), as with the separator.

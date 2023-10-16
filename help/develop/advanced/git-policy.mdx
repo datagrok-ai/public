@@ -69,6 +69,12 @@ We separated the Git Flow into two types: flow for experienced contributors and 
 
 4. Keep your branch name meaningful. Use the agreed standard: `<first letter of your name><your surname>/<task ID>/<meaningful short description>`. Task ID should be a full ID from any task tracking system. For example, `jdoe/GROK-123/description` for Jira issues or `jdoe/#123/description` for GitHub issues.
 
+5. If git checkouts fail on Windows with an error "Filename too long", run the command below:
+
+   ```bash
+   git config --system core.longpaths true
+   ```
+
 ### Codeowners flow
 
 The codeowners are a small group of people with good knowledge of the code base, excellent development skills, and

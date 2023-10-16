@@ -2,16 +2,16 @@ const df = grok.data.demo.demog();
 grok.shell.addTable(df);
 
 const properties = [
-  { "name": "int",         "inputType": "Int"},
+  { "name": "int",         "inputType": "Int", "showPlusMinus": true },
+  { "name": "float",       "inputType": "Float", min: 0, max: 10, "showSlider": true},
   { "name": "bigInt",      "inputType": "BigInt"},
-  { "name": "float",       "inputType": "Float"},
   { "name": "qnum",        "inputType": "QNum"},
   { "name": "slider",      "inputType": "Slider", "min": 0, "max": 10},
   { "name": "bool",        "inputType": "Bool"},
   { "name": "textArea",    "inputType": "TextArea"},
   { "name": "text",        "inputType": "Text"},
   { "name": "date",        "inputType": "Date"},
-  { "name": "map",         "inputType": "Map"},
+  //{ "name": "map",         "inputType": "Map"},
   { "name": "list",        "inputType": "List"},
   { "name": "color",       "inputType": "Color"},
   { "name": "table",       "inputType": "Table"},
@@ -37,7 +37,7 @@ let object = {
   list: ['1', '2', '4'],
   table: df,
   column: df.columns.byName('race'),
-  choice: ['Apple'],
+  choice: 'Apple',
   radio: 'Apple',
 };
 

@@ -62,6 +62,8 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {_demoActivityCliffs, _demoChemOverview, _demoDatabases4,
   _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
 import {RuleSet, runStructuralAlertsDetection} from './panels/structural-alerts';
+import {getmolColumnHighlights} from './widgets/col-highlights';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -87,7 +89,7 @@ const PREVIOUS_SKETCHER_NAMES: {[key: string]: string} = {
 
 //name: getRdKitModule
 //output: object module
-export function getRdKitModule() {
+export function getRdKitModule(): RDModule {
   return chemCommonRdKit.getRdKitModule();
 }
 
@@ -131,7 +133,7 @@ export async function initChemAutostart(): Promise<void> { }
 //name: Chemistry | Most Diverse Structures
 //tags: tooltip
 //input: column col {semType: Molecule}
-//output: widget
+//output: widget result
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
   const version = col.version;
 
@@ -408,7 +410,7 @@ export function diversitySearchTopMenu(): void {
 //name: SearchSubstructureEditor
 //tags: editor
 //input: funccall call
-export function searchSubstructureEditor(call: DG.FuncCall) {
+export function searchSubstructureEditor(call: DG.FuncCall): void {
   if (grok.shell.tv.dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
     grok.shell.warning(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
     return;
@@ -433,7 +435,7 @@ export function searchSubstructureEditor(call: DG.FuncCall) {
 
 
 //top-menu: Chem | Search | Substructure Search...
-//name: Diversity Search
+//name: Substructure Search
 //input: column molecules { semType: Molecule }
 //editor: Chem:SearchSubstructureEditor
 export function SubstructureSearchTopMenu(molecules: DG.Column): void {
@@ -461,12 +463,12 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
 //name: ChemSpaceEditor
 //tags: editor
 //input: funccall call
-export function ChemSpaceEditor(call: DG.FuncCall) {
+export function ChemSpaceEditor(call: DG.FuncCall): void {
   const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MOLECULE);
   ui.dialog({title: 'Chemical Space'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {
-      call.func.prepare(funcEditor.funcParams).call(true);
+      call.func.prepare(funcEditor.funcParams).call();
     })
     .show();
 }
@@ -498,18 +500,29 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
 
+  const pg = DG.TaskBarProgressIndicator.create(`Initializing Chemical space...`);
+
+  const progressFunc = (progress: number) => {
+    pg.update(progress, `Running Chemical space... ${progress.toFixed(0)}%`);
+  };
+
   if (table.rowCount > fastRowCount) {
     ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
-        const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        const res = await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options);
-        progressBar.close();
+        const res =
+          await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
+        pg.close();
         return res;
       })
+      .onCancel(() => pg.close())
       .show();
-  } else
-    return await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options);
+  } else {
+    const res =
+      await runChemSpace(table, molecules, methodName, similarityMetric, plotEmbeddings, options, progressFunc);
+    pg.close();
+    return res;
+  }
 }
 
 
@@ -631,7 +644,7 @@ export function rGroupsAnalysisMenu(): void {
 //name: ActivityCliffsEditor
 //tags: editor
 //input: funccall call
-export function ActivityCliffsEditor(call: DG.FuncCall) {
+export function ActivityCliffsEditor(call: DG.FuncCall): void {
   const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MOLECULE);
   ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
@@ -770,6 +783,14 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMolColumnPropertyPanel(molColumn);
 }
 
+//name: Chemistry | Highlight
+//input: column molColumn {semType: Molecule}
+//tags: panel, exclude-actions-panel
+//output: widget result
+export function molColumnHighlights(molColumn: DG.Column): DG.Widget {
+  return getmolColumnHighlights(molColumn);
+}
+
 //name: Chemistry | Descriptors
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
@@ -810,7 +831,7 @@ export function properties(smiles: DG.SemanticValue): DG.Widget {
 //description: Return chem property function
 //input: string name
 //output: object result
-export function getChemPropertyFunction(name: string) : null | ((smiles: string) => any) {
+export function getChemPropertyFunction(name: string): null | ((smiles: string) => any) {
   return getChemPropertyFunc(name);
 }
 
@@ -1119,8 +1140,8 @@ export function isSmiles(s: string) : boolean {
 //name: isSmarts
 //input: string s
 //output: bool res
-export function isSmarts(s: string) : boolean {
-  return _isSmarts(s);
+export function isSmarts(s: string): boolean {
+  return !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
 }
 
 //name: detectSmiles

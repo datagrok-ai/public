@@ -29,6 +29,7 @@ import {parseAndVisualsData} from './molstar-viewer-open';
 import {StructureComponentRef} from 'molstar/lib/mol-plugin-state/manager/structure/hierarchy-state';
 
 import {_package} from '../../package';
+import {errInfo} from '../../utils/err-info';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -146,6 +147,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
+    this.data = this.addProperty(PROPS.data, DG.TYPE.OBJECT, undefined,
+      {category: PROPS_CATS.DATA, userEditable: false});
     this.pdb = this.string(PROPS.pdb, pdbDefault,
       {category: PROPS_CATS.DATA, userEditable: false});
     this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
@@ -316,6 +319,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
     switch (property.name) {
       case PROPS.data:
+        // @ts-ignore
+        if ('_original' in this.data) this.data = this.data['_original'];
+        this.setData();
+        break;
       case PROPS.pdb:
       case PROPS.pdbTag:
         this.setData();
@@ -340,12 +347,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   }
 
   override detach(): void {
-    if (this.setDataInProgress) return;
     _package.logger.debug('MolstarViewer.detach(), ');
 
     const superDetach = super.detach.bind(this);
     this.detachPromise = this.detachPromise.then(async () => { // detach
       await this.viewPromise;
+      if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
@@ -357,46 +364,47 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   // -- Data --
 
   setData(): void {
-    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
-    _package.logger.debug(`MolstarViewer.setData() `);
-
+    _package.logger.debug(`MolstarViewer.setData(), in `);
     this.viewPromise = this.viewPromise.then(async () => { // setData
-      if (this.viewed) {
-        await this.destroyView('setData');
-        this.viewed = false;
-      }
-    }).then(async () => {
-      await this.detachPromise;
-      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
+      if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
+      try {
+        if (this.viewed) {
+          await this.destroyView('setData');
+          this.viewed = false;
+        }
 
-      // -- PDB data --
-      this.dataEff = null;
-      let pdbTag: string = pdbTAGS.PDB;
-      let pdb: string | null = null;
-      if (this.pdbTag) pdbTag = this.pdbTag;
-      if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
-      if (this.pdb) pdb = this.pdb;
-      if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
-      if (this.data) {
-        this.dataEff = this.data;
-        // TODO: Fix receiving property object value
-        // @ts-ignore
-        if ('a' in this.data) this.dataEff = this.data['a'];
-      }
+        await this.detachPromise;
+        // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-      // -- Ligand --
-      if (!this.ligandColumnName) {
-        const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-        if (molCol)
-          this.ligandColumnName = molCol.name;
+        // -- PDB data --
+        this.dataEff = null;
+        let pdbTag: string = pdbTAGS.PDB;
+        let pdb: string | null = null;
+        if (this.pdbTag) pdbTag = this.pdbTag;
+        if (this.dataFrame.tags.has(pdbTag)) pdb = this.dataFrame.getTag(pdbTag);
+        if (this.pdb) pdb = this.pdb;
+        if (pdb && pdb != pdbDefault) this.dataEff = {ext: 'pdb', data: pdb!};
+        if (this.data)
+          this.dataEff = this.data;
+
+        // -- Ligand --
+        if (!this.ligandColumnName) {
+          const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+          if (molCol)
+            this.ligandColumnName = molCol.name;
+        }
+
+        if (!this.viewed) {
+          await this.buildView('setData');
+          this.viewed = true;
+        }
+      } catch (err: any) {
+        const [errMsg, errStack] = errInfo(err);
+        grok.shell.error(errMsg);
+        _package.logger.error(errMsg, undefined, errStack);
+      } finally {
+        this.setDataInProgress = false;
       }
-    }).then(async () => {
-      if (!this.viewed) {
-        await this.buildView('setData');
-        this.viewed = true;
-      }
-    }).finally(() => {
-      this.setDataInProgress = false;
     });
   }
 

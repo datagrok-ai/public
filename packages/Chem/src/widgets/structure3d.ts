@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {smilesTo3DCoordinates} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 
 const WIDTH = 300;
 const HEIGHT = 300;
@@ -10,13 +11,15 @@ const HEIGHT = 300;
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
   try {
-    molecule = _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, rdKitModule);
+    if (!DG.chem.isMolBlock(molecule))
+      molecule = _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   let sdf: string;
   try {
-    sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
+    sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ?
+      (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n') : molecule;
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));
   }

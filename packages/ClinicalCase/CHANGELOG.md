@@ -1,6 +1,6 @@
 # ClinicalCase changelog
 
-## 1.0.3 (07.08.2023)
+## 1.0.3 (2023-08-07)
 
 ### Features
 

@@ -95,16 +95,25 @@ export class SurfacePlot extends EChartViewer {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: formatter,
+        },
       },
       yAxis3D: {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: formatter,
+        },
       },
       zAxis3D: {
         type: 'value',
         min: 'dataMin',
         max: 'dataMax',
+        axisLabel: {
+          formatter: formatter,
+        },
       },
       grid3D: {
         show: true,
@@ -113,11 +122,6 @@ export class SurfacePlot extends EChartViewer {
         },
         axisLabel: {
           show: true,
-          formatter: (val: any) => {
-            if (typeof val === 'number' && !Number.isInteger(val))
-              return val.toFixed(2);
-            return val;
-          },
         },
       },
       series: [
@@ -190,14 +194,17 @@ export class SurfacePlot extends EChartViewer {
       case 'XColumnName':
         this.XColumnName = newVal;
         this.XArr = col;
+        this.option.xAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'YColumnName':
         this.YColumnName = newVal;
         this.YArr = col;
+        this.option.yAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'ZColumnName':
         this.ZColumnName = newVal;
         this.ZArr = col;
+        this.option.zAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       }
       this.render(true);
@@ -253,3 +260,9 @@ export class SurfacePlot extends EChartViewer {
     this.chart.setOption(this.option);
   }
 }
+
+const formatter = (val: any) => {
+  if (typeof val === 'number' && !Number.isInteger(val))
+    return val.toFixed(2);
+  return val;
+};

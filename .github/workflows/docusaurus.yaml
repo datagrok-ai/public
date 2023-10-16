@@ -75,7 +75,7 @@ jobs:
           fi
 
   convert:
-    name: Convert to HTML
+    name: Build
     needs: [lint, common-check]
     if: needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-22.04

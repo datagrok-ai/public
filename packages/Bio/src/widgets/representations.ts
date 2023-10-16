@@ -1,9 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {Tags as mmcrTags, Temps as mmcrTemps, MonomerWidthMode,
-  tempTAGS, rendererSettingsChangedState} from '../utils/cell-renderer-consts';
+import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+
+import {
+  Tags as mmcrTags, Temps as mmcrTemps, MonomerWidthMode,
+  tempTAGS, rendererSettingsChangedState
+} from '../utils/cell-renderer-consts';
+
 import {_package} from '../package';
 
 
@@ -31,10 +37,11 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     `In short mode, only the 'Max monomer length' characters are displayed, followed by .. if there are more`,
   );
 
+  const tagMaxMonomerLength: number = parseInt(col.getTag(mmcrTAGS.maxMonomerLength));
   const maxMonomerLength: DG.InputBase = ui.intInput('Max monomer length',
-    col.temp[mmcrTemps.maxMonomerLength] ?? _package.properties.MaxMonomerLength,
+    !isNaN(tagMaxMonomerLength) ? tagMaxMonomerLength : _package.properties.MaxMonomerLength,
     (value: number) => {
-      col.temp[mmcrTemps.maxMonomerLength] = value;
+      col.setTag(mmcrTAGS.maxMonomerLength, value.toString());
       col.setTag(mmcrTags.RendererSettingsChanged, rendererSettingsChangedState.true);
       col.dataFrame.fireValuesChanged();
     });

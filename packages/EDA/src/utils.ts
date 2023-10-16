@@ -14,7 +14,7 @@ const MAX_ELEMENTS_COUNT = 100000000;
 
 // Error messages
 const COMP_POSITVE_MES = 'components must be positive.';
-const COMP_EXCESS = 'components must not be greater than feautures count.';
+const COMP_EXCESS = 'components must not be greater than features count.';
 const INCORERRECT_MIN_MAX_MES = 'min must be less than max.';
 const INCORERRECT_FEATURES_MES = 'features must be positive.';
 const INCORERRECT_SAMPLES_MES = 'samples must be positive.';

@@ -410,7 +410,8 @@ export enum VIEWER {
   TIMELINES = 'TimelinesViewer',
   RADAR_VIEWER = 'RadarViewer',
   SURFACE_PLOT = 'SurfacePlot',
-  SCAFFOLD_TREE = 'Scaffold Tree'
+  SCAFFOLD_TREE = 'Scaffold Tree',
+  PIVOT_TABLE = 'Pivot table'
 }
 
 /** @enum {LINE_CHART_SERIES_TYPE} */

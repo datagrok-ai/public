@@ -389,6 +389,7 @@ export interface IScatterPlotLookSettings {
 
   markerType: string;
 
+  // -1 default - automatic sizing based on current dataframe
   markerDefaultSize: number;
 
   markerOpacity: number;
@@ -543,6 +544,12 @@ export interface ILineChartLookSettings {
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
 
+  /// Deprecated, use splitColumnNames instead
+  splitColumnName: string;
+
+  /// A categorical column by which lines are split
+  splitColumnNames: Array<string>;
+
   /// Defines a Y column for the chart on the bottom used for zooming
   overviewColumnName: string;
 
@@ -579,9 +586,6 @@ export interface ILineChartLookSettings {
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
   yColumnNames: Array<string>;
-
-  /// A categorical column by which lines are split
-  splitColumnName: string;
 
   showYAxis: boolean;
 
@@ -1210,7 +1214,13 @@ export interface IGridLookSettings {
   /// Indicates current row with the *Current Row Color*.
   showCurrentRowIndicator: boolean;
 
-  pinnedRows: Array<number>;
+  sortByColumnNames: Array<string>;
+
+  sortTypes: Array<boolean>;
+
+  pinnedRowColumnNames: Array<string>;
+
+  pinnedRowValues: Array<string>;
 
   /// Indicates whether the control is in the grid or heatmap mode.
   /// Typically, you don't need to change it manually.
@@ -1281,6 +1291,9 @@ export interface IGridLookSettings {
   /// Whether the context menu is shown
   showContextMenu: boolean;
 
+  /// Whether to show notifications when the user tries to edit a read-only table
+  showReadOnlyNotifications: boolean;
+
   frozenColumns: number;
 
   showCurrentCellOutline: boolean;
@@ -1349,6 +1362,9 @@ export interface IGridLookSettings {
   marginRight: number;
 
   marginBottom: number;
+
+  /// Determines whether newly added columns are added to the grid
+  syncNewColumns: boolean;
 
   colorScheme: Array<number>;
 
@@ -1447,6 +1463,10 @@ export interface ITrellisPlotLookSettings {
   syncMouseOverRow: boolean;
 
   packCategories: boolean;
+
+  useTiledView: boolean;
+
+  tilesPerRow: number;
 
   autoLayout: boolean;
 
@@ -1846,6 +1866,15 @@ export interface INetworkDiagramLookSettings {
 
   showColumnSelectors: boolean;
 
+  selectRowsOnClick: boolean;
+
+  selectEdgesOnClick: boolean;
+
+  /// Loads external data; called when you double-click on a node.
+  /// The specified function gets called with the node value as a single argument.
+  /// Its signature: `dataframe expand(dynamic nodeId)`.
+  onNodeExpandFunction: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1941,11 +1970,13 @@ export interface IPivotViewerLookSettings {
   /// Determines the rows used in pivot viewer.
   showHeader: boolean;
 
-  columnsColumnNames: Array<string>;
+  pivotColumnNames: Array<string>;
 
-  rowsColumnNames: Array<string>;
+  groupByColumnNames: Array<string>;
 
-  measures: Array<string>;
+  aggregateColumnNames: Array<string>;
+
+  aggregateAggTypes: Array<string>;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;

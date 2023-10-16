@@ -21,8 +21,8 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
   const simpleScaledCol = scaleActivity(simpleActivityCol, C.SCALING_METHODS.MINUS_LG);
   const clustersCol = DG.Column.string('Cluster', simpleTable.rowCount).init('0');
-  let alignedCol: DG.Column<string> = await grok.functions.call('Bio:alignSequences', {sequenceCol: simpleAlignedSeqCol, clustersCol});
-  let model: PeptidesModel = await startAnalysis(simpleActivityCol, alignedCol, null, simpleTable, simpleScaledCol,
+  const alignedCol: DG.Column<string> = await grok.functions.call('Bio:alignSequences', {sequenceCol: simpleAlignedSeqCol, clustersCol});
+  const model: PeptidesModel = await startAnalysis(simpleActivityCol, alignedCol, null, simpleTable, simpleScaledCol,
     C.SCALING_METHODS.MINUS_LG) as PeptidesModel;
   model.modifyMutationCliffsSelection({monomerOrCluster: 'D', positionOrClusterType: '13'});
 }

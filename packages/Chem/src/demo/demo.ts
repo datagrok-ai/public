@@ -518,7 +518,7 @@ export async function _demoDatabases4(): Promise<void> {
   const query = `--name: compound activity details for target 
 --connection: Chembl
 --input: string target_name = "Acetylcholinesterase" {choices: Query("SELECT distinct pref_name from target_dictionary limit 300 offset 309;")}
---input: string target_id = '93' {choices: Query("SELECT distinct tid from target_dictionary where pref_name = @target_name;")}
+--input: string target_id = '93' {choices: Query("SELECT distinct tid::int from target_dictionary where pref_name = @target_name;")}
 --input: string substructure = "NC1=CC(=O)c2ccccc2C1=O" {semType: Substructure}
 --input: string activity_type = "IC50"
 

@@ -39,6 +39,7 @@ export type DrawOptions = {
   marginHorizontal?: number,
   headerStyle?: string,
   textHeight?: number,
+  selectionWidth?: number,
 };
 
 export type StatsInfo = {

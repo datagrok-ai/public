@@ -5,6 +5,9 @@ title: "Box plot"
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the
 five number summary: minimum, first quartile, median, third quartile, and maximum.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Box plot');`
+
 General:
 
 |             |                     |

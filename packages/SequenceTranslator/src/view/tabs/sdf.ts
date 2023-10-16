@@ -165,10 +165,10 @@ export class SdfTabUI {
   }
 
   private getMolfile(ss: StrandData, as: StrandData, as2: StrandData): string {
-    if (ss.strand === '' && (as.strand !== '' || as2.strand !== '')) {
-      this.onInvalidInput.next();
-      return '';
-    }
+    // if (ss.strand === '' && (as.strand !== '' || as2.strand !== '')) {
+    //   this.onInvalidInput.next();
+    //   return '';
+    // }
 
     return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!);
   }

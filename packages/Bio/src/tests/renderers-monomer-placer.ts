@@ -36,24 +36,27 @@ category('renderers: monomerPlacer', () => {
     },
     splitterMsa: {
       /** For charWidth=7 and sepWidth=12, MSA
-       * Array(10) [0, 26, 52, 78, 104, 130, 156, 175, 201, 227]
+       * Array(10) [5, 38, 71, 104, 137, 170, 203, 222, 255, 281]
        */
       csv: 'id,seq\n' +
-        'id1,m1-M-m3-mon4-mon5-N-T-MON8-N9\n' + // [5, 24, 36, 55, 81, 107, 119, 131, 157, 176 ]
-        'id2,m1-mon2-m3-mon4-mon5-Num--MON8-N9\n' + // Array(10) [5, 24, 50, 69, 95, 121, 147, 152, 178, 197]
+        'id1,m1-M-m3-mon4-mon5-N-T-MON8-N9\n' +
+        'id2,m1-mon2-m3-mon4-mon5-Num--MON8-N9\n' +
         'id3,\n' + // empty
-        'id4,mon1-M-mon3-mon4-mon5---MON8-N9\n', // Array(10) [5, 31, 43, 69, 95, 121, 126, 131, 157, 176]
+        'id4,mon1-M-mon3-mon4-mon5---MON8-N9\n',
       testList: [
         {src: {row: 0, x: -1}, tgt: {pos: null}},
         {src: {row: 1, x: 0}, tgt: {pos: null}},
         {src: {row: 1, x: 1}, tgt: {pos: null}},
-        {src: {row: 1, x: 23}, tgt: {pos: 0}}, // (5 + 18) 23 -> 0, (5+19) 24 -> 1
-        {src: {row: 1, x: 24}, tgt: {pos: 1}}, // (5 + 18) 23 -> 0, (5+19) 24 -> 1
-        {src: {row: 1, x: 170}, tgt: {pos: 7}},
-        {src: {row: 1, x: 200}, tgt: {pos: null}},
+        {src: {row: 1, x: 4}, tgt: {pos: null}},
+        {src: {row: 1, x: 5}, tgt: {pos: 0}},
+        {src: {row: 1, x: 37}, tgt: {pos: 0}},
+        {src: {row: 1, x: 38}, tgt: {pos: 1}},
+        {src: {row: 1, x: 170}, tgt: {pos: 4}},
+        {src: {row: 1, x: 200}, tgt: {pos: 5}},
         {src: {row: 2, x: 20}, tgt: {pos: null}}, // empty value
+        {src: {row: 3, x: 170}, tgt: {pos: 4}},
         {src: {row: 3, x: 200}, tgt: {pos: 5}},
-        {src: {row: 3, x: 203}, tgt: {pos: 5}},
+        {src: {row: 3, x: 282}, tgt: {pos: null}},
       ]
     },
     fastaMsa: {

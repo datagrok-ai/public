@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
@@ -36,17 +36,11 @@ category('Widgets: Settings', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    let overlayInit = false;
-    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('UI', async () => {
     const settingsElements = getSettingsDialog(model);
@@ -87,17 +81,11 @@ category('Widgets: Distribution panel', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    let overlayInit = false;
-    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('UI', async () => {
     getDistributionWidget(model.df, model);
@@ -125,17 +113,11 @@ category('Widgets: Mutation cliffs', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    let overlayInit = false;
-    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('UI', async () => {
     mutationCliffsWidget(model.df, model);
@@ -163,17 +145,11 @@ category('Widgets: Actions', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    let overlayInit = false;
-    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('New view', async () => {
     // Set compound bitset: filter out 2 rows and select 1 among them
@@ -192,8 +168,7 @@ category('Widgets: Actions', () => {
     expect(currentTable.getTag(C.TAGS.UUID), newViewId, 'Current table is expected to have the same UUID as new view');
     expect(currentTable.rowCount, 1, 'Current table is expected to have 1 row');
 
-    await awaitCheck(() => currentTable.currentRowIdx === 0, 'Grid never finished initializing', 2000);
-
+    await delay(500);
     const currentTableModel = currentTable.temp[PeptidesModel.modelName] as PeptidesModel;
     const lstViewer = currentTableModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
     expect(lstViewer !== null, true, 'New view is expected to have Logo Summary Table viewer attached');

@@ -34,6 +34,7 @@ import {
 
 import {convertXMLToIFitChartData} from './fit-parser';
 import {CellRenderViewer} from './cell-render-viewer';
+import { calculateSeriesStats, getChartDataAggrStats } from './fit-grid-cell-handler';
 
 
 export const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
@@ -122,6 +123,13 @@ export function layoutChart(rect: DG.Rect, showAxesLabels: boolean, showTitle: b
   ];
 }
 
+/** Checks if the color is valid */
+export function isColorValid(color: string | null | undefined): boolean {
+  if (color === undefined || color === null || color === '')
+    return false;
+  return DG.Color.fromHtml(color) !== undefined;
+}
+
 /** Performs candlestick border drawing */
 function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentValue: number, transform: Viewport): void {
   g.moveTo(transform.xToScreen(x) - (CANDLESTICK_BORDER_PX_SIZE / 2), transform.yToScreen(adjacentValue));
@@ -200,12 +208,13 @@ function drawCandles(g: CanvasRenderingContext2D, series: IFitSeries,
 
 /** Performs a curve confidence interval drawing */
 function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals, screenBounds: DG.Rect,
-  transform: Viewport, confidenceType: string, showAxesLabels: boolean, logOptions: LogOptions): void {
+  transform: Viewport, confidenceType: string, showAxes: boolean, showAxesLabels: boolean, logOptions: LogOptions): void {
   g.beginPath();
-  const axesLeftPxMargin = showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
+  const axesLeftPxMargin = showAxes ? showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN : 0;
+  const axesRightPxMargin = showAxes ? AXES_RIGHT_PX_MARGIN : 0;
   const confIntervalFunc = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP ?
     confIntervals.confidenceTop : confIntervals.confidenceBottom;
-  for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
+  for (let i = axesLeftPxMargin; i <= screenBounds.width - axesRightPxMargin; i++) {
     const x = screenBounds.x + i;
     const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
     const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervalFunc(xForY))) : transform.yToScreen(confIntervalFunc(xForY));
@@ -219,10 +228,11 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
 
 /** Performs a curve confidence interval color filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitConfidenceIntervals, screenBounds: DG.Rect,
-  transform: Viewport, showAxesLabels: boolean, logOptions: LogOptions): void {
+  transform: Viewport, showAxes: boolean, showAxesLabels: boolean, logOptions: LogOptions): void {
   g.beginPath();
-  const axesLeftPxMargin = showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
-  for (let i = axesLeftPxMargin; i <= screenBounds.width - AXES_RIGHT_PX_MARGIN; i++) {
+  const axesLeftPxMargin = showAxes ? showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN : 0;
+  const axesRightPxMargin = showAxes ? AXES_RIGHT_PX_MARGIN : 0;
+  for (let i = axesLeftPxMargin; i <= screenBounds.width - axesRightPxMargin; i++) {
     const x = screenBounds.x + i;
     const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
     const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervals.confidenceTop(xForY))) :
@@ -234,7 +244,7 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, confIntervals: FitC
   }
 
   // reverse traverse to make a shape of confidence interval to fill it
-  for (let i = screenBounds.width - AXES_RIGHT_PX_MARGIN; i >= axesLeftPxMargin; i--) {
+  for (let i = screenBounds.width - axesRightPxMargin; i >= axesLeftPxMargin; i--) {
     const x = screenBounds.x + i;
     const xForY = logOptions.logX ? Math.log10(transform.xToWorld(x)) : transform.xToWorld(x);
     const y = logOptions.logY ? transform.yToScreen(Math.pow(10, confIntervals.confidenceBottom(xForY))) :
@@ -270,11 +280,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (!gridCell.cell.value)
       return;
 
-    grok.shell.o = gridCell;
-
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
+
+    grok.shell.o = gridCell;
 
     const screenBounds = gridCell.bounds.inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
     const showAxesLabels = gridCell.bounds.width >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && gridCell.bounds.height >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
@@ -295,14 +308,19 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         if (e.offsetX >= screenX - pxPerMarkerType && e.offsetX <= screenX + pxPerMarkerType &&
           e.offsetY >= screenY - pxPerMarkerType && e.offsetY <= screenY + pxPerMarkerType) {
           p.outlier = !p.outlier;
-          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn':
-            gridCell.cell.column.name, '.seriesNumber': i});
+          const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
           if (columns) {
-            const stats = getSeriesStatistics(data.series![i], getSeriesFitFunction(data.series![i]));
             for (const column of columns) {
-              column.set(gridCell.cell.rowIndex, stats[column.name as keyof FitStatistics]);
+              const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+              const stats = column.tags['.seriesAggregation'] !== null ?
+                getChartDataAggrStats(data, column.tags['.seriesAggregation']) :
+                column.tags['.seriesNumber'] === i ? calculateSeriesStats(data.series![i], chartLogOptions) : null;
+              if (stats === null)
+                continue;
+              column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as keyof FitStatistics]);  
             }
           }
+          
           // temporarily works only for JSON structure
           if (gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) !== TAG_FIT_CHART_FORMAT_3DX) {
             const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
@@ -348,6 +366,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.clip();
 
     const screenBounds = new DG.Rect(x, y, w, h).inflate(INFLATE_SIZE / 2, INFLATE_SIZE / 2);
+    const showAxes = screenBounds.width >= MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= MIN_AXES_CELL_PX_HEIGHT;
+    // make bigger sizes
     const showAxesLabels = w >= MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH && h >= MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT
       && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
     const showTitle = w >= MIN_TITLE_PX_WIDTH && h >= MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
@@ -358,6 +378,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (dataBounds.y <= 0 && data.chartOptions) data.chartOptions.logY = false;
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
+    // make thinner
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
     const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
 
@@ -411,8 +432,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.beginPath();
         if (series.lineStyle)
           g.setLineDash(LINE_STYLES[series.lineStyle]);
-        const axesLeftPxMargin = showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN;
-        for (let j = axesLeftPxMargin; j <= screenBounds.width - AXES_RIGHT_PX_MARGIN; j++) {
+        const axesLeftPxMargin = showAxes ? showAxesLabels ? AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : AXES_LEFT_PX_MARGIN : 0;
+        const axesRightPxMargin = showAxes ? AXES_RIGHT_PX_MARGIN : 0;
+        for (let j = axesLeftPxMargin; j <= screenBounds.width - axesRightPxMargin; j++) {
           const x = screenBounds.x + j;
           const xForY = data.chartOptions?.logX ? Math.log10(viewport.xToWorld(x)) : viewport.xToWorld(x);
           const y = data.chartOptions?.logY ? viewport.yToScreen(Math.pow(10, curve(xForY))) : viewport.yToScreen(curve(xForY));
@@ -431,10 +453,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   
         const confidenceIntervals = getSeriesConfidenceInterval(series, fitFunc, userParamsFlag, chartLogOptions);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport,
-          CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, showAxesLabels, chartLogOptions);
+          CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, showAxes, showAxesLabels, chartLogOptions);
         drawConfidenceInterval(g, confidenceIntervals, screenBounds, viewport,
-          CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, showAxesLabels, chartLogOptions);
-        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxesLabels, chartLogOptions);
+          CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, showAxes, showAxesLabels, chartLogOptions);
+        fillConfidenceInterval(g, confidenceIntervals, screenBounds, viewport, showAxes, showAxesLabels, chartLogOptions);
       }
   
       if (series.droplines && showAxesLabels) {
@@ -502,6 +524,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
       ? convertXMLToIFitChartData(gridCell.cell.value)
       : getChartData(gridCell);
+
+    if (data.series?.some((series) => series.points.length === 0))
+      return;
 
     this.renderCurves(g, x, y, w, h, data);
   }

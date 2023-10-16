@@ -1,6 +1,11 @@
 // Scroll to pixels.
 
-let grid = grok.shell.addTableView(grok.data.demo.randomWalk(100, 100)).grid;
-rxjs.interval(1000).pipe(rxjs.operators.startWith(0)).subscribe((i) => {
-  grid.scrollToPixels(i, i);
-});
+const grid = grok.shell.addTableView(grok.data.demo.randomWalk(100, 100)).grid;
+let cntr = 0;
+
+ui.dialog('Scroll')
+  .add(ui.button('Scroll by 10 pixels', () => {
+    cntr += 10;
+    grid.scrollToPixels(cntr, 0);
+  }))
+  .show();

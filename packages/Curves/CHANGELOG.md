@@ -1,5 +1,17 @@
 # Curves changelog
 
+## 1.2.8 (2023-09-25)
+
+### Features
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved the curves demo app
+  
+### Bug Fixes
+
+* [#2101](https://github.com/datagrok-ai/public/issues/2101): Improved curves properties and rendering:
+  * Don't allow clickToToggle if small cell size
+  * Fixed margins in small cells
+
 ## 1.2.7 (2023-09-11)
 
 ### Features

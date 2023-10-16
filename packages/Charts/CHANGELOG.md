@@ -1,5 +1,11 @@
 # Charts changelog
 
+## 1.2.2 (2023-09-19)
+
+### Bug Fixes
+
+* [#2096](https://github.com/datagrok-ai/public/issues/2096): Sunburst: Add different click types (make work for Mac keyboard shortcuts)
+
 ## 1.2.1 (2023-08-24)
 
 ### Bug Fixes

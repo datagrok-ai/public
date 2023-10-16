@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, expect, expectArray, test, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectArray, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   countForMonomerAtPosition,
@@ -30,9 +30,9 @@ ATC-G-TTGC--
     seqCol.setTag(bioTAGS.aligned, 'SEQ.MSA');
 
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
-    tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-
-    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
+    await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
+      tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
+    }, 300);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -82,9 +82,9 @@ ATC-G-TTGC--
     df.filter.fireChanged();
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
       {'shrinkEmptyTail': true})) as WebLogoViewer;
-    tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-
-    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
+    await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
+      tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
+    }, 500);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -120,9 +120,9 @@ ATC-G-TTGC--
 
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
       {'skipEmptyPositions': true})) as WebLogoViewer;
-    tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-
-    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero');
+    await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
+      tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
+    }, 300);
     const resPosList: PI[] = wlViewer['positions'];
 
     const tgtPosList: PI[] = [
@@ -156,9 +156,9 @@ ATC-G-TTGC--
       endPositionName: '7',
       skipEmptyPositions: true,
     })) as WebLogoViewer;
-    tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-
-    await awaitCheck(() => wlViewer.Length > 0, 'WebLogo.Length is zero', 100);
+    await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
+      tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
+    }, 300);
     const resPosList: PI[] = wlViewer['positions'];
     const tgtPosList: PI[] = [
       new PI(2, '3', {'C': new PMI(5)}),
@@ -178,6 +178,24 @@ ATC-G-TTGC--
     const uh = UnitsHandler.getOrCreate(seqCol);
     const countAt1 = countForMonomerAtPosition(df, uh, df.filter, 'G', atPI1);
     expect(countAt1, 5);
+  });
+
+  test('empty', async () => {
+    const df: DG.DataFrame = DG.DataFrame.fromColumns([(() => {
+      const col = DG.Column.fromStrings('seq', []);
+      col.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MACROMOLECULE);
+      col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+      col.setTag(bioTAGS.alphabet, ALPHABET.DNA);
+      return col;
+    })()]);
+
+    const tv: DG.TableView = grok.shell.addTableView(df);
+
+    const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
+    await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
+      tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
+    }, 300);
+    const resPosList: PI[] = wlViewer['positions'];
   });
 });
 

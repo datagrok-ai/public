@@ -33,6 +33,10 @@ export class GridCellStyleEx {
   set marginLeft(x: number) {api.grok_GridCellStyle_Set_marginLeft(this.dart, toDart(x)); }
   get marginRight(): number { return api.grok_GridCellStyle_Get_marginRight(this.dart); };
   set marginRight(x: number) {api.grok_GridCellStyle_Set_marginRight(this.dart, toDart(x)); }
+  get marginTop(): number { return api.grok_GridCellStyle_Get_marginTop(this.dart); };
+  set marginTop(x: number) {api.grok_GridCellStyle_Set_marginTop(this.dart, toDart(x)); }
+  get marginBottom(): number { return api.grok_GridCellStyle_Get_marginBottom(this.dart); };
+  set marginBottom(x: number) {api.grok_GridCellStyle_Set_marginBottom(this.dart, toDart(x)); }
   get textVertical(): boolean { return api.grok_GridCellStyle_Get_textVertical(this.dart); };
   set textVertical(x: boolean) {api.grok_GridCellStyle_Set_textVertical(this.dart, toDart(x)); }
   get imageScale(): number { return api.grok_GridCellStyle_Get_imageScale(this.dart); };

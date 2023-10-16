@@ -4,6 +4,9 @@ title: "Histogram"
 
 A histogram is a graphical representation of the distribution of numerical data.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Histogram');`
+
 General:
 
 |                  |                        |
