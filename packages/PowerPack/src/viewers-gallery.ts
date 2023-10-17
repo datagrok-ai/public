@@ -211,28 +211,30 @@ function setTabIndex(root: HTMLDivElement) {
 
 function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: string) {
   let icon: HTMLElement;
-  if (viewers[index].type == 'viewer') {
+  const viewer = viewers[index];
+
+  if (viewer.type == 'viewer') {
     icon = ui.iconFA('');
-    icon.className = 'grok-icon svg-icon ' + viewers[index].icon;
+    icon.className = 'grok-icon svg-icon ' + viewer.icon;
   }
-  if (viewers[index].type == 'js-viewer') {
-    if (viewers[index].icon != 'svg-project') {
-      icon = ui.iconImage('', viewers[index].icon);
+  if (viewer.type == 'js-viewer') {
+    if (viewer.icon != 'svg-project') {
+      icon = ui.iconImage('', viewer.icon);
       icon.classList.add('svg-icon');
     } else {
       icon = ui.iconFA('');
-      icon.className = 'grok-icon svg-icon ' + viewers[index].icon;
+      icon.className = 'grok-icon svg-icon ' + viewer.icon;
       icon.style.filter = 'grayscale(.5) invert(.5) contrast(120%)';
     }
   }
-  const name = ui.label(viewers[index].name);
+  const name = ui.label(viewer.name);
   name.classList.add('card-label');
   const card = ui.div([
     ui.divH([icon!, name]),
   ], 'd4-item-card viewer-gallery vg-card-small');
 
   card.addEventListener('click', () => {
-    dockViewers(viewers[index].name, view, table);
+    dockViewers(viewer.name, view, table);
     dlg.close();
   });
 
@@ -242,6 +244,13 @@ function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: strin
       card.click();
     }
   });
+
+  if (viewer.name.length > 18) {
+    name.addEventListener('mouseenter', () => {
+      if (name.offsetWidth < name.scrollWidth)
+        name.setAttribute('title', viewer.name);
+    }, {once: true});
+  }
 
   return card;
 }
