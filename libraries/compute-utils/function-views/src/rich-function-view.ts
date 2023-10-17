@@ -851,7 +851,7 @@ export class RichFunctionView extends FunctionView {
         $(chevronToClose).show();
         $(chevronToOpen).hide();
         $(warningIcon).hide();
-        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).show());
+        (this.foldedCategoryInputs[currentCategory] ?? []).forEach((t) => $(t.input.root).css({'display': ''}));
       }, 'Open category');
       $(chevronToOpen).css('padding-right', '5px');
       const chevronToClose = ui.iconFA('chevron-down', () => {
