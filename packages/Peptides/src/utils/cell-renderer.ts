@@ -22,7 +22,7 @@ export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
   mutationCliffsSelection: types.Selection, substitutionsInfo: types.MutationCliffs | null = null,
-  _twoColorMode: boolean = false, renderNums: boolean = true): void {
+  renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal = positionStats![currentMonomer]!.pValue;
   const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;

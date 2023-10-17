@@ -180,7 +180,6 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       sequenceColumnName: peptidesCol.name,
       activityColumnName: activityColumn.name,
       scaling: scaling,
-      isBidirectional: false,
       columns: {},
       maxMutations: 1,
       minActivityDelta: 0,

@@ -1261,7 +1261,7 @@ export class PeptidesModel {
         similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE, plotEmbeddings: true, sparseMatrixThreshold: 0.8,
         options: {}};
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined = await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
-    if (typeof seqSpaceViewer === 'undefined')
+    if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
     seqSpaceViewer.props.colorColumnName = C.COLUMNS_NAMES.ACTIVITY_SCALED;
     this.analysisView.dockManager.dock(seqSpaceViewer, DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE), 'Sequence space');

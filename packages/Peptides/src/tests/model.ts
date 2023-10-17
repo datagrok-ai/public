@@ -74,19 +74,6 @@ category('Model: Settings', () => {
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
   });
 
-  test('Bidirectional analysis', async () => {
-    // Check that bidirectional analysis is disabled by default
-    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled by default');
-
-    // Check that bidirectional analysis can be enabled
-    model.settings = {isBidirectional: true};
-    expect(model.settings.isBidirectional, true, 'Bidirectional analysis is disabled after enabling');
-
-    // Check that bidirectional analysis can be disabled
-    model.settings = {isBidirectional: false};
-    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled after disabling');
-  });
-
   test('Mutation Cliffs', async () => {
     // Check default mutation cliffs parameters
     expect(model.settings.maxMutations, mutationCliffsDefaultParams.maxMutations, `Max mutations mismatch: expected ` +

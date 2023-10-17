@@ -18,7 +18,6 @@ export type PeptidesSettings = {
   clustersColumnName?: string,
   targetColumnName?: string,
   scaling?: SCALING_METHODS,
-  isBidirectional?: boolean,
   showMonomerPosition?: boolean,
   showMostPotentResidues?: boolean,
   showLogoSummaryTable?: boolean,
