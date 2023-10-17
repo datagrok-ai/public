@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.15.1 (WIP)\
+
+### Features
+
+* Color-coding Sequence space by scaled activity.
+
 ## 1.15.0 (2023-10-12)
 
 ### Features

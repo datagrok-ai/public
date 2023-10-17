@@ -1263,6 +1263,7 @@ export class PeptidesModel {
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined = await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
     if (typeof seqSpaceViewer === 'undefined')
       return;
+    seqSpaceViewer.props.colorColumnName = C.COLUMNS_NAMES.ACTIVITY_SCALED;
     this.analysisView.dockManager.dock(seqSpaceViewer, DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE), 'Sequence space');
   }
 }
