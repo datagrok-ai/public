@@ -5,7 +5,7 @@ import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
   HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus} from './types';
 import {InfoView} from './hit-triage-views/info-view';
 import {SubmitView} from './hit-triage-views/submit-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, HitSelectionColName, i18n} from './consts';
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, HTcampaignName, HitSelectionColName, i18n} from './consts';
 import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
@@ -192,6 +192,12 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
       //const f = view.filters();
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
+      // loading layout
+      const layout = (await grok.dapi.layouts.filter(`friendlyName = "${this._filterViewName}"`).list())
+        .find((l) => l && l.getUserDataValue(HTcampaignName) === this._campaignId);
+      if (layout)
+        view.loadLayout(layout);
+        //console.log('layout loaded');
 
       view.dataFrame.onFilterChanged
         .subscribe((_) => {
@@ -258,5 +264,22 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     ).toCsv();
     await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
     notify && grok.shell.info('Campaign saved successfully.');
+
+    // saving layout
+    const newLayout = this._pickView!.saveLayout();
+    if (!newLayout) {
+      grok.shell.warning('Layout cound not be saved');
+      return;
+    }
+
+    const oldLayouts = (await grok.dapi.layouts.filter(`friendlyName = "${this._filterViewName}"`).list())
+      .filter((l) => l && l.getUserDataValue(HTcampaignName) === campaignId);
+    for (const l of oldLayouts)
+      await grok.dapi.layouts.delete(l);
+    //save new layout
+    newLayout.setUserDataValue(HTcampaignName, campaignId);
+    const l = await grok.dapi.layouts.save(newLayout);
+    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+    await grok.dapi.permissions.grant(l, allGroup, true);
   }
 }
