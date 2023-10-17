@@ -122,7 +122,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value, {addSequenceSpace: true});
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value, {addSequenceSpace: false}); //TODO REMOVE FALSE
       return model !== null;
     }
     return false;

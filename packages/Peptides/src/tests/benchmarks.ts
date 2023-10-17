@@ -81,7 +81,7 @@ async function mutationCliffsBenchmark(size: number): Promise<void> {
     monomerCols.push({name: col.name, rawData: col.getRawData(), cat: col.categories});
     ++i;
   }
-  DG.time('Mutation Cliffs', () => findMutations(activityCol, monomerCols));
+  DG.timeAsync('Mutation Cliffs', async () => await findMutations(activityCol, monomerCols));
 }
 
 async function getModel(size: number): Promise<PeptidesModel | null> {

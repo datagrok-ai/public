@@ -1,22 +1,29 @@
 import * as C from './constants';
 import * as type from './types';
 import {getTypedArrayConstructor} from './misc';
+import {ParallelMutationCliffs} from './parallel-mutation-cliffs';
 
 type MutationCliffInfo = {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number};
 
-export function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
+export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
   settings: type.PeptidesSettings = {},
-  targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {}): type.MutationCliffs {
+  targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {},
+): Promise<type.MutationCliffs> {
   const nCols = monomerInfoArray.length;
   if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
   settings.minActivityDelta ??= 0;
   settings.maxMutations ??= 1;
-  const currentTargetIdx = targetOptions.targetCol?.cat!.indexOf(targetOptions.currentTarget!) ?? -1;
+  //const currentTargetIdx = targetOptions.targetCol?.cat!.indexOf(targetOptions.currentTarget!) ?? -1;
 
-  const substitutionsInfo: type.MutationCliffs = new Map();
-  const nRows = activityArray.length;
+  //const substitutionsInfo: type.MutationCliffs = new Map();
+  //const nRows = activityArray.length;
+
+  const substitutionsInfo =
+    await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, settings, targetOptions);
+  return substitutionsInfo;
+  /*
   for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
     if (currentTargetIdx !== -1 && targetOptions.targetCol?.rawData[seq1Idx] !== currentTargetIdx)
       continue;
@@ -58,7 +65,8 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
       if (substCounterFlag || substCounter === 0)
         continue;
 
-      // Separate processing loop in case substCOunter is 0 or out of restricted range to prevent unnecessary computations
+      // Separate processing loop in case substCOunter is 0 or out of restricted range to
+      // prevent unnecessary computations
       for (let i = 0; i < tempDataIdx; i++) {
         const tempDataElement = tempData[i];
         //Working with seq1monomer
@@ -105,4 +113,5 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
   }
 
   return substitutionsInfo;
+  */
 }

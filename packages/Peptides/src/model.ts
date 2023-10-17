@@ -297,88 +297,91 @@ export class PeptidesModel {
   }
 
   set settings(s: type.PeptidesSettings) {
-    const newSettingsEntries = Object.entries(s);
-    const updateVars: Set<string> = new Set();
-    for (const [key, value] of newSettingsEntries) {
-      this._settings[key as keyof type.PeptidesSettings] = value as any;
-      switch (key) {
-      case 'activityColumnName':
-      case 'scaling':
-        updateVars.add('activity');
-        updateVars.add('mutationCliffs');
-        updateVars.add('stats');
-        break;
-      case 'columns':
-        updateVars.add('grid');
-        break;
-      case 'maxMutations':
-      case 'minActivityDelta':
-        updateVars.add('mutationCliffs');
-        break;
-      case 'showDendrogram':
-        updateVars.add('dendrogram');
-        break;
-      case 'showLogoSummaryTable':
-        updateVars.add('logoSummaryTable');
-        break;
-      case 'showMonomerPosition':
-        updateVars.add('monomerPosition');
-        break;
-      case 'showMostPotentResidues':
-        updateVars.add('mostPotentResidues');
-        break;
+    const updateAsync = async (): Promise<void> => {
+      const newSettingsEntries = Object.entries(s);
+      const updateVars: Set<string> = new Set();
+      for (const [key, value] of newSettingsEntries) {
+        this._settings[key as keyof type.PeptidesSettings] = value as any;
+        switch (key) {
+        case 'activityColumnName':
+        case 'scaling':
+          updateVars.add('activity');
+          updateVars.add('mutationCliffs');
+          updateVars.add('stats');
+          break;
+        case 'columns':
+          updateVars.add('grid');
+          break;
+        case 'maxMutations':
+        case 'minActivityDelta':
+          updateVars.add('mutationCliffs');
+          break;
+        case 'showDendrogram':
+          updateVars.add('dendrogram');
+          break;
+        case 'showLogoSummaryTable':
+          updateVars.add('logoSummaryTable');
+          break;
+        case 'showMonomerPosition':
+          updateVars.add('monomerPosition');
+          break;
+        case 'showMostPotentResidues':
+          updateVars.add('mostPotentResidues');
+          break;
+        }
       }
-    }
-    this.df.setTag('settings', JSON.stringify(this._settings));
-    for (const variable of updateVars) {
-      switch (variable) {
-      case 'activity':
-        this.createScaledCol();
-        break;
-      case 'mutationCliffs':
-        this.updateMutationCliffs();
-        break;
-      case 'stats':
-        this.monomerPositionStats = this.calculateMonomerPositionStatistics();
-        this.clusterStats = this.calculateClusterStatistics();
-        const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
-        mpViewer.createMonomerPositionGrid();
-        mpViewer.render();
-        const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
-        mprViewer.createMostPotentResiduesGrid();
-        mprViewer.render();
-        break;
-      case 'grid':
-        this.setGridProperties();
-        break;
-      case 'dendrogram':
-        this.settings.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
-        break;
-      case 'logoSummaryTable':
-        this.settings.showLogoSummaryTable ? this.addLogoSummaryTable() :
-          this.closeViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
-        break;
-      case 'monomerPosition':
-        this.settings.showMonomerPosition ? this.addMonomerPosition() :
-          this.closeViewer(VIEWER_TYPE.MONOMER_POSITION);
-        break;
-      case 'mostPotentResidues':
-        this.settings.showMostPotentResidues ? this.addMostPotentResidues() :
-          this.closeViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES);
-        break;
+      this.df.setTag('settings', JSON.stringify(this._settings));
+      for (const variable of updateVars) {
+        switch (variable) {
+        case 'activity':
+          this.createScaledCol();
+          break;
+        case 'mutationCliffs':
+          await this.updateMutationCliffs(); // TODO: function is async
+          break;
+        case 'stats':
+          this.monomerPositionStats = this.calculateMonomerPositionStatistics();
+          this.clusterStats = this.calculateClusterStatistics();
+          const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+          mpViewer.createMonomerPositionGrid();
+          mpViewer.render();
+          const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
+          mprViewer.createMostPotentResiduesGrid();
+          mprViewer.render();
+          break;
+        case 'grid':
+          this.setGridProperties();
+          break;
+        case 'dendrogram':
+          this.settings.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
+          break;
+        case 'logoSummaryTable':
+          this.settings.showLogoSummaryTable ? this.addLogoSummaryTable() :
+            this.closeViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
+          break;
+        case 'monomerPosition':
+          this.settings.showMonomerPosition ? this.addMonomerPosition() :
+            this.closeViewer(VIEWER_TYPE.MONOMER_POSITION);
+          break;
+        case 'mostPotentResidues':
+          this.settings.showMostPotentResidues ? this.addMostPotentResidues() :
+            this.closeViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES);
+          break;
+        }
       }
-    }
-
-    //TODO: handle settings change
-    const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
-    mpViewer?.createMonomerPositionGrid();
-    mpViewer?.render();
-    const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-    mprViewer?.createMostPotentResiduesGrid();
-    mprViewer?.render();
-    const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-    lstViewer?.createLogoSummaryTableGrid();
-    lstViewer?.render();
+    };
+    updateAsync().then(() => {
+      //TODO: handle settings change
+      const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+      mpViewer?.createMonomerPositionGrid();
+      mpViewer?.render();
+      const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+      mprViewer?.createMostPotentResiduesGrid();
+      mprViewer?.render();
+      const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+      lstViewer?.createLogoSummaryTableGrid();
+      lstViewer?.render();
+    });
   }
 
   get identityTemplate(): string {
@@ -389,7 +392,7 @@ export class PeptidesModel {
     this.df.setTag(C.TAGS.IDENTITY_TEMPLATE, template);
   }
 
-  updateMutationCliffs(notify: boolean = true): void {
+  async updateMutationCliffs(notify: boolean = true): Promise<void> {
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: set categories ordering the same to share compare indexes instead of strings
     const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractColInfo);
@@ -398,7 +401,8 @@ export class PeptidesModel {
     const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
     const currentTarget = mpViewer?.getProperty(MONOMER_POSITION_PROPERTIES.TARGET)?.get(mpViewer);
     const targetOptions = {targetCol: targetCol, currentTarget: currentTarget};
-    const mutationCliffs = findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings, targetOptions);
+    const mutationCliffs =
+    await findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings, targetOptions);
     if (notify)
       this.mutationCliffs = mutationCliffs;
     else
@@ -1033,7 +1037,7 @@ export class PeptidesModel {
       maxWidth = Math.max(maxWidth, width);
     }
     setTimeout(() => {
-      for (const positionCol of positionCols)
+      for (const positionCol of this.positionColumns)
         sourceGrid.col(positionCol.name)!.width = maxWidth + 15;
     }, 1000);
   }
@@ -1132,7 +1136,7 @@ export class PeptidesModel {
 
     this.fireBitsetChanged(true);
     if (typeof this.settings.targetColumnName === 'undefined')
-      this.updateMutationCliffs();
+      this.updateMutationCliffs().then(() => this.analysisView.grid.invalidate());
     this.analysisView.grid.invalidate();
   }
 

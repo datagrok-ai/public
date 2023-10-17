@@ -82,9 +82,9 @@ export class MonomerPosition extends DG.JsViewer {
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
     if (property.name === MONOMER_POSITION_PROPERTIES.TARGET)
-      this.model.updateMutationCliffs();
+      this.model.updateMutationCliffs().then(() => this.render());
 
-    this.render();
+    //this.render();
   }
 
   createMonomerPositionDf(): DG.DataFrame {
