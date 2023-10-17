@@ -56,7 +56,7 @@ category('Benchmarks: Analysis start', () => {
       const clustersCol = df.getCol('cluster');
       const sequenceCol = df.getCol('sequence');
       sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-      sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+      sequenceCol.setTag(DG.TAGS.UNITS, size === benchmarkDatasetSizes[0] ? NOTATION.HELM : NOTATION.FASTA);
 
       await DG.timeAsync('Analysis start', async () => {
         const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
@@ -94,6 +94,6 @@ async function getModel(size: number): Promise<PeptidesModel | null> {
   const clustersCol = df.getCol('cluster');
   const sequenceCol = df.getCol('sequence');
   sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+  sequenceCol.setTag(DG.TAGS.UNITS, size === benchmarkDatasetSizes[0] ? NOTATION.HELM : NOTATION.FASTA);
   return await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
 }
