@@ -131,3 +131,38 @@ export function getOutput(funcCalls: DG.FuncCall[], outputsSpecification: Output
 
   return table;
 }
+
+export function splitOutputDFs(funcCalls: DG.FuncCall[], outputsSpecification: OutputInfo[]): DG.DataFrame[] {
+  const res = [] as DG.DataFrame[];
+  
+  if (funcCalls.length < 1)
+    throw new Error(FUNCCALL_ARRAY_IS_EMPTY_MSG);
+
+  const funcCallsCount = funcCalls.length;
+
+  const baseDF = funcCalls[0].outputs[outputsSpecification[0].prop.name] as DG.DataFrame;  
+
+  const baseCols = baseDF.columns.toList();
+  
+  const resCount = baseCols.length - 1;
+
+  for (let i = 0; i < resCount; ++i) {
+    const df = DG.DataFrame.fromColumns([baseCols[0]]);
+    df.name = baseCols[i + 1].name;
+    res.push(df);
+  }
+
+  for (let i = 0; i < funcCallsCount; ++i) {
+    const curCols = (funcCalls[i].outputs[outputsSpecification[0].prop.name] as DG.DataFrame).columns.toList();  
+
+    for (let j = 0; j < resCount; ++j) {
+      const col = curCols[j + 1];
+      col.name = (i + 1).toString();
+      res[j].columns.add(col);
+    }
+
+  //  console.log(i);
+  }
+  
+  return res;
+}

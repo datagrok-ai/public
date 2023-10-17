@@ -9,7 +9,7 @@ import {getDfFromRuns, getPropViewers} from './shared/utils';
 import {CARD_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
-import {getOutput} from './variance-based-analysis/sa-outputs-routine';
+import {getOutput, splitOutputDFs} from './variance-based-analysis/sa-outputs-routine';
 import {getCalledFuncCalls} from './variance-based-analysis/utils';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
@@ -31,12 +31,14 @@ enum ANALYSIS_TYPE {
   GRID_ANALYSIS = 'Grid',
   RANDOM_ANALYSIS = 'Monte Carlo',
   SOBOL_ANALYSIS = 'Sobol',
+  FUNCTIONAL = 'Functional',
 }
 
 enum DF_OPTIONS {
   LAST_ROW = 'Last row',
   FIRST_ROW = 'First row',
-  ALL_COLUMNS = 'All'
+  ALL_COLUMNS = 'All',
+  ALL = 'All',
 }
 
 type AnalysisProps = {
@@ -79,7 +81,7 @@ export class SensitivityAnalysisView {
     const analysisInputs = {
       analysisType: {
         input: ui.choiceInput(
-          'Method', ANALYSIS_TYPE.GRID_ANALYSIS, [ANALYSIS_TYPE.GRID_ANALYSIS, ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS],
+          'Method', ANALYSIS_TYPE.GRID_ANALYSIS, [ANALYSIS_TYPE.GRID_ANALYSIS, ANALYSIS_TYPE.RANDOM_ANALYSIS, ANALYSIS_TYPE.SOBOL_ANALYSIS, ANALYSIS_TYPE.FUNCTIONAL],
           (v: ANALYSIS_TYPE) => {
             analysisInputs.analysisType.value.next(v);
             this.updateRunButtonText();
@@ -182,7 +184,7 @@ export class SensitivityAnalysisView {
         ]).subscribe(([isChanging, analysisType]) => {
           if (isChanging) {
             $(ref.constForm).hide();
-            if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
+            if ((analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) || (analysisType === ANALYSIS_TYPE.FUNCTIONAL)) {
               $(ref.saForm).show();
               simpleSa.forEach((input) => $(input.root).show());
             } else {
@@ -235,7 +237,7 @@ export class SensitivityAnalysisView {
         input:
           (() => {
             const input = outputProp.propertyType === DG.TYPE.DATA_FRAME ?
-              ui.choiceInput(outputProp.caption ?? outputProp.name, DF_OPTIONS.LAST_ROW, [DF_OPTIONS.LAST_ROW, DF_OPTIONS.FIRST_ROW], (v: DF_OPTIONS) => {
+              ui.choiceInput(outputProp.caption ?? outputProp.name, DF_OPTIONS.LAST_ROW, [DF_OPTIONS.LAST_ROW, DF_OPTIONS.FIRST_ROW, DF_OPTIONS.ALL], (v: DF_OPTIONS) => {
                 temp.value.returning = v;
               }):
               ui.input.forProperty(outputProp);
@@ -315,6 +317,7 @@ export class SensitivityAnalysisView {
 
   private openedViewers = [] as DG.Viewer[];
   private runButton: HTMLButtonElement;
+  private divs = [] as HTMLDivElement[];
 
   store = this.generateInputFields(this.func);
   comparisonView: DG.TableView;
@@ -379,6 +382,11 @@ export class SensitivityAnalysisView {
       v.close();
 
     this.openedViewers.splice(0);
+
+    for (const d of this.divs)
+      d.remove();
+
+    this.divs.splice(0);
   }
 
   private getFuncCallCount(analysisInputs: AnalysisProps, inputs: Record<string, SensitivityStore>): number {
@@ -386,6 +394,7 @@ export class SensitivityAnalysisView {
 
     switch (analysisInputs.analysisType.value.value) {
     case ANALYSIS_TYPE.GRID_ANALYSIS:
+    case ANALYSIS_TYPE.FUNCTIONAL:
       let product = 1;
 
       for (const name of Object.keys(inputs)) {
@@ -503,10 +512,21 @@ export class SensitivityAnalysisView {
       });
 
     this.store.analysisInputs.analysisType.value.subscribe((analysisType) => {
-      if (analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) {
+      if ((analysisType === ANALYSIS_TYPE.GRID_ANALYSIS) || (analysisType === ANALYSIS_TYPE.FUNCTIONAL)) {
         //$(outputsTitle).hide();
         //$(outputForm.container).hide();
         $(this.store.analysisInputs.samplesCount.input.root).hide();
+        
+        for (const outputName of Object.keys(this.store.outputs)) {
+          const output = this.store.outputs[outputName];
+
+          if (output.isInterest.value.value && (output.prop.propertyType === DG.TYPE.DATA_FRAME)) {
+            output.value.returning = DF_OPTIONS.ALL;
+            output.input.value = DF_OPTIONS.ALL;
+          }
+            
+        }
+        
       } else {
         $(outputsTitle).show();
         $(outputForm.container).show();
@@ -555,10 +575,7 @@ export class SensitivityAnalysisView {
     $(form.container).css({
       'overflow-y': 'scroll',
     });
-
-    // add tooltips
-
-
+        
     return form.container;
   }
 
@@ -572,6 +589,8 @@ export class SensitivityAnalysisView {
         return 'Monte Carlo simulation: the function is evaluated with respect to random variation of the selected inputs within the specified ranges';
       case ANALYSIS_TYPE.SOBOL_ANALYSIS:
         return 'Variance-based sensitivity analysis: the Sobol\' indices are computed';
+      case ANALYSIS_TYPE.FUNCTIONAL:
+        return 'Functional sensitivity analysis method.';
       default:
         return 'Unknown method!';
       }
@@ -682,6 +701,9 @@ export class SensitivityAnalysisView {
         break;
       case ANALYSIS_TYPE.SOBOL_ANALYSIS:
         this.runSobolAnalysis();
+        break;
+      case ANALYSIS_TYPE.FUNCTIONAL:
+        this.runFunctionalAnalysis();
         break;
       default:
         break;
@@ -1389,5 +1411,225 @@ export class SensitivityAnalysisView {
     }
 
     return names[start];
+  }
+
+  private async runFunctionalAnalysis() {
+    const paramValues = Object.keys(this.store.inputs).reduce((acc, propName) => {
+      switch (this.store.inputs[propName].type) {
+      case DG.TYPE.INT:
+      case DG.TYPE.BIG_INT:
+        const numPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
+        const intStep = (numPropConfig.max.value - numPropConfig.min.value) / (numPropConfig.lvl.value - 1);
+        acc[propName] = numPropConfig.isChanging.value.value ?
+          Array.from({length: numPropConfig.lvl.value}, (_, i) => Math.round(numPropConfig.min.value + i*intStep)) :
+          [numPropConfig.const.value];
+        break;
+      case DG.TYPE.FLOAT:
+        const floatPropConfig = this.store.inputs[propName] as SensitivityNumericStore;
+        const floatStep = (floatPropConfig.max.value - floatPropConfig.min.value) / (floatPropConfig.lvl.value - 1);
+        acc[propName] = floatPropConfig.isChanging.value.value ?
+          Array.from({length: floatPropConfig.lvl.value}, (_, i) => floatPropConfig.min.value + i*floatStep) :
+          [floatPropConfig.const.value];
+        break;
+      case DG.TYPE.BOOL:
+        const boolPropConfig = this.store.inputs[propName] as SensitivityBoolStore;
+        acc[propName] = boolPropConfig.isChanging.value.value ?
+          [boolPropConfig.const.value, !boolPropConfig.const.value]:
+          [boolPropConfig.const.value];
+        break;
+      default:
+        const constPropConfig = this.store.inputs[propName] as SensitivityConstStore;
+        acc[propName] = [constPropConfig.const.value];
+      }
+
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    let runParams = Object.values(paramValues)[0].map((item) => [item]) as any[][];
+    for (let i = 1; i < Object.values(paramValues).length; i++) {
+      const values = Object.values(paramValues)[i];
+
+      const newRunParams = [] as any[][];
+      for (const accVal of runParams) {
+        for (const val of values)
+          newRunParams.push([...accVal, val]);
+      }
+
+      runParams = newRunParams;
+    }
+
+    const funccalls = runParams.map((runParams) => this.func.prepare(
+      this.func.inputs
+        .map((input, idx) => ({name: input.name, idx}))
+        .reduce((acc, {name, idx}) => {
+          acc[name] = runParams[idx];
+          return acc;
+        }, {} as Record<string, any>),
+    ));
+
+    const calledFuncCalls = await getCalledFuncCalls(funccalls);
+
+    this.closeOpenedViewers();
+
+    const variedInputsColumns = [] as DG.Column[];
+    const rowCount = calledFuncCalls.length;
+    const fixedInputsColumns = this.getFixedInputColumns(rowCount);
+    const colNamesToShow = [] as string[];
+
+    for (const inputName of Object.keys(this.store.inputs)) {
+      const input = this.store.inputs[inputName];
+      const prop = input.prop;
+
+      if (input.isChanging.value.value) {
+        colNamesToShow.push(prop.caption ?? prop.name);
+        variedInputsColumns.push(DG.Column.fromType(
+          prop.propertyType as unknown as DG.COLUMN_TYPE,
+          prop.caption ?? prop.name,
+          rowCount,
+        ));
+      }
+    }
+
+    const ID_COLUMN_NAME = 'ID';
+    const funcEvalResults = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings(ID_COLUMN_NAME, calledFuncCalls.map((call) => call.id)),
+      ...variedInputsColumns,
+    ]);
+
+    for (let row = 0; row < rowCount; ++row) {
+      for (const inputName of Object.keys(this.store.inputs)) {
+        const input = this.store.inputs[inputName];
+        const prop = input.prop;
+
+        if (input.isChanging.value.value)
+          funcEvalResults.set(prop.caption ?? prop.name, row, calledFuncCalls[row].inputs[inputName]);
+      }
+    }
+
+    const outputsOfInterest = [];
+
+    for (const outputName of Object.keys(this.store.outputs)) {
+      const output = this.store.outputs[outputName];
+
+      if (output.isInterest.value.value) {
+        outputsOfInterest.push({
+          prop: output.prop,
+          elements: [],
+          row: output.value.returning === DF_OPTIONS.LAST_ROW ? -1 : 1,
+        });
+      }
+    } 
+
+    const outputDFs = splitOutputDFs(calledFuncCalls, outputsOfInterest);   
+
+    for (const col of fixedInputsColumns)
+      funcEvalResults.columns.add(col);
+
+    const col = variedInputsColumns[0];
+    const rawData = col.getRawData();
+    const name = col.name;
+
+    for (let i = 0; i < rowCount; ++i) {
+      const curName = rawData[i].toPrecision(3).toString();
+
+      for (const df of outputDFs)        
+        df.columns.byIndex(i + 1).name = curName;
+    }
+
+    const variedInputsCount = variedInputsColumns.length;
+
+    for (let i = 1; i < variedInputsCount; ++i) {
+      const col = variedInputsColumns[i];
+      const rawData = col.getRawData();
+      const name = col.name;
+
+      for (let i = 0; i < rowCount; ++i) {
+        const curName = rawData[i].toPrecision(3).toString();
+
+        for (const df of outputDFs)        
+          df.columns.byIndex(i + 1).name += curName;
+      }      
+    }
+
+    this.comparisonView.dataFrame = funcEvalResults;
+    this.comparisonView.grid.col(ID_COLUMN_NAME)!.visible = false;
+    this.comparisonView.grid.onCellClick.subscribe((cell: DG.GridCell) => {
+      const selectedRunId = cell.tableRow?.get(ID_COLUMN_NAME);
+      const selectedRun = calledFuncCalls.find((call) => call.id === selectedRunId);
+
+      if (!selectedRun) return;
+
+      const scalarParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
+      const scalarTable = DG.HtmlTable.create(
+        scalarParams,
+        (scalarVal: DG.FuncCallParam) =>
+          [scalarVal.property.caption ?? scalarVal.property.name, selectedRun.outputs[scalarVal.property.name], scalarVal.property.options['units']],
+      ).root;
+
+      const dfParams = ([...selectedRun.outputParams.values()] as DG.FuncCallParam[])
+        .filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME);
+      const dfPanes = dfParams.reduce((acc, param) => {
+        const configs = getPropViewers(param.property).config;
+
+        const dfValue = selectedRun.outputs[param.name];
+        const paneName = param.property.caption ?? param.property.name;
+        configs.map((config) => {
+          const viewerType = config['type'] as string;
+          const viewer = DG.Viewer.fromType(viewerType, dfValue);
+          viewer.setOptions(config);
+          $(viewer.root).css({'width': '100%'});
+          if (acc[paneName])
+            acc[paneName].push(viewer.root);
+          else acc[paneName] = [viewer.root];
+        });
+
+        return acc;
+      }, {} as {[name: string]: HTMLElement[]});
+
+      const overviewPanelConfig = {
+        'Output scalars': [scalarTable],
+        ...dfPanes,
+      };
+      const overviewPanel = ui.accordion();
+      $(overviewPanel.root).css({'width': '100%'});
+      Object.entries(overviewPanelConfig).map((e) => {
+        overviewPanel.addPane(e[0], () => ui.divV(e[1]));
+      });
+
+      grok.shell.o = overviewPanel.root;
+    });
+
+    // hide columns with fixed inputs
+    this.comparisonView.grid.columns.setVisible([colNamesToShow[0]]); // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13450
+    this.comparisonView.grid.columns.setVisible(colNamesToShow);
+    this.comparisonView.grid.props.rowHeight = 25;
+
+    const div = ui.div();
+
+    outputDFs.forEach((df) => {
+      const graph = DG.Viewer.lineChart(
+        df, {          
+          sharex: "true", 
+          multiAxis: "true", 
+          multiAxisLegendPosition: "RightCenter", 
+          autoLayout: "false",
+          showAggrSelectors: false,
+          showYAxis: true,
+          yGlobalScale: true,
+      }).root;
+
+      $(graph).css({'height': '95%', 'width': '95%'})
+
+      div.append(ui.h1(df.name));
+
+      div.append(graph);
+    });
+
+    $(div).css({'overflow-y': 'scroll',});
+
+    this.comparisonView.dockManager.dock(div, 'right', undefined, '', 0.5);
+
+    this.divs.push(div);
   }
 }

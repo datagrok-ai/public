@@ -490,11 +490,13 @@ export class PipelineView extends ComputationView {
       if (newHelpUrl) {
         const path = `System:AppData/${this.func.package.name}/${newHelpUrl}`;
         const file = await grok.dapi.files.readAsText(path);
+//@ts-ignore
         grok.shell.windows.help.showHelp(ui.markdown(file));
       }
     };
 
     this.stepTabs.onTabChanged.subscribe(async () => updateHelpPanel());
+//@ts-ignore
     grok.shell.windows.help.visible = true;
     updateHelpPanel();
 
