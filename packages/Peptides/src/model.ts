@@ -85,7 +85,6 @@ export class PeptidesModel {
   webLogoBounds: {[positon: string]: {[monomer: string]: DG.Rect}} = {};
   cachedWebLogoTooltip: {bar: string, tooltip: HTMLDivElement | null} = {bar: '', tooltip: null};
   _alphabet?: string;
-  _splitSeqDf?: DG.DataFrame;
   _dm!: DistanceMatrix;
   _layoutEventInitialized = false;
 
@@ -121,13 +120,8 @@ export class PeptidesModel {
     this._monomerPositionStats = mps;
   }
 
-  get splitSeqDf(): DG.DataFrame {
-    this._splitSeqDf ??= this.buildSplitSeqDf();
-    return this._splitSeqDf;
-  }
-
-  set splitSeqDf(df: DG.DataFrame) {
-    this._splitSeqDf = df;
+  get positionColumns(): wu.WuIterable<DG.Column> {
+    return wu(this.df.columns.byTags({[C.TAGS.POSITION_COL]: `${true}`}));
   }
 
   get alphabet(): string {
@@ -166,7 +160,7 @@ export class PeptidesModel {
       this._analysisView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame?.getTag(C.TAGS.UUID) === this.id);
       if (this._analysisView === undefined) {
         this._analysisView = grok.shell.addTableView(this.df);
-        const posCols = this.splitSeqDf.columns.names();
+        const posCols = this.positionColumns.toArray().map((col) => col.name);
 
         for (let colIdx = 1; colIdx < this._analysisView.grid.columns.length; ++colIdx) {
           const gridCol = this._analysisView.grid.columns.byIndex(colIdx)!;
@@ -486,7 +480,7 @@ export class PeptidesModel {
     options.notify ??= true;
 
     const tempSelection: type.Selection = {};
-    const positionColumns = this.splitSeqDf.columns.names();
+    const positionColumns = this.positionColumns.toArray().map((col) => col.name);
     for (const pos of positionColumns)
       tempSelection[pos] = [];
 
@@ -500,7 +494,7 @@ export class PeptidesModel {
     options.notify ??= true;
 
     const tempSelection: type.Selection = {};
-    const positionColumns = this.splitSeqDf.columns.names();
+    const positionColumns = this.positionColumns.toArray().map((col) => col.name);
     for (const pos of positionColumns)
       tempSelection[pos] = [];
 
@@ -514,10 +508,11 @@ export class PeptidesModel {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
     const name = this.df.name;
     const cols = this.df.columns;
-    const positionColumns = this.splitSeqDf.columns.names();
+    const splitSeqDf = this.buildSplitSeqDf();
+    const positionColumns = splitSeqDf.columns.names();
     for (const colName of positionColumns) {
       let col = this.df.col(colName);
-      const newCol = this.splitSeqDf.getCol(colName);
+      const newCol = splitSeqDf.getCol(colName);
       if (col !== null)
         cols.remove(colName);
 
@@ -525,6 +520,7 @@ export class PeptidesModel {
       const newColData = newCol.getRawData();
       col = cols.addNew(newCol.name, newCol.type).init((i) => newColCat[newColData[i]]);
       col.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
+      col.setTag(C.TAGS.POSITION_COL, `${true}`);
       CR.setMonomerRenderer(col, this.alphabet);
     }
     this.df.name = name;
@@ -543,7 +539,7 @@ export class PeptidesModel {
     options.isFiltered ??= false;
     const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
     let activityColData: Float64Array = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData() as Float64Array;
-    let positionColumns = this.splitSeqDf.columns.toList();
+    let positionColumns = this.positionColumns.toArray();
     let sourceDfLen = this.df.rowCount;
 
     if (options.isFiltered) {
@@ -553,7 +549,8 @@ export class PeptidesModel {
       for (let i = 0; i < sourceDfLen; ++i)
         tempActivityData[i] = activityColData[selectedIndexes[i]];
       activityColData = tempActivityData;
-      positionColumns = this.splitSeqDf.clone(this.df.filter).columns.toList();
+      // positionColumns = this.positionColumns.clone(this.df.filter).columns.toList();
+      positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(this.df.filter).columns.toList();
     }
     options.columns ??= positionColumns.map((col) => col.name);
 
@@ -1025,7 +1022,7 @@ export class PeptidesModel {
     sourceGridProps.allowEdit = props?.allowEdit ?? false;
     sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
-    const positionCols = this.splitSeqDf.columns;
+    const positionCols = this.positionColumns;
     let maxWidth = 10;
     const canvasContext = sourceGrid.canvas.getContext('2d');
     for (const positionCol of positionCols) {

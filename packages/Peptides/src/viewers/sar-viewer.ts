@@ -89,7 +89,7 @@ export class MonomerPosition extends DG.JsViewer {
 
   createMonomerPositionDf(): DG.DataFrame {
     const uniqueMonomers = new Set<string>();
-    const splitSeqCols = this.model.splitSeqDf.columns;
+    const splitSeqCols = this.model.positionColumns;
     for (const col of splitSeqCols) {
       const colCat = col.categories;
       for (const cat of colCat) {
@@ -112,7 +112,7 @@ export class MonomerPosition extends DG.JsViewer {
     const monomerPositionDf = this.createMonomerPositionDf();
     this.viewerGrid = monomerPositionDf.plot.grid();
     this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
-    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
+    this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.positionColumns.toArray().map((col) => col.name)]);
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setMonomerRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
@@ -420,7 +420,7 @@ export class MostPotentResidues extends DG.JsViewer {
 
 function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
   colorCol?: DG.Column<number>, colorAgg?: DG.AGG, renderNums?: boolean): void {
-  const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
+  const renderColNames = [...model.positionColumns.toArray().map((col) => col.name), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const canvasContext = args.g;
   const bound = args.bounds;
 

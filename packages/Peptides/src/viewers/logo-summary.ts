@@ -224,7 +224,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     const webLogoCache = new DG.LruCache<number, DG.Viewer & IWebLogoViewer>();
     const distCache = new DG.LruCache<number, DG.Viewer<DG.IHistogramLookSettings>>();
-    const maxSequenceLen = this.model.splitSeqDf.columns.length;
+    const maxSequenceLen = this.model.positionColumns.toArray().length;
     const webLogoGridCol = this.viewerGrid.columns.byName(C.LST_COLUMN_NAMES.WEB_LOGO)!;
     webLogoGridCol.cellType = 'html';
     webLogoGridCol.width = 350;
