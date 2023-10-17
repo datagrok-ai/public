@@ -9,7 +9,6 @@
     "@datagrok-libraries/utils": "^4.0.8",
     "cash-dom": "latest",
     "datagrok-api": "latest",
-    "dayjs": "latest",
     "dayjs": "=1.11.7",
     "deep-equal": "^2.2.1",
     "rxjs": "^6.6.7",
