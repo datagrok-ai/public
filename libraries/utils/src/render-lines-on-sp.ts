@@ -2,28 +2,33 @@ import * as DG from 'datagrok-api/dg';
 import { Subject } from 'rxjs';
 import BitArray from './bit-array';
 
-export type ILines = {
+export type ILineSeries = {
     from: Uint32Array;
     to: Uint32Array;
-    colors?: string[];
-    widths?: Uint32Array;
-    opacities?: Float32Array;
-    drawArrows?: BitArray;
+    color?: string;             // common color. Use [colors] if you need individual colors per line
+    colors?: string[];          // line colors. If they are the same for the series, use [color] instead.
+    width?: number;             // common width. Use [colors] if you need individual widths per line
+    widths?: Float32Array;      // line widths. If they are the same for the series, use [width] instead.
+    opacity?: number;           // common opacity. Use [opacities] if you need individual opacities per line
+    opacities?: Float32Array;   // line opacities. If they are the same for the series, use [opacity] instead
+    drawArrows?: Boolean;       // common parameter to draw arrows. Use [drawArrowsArr] if you need to draw arrows not for each line
+    drawArrowsArr?: BitArray;   // individual parameter for each line. If they are the same for the series, use [drawArrows] instead
+
 }
 
 export class ScatterPlotLinesRenderer {
     sp: DG.ScatterPlotViewer;
-    xAxisValues: any[];
-    yAxisValues: any[];
+    xAxisCol: DG.Column;
+    yAxisCol: DG.Column;;
     currentLineIdx = -1;
-    lines: ILines;
+    lines: ILineSeries;
     lineClicked = new Subject<number>();
     lineHover = new Subject<number>();
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     paths: Path2D[];
     mouseOverLineId: number | null = null;
-    numberOfLinesPerPair: {[key: string]: number} = {};
+    multipleLinesIndices: Uint32Array;
 
     get currentLineId(): number {
         return this.currentLineIdx;
@@ -34,15 +39,17 @@ export class ScatterPlotLinesRenderer {
         this.sp.render(this.canvas.getContext('2d') as CanvasRenderingContext2D);
     }
 
-    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILines) {
+    constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILineSeries) {
         this.sp = sp;
-        this.xAxisValues = this.sp.dataFrame!.columns.byName(xAxis).toList();
-        this.yAxisValues = this.sp.dataFrame!.columns.byName(yAxis).toList();;
+        this.xAxisCol = this.sp.dataFrame!.columns.byName(xAxis);
+        this.yAxisCol = this.sp.dataFrame!.columns.byName(yAxis);
         this.lines = lines;
         this.canvas = this.sp.getInfo()['canvas'];
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
         this.paths = new Array<Path2D>(this.lines.from.length);
-        this.countLinesPerPair();
+        this.multipleLinesIndices = new Uint32Array(this.lines.from.length);
+
+        this.createMultiLinesIndices();
 
         this.canvas.onmousedown = () => {
             if (this.mouseOverLineId !== null)
@@ -63,58 +70,66 @@ export class ScatterPlotLinesRenderer {
 
 
     renderLines(): void {
-        const filterBitset = this.sp.dataFrame.filter;
-        const linesPerPairCounter: { [key: string]: number } = {};
         for (let i = 0; i < this.lines.from.length; i++) {
-            if (filterBitset.get(this.lines.from[i]) && filterBitset.get(this.lines.to[i])) {
-                const pointFrom = this.sp.worldToScreen(this.xAxisValues[this.lines.from[i]], this.yAxisValues[this.lines.from[i]]);
-                const aX = pointFrom?.x;
-                const aY = pointFrom?.y;
-                const pointTo = this.sp.worldToScreen(this.xAxisValues[this.lines.to[i]], this.yAxisValues[this.lines.to[i]]);
-                const bX = pointTo?.x;
-                const bY = pointTo?.y;
-                if (aX && aY && bX && bY) {
-                    const pairStr = this.getStringPair(this.lines.from[i], this.lines.to[i]);
-                    !linesPerPairCounter[pairStr] ? linesPerPairCounter[pairStr] = 1 : linesPerPairCounter[pairStr]++;
-                    const line = new Path2D();
-                    this.paths[i] = line;
-                    line.moveTo(aX!, aY!);
-                    const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
-                    const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
-                    this.ctx.strokeStyle = `rgba(${color},${opacity})`;
-                    this.ctx.lineWidth = this.lines.widths?.[i] ? i === this.currentLineIdx ? this.lines.widths?.[i] + 2 :
+            let pointFromIdx = this.lines.from[i];
+            let pointToIdx = this.lines.to[i];
+            let changedPoints = false;
+            if (pointFromIdx > pointToIdx) {
+                pointFromIdx = this.lines.to[i];
+                pointToIdx = this.lines.from[i];
+                changedPoints = true;
+            }
+            const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(pointFromIdx), this.yAxisCol.get(pointFromIdx));
+            const aX = pointFrom?.x;
+            const aY = pointFrom?.y;
+            const pointTo = this.sp.worldToScreen(this.xAxisCol.get(pointToIdx), this.yAxisCol.get(pointToIdx));
+            const bX = pointTo?.x;
+            const bY = pointTo?.y;
+            if (aX && aY && bX && bY) {
+                const line = new Path2D();
+                this.paths[i] = line;
+                line.moveTo(aX!, aY!);
+                const color = this.lines.color ?? this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
+                const opacity = this.lines.opacity ?? this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
+                this.ctx.strokeStyle = `rgba(${color},${opacity})`;
+                this.ctx.lineWidth = this.lines.width ? this.lines.width : this.lines.widths?.[i] ? i === this.currentLineIdx ? this.lines.widths?.[i] + 2 :
                     this.lines.widths?.[i] : i === this.currentLineIdx ? 3 : 1;
-                    let midPoint: DG.Point = this.midPoint(pointFrom, pointTo);
-                    if (this.numberOfLinesPerPair[pairStr] > 1 || linesPerPairCounter[pairStr] > 1) {
-                        midPoint = this.findPerpendicularPointOnCurve(linesPerPairCounter[pairStr],
-                            pointFrom.x, pointFrom.y, midPoint.x, midPoint.y)
-                    }
-                    line.quadraticCurveTo(midPoint.x, midPoint.y, bX, bY);
-                    if (this.lines.drawArrows?.getBit(i))
-                        this.canvasArrow(line, bX, bY, midPoint.x, midPoint.y);
-                    this.ctx.beginPath();
-                    this.ctx.stroke(line);
-                    this.ctx.closePath();
+                let midPoint: DG.Point = this.midPoint(pointFrom, pointTo);
+                if (this.multipleLinesIndices[i]) {
+                    midPoint = this.findPerpendicularPointOnCurve(this.multipleLinesIndices[i],
+                        pointFrom.x, pointFrom.y, midPoint.x, midPoint.y)
                 }
+                line.quadraticCurveTo(midPoint.x, midPoint.y, bX, bY);
+                if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i))
+                    this.canvasArrow(line, changedPoints ? aX : bX, changedPoints ? aY : bY, midPoint.x, midPoint.y);
+                this.ctx.beginPath();
+                this.ctx.stroke(line);
+                this.ctx.closePath();
             }
         }
     }
 
-    countLinesPerPair(): void {
-        for (let i = 0; i < this.lines.from.length; i++) {
-            const pairStr = this.getStringPair(this.lines.from[i], this.lines.to[i]);
-            !this.numberOfLinesPerPair[pairStr] ? this.numberOfLinesPerPair[pairStr] = 1 : this.numberOfLinesPerPair[pairStr]++;
+    createMultiLinesIndices(): void {
+        const arrayIdxs = new Array<number>(this.lines.from.length);
+        for (let i = 0; i < arrayIdxs.length; i++)
+            arrayIdxs[i] = i;
+        while (arrayIdxs.length) {
+            let firstLineIdx = arrayIdxs[0];
+            let p1 = this.lines.from[firstLineIdx];
+            let p2 = this.lines.to[firstLineIdx];
+            let linesPerPair = 1;
+            for (let i = 1; i < arrayIdxs.length; i++) {
+                if (this.lines.from[arrayIdxs[i]] === p1 && this.lines.to[arrayIdxs[i]] === p2 ||
+                    this.lines.to[arrayIdxs[i]] === p1 && this.lines.from[arrayIdxs[i]] === p2) {
+                    this.multipleLinesIndices[arrayIdxs[i]] = ++linesPerPair;
+                    arrayIdxs.splice(i, 1);
+                    i--;
+                }
+            }
+            if (linesPerPair > 1)
+                this.multipleLinesIndices[firstLineIdx] = 1;
+            arrayIdxs.splice(0, 1);
         }
-    }
-
-    getStringPair(point1: number, point2: number): string {
-        let p1 = point1;
-        let p2 = point2;
-        if (point1 > point2) {
-            p1 = point2;
-            p2 = point1;
-        }
-        return `${p1}#${p2}`;
     }
 
 
