@@ -460,22 +460,26 @@ export async function expectExceptionAsync(action: () => Promise<void>,
   }
 }
 
+const catDF = DG.DataFrame.fromColumns([DG.Column.fromStrings('col', ['val1', 'val2', 'val3'])]);
+
 /**
  * Universal test for viewers. It search viewers in DOM by tags: canvas, svg, img, input, h1, a
  * @param  {string} v Viewer name
  * @param  {DG.DataFrame} df Dataframe to use. Should have at least 3 rows
  * @param  {boolean} options.detectSemanticTypes Specify whether to detect semantic types or not
  * @param  {boolean} options.readOnly If set to true, the dataframe will not be modified during the test
+ * @param  {boolean} options.arbitraryDfTest If set to false, test on arbitrary dataframe
+ * (one categorical column) will not be performed
  * @param  {object} options List of options (optional)
  * @return {Promise<void>} The test is considered successful if it completes without errors
  */
 export async function testViewer(v: string, df: DG.DataFrame,
-  options?: {detectSemanticTypes?: boolean, readOnly?: boolean}): Promise<void> {
+  options?: {detectSemanticTypes?: boolean, readOnly?: boolean, arbitraryDfTest?: boolean}): Promise<void> {
   if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
-  const tv = grok.shell.addTableView(df);
+  let tv = grok.shell.addTableView(df);
   const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
-  let selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
-    ${viewerName} input,${viewerName} h1,${viewerName} a`;
+  const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
+    ${viewerName} input,${viewerName} h1,${viewerName} a,${viewerName} .d4-viewer-error`;
   const res = [];
   try {
     let viewer = tv.addViewer(v);
@@ -509,16 +513,29 @@ export async function testViewer(v: string, df: DG.DataFrame,
     tv.resetLayout();
     res.push(Array.from(tv.viewers).length);
     tv.loadLayout(layout);
-    selector = `${viewerName} ${tag}`;
-    await awaitCheck(() => document.querySelector(selector) !== null,
+    const selector1 = `${viewerName} ${tag}`;
+    await awaitCheck(() => document.querySelector(selector1) !== null,
       'cannot load viewer from layout', 3000);
     res.push(Array.from(tv.viewers).length);
     viewer = Array.from(tv.viewers).find((v: any) => v.type !== 'Grid')!;
     expectArray(res, [2, 1, 2]);
     expect(JSON.stringify(viewer.getOptions().look), JSON.stringify(oldProps));
+    if (options?.arbitraryDfTest !== false) {
+      grok.shell.closeAll();
+      await delay(100);
+      tv = grok.shell.addTableView(catDF);
+      try {
+        viewer = tv.addViewer(v);
+      } catch (e) {
+        grok.shell.closeAll();
+        DG.Balloon.closeAll();
+        return;
+      }
+      await awaitCheck(() => document.querySelector(selector) !== null,
+        'cannot load viewer on arbitrary dataset', 3000);
+    }
   } finally {
-    tv.close();
-    grok.shell.closeTable(df);
+    grok.shell.closeAll();
     DG.Balloon.closeAll();
   }
 }
