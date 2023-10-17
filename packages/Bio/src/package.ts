@@ -73,7 +73,7 @@ import {HelmToMolfileConverter} from './utils/helm-to-molfile';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
-import { sequenceToMolfile } from './utils/sequence-to-mol';
+import {sequenceToMolfile} from './utils/sequence-to-mol';
 
 export const _package = new BioPackage();
 
@@ -515,7 +515,7 @@ export async function sequenceSpaceTopMenu(
         usingSparseMatrix: table.rowCount > 20000},
     };
 
-    const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
+    const allowedRowCount = methodName === DimReductionMethods.UMAP ? 500000 : 15000;
     // number of rows which will be processed relatively fast
     const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
     if (table.rowCount > allowedRowCount) {
