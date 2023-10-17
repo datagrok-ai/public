@@ -7,10 +7,10 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
-import {RunComparisonView} from './run-comparison-view';
-import {CARD_VIEW_TYPE} from './shared/consts';
-import {deepCopy} from './shared/utils';
+import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
+import {deepCopy} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
+import {RunComparisonView} from './run-comparison-view';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -481,9 +481,11 @@ export abstract class FunctionView extends DG.ViewBase {
 
       await this.onAfterRun(this.funcCall);
 
+      this.lastCall = deepCopy(this.funcCall);
       // If a view is incapuslated into a tab (e.g. in PipelineView),
       // there is no need to save run till an entire pipeline is over.
-      this.lastCall = (this.options.isTabbed || this.runningOnInput || this.runningOnStart) ? deepCopy(this.funcCall) : await this.saveRun(this.funcCall);
+      if (!(this.options.isTabbed || this.runningOnInput || this.runningOnStart))
+        await this.saveRun(this.funcCall);
     } catch (err: any) {
       grok.shell.error(err.toString());
     } finally {

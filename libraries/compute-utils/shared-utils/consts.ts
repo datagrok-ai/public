@@ -37,6 +37,8 @@ export const CARD_VIEW_TYPE = 'JsCardView' as const;
 export const SCRIPTS_VIEW_TYPE = 'scripts' as const;
 export const FUNCTIONS_VIEW_TYPE = 'functions' as const;
 export const VIEWER_PATH = 'viewer' as const;
+export const RESTRICTED_PATH = 'restrictedValues' as const;
+export const EDIT_STATE_PATH = 'editState' as const;
 export enum DIRECTION {
   INPUT = 'Input',
   OUTPUT = 'Output'
@@ -54,3 +56,5 @@ export enum ABILITY_STATE {
   ENABLED = 'enabled',
   DISABLED = 'disabled',
 }
+
+export type INPUT_STATE = 'disabled' | 'restricted' | 'restricted unlocked' | 'inconsistent' | 'user input';
