@@ -1,6 +1,6 @@
 # Peptides changelog
 
-## 1.15.1 (WIP)\
+## 1.15.1 (WIP)
 
 ### Features
 
