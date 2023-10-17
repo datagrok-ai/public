@@ -1,4 +1,4 @@
-//name: Lotka-Volterra
+//name: LotkaVolterra
 //meta.domain: Nonlinear dynamics
 //description: Model describes the dynamics of biological systems in which two species interact, one as a predator and the other as prey.
 //language: javascript

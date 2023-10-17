@@ -16,6 +16,7 @@ import '../css/breadcrumbs.css';
 import '../css/drop-down.css';
 import '../css/typeahead-input.css';
 import '../css/tags-input.css';
+import {FuncCall} from "./functions";
 
 declare let grok: any;
 declare let DG: any;
@@ -1111,6 +1112,33 @@ export class InputBase<T = any> {
   };
 
   get classList(): DOMTokenList { return this.root.classList; }
+}
+
+
+export class DartWrapper {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+}
+
+
+/** A form with multiple inputs inside */
+export class InputForm extends DartWrapper {
+  constructor(dart: any) { super(dart); }
+
+  /** Creates an InputForm for the specified function call. */
+  static async forFuncCall(funcCall: FuncCall): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart));
+  }
+
+  get root(): HTMLElement { return api.grok_InputForm_Get_Root(this.dart); };
+
+  getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
+
+  /** Occurs when user changes any input value in a form. */
+  get onInputChanged(): Observable<any> { return observeStream(api.grok_InputForm_OnInputChanged(this.dart)); }
 }
 
 
