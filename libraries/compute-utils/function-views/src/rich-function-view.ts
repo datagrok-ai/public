@@ -906,10 +906,11 @@ export class RichFunctionView extends FunctionView {
       };
       const exp = getExplanation();
 
-      return ui.divV([
-        ...desc ? [ui.divText(desc)]: [],
-        ...exp ? [ui.divText(exp)]: [],
-      ], {style: {'max-width': '300px'}});
+      return desc || exp ?
+        ui.divV([
+          ...desc ? [ui.divText(desc)]: [],
+          ...exp ? [ui.divText(exp)]: [],
+        ], {style: {'max-width': '300px'}}) : null;
     });
   }
 
