@@ -964,11 +964,6 @@ export class RichFunctionView extends FunctionView {
     tAny.placeLockStateIcons(lockIcon, unlockIcon, resetIcon, warningIcon);
   }
 
-  private syncInput(val: DG.FuncCallParam, t: InputVariants, fields: SyncFields) {
-    this.syncFuncCallReplaced(t, val.name, fields);
-    this.syncOnInput(t, val, fields);
-  }
-
   private saveInputLockState(paramName: string, value: any, state?: INPUT_STATE) {
     if (state === 'restricted') {
       this.funcCall.options[RESTRICTED_PATH] = {
@@ -989,7 +984,11 @@ export class RichFunctionView extends FunctionView {
     return this.funcCall.options[EDIT_STATE_PATH]?.[paramName];
   }
 
-  private syncFuncCallReplaced(t: InputVariants, name: string, field: SyncFields) {
+  private syncInput(val: DG.FuncCallParam, t: InputVariants, field: SyncFields) {
+    const name = val.name;
+
+    let stopUIUpdates = false;
+
     const sub1 = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newParam = this.funcCall[syncParams[field]][name];
       const newValue = this.funcCall[field][name] ?? newParam.property.defaultValue ?? null;
@@ -1009,14 +1008,8 @@ export class RichFunctionView extends FunctionView {
       }),
     ).subscribe((newParam) => {
       const newValue = this.funcCall[field][newParam.name];
-      const propertyType = newParam.property.propertyType;
-      // we need to check if the value is not the same for floats,
-      // otherwise we will overwrite a user input with a lower
-      // precicsion decimal representation
-      if (
-        ((propertyType === DG.TYPE.FLOAT) && new Float32Array([t.value])[0] !== new Float32Array([newValue])[0]) ||
-          propertyType !== DG.TYPE.FLOAT
-      ) {
+      // don't update UI if an update is triggered by UI
+      if (!stopUIUpdates) {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
@@ -1050,16 +1043,19 @@ export class RichFunctionView extends FunctionView {
       this.validationRequests.next({field: param.name, isRevalidation: false});
     });
     this.subs.push(sub3);
-  }
 
-  private syncOnInput(t: InputVariants, val: DG.FuncCallParam, field: SyncFields) {
-    const sub = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
+    const sub4 = getObservable(t.onInput.bind(t)).pipe(debounceTime(VALIDATION_DEBOUNCE_TIME)).subscribe(() => {
       if (this.isHistorical.value)
         this.isHistorical.next(false);
-
-      this.funcCall[field][val.name] = t.value;
+      try {
+        stopUIUpdates = true;
+        this.funcCall[field][val.name] = t.value;
+      } finally {
+        stopUIUpdates = false;
+      }
     });
-    this.subs.push(sub);
+    this.subs.push(sub4);
+
   }
 
   public isRunnable() {
