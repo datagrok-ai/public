@@ -104,6 +104,16 @@ export class ScatterPlotLinesRenderer {
                 this.ctx.closePath();
             }
         }
+        this.fillLeftBottomRect();
+    }
+
+    fillLeftBottomRect() {
+        const rect = new Path2D();
+        rect.rect(this.sp.yAxisBox.minX, this.sp.yAxisBox.maxY, this.sp.yAxisBox.width, this.sp.xAxisBox.height);
+        this.ctx.fillStyle = `white`;
+        this.ctx.beginPath();
+        this.ctx.fill(rect);
+        this.ctx.closePath();
     }
 
     createMultiLinesIndices(): void {
