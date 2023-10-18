@@ -29,7 +29,7 @@ import {getAggregatedValue, getStats, Stats} from './utils/statistics';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
-import {findMutations} from './utils/algorithms';
+import {calculateClusterStatistics, calculateMonomerPositionStatistics, findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
 import {getSelectionWidget} from './widgets/selection';
 
@@ -112,7 +112,7 @@ export class PeptidesModel {
   }
 
   get monomerPositionStats(): MonomerPositionStats {
-    this._monomerPositionStats ??= this.calculateMonomerPositionStatistics();
+    this._monomerPositionStats ??= calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray());
     return this._monomerPositionStats;
   }
 
@@ -138,7 +138,8 @@ export class PeptidesModel {
   }
 
   get clusterStats(): ClusterTypeStats {
-    this._clusterStats ??= this.calculateClusterStatistics();
+    this._clusterStats ??= calculateClusterStatistics(this.df, this.settings.clustersColumnName!,
+      this.customClusters.toArray());
     return this._clusterStats;
   }
 
@@ -285,10 +286,10 @@ export class PeptidesModel {
     return (this.clusterSelection[CLUSTER_TYPE.ORIGINAL].length + this.clusterSelection[CLUSTER_TYPE.CUSTOM].length) === 0;
   }
 
-  get customClusters(): Iterable<DG.Column<boolean>> {
+  get customClusters(): wu.WuIterable<DG.Column<boolean>> {
     const query: { [key: string]: string } = {};
     query[C.TAGS.CUSTOM_CLUSTER] = '1';
-    return this.df.columns.byTags(query);
+    return wu(this.df.columns.byTags(query));
   }
 
   get settings(): type.PeptidesSettings {
@@ -339,8 +340,9 @@ export class PeptidesModel {
         this.updateMutationCliffs();
         break;
       case 'stats':
-        this.monomerPositionStats = this.calculateMonomerPositionStatistics();
-        this.clusterStats = this.calculateClusterStatistics();
+        this.monomerPositionStats = calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray());
+        this.clusterStats = calculateClusterStatistics(this.df, this.settings.clustersColumnName!,
+          this.customClusters.toArray());
         const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
         mpViewer.createMonomerPositionGrid();
         mpViewer.render();
@@ -535,141 +537,6 @@ export class PeptidesModel {
     sourceGrid.columns.setOrder([scaledCol.name]);
   }
 
-  calculateMonomerPositionStatistics(options: {isFiltered?: boolean, columns?: string[]} = {}): MonomerPositionStats {
-    options.isFiltered ??= false;
-    const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
-    let activityColData: Float64Array = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData() as Float64Array;
-    let positionColumns = this.positionColumns.toArray();
-    let sourceDfLen = this.df.rowCount;
-
-    if (options.isFiltered) {
-      sourceDfLen = this.df.filter.trueCount;
-      const tempActivityData = new Float64Array(sourceDfLen);
-      const selectedIndexes = this.df.filter.getSelectedIndexes();
-      for (let i = 0; i < sourceDfLen; ++i)
-        tempActivityData[i] = activityColData[selectedIndexes[i]];
-      activityColData = tempActivityData;
-      // positionColumns = this.positionColumns.clone(this.df.filter).columns.toList();
-      positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(this.df.filter).columns.toList();
-    }
-    options.columns ??= positionColumns.map((col) => col.name);
-
-    for (const posCol of positionColumns) {
-      if (!options.columns.includes(posCol.name))
-        continue;
-      const posColData = posCol.getRawData();
-      const posColCateogries = posCol.categories;
-      const currentPositionObject = {general: {}} as PositionStats & {general: SummaryStats};
-
-      for (let categoryIndex = 0; categoryIndex < posColCateogries.length; ++categoryIndex) {
-        const monomer = posColCateogries[categoryIndex];
-        if (monomer === '')
-          continue;
-
-        const boolArray: boolean[] = new Array(sourceDfLen).fill(false);
-        for (let i = 0; i < sourceDfLen; ++i) {
-          if (posColData[i] === categoryIndex)
-            boolArray[i] = true;
-        }
-        const bitArray = BitArray.fromValues(boolArray);
-        const stats = bitArray.allFalse || bitArray.allTrue ?
-          {count: sourceDfLen, meanDifference: 0, ratio: 1.0, pValue: null, mask: bitArray} :
-          getStats(activityColData, bitArray);
-        currentPositionObject[monomer] = stats;
-        this.getSummaryStats(currentPositionObject.general, stats);
-      }
-      monomerPositionObject[posCol.name] = currentPositionObject;
-      this.getSummaryStats(monomerPositionObject.general, null, currentPositionObject.general);
-    }
-    return monomerPositionObject;
-  }
-
-  getSummaryStats(genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
-    if (stats === null && summaryStats === null)
-      throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
-
-    const possibleMaxCount = stats?.count ?? summaryStats!.maxCount;
-    genObj.maxCount ??= possibleMaxCount;
-    if (genObj.maxCount < possibleMaxCount)
-      genObj.maxCount = possibleMaxCount;
-
-    const possibleMinCount = stats?.count ?? summaryStats!.minCount;
-    genObj.minCount ??= possibleMinCount;
-    if (genObj.minCount > possibleMinCount)
-      genObj.minCount = possibleMinCount;
-
-    const possibleMaxMeanDifference = stats?.meanDifference ?? summaryStats!.maxMeanDifference;
-    genObj.maxMeanDifference ??= possibleMaxMeanDifference;
-    if (genObj.maxMeanDifference < possibleMaxMeanDifference)
-      genObj.maxMeanDifference = possibleMaxMeanDifference;
-
-    const possibleMinMeanDifference = stats?.meanDifference ?? summaryStats!.minMeanDifference;
-    genObj.minMeanDifference ??= possibleMinMeanDifference;
-    if (genObj.minMeanDifference > possibleMinMeanDifference)
-      genObj.minMeanDifference = possibleMinMeanDifference;
-
-    if (!isNaN(stats?.pValue ?? NaN)) {
-      const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
-      genObj.maxPValue ??= possibleMaxPValue;
-      if (genObj.maxPValue < possibleMaxPValue)
-        genObj.maxPValue = possibleMaxPValue;
-
-      const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
-      genObj.minPValue ??= possibleMinPValue;
-      if (genObj.minPValue > possibleMinPValue)
-        genObj.minPValue = possibleMinPValue;
-    }
-
-    const possibleMaxRatio = stats?.ratio ?? summaryStats!.maxRatio;
-    genObj.maxRatio ??= possibleMaxRatio;
-    if (genObj.maxRatio < possibleMaxRatio)
-      genObj.maxRatio = possibleMaxRatio;
-
-    const possibleMinRatio = stats?.ratio ?? summaryStats!.minRatio;
-    genObj.minRatio ??= possibleMinRatio;
-    if (genObj.minRatio > possibleMinRatio)
-      genObj.minRatio = possibleMinRatio;
-  }
-
-  calculateClusterStatistics(): ClusterTypeStats {
-    const rowCount = this.df.rowCount;
-    const origClustCol = this.df.getCol(this.settings.clustersColumnName!);
-    const origClustColData = origClustCol.getRawData();
-    const origClustColCat = origClustCol.categories;
-    const origClustMasks: BitArray[] = Array.from({length: origClustColCat.length},
-      () => new BitArray(rowCount, false));
-    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx)
-      origClustMasks[origClustColData[rowIdx]].setTrue(rowIdx);
-
-
-    const customClustColList = wu(this.customClusters).toArray();
-    const customClustMasks = customClustColList.map(
-      (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));
-    const customClustColNamesList = customClustColList.map((v) => v.name);
-
-    const activityColData: type.RawData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
-
-    const origClustStats: ClusterStats = {};
-    const customClustStats: ClusterStats = {};
-
-    for (const clustType of Object.values(CLUSTER_TYPE)) {
-      const masks = clustType === CLUSTER_TYPE.ORIGINAL ? origClustMasks : customClustMasks;
-      const clustNames = clustType === CLUSTER_TYPE.ORIGINAL ? origClustColCat : customClustColNamesList;
-      const resultStats = clustType === CLUSTER_TYPE.ORIGINAL ? origClustStats : customClustStats;
-      for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
-        const mask = masks[maskIdx];
-        const stats = mask.allTrue || mask.allFalse ? {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask} :
-          getStats(activityColData, mask);
-        resultStats[clustNames[maskIdx]] = stats;
-      }
-    }
-
-    const resultStats = {} as ClusterTypeStats;
-    resultStats[CLUSTER_TYPE.ORIGINAL] = origClustStats;
-    resultStats[CLUSTER_TYPE.CUSTOM] = customClustStats;
-    return resultStats;
-  }
-
   initClusterSelection(options: {notify?: boolean} = {}): void {
     options.notify ??= true;
 
@@ -777,8 +644,8 @@ export class PeptidesModel {
         //TODO: optimize
         if (gcArgs.cell.isColHeader && col?.semType === C.SEM_TYPES.MONOMER) {
           const isDfFiltered = this.df.filter.anyFalse;
-          const stats = (isDfFiltered ? this.calculateMonomerPositionStatistics({isFiltered: true, columns: [col.name]}) :
-            this.monomerPositionStats)[col.name];
+          const stats = (isDfFiltered ? calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray(),
+            {isFiltered: true, columns: [col.name]}) : this.monomerPositionStats)[col.name];
           if (!stats)
             return;
           //TODO: precalc on stats creation
