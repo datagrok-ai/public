@@ -60,7 +60,7 @@ export class ParallelMutationCliffs {
 
     const substitutionsInfo: type.MutationCliffs = new Map();
     console.time('fill map');
-    results.forEach((result) => {
+    results.filter(Boolean).forEach((result) => {
       for (let i = 0; i< result.pos.length; i++) {
         if (!substitutionsInfo.has(result.monomers1[i]))
           substitutionsInfo.set(result.monomers1[i], new Map());
@@ -82,6 +82,8 @@ export class ParallelMutationCliffs {
         const indexes2 = indexes2Map.get(result.seq2Idxs[i])!;
         (indexes1 as number[]).push(result.seq2Idxs[i]);
         (indexes2 as number[]).push(result.seq1Idxs[i]);
+        // const monomer1 = monomerInfoArray[parseInt(result.pos[i]) - 1].cat![];
+        //console.log(result.monomers1[i] === monomerInfoArray[parseInt(result.pos[i])].)
       }
     });
     console.timeEnd('fill map');

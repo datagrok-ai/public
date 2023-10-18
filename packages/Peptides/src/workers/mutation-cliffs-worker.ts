@@ -37,7 +37,7 @@ onmessage = async (event): Promise<void> => {
           if (substCounterFlag)
             break;
 
-          tempData[tempDataIdx++] ={
+          tempData[tempDataIdx++] = {
             pos: monomerInfo.name,
             seq1monomer: monomerInfo.cat![seq1categoryIdx],
             seq2monomer: monomerInfo.cat![seq2categoryIdx],
