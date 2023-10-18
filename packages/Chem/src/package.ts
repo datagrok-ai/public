@@ -1257,8 +1257,7 @@ export function addScaffoldTree(): void {
 //input: column activities {type:numerical}
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities:DG.Column): Promise<void> {
   const view = grok.shell.tv;
-  const mmp = new MmpAnalysis();
-  await mmp.init(table, molecules, activities);
+  const mmp = await MmpAnalysis.init(table, molecules, activities);
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
 }
 

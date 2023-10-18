@@ -6,7 +6,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {isMolBlock} from './chem-common';
+import {hexToPercentRgb, isMolBlock} from './chem-common';
 import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
@@ -248,21 +248,42 @@ export function checkMoleculeValid(molecule: string): any {
 }
 
 
-export function getUncommonAtomsAndBonds(molecule: string, mcsMol: RDMol | null, rdkit: RDModule): ISubstruct | null {
+export function getUncommonAtomsAndBonds(
+  molecule: string, mcsMol: RDMol | null, rdkit: RDModule, col?: string) : ISubstruct | null {
   const mol = getMolSafe(molecule, {}, rdkit).mol;
   let substruct: ISubstruct | null = null;
   try {
     if (mol) {
       let uncommonAtoms = [...Array(mol.get_num_atoms()).keys()];
       let uncommonBonds = [...Array(mol.get_num_bonds()).keys()];
+
+      const highlightAtomColors: {[key: string]: number[]} = {};
+      const highlightBondColors: {[key: string]: number[]} = {};
+
+      let rdKol: number[] | null = null;
+      if (col)
+        rdKol = hexToPercentRgb(col);
+
       if (mcsMol) {
         const matchedAtomsAndBonds: ISubstruct = JSON.parse(mol!.get_substruct_match(mcsMol!));
-        if (matchedAtomsAndBonds.atoms)
-          uncommonAtoms = getArraysDifference(uncommonAtoms, matchedAtomsAndBonds.atoms.sort((a, b) => { return a - b; }));
-        if (matchedAtomsAndBonds.bonds)
-          uncommonBonds = getArraysDifference(uncommonBonds, matchedAtomsAndBonds.bonds.sort((a, b) => { return a - b; }));
+        if (matchedAtomsAndBonds.atoms) {
+          uncommonAtoms = getArraysDifference(uncommonAtoms, matchedAtomsAndBonds.atoms
+            .sort((a, b) => {return a - b;}));
+          if (rdKol) {
+            for (let i = 0; i < uncommonAtoms.length; i++)
+              highlightAtomColors[uncommonAtoms[i].toString()] = rdKol;
+          }
+        }
+        if (matchedAtomsAndBonds.bonds) {
+          uncommonBonds = getArraysDifference(uncommonBonds, matchedAtomsAndBonds.bonds
+            .sort((a, b) => {return a - b;}));
+          if (rdKol) {
+            for (let i = 0; i < uncommonBonds.length; i++)
+              highlightBondColors[uncommonBonds[i].toString()] = rdKol;
+          }
+        }
       }
-      return {atoms: uncommonAtoms, bonds: uncommonBonds};
+      return {atoms: uncommonAtoms, bonds: uncommonBonds, highlightAtomColors, highlightBondColors};
     }
   } finally {
     mol?.delete();

@@ -237,7 +237,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
-  getFragments(molecules: string[]): [string, string][][] {
+  mmpGetFragments(molecules: string[]): [string, string][][] {
     const frags: [string, string][][] = new Array<[string, string][]>(molecules.length);
     for (let i = 0; i < molecules.length; i++) {
       let mol;
@@ -265,6 +265,38 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
 
     return frags;
+  }
+
+  mmpGetMcs(molecules: [string, string][]): string[] {
+    const res: string[] = new Array<string>(molecules.length);
+    for (let i = 0; i < molecules.length; i++) {
+      let mol1;
+      let mol2;
+      let mols;
+      try {
+        console.log(`GO1 ${molecules[0][i]} ; ${molecules[1][i]}`);
+        mol1 = getMolSafe(molecules[i][0], {}, this._rdKitModule);
+        mol2 = getMolSafe(molecules[i][1], {}, this._rdKitModule);
+        mols = new this._rdKitModule.MolList();
+        if (mol1.mol && mol2.mol) {
+          mols.append(mol1.mol!);
+          mols.append(mol2.mol!);
+          res[i] = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
+            AtomCompare: 'Elements',
+            BondCompare: 'OrderExact',
+          }));
+          console.log(`GO ${molecules[0][i]} ; ${molecules[1][i]} ; ${res[i]}`);
+        } else
+          res[i] = '';
+      } catch (e: any) {
+        res[i] = '';
+      } finally {
+        mol1?.mol?.delete();
+        mol2?.mol?.delete();
+      }
+    }
+
+    return res;
   }
 
   setTerminateFlag(flag: boolean) {
