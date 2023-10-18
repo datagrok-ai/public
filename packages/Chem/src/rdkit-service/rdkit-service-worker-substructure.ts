@@ -237,8 +237,37 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
+  getFragments(molecules: string[]): [string, string][][] {
+    const frags: [string, string][][] = new Array<[string, string][]>(molecules.length);
+    for (let i = 0; i < molecules.length; i++) {
+      let mol;
+      try {
+        mol = this._rdKitModule.get_mol(molecules[i]);
+        if (mol) {
+          const res = this._rdKitModule.get_mmp(mol, 1, 1, 20);
+          const fSplit = res.split(';');
+          const ffSplit = fSplit[1].split(',');
+          ffSplit.pop();
+          frags[i] = new Array<[string, string]>(ffSplit.length);
+
+          for (let j = 0; j < ffSplit.length; j++) {
+            const fffSplit = ffSplit[j].split('.');
+            const firstIsFirst = fffSplit[0].length >= fffSplit[1].length;
+            frags[i][j] = [firstIsFirst ? fffSplit[0] : fffSplit[1], firstIsFirst ? fffSplit[1] : fffSplit[0]];
+          }
+        } else
+          frags[i] = new Array<[string, string]>(0);
+      } catch (e: any) {
+        frags[i] = new Array<[string, string]>(0);
+      } finally {
+        mol?.delete();
+      }
+    }
+
+    return frags;
+  }
+
   setTerminateFlag(flag: boolean) {
     this._requestTerminated = flag;
   }
-
 }

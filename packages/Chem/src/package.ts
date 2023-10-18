@@ -1251,13 +1251,14 @@ export function addScaffoldTree(): void {
 }
 
 //top-menu: Chem | Analyze | Molecular Matched Pairs...
-//name: mmpAnalysis
+//name:  Molecular Matched Pairs
 //input: dataframe table [Input data table]
 //input: column molecules { semType: Molecule }
 //input: column activities {type:numerical}
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities:DG.Column): Promise<void> {
   const view = grok.shell.tv;
-  const mmp = new MmpAnalysis(table, molecules, activities);
+  const mmp = new MmpAnalysis();
+  await mmp.init(table, molecules, activities);
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
 }
 
@@ -1363,24 +1364,4 @@ export async function demoDatabases(): Promise<void> {
 //meta.demoPath: Cheminformatics | Scaffold Tree
 export async function demoScaffold(): Promise<void> {
   _demoScaffoldTree();
-}
-
-//top-menu: Chem | BBBB
-//name: BBBB
-export async function BBBB(): Promise<void> {
-  let df = await grok.data.files.openTable('Demo:Files/chem/smiles_500K.zip');
-  const details = JSON.stringify({sanitize: false});
-  const time1 = Date.now();
-  const rdkit = getRdKitModule();
-  for (let i = 0; i < df.rowCount; i++) {
-    let mol;
-    try {
-      mol = rdkit.get_mol(df.col('smiles')!.get(i), details);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      mol?.delete();
-    }
-  }
-  console.log(`******************${Date.now() - time1}`);
 }

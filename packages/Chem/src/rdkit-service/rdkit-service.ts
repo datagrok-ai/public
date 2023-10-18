@@ -472,4 +472,14 @@ export class RdKitService {
         return;
       });
   }
+
+  async getFragments(molecules: string[]): Promise<[string, string][][]> {
+    const t = this;
+    const res = await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      t.parallelWorkers[i].getFragments(segment),
+    (data: [string, string][][][]): [string, string][][] => {
+      return ([] as [string, string][][]).concat(...data);
+    });
+    return res;
+  }
 }
