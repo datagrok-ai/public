@@ -20,7 +20,7 @@ export class AppMultiView {
   private multiView: DG.MultiView;
   private externalViewFactories?: ViewFactories;
 
-  get viewFactories() {
+  get viewFactories(): ViewFactories {
     function viewFactory(uiConstructor: new (view: DG.View) => AppUI): () => DG.View {
       const view = DG.View.create();
       const translateUI = new uiConstructor(view);
@@ -129,43 +129,34 @@ export class OligoStructureUI extends AppUI {
   }
 }
 
-/** For proprietary plugins  */
-export class ExternalPlugin extends AppUI {
-  constructor(view: DG.View, app_name: string, getHtml: () => Promise<HTMLElement>) {
-    super(view,  app_name)
+class URLRouter {
+  constructor(private readonly view: DG.View) {
+    this.pathParts = window.location.pathname.split('/');
+    console.log(`pathParts:`, this.pathParts);
+    this.searchParams = new URLSearchParams(window.location.search);
+    console.log(`searchParams:`, this.searchParams);
   }
 
-  protected getHtml(): Promise<HTMLDivElement> {
-    return this.getHtml();
+  searchParams: URLSearchParams;
+  private pathParts: string[];
+
+  get urlParamsString(): string {
+    return Object.entries(this.searchParams)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  }
+
+  updatePath(control: DG.TabControl) {
+    const urlParamsTxt: string = Object.entries(this.searchParams)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+    this.view.path = '/apps/SequenceTranslator' + `/${control.currentPane.name}`;
+    if (urlParamsTxt)
+      this.view.path += `/?${urlParamsTxt}`;
+  }
+
+  get tabName(): string {
+    const idx = this.pathParts.findIndex((el) => el === 'SequenceTranslator');
+    if (idx === -1) // todo: remove after verification of validity condition
+      return '';
+    return this.pathParts[idx + 1];
   }
 }
-
-// class URLRouter {
-//   constructor(private readonly view: DG.View) {
-//     this.pathParts = window.location.pathname.split('/');
-//     this.searchParams = new URLSearchParams(window.location.search);
-//   }
-
-//   searchParams: URLSearchParams;
-//   private pathParts: string[];
-
-//   get urlParamsString(): string {
-//     return Object.entries(this.searchParams)
-//       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-//   }
-
-//   updatePath(control: DG.TabControl) {
-//     const urlParamsTxt: string = Object.entries(this.searchParams)
-//       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-//     this.view.path = '/apps/SequenceTranslator' + `/${control.currentPane.name}`;
-//     if (urlParamsTxt)
-//       this.view.path += `/?${urlParamsTxt}`;
-//   }
-
-//   get tabName(): string {
-//     const idx = this.pathParts.findIndex((el) => el === 'SequenceTranslator');
-//     if (idx === -1) // todo: remove after verification of validity condition
-//       return '';
-//     return this.pathParts[idx + 1];
-//   }
-// }

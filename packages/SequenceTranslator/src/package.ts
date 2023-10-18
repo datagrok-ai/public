@@ -16,6 +16,8 @@ import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
 import {COMBINED_APP_NAME, PATTERN_APP_NAME, STRUCTRE_APP_NAME, TRANSLATOR_APP_NAME} from './view/const/view';
+import {ColoredTextInput} from './view/utils/colored-input/colored-text-input';
+import {highlightInvalidSubsequence} from './view/utils/colored-input/input-painters';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
@@ -52,28 +54,37 @@ export async function oligoToolkitApp(): Promise<void> {
 
   async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
 
-    /** key: plugin name, value: tab name  */
-    const externalPlugins = {
-      'Mermadesynthesis:merMadeSynthesis': 'SYNTHESIS'
+    const base = ui.textInput('input', '');
+    const input = new ColoredTextInput(base, highlightInvalidSubsequence);
+
+    /** key: plugin name, value: tab name */
+    const externalPluginData = {
+      'Mermadesynthesis:merMadeSynthesis': {
+        tabName: 'SYNTHESIZE',
+        parameters: {
+          coloredInput: input,
+          gcrsCodes: ['a', 'b', 'c']
+        }
+      },
     }
 
     const result: {[tabName: string]: () => DG.View} = {};
 
-    for (const [pluginName, tabName] of Object.entries(externalPlugins)) {
+    for (const [pluginName, data] of Object.entries(externalPluginData)) {
       let layout: HTMLDivElement;
       try {
-        layout = await grok.functions.call(pluginName);
+        layout = await grok.functions.call(pluginName, data.parameters);
       } catch (err) {
-        console.log(`Plugin ${pluginName} not loaded`)
-        return undefined;
+        console.log(`Plugin ${pluginName} not loaded, error:`, err)
+        layout = ui.div(['error loading']);
       }
       const view = DG.View.create();
-      const appUI = new ExternalPluginUI(view, tabName, layout);
+      const appUI = new ExternalPluginUI(view, data.tabName, layout);
 
       // intentonally don't await for the promise
       appUI.initView();
 
-      result[tabName] = () => view;
+      result[data.tabName] = () => view;
     }
     return result;
   }
