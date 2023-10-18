@@ -5,6 +5,7 @@
 ### Features
 
 * Color-coding Sequence space by scaled activity.
+* Optimized Mutation Cliffs calculations to use workers.
 
 ### Bug Fixes
 

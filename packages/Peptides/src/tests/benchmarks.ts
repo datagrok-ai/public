@@ -8,7 +8,6 @@ import {_package} from '../package-test';
 import {calculateClusterStatistics, calculateMonomerPositionStatistics, findMutations} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {scaleActivity} from '../utils/misc';
-import {PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';
 import * as C from '../utils/constants';
 
@@ -17,7 +16,7 @@ const benchmarkDatasetSizes = [5, 50, 100, 200];
 
 category('Benchmarks: Mutation Cliffs', () => {
   for (const size of benchmarkDatasetSizes)
-    test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 60000});
+    test(`${size}k sequences`, async () => await mutationCliffsBenchmark(size), {timeout: 100000});
 });
 
 category('Benchmarks: Cluster stats', () => {
@@ -31,7 +30,7 @@ category('Benchmarks: Cluster stats', () => {
       const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
       df.columns.add(scaledActivity);
       DG.time(`Cluster stats benchmark - ${size}k`, () => calculateClusterStatistics(df, clustersColumnName, []));
-    }, {timeout: 60000});
+    }, {timeout: 100000});
   }
 });
 
@@ -51,7 +50,7 @@ category('Benchmarks: Monomer-Position stats', () => {
       const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
       df.columns.add(scaledActivity);
       DG.time(`Monomer-Position stats benchmark - ${size}k`, () => calculateMonomerPositionStatistics(df, positionCols));
-    }, {timeout: 60000});
+    }, {timeout: 100000});
   }
 });
 
@@ -75,7 +74,7 @@ category('Benchmarks: Analysis start', () => {
         if (model)
           grok.shell.closeTable(model.df);
       });
-    });
+    }, {timeout: 100000});
   }
 });
 

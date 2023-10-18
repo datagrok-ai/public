@@ -6,7 +6,7 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {pickUpPalette, TAGS as bioTAGS, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {calculateScores, SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {Options, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {DistanceMatrix} from '@datagrok-libraries/ml/src/distance-matrix';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
@@ -299,8 +299,6 @@ export class PeptidesModel {
   }
 
   set settings(s: type.PeptidesSettings) {
-    // if one of the settings updated is mutation cliffs, we need to wait for it to finish
-    let mutationCliffsUpdatePromise: Promise<void> | null = null;
     const newSettingsEntries = Object.entries(s);
     const updateVars: Set<string> = new Set();
     for (const [key, value] of newSettingsEntries) {
@@ -334,24 +332,21 @@ export class PeptidesModel {
       }
     }
     this.df.setTag('settings', JSON.stringify(this._settings));
+    let updateViewersData = false;
     for (const variable of updateVars) {
       switch (variable) {
       case 'activity':
         this.createScaledCol();
+        updateViewersData = true;
         break;
       case 'mutationCliffs':
-        mutationCliffsUpdatePromise = this.updateMutationCliffs(); // TODO: function is async
+        this.updateMutationCliffs();
         break;
       case 'stats':
         this.monomerPositionStats = calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray());
         this.clusterStats = calculateClusterStatistics(this.df, this.settings.clustersColumnName!,
           this.customClusters.toArray());
-        const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
-        mpViewer.createMonomerPositionGrid();
-        mpViewer.render();
-        const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues;
-        mprViewer.createMostPotentResiduesGrid();
-        mprViewer.render();
+        updateViewersData = true;
         break;
       case 'grid':
         this.setGridProperties();
@@ -374,24 +369,19 @@ export class PeptidesModel {
       }
     }
 
-
     //TODO: handle settings change
     const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
-    mpViewer?.createMonomerPositionGrid();
+    if (updateViewersData)
+      mpViewer?.createMonomerPositionGrid();
     mpViewer?.render();
     const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-    mprViewer?.createMostPotentResiduesGrid();
+    if (updateViewersData)
+      mprViewer?.createMostPotentResiduesGrid();
     mprViewer?.render();
     const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-    lstViewer?.createLogoSummaryTableGrid();
+    if (updateViewersData)
+      lstViewer?.createLogoSummaryTableGrid();
     lstViewer?.render();
-
-    mutationCliffsUpdatePromise?.then(() => {
-      const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
-      mpViewer?.render();
-      const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-      mprViewer?.render();
-    });
   }
 
   get identityTemplate(): string {
@@ -408,23 +398,19 @@ export class PeptidesModel {
     const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractColInfo);
     const targetCol = typeof this.settings.targetColumnName !== 'undefined' ?
       extractColInfo(this.df.getCol(this.settings.targetColumnName)) : null;
-    const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
-    const currentTarget = mpViewer?.getProperty(MONOMER_POSITION_PROPERTIES.TARGET)?.get(mpViewer);
+    let mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const currentTarget = mpViewer?.getProperty(MONOMER_POSITION_PROPERTIES.TARGET)?.get(mpViewer) as string | undefined;
     const targetOptions = {targetCol: targetCol, currentTarget: currentTarget};
-    const mutationCliffs =
-    await findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings, targetOptions);
+    const mutationCliffs = await findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings, targetOptions);
     if (notify)
       this.mutationCliffs = mutationCliffs;
     else
       this._mutationCliffs = mutationCliffs;
-    setTimeout(() => {
-      const mpViewer1 = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
-      mpViewer1?.render();
-      mpViewer1?._viewerGrid.invalidate();
-      const mostPotentViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
-      mostPotentViewer?.render();
-      mostPotentViewer?._viewerGrid.invalidate();
-    }, 0);
+
+    mpViewer ??= this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    mpViewer?.render(true);
+    const mostPotentViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+    mostPotentViewer?.render(true);
   }
 
   buildSplitSeqDf(): DG.DataFrame {
@@ -1018,11 +1004,9 @@ export class PeptidesModel {
     }));
 
     this.fireBitsetChanged(true);
-    if (typeof this.settings.targetColumnName === 'undefined') {
-      this.updateMutationCliffs().then(() => {
-        this.analysisView.grid.invalidate();
-      });
-    }
+    if (typeof this.settings.targetColumnName === 'undefined')
+      this.updateMutationCliffs();
+
     this.analysisView.grid.invalidate();
   }
 
@@ -1143,10 +1127,10 @@ export class PeptidesModel {
   async addSequenceSpace(): Promise<void> {
     const seqSpaceParams: {table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
       similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames, plotEmbeddings: boolean,
-      sparseMatrixThreshold?: number, options?: IUMAPOptions | ITSNEOptions} =
-      {table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName!), methodName: DimReductionMethods.UMAP,
-        similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE, plotEmbeddings: true, sparseMatrixThreshold: 0.8,
-        options: {}};
+      sparseMatrixThreshold?: number, options?: (IUMAPOptions | ITSNEOptions) & Options} =
+      {table: this.df, molecules: this.df.getCol(this.settings.sequenceColumnName!),
+        methodName: DimReductionMethods.UMAP, similarityMetric: MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
+        plotEmbeddings: true, sparseMatrixThreshold: 0.8, options: {'bypassLargeDataWarning': true}};
     const seqSpaceViewer: DG.ScatterPlotViewer | undefined = await grok.functions.call('Bio:sequenceSpaceTopMenu', seqSpaceParams);
     if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
