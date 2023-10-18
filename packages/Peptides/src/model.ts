@@ -1022,7 +1022,7 @@ export class PeptidesModel {
     sourceGridProps.allowEdit = props?.allowEdit ?? false;
     sourceGridProps.showCurrentRowIndicator = props?.showCurrentRowIndicator ?? false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
-    const positionCols = this.positionColumns;
+    const positionCols = this.positionColumns.toArray();
     let maxWidth = 10;
     const canvasContext = sourceGrid.canvas.getContext('2d');
     for (const positionCol of positionCols) {

@@ -6,6 +6,10 @@
 
 * Color-coding Sequence space by scaled activity.
 
+### Bug Fixes
+
+* Fixed Invariant Map color coding wouldn't change when changing color column.
+
 ## 1.15.0 (2023-10-12)
 
 ### Features
