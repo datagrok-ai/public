@@ -1,9 +1,6 @@
 import * as C from './constants';
 import * as type from './types';
-import {getTypedArrayConstructor} from './misc';
 import {ParallelMutationCliffs} from './parallel-mutation-cliffs';
-
-type MutationCliffInfo = {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number};
 
 export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
   settings: type.PeptidesSettings = {},

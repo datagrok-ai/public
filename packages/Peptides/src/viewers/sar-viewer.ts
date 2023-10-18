@@ -89,7 +89,7 @@ export class MonomerPosition extends DG.JsViewer {
 
   createMonomerPositionDf(): DG.DataFrame {
     const uniqueMonomers = new Set<string>();
-    const splitSeqCols = this.model.positionColumns;
+    const splitSeqCols = this.model.positionColumns.toArray();
     for (const col of splitSeqCols) {
       const colCat = col.categories;
       for (const cat of colCat) {
