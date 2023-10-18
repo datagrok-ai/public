@@ -77,6 +77,7 @@ export class PeptidesModel {
   isInitialized = false;
   _analysisView?: DG.TableView;
 
+
   _settings!: type.PeptidesSettings;
   isRibbonSet = false;
 
@@ -298,6 +299,8 @@ export class PeptidesModel {
   }
 
   set settings(s: type.PeptidesSettings) {
+    // if one of the settings updated is mutation cliffs, we need to wait for it to finish
+    let mutationCliffsUpdatePromise: Promise<void> | null = null;
     const newSettingsEntries = Object.entries(s);
     const updateVars: Set<string> = new Set();
     for (const [key, value] of newSettingsEntries) {
@@ -337,7 +340,7 @@ export class PeptidesModel {
         this.createScaledCol();
         break;
       case 'mutationCliffs':
-        this.updateMutationCliffs();
+        mutationCliffsUpdatePromise = this.updateMutationCliffs(); // TODO: function is async
         break;
       case 'stats':
         this.monomerPositionStats = calculateMonomerPositionStatistics(this.df, this.positionColumns.toArray());
@@ -371,6 +374,7 @@ export class PeptidesModel {
       }
     }
 
+
     //TODO: handle settings change
     const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
     mpViewer?.createMonomerPositionGrid();
@@ -381,6 +385,13 @@ export class PeptidesModel {
     const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     lstViewer?.createLogoSummaryTableGrid();
     lstViewer?.render();
+
+    mutationCliffsUpdatePromise?.then(() => {
+      const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+      mpViewer?.render();
+      const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+      mprViewer?.render();
+    });
   }
 
   get identityTemplate(): string {
@@ -391,7 +402,7 @@ export class PeptidesModel {
     this.df.setTag(C.TAGS.IDENTITY_TEMPLATE, template);
   }
 
-  updateMutationCliffs(notify: boolean = true): void {
+  async updateMutationCliffs(notify: boolean = true): Promise<void> {
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: set categories ordering the same to share compare indexes instead of strings
     const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractColInfo);
@@ -400,11 +411,20 @@ export class PeptidesModel {
     const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
     const currentTarget = mpViewer?.getProperty(MONOMER_POSITION_PROPERTIES.TARGET)?.get(mpViewer);
     const targetOptions = {targetCol: targetCol, currentTarget: currentTarget};
-    const mutationCliffs = findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings, targetOptions);
+    const mutationCliffs =
+    await findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings, targetOptions);
     if (notify)
       this.mutationCliffs = mutationCliffs;
     else
       this._mutationCliffs = mutationCliffs;
+    setTimeout(() => {
+      const mpViewer1 = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+      mpViewer1?.render();
+      mpViewer1?._viewerGrid.invalidate();
+      const mostPotentViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
+      mostPotentViewer?.render();
+      mostPotentViewer?._viewerGrid.invalidate();
+    }, 0);
   }
 
   buildSplitSeqDf(): DG.DataFrame {
@@ -902,7 +922,7 @@ export class PeptidesModel {
     setTimeout(() => {
       for (const positionCol of positionCols)
         sourceGrid.col(positionCol.name)!.width = maxWidth + 15;
-    }, 1000);
+    }, 100);
   }
 
   closeViewer(viewerType: VIEWER_TYPE): void {
@@ -998,8 +1018,11 @@ export class PeptidesModel {
     }));
 
     this.fireBitsetChanged(true);
-    if (typeof this.settings.targetColumnName === 'undefined')
-      this.updateMutationCliffs();
+    if (typeof this.settings.targetColumnName === 'undefined') {
+      this.updateMutationCliffs().then(() => {
+        this.analysisView.grid.invalidate();
+      });
+    }
     this.analysisView.grid.invalidate();
   }
 

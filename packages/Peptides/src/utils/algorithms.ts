@@ -1,30 +1,32 @@
 import * as DG from 'datagrok-api/dg';
-
-import wu from 'wu';
-
 import * as C from './constants';
 import * as type from './types';
-import {getTypedArrayConstructor} from './misc';
-import {CLUSTER_TYPE, ClusterStats, ClusterTypeStats, MonomerPositionStats, PositionStats, SummaryStats} from '../model';
+import {ParallelMutationCliffs} from './parallel-mutation-cliffs';
+import {CLUSTER_TYPE, ClusterStats, ClusterTypeStats,
+  MonomerPositionStats, PositionStats, SummaryStats} from '../model';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Stats, getStats} from './statistics';
 
 
-type MutationCliffInfo = {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number};
-
-export function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
+export async function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
   settings: type.PeptidesSettings = {},
-  targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {}): type.MutationCliffs {
+  targetOptions: {targetCol?: type.RawColumn | null, currentTarget?: string | null} = {},
+): Promise<type.MutationCliffs> {
   const nCols = monomerInfoArray.length;
   if (nCols === 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
   settings.minActivityDelta ??= 0;
   settings.maxMutations ??= 1;
-  const currentTargetIdx = targetOptions.targetCol?.cat!.indexOf(targetOptions.currentTarget!) ?? -1;
+  //const currentTargetIdx = targetOptions.targetCol?.cat!.indexOf(targetOptions.currentTarget!) ?? -1;
 
-  const substitutionsInfo: type.MutationCliffs = new Map();
-  const nRows = activityArray.length;
+  //const substitutionsInfo: type.MutationCliffs = new Map();
+  //const nRows = activityArray.length;
+
+  const substitutionsInfo =
+    await new ParallelMutationCliffs().calc(activityArray, monomerInfoArray, settings, targetOptions);
+  return substitutionsInfo;
+  /*
   for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
     if (currentTargetIdx !== -1 && targetOptions.targetCol?.rawData[seq1Idx] !== currentTargetIdx)
       continue;
@@ -66,7 +68,8 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
       if (substCounterFlag || substCounter === 0)
         continue;
 
-      // Separate processing loop in case substCOunter is 0 or out of restricted range to prevent unnecessary computations
+      // Separate processing loop in case substCOunter is 0 or out of restricted range to
+      // prevent unnecessary computations
       for (let i = 0; i < tempDataIdx; i++) {
         const tempDataElement = tempData[i];
         //Working with seq1monomer
@@ -113,6 +116,7 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: typ
   }
 
   return substitutionsInfo;
+  */
 }
 
 export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionColumns: DG.Column<string>[],
@@ -163,7 +167,9 @@ export function calculateMonomerPositionStatistics(df: DG.DataFrame, positionCol
   return monomerPositionObject;
 }
 
-export function getSummaryStats(genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
+export function getSummaryStats(
+  genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null,
+): void {
   if (stats === null && summaryStats === null)
     throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
 
@@ -236,8 +242,8 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
     const resultStats = clustType === CLUSTER_TYPE.ORIGINAL ? origClustStats : customClustStats;
     for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
       const mask = masks[maskIdx];
-      const stats = mask.allTrue || mask.allFalse ? {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask} :
-        getStats(activityColData, mask);
+      const stats = mask.allTrue || mask.allFalse ?
+        {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask} : getStats(activityColData, mask);
       resultStats[clustNames[maskIdx]] = stats;
     }
   }

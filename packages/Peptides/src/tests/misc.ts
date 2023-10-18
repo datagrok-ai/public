@@ -31,7 +31,7 @@ category('Algorithms', () => {
 
   test('MutationCliffs', async () => {
     // Check every pair
-    let mutationCliffsInfo: type.MutationCliffs = findMutations(activityCol, monomerColumns, settings);
+    let mutationCliffsInfo: type.MutationCliffs = await findMutations(activityCol, monomerColumns, settings);
     expect(mutationCliffsInfo.has('C'), true, `MutationCliffsInfo should have key 'C'`);
     expect(mutationCliffsInfo.has('D'), true, `MutationCliffsInfo should have key 'D'`);
     expect(mutationCliffsInfo.has('A'), false, `MutationCliffsInfo should not have key 'A'`);
@@ -52,7 +52,7 @@ category('Algorithms', () => {
     expect(d32[0], 1, `MutationCliffsInfo['D']['3'][2] should have value 1`);
 
     // Check with target
-    mutationCliffsInfo = findMutations(activityCol, monomerColumns, settings, {targetCol, currentTarget: '1'});
+    mutationCliffsInfo = await findMutations(activityCol, monomerColumns, settings, {targetCol, currentTarget: '1'});
     expect(mutationCliffsInfo.size, 0, `MutationCliffsInfo should be empty for target '1'`);
   });
 });
