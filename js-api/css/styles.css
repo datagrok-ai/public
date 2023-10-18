@@ -29,5 +29,5 @@
 }
 
 .chem-sketcher-loader-hide {
-  display: none;
+  display: none!important;
 }

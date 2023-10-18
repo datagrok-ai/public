@@ -27,7 +27,7 @@ export class MonomerPosition extends DG.JsViewer {
   _titleHost = ui.divText(SELECTION_MODE.MUTATION_CLIFFS, {id: 'pep-viewer-title'});
   _viewerGrid!: DG.Grid;
   _model!: PeptidesModel;
-  colorCol: string;
+  color: string;
   aggregation: string;
   target: string;
   keyPressed: boolean = false;
@@ -37,7 +37,7 @@ export class MonomerPosition extends DG.JsViewer {
     super();
     this.target = this.string(MONOMER_POSITION_PROPERTIES.TARGET, null,
       {category: SELECTION_MODE.MUTATION_CLIFFS, choices: []});
-    this.colorCol = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
+    this.color = this.string(MONOMER_POSITION_PROPERTIES.COLOR_COLUMN_NAME, C.COLUMNS_NAMES.ACTIVITY_SCALED,
       {category: SELECTION_MODE.INVARIANT_MAP,
         choices: wu(grok.shell.t.columns.numerical).toArray().map((col) => col.name)});
     this.aggregation = this.string(MONOMER_POSITION_PROPERTIES.AGGREGATION, DG.AGG.AVG,
@@ -116,7 +116,7 @@ export class MonomerPosition extends DG.JsViewer {
     const monomerCol = monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setMonomerRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
-      this.mode === SELECTION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.colorCol), this.aggregation as DG.AGG));
+      this.mode === SELECTION_MODE.INVARIANT_MAP, this.dataFrame.getCol(this.color), this.aggregation as DG.AGG));
 
     this.viewerGrid.onCellTooltip((gridCell: DG.GridCell, x: number, y: number) => {
       if (!gridCell.isTableCell) {

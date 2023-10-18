@@ -5,7 +5,7 @@ import {category, test} from '@datagrok-libraries/utils/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {_package} from '../package-test';
-import {findMutations} from '../utils/algorithms';
+import {calculateClusterStatistics, calculateMonomerPositionStatistics, findMutations} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {scaleActivity} from '../utils/misc';
 import {PeptidesModel} from '../model';
@@ -26,8 +26,11 @@ category('Benchmarks: Cluster stats', () => {
       if (!DG.Test.isInBenchmark)
         return null;
 
-      const model = await getModel(size);
-      DG.time(`Cluster stats benchmark - ${size}`, () => model!.calculateClusterStatistics());
+      const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
+      const clustersColumnName = 'cluster';
+      const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
+      df.columns.add(scaledActivity);
+      DG.time(`Cluster stats benchmark - ${size}k`, () => calculateClusterStatistics(df, clustersColumnName, []));
     }, {timeout: 60000});
   }
 });
@@ -38,8 +41,16 @@ category('Benchmarks: Monomer-Position stats', () => {
       if (!DG.Test.isInBenchmark)
         return null;
 
-      const model = await getModel(size);
-      DG.time(`Monomer-Position stats benchmark - ${size}`, () => model!.calculateMonomerPositionStatistics());
+      const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
+      const positionCols: DG.Column<string>[] = [];
+      let i = 1;
+      while (df.col(i.toString()) !== null) {
+        positionCols.push(df.getCol(i.toString()));
+        ++i;
+      }
+      const scaledActivity = scaleActivity(df.getCol('activity'), C.SCALING_METHODS.NONE);
+      df.columns.add(scaledActivity);
+      DG.time(`Monomer-Position stats benchmark - ${size}k`, () => calculateMonomerPositionStatistics(df, positionCols));
     }, {timeout: 60000});
   }
 });
@@ -82,18 +93,4 @@ async function mutationCliffsBenchmark(size: number): Promise<void> {
     ++i;
   }
   await DG.timeAsync('Mutation Cliffs', async () => await findMutations(activityCol, monomerCols));
-}
-
-async function getModel(size: number): Promise<PeptidesModel | null> {
-  if (!DG.Test.isInBenchmark)
-    return null;
-
-  const df = (await _package.files.readBinaryDataFrames(`tests/${size}k.d42`))[0];
-  const activityCol = df.getCol('activity');
-  const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
-  const clustersCol = df.getCol('cluster');
-  const sequenceCol = df.getCol('sequence');
-  sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  sequenceCol.setTag(DG.TAGS.UNITS, size === benchmarkDatasetSizes[0] ? NOTATION.HELM : NOTATION.FASTA);
-  return await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
 }
