@@ -82,6 +82,7 @@ async function invalidationCacheTest(dataQuery: DataQuery, days: number): Promis
   const funcCall1 = await dataQuery.prepare().call();
   const firstExecutionTime = Date.now() - start;
   await delay(100);
+  //@ts-ignore
   funcCall1.started = dayjs().subtract(days, 'day');
   await grok.dapi.functions.calls.save(funcCall1);
   await grok.functions.clientCache.clear();

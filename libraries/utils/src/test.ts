@@ -258,7 +258,7 @@ export async function initAutoTests(packageId: string, module?: any) {
       const test = new Test(demoCatName, f.friendlyName, async () => {
         grok.shell.lastError = '';
         await f.apply();
-        await delay(wait ? wait : 1000);
+        await delay(wait ? wait : 2000);
         if (grok.shell.lastError)
           throw new Error(grok.shell.lastError);
       });
