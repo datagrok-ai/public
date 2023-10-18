@@ -6,6 +6,7 @@
 
 * Color-coding Sequence space by scaled activity.
 * Optimized Mutation Cliffs calculations to use workers.
+* Hid WebLogo positions in Logo Summary Table.
 
 ### Bug Fixes
 
