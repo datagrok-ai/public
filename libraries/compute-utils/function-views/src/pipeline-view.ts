@@ -521,7 +521,6 @@ export class PipelineView extends ComputationView {
 
     await this.onAfterRun(this.funcCall);
 
-    this.funcCall.options['isShared'] = undefined;
     this.funcCall.options['isFavorite'] = undefined;
     if (this.funcCall.options['title'])
       this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
