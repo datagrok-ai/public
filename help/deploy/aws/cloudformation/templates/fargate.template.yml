@@ -1593,7 +1593,7 @@ Resources:
   DatagrokJupyterServiceDiscoveryEntry:
     Properties:
       Description:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM 'jupyter' service discovery entry in Cloud Map"
+        Fn::Sub: "${AWS::StackName} Datagrok CVM 'jupyter-kernel-gateway' service discovery entry in Cloud Map"
       DnsConfig:
         DnsRecords:
           - TTL: 60
@@ -1608,7 +1608,7 @@ Resources:
   DatagrokJupyterNotebookServiceDiscoveryEntry:
     Properties:
       Description:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM 'jupyter' service discovery entry in Cloud Map"
+        Fn::Sub: "${AWS::StackName} Datagrok CVM 'jupyter-notebook' service discovery entry in Cloud Map"
       DnsConfig:
         DnsRecords:
           - TTL: 60
@@ -1623,7 +1623,7 @@ Resources:
   DatagrokJupyterTCP5005TargetGroup:
     Properties:
       Name:
-        Fn::Sub: "${AWS::StackName}-dg-cvm-jup-gh"
+        Fn::Sub: "${AWS::StackName}-dg-cvm-jkg-gh"
       Port: 5005
       Protocol: HTTP
       Tags:
