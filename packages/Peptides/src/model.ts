@@ -386,7 +386,7 @@ export class PeptidesModel {
     lstViewer?.createLogoSummaryTableGrid();
     lstViewer?.render();
 
-    mutationCliffsUpdatePromise && mutationCliffsUpdatePromise.then(() => {
+    mutationCliffsUpdatePromise?.then(() => {
       const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
       mpViewer?.render();
       const mprViewer = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResidues | null;
