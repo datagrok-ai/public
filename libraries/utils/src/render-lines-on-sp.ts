@@ -29,6 +29,7 @@ export class ScatterPlotLinesRenderer {
     paths: Path2D[];
     mouseOverLineId: number | null = null;
     multipleLinesIndices: Uint32Array;
+    changePointsOrder: BitArray;
 
     get currentLineId(): number {
         return this.currentLineIdx;
@@ -48,6 +49,7 @@ export class ScatterPlotLinesRenderer {
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
         this.paths = new Array<Path2D>(this.lines.from.length);
         this.multipleLinesIndices = new Uint32Array(this.lines.from.length);
+        this.changePointsOrder = new BitArray(this.lines.from.length, false);
 
         this.createMultiLinesIndices();
 
@@ -71,14 +73,9 @@ export class ScatterPlotLinesRenderer {
 
     renderLines(): void {
         for (let i = 0; i < this.lines.from.length; i++) {
-            let pointFromIdx = this.lines.from[i];
-            let pointToIdx = this.lines.to[i];
-            let changedPoints = false;
-            if (pointFromIdx > pointToIdx) {
-                pointFromIdx = this.lines.to[i];
-                pointToIdx = this.lines.from[i];
-                changedPoints = true;
-            }
+            const pointsOrderChanged = this.changePointsOrder.getBit(i);
+            let pointFromIdx = pointsOrderChanged ? this.lines.to[i] : this.lines.from[i];
+            let pointToIdx = pointsOrderChanged ? this.lines.from[i] : this.lines.to[i];
             const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(pointFromIdx), this.yAxisCol.get(pointFromIdx));
             const aX = pointFrom?.x;
             const aY = pointFrom?.y;
@@ -101,7 +98,7 @@ export class ScatterPlotLinesRenderer {
                 }
                 line.quadraticCurveTo(midPoint.x, midPoint.y, bX, bY);
                 if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i))
-                    this.canvasArrow(line, changedPoints ? aX : bX, changedPoints ? aY : bY, midPoint.x, midPoint.y);
+                    this.canvasArrow(line, pointsOrderChanged ? aX : bX, pointsOrderChanged ? aY : bY, midPoint.x, midPoint.y);
                 this.ctx.beginPath();
                 this.ctx.stroke(line);
                 this.ctx.closePath();
@@ -117,10 +114,16 @@ export class ScatterPlotLinesRenderer {
             let firstLineIdx = arrayIdxs[0];
             let p1 = this.lines.from[firstLineIdx];
             let p2 = this.lines.to[firstLineIdx];
+            if (p1 > p2)
+                this.changePointsOrder.setBit(firstLineIdx, true, false);
             let linesPerPair = 1;
             for (let i = 1; i < arrayIdxs.length; i++) {
-                if (this.lines.from[arrayIdxs[i]] === p1 && this.lines.to[arrayIdxs[i]] === p2 ||
-                    this.lines.to[arrayIdxs[i]] === p1 && this.lines.from[arrayIdxs[i]] === p2) {
+                const pointToCompare1 = this.lines.from[arrayIdxs[i]];
+                const pointToCompare2 = this.lines.to[arrayIdxs[i]];
+                if (pointToCompare1 === p1 && pointToCompare2 === p2 ||
+                    pointToCompare2 === p1 && pointToCompare1 === p2) {
+                    if (pointToCompare1 > pointToCompare2)
+                        this.changePointsOrder.setBit(arrayIdxs[i], true);
                     this.multipleLinesIndices[arrayIdxs[i]] = ++linesPerPair;
                     arrayIdxs.splice(i, 1);
                     i--;
