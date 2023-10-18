@@ -467,6 +467,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //input: bool plotEmbeddings = true
 //input: double sparseMatrixThreshold = 0.8 [Similarity Threshold for sparse matrix calculation]
 //input: object options {optional: true}
+//output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(
   table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
