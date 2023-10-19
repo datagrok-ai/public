@@ -68,7 +68,7 @@ Metadata:
       - DatagrokVersion
       - GrokConnectVersion
       - GrokSpawnerVersion
-      - JKGVersion
+      - JupyterVersion
       - GrokComputeVersion
       - H2oVersion
     ParameterLabels:
@@ -94,8 +94,8 @@ Metadata:
         default: 'InternetIngressAccess: Access from internet'
       InternetSubnetAllow:
         default: 'InternetSubnetAllow: Allow connect from CIDR'
-      JKGVersion:
-        default: Jupyter Kernel Gateway Version
+      JupyterVersion:
+        default: Jupyter Version
 Outputs:
   DatagrokAdminPassword:
     Description: Admin password for first login
