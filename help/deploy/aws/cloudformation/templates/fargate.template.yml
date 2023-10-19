@@ -1481,10 +1481,10 @@ Resources:
       - CvmTCP80Listener
       - CvmTCP443Listener
       - CvmTCP8090IntListener
-      - DatagrokJupyterTCP5005ListenerRule
-      - DatagrokJupyterTCP5005IntListenerRule
-      - DatagrokJupyterTCP8888ListenerRule
-      - DatagrokJupyterTCP8888IntListenerRule
+      - DatagrokJupyterKernelGatewayTCP5005ListenerRule
+      - DatagrokJupyterKernelGatewayTCP5005IntListenerRule
+      - DatagrokJupyterKernelGatewayTCP8888ListenerRule
+      - DatagrokJupyterKernelGatewayTCP8888IntListenerRule
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -1501,19 +1501,19 @@ Resources:
         - ContainerName: jupyter_kernel_gateway
           ContainerPort: 5005
           TargetGroupArn:
-            Ref: DatagrokJupyterTCP5005TargetGroup
+            Ref: DatagrokJupyterKernelGatewayTCP5005TargetGroup
         - ContainerName: jupyter_kernel_gateway
           ContainerPort: 8888
           TargetGroupArn:
-            Ref: DatagrokJupyterTCP8888TargetGroup
+            Ref: DatagrokJupyterKernelGatewayTCP8888TargetGroup
         - ContainerName: jupyter_kernel_gateway
           ContainerPort: 5005
           TargetGroupArn:
-            Ref: DatagrokJupyterTCP5005IntTargetGroup
+            Ref: DatagrokJupyterKernelGatewayTCP5005IntTargetGroup
         - ContainerName: jupyter_kernel_gateway
           ContainerPort: 8888
           TargetGroupArn:
-            Ref: DatagrokJupyterTCP8888IntTargetGroup
+            Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -1543,8 +1543,8 @@ Resources:
       - CvmTCP80Listener
       - CvmTCP443Listener
       - CvmTCP8090IntListener
-      - DatagrokJupyterTCP8889ListenerRule
-      - DatagrokJupyterTCP8889IntListenerRule
+      - DatagrokJupyterNotebookTCP8889ListenerRule
+      - DatagrokJupyterNotebookTCP8889IntListenerRule
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -1561,11 +1561,11 @@ Resources:
         - ContainerName: jupyter_notebook
           ContainerPort: 8889
           TargetGroupArn:
-            Ref: DatagrokJupyterTCP8889TargetGroup
+            Ref: DatagrokJupyterNotebookTCP8889TargetGroup
         - ContainerName: jupyter_notebook
           ContainerPort: 8889
           TargetGroupArn:
-            Ref: DatagrokJupyterTCP8889IntTargetGroup
+            Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -1620,7 +1620,7 @@ Resources:
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
-  DatagrokJupyterTCP5005TargetGroup:
+  DatagrokJupyterKernelGatewayTCP5005TargetGroup:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-dg-cvm-jkg-gh"
@@ -1643,7 +1643,7 @@ Resources:
         - Key: stickiness.lb_cookie.duration_seconds
           Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP5005IntTargetGroup:
+  DatagrokJupyterKernelGatewayTCP5005IntTargetGroup:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-dg-cvm-jup-gh-int"
@@ -1666,7 +1666,7 @@ Resources:
         - Key: stickiness.lb_cookie.duration_seconds
           Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8888TargetGroup:
+  DatagrokJupyterKernelGatewayTCP8888TargetGroup:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-dg-cvm-jupyter"
@@ -1689,7 +1689,7 @@ Resources:
         - Key: stickiness.lb_cookie.duration_seconds
           Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8889TargetGroup:
+  DatagrokJupyterNotebookTCP8889TargetGroup:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-dg-cvm-jupytern"
@@ -1712,7 +1712,7 @@ Resources:
         - Key: stickiness.lb_cookie.duration_seconds
           Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8888IntTargetGroup:
+  DatagrokJupyterKernelGatewayTCP8888IntTargetGroup:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-dg-cvm-jupyter-int"
@@ -1735,7 +1735,7 @@ Resources:
         - Key: stickiness.lb_cookie.duration_seconds
           Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8889IntTargetGroup:
+  DatagrokJupyterNotebookTCP8889IntTargetGroup:
     Properties:
       Name:
         Fn::Sub: "${AWS::StackName}-dg-cvm-jupytern-int"
@@ -1933,13 +1933,13 @@ Resources:
         Ref: CvmTCP8090IntListener
       Priority: 2
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP5005ListenerRule:
+  DatagrokJupyterKernelGatewayTCP5005ListenerRule:
     Properties:
       Actions:
         - ForwardConfig:
             TargetGroups:
               - TargetGroupArn:
-                  Ref: DatagrokJupyterTCP5005TargetGroup
+                  Ref: DatagrokJupyterKernelGatewayTCP5005TargetGroup
           Type: forward
       Conditions:
         - Field: path-pattern
@@ -1950,13 +1950,13 @@ Resources:
         Ref: CvmTCP443Listener
       Priority: 3
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP5005IntListenerRule:
+  DatagrokJupyterKernelGatewayTCP5005IntListenerRule:
     Properties:
       Actions:
         - ForwardConfig:
             TargetGroups:
               - TargetGroupArn:
-                  Ref: DatagrokJupyterTCP5005IntTargetGroup
+                  Ref: DatagrokJupyterKernelGatewayTCP5005IntTargetGroup
           Type: forward
       Conditions:
         - Field: path-pattern
@@ -1967,13 +1967,13 @@ Resources:
         Ref: CvmTCP8090IntListener
       Priority: 3
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8888ListenerRule:
+  DatagrokJupyterKernelGatewayTCP8888ListenerRule:
     Properties:
       Actions:
         - ForwardConfig:
             TargetGroups:
               - TargetGroupArn:
-                  Ref: DatagrokJupyterTCP8888TargetGroup
+                  Ref: DatagrokJupyterKernelGatewayTCP8888TargetGroup
           Type: forward
       Conditions:
         - Field: path-pattern
@@ -1984,13 +1984,13 @@ Resources:
         Ref: CvmTCP443Listener
       Priority: 4
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8888IntListenerRule:
+  DatagrokJupyterKernelGatewayTCP8888IntListenerRule:
     Properties:
       Actions:
         - ForwardConfig:
             TargetGroups:
               - TargetGroupArn:
-                  Ref: DatagrokJupyterTCP8888IntTargetGroup
+                  Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
           Type: forward
       Conditions:
         - Field: path-pattern
@@ -2001,13 +2001,13 @@ Resources:
         Ref: CvmTCP8090IntListener
       Priority: 4
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8889ListenerRule:
+  DatagrokJupyterNotebookTCP8889ListenerRule:
     Properties:
       Actions:
         - ForwardConfig:
             TargetGroups:
               - TargetGroupArn:
-                  Ref: DatagrokJupyterTCP8889TargetGroup
+                  Ref: DatagrokJupyterNotebookTCP8889TargetGroup
           Type: forward
       Conditions:
         - Field: path-pattern
@@ -2018,13 +2018,13 @@ Resources:
         Ref: CvmTCP443Listener
       Priority: 6
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8889IntListenerRule:
+  DatagrokJupyterNotebookTCP8889IntListenerRule:
     Properties:
       Actions:
         - ForwardConfig:
             TargetGroups:
               - TargetGroupArn:
-                  Ref: DatagrokJupyterTCP8889IntTargetGroup
+                  Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
           Type: forward
       Conditions:
         - Field: path-pattern
