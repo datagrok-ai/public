@@ -347,58 +347,58 @@ category('RichFunctionView Validation', async () => {
   });
 
   test('Validate on start', async () => {
-    const view = new RichFunctionView('Compute:validationDemo');
+    const view = new RichFunctionView('Libtests:validationDemo');
     await view.funcCallReplaced.pipe(take(1)).toPromise();
     await delay(1500);
     const results = view.getValidationState();
     expectDeepEqual(
       results,
       {
-        "a": {
-          "errors": [
+        'a': {
+          'errors': [
             {
-              "description": "Missing value"
+              'description': 'Missing value',
             },
             {
-              "description": "Out of range [1, 10] value: null"
-            }
+              'description': 'Out of range [1, 10] value: null',
+            },
           ],
-          "warnings": [],
-          "notifications": [],
-          "revalidate": [],
-          "context": {}
+          'warnings': [],
+          'notifications': [],
+          'revalidate': [],
+          'context': {},
         },
-        "b": {
-          "errors": [
+        'b': {
+          'errors': [
             {
-              "description": "Missing value"
+              'description': 'Missing value',
             },
             {
-              "description": "Out of range [20, 100] value: null"
-            }
+              'description': 'Out of range [20, 100] value: null',
+            },
           ],
-          "warnings": [],
-          "notifications": [],
-          "revalidate": [],
-          "context": {}
+          'warnings': [],
+          'notifications': [],
+          'revalidate': [],
+          'context': {},
         },
-        "x": {
-          "errors": [],
-          "warnings": [
+        'x': {
+          'errors': [],
+          'warnings': [
             {
-              "description": "Try non-null value"
-            }
+              'description': 'Try non-null value',
+            },
           ],
-          "notifications": [],
-          "revalidate": [],
-          "context": {}
-        }
-      }
+          'notifications': [],
+          'revalidate': [],
+          'context': {},
+        },
+      },
     );
   });
 
   test('Validate on input', async () => {
-    const view = new RichFunctionView('Compute:validationDemo');
+    const view = new RichFunctionView('Libtests:validationDemo');
     const inputValues: Record<string, any> = {
       a: 2.3,
       b: 3.2,
@@ -421,19 +421,19 @@ category('RichFunctionView Validation', async () => {
     expectDeepEqual(
       results,
       {
-        "b": {
-          "errors": [
+        'b': {
+          'errors': [
             {
-              "description": "Out of range [20, 100] value: 3.2"
-            }
-          ]
-        }
-      }
+              'description': 'Out of range [20, 100] value: 3.2',
+            },
+          ],
+        },
+      },
     );
   });
 
   test('Revalidation sequence', async () => {
-    const view = new RichFunctionView('Compute:globalValidationDemo');
+    const view = new RichFunctionView('Libtests:globalValidationDemo');
     const inputValues: Record<string, any> = {
       a: 30,
       b: 40,
@@ -455,35 +455,35 @@ category('RichFunctionView Validation', async () => {
     expectDeepEqual(
       results,
       {
-        "a": {
-          "revalidate": [
-            "b",
-            "c"
+        'a': {
+          'revalidate': [
+            'b',
+            'c',
           ],
-          "context": {
-            "isOk": false
+          'context': {
+            'isOk': false,
           },
-          "warnings": [
+          'warnings': [
             {
-              "description": "Try lowering a value"
-            }
-          ]
+              'description': 'Try lowering a value',
+            },
+          ],
         },
-        "b": {
-          "warnings": [
+        'b': {
+          'warnings': [
             {
-              "description": "Try lowering a value as well"
-            }
-          ]
+              'description': 'Try lowering a value as well',
+            },
+          ],
         },
-        "c": {
-          "warnings": [
+        'c': {
+          'warnings': [
             {
-              "description": "Try lowering a value as well"
-            }
-          ]
-        }
-      }
+              'description': 'Try lowering a value as well',
+            },
+          ],
+        },
+      },
     );
   });
 
