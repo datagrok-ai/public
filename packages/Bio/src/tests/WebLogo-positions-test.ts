@@ -32,7 +32,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -122,7 +122,7 @@ ATC-G-TTGC--
       {'skipEmptyPositions': true})) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const resPosList: PI[] = wlViewer['positions'];
 
     const tgtPosList: PI[] = [
@@ -158,7 +158,7 @@ ATC-G-TTGC--
     })) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const resPosList: PI[] = wlViewer['positions'];
     const tgtPosList: PI[] = [
       new PI(2, '3', {'C': new PMI(5)}),
@@ -194,7 +194,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const resPosList: PI[] = wlViewer['positions'];
   });
 });
