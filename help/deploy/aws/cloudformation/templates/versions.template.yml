@@ -9,7 +9,7 @@ Metadata:
           - DatagrokVersion
           - GrokConnectVersion
           - GrokSpawnerVersion
-          - JKGVersion
+          - JupyterVersion
           - GrokComputeVersion
           - H2oVersion
     ParameterLabels:
@@ -19,8 +19,8 @@ Metadata:
         default: 'Grok Connect Version'
       GrokSpawnerVersion:
         default: 'Grok Spawner Version'
-      JKGVersion:
-        default: 'Jupyter Kernel Gateway Version'
+      JupyterVersion:
+        default: 'Jupyter Version'
       GrokComputeVersion:
         default: 'Grok Compute Version'
       H2oVersion:
