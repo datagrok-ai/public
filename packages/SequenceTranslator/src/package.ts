@@ -7,6 +7,7 @@ import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {codesToHelmDictionary} from './model/data-loading-utils/json-loader';
 import {getJsonData} from './model/data-loading-utils/json-loader';
 import {SequenceToMolfileConverter} from './model/sequence-to-structure-utils/sequence-to-molfile';
 import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transformations';
@@ -54,7 +55,7 @@ export async function oligoToolkitApp(): Promise<void> {
 
   async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
 
-    const base = ui.textInput('input', '');
+    const base = ui.textInput('', '');
     const input = new ColoredTextInput(base, highlightInvalidSubsequence);
 
     /** key: plugin name, value: tab name */
@@ -63,10 +64,11 @@ export async function oligoToolkitApp(): Promise<void> {
         tabName: 'SYNTHESIZE',
         parameters: {
           coloredInput: input,
-          gcrsCodes: ['a', 'b', 'c']
+          codes: codesToHelmDictionary
         }
       },
     }
+    console.log(`pluginData:`, externalPluginData);
 
     const result: {[tabName: string]: () => DG.View} = {};
 
@@ -76,7 +78,7 @@ export async function oligoToolkitApp(): Promise<void> {
         layout = await grok.functions.call(pluginName, data.parameters);
       } catch (err) {
         console.log(`Plugin ${pluginName} not loaded, error:`, err)
-        layout = ui.div(['error loading']);
+        layout = ui.divText('error loading');
       }
       const view = DG.View.create();
       const appUI = new ExternalPluginUI(view, data.tabName, layout);
