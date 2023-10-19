@@ -2,13 +2,13 @@
 //description: Uses Newton's law of cooling to simulate object cooling process. Default values are for cube of boiling water in air.
 //language: javascript
 //tags: simulation, demo
-//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50}
-//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50}
-//input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment}
+//input: double ambTemp = 22 {caption: Ambient temperature; units: C; category: Environment; block: 50; validator: Compute:AmbTempValidator; }
+//input: double initTemp = 100 {caption: Initial temperature; units: C; category: Environment; block: 50; validator: Compute:InitialTempValidator; }
+//input: double desiredTemp = 30 {caption: Desired temperature; units: C; category: Environment; validator: Compute:DesiredTempValidator; }
 //input: double area = 0.06 {caption: Surface area; units: m²; category: Object properties}
-//input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties}
+//input: double heatCap = 4200 {caption: Heat capacity; units: J/C; category: Object properties; validator: Compute:HeatCapValidator; }
 //input: double heatTransferCoeff = 8.3 {caption: Heat transfer coefficient; units: W/(m² * C); category: Object properties}
-//input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation}
+//input: int simTime = 21600 {caption: Simulation time; units: sec; category: Simulation; validator: Compute:SimTimeValidator; validatorOptions: { "reasonableMin": 10800, "reasonableMax": 100000} }
 //output: dataframe simulation {caption: Temp. vs time; category: Output; viewer: Line chart(block: 75) | Grid(block: 25)}
 //output: double timeToCool {caption: Time to cool; units: sec.; category: Output}
 //output: double coolingFactor {caption: Cooling factor; units: 1 / sec.; category: Calculations}
