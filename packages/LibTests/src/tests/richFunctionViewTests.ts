@@ -347,7 +347,7 @@ category('RichFunctionView Validation', async () => {
   });
 
   test('Validate on start', async () => {
-    const view = new RichFunctionView('Libtests:validationDemo');
+    const view = new RichFunctionView('Libtests:validationTest');
     await view.funcCallReplaced.pipe(take(1)).toPromise();
     await delay(1500);
     const results = view.getValidationState();
@@ -398,7 +398,7 @@ category('RichFunctionView Validation', async () => {
   });
 
   test('Validate on input', async () => {
-    const view = new RichFunctionView('Libtests:validationDemo');
+    const view = new RichFunctionView('Libtests:validationTest');
     const inputValues: Record<string, any> = {
       a: 2.3,
       b: 3.2,
@@ -433,7 +433,7 @@ category('RichFunctionView Validation', async () => {
   });
 
   test('Revalidation sequence', async () => {
-    const view = new RichFunctionView('Libtests:globalValidationDemo');
+    const view = new RichFunctionView('Libtests:globalValidationTest');
     const inputValues: Record<string, any> = {
       a: 30,
       b: 40,

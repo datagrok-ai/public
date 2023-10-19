@@ -1,7 +1,7 @@
-//name: validatorActionsDemo
-//description: Validator actions demo
+//name: validatorActionsTest
+//description: Validator actions test
 //language: javascript
-//tags: simulation, demo
+//tags: simulation
 //input: double x=0 {caption: Input; validator: LibTests:ValidatorActionsDemoFactory }
 //output: double y
 //editor: Compute:RichFunctionViewEditor
