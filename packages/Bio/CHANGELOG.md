@@ -23,8 +23,8 @@
 * Fix added by Split to monomers columns to be not used as a filter.
 * Fix WebLogo with `filterSource` of `Selection` to work from project.
 * Fix WebLogo with `filterSource` of `Selection` display all in case of empty selection.
-* Fix VdRegionsViewer for initial `filterSource`
-* Fix Macromolecule cell render to skip on closed grid
+* Fix VdRegionsViewer for initial `filterSource`.
+* Fix Macromolecule cell render to skip on closed grid.
 * Fix WebLogoViewer for empty column (annotated).
 * Fix WebLogoViewer and VdRegionsViewer deadlock.
 

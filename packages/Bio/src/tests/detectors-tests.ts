@@ -39,6 +39,7 @@ category('detectors', () => {
     sepUn2 = 'sepUn2',
     sepMsaDna1 = 'sepMsaDna1',
     sepMsaUnWEmpty = 'sepMsaUnWEmpty',
+    sepComplex = 'sepComplex',
     fastaMsaDna1 = 'fastaMsaDna1',
     fastaMsaPt1 = 'fastaMsaPt1',
   }
@@ -115,6 +116,10 @@ m1-M-m3-mon4-mon5-N-T-MON8-N9
 m1-mon2-m3-mon4-mon5-Num--MON8-N9
 
 mon1-M-mon3-mon4-mon5---MON8-N9`;
+    [csvTests.sepComplex]: string = `seq
+Ac(1)-F-K(AEEA-AEEA-R-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
+Ac(1)-F-K(AEEA-ARRA-W-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
+Ac(1)-F-K(AEEA-AEEA-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2`;
     [csvTests.fastaMsaDna1]: string = `seq
 AC-GT-CT
 CAC-T-GT
@@ -244,10 +249,6 @@ MWRSWY-CKHP`;
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 12, true);
   });
 
-  test('SepMsaUnWEmpty', async () => {
-    await _testPos(readCsv(csvTests.sepMsaUnWEmpty), 'seq',
-      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true);
-  });
   test('FastaMsaDna1', async () => {
     await _testPos(readCsv(csvTests.fastaMsaDna1), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false);
@@ -282,6 +283,16 @@ MWRSWY-CKHP`;
   test('SepMsaN1', async () => {
     await _testPos(readCsv(csvTests.sepMsaDna1), 'seq',
       NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false, '-');
+  });
+
+  test('SepMsaUnWEmpty', async () => {
+    await _testPos(readCsv(csvTests.sepMsaUnWEmpty), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true);
+  });
+
+  test('SepComplex', async () => {
+    await _testPos(readCsv(csvTests.sepComplex), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true);
   });
 
   test('samplesFastaCsv', async () => {
