@@ -1451,10 +1451,10 @@ Resources:
     - CvmTCP80Listener
     - CvmTCP443Listener
     - CvmTCP8090IntListener
-    - DatagrokJupyterTCP5005ListenerRule
-    - DatagrokJupyterTCP5005IntListenerRule
-    - DatagrokJupyterTCP8888ListenerRule
-    - DatagrokJupyterTCP8888IntListenerRule
+    - DatagrokJupyterKernelGatewayTCP5005ListenerRule
+    - DatagrokJupyterKernelGatewayTCP5005IntListenerRule
+    - DatagrokJupyterKernelGatewayTCP8888ListenerRule
+    - DatagrokJupyterKernelGatewayTCP8888IntListenerRule
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -1471,19 +1471,19 @@ Resources:
       - ContainerName: jupyter_kernel_gateway
         ContainerPort: 5005
         TargetGroupArn:
-          Ref: DatagrokJupyterTCP5005TargetGroup
+          Ref: DatagrokJupyterKernelGatewayTCP5005TargetGroup
       - ContainerName: jupyter_kernel_gateway
         ContainerPort: 8888
         TargetGroupArn:
-          Ref: DatagrokJupyterTCP8888TargetGroup
+          Ref: DatagrokJupyterKernelGatewayTCP8888TargetGroup
       - ContainerName: jupyter_kernel_gateway
         ContainerPort: 5005
         TargetGroupArn:
-          Ref: DatagrokJupyterTCP5005IntTargetGroup
+          Ref: DatagrokJupyterKernelGatewayTCP5005IntTargetGroup
       - ContainerName: jupyter_kernel_gateway
         ContainerPort: 8888
         TargetGroupArn:
-          Ref: DatagrokJupyterTCP8888IntTargetGroup
+          Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -1508,13 +1508,173 @@ Resources:
       TaskDefinition:
         Ref: DatagrokJupyterTaskDefinition
     Type: AWS::ECS::Service
+  DatagrokJupyterKernelGatewayTCP5005IntListenerRule:
+    Properties:
+      Actions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: DatagrokJupyterKernelGatewayTCP5005IntTargetGroup
+        Type: forward
+      Conditions:
+      - Field: path-pattern
+        PathPatternConfig:
+          Values:
+          - /jupyter/helper/*
+      ListenerArn:
+        Ref: CvmTCP8090IntListener
+      Priority: 3
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  DatagrokJupyterKernelGatewayTCP5005IntTargetGroup:
+    Properties:
+      HealthCheckPath: /jupyter/helper/info
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jup-gh-int
+      Port: 5005
+      Protocol: HTTP
+      Tags:
+      - Key: datagrok.component
+        Value: cvm
+      TargetGroupAttributes:
+      - Key: stickiness.enabled
+        Value: true
+      - Key: stickiness.type
+        Value: lb_cookie
+      - Key: stickiness.lb_cookie.duration_seconds
+        Value: 86400
+      TargetType: ip
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  DatagrokJupyterKernelGatewayTCP5005ListenerRule:
+    Properties:
+      Actions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: DatagrokJupyterKernelGatewayTCP5005TargetGroup
+        Type: forward
+      Conditions:
+      - Field: path-pattern
+        PathPatternConfig:
+          Values:
+          - /jupyter/helper/*
+      ListenerArn:
+        Ref: CvmTCP443Listener
+      Priority: 3
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  DatagrokJupyterKernelGatewayTCP5005TargetGroup:
+    Properties:
+      HealthCheckPath: /jupyter/helper/info
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jkg-gh
+      Port: 5005
+      Protocol: HTTP
+      Tags:
+      - Key: datagrok.component
+        Value: cvm
+      TargetGroupAttributes:
+      - Key: stickiness.enabled
+        Value: true
+      - Key: stickiness.type
+        Value: lb_cookie
+      - Key: stickiness.lb_cookie.duration_seconds
+        Value: 86400
+      TargetType: ip
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  DatagrokJupyterKernelGatewayTCP8888IntListenerRule:
+    Properties:
+      Actions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: DatagrokJupyterKernelGatewayTCP8888IntTargetGroup
+        Type: forward
+      Conditions:
+      - Field: path-pattern
+        PathPatternConfig:
+          Values:
+          - /jupyter/*
+      ListenerArn:
+        Ref: CvmTCP8090IntListener
+      Priority: 4
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  DatagrokJupyterKernelGatewayTCP8888IntTargetGroup:
+    Properties:
+      HealthCheckPath: /jupyter/api/swagger.yaml
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter-int
+      Port: 8888
+      Protocol: HTTP
+      Tags:
+      - Key: com.docker.compose.project
+        Value: cvm
+      TargetGroupAttributes:
+      - Key: stickiness.enabled
+        Value: true
+      - Key: stickiness.type
+        Value: lb_cookie
+      - Key: stickiness.lb_cookie.duration_seconds
+        Value: 86400
+      TargetType: ip
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  DatagrokJupyterKernelGatewayTCP8888ListenerRule:
+    Properties:
+      Actions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: DatagrokJupyterKernelGatewayTCP8888TargetGroup
+        Type: forward
+      Conditions:
+      - Field: path-pattern
+        PathPatternConfig:
+          Values:
+          - /jupyter/*
+      ListenerArn:
+        Ref: CvmTCP443Listener
+      Priority: 4
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  DatagrokJupyterKernelGatewayTCP8888TargetGroup:
+    Properties:
+      HealthCheckPath: /jupyter/api/swagger.yaml
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
+      Port: 8888
+      Protocol: HTTP
+      Tags:
+      - Key: com.docker.compose.project
+        Value: cvm
+      TargetGroupAttributes:
+      - Key: stickiness.enabled
+        Value: true
+      - Key: stickiness.type
+        Value: lb_cookie
+      - Key: stickiness.lb_cookie.duration_seconds
+        Value: 86400
+      TargetType: ip
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
   DatagrokJupyterNotebookService:
     DependsOn:
     - CvmTCP80Listener
     - CvmTCP443Listener
     - CvmTCP8090IntListener
-    - DatagrokJupyterTCP8889ListenerRule
-    - DatagrokJupyterTCP8889IntListenerRule
+    - DatagrokJupyterNotebookTCP8889ListenerRule
+    - DatagrokJupyterNotebookTCP8889IntListenerRule
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -1531,11 +1691,11 @@ Resources:
       - ContainerName: jupyter_notebook
         ContainerPort: 8889
         TargetGroupArn:
-          Ref: DatagrokJupyterTCP8889TargetGroup
+          Ref: DatagrokJupyterNotebookTCP8889TargetGroup
       - ContainerName: jupyter_notebook
         ContainerPort: 8889
         TargetGroupArn:
-          Ref: DatagrokJupyterTCP8889IntTargetGroup
+          Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -1576,6 +1736,86 @@ Resources:
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
+  DatagrokJupyterNotebookTCP8889IntListenerRule:
+    Properties:
+      Actions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: DatagrokJupyterNotebookTCP8889IntTargetGroup
+        Type: forward
+      Conditions:
+      - Field: path-pattern
+        PathPatternConfig:
+          Values:
+          - /notebook/*
+      ListenerArn:
+        Ref: CvmTCP8090IntListener
+      Priority: 6
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  DatagrokJupyterNotebookTCP8889IntTargetGroup:
+    Properties:
+      HealthCheckPath: /notebook/api
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern-int
+      Port: 8889
+      Protocol: HTTP
+      Tags:
+      - Key: com.docker.compose.project
+        Value: cvm
+      TargetGroupAttributes:
+      - Key: stickiness.enabled
+        Value: true
+      - Key: stickiness.type
+        Value: lb_cookie
+      - Key: stickiness.lb_cookie.duration_seconds
+        Value: 86400
+      TargetType: ip
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  DatagrokJupyterNotebookTCP8889ListenerRule:
+    Properties:
+      Actions:
+      - ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: DatagrokJupyterNotebookTCP8889TargetGroup
+        Type: forward
+      Conditions:
+      - Field: path-pattern
+        PathPatternConfig:
+          Values:
+          - /notebook/*
+      ListenerArn:
+        Ref: CvmTCP443Listener
+      Priority: 6
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  DatagrokJupyterNotebookTCP8889TargetGroup:
+    Properties:
+      HealthCheckPath: /notebook/api
+      Matcher:
+        HttpCode: 200
+      Name:
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern
+      Port: 8889
+      Protocol: HTTP
+      Tags:
+      - Key: com.docker.compose.project
+        Value: cvm
+      TargetGroupAttributes:
+      - Key: stickiness.enabled
+        Value: true
+      - Key: stickiness.type
+        Value: lb_cookie
+      - Key: stickiness.lb_cookie.duration_seconds
+        Value: 86400
+      TargetType: ip
+      VpcId:
+        Ref: DatagrokVPC
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
   DatagrokJupyterNotebookTaskDefinition:
     Properties:
       ContainerDefinitions:
@@ -1676,246 +1916,6 @@ Resources:
       NamespaceId:
         Ref: DatagrokCloudMap
     Type: AWS::ServiceDiscovery::Service
-  DatagrokJupyterTCP5005IntListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterTCP5005IntTargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /jupyter/helper/*
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 3
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP5005IntTargetGroup:
-    Properties:
-      HealthCheckPath: /jupyter/helper/info
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jup-gh-int
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-      - Key: datagrok.component
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP5005ListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterTCP5005TargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /jupyter/helper/*
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 3
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP5005TargetGroup:
-    Properties:
-      HealthCheckPath: /jupyter/helper/info
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jkg-gh
-      Port: 5005
-      Protocol: HTTP
-      Tags:
-      - Key: datagrok.component
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8888IntListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterTCP8888IntTargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /jupyter/*
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 4
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8888IntTargetGroup:
-    Properties:
-      HealthCheckPath: /jupyter/api/swagger.yaml
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter-int
-      Port: 8888
-      Protocol: HTTP
-      Tags:
-      - Key: com.docker.compose.project
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8888ListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterTCP8888TargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /jupyter/*
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 4
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8888TargetGroup:
-    Properties:
-      HealthCheckPath: /jupyter/api/swagger.yaml
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jupyter
-      Port: 8888
-      Protocol: HTTP
-      Tags:
-      - Key: com.docker.compose.project
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8889IntListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterTCP8889IntTargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /notebook/*
-      ListenerArn:
-        Ref: CvmTCP8090IntListener
-      Priority: 6
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8889IntTargetGroup:
-    Properties:
-      HealthCheckPath: /notebook/api
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern-int
-      Port: 8889
-      Protocol: HTTP
-      Tags:
-      - Key: com.docker.compose.project
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  DatagrokJupyterTCP8889ListenerRule:
-    Properties:
-      Actions:
-      - ForwardConfig:
-          TargetGroups:
-          - TargetGroupArn:
-              Ref: DatagrokJupyterTCP8889TargetGroup
-        Type: forward
-      Conditions:
-      - Field: path-pattern
-        PathPatternConfig:
-          Values:
-          - /notebook/*
-      ListenerArn:
-        Ref: CvmTCP443Listener
-      Priority: 6
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  DatagrokJupyterTCP8889TargetGroup:
-    Properties:
-      HealthCheckPath: /notebook/api
-      Matcher:
-        HttpCode: 200
-      Name:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jupytern
-      Port: 8889
-      Protocol: HTTP
-      Tags:
-      - Key: com.docker.compose.project
-        Value: cvm
-      TargetGroupAttributes:
-      - Key: stickiness.enabled
-        Value: true
-      - Key: stickiness.type
-        Value: lb_cookie
-      - Key: stickiness.lb_cookie.duration_seconds
-        Value: 86400
-      TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
   DatagrokJupyterTaskDefinition:
     Properties:
       ContainerDefinitions:
