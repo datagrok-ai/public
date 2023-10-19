@@ -5,7 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemmColumn, getClosest, stemBuffer, getEmbeddings} from './stemming-tools';
+import {stemmColumn, getClosest, stemBuffer, getEmbeddings, getMarkedString, MIN_CHAR_COUNT} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -199,26 +199,30 @@ export async function initAWS() {
 export function similar(query: string): DG.Widget {
   const df = grok.shell.t;
   const source = df.currentCol;
+  const queryIdx = df.currentRowIdx;
 
   if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name)) {
     stemBuffer.dfName = df.name;
     stemBuffer.colName = source.name;
-    stemBuffer.indices = stemmColumn(source, 1).indices;
+
+    const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
+    stemBuffer.dictionary = stemmingRes.dict;
+    stemBuffer.indices = stemmingRes.indices;
   }
 
-  const closest = getClosest(stemBuffer.indices!, df.currentCell.rowIndex, 6); 
+  const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
 
-  const divElements = [] as HTMLDivElement[];
+  const uiElements = [] as HTMLElement[];
 
-  for (let i = 1; i < closest.length; ++i) {
-    const divElem = ui.divText(source.get(closest[i]));
-    divElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name)};
-    divElements.push(divElem);
-    divElements.push(ui.h3(''));
-    ui.tooltip.bind(divElem, 'Click to navigate.');
+  for (let i = 1; i < closest.length; ++i) {    
+    const uiElem = ui.inlineText(getMarkedString(queryIdx, source.get(closest[i]), MIN_CHAR_COUNT));    
+    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name)};
+    uiElements.push(uiElem);
+    uiElements.push(ui.h3(''));
+    ui.tooltip.bind(uiElem, 'Click to navigate.');
   }
 
-  const wgt = new DG.Widget(ui.divV(divElements));
+  const wgt = new DG.Widget(ui.divV(uiElements));
 
   return wgt;
 }

@@ -10,16 +10,19 @@ import { UMAP } from 'umap-js';
 type StemBuffer = {
   dfName: string | undefined,
   colName: string | undefined,
+  dictionary: Map<string, number> | undefined,
   indices: DG.Column | undefined,
 };
 
 export var stemBuffer: StemBuffer = {
   dfName: undefined,
   colName: undefined,
+  dictionary: undefined,
   indices: undefined
 };
 
 const INFTY = 100000;
+export const MIN_CHAR_COUNT = 1;
 
 const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", 
   "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", 
@@ -28,7 +31,7 @@ const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "
   "each", 
   "few", "for", "from", "further", 
   "had", "has", "have", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", 
-  "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "it", "it's", "its", "itself", 
+  "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "it", "it's", "its", "itself", "i.e",
   "let's", 
   "me", "more", "most", "my", "myself", 
   "nor", 'nan', 
@@ -40,10 +43,12 @@ const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "
   "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", 
   "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"];
 
+const SEPARATORS = '[].,:;?!(){} \n\t#';
+
 /** Get words of input string, stop words are emoved. */
 function getWords(str: string, minCharCount: number): string[] {
   return str.toLowerCase()
-    .replace(/[\s.,%:?!(){}#]/g, ' ')
+    .replace(/[\s.,:;?!(){}#]/g, ' ')
     .split(' ')
     .filter((word) => ((word.length > minCharCount) && (word !== '\n') && (!STOP_WORDS.includes(word))));
 }
@@ -182,15 +187,10 @@ function distFn(arr1: number[], arr2: number[]): number {
   //if (common === 0)
     return INFTY;
 
-  /*console.log(ref1);
-  console.log(ref2);
-  console.log(common);
-  console.log(((len1 < len2) ? len1 : len2) / common - 1);
-
-  alert('In custom metric func!');
-  throw new Error('Controled exit!');*/
-
-  return ((len1 < len2) ? len1 : len2) / common - 1;
+  return 1.0 / common - 1;
+  //return ((len1 < len2) ? len1 : len2) / common - 1;
+  //return ((len1 > len2) ? len1 : len2) / common - 1;
+  //return (len1 + len2 - common) / common - 1;
 }
 
 /** Get embeddings. */
@@ -232,4 +232,69 @@ export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components
       umapColumnsData[j][i] = embeddings[i][j];  
 
   return range.map(i => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
+}
+
+/**  */
+export function getMarkedString(queryIdx: number, strToBeMarked: string, minCharCount: number): any[] {
+  const size = strToBeMarked.length;
+
+  if (size === 0)
+    return [];
+
+  let result = [] as any[];
+
+  const wordsOfQuery = stemBuffer.indices?.get(queryIdx);
+
+  let start = 0;
+  let end = 0;
+  
+  let isWord = !SEPARATORS.includes(strToBeMarked[start]);
+
+  while (start < size) {
+
+
+    if (isWord) {
+
+      while (!SEPARATORS.includes(strToBeMarked[end])) {
+        ++end;
+
+        if (end === size)
+          break;
+      }
+      
+      const word = strToBeMarked.slice(start, end);
+
+      if (!STOP_WORDS.includes(word)) {
+        const stemmed = stemmer(word.toLowerCase());
+        const value = stemBuffer.dictionary?.get(stemmed);
+
+        if (wordsOfQuery.includes(value)) {
+          let p = ui.inlineText([word]);
+          //@ts-ignore
+          $(p).css({"font-weight": "bold"});
+          result.push(p);
+        }
+        else
+          result.push(word);
+      }
+      else
+      result.push(word);
+    }
+
+    else {
+      while (SEPARATORS.includes(strToBeMarked[end])) {
+        ++end;
+
+        if (end === size)
+          break;
+      }
+
+      result.push(strToBeMarked.slice(start, end));
+    }   
+
+    start = end;
+    isWord = !isWord;
+  } // while
+
+  return result;
 }
