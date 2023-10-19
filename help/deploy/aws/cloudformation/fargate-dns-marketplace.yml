@@ -133,7 +133,7 @@ Parameters:
       and specify the Certificate ARN here.
     Type: String
   DatagrokVersion:
-    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge|jupyter
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
     Default: 1.16.3
     Description: Enter Datagrok docker image version.
     Type: String
@@ -1490,8 +1490,8 @@ Resources:
   DatagrokJupyterNotebookServiceDiscoveryEntry:
     Properties:
       Description:
-        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter' service discovery entry
-          in Cloud Map
+        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter-notebook' service discovery
+          entry in Cloud Map
       DnsConfig:
         DnsRecords:
         - TTL: 60
@@ -1590,8 +1590,8 @@ Resources:
   DatagrokJupyterServiceDiscoveryEntry:
     Properties:
       Description:
-        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter' service discovery entry
-          in Cloud Map
+        Fn::Sub: ${AWS::StackName} Datagrok CVM 'jupyter-kernel-gateway' service discovery
+          entry in Cloud Map
       DnsConfig:
         DnsRecords:
         - TTL: 60
@@ -1666,7 +1666,7 @@ Resources:
       Matcher:
         HttpCode: 200
       Name:
-        Fn::Sub: ${AWS::StackName}-dg-cvm-jup-gh
+        Fn::Sub: ${AWS::StackName}-dg-cvm-jkg-gh
       Port: 5005
       Protocol: HTTP
       Tags:
