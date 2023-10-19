@@ -350,6 +350,9 @@ export class PeptidesModel {
         break;
       case 'grid':
         this.setGridProperties();
+        const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+        lstViewer?.createLogoSummaryTableGrid();
+        lstViewer?.render();
         break;
       case 'dendrogram':
         this.settings.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);

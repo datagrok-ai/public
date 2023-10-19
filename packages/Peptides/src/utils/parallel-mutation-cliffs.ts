@@ -25,7 +25,6 @@ export class ParallelMutationCliffs {
   ): Promise<type.MutationCliffs> {
     const substitutionsInfo: type.MutationCliffs = new Map();
     try {
-      console.time('parallel');
       const currentTargetIdx = targetOptions.targetCol?.cat!.indexOf(targetOptions.currentTarget!) ?? -1;
 
       const len = activityArray.length;
@@ -58,10 +57,6 @@ export class ParallelMutationCliffs {
       }
 
       const results = await Promise.all(promises);
-      console.timeEnd('parallel');
-
-      console.time('fill map');
-
       const monomerPositionsMap = new Map<string, number>();
       monomerInfoArray.forEach((monomerInfo, i) => {
         monomerPositionsMap.set(monomerInfo.name, i);
@@ -98,7 +93,6 @@ export class ParallelMutationCliffs {
           (indexes2 as number[]).push(result.seq1Idxs[i]);
         }
       });
-      console.timeEnd('fill map');
     } catch (error) {
       this.terminate();
       console.error(error);
