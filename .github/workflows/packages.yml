@@ -94,8 +94,8 @@ jobs:
                       MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                       job_name+=' and publish to NPM'
                     else
-                      echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps"
-                      echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies"
+                      echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps. It is not going to be published"
+                      echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies and is not going to be published"
                     fi
                   else
                     MATRIX_PUBLISH_JSON+=", \"beta\": \"beta\""
@@ -108,6 +108,7 @@ jobs:
                 fi
               else
                   echo "It is an actions for PR. Publish will be skipped."
+                  echo "::notice title=${PACKAGE}::It is an actions for PR. Publish will be skipped."
               fi
           
               if ([[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]) && [[ -d "${DIR}/dockerfiles" ]]; then
