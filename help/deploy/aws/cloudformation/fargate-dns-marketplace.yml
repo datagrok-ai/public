@@ -32,10 +32,7 @@ Mappings:
     H2o:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/h2o
-    JKG:
-      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
-      repo: datagrok/jupyter
-    JN:
+    Jupyter:
       domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
       repo: datagrok/jupyter
     Kaniko:
@@ -1431,7 +1428,7 @@ Resources:
       - Key: datagrok.component
         Value: cvm
       - Key: datagrok.service
-        Value: jupyter
+        Value: jupyter_kernel_gateway
       TaskDefinition:
         Ref: DatagrokJupyterTaskDefinition
     Type: AWS::ECS::Service
