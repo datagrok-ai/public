@@ -11,10 +11,7 @@ Mappings:
     GrokSpawner:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/grok_spawner"
-    JKG:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/jupyter"
-    JN:
+    Jupyter:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/jupyter"
     GrokCompute:
