@@ -8,122 +8,94 @@ and size, you can show up to three additional data dimensions. Use the
 scatterplot to explore patterns and relationships between variables in your
 data.
 
->Note: To show the relationship between three variables, use [3D
->Scatterplot](3d-scatter-plot.md).
+<!--![Scatterplot](scatter-plot.png)-->
 
-To add a scatterplot, click the **Scatterplot** icon on the **Sidebar**.
+A scatterplot is a [chemically-aware viewer](../../datagrok/solutions/domains/chem/chemically-aware-viewers#scatter-plot) and can be used to explore a chemical space.
 
->Developers: To add the viewer from the console, use:
->grok.shell.tv.addViewer('Scatterplot');
+:::tip
 
-![Scatterplot](scatter-plot.png)
+To show the relationship between three variables, use a [3D Scatterplot](3d-scatter-plot.md).
 
-## Configuring a scatterplot
-
-Click the **Gear** icon on the top of the viewer to access scatterplot settings
-in the **Context Pane**. Select data for the **X** and **Y** axes and adjust
-color, marker shape, and size to make the scatterplot visually appealing and
-informative. You can also configure these settings directly through the viewer's
-selectors.
-
-### Axes
-
-You can customize scatterplot axes using settings from the **X** and **Y** info
-panels: 
-
-* Apply **X** (**Y**) **Axis Type** to switch between `linear` and `logarithmic`
-  scales. Log scale is aplicable for positive numeric values only.
-* Set **Min** and **Max** values for the axes.
-* Enable **Invert X** (**Y**) **Axis**  to reverse the direction of the axis on
-  a viewer. 
-
->Note: The key settings from the **Context Panel** are replicated in the context
->menu for scatterplot axes.
-
-#### Molecular rendering
-
-A scatterplot renders molecular structures on the axes. When you hover over a
-structure, a tick mark shows its position on the axis, and its label appears
-above the others on the axis.
-
-<img alt="Molecular structures rendering" src={require('./Axes.gif').default}
-width="800px"/>
-
-### Advanced features
-
-Once you've set up your scatterplot, consider enhancing it with advanced
-features that improve data presentation:
-
-* Formula lines (**Context Menu** > **Tools** > **Formula Lines…**) enable you
-  to visually represent mathematical formulas or equations on the plot. This can
-  help illustrate trends, relationships, or patterns between variables in the
-  data. 
-
->Developers: Learn more about how to [Show formula
->lines](https://datagrok.ai/help/develop/how-to/show-formula-lines)
-
-* Regression line. Hit 'R' to toggle the regression line.
-
-<img alt="Formula lines" src={require('./formula-lines.gif').default}
-width="800px"/>
-
-### Filtering
-
-A scatterplot can respond to filters and apply filters to other viewers
-(**Context Pane** > **Data**):
-
-* Use **Row Source** to define the rows to display on the scatterplot. Choices
-  are: `All`, `Filtered`, `Selected`, `SelectedOrCurrent`, `FilteredSelected`,
-  `MouseOverGroup`, `CurrentRow`, `MouseOverRow`.
-* Apply **Zoom and Filter** to define how the scatterplot responds during
-  zooming. Сhoices include: `zoom by filter`, `filter by zoom`, `pack and zoom
-  by filter`.
-
-<img alt="Filtering" src={require('./filtering.gif').default} width="800px"/>
-
-### Selection
-
-A scatterplot offers two data selection modes: **Rectangle Marquee** (by
-default) and **Lasso** (**L** or **Misc** > **Lasso tool**).  By default, to
-select points on a scatterplot, you need to use **Shift + Mouse Drag**. To
-enable selecting an area using only mouse drag, switch the **Mouse Drag**
-setting to `select`. 
-
-<img alt="Selection" src={require('./selection.gif').default}width="800px"/>
-
-### Tooltip
-
-By default, a scatterplot inherits a tooltip from the grid. You can set a custom
-tooltip for the scatterplot  from the **Tooltip** info panel:
-
-1. Set **Show tooltip** to `show custom tooltip`.
-1. In **Row Tooltip**, select the desired columns.
-1. Select the suitable choice for **Data Values** to combine values from the
-   axes and **Data Values** in the tooltip.
-
->Note: The key settings from the **Context Panel** are replicated in the context
->menu for the scatterplot (**Context Menu** > **Tooltip**).
-
-<img alt="Tooltip" src={require('./tooltip.gif').default} width="800px"/>
-
-Learn also about [Goup
-tooltip](https://datagrok.ai/help/visualize/viewers/#group-tooltips)
-
-<!--![Scatterplot](../../uploads/gifs/scatter-plot.gif "scatterplot")-->
+:::
 
 ## Viewer controls
 
 | Action                 | Control              |
 |------------------------|----------------------|
+| Right-click            | Context menu         |
 | Zoom                   | Alt+Mouse Drag       |
-| Zoom in  | Mouse Wheel Up or Plus |
-| Zoom out  | Mouse Wheel Down or Minus  |
-| Select | Shift+Mouse Drag       |
-| Invert selected | Ctrl+Mouse Click        |
-| Scroll  |  Up, Down, Left, Right       |
-| Toggle lasso tool | L        |
+| Zoom in                | Mouse Wheel Up or Plus|
+| Zoom out               | Mouse Wheel Down or Minus|
+| Double-click           | Reset view             |
+| Select                 | Shift+Mouse Drag       |
+| Invert selected        | Ctrl+Mouse Click       |
+| Scroll                 |  Up, Down, Left, Right |
+| Toggle lasso tool      | L        |
 | Toggle regression line | R       |
-| Show in full screen | Alt+F        |
+| Show in full screen    | Alt+F        |
+
+![Scatterplot](../../uploads/gifs/scatter-plot.gif)
+
+## Adding and configuring a scatterplot
+
+To add a scatterplot, click the **Scatterplot** icon on the **Toolbox**.
+
+Use the viewer controls to select columns for each axis and marker color and size.
+For additional configurations, click the **Gear** icon on top of the viewer and set your preferences in the **Context Panel**. Here, you can change the background, adjust the legend position, add or remove labels, show drop lines, and more. You can also access key settings from the context menu by right-clicking.
+
+<img alt="Molecular structures rendering" src={require('./Axes.gif').default}
+width="800px"/>
+
+:::note developers
+
+To add a scatterplot from the **Console**, use
+`grok.shell.tv.addViewer('Scatterplot');`
+
+:::
+
+### Calculations and trends
+
+A scatterplot can show reference lines that represent formulas or equations. These lines are used to emphasize specific areas on the chart or data. Common examples include a regression line, value bands, and so on. 
+
+To toggle a regression line, press the **R** key. 
+
+To show a custom formula line, right-click a scatterplot, then choose **Tools** > **Formula Lines...** This action opens a **Formula Lines** dialog. Here, enter your formula and configure the line settings. Your formula should refer to the columns on the **X** and **Y** axes. The syntax for the formula is similar to that used to [Add New Column](../../transform/add-new-column.md).
+
+<img alt="Formula lines" src={require('./formula-lines.gif').default}
+width="800px"/>
+
+:::note developers
+
+You can [add formula lines programmatically](https://datagrok.ai/help/develop/how-to/show-formula-lines).
+
+:::
+
+### Filtering and selection
+
+To adjust the data display settings, use the **Data** info pane from the **Context Panel**. Here, you can specify which rows to show on the scatterplot, define zoom and filtering actions, and so on.
+
+<!--<img alt="Filtering" src={require('./filtering.gif').default} width="800px"/>-->
+
+For manual selection settings, use the **Misc** info pane. Here, you can choose the selector you want and define actions for the mouse drag. 
+
+<!--<img alt="Selection" src={require('./selection.gif').default}width="800px"/>-->
+
+### Tooltip
+
+By default, a scatterplot inherits the tooltip from the grid. However, you can customize the scatterplot's 
+tooltip to show the data you want using the **Tooltip** info panel or via the context menu.
+
+<!--<img alt="Tooltip" src={require('./tooltip.gif').default} width="800px"/>-->
+
+In addition, a scatterplot itself can be used as a [group tooltip](viewers.md#group-tooltips), which may be especially useful when dealing with grouped or clustered data or when the screen space is limited.
+
+![Group Tooltip](../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
+
+To use this feature: 
+
+1. Add and configure a scatterplot.
+1. From the context menu, select **Tooltip** > **Use as Group Tooltip**.
+1. Optional. Close the scatterplot.
 
 ## Videos
 
