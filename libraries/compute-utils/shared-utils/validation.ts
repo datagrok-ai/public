@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import { RichFunctionView } from '../function-views';
 
 // validation/advisory system
 export interface ActionItems {
@@ -83,14 +84,15 @@ export function makeRevalidation(revalidate: string[], context?: any, result?: V
 }
 
 export interface ValidationInfo {
-    param: string,
-    funcCall: DG.FuncCall,
-    lastCall?:DG.FuncCall,
-    isRevalidation: boolean,
-    isNewOutput: boolean,
-    signal: AbortSignal,
-    context?: any
-  }
+  param: string,
+  funcCall: DG.FuncCall,
+  lastCall?:DG.FuncCall,
+  isRevalidation: boolean,
+  isNewOutput: boolean,
+  signal: AbortSignal,
+  view: RichFunctionView,
+  context?: any,
+}
 
 export type Validator = (val: any, info: ValidationInfo)
     => Promise<ValidationResult | undefined>;

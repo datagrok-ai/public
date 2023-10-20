@@ -1100,6 +1100,7 @@ export class RichFunctionView extends FunctionView {
         signal,
         isNewOutput: !!payload.isNewOutput,
         isRevalidation: payload.isRevalidation,
+        view: this,
       });
       let customMsgs;
       const customValidator = this.validators[name];
@@ -1112,6 +1113,7 @@ export class RichFunctionView extends FunctionView {
           isNewOutput: !!payload.isNewOutput,
           isRevalidation: payload.isRevalidation,
           context: payload.context,
+          view: this,
         });
       }
       return [name, mergeValidationResults(standardMsgs, customMsgs)] as const;
