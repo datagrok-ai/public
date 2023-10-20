@@ -127,7 +127,7 @@ export function getClosest(indices: DG.Column, idx: number, count: number): Uint
     if (curLen === 0) 
       closestDists[i] = 0;    
     else 
-      closestDists[i] = commonItemsCount(query, current) / ((queryLen < curLen) ? queryLen : curLen);
+      closestDists[i] = commonItemsCount(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
   }
     
   let minRelIdx = closestDists.reduce((r, v, i, a) => v >= a[r] ? r : i, -1);
@@ -137,7 +137,7 @@ export function getClosest(indices: DG.Column, idx: number, count: number): Uint
     const curLen = current.length;
 
     if (curLen > 0) {      
-      const curRelDist = commonItemsCount(query, current) / ((queryLen < curLen) ? queryLen : curLen);     
+      const curRelDist = commonItemsCount(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);     
 
       if (curRelDist > closestDists[minRelIdx]) {
         closestDists[minRelIdx] = curRelDist;
@@ -186,11 +186,9 @@ function distFn(arr1: number[], arr2: number[]): number {
   if (common < 2)
   //if (common === 0)
     return INFTY;
-
-  return 1.0 / common - 1;
+  
   //return ((len1 < len2) ? len1 : len2) / common - 1;
-  //return ((len1 > len2) ? len1 : len2) / common - 1;
-  //return (len1 + len2 - common) / common - 1;
+  return ((len1 < len2) ? 1 : len2) / common - 1;
 }
 
 /** Get embeddings. */

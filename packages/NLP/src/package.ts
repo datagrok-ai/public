@@ -216,7 +216,57 @@ export function similar(query: string): DG.Widget {
 
   for (let i = 1; i < closest.length; ++i) {    
     const uiElem = ui.inlineText(getMarkedString(queryIdx, source.get(closest[i]), MIN_CHAR_COUNT));    
-    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name)};
+    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
+    uiElements.push(uiElem);
+    uiElements.push(ui.h3(''));
+    ui.tooltip.bind(uiElem, 'Click to navigate.');
+  }
+
+  const wgt = new DG.Widget(ui.divV(uiElements));
+
+  return wgt;
+}
+
+//name: Similar (UMAP)
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function similarUMAP(query: string): DG.Widget {
+  const df = grok.shell.t;
+  const source = df.currentCol;
+  const queryIdx = df.currentRowIdx;
+
+  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name)) {
+    stemBuffer.dfName = df.name;
+    stemBuffer.colName = source.name;
+
+    const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
+    stemBuffer.dictionary = stemmingRes.dict;
+    stemBuffer.indices = stemmingRes.indices;
+  }
+
+  const x = df.getCol('UMAP0').getRawData();
+  const y = df.getCol('UMAP1').getRawData();
+  const size = x.length;
+
+  const res = [] as {dist: Number, idx: number}[];
+
+  for (let i = 0; i < size; ++i) 
+    res.push({
+      dist: (x[i] - x[queryIdx])**2 + (y[i] - y[queryIdx])**2,
+      idx: i
+    });
+
+  const sorted = res.sort((a, b) => a.dist > b.dist ? 1 : -1);
+
+  const closest = sorted.slice(0, 6).map(el => el.idx).filter(idx => idx !== queryIdx);
+
+  const uiElements = [] as HTMLElement[];
+
+  for (let i = 1; i < closest.length; ++i) {    
+    const uiElem = ui.inlineText(getMarkedString(queryIdx, source.get(closest[i]), MIN_CHAR_COUNT));    
+    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name)};    
     uiElements.push(uiElem);
     uiElements.push(ui.h3(''));
     ui.tooltip.bind(uiElem, 'Click to navigate.');
