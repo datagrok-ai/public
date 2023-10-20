@@ -17,6 +17,7 @@ including in-grid rendering, storing charts in cells, interactivity, and automat
   - Ability to define chart, marker, or fitting options (such as fit function or marker color)
       on the column level, with the ability to override it on a grid cell or point level
   - Clicking a point in a chart within a grid makes it an outlier -> curve is re-fitted on the fly
+  - Ability to switch curves parameters from the property panel on different levels (dataframe, column, cell)
   - Ability to specify a chart as a "reference" so that it is shown on every other chart for comparison
 - Ability to overlay curves from multiple grid cells (special viewer)
 - Work with series stored in multiple formats (binary for performance, JSON for flexibility, etc.)
@@ -35,6 +36,7 @@ To render a fitted curve based on series points, you need to write it in the fol
       "confidenceIntervalColor": "#fbec5d",
       "markerType": "circle",
       "lineStyle": "dashed",
+      "errorModel": "proportional",
       "showFitLine": true,
       "showCurveConfidenceInterval": true,
       "fitFunction": "sigmoid",
@@ -79,6 +81,7 @@ Each series has its own parameters, such as:
 - `confidenceIntervalColor` - overrides the standardized series confidence interval color
 - `markerType` - defines the series marker type, which could be `circle`, `asterisk`, `square`, etc.
 - `lineStyle` - defines the series line style, which could be `solid`, `dotted`, `dashed` or `dashdotted`
+- `errorModel` - defines the series error model, which could be either `constant` or `proportional`
 - `showFitLine` - defines whether to show the fit line or not
 - `showCurveConfidenceInterval` - defines whether to show the confidence intervals or not
 - `fitFunction` - controls the series fit function, which could be either a sigmoid function or a

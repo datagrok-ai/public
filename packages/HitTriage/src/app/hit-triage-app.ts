@@ -5,8 +5,8 @@ import {HitTriageCampaign, IComputeDialogResult, IFunctionArgs,
   HitTriageTemplate, HitTriageTemplateIngest, IngestType, HitTriageCampaignStatus} from './types';
 import {InfoView} from './hit-triage-views/info-view';
 import {SubmitView} from './hit-triage-views/submit-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, HitSelectionColName, i18n} from './consts';
-import {modifyUrl, toFormatedDateString} from './utils';
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, HTcampaignName, HitSelectionColName, i18n} from './consts';
+import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {_package} from '../package';
 import '../../css/hit-triage.css';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
@@ -31,15 +31,17 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   protected _filterDescriptions: string[] = [];
   public campaignProps: {[key: string]: any} = {};
   private currentPickViewId?: string;
-  constructor() {
-    super();
+  constructor(c: DG.FuncCall) {
+    super(c);
     this._infoView = new InfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
+    this.multiView.parentCall = c;
     grok.shell.addView(this.multiView);
+
     grok.events.onCurrentViewChanged.subscribe(() => {
       try {
         if (grok.shell.v?.name === this.currentPickViewId) {
@@ -97,12 +99,19 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         externals: funcs,
       });
     };
-
+    const curView = grok.shell.v;
     const pickV = grok.shell.addView(this.pickView);
     this.currentPickViewId = pickV.name;
-    this._submitView ??= new SubmitView(this);
+    this._submitView = new SubmitView(this);
     this.setBaseUrl();
     modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
+
+    const newView = pickV;
+    const {sub} = addBreadCrumbsToRibbons(newView, 'Hit Triage', 'Pick', () => {
+      grok.shell.v = curView;
+      newView.close();
+      sub.unsubscribe();
+    });
     // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
   }
@@ -111,7 +120,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
   get campaignId(): string | undefined {return this._campaignId;}
 
-  get pickView(): DG.TableView {return this._pickView ??= this.getFilterView();}
+  get pickView(): DG.TableView {return this._pickView = this.getFilterView();}
 
   get molColName() {return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;}
 
@@ -158,13 +167,19 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     const view = DG.TableView.create(this.dataFrame!, false);
     const ribbons = view.getRibbonPanels();
     const calculateRibbon = ui.icons.add(getComputeDialog, 'Calculate additional properties');
-    const submitButton = ui.div(ui.bigButton('Submit', () => {
+    const submitButton = ui.bigButton('Submit', () => {
       const dialogContent = this._submitView?.render();
-      if (dialogContent)
-        ui.dialog('Submit').add(dialogContent).show();
-    }));
-
-    ribbons.push([calculateRibbon, submitButton]);
+      if (dialogContent) {
+        const dlg = ui.dialog('Submit');
+        dlg.add(dialogContent);
+        dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();});
+        dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
+        dlg.show();
+      }
+    });
+    submitButton.classList.add('hit-design-submit-button');
+    const hasSubmit = checkRibbonsHaveSubmit(ribbons);
+    ribbons.push([calculateRibbon, ...(hasSubmit ? [] : [submitButton])]);
     view.setRibbonPanels(ribbons);
     view.name = this._filterViewName;
     setTimeout(async () => {
@@ -177,6 +192,12 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
       //const f = view.filters();
       const f = view.filters(this._campaignFilters ? {filters: this._campaignFilters} : undefined);
+      // loading layout
+      const layout = (await grok.dapi.layouts.filter(`friendlyName = "${this._filterViewName}"`).list())
+        .find((l) => l && l.getUserDataValue(HTcampaignName) === this._campaignId);
+      if (layout)
+        view.loadLayout(layout);
+        //console.log('layout loaded');
 
       view.dataFrame.onFilterChanged
         .subscribe((_) => {
@@ -188,6 +209,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         this._campaignFilters = f.getOptions().look.filters;
       }, 300);
     }, 300);
+    view.parentCall = this.parentCall;
     return view;
   }
 
@@ -242,5 +264,22 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
     ).toCsv();
     await _package.files.writeAsText(`Hit Triage/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
     notify && grok.shell.info('Campaign saved successfully.');
+
+    // saving layout
+    const newLayout = this._pickView!.saveLayout();
+    if (!newLayout) {
+      grok.shell.warning('Layout cound not be saved');
+      return;
+    }
+
+    const oldLayouts = (await grok.dapi.layouts.filter(`friendlyName = "${this._filterViewName}"`).list())
+      .filter((l) => l && l.getUserDataValue(HTcampaignName) === campaignId);
+    for (const l of oldLayouts)
+      await grok.dapi.layouts.delete(l);
+    //save new layout
+    newLayout.setUserDataValue(HTcampaignName, campaignId);
+    const l = await grok.dapi.layouts.save(newLayout);
+    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+    await grok.dapi.permissions.grant(l, allGroup, true);
   }
 }

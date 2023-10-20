@@ -1,11 +1,8 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {TAGS as bioTags} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
@@ -39,15 +36,16 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING
       const val = activityColData[i];
       return val === DG.FLOAT_NULL || val === DG.INT_NULL ? val : formula(val);
     });
-
+  scaledCol.setTag(C.TAGS.ANALYSIS_COL, `${true}`);
   return scaledCol;
 }
 
 //TODO: optimize
-export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
+export function calculateSelected(df: DG.DataFrame): type.SelectionStats {
   const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
-  const selectedObj: type.MonomerSelectionStats = {};
-  for (const idx of df.selection.getSelectedIndexes()) {
+  const selectedObj: type.SelectionStats = {};
+  const selectedIndexes = df.filter.clone().and(df.selection).getSelectedIndexes();
+  for (const idx of selectedIndexes) {
     for (const col of monomerColumns) {
       const monomer = col.get(idx);
       if (!monomer)
@@ -100,4 +98,38 @@ export function prepareTableForHistogram(table: DG.DataFrame): DG.DataFrame {
     DG.Column.fromList(DG.TYPE.FLOAT, activityCol.name, expandedData),
     DG.Column.fromList(DG.TYPE.BOOL, C.COLUMNS_NAMES.SPLIT_COL, expandedMasks),
   ]);
+}
+
+export function addExpandIcon(grid: DG.Grid): void {
+  const fullscreenIcon = ui.iconFA('expand-alt', () => {
+    const fullscreenGrid = grid.dataFrame.plot.grid();
+    setGridProps(fullscreenGrid);
+    fullscreenGrid.root.style.height = '100%';
+    const pairsFullscreenDialog = ui.dialog(grid.dataFrame.name);
+    pairsFullscreenDialog.add(fullscreenGrid.root);
+    pairsFullscreenDialog.showModal(true);
+    fullscreenGrid.invalidate();
+  });
+  grid.root.appendChild(fullscreenIcon);
+  fullscreenIcon.style.position = 'absolute';
+  fullscreenIcon.style.right = '0px';
+  fullscreenIcon.style.top = '0px';
+  fullscreenIcon.style.visibility = 'hidden';
+  grid.root.addEventListener('mouseenter', (_) => {
+    fullscreenIcon.style.visibility = 'visible';
+  });
+  grid.root.addEventListener('mouseleave', (_) => {
+    fullscreenIcon.style.visibility = 'hidden';
+  });
+}
+
+export function setGridProps(grid: DG.Grid): void {
+  grid.props.allowEdit = false;
+  grid.props.allowRowSelection = false;
+  grid.props.allowBlockSelection = false;
+  grid.props.allowColSelection = false;
+  grid.props.showRowHeader = false;
+  grid.props.showCurrentRowIndicator = false;
+  grid.root.style.width = '100%';
+  grid.root.style.maxWidth = '100%';
 }

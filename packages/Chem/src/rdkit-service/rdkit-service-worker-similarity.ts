@@ -59,19 +59,23 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
             canonicalSmilesArr[i] = rdMol.get_smiles();
           switch (fingerprintType) {
             case Fingerprint.Pattern:
-              try {
-                fps[i] = rdMol.get_pattern_fp_as_uint8array();
-              } catch {
-                //do nothing, fp is already null
-              }
+              fps[i] = rdMol.get_pattern_fp_as_uint8array();
               break;
             case Fingerprint.Morgan:
-              try {
-                if (!rdMol.is_qmol)
-                  fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
-              } catch (error) {
-                //do nothing, fp is already null
-              }
+              if (!rdMol.is_qmol)
+                fps[i] = rdMol.get_morgan_fp_as_uint8array(morganFpParams!);
+              break;
+            case Fingerprint.AtomPair:
+              fps[i] = rdMol.get_atom_pair_fp_as_uint8array();
+              break;
+            case Fingerprint.MACCS:
+              fps[i] = rdMol.get_maccs_fp_as_uint8array();
+              break;
+            case Fingerprint.RDKit:
+              fps[i] = rdMol.get_rdkit_fp_as_uint8array();
+              break;
+            case Fingerprint.TopologicalTorsion:
+              fps[i] = rdMol.get_topological_torsion_fp_as_uint8array();
               break;
             default:
               rdMol?.delete();

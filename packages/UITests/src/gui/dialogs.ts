@@ -49,7 +49,7 @@ category('GUI: Dialogs', () => {
     demog = df.clone();
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').click();
+    grok.shell.topMenu.find('ML').find('Cluster').find('Cluster...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 1', 1000);
     isDialogPresent('Cluster Data');
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
@@ -57,7 +57,7 @@ category('GUI: Dialogs', () => {
     okButton.click();
     await awaitCheck(() => demog.col('clusters') !== null, 'cannot find clusters column', 3000);
     isColumnPresent(demog.columns, 'clusters');
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').click();
+    grok.shell.topMenu.find('ML').find('Cluster').find('Cluster...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 2', 1000);
     isDialogPresent('Cluster Data');
     returnDialog('Cluster Data')!.input('Show scatter plot').input.click();
@@ -74,7 +74,7 @@ category('GUI: Dialogs', () => {
     });
     if (demog.col('clusters (2)') !== null)
       throw new Error('cluster (2) column did not disappear after clicking on the "Cancel" button');
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').click();
+    grok.shell.topMenu.find('ML').find('Cluster').find('Cluster...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 3', 1000);
     isDialogPresent('Cluster Data');
     setDialogInputValue('Cluster Data', 'Normalize', 'Z-scores'); await delay(100);

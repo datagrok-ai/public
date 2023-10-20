@@ -8,10 +8,11 @@ export type Stats = {
   pValue: number | null,
   meanDifference: number,
   ratio: number,
+  mask: BitArray,
 };
 
 export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
-  if (data.length !== bitArray.length)
+  if (data.length !== bitArray.length && data.some((v, i) => i >= bitArray.length ? v !== 0 : false))
     throw new Error('PeptidesError: Data and bit array have different lengths');
   if (bitArray.falseCount() === 0 || bitArray.trueCount() === 0)
     throw new Error('PeptidesError: One of the samples is empty');
@@ -36,6 +37,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
       pValue: null,
       meanDifference: selectedMean - restMean,
       ratio: selected.length / (bitArray.length),
+      mask: bitArray,
     };
   }
 
@@ -46,6 +48,7 @@ export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
     meanDifference: currentMeanDiff,
     ratio: selected.length / (bitArray.length),
+    mask: bitArray,
   };
 }
 

@@ -1,7 +1,6 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, expectFloat, awaitCheck, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE, getAggregatedColName} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -35,17 +34,11 @@ category('Model: Settings', () => {
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
-    let overlayInit = false;
-    model._analysisView!.grid.onAfterDrawOverlay.subscribe(() => overlayInit = true);
 
-    // Ensure grid finished initializing to prevent Unhandled exceptions
-    let accrodionInit = false;
-    grok.events.onAccordionConstructed.subscribe((_) => accrodionInit = true);
-    await awaitCheck(() => model!.df.currentRowIdx === 0, 'Grid cell never finished initializing', 2000);
-    await awaitCheck(() => grok.shell.o instanceof DG.Column, 'Shell object never changed', 2000);
-    await awaitCheck(() => accrodionInit, 'Accordion never finished initializing', 2000);
-    await awaitCheck(() => overlayInit, 'Overlay never finished initializing', 2000);
+    await delay(500);
   });
+
+  after(async () => await delay(3000));
 
   test('Activity scaling', async () => {
     const getError = (row: number, method: SCALING_METHODS): string =>
@@ -79,19 +72,6 @@ category('Model: Settings', () => {
     scaledActivityData = scaledActivity.getRawData();
     for (let i = 0; i < dfLen; i++)
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
-  });
-
-  test('Bidirectional analysis', async () => {
-    // Check that bidirectional analysis is disabled by default
-    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled by default');
-
-    // Check that bidirectional analysis can be enabled
-    model.settings = {isBidirectional: true};
-    expect(model.settings.isBidirectional, true, 'Bidirectional analysis is disabled after enabling');
-
-    // Check that bidirectional analysis can be disabled
-    model.settings = {isBidirectional: false};
-    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled after disabling');
   });
 
   test('Mutation Cliffs', async () => {

@@ -6,7 +6,7 @@ import {debounceTime} from 'rxjs/operators';
 import {initSearch, powerSearch} from './search/power-search';
 import {widgetHost, getSettings, UserWidgetsSettings} from './utils';
 
-export function welcomeView() {
+export function welcomeView(): DG.View | undefined {
   let searchStr = null;
   if (window.location.pathname == '/search' && window.location.search.startsWith('?')) {
     const params = new URLSearchParams(window.location.search.slice(1));
@@ -15,7 +15,7 @@ export function welcomeView() {
 
   // let's not add this view if the platform was opened via a specific link
   if (searchStr == null && window.location.pathname != '/' && window.location.pathname != '/login.html')
-    return;
+    return undefined;
 
   const input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
   input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
@@ -29,10 +29,10 @@ export function welcomeView() {
   const searchHost = ui.block([], 'power-pack-search-host');
   const widgetsHost = ui.div([], 'power-pack-widgets-host');
   const viewHost = ui.div([widgetsHost, searchHost]);
-  const view = grok.shell.newView(
-    'Welcome',
-    [inputHost, viewHost],
-    'power-pack-welcome-view');
+  const view = DG.View.create();
+  view.root.appendChild(inputHost);
+  view.root.appendChild(viewHost);
+  view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({tags: ['dashboard'], returnType: 'widget'});
 
@@ -66,4 +66,5 @@ export function welcomeView() {
 
   if (searchStr != null)
     doSearch(searchStr);
+  return view;
 }

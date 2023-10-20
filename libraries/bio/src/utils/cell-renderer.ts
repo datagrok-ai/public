@@ -10,6 +10,10 @@ const grayColor = '#808080';
 const blackColor = 'rgb(0,0,0)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = monomerToShort;
 
+export enum TAGS {
+  maxMonomerLength = '.mm.cellRenderer.maxMonomerLength',
+}
+
 export enum DrawStyle {
   MSA = 'MSA',
   classic = 'classic',

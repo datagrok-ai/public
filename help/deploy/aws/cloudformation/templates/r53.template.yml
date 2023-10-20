@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "Datagrok template to deploy all components to ECS Fargate in new VPC. Template also creates ACM and DNS records."
+Description: "Datagrok template to deploy all components to ECS Fargate. Template also creates ACM and DNS records."
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -331,9 +331,6 @@ Resources:
     DependsOn:
       - DatagrokService
       - DatagrokSettingsSetLambdaFunctionLogGroup
-      - DatagrokS3VPCEndpoint
-      - DatagrokPrivateSubnetRouteAssos1
-      - DatagrokPrivateSubnetRouteAssos2
     Properties:
       DevKey:
         Ref: DatagrokAdminDevKey
@@ -346,6 +343,21 @@ Resources:
                 - DNSName
       cvmClient:
         Ref: CvmDNS
+      VpcEndpoint:
+        - Fn::If:
+            - CreateVPC
+            - Ref: DatagrokS3VPCEndpoint
+            - Ref: "AWS::NoValue"
+      DatagrokPrivateSubnetRouteAssos1:
+        - Fn::If:
+            - CreateVPC
+            - Ref: DatagrokPrivateSubnetRouteAssos1
+            - Ref: "AWS::NoValue"
+      DatagrokPrivateSubnetRouteAssos2:
+        - Fn::If:
+            - CreateVPC
+            - Ref: DatagrokPrivateSubnetRouteAssos2
+            - Ref: "AWS::NoValue"
       ServiceToken:
         Fn::GetAtt:
           - DatagrokSettingsSetLambdaFunction

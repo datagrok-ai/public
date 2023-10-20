@@ -1,5 +1,49 @@
 # Compute changelog
 
+## 1.15.1 (2023-10-21)
+
+### Fixed bugs
+
+- PLV: Fixed load run bug logic
+- RFV: Fixed load run bug logic
+
+## 1.15.0 (2023-09-25)
+
+### Fixed bugs
+
+- RFV: Fixed inputs layout inside of foldable categories
+
+### Features
+
+- RFV: Sensitivity analysis is added
+
+## 1.14.3 (2023-09-08)
+
+### Fixed bugs
+
+- PLV: Fixed options logic on funcCall copy
+
+### Features
+
+- Compute: OutliersViewer's balloon has now proper buttons type
+
+## 1.14.2 (2023-09-07)
+
+### Fixed bugs
+
+- RFV: Fixed tabs reappearance after recalculation
+
+### Features
+
+- RFV: Added styling for scalar tables
+- OultiersSelection viewer now supports actionable balloon
+
+## 1.14.1 (2023-09-06)
+
+### Fixed bugs
+
+- Fixed color and numeric values parsing in RFV
+
 ## 1.13.12 (2023-08-25)
 
 ### Fixed bugs

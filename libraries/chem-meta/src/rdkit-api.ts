@@ -16,7 +16,7 @@ export interface RDModule {
   writeArrayToMemory(arr: any, buff:any): any;
   MolList: MolListConstructor;
   SubstructLibrary: RDSubstructLibraryConstructor;
-  }
+}
 
 export interface RDMol {
   is_qmol: boolean;

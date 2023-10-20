@@ -1,4 +1,4 @@
-name: Lint Code Base
+name: Lint
 on:
   workflow_dispatch: { }
   push:
@@ -101,7 +101,7 @@ jobs:
           separator: ","
 
   commit:
-    name: Lint Commit message
+    name: CommitLint
     needs: common-check
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
@@ -124,7 +124,7 @@ jobs:
           helpURL: https://datagrok.ai/help/develop/advanced/git-policy#commit-message-policy
 
   pr-name:
-    name: Lint PR name
+    name: PR name
     runs-on: ubuntu-22.04
     if: github.event_name == 'pull_request'
     steps:

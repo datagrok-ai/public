@@ -38,6 +38,8 @@ category('detectors', () => {
     sepUn1 = 'sepUn1',
     sepUn2 = 'sepUn2',
     sepMsaDna1 = 'sepMsaDna1',
+    sepMsaUnWEmpty = 'sepMsaUnWEmpty',
+    sepComplex = 'sepComplex',
     fastaMsaDna1 = 'fastaMsaDna1',
     fastaMsaPt1 = 'fastaMsaPt1',
   }
@@ -109,6 +111,15 @@ rut12/rty/her2/abc/cfr3//wert/rut12`;
 A-C--G-T--C-T
 C-A-C--T--G-T
 A-C-C-G-T-A-C-T`;
+    [csvTests.sepMsaUnWEmpty]: string = `seq
+m1-M-m3-mon4-mon5-N-T-MON8-N9
+m1-mon2-m3-mon4-mon5-Num--MON8-N9
+
+mon1-M-mon3-mon4-mon5---MON8-N9`;
+    [csvTests.sepComplex]: string = `seq
+Ac(1)-F-K(AEEA-AEEA-R-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
+Ac(1)-F-K(AEEA-ARRA-W-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2
+Ac(1)-F-K(AEEA-AEEA-Ac)-L-mF-V-Y-mNle-D-W-N-mF-C(1)-G-NH2`;
     [csvTests.fastaMsaDna1]: string = `seq
 AC-GT-CT
 CAC-T-GT
@@ -176,7 +187,10 @@ MWRSWY-CKHP`;
           const df: DG.DataFrame = await readFile(samples[key]);
           // await grok.data.detectSemanticTypes(df);
           return df;
-        })();
+        })().catch((err: any) => {
+          delete _samplesDfs[key];
+          throw err;
+        });
       }
       return _samplesDfs[key];
     };
@@ -234,6 +248,7 @@ MWRSWY-CKHP`;
     await _testPos(readCsv(csvTests.fastaUn), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 12, true);
   });
+
   test('FastaMsaDna1', async () => {
     await _testPos(readCsv(csvTests.fastaMsaDna1), 'seq',
       NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false);
@@ -270,17 +285,27 @@ MWRSWY-CKHP`;
       NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false, '-');
   });
 
+  test('SepMsaUnWEmpty', async () => {
+    await _testPos(readCsv(csvTests.sepMsaUnWEmpty), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 14, true);
+  });
+
+  test('SepComplex', async () => {
+    await _testPos(readCsv(csvTests.sepComplex), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 18, true);
+  });
+
   test('samplesFastaCsv', async () => {
     await _testDf(readSamples(Samples.fastaCsv), {
       'Sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
     });
-  }, {skipReason: 'GROK-13851: Unhandled exceptions'});
+  });
 
   test('samplesFastaFasta', async () => {
     await _testDf(readSamples(Samples.fastaFasta), {
       'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
     });
-  }, {skipReason: 'GROK-13851: Unhandled exceptions'});
+  });
 
   // peptidesComplex contains monomers with spaces in AlignedSequence columns, which are forbidden
   // test('samplesPeptidesComplexPositiveAlignedSequence', async () => {

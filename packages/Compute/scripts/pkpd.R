@@ -1,6 +1,5 @@
 #name: pkpd
 #language: r
-#tags: model
 #input: double dosage = 1000 {category: Dosing options} 
 #input: double doseInterval = 12 {category: Dosing options} 
 #input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']} 
@@ -17,7 +16,6 @@
 #editor: Compute:RichFunctionViewEditor
 #meta.runOnOpen: true
 #meta.runOnInput: true
-
 
 require("ggplot2")
 require("RxODE")

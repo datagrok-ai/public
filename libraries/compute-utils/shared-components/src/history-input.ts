@@ -13,7 +13,7 @@ class DatabaseService {
     return from((async () => {
       const res = await historyUtils.pullRunsByName(
         funcName, [
-          {isShared: true}, {author: grok.shell.user},
+          {author: grok.shell.user},
           // EXPLAIN WHY FUNC.PARAMS
         ], {order: 'started'}, [...(includeParams ? ['func.params']: []), 'session.user', 'options'],
       );

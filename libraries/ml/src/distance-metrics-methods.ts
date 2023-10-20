@@ -1,5 +1,6 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {BitArrayMetricsNames} from './typed-metrics/consts';
+import {BitArrayMetricsNames, IntArrayMetricsNames} from './typed-metrics/consts';
+import { MmDistanceFunctionsNames } from './macromolecule-distance-functions';
 
 export const similarityMetric: { [name: string]: (x: BitArray, y: BitArray) => number } = {
   [BitArrayMetricsNames.Tanimoto]: tanimotoSimilarity,
@@ -40,6 +41,11 @@ export const SEQ_SPACE_SIMILARITY_METRICS = [
   BitArrayMetricsNames.Asymmetric,
   BitArrayMetricsNames.Cosine,
   BitArrayMetricsNames.Sokal];
+export const MACROMOLECULE_SIMILARITY_METRICS = [
+  MmDistanceFunctionsNames.HAMMING,
+  MmDistanceFunctionsNames.LEVENSHTEIN,
+  MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE];
+
 
 export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
@@ -50,6 +56,12 @@ export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
 
 export function tanimotoDistance(x: BitArray, y: BitArray): number {
   return getDistanceFromSimilarity(tanimotoSimilarity(x, y));
+}
+
+export function tanimotoDistanceIntArray(x: Uint32Array, y: Uint32Array): number {
+  const xb = new BitArray(x, x.length * 32);
+  const yb = new BitArray(y, y.length * 32);
+  return getDistanceFromSimilarity(tanimotoSimilarity(xb, yb));
 }
 
 export function diceSimilarity(x: BitArray, y: BitArray): number {

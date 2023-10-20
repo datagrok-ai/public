@@ -65,6 +65,7 @@ export async function demoBio01bUI() {
         delay: 2000,
       })
       .step('Cluster sequences', async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence clustering...`);
         const seqCol: DG.Column<string> = df.getCol('sequence');
         const seqList = seqCol.toList();
         const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
@@ -72,6 +73,7 @@ export async function demoBio01bUI() {
           return levDistance / ((aSeq.length + bSeq.length) / 2);
         });
         const treeRoot = await treeHelper.hierarchicalClusteringByDistance(distance, 'ward');
+        progressBar.close();
         dendrogramSvc.injectTreeForGrid(view.grid, treeRoot, undefined, 150, undefined);
 
         // adjust for visual

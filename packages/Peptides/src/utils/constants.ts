@@ -29,6 +29,7 @@ export enum TAGS {
   POSITION = 'pos',
   SEPARATOR = 'separator',
   SELECTION = 'selection',
+  MUTATION_CLIFFS_SELECTION = 'mutationCliffsSelection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
   INVARIANT_MAP_SELECTION = 'invariantMapSelection',
@@ -42,6 +43,8 @@ export enum TAGS {
   MULTIPLE_VIEWS = 'isMultipleViews',
   IDENTITY_TEMPLATE = 'Identity template',
   SIMILARITY_TEMPLATE = 'Similarity template',
+  ANALYSIS_COL = 'isAnalysisCol',
+  POSITION_COL = 'isPositionCol',
 }
 
 export enum SEM_TYPES {

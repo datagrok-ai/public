@@ -1,4 +1,4 @@
-import {mmDistanceFunctionType} from './types';
+import {mmDistanceFunctionArgs, mmDistanceFunctionType} from './types';
 
 // Blosum 62 matrix for protein sequences
 const BLOSUM62:Array<Array<number>> =
@@ -34,11 +34,9 @@ const ProtIndexes: {[id:string]:number} = {
   'W': 17, 'Y': 18, 'V': 19, 'B': 20, 'Z': 21, 'X': 22, '*': 23
 };
 
-interface NeedlemanWunchArgs {
+type NeedlemanWunchArgs = mmDistanceFunctionArgs & {
   gapOpen: number;
   gapExtend: number;
-  scoringMatrix: number[][];
-  alphabetIndexes: {[id:string]:number};
 }
 
 const defaultArgs: NeedlemanWunchArgs = {

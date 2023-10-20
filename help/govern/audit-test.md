@@ -147,9 +147,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Open *demog* table
 
-2. Use **Tools | Data science | Missing Values Imputation** for impute data to null rows
+2. Use **ML | Missing Values Imputation** for impute data to null rows
 
-3. Open "Train Model" view from **Tools | Predictive Modeling | Train**
+3. Open "Train Model" view from **ML | Models | Train**
 
     * "Predictive model" view was open
 
@@ -161,7 +161,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 7. Leave other parameters with default values and train new model
 
-8. Open "Model Browser" from **Tools | Predictive Modeling | Browse Models**
+8. Open "Model Browser" from **ML | Models | Browse Models**
 
 9. Open "Edit model" dialog for *"audit-test-model"*
 
@@ -250,7 +250,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Open "demog" table from local file using **File | Open**
 
-2. Use **Tools | Data science | Missing Values Imputation** for impute data to null rows
+2. Use **ML | Missing Values Imputation** for impute data to null rows
 
 3. Add [Scatter-Plot](../visualize/viewers/scatter-plot.md) viewer from **Add** menu
 
@@ -277,7 +277,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
     * Functions returned ```true```
     * result added to Variables
 
-10. Open **Tools | Data science | Multivariate Analysis (PLS)**
+10. Open **ML | Analyze | Multivariate Analysis...**
 
 11. Select *"AGE"* column for "Predict" field and *"HEIGHT"* and *"WEIGHT"* columns for "Features"
     and execute dialog

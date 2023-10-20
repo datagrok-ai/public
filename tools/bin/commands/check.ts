@@ -244,6 +244,23 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
 
       return { value, message };
     },
+    params: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
+      let value = true;
+      let message = '';
+
+      for (const input of inputs)
+        if (!(input.name && input.type)) {
+          value = false;
+          message += `Function has no name or type of input parameter\n`;
+        }
+      for (const output of outputs)
+        if (!(output.name && output.type)) {
+          value = false;
+          message += `Function has no name or type of output parameter\n`;
+        }
+
+      return { value, message };
+    },
   };
   const functionRoles = Object.keys(checkFunctions);
 
@@ -251,6 +268,9 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
     const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
     const functions = getFuncMetadata(content);
     for (const f of functions) {
+      const paramsCheck = checkFunctions.params(f);
+      if (!paramsCheck.value)
+        warnings.push(`File ${file}, function ${f.name}:\n${paramsCheck.message}`);
       const roles = functionRoles.filter((role) => f.tags?.includes(role));
       if (roles.length > 1) {
         warnings.push(`File ${file}, function ${f.name}: several function roles are used (${roles.join(', ')})`);
@@ -367,7 +387,7 @@ export function checkChangelog(packagePath: string, json: PackageFile) {
   regex = /^## \d+\.\d+\.\d+ \((\d{4}-\d{2}-\d{2}|WIP)\)$/;
   for (const h of h2) {
     if (!regex.test(h))
-      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<release date> | WIP)\n`);
+      warnings.push(`CHANGELOG: '${h}' does not match the h2 format, expected: ## <version> (<yyyy-mm-dd> | WIP)\n`);
   }
   regex = /^## (\d+\.\d+\.\d+)/;
   const v1 = h2[0].match(regex)?.[1];
@@ -397,19 +417,19 @@ function getFuncMetadata(script: string): FuncMetadata[] {
         isHeader = true;
       const param = match[1];
       if (param === 'name')
-        data.name = match[2];
+        data.name = line.match(utils.nameAnnRegex)?.[2];
       else if (param === 'description')
         data.description = match[2];
       else if (param === 'input')
-        data.inputs.push({ type: match[2] });
+        data.inputs.push({type: match[2], name: match[3]});
       else if (param === 'output')
-        data.outputs.push({ type: match[2] });
+        data.outputs.push({type: match[2], name: match[3]});
       else if (param === 'tags')
         data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
     }
     if (isHeader) {
       const nm = line.match(utils.nameRegex);
-      if (nm && !line.match(utils.paramRegex)) {
+      if (nm && !match) {
         data.name = data.name || nm[1];
         funcData.push(data);
         data = { name: '', inputs: [], outputs: [] };

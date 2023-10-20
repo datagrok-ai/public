@@ -1,5 +1,49 @@
 # Bio changelog
 
+## 2.11.0 (WIP)
+
+### Features
+
+* Add VdRegionsViewer `filterSource` property.
+* Add ToAtomicLevel for non-linear HELM strcutures.
+
+### Bug fixes
+
+* Fix GetRegion to detect semantic type and renderer for created column.
+* Fix GetRegion dialog column name field for default value.
+* Fix WebLogo viewer for gaps with Helm.
+* Fix cell renderer for empty values MSA.
+* Fix detectMacromolecule to ignore empty seqs.
+* Add property fitWidth for VdRegionsViewer.
+* Fix VdRegionsViewer fit width accounting position margin of WebLogo.
+* Fix similarity/diversity viewer tests.
+* Fix reset filters for Substructure Search filter.
+* Fix Macromolecule cell renderer width limit for `devicePixelRatio` less than 1.
+* Fix VdRegionsViewer `positionHeight` transmit to enclosed WebLogo.
+* Fix added by Split to monomers columns to be not used as a filter.
+* Fix WebLogo with `filterSource` of `Selection` to work from project.
+* Fix WebLogo with `filterSource` of `Selection` display all in case of empty selection.
+* Fix VdRegionsViewer for initial `filterSource`.
+* Fix Macromolecule cell render to skip on closed grid.
+* Fix WebLogoViewer for empty column (annotated).
+* Fix WebLogoViewer and VdRegionsViewer deadlock.
+
+## 2.10.0 (2023-09-06)
+
+### Features
+
+* GetRegion for Macromolecule:
+  * Added dialog Top menu Bio | Convert | GetRegion.
+  * Added maintaining `.positionNames` tag for GetRegion derived column.
+  * Added using `.regions` tag annotation for GetRegion dialog.
+
+### Bug fixes
+
+* Fixed UnitsHandler.posList length.
+* Fixed mistyping top menu path for Identity scoring.
+* Fixed Get Region missed in short top menu.
+* Fixed tests detectMacromoleculeBenchmark to specify test failed.
+
 ## 2.9.0 (2023-08-30)
 
 ### Features
@@ -76,7 +120,7 @@ This release focuses on improvements and bug fixes.
 * Added separator support for **Sequence Space** and **Activity Cliffs**.
 * Tooltip: shows monomer atomic structure for macromolecules.
 * For macromolecule cells, added the ability to show composition ratios in the property panel.
-* **Top menu**: organized the items into groups **SAR**, **Structure**, **Atomic level**, and **Search**. 
+* **Top menu**: organized the items into groups **SAR**, **Structure**, **Atomic level**, and **Search**.
 
 ### Bug Fixes
 

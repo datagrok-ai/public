@@ -3,20 +3,26 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {HelmWebEditor} from './helm-web-editor';
-import {HelmCellRenderer} from './cell-renderer';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-import {findMonomers, parseHelm} from './utils';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+
+import {findMonomers, parseHelm} from './utils';
+import {HelmWebEditor} from './helm-web-editor';
+import {HelmCellRenderer} from './cell-renderer';
+
+let monomerLib: IMonomerLib | null = null;
+
+import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 
 export const _package = new DG.Package();
-let monomerLib: IMonomerLib | null = null;
 
 //tags: init
 export async function initHelm(): Promise<void> {
+  //@ts-ignore
+  org.helm.webeditor.kCaseSensitive = true; // GROK-13880
+
   return Promise.all([
     new Promise((resolve, reject) => {
       // @ts-ignore
@@ -58,6 +64,7 @@ export function getMonomerLib(): IMonomerLib {
   return monomerLib!;
 }
 
+/** Fills org.helm.webeditor.Monomers dictionary for WebEditor */
 function rewriteLibraries() {
   // @ts-ignore
   org.helm.webeditor.Monomers.clear();
@@ -87,9 +94,8 @@ function rewriteLibraries() {
       } else if (monomer[SMILES] != null) {
         webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
         webEditorMonomer.at = getRS(monomer[SMILES].toString());
-      } else {
+      } else
         isBroken = true;
-      }
 
       if (!isBroken) {
         // @ts-ignore
@@ -116,8 +122,13 @@ function checkMonomersAndOpenWebEditor(cell?: DG.Cell, value?: string, units?: s
   const cellValue: string = !!cell && units === undefined ? cell.value : value;
   const monomerList: string[] = parseHelm(cellValue);
   const monomers = findMonomers(monomerList);
-  if (monomers.size == 0) { webEditor(cell, value, units); } else {
-    grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent! <br/>` +
+  if (monomers.size === 0)
+    webEditor(cell, value, units);
+  else if (monomers.size === 1 && monomers.has(GapSymbols[NOTATION.HELM]))
+    grok.shell.warning(`WebEditor doesn't support Helm with gaps '${GapSymbols[NOTATION.HELM]}'.`);
+  else {
+    grok.shell.warning(
+      `Monomers ${Array.from(monomers).map((m) => `'${m}'`).join(', ')} are absent! <br/>` +
       `Please, upload the monomer library! <br/>` +
       `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
   }
@@ -138,12 +149,13 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 export function openEditor(mol: string): void {
   const df = grok.shell.tv.grid.dataFrame;
   const col = df.columns.bySemType('Macromolecule')!;
+  const colUh = UnitsHandler.getOrCreate(col);
   const colUnits = col.getTag(DG.TAGS.UNITS);
   if (colUnits === NOTATION.HELM)
     checkMonomersAndOpenWebEditor(df.currentCell, undefined, undefined);
-  const converter = new NotationConverter(col);
-  const resStr = converter.convertStringToHelm(mol, '/');
-  checkMonomersAndOpenWebEditor(df.currentCell, resStr, col.getTag(DG.TAGS.UNITS));
+  const convert = colUh.getConverter(NOTATION.HELM);
+  const helmMol = convert(mol);
+  checkMonomersAndOpenWebEditor(df.currentCell, helmMol, col.getTag(DG.TAGS.UNITS));
 }
 
 //name: Properties
@@ -175,7 +187,8 @@ export async function propertiesPanel(helmString: string) {
 function webEditor(cell?: DG.Cell, value?: string, units?: string) {
   const view = ui.div();
   const df = grok.shell.tv.grid.dataFrame;
-  const converter = new NotationConverter(df.columns.bySemType('Macromolecule')!);
+  const col = df.columns.bySemType('Macromolecule')!;
+  const uh = UnitsHandler.getOrCreate(col);
   // @ts-ignore
   org.helm.webeditor.MolViewer.molscale = 0.8;
   // @ts-ignore
@@ -214,10 +227,10 @@ function webEditor(cell?: DG.Cell, value?: string, units?: string) {
       const helmValue = app.canvas.getHelm(true).replace(/<\/span>/g, '')
         .replace(/<span style='background:#bbf;'>/g, '');
       if (!!cell) {
-        if (units === undefined) {
+        if (units === undefined)
           cell.value = helmValue;
-        } else {
-          const convertedRes = converter.convertHelmToFastaSeparator(helmValue, units!);
+        else {
+          const convertedRes = uh.convertHelmToFastaSeparator(helmValue, units!);
           cell.value = convertedRes;
         }
       }

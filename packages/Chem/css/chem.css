@@ -264,11 +264,11 @@
 }
 
 .mol-host > :last-child {
-  right: 20px;
+  right: 10px;
 }
 
 .mol-host > :first-child {
-  left: 60px;
+  left: 55px;
 }
 
 .scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
@@ -408,4 +408,97 @@
     align-items: center;
     color: red;
     text-align: center;
+}
+
+.chem-col-highlight-sketcher-input {
+  width: 150px;
+  height: 100%;
+  position: relative;
+}
+
+.struct-alerts-mol-box {
+  position: relative
+}
+
+.struct-alerts-mol-box > .pep-more-icon {
+  position: absolute;
+}
+
+.highlight-substr-grid-button {
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
+
+.chem-filter-fp-editor {
+  width: 82px;
+}
+
+.chem-filter-fp-label {
+  margin-right: 5px!important;
+}
+arch-options-icon
+.chem-filter-sim-cutoff-label {
+  width: 0px;
+  margin: 0px!important;
+}
+
+.chem-filter-sim-cutoff-editor {
+  width: 94px;
+}
+
+.chem-search-options-icon {
+  visibility: hidden;
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  font-size: 18px;
+  font-weight: bolder
+}
+
+.chem-filter:hover .chem-search-options-icon {
+  visibility: visible;
+}
+
+.empty-filter {
+  gap: 5px;
+}
+
+.chem-filter-similarity-options {
+  margin-bottom: 3px;
+  gap: 5px;
+}
+
+.color-icon.color-is-set {
+  visibility: visible;
+}
+
+.palette-icon.color-is-not-set {
+  visibility: hidden;
+}
+
+.palette-icon.color-is-set {
+  visibility: hidden;
+}
+
+.palette-icon.color-is-set:hover {
+  visibility: visible;
+}
+
+.canvas-container {
+  position: relative;
+  width: 100%;
+}
+
+.disable-icon {
+  pointer-events: none;
+  color: var(--grey-4)!important;
+  cursor:default!important;
+}
+
+.sketch-link {
+  border: none!important;
+  color: var(--blue-1);
 }

@@ -64,7 +64,7 @@ category('toAtomicLevel', async () => {
 
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
     const inputCol = source.getCol(inputColName);
-    await toAtomicLevel(source, inputCol);
+    await toAtomicLevel(source, inputCol, false);
     const obtainedCol = source.getCol(outputColName);
     const expectedCol = target.getCol(outputColName);
     const obtainedArray = [...obtainedCol.values()];

@@ -19,6 +19,9 @@ multivariate data and show the intensity and difference between variables.
 1. Go to **Tables** and expand the **Viewers** panel.
 1. Locate the **Heatmap** icon and click it.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Heatmap');`
+
 Initially, the viewer displays a heatmap of the entire dataset on a screen. Pan
 or resize the range slider on the right to control how many rows are shown.
 

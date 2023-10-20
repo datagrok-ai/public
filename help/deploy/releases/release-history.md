@@ -7,7 +7,7 @@ slug: develop/admin/releases/release-history
 
 | Service                                                   | Docker Image                                                                                      |
 |-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.4](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.16.7](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.8](https://hub.docker.com/r/datagrok/grok_connect)                    |
 | Grok Spawner                                              | [datagrok/grok_spawner:1.4.4](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.3](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -18,7 +18,33 @@ slug: develop/admin/releases/release-history
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../docker-compose.mdx)
+- [Docker-Compose](../docker-compose/docker-compose.mdx)
+
+## 2023-10-04 1.16.7
+
+### Addressed Issues
+
+* (Improvement): Connectors: Added gzip compression of socket message
+* (Improvement): Connectors: Added offset, fixed caching 
+* (Improvement): DataQuery: Added setting of gzip and batchSize through SQL script meta
+
+## 2023-09-14 1.16.6
+
+### Addressed Issues
+
+* (Bug) GROK-13904: Redocking viewer leads to multiple entries in .viewers list 
+* (Bug) [#2350](https://github.com/datagrok-ai/public/issues/2350): 'Error loading line chart' on applying layout, if line chart has categorical X axis and row source = Selected 
+
+
+## 2023-09-06 1.16.5
+
+### Addressed Issues
+
+* (Bug) GROK-13874: Box plot: incorrectly displays values on the X axis 
+* (Bug) [#2329](https://github.com/datagrok-ai/public/issues/2329): Histogram 'normalise to filter' option: Y axis values are not updated on zooming 
+* (Bug) [#2328](https://github.com/datagrok-ai/public/issues/2328): Viewer docked at the left or at the top is sometimes unexpectedly hidden 
+* (Bug) [#2315](https://github.com/datagrok-ai/public/issues/2315): Unexpected columns appear in 'Order and hide' columns dialog if scaffold tree viewer or structure filter is added 
+
 ## 2023-08-30 1.16.4
 
 ### Addressed Issues

@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Subject} from 'rxjs';
-import Validation from './validation';
 import '../css/file-input.css';
 
 export const EXCEL_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -17,7 +16,6 @@ export class FileInput extends DG.InputBase<File | null> {
   // Real file value
   private fileValue: File | null = null;
   // Validation object
-  public validation = new Validation<File>();
   private isValid = new BehaviorSubject<boolean>(true);
 
   private hiddenInput = document.createElement('input');
@@ -96,8 +94,6 @@ export class FileInput extends DG.InputBase<File | null> {
         this.isValid.next(false);
         throw new Error('File type is not supported');
       }
-
-      this.isValid.next(await this.validation.validate(files[0]));
 
       if (this.isValid.value)
         this.uploadedFile$.next(files[0]);

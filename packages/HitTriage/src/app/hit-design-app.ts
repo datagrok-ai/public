@@ -3,12 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, EmptyStageCellValue, HitDesignCampaignIdKey,
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, EmptyStageCellValue, HDcampaignName, HitDesignCampaignIdKey,
   HitDesignMolColName, TileCategoriesColName, ViDColName, i18n} from './consts';
 import {calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
 import {_package} from '../package';
-import {modifyUrl, toFormatedDateString} from './utils';
+import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
 import {HitDesignTilesView} from './hit-design-views/tiles-view';
 import {HitAppBase} from './hit-app-base';
@@ -32,16 +32,18 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
   private currentDesignViewId?: string;
   private currentTilesViewId?: string;
-  constructor() {
-    super();
+  public mainView: DG.ViewBase;
+  constructor(c: DG.FuncCall) {
+    super(c);
     this._infoView = new HitDesignInfoView(this);
     this.multiView = new DG.MultiView({viewFactories: {[this._infoView.name]: () => this._infoView}});
     this.multiView.tabs.onTabChanged.subscribe((_) => {
       if (this.multiView.currentView instanceof HitBaseView)
         (this.multiView.currentView as HitBaseView<HitDesignTemplate, HitDesignApp>).onActivated();
     });
-    grok.shell.addView(this.multiView);
-    grok.events.onCurrentViewChanged.subscribe(() => {
+    this.multiView.parentCall = c;
+    this.mainView = grok.shell.addView(this.multiView);
+    grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
         if (grok.shell.v?.name === this.currentDesignViewId || grok.shell.v?.name === this.currentTilesViewId) {
           grok.shell.windows.showHelp = false;
@@ -49,7 +51,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
           this.setBaseUrl();
           modifyUrl(CampaignIdKey, this._campaignId ?? this._campaign?.name ?? '');
           if (grok.shell.v?.name === this.currentTilesViewId)
-            this._tilesView?.onActivated();
+            await this._tilesView?.render();
+          const {sub} = addBreadCrumbsToRibbons(grok.shell.v, 'Hit Design', grok.shell.v?.name, () => {
+            grok.shell.v = this.mainView;
+            this._tilesView?.close();
+            this._designView?.close();
+            sub.unsubscribe();
+          });
         }
       } catch (e) {
         console.error(e);
@@ -85,7 +93,6 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     this.template = template;
 
     this._submitView ??= new HitDesignSubmitView(this);
-    // this.multiView.addView(this._submitView.name, () => this._submitView!, false);
     grok.shell.windows.showHelp = false;
     //add empty rows to define stages, used for tile categories;
     const stagesRow = this.dataFrame.getCol(TileCategoriesColName);
@@ -104,14 +111,10 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     }
     this.dataFrame.rows.filter((r) => r[ViDColName] !== EmptyStageCellValue);
     this._extraStageColsCount = this.dataFrame!.rowCount - this.dataFrame.filter.trueCount;
-
-    //this.multiView.addView(this._designViewName, () => this.designView, true);
-    //this.multiView.addView(this._tilesView.name, () => this._tilesView!, false);
-
     const designV = grok.shell.addView(this.designView);
     this.currentDesignViewId = designV.name;
-
-    this._tilesView ??= new HitDesignTilesView(this);
+    this._tilesView = new HitDesignTilesView(this);
+    this._tilesView.parentCall = this.parentCall;
     const tilesV = grok.shell.addView(this._tilesView);
     grok.shell.v = designV;
     this.currentTilesViewId = tilesV.name;
@@ -122,7 +125,7 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
 
   get campaignId(): string | undefined {return this._campaignId;}
 
-  get designView(): DG.TableView {return this._designView ??= this.getDesignView();}
+  get designView(): DG.TableView {return this._designView = this.getDesignView();}
 
   get molColName() {
     return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name ?? HitDesignMolColName;
@@ -140,6 +143,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     setTimeout(async () => {
       view._onAdded();
       await new Promise((r) => setTimeout(r, 1000)); // needed for substruct filter
+      // apply layout.
+      const layout = (await grok.dapi.layouts.filter(`friendlyName = "${this._designViewName}"`).list())
+        .find((l) => l && l.getUserDataValue(HDcampaignName) === this._campaignId);
+      if (layout)
+        view.loadLayout(layout);
+
+
       if (isNew)
         grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
 
@@ -200,14 +210,24 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     }, 300);
     const ribbons = view?.getRibbonPanels();
     if (ribbons) {
-      const submitButton = ui.div(ui.bigButton('Submit', () => {
-        const dialogContent = this._submitView?.render();
-        if (dialogContent)
-          ui.dialog('Submit').add(dialogContent).show().getButton('Cancel').textContent = 'Ok';
-      }), 'hit-design-submit-button');
-      ribbons.push([submitButton]);
-      view.setRibbonPanels(ribbons);
+      const hasSubmit = checkRibbonsHaveSubmit(ribbons);
+      if (!hasSubmit) {
+        const submitButton = ui.bigButton('Submit', () => {
+          const dialogContent = this._submitView?.render();
+          if (dialogContent) {
+            const dlg = ui.dialog('Submit');
+            dlg.add(dialogContent);
+            dlg.addButton('Save', ()=>{this.saveCampaign(); dlg.close();});
+            dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
+            dlg.show();
+          }
+        });
+        submitButton.classList.add('hit-design-submit-button');
+        ribbons.push([submitButton]);
+        view.setRibbonPanels(ribbons);
+      }
     }
+    view.parentCall = this.parentCall;
     return view;
   }
 
@@ -249,6 +269,22 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
     ).toCsv();
     await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
+
+    const newLayout = this._designView!.saveLayout();
+    if (!newLayout) {
+      grok.shell.warning('Layout cound not be saved');
+      return;
+    }
+
+    const oldLayouts = (await grok.dapi.layouts.filter(`friendlyName = "${this._designViewName}"`).list())
+      .filter((l) => l && l.getUserDataValue(HDcampaignName) === campaignId);
+    for (const l of oldLayouts)
+      await grok.dapi.layouts.delete(l);
+    //save new layout
+    newLayout.setUserDataValue(HDcampaignName, campaignId);
+    const l = await grok.dapi.layouts.save(newLayout);
+    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+    await grok.dapi.permissions.grant(l, allGroup, true);
     notify && grok.shell.info('Campaign saved successfully.');
   }
 }

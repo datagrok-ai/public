@@ -1203,7 +1203,7 @@ export class ColumnList {
    * */
   addNewBool(name: string): Column<boolean> { return this.addNew(name, TYPE.BOOL); }
 
-  /** Creates and adds a boolean column
+  /** Creates and adds a byte array column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
@@ -1746,6 +1746,11 @@ export class Stats {
    * @returns {Stats} */
   static fromColumn(col: Column, mask: BitSet | null = null): Stats {
     return new Stats(api.grok_Stats_FromColumn(col.dart, toDart(mask)));
+  }
+
+  /** Calculates statistics for the array of values. */
+  static fromValues(values: number[] | Int8Array | Int16Array | Int32Array | Float32Array | Float64Array): Stats {
+    return new Stats(api.grok_Stats_FromValues(values));
   }
 
   /** Total number of values (including missing values). */

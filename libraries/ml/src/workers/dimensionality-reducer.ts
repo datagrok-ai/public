@@ -17,9 +17,14 @@ async function onMessage(columnData: any[], method: KnownMethods, measure: Known
     columnData,
     method,
     measure,
-    options,
+    {...options, progressFunc},
   );
   return await reducer.transform(true, parallelDistanceWorkers);
+}
+
+async function progressFunc (epochNum: number, epochsLength: number, embedding: number[][]) {
+  if (epochNum % 5 === 0)
+    self.postMessage({epochNum, epochsLength, embedding});
 }
 
 self.onmessage = async ({data: {columnData, method, measure, options, parallelDistanceWorkers}}) => {

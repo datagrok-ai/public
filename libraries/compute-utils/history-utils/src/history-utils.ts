@@ -11,7 +11,6 @@ type FilterOptions = {
   text?: string,
   date?: DateOptions,
   author?: DG.User,
-  isShared?: boolean,
 };
 
 const getSearchStringByPattern = (datePattern: DateOptions) => {
@@ -103,11 +102,14 @@ export namespace historyUtils {
    * @returns Saved FuncCall
    */
   export async function saveRun(callToSave: DG.FuncCall) {
+    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
     for (const output of dfOutputs) {
       callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
+      await grok.dapi.permissions.grant(callToSave.outputs[output.name].getTableInfo(), allGroup, false);
     }
 
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
@@ -115,6 +117,7 @@ export namespace historyUtils {
     for (const input of dfInputs) {
       callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
+      await grok.dapi.permissions.grant(callToSave.inputs[input.name].getTableInfo(), allGroup, false);
     }
 
     return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
@@ -170,7 +173,6 @@ export namespace historyUtils {
       const filterOptionCriteria = [] as string[];
       if (filterOption.author) filterOptionCriteria.push(`session.user.id="${filterOption.author.id}"`);
       if (filterOption.date) filterOptionCriteria.push(getSearchStringByPattern(filterOption.date));
-      if (filterOption.isShared) filterOptionCriteria.push(`options.isShared="true"`);
       if (filterOption.text) {
         filterOptionCriteria.push(
           `((options.title like "${filterOption.text}") or (options.annotation like "${filterOption.text}"))`,

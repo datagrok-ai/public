@@ -18,7 +18,6 @@ export const rendererSettingsChangedState = {
 
 export const enum Temps {
   monomerWidth = '.mm.cellRenderer.monomerWidth',
-  maxMonomerLength = '.mm.cellRenderer.maxMonomerLength',
   colorCode = '.mm.cellRenderer.colorCode',
   compareWithCurrent = '.mm.cellRenderer.compareWithCurrent',
   highlightDifference = '.mm.cellRenderer.highlightDifference',

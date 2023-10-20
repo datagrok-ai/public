@@ -14,16 +14,10 @@ export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesig
 
   render(): HTMLDivElement {
     ui.empty(this.root);
-    const submitDiv = ui.divH([]);
-    if (this.app.template?.submit && this.app.template.submit.fName)
-      submitDiv.appendChild(ui.bigButton('SUBMIT', () => this.submit()));
 
-    submitDiv.appendChild(ui.bigButton('Save Campaign', () => this.app.saveCampaign()));
-    submitDiv.style.gap = '10px';
     const content = ui.divV([
       ui.h1('Summary'),
       ui.div([ui.tableFromMap(this.app.getSummary())]),
-      submitDiv,
     ]);
     return content;
   }
