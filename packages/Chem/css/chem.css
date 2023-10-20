@@ -277,7 +277,7 @@
 }
 
 .scaffold-tree-extra .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  min-width: 200px;
+  min-width: 230px;
   max-width: 340px;
   height: auto;
   aspect-ratio: 3/1.25;
@@ -289,7 +289,7 @@
 }
 
 .scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 200px;
+  width: 230px;
   height: 90px;
 }
 
