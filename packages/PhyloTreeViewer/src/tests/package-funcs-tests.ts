@@ -33,17 +33,15 @@ category('packageFuncs', () => {
     await awaitCheck(() => true, 'Error', 200);
   });
 
-  // // Failed
-  // test('treeToGridApp', async () => {
-  //   const app: TreeToGridApp = await grok.functions.call(`${_package.name}:treeToGridApp`, {});
-  //   await awaitCheck(() => true, 'Error', 200);
-  // });
-  //
-  // // Failed
-  // test('treeCutAsTreeApp', async () => {
-  //   await grok.functions.call(`${_package.name}:treeCutAsTreeApp`, {});
-  //   await awaitCheck(() => true, 'Error', 200);
-  // });
+  test('treeToGridApp', async () => {
+    const app: TreeToGridApp = await grok.functions.call(`${_package.name}:treeToGridApp`, {});
+    await awaitCheck(() => true, 'Error', 200);
+  });
+
+  test('treeCutAsTreeApp', async () => {
+    await grok.functions.call(`${_package.name}:treeCutAsTreeApp`, {});
+    await awaitCheck(() => true, 'Error', 200);
+  });
 
   test('treeInGridCellApp', async () => {
     await grok.functions.call(`${_package.name}:treeInGridCellApp`, {});
