@@ -7,20 +7,28 @@ import * as DG from 'datagrok-api/dg';
 import {stemmer} from 'stemmer';
 import { UMAP } from 'umap-js';
 
+type WordInfo = {
+  index: number,
+  frequency: number,
+};
+
 type StemBuffer = {
   dfName: string | undefined,
   colName: string | undefined,
-  dictionary: Map<string, number> | undefined,
+  dictionary: Map<string, WordInfo> | undefined,
   indices: DG.Column | undefined,
+  mostCommon: Set<number> | undefined,
 };
 
 export var stemBuffer: StemBuffer = {
   dfName: undefined,
   colName: undefined,
   dictionary: undefined,
-  indices: undefined
+  indices: undefined,
+  mostCommon: undefined
 };
 
+const RATIO = 0.05;
 const INFTY = 100000;
 export const MIN_CHAR_COUNT = 1;
 
@@ -34,7 +42,7 @@ const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "
   "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "it", "it's", "its", "itself", "i.e",
   "let's", 
   "me", "more", "most", "my", "myself", 
-  "nor", 'nan', 
+  "nor", 'nan', 'no', 'not',
   "of", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", 
   "same", "she", "she'd", "she'll", "she's", "should", "so", "some", "such", 
   "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too", 
@@ -59,10 +67,11 @@ function getStemmedWords(str: string, minCharCount: number): string[] {
 }
 
 /** Return dictionary of stemmed words & a column of indices. */
-export function stemmColumn(source: DG.Column<string>, minCharCount: number): {dict: Map<string, number>, indices: DG.Column} {
-  const dict = new Map<string, number>();
+export function stemmColumn(source: DG.Column<string>, minCharCount: number): {dict: Map<string, WordInfo>, indices: DG.Column, mostCommon: Set<number>} {
+  const dict = new Map<string, WordInfo>();
   const size = source.length;
   const indices = DG.Column.fromType(DG.COLUMN_TYPE.OBJECT, `${source.name} (inds)`, size);
+  const mostCommon = new Set<number>();
 
   for (let i = 0; i < size; ++i) {
     const words = getStemmedWords(source.get(i) ?? '', minCharCount);
@@ -70,10 +79,16 @@ export function stemmColumn(source: DG.Column<string>, minCharCount: number): {d
     let j = 0; 
 
     words.forEach((w) => {
-      if (!dict.has(w))
-        dict.set(w, dict.size);
-
-      inds[j] = dict.get(w)!;
+      if (!dict.has(w)) {
+        dict.set(w, {index: dict.size, frequency: 1});
+        inds[j] = dict.size;
+      }
+      else {
+        const info = dict.get(w);
+        ++(info!.frequency);
+        dict.set(w, info!);
+        inds[j] = info!.index;
+      }     
       
       ++j;
     });
@@ -81,7 +96,13 @@ export function stemmColumn(source: DG.Column<string>, minCharCount: number): {d
     indices.set(i, inds.sort());
   }
 
-  return {dict: dict, indices: indices};
+  const limit = RATIO * dict.size;
+
+  for (const val of dict.values())
+    if (val.frequency > limit)
+      mostCommon.add(val.index);
+
+  return {dict: dict, indices: indices, mostCommon: mostCommon};
 }
 
 /** Return number of common elements. */
@@ -127,7 +148,7 @@ export function getClosest(indices: DG.Column, idx: number, count: number): Uint
     if (curLen === 0) 
       closestDists[i] = 0;    
     else 
-      closestDists[i] = commonItemsCount(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
+      closestDists[i] = commonItemsCountNon(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
   }
     
   let minRelIdx = closestDists.reduce((r, v, i, a) => v >= a[r] ? r : i, -1);
@@ -137,7 +158,7 @@ export function getClosest(indices: DG.Column, idx: number, count: number): Uint
     const curLen = current.length;
 
     if (curLen > 0) {      
-      const curRelDist = commonItemsCount(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
+      const curRelDist = commonItemsCountNon(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
 
       if (curRelDist > closestDists[minRelIdx]) {
         closestDists[minRelIdx] = curRelDist;
@@ -150,19 +171,27 @@ export function getClosest(indices: DG.Column, idx: number, count: number): Uint
   return closestInds.filter(i => i !== idx);
 }
 
-function distaFn(arr1: Uint16Array, arr2: Uint16Array): number {
+/** Return number of common elements. */
+function commonItemsCountNon(arr1: Uint16Array, arr2: Uint16Array): number {
   const len1 = arr1.length;
   const len2 = arr2.length;
+  let count = 0;
+  let i1 = 0;
+  let i2 = 0;
 
-  if ((len1 === 0) || (len2 === 0))
-    return INFTY;
-
-  const common = commonItemsCount(arr1, arr2);
-
-  if (common === 0)
-    return INFTY;
-
-  return ((len1 < len2) ? len1 : len2) / common;
+  while((i1 < len1) && (i2 < len2))
+    if (arr1[i1] === arr2[i2]) {
+      if (!stemBuffer.mostCommon?.has(arr1[i1]))
+        ++count;
+      ++i1;
+      ++i2;
+    }
+    else if (arr1[i1] < arr2[i2])
+      ++i1;
+    else
+      ++i2;
+  
+  return count;
 }
 
 function distFn(arr1: number[], arr2: number[]): number {
@@ -181,7 +210,7 @@ function distFn(arr1: number[], arr2: number[]): number {
   if ((len1 === 0) || (len2 === 0))
     return INFTY;
 
-  const common = commonItemsCount(ref1, ref2);  
+  const common = commonItemsCountNon(ref1, ref2);  
 
   if (common < 2)
   //if (common === 0)
@@ -263,86 +292,18 @@ export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked
       }
       
       const word = strToBeMarked.slice(start, end);
+      const wordLow = word.toLowerCase();
 
-      if (!STOP_WORDS.includes(word)) {
-        const stemmed = stemmer(word.toLowerCase());
-        const value = stemBuffer.dictionary?.get(stemmed);
+      if (!STOP_WORDS.includes(wordLow)) {
+        const value = stemBuffer.dictionary?.get(stemmer(wordLow));
 
-        if (wordsOfQuery.includes(value)) {
+        if (wordsOfQuery.includes(value?.index)) {
           let p = ui.inlineText([word]);
           //@ts-ignore
           $(p).css({"font-weight": "bold"});
           marked.push(p);
           const buf = word.toLocaleLowerCase();
           commonWords.set(buf, (commonWords.get(buf) ?? 0) + 1);          
-        }
-        else
-          marked.push(word);
-      }
-      else
-      marked.push(word);
-    }
-
-    else {
-      while (SEPARATORS.includes(strToBeMarked[end])) {
-        ++end;
-
-        if (end === size)
-          break;
-      }
-
-      marked.push(strToBeMarked.slice(start, end));
-    }   
-
-    start = end;
-    isWord = !isWord;
-  } // while
-
-  return {marked: marked, commonWords: commonWords};
-}
-
-/**  */
-export function getMarkedStringAndCommonWordsSet(queryIdx: number, strToBeMarked: string): {marked: any[], commonWords: Set<string>}  {
-  const size = strToBeMarked.length;
-
-  if (size === 0)
-    return {marked: [] as any[], commonWords: new Set<string>()};
-
-  const marked = [] as any[];
-  const commonWords = new Set<string>();
-
-  const wordsOfQuery = stemBuffer.indices?.get(queryIdx);
-
-  let start = 0;
-  let end = 0;
-  
-  let isWord = !SEPARATORS.includes(strToBeMarked[start]);
-
-  while (start < size) {
-
-
-    if (isWord) {
-
-      while (!SEPARATORS.includes(strToBeMarked[end])) {
-        ++end;
-
-        if (end === size)
-          break;
-      }
-      
-      const word = strToBeMarked.slice(start, end);
-
-      if (!STOP_WORDS.includes(word)) {
-        const stemmed = stemmer(word.toLowerCase());
-        const value = stemBuffer.dictionary?.get(stemmed);
-
-        if (wordsOfQuery.includes(value)) {
-          let p = ui.inlineText([word]);
-          //@ts-ignore
-          $(p).css({"font-weight": "bold"});
-          marked.push(p);
-          const buf = word.toLocaleLowerCase();          
-          commonWords.add(buf);
         }
         else
           marked.push(word);

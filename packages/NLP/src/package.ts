@@ -5,9 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemmColumn, getClosest, stemBuffer, getEmbeddings, 
-  getMarkedStringAndCommonWordsMap, getMarkedStringAndCommonWordsSet,
-  MIN_CHAR_COUNT} from './stemming-tools';
+import {stemmColumn, getClosest, stemBuffer, getEmbeddings, getMarkedStringAndCommonWordsMap, MIN_CHAR_COUNT} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -198,7 +196,7 @@ export async function initAWS() {
 //input: string query {semType: Text}
 //output: widget result
 //condition: true
-export function similarMap(query: string): DG.Widget {
+export function similar(query: string): DG.Widget {
   const df = grok.shell.t;
   const source = df.currentCol;
   const queryIdx = df.currentRowIdx;
@@ -210,6 +208,7 @@ export function similarMap(query: string): DG.Widget {
     const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
     stemBuffer.dictionary = stemmingRes.dict;
     stemBuffer.indices = stemmingRes.indices;
+    stemBuffer.mostCommon = stemmingRes.mostCommon;
   }
 
   const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
@@ -232,58 +231,54 @@ export function similarMap(query: string): DG.Widget {
 
   const filterWordsSorted = new Map(Array.from(filterWords).sort((a, b) => a[1] > b[1] ? 1 : -1));
 
-  console.log(filterWordsSorted);
-  console.log('-----------------------------------------------------------------------------');
+  //console.log(filterWordsSorted);
+  //console.log('-----------------------------------------------------------------------------');  
+
+  //@ts-ignore
+  /*console.log(new Map( Array.from(stemBuffer.dictionary!)
+    .map(item => [item[0], item[1].frequency])
+    .sort((a, b) => a[1] > b[1] ? -1 : 1)
+  ));*/
   
   const wgt = new DG.Widget(ui.divV(uiElements));
 
   return wgt;
 }
 
-/*name: Similar (Set)
-tags: panel, widgets
-input: string query {semType: Text}
-output: widget result
-condition: true
-export function similarSet(query: string): DG.Widget {
-  const df = grok.shell.t;
-  const source = df.currentCol;
-  const queryIdx = df.currentRowIdx;
-
-  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name)) {
-    stemBuffer.dfName = df.name;
+//top-menu: NLP | Get dictionary...
+//name: Compute Embeddings
+//input: dataframe table {caption: Table; category: Data}
+//input: column source {type: string; caption: Table; category: Data}
+//output: dataframe dictionary
+export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
+  if ((stemBuffer.dfName !== table.name) || (stemBuffer.colName !== source.name)) {
+    stemBuffer.dfName = table.name;
     stemBuffer.colName = source.name;
 
     const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
     stemBuffer.dictionary = stemmingRes.dict;
     stemBuffer.indices = stemmingRes.indices;
+    stemBuffer.mostCommon = stemmingRes.mostCommon;
   }
 
-  const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
+  const dict = stemBuffer.dictionary;
+  const size = dict?.size ?? 0;
+  const words = Array<string>(size);
+  const freqs = new Int32Array(size);
 
-  const uiElements = [] as HTMLElement[];
-  const filterWords = new Map<string, number>();
+  let idx = 0;
 
-  for (let i = 1; i < closest.length; ++i) {
-    const res = getMarkedStringAndCommonWordsSet(queryIdx, source.get(closest[i]));
-
-    for (const word of res.commonWords)
-      filterWords.set(word, (filterWords.get(word) ?? 0) + 1);
-
-    const uiElem = ui.inlineText(res.marked);
-    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
-    uiElements.push(uiElem);
-    uiElements.push(ui.h3(''));
-    ui.tooltip.bind(uiElem, 'Click to navigate.');
+  for (const item of dict!) {
+    words[idx] = item[0];
+    freqs[idx] = item[1].frequency;
+    ++idx;
   }
 
-  console.log(filterWords);
-  console.log('-----------------------------------------------------------------------------');
-
-  const wgt = new DG.Widget(ui.divV(uiElements));
-
-  return wgt;
-}*/
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('Stemmed words', words),
+    DG.Column.fromInt32Array('Frequency', freqs),
+  ]);
+}
 
 //top-menu: NLP | Compute Embeddings...
 //name: Compute Embeddings
