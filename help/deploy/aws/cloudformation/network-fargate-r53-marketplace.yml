@@ -118,12 +118,12 @@ Metadata:
         default: 'InternetIngressAccess: Access from internet'
       InternetSubnetAllow:
         default: 'InternetSubnetAllow: Allow connect from CIDR'
-      JupyterVersion:
-        default: Jupyter Version
       InternetSubnetAllow2:
         default: 'InternetSubnetAllow2: Allow connect from additional CIDR (Optional)'
       InternetSubnetAllow3:
         default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
+      JupyterVersion:
+        default: Jupyter Version
   cfn-lint:
     config:
       ignore_checks:
@@ -214,7 +214,7 @@ Parameters:
   JupyterVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
     Default: bleeding-edge
-    Description: Enter Datagrok Jupyter docker image version.
+    Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
 Resources:
   Cvm443Ingress:

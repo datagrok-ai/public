@@ -115,12 +115,12 @@ Metadata:
         default: 'InternetIngressAccess: Access from internet'
       InternetSubnetAllow:
         default: 'InternetSubnetAllow: Allow connect from CIDR'
-      JupyterVersion:
-        default: Jupyter Version
       InternetSubnetAllow2:
         default: 'InternetSubnetAllow2: Allow connect from additional CIDR (Optional)'
       InternetSubnetAllow3:
         default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
+      JupyterVersion:
+        default: Jupyter Version
   cfn-lint:
     config:
       ignore_checks:
