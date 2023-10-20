@@ -5,7 +5,9 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemmColumn, getClosest, stemBuffer, getEmbeddings, getMarkedString, MIN_CHAR_COUNT} from './stemming-tools';
+import {stemmColumn, getClosest, stemBuffer, getEmbeddings, 
+  getMarkedStringAndCommonWordsMap, getMarkedStringAndCommonWordsSet,
+  MIN_CHAR_COUNT} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -196,7 +198,7 @@ export async function initAWS() {
 //input: string query {semType: Text}
 //output: widget result
 //condition: true
-export function similar(query: string): DG.Widget {
+export function similarMap(query: string): DG.Widget {
   const df = grok.shell.t;
   const source = df.currentCol;
   const queryIdx = df.currentRowIdx;
@@ -213,26 +215,37 @@ export function similar(query: string): DG.Widget {
   const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
 
   const uiElements = [] as HTMLElement[];
+  const filterWords = new Map<string, number>();
 
-  for (let i = 1; i < closest.length; ++i) {    
-    const uiElem = ui.inlineText(getMarkedString(queryIdx, source.get(closest[i]), MIN_CHAR_COUNT));    
+  for (let i = 1; i < closest.length; ++i) {
+    const res = getMarkedStringAndCommonWordsMap(queryIdx, source.get(closest[i]));
+
+    for (const word of res.commonWords.keys())
+      filterWords.set(word, (filterWords.get(word) ?? 0) + res.commonWords.get(word)!);
+
+    const uiElem = ui.inlineText(res.marked);
     uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
     uiElements.push(uiElem);
     uiElements.push(ui.h3(''));
     ui.tooltip.bind(uiElem, 'Click to navigate.');
   }
 
+  const filterWordsSorted = new Map(Array.from(filterWords).sort((a, b) => a[1] > b[1] ? 1 : -1));
+
+  console.log(filterWordsSorted);
+  console.log('-----------------------------------------------------------------------------');
+  
   const wgt = new DG.Widget(ui.divV(uiElements));
 
   return wgt;
 }
 
-//name: Similar (UMAP)
-//tags: panel, widgets
-//input: string query {semType: Text}
-//output: widget result
-//condition: true
-export function similarUMAP(query: string): DG.Widget {
+/*name: Similar (Set)
+tags: panel, widgets
+input: string query {semType: Text}
+output: widget result
+condition: true
+export function similarSet(query: string): DG.Widget {
   const df = grok.shell.t;
   const source = df.currentCol;
   const queryIdx = df.currentRowIdx;
@@ -246,36 +259,31 @@ export function similarUMAP(query: string): DG.Widget {
     stemBuffer.indices = stemmingRes.indices;
   }
 
-  const x = df.getCol('UMAP0').getRawData();
-  const y = df.getCol('UMAP1').getRawData();
-  const size = x.length;
-
-  const res = [] as {dist: Number, idx: number}[];
-
-  for (let i = 0; i < size; ++i) 
-    res.push({
-      dist: (x[i] - x[queryIdx])**2 + (y[i] - y[queryIdx])**2,
-      idx: i
-    });
-
-  const sorted = res.sort((a, b) => a.dist > b.dist ? 1 : -1);
-
-  const closest = sorted.slice(0, 6).map(el => el.idx).filter(idx => idx !== queryIdx);
+  const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
 
   const uiElements = [] as HTMLElement[];
+  const filterWords = new Map<string, number>();
 
-  for (let i = 1; i < closest.length; ++i) {    
-    const uiElem = ui.inlineText(getMarkedString(queryIdx, source.get(closest[i]), MIN_CHAR_COUNT));    
-    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name)};    
+  for (let i = 1; i < closest.length; ++i) {
+    const res = getMarkedStringAndCommonWordsSet(queryIdx, source.get(closest[i]));
+
+    for (const word of res.commonWords)
+      filterWords.set(word, (filterWords.get(word) ?? 0) + 1);
+
+    const uiElem = ui.inlineText(res.marked);
+    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
     uiElements.push(uiElem);
     uiElements.push(ui.h3(''));
     ui.tooltip.bind(uiElem, 'Click to navigate.');
   }
 
+  console.log(filterWords);
+  console.log('-----------------------------------------------------------------------------');
+
   const wgt = new DG.Widget(ui.divV(uiElements));
 
   return wgt;
-}
+}*/
 
 //top-menu: NLP | Compute Embeddings...
 //name: Compute Embeddings

@@ -137,7 +137,7 @@ export function getClosest(indices: DG.Column, idx: number, count: number): Uint
     const curLen = current.length;
 
     if (curLen > 0) {      
-      const curRelDist = commonItemsCount(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);     
+      const curRelDist = commonItemsCount(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
 
       if (curRelDist > closestDists[minRelIdx]) {
         closestDists[minRelIdx] = curRelDist;
@@ -233,13 +233,15 @@ export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components
 }
 
 /**  */
-export function getMarkedString(queryIdx: number, strToBeMarked: string, minCharCount: number): any[] {
+export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked: string): {marked: any[], commonWords: Map<string, number>}  {
   const size = strToBeMarked.length;
 
   if (size === 0)
-    return [];
+    return {marked: [] as any[], commonWords: new Map<string, number>()
+    };
 
-  let result = [] as any[];
+  const marked = [] as any[];
+  const commonWords = new Map<string, number>();
 
   const wordsOfQuery = stemBuffer.indices?.get(queryIdx);
 
@@ -270,13 +272,15 @@ export function getMarkedString(queryIdx: number, strToBeMarked: string, minChar
           let p = ui.inlineText([word]);
           //@ts-ignore
           $(p).css({"font-weight": "bold"});
-          result.push(p);
+          marked.push(p);
+          const buf = word.toLocaleLowerCase();
+          commonWords.set(buf, (commonWords.get(buf) ?? 0) + 1);          
         }
         else
-          result.push(word);
+          marked.push(word);
       }
       else
-      result.push(word);
+      marked.push(word);
     }
 
     else {
@@ -287,12 +291,80 @@ export function getMarkedString(queryIdx: number, strToBeMarked: string, minChar
           break;
       }
 
-      result.push(strToBeMarked.slice(start, end));
+      marked.push(strToBeMarked.slice(start, end));
     }   
 
     start = end;
     isWord = !isWord;
   } // while
 
-  return result;
+  return {marked: marked, commonWords: commonWords};
+}
+
+/**  */
+export function getMarkedStringAndCommonWordsSet(queryIdx: number, strToBeMarked: string): {marked: any[], commonWords: Set<string>}  {
+  const size = strToBeMarked.length;
+
+  if (size === 0)
+    return {marked: [] as any[], commonWords: new Set<string>()};
+
+  const marked = [] as any[];
+  const commonWords = new Set<string>();
+
+  const wordsOfQuery = stemBuffer.indices?.get(queryIdx);
+
+  let start = 0;
+  let end = 0;
+  
+  let isWord = !SEPARATORS.includes(strToBeMarked[start]);
+
+  while (start < size) {
+
+
+    if (isWord) {
+
+      while (!SEPARATORS.includes(strToBeMarked[end])) {
+        ++end;
+
+        if (end === size)
+          break;
+      }
+      
+      const word = strToBeMarked.slice(start, end);
+
+      if (!STOP_WORDS.includes(word)) {
+        const stemmed = stemmer(word.toLowerCase());
+        const value = stemBuffer.dictionary?.get(stemmed);
+
+        if (wordsOfQuery.includes(value)) {
+          let p = ui.inlineText([word]);
+          //@ts-ignore
+          $(p).css({"font-weight": "bold"});
+          marked.push(p);
+          const buf = word.toLocaleLowerCase();          
+          commonWords.add(buf);
+        }
+        else
+          marked.push(word);
+      }
+      else
+      marked.push(word);
+    }
+
+    else {
+      while (SEPARATORS.includes(strToBeMarked[end])) {
+        ++end;
+
+        if (end === size)
+          break;
+      }
+
+      marked.push(strToBeMarked.slice(start, end));
+    }   
+
+    start = end;
+    isWord = !isWord;
+  } // while
+
+  return {marked: marked, commonWords: commonWords};
 }
