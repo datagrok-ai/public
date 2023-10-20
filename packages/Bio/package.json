@@ -101,5 +101,36 @@
   "sources": [
     "css/helm.css"
   ],
-  "category": "Bioinformatics"
+  "category": "Bioinformatics",
+  "meta": {
+    "menu": {
+      "Bio": {
+        "Analyze": {
+          "SAR...": null,
+          "Sequence Space...": null,
+          "Hierarchical Clustering...": null,
+          "Activity Cliffs...": null,
+          "Sequence Space": null,
+          "MSA...": null,
+          "Composition": null
+        },
+        "Search": {
+          "Diversity Search": null,
+          "Similarity Search": null,
+          "Subsequence Search...": null
+        },
+        "Calculate": {
+          "Identity...": null,
+          "Similarity...": null
+        },
+        "Convert": {
+          "Split to Monomerts...": null,
+          "Get Region...": null,
+          "Notation...": null,
+          "SDF to JSON Library...": null,
+          "To Atomic Level...": null
+        }
+      }
+    }
+  }
 }
