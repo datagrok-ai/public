@@ -274,7 +274,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       let mol2;
       let mols;
       try {
-        console.log(`GO1 ${molecules[0][i]} ; ${molecules[1][i]}`);
         mol1 = getMolSafe(molecules[i][0], {}, this._rdKitModule);
         mol2 = getMolSafe(molecules[i][1], {}, this._rdKitModule);
         mols = new this._rdKitModule.MolList();
@@ -285,7 +284,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             AtomCompare: 'Elements',
             BondCompare: 'OrderExact',
           }));
-          console.log(`GO ${molecules[0][i]} ; ${molecules[1][i]} ; ${res[i]}`);
         } else
           res[i] = '';
       } catch (e: any) {

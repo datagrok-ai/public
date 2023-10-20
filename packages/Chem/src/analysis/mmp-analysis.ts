@@ -9,7 +9,6 @@ import {chemSpace} from './chem-space';
 import $ from 'cash-dom';
 import {ISubstruct} from '../rendering/rdkit-cell-renderer';
 import {SUBSTRUCT_COL} from '../constants';
-import { getMCS } from '../utils/most-common-subs';
 
 const MMP_COLNAME_FROM = 'From';
 const MMP_COLNAME_TO = 'To';
@@ -212,13 +211,31 @@ function getMmpPairedTransforms(molecules: DG.Column, activities: DG.Column, mmp
   const pairsTo: string[] = [];
   const singleDiff: number[] = [];
 
+  //revise
+  const module = getRdKitModule();
+
   for (let i = 0; i < mmpRules.rules.length; i++) {
     for (let j = 0; j < mmpRules.rules[i].pairs.length; j++) {
       const idx1 = mmpRules.rules[i].pairs[j].firstStructure;
       const idx2 = mmpRules.rules[i].pairs[j].secondStructure;
-      pairsFrom.push(molecules.get(idx1));
-      pairsTo.push(molecules.get(idx2));
+
+      //revise
+      const mol1 = module.get_mol(molecules.get(idx1));
+      const mol2 = module.get_mol(molecules.get(idx2));
+
+      mol2.generate_aligned_coords(mol1, JSON.stringify({
+        useCoordGen: true,
+        allowRGroups: true,
+        acceptFailure: false,
+        alignOnly: true,
+      }));
+
+      pairsFrom.push(mol1.get_molblock());
+      pairsTo.push(mol2.get_molblock());
       singleDiff.push(activities.get(idx2) - activities.get(idx1));
+
+      mol1?.delete();
+      mol2?.delete();
     }
   }
 
@@ -269,12 +286,13 @@ function getMmpScatterPlot(table: DG.DataFrame, activities: DG.Column, maxAct: n
 
   const slider = DG.Property.fromOptions(property);
   const initialCutOff = {Cutoff: 0};
-  const sliderInput = ui.input.forProperty(slider, initialCutOff);
+  //const sliderInput = ui.input.forProperty(slider, initialCutOff);
+  const sliderInput = ui.sliderInput('Cutoff', 0, 0, maxAct);
 
   return [sp, sliderInput];
 }
 
-function mmpRunChemSpace(table: DG.DataFrame, molecules: DG.Column, mmpRules: MmpRules, sp: DG.Viewer): void {
+function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, mmpRules: MmpRules, sp: DG.Viewer): void {
   const chemSpaceParams = {
     seqCol: molecules,
     methodName: DimReductionMethods.UMAP,
@@ -321,8 +339,9 @@ async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<st
 async function getInverseSubstructures(from: string[], to: string[]):
   Promise<[(ISubstruct | null)[], (ISubstruct | null)[]]> {
   //TODO: the length is known
-  const res1: (ISubstruct | null)[] = [];
-  const res2: (ISubstruct | null)[] = [];
+  const res1 = new Array<(ISubstruct | null)>(from.length);
+  const res2 = new Array<(ISubstruct | null)>(from.length);
+  //const res3 = new Array<string>(from.length);
 
   const mcs = await getMmpMcs(from, to);
 
@@ -330,9 +349,6 @@ async function getInverseSubstructures(from: string[], to: string[]):
   for (let i = 0; i < from.length; i++) {
     const module = getRdKitModule();
     const mcsMol = module.get_qmol(mcs[i]);
-
-    const coll = DG.Column.fromStrings('ss', [from[i], to[i]]);
-    const mcs2 = getMCS(coll, true, true);
 
     const substruct1 = getUncommonAtomsAndBonds(from[i], mcsMol, module, '#bc131f');
     const substruct2 = getUncommonAtomsAndBonds(to[i], mcsMol, module, '#49bead');
@@ -351,13 +367,13 @@ async function getInverseSubstructures(from: string[], to: string[]):
     //   {normalizeDepiction: true, straightenDepiction: true}, substruct1);
     // drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol2, mol2.get_molblock(), '',
     //   {normalizeDepiction: true, straightenDepiction: true}, substruct2);
-    res1.push(substruct1);
-    res2.push(substruct2);
-    //res3.push(mcs[i]);
+    res1[i] = substruct1;
+    res2[i] = substruct2;
+    //res3[i] = mol2.get_molblock();
     //res.push(mcs === null ? '' : mcs);
     mcsMol?.delete();
-    // mol1.delete;
-    // mol2.delete;
+    // mol1?.delete;
+    // mol2?.delete;
   }
   return [res1, res2];//res;
 }
@@ -367,7 +383,7 @@ export class MmpAnalysis {
   parentCol: DG.Column;
   mmpRules: MmpRules;
   mmpView: DG.View;
-  enableFilters: boolean = false;
+  enableFilters: boolean = true;
   //transformations tab objects
   allPairsGrid: DG.Grid;
   transformationsMask: DG.BitSet;
@@ -416,8 +432,13 @@ export class MmpAnalysis {
       this.refilterCliffs(sliderInput.value, true);
     });
 
-    sp.root.prepend(sliderInput.root);
-    const cliffs = ui.splitV([ui.box(sliderInput.root, {style: {maxHeight: '100px'}}), sp.root]);
+    // sp.root.prepend(sliderInput.root);
+    // const cliffs = ui.splitV([ui.box(sliderInput.root, {style: {maxHeight: '100px'}}), sp.root]);
+    ui.tooltip.bind(sliderInput.captionLabel, 'Select the cutoff by activity difference');
+    ui.tooltip.bind(sliderInput.input, 'Activity value cutoff');
+    sp.root.style.width = '100%';
+    // sp.root.style.marginRight = '6px';
+    const cliffs = ui.divV([sliderInput.root, ui.box(sp.root, {style: {maxHeight: '100px', paddingRight: '6px'}})]);
 
     this.cutoffMask = DG.BitSet.create(this.parentTable.rowCount);
     this.cutoffMask.setAll(true);
@@ -427,13 +448,13 @@ export class MmpAnalysis {
 
     tabs.addPane(MMP_TAB_TRANSFORMATIONS, () => {
       const fragmentsHeader = ui.h1('Fragments');
-      $(fragmentsHeader).css('padding', '6px');
+      $(fragmentsHeader).css('padding', '4px');
       $(fragmentsHeader).css('margin', '0px');
       this.allPairsGrid.root.prepend(fragmentsHeader);
       const fragments = ui.splitV([ui.box(fragmentsHeader, {style: {maxHeight: '30px'}}), this.allPairsGrid.root]);
 
       const casesHeader = ui.h1('Pairs');
-      $(casesHeader).css('padding', '6px');
+      $(casesHeader).css('padding', '4px');
       $(casesHeader).css('margin', '0px');
 
       this.casesGrid.root.prepend(casesHeader);
@@ -489,12 +510,13 @@ export class MmpAnalysis {
     const [sp, sliderInput] = getMmpScatterPlot(table, activities, maxAct);
 
     //running internal chemspace
-    mmpRunChemSpace(table, molecules, mmpRules, sp);
+    runMmpChemSpace(table, molecules, mmpRules, sp);
 
     return new MmpAnalysis(table, molecules, mmpRules, activityPairs, allPairsGrid, casesGrid, tp, sp, sliderInput);
   }
 
   async refreshPair() {
+    const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
     //TODO: pin columns
     const idxParent = this.parentTable.currentRowIdx;
     const idx = this.allPairsGrid.table.currentRowIdx;
@@ -535,13 +557,15 @@ export class MmpAnalysis {
       pairsFrom[i] = diffFrom.get(cases[i]);
       pairsTo[i] = diffTo.get(cases[i]);
     }
-    const substructures = await getInverseSubstructures(pairsFrom, pairsTo);
+    const [inverse1, inverse2] = await getInverseSubstructures(pairsFrom, pairsTo);
     for (let i = 0; i < cases.length; i++) {
-      diffFromSubstrCol.set(cases[i], substructures[0][i]);
-      diffToSubstrCol.set(cases[i], substructures[1][i]);
+      diffFromSubstrCol.set(cases[i], inverse1[i]);
+      diffToSubstrCol.set(cases[i], inverse2[i]);
+      //diffTo.set(cases[i], alignemols[i]);
     }
 
     this.casesGrid.dataFrame.filter.copyFrom(this.pairsMask);
+    progressBarPairs.close();
   }
 
   refreshFilterAllPairs() {
