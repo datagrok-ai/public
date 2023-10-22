@@ -254,18 +254,17 @@ supported. You can add an input/output of type `list<string>`.
 
 To define input parameters for your SQL query, use the `--input` annotation followed by the parameter's data type, name, default value, and any additional options. You can also include a brief description of the parameter that will appear in the UI:
 
-`--input: <type> <name> = <value> {<option>: <value>; ...} [<description>]`
+`--input: <type> <name> = <initialValue> {<option>: <value>; ...} [<description>]`
 
-Supported parameter types include `integer`, `float`, `boolean`, `string`, `DateTime`, and `list<T>` (a list of parameter type `T`, currently supports the `strings` type only). [Additional options](../../datagrok/concepts/functions/func-params-annotation#options) are based on the parameter type, and may include _choices_, _suggestions_, and _validators_.
+Supported parameter types include `integer`, `double`, `boolean`, `string`, `DateTime`, and `list<T>` (a list of parameter type `T`, currently supports the `strings` type only). [Additional options](../../datagrok/concepts/functions/func-params-annotation#options) are based on the parameter type, and may include _choices_, _suggestions_, and _validators_.
 
-For example, to create a string input parameter for a _ship country_, you can use the following code snippet:
+For example, this is an optional string parameter "shipCountry" with the initial value "France"
+(learn more about [initial values and optional parameters](../../datagrok/concepts/functions/func-params-annotation.md#initial-values-and-optional-parameters)):
 
 ```
---input: string shipCountry = "France"
+--input: string shipCountry = "France" { nullable: true }
 SELECT * FROM customers where shipCountry = @country
 ```
-
-Here, the input parameter is called `shipCountry` and has a default value of `France`.
 
 You can also use lists to pass multiple values for a single parameter. For example, you can use lists to retrieve data for a specific set of users or analyze sales data for a particular country. To use lists in queries, you can specify `list<T>` as the parameter's data type and wrap its use inside the SQL query into `= ANY(p)`, or a similar operator with an alternative selection of the comparison type, such as `>= ANY` or `< ANY`. Here's an example:
 
@@ -276,7 +275,7 @@ SELECT * FROM Orders WHERE shipCountry = ANY(@shipCountry)
 
 This query returns all records from the `Orders` table where the `shipCountry` column matches any of the values in the `shipCountry` list.
 
-To help users build queries more quickly and accurately, or for more complex queries, you can also use _choices_, _suggestions_, and _validators_. _Choices_ allow users to select from a predefined list of values for a given parameter, _suggestions_ provide users with auto-complete suggestions based on what they type in the input field, and query _validators_ validate the query without executing it.
+To help you use queries more quickly and accurately, use _choices_, _suggestions_, and _validators_. _Choices_ allow users to select from a predefined list of values for a given parameter, _suggestions_ provide users with auto-complete suggestions based on what they type in the input field, and query _validators_ validate the query without executing it.
 
 You can define _choices_ using a comma-separated list of values, a name of another query, or by writing an actual SQL query. Here's an example of how to define _choices_ for a _ship country_ input parameter using all three methods:
 
@@ -307,53 +306,8 @@ Here, the `state` and `city` parameters are defined as strings with default valu
 
 To define _suggestions_ or _validators_, provide the name of the function that will be executed to generate suggestions or validators as the user types a value.
 
-A special query input type is a _search pattern_ that allows you to enter free-text conditions that are then transformed into proper SQL clauses, for instance "this week" for a date column, or "> 50" for a numerical column.
-
-To use search patterns, set the input parameter's data type to `string`. Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`.
-
-Here's an example of a numerical pattern for filtering the "freightValue" column:
-
-```
---input: string freightValue = >= 10.0 {pattern: double}
-select * from Orders where @freightValue(freight)
-```
-
-In this example, the `freightValue` input parameter is defined as a string with a default value of `>= 10.0`. The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to `@freightValue(freight)` specifies the _pattern_ that will be evaluated against the "freight" column.
-
-Here's a list of all supported search patterns:
-
-<details>
-<summary> Patterns </summary>
-
-| Type               | Value         | Description or example       |
-|--------------------|---------------|------------------------------|
-| `num, int, double` | `=`           | `= 100`                      |
-|                    | `>`           | `> 1.02`                     |
-|                    | `>=`          | `>= 4.1`                     |
-|                    | `<`           | `< 5`                        |
-|                    | `<=`          | `<= 2`                       |
-|                    | `in`          | `in (1, 3, 10.2)`            |
-|                    | `min-max`     | `Range: 1.5-10.0`            |
-| `string`           | `contains`    | `contains ea`                |
-|                    | `starts with` | `starts with R`              |
-|                    | `ends with`   | `ends with w`                |
-|                    | `regex`       | `regex 1(\w+)1`              |
-|                    | `in`          | `in (ab, "c d", "e\\"f\\"")` |
-| `datetime`         | `anytime`     |                              |
-|                    | `today`       |                              |
-|                    | `this week`   |                              |
-|                    | `this month`  |                              |
-|                    | `this year`   |                              |
-|                    | `yesterday`   |                              |
-|                    | `last week`   |                              |
-|                    | `last month`  |                              |
-|                    | `last year`   |                              |
-|                    | `before`      | `before July 1984`           |
-|                    | `after`       | `after March 2001`           |
-|                    | `min-max`     | `Range: 1941-1945`           |
-
-To learn more, see [search patterns](../../explore/search-filter-select/data-search-patterns.md).
-</details>
+A special query input type is a [filter pattern](../../datagrok/concepts/functions/func-params-annotation.md) that allows you to enter free-text conditions
+like "this week" for dates, or ">50" for numbers.
 
 #### Output parameters
 
