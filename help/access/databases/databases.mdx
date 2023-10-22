@@ -63,76 +63,7 @@ Like other objects in Datagrok, newly created connections are only visible to th
 
 ### Caching data
 
-You can cache query results to improve query performance. To change caching options, right-click the connection, select **Edit...**, and then select the appropriate checkboxes in the **Edit** dialog:
-
-1. **Cache Schema**: to speed up building the database schema.
-1. **Cache Results**: to reuse results for all queries under this connection. To cache results of individual queries, edit that query's properties.
-
-When you cache the query results, use the **Invalidate On** field to specify a [cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html) that defines when the cache is invalidated. Here is an example of a cron expression that invalidates the cache at 1 AM every night for a database that refreshes overnight: `0 0 1 * * ?`
-
-:::caution
-
-If you leave the **Invalidate On** field empty, the cache will never be updated.
-This may be suitable when the data stored in the database remains static and never changes.
-
-:::
-
-:::note developers
-
-You can cache data programmatically.
-
-<details>
-
-<summary> Caching package-defined connections </summary>
-
-To cache package-defined connections, you can specify the `cacheResults` parameter in the connection json definition:
-
-```json
-{
-  "name": "Northwind",
-  "parameters": {
-    "server": "dev.datagrok.ai",
-    "port": 23306,
-    "db": "Northwind",
-    "cacheSchema": false,
-    "cacheResults": true,
-    "ssl": false,
-    "connString": ""
-  }
-}
-```
-
-</details>
-
-<details>
-
-<summary> Setting cache options for queries </summary>
-
-To cache the query results programmatically, edit the corresponding SQL file in the package queries and specify the `meta.cache` and `meta.invalidate` fields. These fields determine whether and how to cache the query results:
-
-* `meta.cache` specifies whether the query is cached or not.
-* `meta.invalidate` specifies when the cached result should be invalidated.
-
-By setting these fields, you can control the caching behavior of individual queries and improve overall query performance.
-
-<details>
-
-<summary> Example </summary>
-
-```Grok Script
---name: getProductNames
---input: string department
---meta.cache: true
---meta.invalidate: 0 0 1 * * ?
-select distinct name from products p
-where p.department = @department
-```
-
-</details>
-
-</details>
-
-:::
+You can cache query results to improve query performance. To learn more, see [Caching function results](../../develop/function_results_cache.md)
 
 ### Modifying connection
 
