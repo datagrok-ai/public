@@ -14,7 +14,7 @@ category('Dialogs', () => {
   const dialogs: DG.Dialog[] = [];
 
   before(async () => {
-    df = grok.data.demo.demog(10);
+    df = grok.data.demo.demog(2);
     tv = grok.shell.addTableView(df);
   });
 
@@ -23,21 +23,12 @@ category('Dialogs', () => {
     dialogs.push(dlg.uiDialog!);
     await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     const funcs = DG.Func.find();
-    function getUniqueColumnName() {
-      let counter = 0;
-      function increment() {
-        counter++;
-        return `Column ${counter}`;
-      }
-      return increment;
-    }
-    const getColumnName = getUniqueColumnName();
 
     for (const f of funcs) {
       if (!(f.name in FUNC_TESTS) || EXCLUDED.includes(f.name))
         continue;
       for (const [expression, result] of Object.entries(FUNC_TESTS[f.name])) {
-        const columnName = getColumnName();
+        const columnName = df.columns.getUnusedName(expression);
         dlg.inputName!.value = columnName;
         dlg.inputExpression!.value = expression;
         dlg.uiDialog!.getButton('OK').click();
