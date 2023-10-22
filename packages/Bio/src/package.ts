@@ -74,6 +74,7 @@ import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
+import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
 
 export const _package = new BioPackage();
 
@@ -465,7 +466,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Hamming", "Levenshtein", "Monomer chemical distance"] }
 //input: bool plotEmbeddings = true
-//input: double sparseMatrixThreshold = 0.8 [Similarity Threshold for sparse matrix calculation]
+//input: double sparseMatrixThreshold = 0 [Similarity Threshold for sparse matrix calculation]
 //input: object options {optional: true}
 //output: viewer result
 //editor: Bio:SequenceSpaceEditor
@@ -498,8 +499,11 @@ export async function sequenceSpaceTopMenu(
         embedYCol = table.columns.byName(embedColsNames[1]);
       }
 
-      embedXCol.init((i) => embeddings[i] ? embeddings[i][0] : undefined);
-      embedYCol.init((i) => embeddings[i] ? embeddings[i][1] : undefined);
+      if (options?.[SHOW_SCATTERPLOT_PROGRESS]) {
+        scatterPlot?.root && ui.setUpdateIndicator(scatterPlot!.root, false);
+        embedXCol.init((i) => embeddings[i] ? embeddings[i][0] : undefined);
+        embedYCol.init((i) => embeddings[i] ? embeddings[i][1] : undefined);
+      }
       const progress = (_nEpoch / epochsLength * 100);
       pg.update(progress, `Running sequence space ... ${progress.toFixed(0)}%`);
     }
@@ -525,6 +529,14 @@ export async function sequenceSpaceTopMenu(
     }
 
     async function getSeqSpace() {
+      table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
+      table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
+      if (plotEmbeddings) {
+        scatterPlot = grok.shell
+          .tableView(table.name)
+          .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+        ui.setUpdateIndicator(scatterPlot.root, true);
+      }
       let resolveF: Function | null = null;
 
       const sub = grok.events.onViewerClosed.subscribe((args) => {
@@ -580,6 +592,7 @@ export async function sequenceSpaceTopMenu(
             .tableView(table.name)
             .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
         }
+        ui.setUpdateIndicator(scatterPlot.root, false);
         return scatterPlot;
       }
     }
