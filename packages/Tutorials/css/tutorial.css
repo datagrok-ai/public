@@ -178,6 +178,13 @@ progress[value]::-webkit-progress-value::after {
     user-select: text;
 }
 
+.grok-tutorial-step-description br {
+    content: "";
+    margin: 2em;
+    display: block;
+    font-size: 24%;
+}
+
 .tutorials-root-header{
     justify-content: space-between;
     align-items: center;
