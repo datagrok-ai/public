@@ -16,7 +16,7 @@ import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
-import {COMBINED_APP_NAME, PATTERN_APP_NAME, STRUCTRE_APP_NAME, TRANSLATOR_APP_NAME} from './view/const/view';
+import {APP} from './view/const/view';
 import {ColoredTextInput} from './view/utils/colored-input/colored-text-input';
 import {highlightInvalidSubsequence} from './view/utils/colored-input/input-painters';
 
@@ -34,7 +34,7 @@ class StPackage extends DG.Package {
       return;
 
     const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
-      `Initializing ${COMBINED_APP_NAME} monomer library ...`);
+      `Initializing ${APP.COMBINED} monomer library ...`);
     await tryCatch(async () => {
       const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
       this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
@@ -48,10 +48,11 @@ export const _package: StPackage = new StPackage();
 //meta.icon: img/icons/toolkit.png
 //tags: app
 export async function oligoToolkitApp(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${COMBINED_APP_NAME}...`);
+  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${APP.COMBINED}...`);
 
-  let currentView = grok.shell.v.root;
-  ui.setUpdateIndicator(currentView, true);
+  let currentView = grok.shell.v?.root;
+  if (currentView)
+    ui.setUpdateIndicator(currentView, true);
 
   async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
 
@@ -97,7 +98,8 @@ export async function oligoToolkitApp(): Promise<void> {
     const multiView = new AppMultiView(externalViewFactories);
     multiView.createLayout();
   }, () => pi.close());
-  ui.setUpdateIndicator(currentView, false);
+  if (currentView)
+    ui.setUpdateIndicator(currentView, false);
 }
 
 async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
@@ -115,7 +117,7 @@ async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
 export async function oligoTranslatorApp(): Promise<void> {
   await initSequenceTranslatorLibData();
   const appUI = new OligoTranslatorUI(DG.View.create());
-  await createAppLayout(appUI, TRANSLATOR_APP_NAME);
+  await createAppLayout(appUI, APP.TRANSLATOR);
 }
 
 //name: Oligo Pattern
@@ -124,7 +126,7 @@ export async function oligoTranslatorApp(): Promise<void> {
 export async function oligoPatternApp(): Promise<void> {
   await initSequenceTranslatorLibData();
   const appUI = new OligoPatternUI(DG.View.create());
-  createAppLayout(appUI, PATTERN_APP_NAME);
+  createAppLayout(appUI, APP.PATTERN);
 }
 
 //name: Oligo Structure
@@ -133,7 +135,7 @@ export async function oligoPatternApp(): Promise<void> {
 export async function oligoStructureApp(): Promise<void> {
   await initSequenceTranslatorLibData();
   const appUI = new OligoStructureUI(DG.View.create());
-  createAppLayout(appUI, STRUCTRE_APP_NAME);
+  createAppLayout(appUI, APP.STRUCTRE);
 }
 
 //name: initSequenceTranslatorLibData

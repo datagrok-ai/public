@@ -3,24 +3,25 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TRANSLATOR_TAB, PATTERN_TAB, STRUCTRE_TAB, STRUCTRE_APP_NAME, PATTERN_APP_NAME, TRANSLATOR_APP_NAME} from './const/view';
+import {TAB, APP} from './const/view';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
 import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
+import {_package} from '../package';
 
 type ViewFactories = {[name: string]: () => DG.View};
 
 export class AppMultiView {
   constructor(externalViewFactories?: ViewFactories) {
     this.externalViewFactories = externalViewFactories;
-    this.multiView = new DG.MultiView({viewFactories: this.viewFactories});
+    this.multiView = new DG.MultiView({viewFactories: this.getViewFactories()}); 
   }
 
   private multiView: DG.MultiView;
   private externalViewFactories?: ViewFactories;
 
-  get viewFactories(): ViewFactories {
+  private getViewFactories(): ViewFactories {
     function viewFactory(uiConstructor: new (view: DG.View) => AppUI): () => DG.View {
       const view = DG.View.create();
       const translateUI = new uiConstructor(view);
@@ -30,9 +31,9 @@ export class AppMultiView {
     }
 
     let result: {[key: string]: () => DG.View } = {
-      [TRANSLATOR_TAB]: viewFactory(OligoTranslatorUI),
-      [PATTERN_TAB]: viewFactory(OligoPatternUI),
-      [STRUCTRE_TAB]: viewFactory(OligoStructureUI),
+      [TAB.TRANSLATOR]: viewFactory(OligoTranslatorUI),
+      [TAB.PATTERN]: viewFactory(OligoPatternUI),
+      [TAB.STRUCTRE]: viewFactory(OligoStructureUI),
     }
 
     if (this.externalViewFactories)
@@ -41,13 +42,26 @@ export class AppMultiView {
     return result
   }
 
+  private getPath(): string {
+    let name = this.multiView.tabs.currentPane.name;
+    name = name.charAt(0).toUpperCase() + name.substring(1).toLowerCase();
+    const path = `/apps/${_package.name}/OligoToolkit/${name}`;
+    return path;
+  }
+
+  private setUrl(): void {
+    this.multiView.path = this.getPath();
+  }
+
   async createLayout(): Promise<void> {
+    this.multiView.tabs.onTabChanged.subscribe(() => this.setUrl());
+    this.setUrl();
     grok.shell.addView(this.multiView);
   }
 }
 
 export abstract class AppUI {
-  constructor(view: DG.View, viewName: string) {
+  constructor(view: DG.View, private viewName: string) {
     this.view = view;
     this.view.box = true;
     this.view.name = viewName;
@@ -69,6 +83,7 @@ export abstract class AppUI {
   /** Create master layout of the app  */
   async createLayout(): Promise<void> {
     await this.initView();
+    this.view.path = `/apps/${_package.name}/${this.viewName.replace(/\s/g, '')}/`;
     grok.shell.addView(this.view);
   }
 }
@@ -88,7 +103,7 @@ export class ExternalPluginUI extends AppUI {
 
 export class OligoTranslatorUI extends AppUI {
   constructor(view: DG.View) {
-    super(view, TRANSLATOR_APP_NAME);
+    super(view, APP.TRANSLATOR);
 
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
@@ -108,7 +123,7 @@ export class OligoTranslatorUI extends AppUI {
 
 export class OligoPatternUI extends AppUI {
   constructor(view: DG.View) {
-    super(view, PATTERN_APP_NAME);
+    super(view, APP.PATTERN);
     this.ui = new AxolabsTabUI();
   }
   private readonly ui: AxolabsTabUI;
@@ -119,44 +134,12 @@ export class OligoPatternUI extends AppUI {
 
 export class OligoStructureUI extends AppUI {
   constructor(view: DG.View) {
-    super(view,  STRUCTRE_APP_NAME)
+    super(view, APP.STRUCTRE)
     this.ui = new SdfTabUI();
   }
   private readonly ui: SdfTabUI;
 
   protected getHtml(): Promise<HTMLDivElement> {
     return this.ui.getHtmlDivElement();
-  }
-}
-
-class URLRouter {
-  constructor(private readonly view: DG.View) {
-    this.pathParts = window.location.pathname.split('/');
-    console.log(`pathParts:`, this.pathParts);
-    this.searchParams = new URLSearchParams(window.location.search);
-    console.log(`searchParams:`, this.searchParams);
-  }
-
-  searchParams: URLSearchParams;
-  private pathParts: string[];
-
-  get urlParamsString(): string {
-    return Object.entries(this.searchParams)
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-  }
-
-  updatePath(control: DG.TabControl) {
-    const urlParamsTxt: string = Object.entries(this.searchParams)
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-    this.view.path = '/apps/SequenceTranslator' + `/${control.currentPane.name}`;
-    if (urlParamsTxt)
-      this.view.path += `/?${urlParamsTxt}`;
-  }
-
-  get tabName(): string {
-    const idx = this.pathParts.findIndex((el) => el === 'SequenceTranslator');
-    if (idx === -1) // todo: remove after verification of validity condition
-      return '';
-    return this.pathParts[idx + 1];
   }
 }
