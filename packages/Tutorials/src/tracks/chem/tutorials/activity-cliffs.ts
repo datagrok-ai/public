@@ -13,7 +13,7 @@ export class ActivityCliffsTutorial extends Tutorial {
   }
 
   get description() {
-    return 'The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules ' +
+    return 'The <b>Activity Cliffs</b> tool detects and visualizes pairs of molecules ' +
     'with highly similar structures but significantly different activity levels. ' +
     'It uses distance-based dimensionality reduction algorithms (such as tSNE and UMAP) ' +
     'to convert cross-similarities into a 2D scatterplot.';
@@ -31,7 +31,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     const df = await grok.data.files.openTable('System:AppData/Tutorials/activity_cliffs.csv');
     const tv = grok.shell.addTableView(df);
 
-    const d = await this.openDialog('Start the Activity Cliffs tool', 'Activity Cliffs',
+    const d = await this.openDialog('Start the Activity Cliffs Tool', 'Activity Cliffs',
     this.getMenuItem('Chem'), `When you open a chemical dataset, Datagrok automatically detects molecules
     and shows molecule-specific tools, actions, and information. Access them through:
     <ul>
@@ -39,12 +39,14 @@ export class ActivityCliffsTutorial extends Tutorial {
     <li>Context menu (right-click for access)</li>
     <li><b>Context Panel</b> on the right.</li>
     </ul><br>
-    <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">Learn more about exploring chemical data</a><br>
-    Let’s launch the Activity Cliffs tool. On the <b>Top Menu</b>, click <b>Chem</b> > <b>Analyze</b> > <b>Acitvity Cliffs...</b>`);
+   
+    Let's launch the Activity Cliffs tool. On the <b>Top Menu</b>, click <b>Chem</b> > <b>Analyze</b> > <b>Activity Cliffs...</b>`);
 
-    await this.action('Click "OK"', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0],
-    `In the dialog, you can fine-tune your analysis by specifying parameters like the similarity
-    cutoff or dimicionality reduction algorithm. For this tutorial, let’s go with the default settings.`);
+    // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">Learn more about exploring chemical data</a><br>
+
+    await this.action('Set Parameters', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0],
+    `In the <b>Activity Cliffs</b> dialog, you can specify parameters like the similarity
+    cutoff or the dimensionality reduction algorithm. For this tutorial, let's stick with the default settings. Click <b>OK</b>.`);
 
     let v: DG.ScatterPlotViewer;
     await this.action('Wait for analysis to complete',
@@ -56,7 +58,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     })));
 
     let i = 0;
-    await this.action('Hover over at least 2 data points on scatterplot', new Observable((subscriber: any) => {
+    await this.action('Start analyzing the results', new Observable((subscriber: any) => {
       v.root.addEventListener('mousemove', () => {
         if (i > 3) return;
         if ($('.d4-tooltip').css('display') === 'block')
@@ -65,27 +67,33 @@ export class ActivityCliffsTutorial extends Tutorial {
           subscriber.next(true);
         }
       });
-    }), undefined, `Activity cliffs are visualized on the scatterplot.
-    Here, hover over data points to get information about molecules.`);
+    }), undefined, `Activity cliffs are visualized on an interactive scatterplot,
+    where the proximity of the points indicates structural similarity.
+    Hover over data points for molecule information.`);
 
-    await this.action('Toggle the Show only cliffs control', new Observable((subscriber: any) => {
+    await this.action('To view only the cliffs, toggle the <b>Show only cliffs</b> control.', new Observable((subscriber: any) => {
       $('.ui-input-switch').one('click', () => subscriber.next(true));
     }), $('.ui-input-switch').get(0));
 
-    await this.action('Press Alt + Mouse Drag to zoom in', v!.onZoomed, undefined,
-    `On the scatterplot, the marker color corresponds to the level of activity, and the size represents
-    the maximum detected activity cliff for that molecule. The pairs with larger red markers may be of
-    particular interest as they indicate molecules with high activity levels and significant detected activity cliffs.`);
+    await this.action('Zoom in on the area of interest', v!.onZoomed, undefined,
+    `On the scatterplot, the marker color corresponds to the activity level, and the size represents
+    the maximum detected activity cliff for that molecule. The pairs with larger red markers may be
+    particularly interesting as they indicate molecules with high activity levels and significant detected activity cliffs.`);
     
-    // await this.action('Step 5. [Title]');
+    // await this.action('Step 5. [Explore the pairs of molecules]');
+    
+    //`The opacity of the green line connecting molecule pairs corresponds to the size of the activity cliff. 
+    // Hover over the line to see the pair. Note the difference in their structures. 
+    // Now, click the line. The <b>Context Panel</b> on the right updates to show the molecule pair.  
+    //Click on the bottom molecule. This molecule becomes the current molecule in the grid.`
 
-    await this.buttonClickAction(v!.root, 'Click the 15 CLIFFS button', '15 cliffs', 
-    `To see all pairs of molecules identified as cliffs, click <b>15 CLIFFS</b> in
+    await this.buttonClickAction(v!.root, 'Add a summary table with cliffs', '15 cliffs', 
+    `To view all pairs of molecules identified as cliffs simultaneously, click <b>15 CLIFFS</b> at
     the top right corner of the scatterplot. This opens a table.`);
 
     let initH: number;
     const grid: DG.Grid = [...tv.viewers].find((v) => v.dataFrame.columns.length === 6) as DG.Grid;
-    await this.action('Drag the bottom table’s border up',
+    await this.action('Drag the top border of that table upwards to create more space for it.',
     new Observable((subscriber: any) => {
       const ro = new ResizeObserver((entries) => {
         if (initH === undefined) {
@@ -100,7 +108,7 @@ export class ActivityCliffsTutorial extends Tutorial {
       ro.observe(grid.root);
     }), grid.root);
 
-    await this.action('In the cliffs table, click any cell in the first row',
+    await this.action('Now, click the first row.',
     new Observable((subscriber: any) => {
       const sub = grid.onCellClick.subscribe((cell) => {
         if (cell.gridRow === 0) {
@@ -108,6 +116,6 @@ export class ActivityCliffsTutorial extends Tutorial {
           sub.unsubscribe();
         }
       });
-    }), undefined, `Click the first row to update the scatterplot view and select the corresponding rows in the source table.`);
+    }), undefined, `Note the changes in the scatterplot's view and the source table.`);
   }
 }
