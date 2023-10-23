@@ -321,7 +321,7 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
   return await getPrediction(df, model); 
 }
 
-//top-menu: ML | Analysis of Variances (ANOVA)...
+//top-menu: ML | Analyze | ANOVA...
 //name: One-way ANOVA
 //description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
 //input: dataframe table
