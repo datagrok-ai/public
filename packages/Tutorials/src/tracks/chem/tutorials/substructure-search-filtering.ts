@@ -13,9 +13,8 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
   }
 
   get description() {
-    return 'Datagrok offers an intuitive filtering functionality to explore and filter datasets. ' +
-    'Specifically for molecules, Datagrok uses integrated sketchers to allow structure-based filtering. ' +
-    'After applying the structure-based filter, queried substructures are highlighted in the filtered subset.';
+    return 'You can interactively explore datasets using filters. ' +
+    'Specifically for molecules, Datagrok uses integrated sketchers to filter by substructure.';
   }
 
   get steps() { return 10; }
@@ -37,8 +36,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     <li><b>Chem</b> menu (it houses all chemical tools).</li>
     <li>Context menu (right-click for access)</li>
     <li><b>Context Panel</b> on the right.</li>
-    </ul><br>
-    <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">Learn more about exploring chemical data</a><br>
+    </ul><br>   
     Let’s use the <b>Chem</b> menu. Click it. Then, select <b>Search</b> > <b>Substructure Search</b>.`);
 
     const v = [...tv.viewers].find((v) => v.type === DG.VIEWER.FILTERS);
@@ -47,16 +45,16 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     '<div class="ui-image" style="background-image: url(&quot;https://public.datagrok.ai/api/packages/published/' +
     'files/Tutorials/amuzychyna/b4MdalZhTYWUNZKAMDaN4uevTqxgauyU/6/images/naphtalene.png&quot;); height: 90px;"></div>' +
     `Note that as you draw, the chemical spreadsheet (grid) dynamically updates to show only the molecules with the
-    specified substructure, with the substructure highlighted in each molecule.<br>Click <b>OK</b>.`);
+    specified substructure, highlighting it in each molecule.<br>Click <b>OK</b>.`);
 
-    await this.buttonClickAction(v!.root, 'In the filter panel, click CLEAR', 'Clear', 
-    'Remove the substructure filter.');
+    await this.buttonClickAction(v!.root, 'Remove the substructure filter', 'Clear', 
+    'Use the <b>Filter Panel</b> on the left to clear the substructure filter.');
 
-    await this.contextMenuAction('Use molecule to filter by substructure', 'Use as filter', undefined,
+    await this.contextMenuAction('Use current molecule to filter by substructure', 'Use as filter', undefined,
     'In the grid, right-click any molecule and select <b>Current Value</b> > <b>Use as flter</b>.');
 
     let d_: DG.Dialog;
-    await this.action('In the filter panel, click the molecule', grok.events.onDialogShown.pipe(filter((dialog: DG.Dialog) => {
+    await this.action('On the <b>Filter Panel</b>, click the molecule', grok.events.onDialogShown.pipe(filter((dialog: DG.Dialog) => {
       if (dialog.title === '') {
         d_ = dialog;
         return true;
@@ -65,7 +63,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     })), v!.root.querySelector('.chem-canvas') as HTMLElement);
 
     await this.action('Modify it in the sketcher', d_!.onClose,
-      undefined, 'In the sketcher, remove fragments<br>Click <b>OK</b>');
+      undefined, 'When finished, <br>click <b>OK</b>');
 
     await this.action('Adjust the filter setting to exclude the specified substructure', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
@@ -78,11 +76,11 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
         });
       });
       observer.observe(v!.root.querySelector('.d4-flex-col.d4-filter')!, {subtree: true, attributes: true});
-    }), undefined, `You can switch between different filtering
+    }), undefined, `You can choose different filtering
     modes to include or exclude molecules with the specified substructure, show similar structures, and so on.<br>
-    For this tutorial, let’s change the filter setting to exclude the specified substructure from the view:<br>
+    Let’s exclude the specified substructure from the view.<br>
     On the <b>Filter Panel</b>, hover over a molecule and click the <b>Gear</b> icon.
-    In the dropdown, select <b>Not contains</b>.`);
+    From the dropdown, select <b>Not contains</b>.`);
 
     await this.action('Toggle the filter', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
@@ -94,21 +92,21 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
         });
       });
       observer.observe(v!.root.querySelector('.d4-flex-col.ui-div.chem-filter.d4-filter-element')!, {attributes: true});
-    }), undefined, `You can toggle a filter using a checkbox next to the filter’s name. Turn it off.`);
+    }), undefined, `You can toggle a filter using a checkbox to the right of the filter’s name ("smiles"). Turn it off.`);
 
     const exp = ['NOCount', 'NumRotatableBonds', 'smiles'];
-    await this.action('Add additional filters', v?.onEvent('d4-filter-added').pipe(filter(() => {
+    await this.action('Add more filters', v?.onEvent('d4-filter-added').pipe(filter(() => {
       return v.getOptions().look.filters.every((f: any) => exp.includes(f.column));
     }))!, $('.grok-icon.grok-font-icon-menu').get(0),
-     `In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and select <b>Select columns...</b>.<br>
-      In the dialog, select the <b>NOCount</b> column. Search for the <b>NumRotatableBonds</b> column and select it as well.<br>
+     `In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose <b>Select columns...</b>.<br>
+      Then, in the dialog, select the <b>NOCount</b> column. Search for the <b>NumRotatableBonds</b> column and select it too.<br>
       Click <b>OK</b>`);
 
     await this.action('Explore the dataset using newly added filters', merge(df.onSelectionChanged, df.onFilterChanged),
       undefined, `Hover over categories or distributions in the <b>Filter Panel</b> to instantly
-      highlight relevant data points across all viewers.<br>
+      highlight relevant data points.<br>
       Click any bin to select a corresponding group of rows in the grid.<br>
-      Drag range controls to filter.<br>
+      Drag the range controls to filter.<br>
       To learn more about filters, complete our <b>Filters</b> tutorial.`);
   }
 }
