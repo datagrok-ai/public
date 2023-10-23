@@ -54,7 +54,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     'In the grid, right-click any molecule and select <b>Current Value</b> > <b>Use as flter</b>.');
 
     let d_: DG.Dialog;
-    await this.action('On the <b>Filter Panel</b>, click the molecule', grok.events.onDialogShown.pipe(filter((dialog: DG.Dialog) => {
+    await this.action('On the Filter Panel, click the molecule', grok.events.onDialogShown.pipe(filter((dialog: DG.Dialog) => {
       if (dialog.title === '') {
         d_ = dialog;
         return true;
@@ -76,7 +76,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
         });
       });
       observer.observe(v!.root.querySelector('.d4-flex-col.d4-filter')!, {subtree: true, attributes: true});
-    }), undefined, `You can choose different filtering
+    }), v?.root.querySelector('.chem-canvas') as HTMLElement, `You can choose different filtering
     modes to include or exclude molecules with the specified substructure, show similar structures, and so on.<br>
     Let’s exclude the specified substructure from the view.<br>
     On the <b>Filter Panel</b>, hover over a molecule and click the <b>Gear</b> icon.
@@ -92,12 +92,14 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
         });
       });
       observer.observe(v!.root.querySelector('.d4-flex-col.ui-div.chem-filter.d4-filter-element')!, {attributes: true});
-    }), undefined, `You can toggle a filter using a checkbox to the right of the filter’s name ("smiles"). Turn it off.`);
+    }), v?.root.querySelector('.d4-flex-row.d4-filter-header') as HTMLElement,
+    `You can toggle a filter using a checkbox to the right of the filter’s name ("smiles"). Turn it off.`);
 
     const exp = ['NOCount', 'NumRotatableBonds', 'smiles'];
     await this.action('Add more filters', v?.onEvent('d4-filter-added').pipe(filter(() => {
-      return v.getOptions().look.filters.every((f: any) => exp.includes(f.column));
-    }))!, $('.grok-icon.grok-font-icon-menu').get(0),
+      const filt = v.getOptions().look.filters;
+      return filt.length === 3 && filt.every((f: any) => exp.includes(f.column));
+    }))!, $('.panel-titlebar.panel-titlebar-tabhost .grok-icon.grok-font-icon-menu').get(0),
      `In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose <b>Select columns...</b>.<br>
       Then, in the dialog, select the <b>NOCount</b> column. Search for the <b>NumRotatableBonds</b> column and select it too.<br>
       Click <b>OK</b>`);
