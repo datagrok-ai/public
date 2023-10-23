@@ -107,7 +107,6 @@ export namespace historyUtils {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
     for (const output of dfOutputs) {
-      callToSave.outputs[output.name] = callToSave.outputs[output.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
       await grok.dapi.permissions.grant(callToSave.outputs[output.name].getTableInfo(), allGroup, false);
     }
@@ -115,7 +114,6 @@ export namespace historyUtils {
     const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
       .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
     for (const input of dfInputs) {
-      callToSave.inputs[input.name] = callToSave.inputs[input.name].clone();
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
       await grok.dapi.permissions.grant(callToSave.inputs[input.name].getTableInfo(), allGroup, false);
     }
