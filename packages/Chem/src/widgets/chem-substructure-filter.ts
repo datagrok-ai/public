@@ -465,6 +465,8 @@ export class SubstructureFilter extends DG.Filter {
     this.searchType = this.searchTypeInput.value;
     if (this.searchType !== SubstructureSearchType.CONTAINS)
       this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'chem-search-options-icon');
+    else
+        this.sketcher.root.appendChild(this.optionsIcon);
     if (this.searchType === SubstructureSearchType.IS_SIMILAR)
       this.searchOptionsDiv.append(this.similarityOptionsDiv);
     else
