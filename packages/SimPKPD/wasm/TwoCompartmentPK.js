@@ -84,7 +84,7 @@ var solveTwoCompartmentPK = {
         ref: '_varsCount',
         value: 'data'
       },
-      names: ['t', 'depot(t)', 'centr(t)', 'peri(t)', 'eff(t)']
+      names: ['Time [h]', 'Depot', 'Central', 'Peripheral', 'Effect']
     }
   },
   output: {

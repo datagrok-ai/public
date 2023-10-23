@@ -1,4 +1,4 @@
-// Help pannels
+// Help panels
 
 export function showHelpPanel() {
 
