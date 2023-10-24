@@ -29,11 +29,9 @@ general parameters are required, the list of parameters depends on the function
 #output: int count [Number of cells in table]
 count = table.shape[0] * table.shape[1]
 ```
-
 </div> </details>
 
 These are the common parameters for all functions:
-
 * `name`: shows up in the user interface
 * `description`: shows up in a function tooltip
 * `tags`: comma-separated tags that you can use in search
@@ -42,7 +40,6 @@ These are the common parameters for all functions:
 * `top-menu`: Top menu path separated with pipes (`|`), such as `Chem | Gasteiger Charges`
 
 Some parameters are specific to script language and/or technology:
-
 * Script
   * `language`: script language, so that Datagrok knows how to execute it
   * `environment`: [script environment](../../../compute/scripting.md#environments) (Conda environment for python, etc)
@@ -54,6 +51,7 @@ Some parameters are specific to script language and/or technology:
 
 To add additional parameters, use the `meta.` prefix. They can be used for dynamically searching for
 the functions of interest.
+
 
 ## Inputs and outputs
 
@@ -151,7 +149,6 @@ as `@patternName(columnName)`, just like we did here for the "freight" column:
 --input: string freightValue = >= 10.0 {pattern: double}
 select * from Orders where @freightValue(freight)
 ```
-
 Different inputs would produce differently structured SQL (also dependent on the database). 
 
 | Input | SQL                                                                | Description                     |
@@ -160,9 +157,10 @@ Different inputs would produce differently structured SQL (also dependent on the
 | >3    | select * from orders <br/> where freight > 3                       | Using column name to filter     |
 | 10-20 | select * from orders <br/> where (freight >= 10 and freight <= 20) | Have to do multiple comparisons |
 
+
 In this example, the `freightValue` input parameter is defined as a string with a default value of `>= 10.0`. 
-The `pattern` *option* specifies that the actual data type is a `double`. In the query, a reference to
-`@freightValue(freight)` specifies the *pattern* that will be evaluated against the "freight" column.
+The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to
+`@freightValue(freight)` specifies the _pattern_ that will be evaluated against the "freight" column.
 
 Here's a list of all supported search patterns:
 
@@ -198,6 +196,7 @@ Here's a list of all supported search patterns:
 
 To learn more, see [search patterns](../../../explore/search-filter-select/data-search-patterns.md).
 </details>
+
 
 ### Choices
 
@@ -266,10 +265,10 @@ FROM target_dictionary td
     AND td.organism = @organism
     AND oc.L1 = 'Bacteria'
 ```
-
 </div></details>
 
 ![](autocomplete.gif)
+
 
 ## Examples
 
