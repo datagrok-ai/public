@@ -15,7 +15,6 @@ import {getLinkedMolfile, saveSdf} from '../../model/sequence-to-structure-utils
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {MoleculeImage} from '../utils/molecule-img';
 import {StrandData} from '../../model/sequence-to-structure-utils/sdf-tab';
-import {DEFAULT_AXOLABS_INPUT} from '../const/view';
 
 const enum DIRECTION {
   STRAIGHT = '5′ → 3′',

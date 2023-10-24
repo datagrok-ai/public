@@ -3,14 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TAB, APP} from './const/view';
+import {TAB, APP} from './const/ui';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
 import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
 import {_package} from '../package';
 import {tryCatch} from '../model/helpers';
-import {initSequenceTranslatorLibData} from '../package';
 
 type ViewFactories = {[name: string]: () => DG.View};
 
@@ -70,7 +69,7 @@ abstract class SimpleAppUIBase extends AppUIBase {
   }
 }
 
-export class CompundAppUI extends AppUIBase {
+export class CombinedAppUI extends AppUIBase {
   constructor(externalViewFactories: ViewFactories) {
     super(APP.COMBINED)
     this.externalViewFactories = externalViewFactories;
@@ -133,7 +132,24 @@ export class ExternalPluginUI extends SimpleAppUIBase {
   }
 }
 
-export class OligoTranslatorUI extends SimpleAppUIBase {
+export class AppUIFactory {
+  private constructor() {}
+
+  static getUI(appName: string): SimpleAppUIBase {
+    switch (appName) {
+      case APP.TRANSLATOR:
+        return new OligoTranslatorUI();
+      case APP.PATTERN:
+        return new OligoPatternUI();
+      case APP.STRUCTRE:
+        return new OligoStructureUI();
+      default:
+        throw new Error(`Unknown app name: ${appName}`);
+    }
+  }
+}
+
+class OligoTranslatorUI extends SimpleAppUIBase {
   constructor() {
     super(APP.TRANSLATOR);
 
@@ -153,7 +169,7 @@ export class OligoTranslatorUI extends SimpleAppUIBase {
   };
 }
 
-export class OligoPatternUI extends SimpleAppUIBase {
+class OligoPatternUI extends SimpleAppUIBase {
   constructor() {
     super(APP.PATTERN);
     this.ui = new AxolabsTabUI();
@@ -164,7 +180,7 @@ export class OligoPatternUI extends SimpleAppUIBase {
   }
 }
 
-export class OligoStructureUI extends SimpleAppUIBase {
+class OligoStructureUI extends SimpleAppUIBase {
   constructor() {
     super(APP.STRUCTRE)
     this.ui = new SdfTabUI();

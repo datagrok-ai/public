@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, CompundAppUI} from './view/app-ui';
+import {AppUIFactory, CombinedAppUI} from './view/app-ui';
 import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
@@ -15,7 +15,7 @@ import {FormatDetector} from './model/parsing-validation/format-detector';
 import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
-import {APP} from './view/const/view';
+import {APP} from './view/const/ui';
 import {getExternalAppViewFactories} from './plugins/mermade';
 
 class StPackage extends DG.Package {
@@ -42,6 +42,13 @@ class StPackage extends DG.Package {
 
 export const _package: StPackage = new StPackage();
 
+async function buildLayout(appName: string): Promise<void> {
+  await initSequenceTranslatorLibData();
+  const appUI = AppUIFactory.getUI(appName);
+  await appUI.createAppLayout();
+}
+
+
 //name: Oligo Toolkit
 //meta.icon: img/icons/toolkit.png
 //tags: app
@@ -50,7 +57,7 @@ export async function oligoToolkitApp(): Promise<void> {
   const externalViewFactories = await getExternalAppViewFactories();
   if (!externalViewFactories)
     throw new Error('External app view factories not loaded');
-  const appUI = new CompundAppUI(externalViewFactories!);
+  const appUI = new CombinedAppUI(externalViewFactories!);
   await appUI.createAppLayout();
 }
 
@@ -58,27 +65,21 @@ export async function oligoToolkitApp(): Promise<void> {
 //meta.icon: img/icons/translator.png
 //tags: app
 export async function oligoTranslatorApp(): Promise<void> {
-  await initSequenceTranslatorLibData();
-  const appUI = new OligoTranslatorUI();
-  await appUI.createAppLayout();
+  await buildLayout(APP.TRANSLATOR);
 }
 
 //name: Oligo Pattern
 //meta.icon: img/icons/pattern.png
 //tags: app
 export async function oligoPatternApp(): Promise<void> {
-  await initSequenceTranslatorLibData();
-  const appUI = new OligoPatternUI();
-  await appUI.createAppLayout();
+  await buildLayout(APP.PATTERN);
 }
 
 //name: Oligo Structure
 //meta.icon: img/icons/structure.png
 //tags: app
 export async function oligoStructureApp(): Promise<void> {
-  await initSequenceTranslatorLibData();
-  const appUI = new OligoStructureUI();
-  await appUI.createAppLayout();
+  await buildLayout(APP.STRUCTRE);
 }
 
 //name: initSequenceTranslatorLibData

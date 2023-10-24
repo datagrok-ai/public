@@ -14,7 +14,7 @@ import {getTranslatedSequences} from '../../model/format-translation/conversion-
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../const/main-tab';
-import {DEFAULT_AXOLABS_INPUT} from '../const/view';
+import {DEFAULT_AXOLABS_INPUT} from '../const/ui';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
 import {FormatConverter} from '../../model/format-translation/format-converter';
