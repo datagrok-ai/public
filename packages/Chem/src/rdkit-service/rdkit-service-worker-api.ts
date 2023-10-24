@@ -7,4 +7,5 @@ export enum WORKER_CALL {
   GET_STRUCTURAL_ALERTS = 'getStructuralAlerts',
   INVALIDATE_CACHE = 'invalidateCache',
   SET_TERMINATE_FLAG = 'setTerminateFlag',
+  MOST_COMMON_STRUCTURE = 'mostCommonStructure',
 }
