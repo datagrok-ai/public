@@ -155,6 +155,13 @@ M  END
             rdKitScaffoldMol.normalize_depiction(0);
             if (molHasOwnCoords)
               mol.normalize_depiction(0);
+            else { 
+              //need the following 4 rows for smiles with highlights to be rendered in adequate coordinates
+              mol.set_new_coords();
+              mol.normalize_depiction(1);
+              mol.straighten_depiction(false);
+              molHasOwnCoords = true;
+            }
             let substructString = '';
             try {
               substructString = !scaffolds[0].isSuperstructure ? mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
