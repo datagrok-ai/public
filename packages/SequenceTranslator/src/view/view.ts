@@ -15,19 +15,21 @@ type ViewFactories = {[name: string]: () => DG.View};
 export class AppMultiView {
   constructor(externalViewFactories?: ViewFactories) {
     this.externalViewFactories = externalViewFactories;
-    this.multiView = new DG.MultiView({viewFactories: this.getViewFactories()}); 
+    const factories = this.getViewFactories();
+    console.log(`factories:`, factories);
+    this.multiView = new DG.MultiView({viewFactories: factories}); 
   }
 
   private multiView: DG.MultiView;
   private externalViewFactories?: ViewFactories;
 
   private getViewFactories(): ViewFactories {
-    function viewFactory(uiConstructor: new (view: DG.View) => AppUI): () => DG.View {
+    function viewFactory(uiConstructor: new (view: DG.View) => AppUIBase): () => DG.View {
       const view = DG.View.create();
       const translateUI = new uiConstructor(view);
       // intentonally don't await for the promise
       translateUI.initView();
-      return () => view;
+      return () => translateUI.appView;
     }
 
     let result: {[key: string]: () => DG.View } = {
@@ -60,19 +62,11 @@ export class AppMultiView {
   }
 }
 
-export abstract class AppUI {
-  constructor(view: DG.View, private viewName: string) {
-    this.view = view;
-    this.view.box = true;
-    this.view.name = viewName;
-
-    const windows = grok.shell.windows;
-    windows.showProperties = false;
-    windows.showToolbox = false;
-    windows.showHelp = false;
+export abstract class AppUIBase {
+  constructor(private appName: string, private parentAppName?: string) {
   }
 
-  protected readonly view: DG.View;
+  protected view: DG.View;
   protected abstract getHtml(): Promise<HTMLDivElement>;
 
   async initView(): Promise<void> {
@@ -83,15 +77,38 @@ export abstract class AppUI {
   /** Create master layout of the app  */
   async createLayout(): Promise<void> {
     await this.initView();
-    this.view.path = `/apps/${_package.name}/${this.viewName.replace(/\s/g, '')}/`;
+    const name = this.parentAppName ? this.parentAppName + '/' + this.appName : this.appName;
+    this.view.path = `/apps/${_package.name}/${name.replace(/\s/g, '')}/`;
     grok.shell.addView(this.view);
+  }
+  
+  protected setupView(): void {
+    this.view.box = true;
+    this.view.name = this.appName;
+
+    const windows = grok.shell.windows;
+    windows.showProperties = false;
+    windows.showToolbox = false;
+    windows.showHelp = false;
+  }
+
+  get appView(): DG.View {
+    return this.view;
+  }
+}
+
+abstract class SimpleAppUIBase extends AppUIBase {
+  constructor(appName: string) {
+    super(appName);
+    this.view = DG.View.create();
+    this.setupView();
   }
 }
 
 /** For plugins from external packages */
-export class ExternalPluginUI extends AppUI {
-  constructor(view: DG.View, viewName: string, layout: HTMLDivElement) {
-    super(view, viewName);
+export class ExternalPluginUI extends SimpleAppUIBase {
+  constructor(viewName: string, layout: HTMLDivElement) {
+    super(viewName);
     this.layout = layout;
   }
   private layout: HTMLDivElement;
@@ -101,9 +118,9 @@ export class ExternalPluginUI extends AppUI {
   }
 }
 
-export class OligoTranslatorUI extends AppUI {
-  constructor(view: DG.View) {
-    super(view, APP.TRANSLATOR);
+export class OligoTranslatorUI extends SimpleAppUIBase {
+  constructor() {
+    super(APP.TRANSLATOR);
 
     const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     this.topPanel = [
@@ -121,9 +138,9 @@ export class OligoTranslatorUI extends AppUI {
   };
 }
 
-export class OligoPatternUI extends AppUI {
-  constructor(view: DG.View) {
-    super(view, APP.PATTERN);
+export class OligoPatternUI extends SimpleAppUIBase {
+  constructor() {
+    super(APP.PATTERN);
     this.ui = new AxolabsTabUI();
   }
   private readonly ui: AxolabsTabUI;
@@ -132,9 +149,9 @@ export class OligoPatternUI extends AppUI {
   }
 }
 
-export class OligoStructureUI extends AppUI {
-  constructor(view: DG.View) {
-    super(view, APP.STRUCTRE)
+export class OligoStructureUI extends SimpleAppUIBase {
+  constructor() {
+    super(APP.STRUCTRE)
     this.ui = new SdfTabUI();
   }
   private readonly ui: SdfTabUI;

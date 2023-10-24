@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, AppUI, AppMultiView, ExternalPluginUI} from './view/view';
+import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, AppUIBase, AppMultiView, ExternalPluginUI} from './view/view';
 import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
@@ -81,13 +81,13 @@ export async function oligoToolkitApp(): Promise<void> {
         console.log(`Plugin ${pluginName} not loaded, error:`, err)
         layout = ui.divText('error loading');
       }
-      const view = DG.View.create();
-      const appUI = new ExternalPluginUI(view, data.tabName, layout);
+      const appUI = new ExternalPluginUI(data.tabName, layout);
 
       // intentonally don't await for the promise
       appUI.initView();
+      console.log(`after init`);
 
-      result[data.tabName] = () => view;
+      result[data.tabName] = () => appUI.appView;
     }
     return result;
   }
@@ -96,13 +96,14 @@ export async function oligoToolkitApp(): Promise<void> {
     await initSequenceTranslatorLibData();
     const externalViewFactories = await getMerMadeViewFactories();
     const multiView = new AppMultiView(externalViewFactories);
+    // await multiView.init();
     multiView.createLayout();
   }, () => pi.close());
   if (currentView)
     ui.setUpdateIndicator(currentView, false);
 }
 
-async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
+async function createAppLayout(appUI: AppUIBase, appName: string): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${appName}...`);
 
   await tryCatch(async () => {
@@ -116,7 +117,7 @@ async function createAppLayout(appUI: AppUI, appName: string): Promise<void> {
 //tags: app
 export async function oligoTranslatorApp(): Promise<void> {
   await initSequenceTranslatorLibData();
-  const appUI = new OligoTranslatorUI(DG.View.create());
+  const appUI = new OligoTranslatorUI();
   await createAppLayout(appUI, APP.TRANSLATOR);
 }
 
@@ -125,7 +126,7 @@ export async function oligoTranslatorApp(): Promise<void> {
 //tags: app
 export async function oligoPatternApp(): Promise<void> {
   await initSequenceTranslatorLibData();
-  const appUI = new OligoPatternUI(DG.View.create());
+  const appUI = new OligoPatternUI();
   createAppLayout(appUI, APP.PATTERN);
 }
 
@@ -134,7 +135,7 @@ export async function oligoPatternApp(): Promise<void> {
 //tags: app
 export async function oligoStructureApp(): Promise<void> {
   await initSequenceTranslatorLibData();
-  const appUI = new OligoStructureUI(DG.View.create());
+  const appUI = new OligoStructureUI();
   createAppLayout(appUI, APP.STRUCTRE);
 }
 
