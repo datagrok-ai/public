@@ -2,12 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, AppUIBase, AppMultiView, ExternalPluginUI} from './view/view';
+import {OligoTranslatorUI, OligoPatternUI, OligoStructureUI, CompundAppUI} from './view/app-ui';
 import {tryCatch} from './model/helpers';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {codesToHelmDictionary} from './model/data-loading-utils/json-loader';
 import {getJsonData} from './model/data-loading-utils/json-loader';
 import {SequenceToMolfileConverter} from './model/sequence-to-structure-utils/sequence-to-molfile';
 import {linkStrandsV3000} from './model/sequence-to-structure-utils/mol-transformations';
@@ -17,8 +16,7 @@ import {SequenceValidator} from './model/parsing-validation/sequence-validator';
 import {demoOligoTranslatorUI, demoOligoPatternUI, demoOligoStructureUI} from './demo/demo-st-ui';
 import {FormatConverter} from './model/format-translation/format-converter';
 import {APP} from './view/const/view';
-import {ColoredTextInput} from './view/utils/colored-input/colored-text-input';
-import {highlightInvalidSubsequence} from './view/utils/colored-input/input-painters';
+import {getExternalAppViewFactories} from './plugins/mermade';
 
 class StPackage extends DG.Package {
   private _monomerLib?: IMonomerLib;
@@ -48,68 +46,12 @@ export const _package: StPackage = new StPackage();
 //meta.icon: img/icons/toolkit.png
 //tags: app
 export async function oligoToolkitApp(): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${APP.COMBINED}...`);
-
-  let currentView = grok.shell.v?.root;
-  if (currentView)
-    ui.setUpdateIndicator(currentView, true);
-
-  async function getMerMadeViewFactories(): Promise<{[name: string]: () => DG.View} | undefined> {
-
-    const base = ui.textInput('', '');
-    const input = new ColoredTextInput(base, highlightInvalidSubsequence);
-
-    /** key: plugin name, value: tab name */
-    const externalPluginData = {
-      'Mermadesynthesis:merMadeSynthesis': {
-        tabName: 'SYNTHESIZE',
-        parameters: {
-          coloredInput: input,
-          codes: codesToHelmDictionary
-        }
-      },
-    }
-    console.log(`pluginData:`, externalPluginData);
-
-    const result: {[tabName: string]: () => DG.View} = {};
-
-    for (const [pluginName, data] of Object.entries(externalPluginData)) {
-      let layout: HTMLDivElement;
-      try {
-        layout = await grok.functions.call(pluginName, data.parameters);
-      } catch (err) {
-        console.log(`Plugin ${pluginName} not loaded, error:`, err)
-        layout = ui.divText('error loading');
-      }
-      const appUI = new ExternalPluginUI(data.tabName, layout);
-
-      // intentonally don't await for the promise
-      appUI.initView();
-      console.log(`after init`);
-
-      result[data.tabName] = () => appUI.appView;
-    }
-    return result;
-  }
-
-  await tryCatch(async () => {
-    await initSequenceTranslatorLibData();
-    const externalViewFactories = await getMerMadeViewFactories();
-    const multiView = new AppMultiView(externalViewFactories);
-    // await multiView.init();
-    multiView.createLayout();
-  }, () => pi.close());
-  if (currentView)
-    ui.setUpdateIndicator(currentView, false);
-}
-
-async function createAppLayout(appUI: AppUIBase, appName: string): Promise<void> {
-  const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(`Loading ${appName}...`);
-
-  await tryCatch(async () => {
-    await initSequenceTranslatorLibData();
-    await appUI.createLayout();
-  }, () => pi.close());
+  await initSequenceTranslatorLibData();
+  const externalViewFactories = await getExternalAppViewFactories();
+  if (!externalViewFactories)
+    throw new Error('External app view factories not loaded');
+  const appUI = new CompundAppUI(externalViewFactories!);
+  await appUI.createAppLayout();
 }
 
 //name: Oligo Translator
@@ -118,7 +60,7 @@ async function createAppLayout(appUI: AppUIBase, appName: string): Promise<void>
 export async function oligoTranslatorApp(): Promise<void> {
   await initSequenceTranslatorLibData();
   const appUI = new OligoTranslatorUI();
-  await createAppLayout(appUI, APP.TRANSLATOR);
+  await appUI.createAppLayout();
 }
 
 //name: Oligo Pattern
@@ -127,7 +69,7 @@ export async function oligoTranslatorApp(): Promise<void> {
 export async function oligoPatternApp(): Promise<void> {
   await initSequenceTranslatorLibData();
   const appUI = new OligoPatternUI();
-  createAppLayout(appUI, APP.PATTERN);
+  await appUI.createAppLayout();
 }
 
 //name: Oligo Structure
@@ -136,7 +78,7 @@ export async function oligoPatternApp(): Promise<void> {
 export async function oligoStructureApp(): Promise<void> {
   await initSequenceTranslatorLibData();
   const appUI = new OligoStructureUI();
-  createAppLayout(appUI, APP.STRUCTRE);
+  await appUI.createAppLayout();
 }
 
 //name: initSequenceTranslatorLibData
