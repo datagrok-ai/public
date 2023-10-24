@@ -35,21 +35,19 @@ export interface IHighlightTagInfo {
 }
 
 export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
-  if (color) {
-    const colorArr = hexToPercentRgb(color);
-    const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-    if (substrToTakeAtomsFrom.atoms) {
-      for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-        mainSubstr.highlightAtomColors ??= {};
-        mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-      };
-    }
-    if (substrToTakeAtomsFrom.bonds) {
-      for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-        mainSubstr.highlightBondColors ??= {};
-        mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-      };
-    }
+  const colorArr = color ? hexToPercentRgb(color) : [1.0, 0.7, 0.7, 1.0];
+  const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
+  if (substrToTakeAtomsFrom.atoms) {
+    for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
+      mainSubstr.highlightAtomColors ??= {};
+      mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
+    };
+  }
+  if (substrToTakeAtomsFrom.bonds) {
+    for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
+      mainSubstr.highlightBondColors ??= {};
+      mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
+    };
   }
 }
 
@@ -174,13 +172,11 @@ M  END
                 mol.straighten_depiction(true);
             } else
               substruct = JSON.parse(substructString);
-              if (scaffolds[0].color) {
                 if (!substruct.atoms)
                   substruct.atoms = [];
                 if (!substruct.bonds)
                   substruct.bonds = [];
                 _addColorsToBondsAndAtoms(substruct, scaffolds[0].color);
-              }
           }
         }
         for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
@@ -238,8 +234,7 @@ M  END
   _fetchMol(molString: string, scaffolds: IColoredScaffold[], molRegenerateCoords: boolean,
     scaffoldRegenerateCoords: boolean, details: object = {}, alignByFirstSubstructure: boolean): IMolRenderingInfo {    
     const name = molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
-      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords +
-      (Object.keys(details).length ? ' || ' + JSON.stringify(details) : '');
+      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' + JSON.stringify(details);
     return this.molCache.getOrCreate(name, (_: any) =>
       this._fetchMolGetOrCreate(molString, scaffolds, molRegenerateCoords, details, alignByFirstSubstructure));
   }
