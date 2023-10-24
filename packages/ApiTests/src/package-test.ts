@@ -37,7 +37,6 @@ import './widgets/legend';
 import './widgets/tree-view';
 import './utils/color';
 // import './package/upload';
-import './packages/docker';
 import './packages/properties';
 import './grid/grid';
 import './grid/color-coding';
