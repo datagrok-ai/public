@@ -37,4 +37,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   invalidateCache = async () => this.call(WORKER_CALL.INVALIDATE_CACHE);
 
   setTerminateFlag = async (flag: boolean) => this.call(WORKER_CALL.SET_TERMINATE_FLAG, [flag]);
+
+  mostCommonStructure = async (
+    molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
+  ): Promise<string> =>
+    this.call(WORKER_CALL.MOST_COMMON_STRUCTURE, [molecules, exactAtomSearch, exactBondSearch]);
 }

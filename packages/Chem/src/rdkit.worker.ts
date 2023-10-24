@@ -38,6 +38,8 @@ ctx.addEventListener('message', async (e: any) => {
       _rdKitServiceWorker!.invalidateCache();
     else if (op === WORKER_CALL.SET_TERMINATE_FLAG)
       _rdKitServiceWorker!.setTerminateFlag(args[0]);
+    else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE)
+      result = _rdKitServiceWorker!.mostCommonStructure(args[0], args[1], args[2]);
 
     port.postMessage({op: op, retval: result});
   } catch (e) {
