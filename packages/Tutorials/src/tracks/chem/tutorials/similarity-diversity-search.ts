@@ -14,9 +14,9 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
 
   get description() {
     return 'Datagrok offers two analytical tools to help you analyze a collection ' +
-    'of molecules based on molecular similarity: Similarity Search and Diversity ' +
-    'Search viewers. Similarity search finds structures similar to the reference molecule, ' +
-    'while diversity search shows N molecules of different chemical classes in the dataset.';
+    'of molecules based on molecular similarity: <b>Similarity Search</b> and <b>Diversity ' +
+    'Search</b>. Similarity Search finds structures similar to the reference molecule, ' +
+    'while Diversity Search shows N molecules of different chemical classes in the dataset.';
   }
 
   get steps() { return 10; }
@@ -46,7 +46,6 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     <li>Context menu (right-click for access)</li>
     <li><b>Context Panel</b> on the right.</li>
     </ul><br>
-    <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">Learn more about exploring chemical data</a><br>
     Let’s search for similar and diverse structures.<br>
     Click <b>Chem</b> > <b>Search</b> > <b>Similarity Search...</b><br>
     Click <b>Chem</b> > <b>Search</b> > <b>Diversity Search...</b>`);
@@ -56,25 +55,27 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
       i++;
       return i >= 2;
     })), undefined, `The similarity and diversity viewers are interactive and are synchronized with each other,
-    chemical spreadsheet (grid), and other viewers.<br>In the <b>Most similar structures</b> viewer, click a tile next to the reference molecule<br>
-    In the diversity viewer, click any tile`);
+    chemical spreadsheet (grid), and other viewers.<br>On the <b>Most similar structures</b> viewer, click the molecule next to the reference molecule<br>
+    Note how it’s now the current molecule in the grid.<br>
+    Now, click any molecule in the diversity viewer.<br>
+    Note the change in the similarity viewer.`);
 
-    const d = await this.openDialog('Most similar structures viewer > Reference molecule tile, click the edit (pencil) icon.', '',
+    const d = await this.openDialog('Specify a reference molecule', '',
       $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0));
 
     await this.action('Specify a reference molecule', 
-    d.onClose, undefined, `In the sketcher, paste the molecule’s identifier. For this tutorial, paste<br><b>RCKUZCZZUOYUBE-DHDCSXOGSA-N</b><br>and press <b>Enter</b>.
+    d.onClose, undefined, `To specify a reference molecule, click the <b>Edit</b> icon on the reference molecule card.<br>
+    For this tutorial, let's paste this identifier in the sketcher and press <b>Enter</b>: <br><b>RCKUZCZZUOYUBE-DHDCSXOGSA-N</b><br> 
     The sketcher updates to show the new structure.<br>
     Click <b>OK</b> to apply.<br>
     If you want, you can also draw the structure manually.`);
 
     await this.contextMenuAction('Lock in a reference molecule', 'Properties...',
       $('.ui-div.d4-flex-col.d4-current').get(0),
-      `By default, a reference molecule follows the current row. If you click a different molecule, the similarity viewer updates accordingly.
-      You can lock in a specific reference molecule.<br>
+      `By default, a reference molecule follows the current row. However, you can lock it in.<br>
       In the similarity viewer, right-click a reference molecule and select <b>Properties...</b>`);
 
-    await this.action('Under Misc info pane, clear the Follow Current Row checkbox', new Observable((subscriber: any) => {
+    await this.action('Under <b>Misc</b>, clear the <b>Follow Current Row</b> checkbox', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
         mutationsList.forEach((m) => {
           //@ts-ignore
@@ -94,9 +95,9 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     })), undefined, `Click anywhere in the viewer. Now click any molecule in the grid.
     The current molecule changes, but the reference molecule stays the same.`);
 
-    await this.contextMenuAction('Click More > Explore', 'Explore',
+    await this.contextMenuAction('Get insights using <b>Context Panel</b>', 'Explore',
     $('.grok-icon.fal.fa-ellipsis-v.chem-mol-view-icon.pep-more-icon').get(0),
-      `In the similarity viewer, hover over the reference molecule and then click the <b>More</b> icon. Click <b>Explore</b>.
+      `In the similarity viewer, hover over the reference molecule and then click the <b>More</b> icon. Then, click <b>Explore</b>.
        The <b>Context Panel</b> on the right now shows molecule-specific information.`);
     
     // await this.action('Get insights using Context Panel', new Observable((subscriber: any) => {
@@ -105,13 +106,14 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     // }), undefined, `Under <b>Biology</b>, click <b>Toxicity</b>.<br>
     // Now click <b>Drug Likeness</b>.<br>
     // On the <b>Drug Likeness</b> info pane, scroll through the substructure list.<br>
+    // These info panes are interactive and fully customizable.<br>
     // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">Learn about chemical info panes here</a>`);
 
-    await this.action('In the top right corner of the diversity viewer, click Tanimoto, Morgan', new Observable((subscriber: any) => {
+    await this.action('Access the viewer settings', new Observable((subscriber: any) => {
       $('.d4-chem-diversity-search .ui-link').on('click', () => subscriber.next(true));
-    }), $('.d4-chem-diversity-search .ui-link').get(0), 'You can change search parameters and other settings anytime. To do so, use the viewer’s settings.');
+    }), $('.d4-chem-diversity-search .ui-link').get(0), 'You can change search parameters and other settings anytime. To do so, use the viewer’s settings. In the top right corner of the diversity viewer, click <b>Tanimoto, Morgan</b><br>');
 
-    await this.action('Change search parameters and show additional data', new Observable((subscriber: any) => {
+    await this.action('Add more data', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
         mutationsList.forEach((m) => {
           //@ts-ignore
@@ -122,7 +124,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
         });
       });
       observer.observe($('.grok-prop-panel').get(0)!, {subtree: true, attributes: true, childList: true, characterData: true});
-    }), undefined, `For this tutorial, let’s show additional data on molecule cards:<br>
+    }), undefined, `Let’s add some data on the molecule card:<br>
       Under <b>Misc</b>, next to <b>Molecule Properties</b>, click the column selector icon.<br>
       In the dialog, select the <b>NumValenceElectrons</b> column.<br>
       Click <b>OK</b>.`);
