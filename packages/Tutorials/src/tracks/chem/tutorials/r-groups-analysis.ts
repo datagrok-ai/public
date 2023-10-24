@@ -13,7 +13,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
   }
 
   get description() {
-    return 'With Datagrok\'s R-Group Analysis (RGA), you can identify all R-group ' +
+    return 'R-Groups Analysis lets you identify all R-group ' +
     'variations around a scaffold, analyze substitution patterns, evaluate their ' +
     'impact on crucial compound properties, and find gaps.';
   }
@@ -30,7 +30,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     const df = await grok.data.files.openTable('System:AppData/Tutorials/sar_small-R-groups.csv');
     const tv = grok.shell.addTableView(df);
 
-    const d = await this.openDialog('Start the RGA tool', 'R-Groups Analysis',
+    const d = await this.openDialog('Start the R-Groups Analysis tool', 'R-Groups Analysis',
     this.getMenuItem('Chem'), `When you open a chemical dataset, Datagrok automatically detects molecules
     and shows molecule-specific tools, actions, and information. Access them through:
     <ul>
@@ -38,10 +38,9 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     <li>Context menu (right-click for access).</li>
     <li><b>Context Panel</b> on the right.</li>
     </ul><br>
-    <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">Learn more about exploring chemical data</a><br>
-    Let’s launch the RGA tool. On the <b>Top Menu</b>, click <b>Chem</b> > <b>Analyze</b> > <b>R-Groups Analysis...</b>`);
+    Let’s launch the R-Groups Analysis tool. On the <b>Top Menu</b>, click <b>Chem</b> > <b>Analyze</b> > <b>R-Groups Analysis...</b>`);
 
-    await this.action('Click MCS', new Observable((subscriber: any) => {
+    await this.action('Specify the scaffold', new Observable((subscriber: any) => {
         $('.chem-mcs-button').one('click', () => subscriber.next(true));
       }), undefined, `In the sketcher, you have two options to specify the scaffold:
       <ul>
@@ -61,13 +60,13 @@ export class RGroupsAnalysisTutorial extends Tutorial {
         return found;
     })));
     
-    await this.action('In the trellis plot, click the gear icon for the embedded viewer',
+    await this.action('Set up the visualization',
     new Observable((subscriber: any) => {
       $('.grok-icon.grok-font-icon-settings.d4-viewer-icon').one('click', () => subscriber.next(true));
     }), $('.grok-icon.grok-font-icon-settings.d4-viewer-icon').get(0), `
     Once the analysis is complete, the R-group columns are added to the table (grid), along with a trellis plot for visual exploration.<br>
     Let’s set up the visualization. In the top-left corner, click the <b>Gear</b> icon.<br>
-    <a href="https://datagrok.ai/help/visualize/viewers/pie-chart">Learn more about pie charts</a>`);
+    The <b>Context Panel</b> on the right now shows the settings for the pie chart.<br>`);
 
    
     await this.action('Set Category to LC/MS', new Observable((subscriber: any) => {
@@ -81,13 +80,14 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       });
       observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
     }), undefined,
-    'On the Context Panel, click <b>Data</b><br>Under <b>Data</b>, next to <b>Category</b> select <b>LC/MS</b>.');
+    'On the Context Panel, under <b>Data</b> set <b>Category</b> to <b>LC/MS</b>.');
 
-    await this.action('Click any segment on any bar chart', df.onSelectionChanged.pipe(filter(() => {
+    await this.action('Analyze and explore', df.onSelectionChanged.pipe(filter(() => {
       return grok.shell.o.constructor.name === 'RowGroup' && 
         $('.d4-accordion-pane-header').filter((ind, el) => el.textContent === 'Distributions').length > 0;
-    })), v!.root, `All datagrok viewers are syncronized. This means they respond to the same filtering, selection, and so on.
-    Click any segment on the chart. Note the selected items are instantly highlighted on the grid.`);
+    })), v!.root, `All datagrok viewers are synchronized. This means they respond to the same filtering, selection, and so on.
+    Click any segment on the pie chart. Note the selected items are instantly highlighted on the grid.
+    <a href="https://datagrok.ai/help/visualize/viewers/pie-chart">Learn more about pie charts</a>`);
 
     let pane: Cash;
     await this.action('On the Context Panel expand the Distributions pane',
@@ -105,13 +105,13 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       content?.querySelectorAll('.d4-flex-col')[2].addEventListener('mouseover', () => subscriber.next(true), {once: true});
     }));
 
-    await this.action('In the trellis plot, select a histogram viewer',
+    await this.action('Get a different view',
       v!.onEvent('d4-trellis-plot-viewer-type-changed').pipe(filter((s: string) => s === 'Histogram')),
-      v!.root.querySelector('.d4-combo-popup') as HTMLElement, `The trellis plot initially displays pie charts, but you can switch
+      v!.root.querySelector('.d4-combo-popup') as HTMLElement, `The trellis plot initially shows pie charts, but you can change
       visualizations to get a different view of your data. Let’s change a pie chart to a histogram. In the top-left corner,
-      click the <b>Viewer</b> control and select <b>Histogram</b>`);
+      click the <b>Viewer</b> control and select <b>Histogram</b>.`);
 
-    await this.action('Get a different view', new Observable((subscriber: any) => {
+    await this.action('Set <b>Value</b> to <b>In-Vivo Activity</b>', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
         mutationsList.forEach((m) => {
           if (m.previousSibling?.textContent === 'In-vivo Activity') {
@@ -124,7 +124,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     }), undefined, `Now, use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
       the histogram’s settings, and set <b>Value</b> to <b>In-vivo Activity</b>.`);
 
-    await this.action('Set the X axis to R4', new Observable((subscriber: any) => {
+    await this.action('Switch axes', new Observable((subscriber: any) => {
       const s = v.root.querySelectorAll('.d4-columns-host')[0].children[1] as HTMLSelectElement;
       s.addEventListener('change', (e) => {
         //@ts-ignore
@@ -132,7 +132,6 @@ export class RGroupsAnalysisTutorial extends Tutorial {
           subscriber.next(true)
       });
     }), undefined, `Finally, let’s change the R-groups used on the plot. In the top left corner,
-    set the <b>X</b> axis to <b>R4</b>.<br>
-    <a href="https://datagrok.ai/help/visualize/viewers/trellis-plot">Learn more about trellis plot</a>`);
+    set the <b>X</b> axis to <b>R4</b>.<br>`);
   }
 }
