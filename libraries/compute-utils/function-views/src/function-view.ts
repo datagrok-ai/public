@@ -385,8 +385,6 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
 
-    this.linkFunccall(savedCall);
-
     if (this.options.historyEnabled) this.buildHistoryBlock();
     this.isHistorical.next(true);
 
