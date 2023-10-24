@@ -19,8 +19,8 @@ export async function awaitContainerStart(containerName: string, tries: number =
 }
 
 category('Packages: Docker', () => {
-  const containerOnDemandName: string = 'Apitests-docker-test1';
-  const containerName: string = 'Apitests-docker-test2';
+  const containerOnDemandName: string = 'Cvmtests-docker-test1';
+  const containerName: string = 'Cvmtests-docker-test2';
 
   test('Get response', async () => {
     const container = await awaitContainerStart(containerName);
