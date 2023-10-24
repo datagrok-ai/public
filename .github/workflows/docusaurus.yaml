@@ -77,7 +77,7 @@ jobs:
   convert:
     name: Build
     needs: [lint, common-check]
-    if: needs.common-check.outputs.continue == 'true'
+    if: always() && (needs.lint.result == skipped || needs.lint.result == success) && needs.common-check.outputs.continue == 'true'
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
