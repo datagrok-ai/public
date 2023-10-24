@@ -9,7 +9,7 @@
   },
   "servicePackage": true,
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.1.1",
+    "@datagrok-libraries/utils": "^4.1.9",
     "cash-dom": "latest",
     "datagrok-api": "../../js-api",
     "dayjs": "latest"
@@ -21,7 +21,7 @@
     "eslint-config-google": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "webpack": "latest",
+    "webpack": "5.74.0",
     "webpack-cli": "latest"
   },
   "scripts": {
