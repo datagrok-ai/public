@@ -358,8 +358,10 @@ export abstract class Tutorial extends DG.Widget {
   /** Closes all visual components that were added when working on tutorial, e.g., table views. */
   _closeAll(): void {
     // TODO: Take into account dialogs and other views
-    if (this.t?.name)
+    if (this.t?.name) {
       grok.shell.tableView(this.t.name)?.close();
+      grok.shell.closeTable(this.t);
+    }
   }
 
   _onClose: Subject<void> = new Subject();
