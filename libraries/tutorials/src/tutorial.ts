@@ -17,8 +17,13 @@ export abstract class Tutorial extends DG.Widget {
   prerequisites: TutorialPrerequisites = {};
   demoTable: string = 'demog.csv';
   private _t: DG.DataFrame | null = null;
+
   get t(): DG.DataFrame | null {
     return this._t;
+  }
+
+  set t(df: DG.DataFrame | null) {
+    this._t = df;
   }
 
   get url(): string {
