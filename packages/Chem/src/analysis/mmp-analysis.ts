@@ -13,6 +13,9 @@ import {SUBSTRUCT_COL} from '../constants';
 const MMP_COLNAME_FROM = 'From';
 const MMP_COLNAME_TO = 'To';
 const MMP_COLNAME_PAIRS = 'Pairs';
+const MMP_COL_PAIRNUM = 'PairNum';
+const MMP_COL_PAIRNUM_FROM = 'PairNumFrom';
+const MMP_COL_PAIRNUM_TO = 'PairNumTo';
 const MMP_COLNAME_MEANDIFF = 'Mean Difference';
 const MMP_COLNAME_DIFF = 'Difference';
 const MMP_COLNAME_CHEMSPACE_X = '~X';
@@ -73,10 +76,12 @@ async function getMmpFrags(molecules: DG.Column): Promise<[string, string][][]> 
   return res;
 }
 
-function getMmpRules(frags: [string, string][][]): MmpRules {
+//returns mmp rules and number of cases
+function getMmpRules(frags: [string, string][][]): [MmpRules, number] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
   const dim = frags.length;
   let ruleCounter = 0;
+  let allCasesCounter = 0;
 
   for (let i = 0; i < dim; i++) {
     const dim1 = frags[i].length;
@@ -86,7 +91,7 @@ function getMmpRules(frags: [string, string][][]): MmpRules {
       let r1 = '';
       let r2 = '';
 
-      //here we get the best possibple fragment pair
+      //here we get the best possible fragment pair
       //TODO: do not process molecular pairs with low similarity
       for (let p1 = 0; p1 < dim1; p1++) {
         for (let p2 = 0; p2 < dim2; p2++) {
@@ -141,16 +146,18 @@ function getMmpRules(frags: [string, string][][]): MmpRules {
         });
         mmpRules.rules[ruleCounter].pairs.push({firstStructure: indxFirst ? j : i, secondStructure: indxFirst ? i : j});
         ruleCounter++;
+        allCasesCounter += 2;
       } else {
         mmpRules.rules[ruleIndexStraight].pairs
-          .push({firstStructure: indxFirst ? i : j, secondStructure: indxFirst ? j : i});
+          .push({firstStructure: i, secondStructure: j});
         mmpRules.rules[ruleIndexInverse].pairs
-          .push({firstStructure: indxFirst ? j : i, secondStructure: indxFirst ? i : j});
+          .push({firstStructure: j, secondStructure: i});
+        allCasesCounter += 2;
       }
     }
   }
 
-  return mmpRules;
+  return [mmpRules, allCasesCounter];
 }
 
 function getMmpActivityPairs(activities: DG.Column, mmpRules: MmpRules):
@@ -206,14 +213,22 @@ function getMmpActivityPairs(activities: DG.Column, mmpRules: MmpRules):
   return [maxAct, activityPairs, allPairsGrid];
 }
 
-function getMmpPairedTransforms(molecules: DG.Column, activities: DG.Column, mmpRules: MmpRules): DG.Grid {
-  const pairsFrom: string[] = [];
-  const pairsTo: string[] = [];
-  const singleDiff: number[] = [];
+function getMmpPairedTransforms(molecules: DG.Column, activities: DG.Column,
+  mmpRules: MmpRules, allCasesNumber: number): DG.Grid {
+  const pairsFrom = new Array<string>(allCasesNumber);
+  const pairsTo = new Array<string>(allCasesNumber);
+  const singleDiff = new Float32Array(allCasesNumber);
+  const pairNum = new Int32Array(allCasesNumber);
+  const pairNumFrom = new Int32Array(allCasesNumber);
+  const pairNumTo = new Int32Array(allCasesNumber);
 
+  const pairsFromSmiles = new Array<string>(allCasesNumber);
+  const pairsToSmiles = new Array<string>(allCasesNumber);
+  const ruleNum = new Int32Array(allCasesNumber)
   //revise
   const module = getRdKitModule();
 
+  let counter = 0;
   for (let i = 0; i < mmpRules.rules.length; i++) {
     for (let j = 0; j < mmpRules.rules[i].pairs.length; j++) {
       const idx1 = mmpRules.rules[i].pairs[j].firstStructure;
@@ -230,36 +245,69 @@ function getMmpPairedTransforms(molecules: DG.Column, activities: DG.Column, mmp
         alignOnly: true,
       }));
 
-      pairsFrom.push(mol1.get_molblock());
-      pairsTo.push(mol2.get_molblock());
-      singleDiff.push(activities.get(idx2) - activities.get(idx1));
+      pairsFrom[counter] = mol1.get_molblock();
+      pairsTo[counter] = mol2.get_molblock();
+      singleDiff[counter] = activities.get(idx2) - activities.get(idx1);
+      pairNum[counter] = counter;
+      pairNumFrom[counter] = idx1;
+      pairNumTo[counter] = idx2;
+
+      pairsFromSmiles[counter] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule1];
+      pairsToSmiles[counter] = mmpRules.smilesFrags[mmpRules.rules[i].smilesRule2];
+      ruleNum[counter] = i;
+
 
       mol1?.delete();
       mol2?.delete();
+      counter++;
     }
   }
 
   const pairsFromCol = DG.Column.fromStrings(MMP_COLNAME_FROM, pairsFrom);
   const pairsToCol = DG.Column.fromStrings(MMP_COLNAME_TO, pairsTo);
-  const singleDiffCol = DG.Column.fromList('double', MMP_COLNAME_DIFF, singleDiff);
+  const singleDiffCol = DG.Column.fromFloat32Array(MMP_COLNAME_DIFF, singleDiff);
   const structureDiffFromCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_FROM_NAME, pairsFrom.length);
   const structureDiffToCol = DG.Column.fromType('object', MMP_STRUCT_DIFF_TO_NAME, pairsFrom.length);
+  const pairNumberCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM, pairNum);
+  const pairNumberFromCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_FROM, pairNumFrom);
+  const pairNumberToCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_TO, pairNumTo);
+
+  const pairsFromSmilesCol = DG.Column.fromStrings("smi1", pairsFromSmiles);
+  const pairsToSmilesCol = DG.Column.fromStrings("smi2", pairsToSmiles);
+  const ruleNumCol = DG.Column.fromInt32Array("ruleNum", ruleNum);
+
+  pairsFromSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+  pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
 
   pairsFromCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToCol.semType = DG.SEMTYPE.MOLECULE;
   pairsFromCol.temp[SUBSTRUCT_COL] = MMP_STRUCT_DIFF_FROM_NAME;
   pairsToCol.temp[SUBSTRUCT_COL] = MMP_STRUCT_DIFF_TO_NAME;
   const pairedTransformations = DG.DataFrame.
-    fromColumns([pairsFromCol, pairsToCol, singleDiffCol, structureDiffFromCol, structureDiffToCol]);
+    fromColumns([pairsFromCol, pairsToCol,
+      singleDiffCol, structureDiffFromCol, structureDiffToCol,
+      pairNumberCol, pairNumberFromCol, pairNumberToCol,
+      pairsFromSmilesCol, pairsToSmilesCol, ruleNumCol]);
 
   return pairedTransformations.plot.grid();
 }
 
 function getMmpTrellisPlot(allPairsGrid: DG.Grid): DG.Viewer {
-  return DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, allPairsGrid.table, {
+  const tp = DG.Viewer.fromType(DG.VIEWER.TRELLIS_PLOT, allPairsGrid.table, {
     xColumnNames: [allPairsGrid.table.columns.byIndex(0).name],
     yColumnNames: [allPairsGrid.table.columns.byIndex(1).name],
+    viewerType: 'Summary',
+    innerViewerLook: {
+      columnNames: [MMP_COLNAME_MEANDIFF],
+      aggregations: [DG.STATS.MED],
+      visualizationType: 'bars',
+      //colorColumnName: 'age',
+      //colorAggrType: 'stdev',
+      //invertColorScheme: true,
+    },
   });
+
+  return tp;
 }
 
 function getMmpScatterPlot(table: DG.DataFrame, activities: DG.Column, maxAct: number) :
@@ -274,19 +322,6 @@ function getMmpScatterPlot(table: DG.DataFrame, activities: DG.Column, maxAct: n
     color: activities.name,
   });
 
-  const property =
-  {
-    'name': 'Cutoff',
-    'type': DG.TYPE.FLOAT,
-    'showSlider': true,
-    'min': 0,
-    'max': maxAct,
-    'nullable': false,
-  };
-
-  const slider = DG.Property.fromOptions(property);
-  const initialCutOff = {Cutoff: 0};
-  //const sliderInput = ui.input.forProperty(slider, initialCutOff);
   const sliderInput = ui.sliderInput('Cutoff', 0, 0, maxAct);
 
   return [sp, sliderInput];
@@ -338,14 +373,11 @@ async function getMmpMcs(molecules1: string[], molecules2: string[]): Promise<st
 
 async function getInverseSubstructures(from: string[], to: string[]):
   Promise<[(ISubstruct | null)[], (ISubstruct | null)[]]> {
-  //TODO: the length is known
   const res1 = new Array<(ISubstruct | null)>(from.length);
   const res2 = new Array<(ISubstruct | null)>(from.length);
-  //const res3 = new Array<string>(from.length);
 
   const mcs = await getMmpMcs(from, to);
 
-  //const res: string[] = [];
   for (let i = 0; i < from.length; i++) {
     const module = getRdKitModule();
     const mcsMol = module.get_qmol(mcs[i]);
@@ -358,7 +390,7 @@ async function getInverseSubstructures(from: string[], to: string[]):
 
     mcsMol?.delete();
   }
-  return [res1, res2];//res;
+  return [res1, res2];
 }
 
 export class MmpAnalysis {
@@ -480,11 +512,11 @@ export class MmpAnalysis {
   static async init(table: DG.DataFrame, molecules: DG.Column, activities:DG.Column) {
     //initial calculations
     const frags = await getMmpFrags(molecules);
-    const mmpRules = getMmpRules(frags);
+    const [mmpRules, allCasesNumber] = getMmpRules(frags);
 
     //Transformations tab
     const [maxAct, activityPairs, allPairsGrid] = getMmpActivityPairs(activities, mmpRules);
-    const casesGrid = getMmpPairedTransforms(molecules, activities, mmpRules);
+    const casesGrid = getMmpPairedTransforms(molecules, activities, mmpRules, allCasesNumber);
 
     //Fragments tab
     const tp = getMmpTrellisPlot(allPairsGrid);
@@ -500,8 +532,9 @@ export class MmpAnalysis {
 
   async refreshPair() {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
-    //TODO: pin columns
     const idxParent = this.parentTable.currentRowIdx;
+    let idxPairs = -1;
+
     const idx = this.allPairsGrid.table.currentRowIdx;
 
     const ruleSmi1 = this.allPairsGrid.table.getCol('From').get(idx);
@@ -520,6 +553,7 @@ export class MmpAnalysis {
     const diffTo = this.casesGrid.dataFrame.getCol(MMP_COLNAME_TO);
 
     //search specific rule
+
     for (let i = 0; i < this.mmpRules.rules.length; i++) {
       const first = this.mmpRules.rules[i].smilesRule1; //.pairs[j].firstStructure;
       const second = this.mmpRules.rules[i].smilesRule2; //.pairs[j].secondStructure;
@@ -528,6 +562,8 @@ export class MmpAnalysis {
           this.pairsMask.set(counter, true, false);
           if (diffFromSubstrCol.get(counter) === null)
             cases.push(counter);
+          if (this.mmpRules.rules[i].pairs[j].firstStructure == idxParent)
+            idxPairs = counter;
         }
         counter++;
       }
@@ -544,10 +580,21 @@ export class MmpAnalysis {
     for (let i = 0; i < cases.length; i++) {
       diffFromSubstrCol.set(cases[i], inverse1[i]);
       diffToSubstrCol.set(cases[i], inverse2[i]);
-      //diffTo.set(cases[i], alignemols[i]);
     }
 
     this.casesGrid.dataFrame.filter.copyFrom(this.pairsMask);
+
+    this.casesGrid.setOptions({
+      pinnedRowColumnNames: [],
+      pinnedRowValues: [],
+    });
+    if (idxPairs >= 0) {
+      this.casesGrid.setOptions({
+        pinnedRowValues: [idxPairs.toString()],
+        pinnedRowColumnNames: [MMP_COL_PAIRNUM],
+      });
+    }
+
     progressBarPairs.close();
   }
 

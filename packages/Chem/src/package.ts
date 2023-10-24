@@ -1259,6 +1259,12 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
   const view = grok.shell.tv;
   const mmp = await MmpAnalysis.init(table, molecules, activities);
   view.dockManager.dock(mmp.mmpView.root, 'right', null, 'MMP Analysis', 1);
+
+  // const df = mmp.casesGrid.dataFrame.clone();
+  // const consistsBitSet: DG.BitSet = DG.BitSet.create(df.rowCount);
+  // consistsBitSet.setAll(true);
+  // df.filter.copyFrom(consistsBitSet);
+  // grok.shell.addTableView(df);
 }
 
 //name: Scaffold Tree Filter

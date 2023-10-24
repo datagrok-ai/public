@@ -486,7 +486,6 @@ export class RdKitService {
   async mmpGetMcs(molecules: [string, string][]): Promise<string[]> {
     const t = this;
 
-    console.log(molecules);
     const res = await this._initParallelWorkers(molecules, (i: number, segment: [string, string][]) =>
       t.parallelWorkers[i].mmpGetMcs(segment),
     (data: string[][]): string[] => {
