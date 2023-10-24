@@ -353,27 +353,10 @@ async function getInverseSubstructures(from: string[], to: string[]):
     const substruct1 = getUncommonAtomsAndBonds(from[i], mcsMol, module, '#bc131f');
     const substruct2 = getUncommonAtomsAndBonds(to[i], mcsMol, module, '#49bead');
 
-    // const mol1 = module.get_mol(from[i]);
-    // const mol2 = module.get_mol(to[i]);
-
-    // mol2.generate_aligned_coords(mol1, JSON.stringify({
-    //   useCoordGen: true,
-    //   allowRGroups: true,
-    //   acceptFailure: false,
-    //   alignOnly: true,
-    // }));
-
-    // drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol1, mol1.get_molblock(), '',
-    //   {normalizeDepiction: true, straightenDepiction: true}, substruct1);
-    // drawMoleculeToCanvas(0, 0, 200, 100, this.canvasMol2, mol2.get_molblock(), '',
-    //   {normalizeDepiction: true, straightenDepiction: true}, substruct2);
     res1[i] = substruct1;
     res2[i] = substruct2;
-    //res3[i] = mol2.get_molblock();
-    //res.push(mcs === null ? '' : mcs);
+
     mcsMol?.delete();
-    // mol1?.delete;
-    // mol2?.delete;
   }
   return [res1, res2];//res;
 }
