@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import {fromEvent, interval, Observable, Subject, merge} from 'rxjs';
+import {filter} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {Observable} from 'rxjs';
 import $ from 'cash-dom';
 
 
@@ -19,17 +19,18 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     'while Diversity Search shows N molecules of different chemical classes in the dataset.';
   }
 
-  get steps() { return 10; }
+  get steps() {return 10;}
   
   helpUrl: string = '';
+  demoTable: string = '';
 
   protected async _run() {
     this.header.textContent = this.name;
 
     this.describe(this.description);
 
-    const df = await grok.data.files.openTable('System:AppData/Tutorials/demo_smiles.csv');
-    const tv = grok.shell.addTableView(df);
+    this.t = await grok.data.files.openTable('System:AppData/Tutorials/demo_smiles.csv');
+    grok.shell.addTableView(this.t);
 
     let sim: DG.Viewer;
     let div: DG.Viewer;
@@ -51,11 +52,12 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     Click <b>Chem</b> > <b>Search</b> > <b>Diversity Search...</b>`);
 
     let i = 0;
-    await this.action('Explore the dataset using similarity and diversity viewers', df.onCurrentRowChanged.pipe(filter(() => {
+    await this.action('Explore the dataset using similarity and diversity viewers', this.t.onCurrentRowChanged.pipe(filter(() => {
       i++;
       return i >= 2;
     })), undefined, `The similarity and diversity viewers are interactive and are synchronized with each other,
-    chemical spreadsheet (grid), and other viewers.<br>On the <b>Most similar structures</b> viewer, click the molecule next to the reference molecule<br>
+    chemical spreadsheet (grid), and other viewers.<br>On the <b>Most similar structures</b> viewer, click the
+    molecule next to the reference molecule<br>
     Note how it’s now the current molecule in the grid.<br>
     Now, click any molecule in the diversity viewer.<br>
     Note the change in the similarity viewer.`);
@@ -64,14 +66,14 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
       $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0));
 
     await this.action('Specify a reference molecule', 
-    d.onClose, undefined, `To specify a reference molecule, click the <b>Edit</b> icon on the reference molecule card.<br>
+      d.onClose, undefined, `To specify a reference molecule, click the <b>Edit</b> icon on the reference molecule card.<br>
     For this tutorial, let's paste this identifier in the sketcher and press <b>Enter</b>: <br><b>RCKUZCZZUOYUBE-DHDCSXOGSA-N</b><br> 
     The sketcher updates to show the new structure.<br>
     Click <b>OK</b> to apply.<br>
     If you want, you can also draw the structure manually.`);
 
     await this.contextMenuAction('Lock in a reference molecule', 'Properties...',
-      $('.ui-div.d4-flex-col.d4-current').get(0),
+      $('.d4-chem-similarity-search .ui-div.d4-flex-col.d4-current').get(0),
       `By default, a reference molecule follows the current row. However, you can lock it in.<br>
       In the similarity viewer, right-click a reference molecule and select <b>Properties...</b>`);
 
@@ -89,14 +91,14 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     }));
 
     let j = 0;
-    await this.action('Click anywhere in the viewer and in the grid', df.onCurrentRowChanged.pipe(filter(() => {
+    await this.action('Click anywhere in the viewer and in the grid', this.t.onCurrentRowChanged.pipe(filter(() => {
       j++;
       return j >= 2;
     })), undefined, `Click anywhere in the viewer. Now click any molecule in the grid.
     The current molecule changes, but the reference molecule stays the same.`);
 
     await this.contextMenuAction('Get insights using <b>Context Panel</b>', 'Explore',
-    $('.grok-icon.fal.fa-ellipsis-v.chem-mol-view-icon.pep-more-icon').get(0),
+      $('.d4-chem-similarity-search .grok-icon.fal.fa-ellipsis-v.chem-mol-view-icon.pep-more-icon').get(0),
       `In the similarity viewer, hover over the reference molecule and then click the <b>More</b> icon. Then, click <b>Explore</b>.
        The <b>Context Panel</b> on the right now shows molecule-specific information.`);
     
@@ -107,11 +109,13 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     // Now click <b>Drug Likeness</b>.<br>
     // On the <b>Drug Likeness</b> info pane, scroll through the substructure list.<br>
     // These info panes are interactive and fully customizable.<br>
-    // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">Learn about chemical info panes here</a>`);
+    // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">
+    //Learn about chemical info panes here</a>`);
 
     await this.action('Access the viewer settings', new Observable((subscriber: any) => {
       $('.d4-chem-diversity-search .ui-link').on('click', () => subscriber.next(true));
-    }), $('.d4-chem-diversity-search .ui-link').get(0), 'You can change search parameters and other settings anytime. To do so, use the viewer’s settings. In the top right corner of the diversity viewer, click <b>Tanimoto, Morgan</b><br>');
+    }), $('.d4-chem-diversity-search .ui-link').get(0), `You can change search parameters and other settings anytime.
+    To do so, use the viewer’s settings. In the top right corner of the diversity viewer, click <b>Tanimoto, Morgan</b><br>`);
 
     await this.action('Add more data', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
@@ -128,5 +132,10 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
       Under <b>Misc</b>, next to <b>Molecule Properties</b>, click the column selector icon.<br>
       In the dialog, select the <b>NumValenceElectrons</b> column.<br>
       Click <b>OK</b>.`);
+
+    await this.action('Color-code for quick profiling', this.t.onMetadataChanged.pipe(filter((data: DG.EventData) => {
+      return data.args.change === 'set' && data.args.key === '.color-coding-type' && data.args.value === 'Linear' &&
+        data.args.source.name === 'NumValenceElectrons';
+    })));
   }
 }
