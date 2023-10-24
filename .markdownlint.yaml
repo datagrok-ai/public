@@ -175,7 +175,7 @@ MD041:
   front_matter_title: "^\\s*title\\s*[:=]"
 
 # MD042/no-empty-links - No empty links
-MD042: false
+MD042: true
 
 # MD043/required-headings/required-headers - Required heading structure
 MD043:
@@ -216,7 +216,7 @@ MD050:
   style: "consistent"
 
 # MD051/link-fragments - Link fragments should be valid
-MD051: false
+MD051: true
 
 # MD052/reference-links-images - Reference links and images should use a label that is defined
 MD052: true
