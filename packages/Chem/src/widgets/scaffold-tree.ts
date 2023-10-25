@@ -1372,7 +1372,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const iconsDiv = ui.divV([
       ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
-      ui.iconFA('minus', () => this.removeNode(group), 'Remove scaffold'),
+      ui.iconFA('trash-alt', () => this.removeNode(group), 'Remove scaffold'),
       ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
