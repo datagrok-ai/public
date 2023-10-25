@@ -4,18 +4,17 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge} from 'rxjs';
-import {debounceTime, filter, mapTo, startWith} from 'rxjs/operators';
+import {debounceTime, filter, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
+import {historyUtils} from '../../history-utils';
+import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
+import {deepCopy} from '../../shared-utils/utils';
+import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
-import {historyUtils} from '../../history-utils';
-import '../css/pipeline-view.css';
 import {RunComparisonView} from './run-comparison-view';
-import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from './shared/consts';
-import wu from 'wu';
-import {RichFunctionView} from './rich-function-view';
-import {deepCopy} from './shared/utils';
+import '../css/pipeline-view.css';
 
 type StepState = {
   func: DG.Func,
@@ -243,80 +242,65 @@ export class PipelineView extends ComputationView {
 
       const step = this.steps[loadedScript.nqName];
 
-      const subscribeOnDisableEnable = () => {
-        const outerSub = step.view.funcCallReplaced.subscribe(() => {
-          const subscribeForTabsDisabling = () => {
-            wu(step.view.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach(
-              (param) => {
-                const disableFollowingTabs = () => {
-                  Object.values(this.steps).forEach((iteratedStep) => {
-                    if (
-                      iteratedStep.idx > step.idx &&
-                      iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
-                      iteratedStep.ability.value === ABILITY_STATE.ENABLED
-                    )
-                      iteratedStep.ability.next(ABILITY_STATE.DISABLED);
-                  });
-                };
-
-                const sub = param.onChanged.subscribe(disableFollowingTabs);
-                this.subs.push(sub);
-
-                // DG.DataFrames have interior mutability
-                if (param.property.propertyType === DG.TYPE.DATA_FRAME && param.value) {
-                  const sub = (param.value as DG.DataFrame).onDataChanged.subscribe(disableFollowingTabs);
-                  this.subs.push(sub);
-                }
-              });
-          };
-          subscribeForTabsDisabling();
-
-          const subscribeForTabsEnabling = () => {
-            const sub = grok.functions.onAfterRunAction.pipe(
-              filter((run) => step.view.funcCall.id === run.id && !!run),
-            ).subscribe(() => {
-              if (
-                step.visibility.value === VISIBILITY_STATE.HIDDEN ||
-                step.ability.value === ABILITY_STATE.DISABLED
-              ) return;
-
-              const findNextDisabledStep = () => {
-                if (Object.values(this.steps)
-                  .find((iteratedStep) =>
-                    iteratedStep.idx > step.idx &&
-                    iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
-                    iteratedStep.ability.value === ABILITY_STATE.ENABLED)
-                )
-                  return null;
-
-                return Object.values(this.steps)
-                  .find((iteratedStep) =>
-                    iteratedStep.idx > step.idx &&
-                    iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
-                    iteratedStep.ability.value === ABILITY_STATE.DISABLED,
-                  );
-              };
-
-              const stepToEnable = findNextDisabledStep();
-
-              stepToEnable?.ability.next(ABILITY_STATE.ENABLED);
-            });
-            this.subs.push(sub);
-          };
-          subscribeForTabsEnabling();
+      const disableFollowingTabs = () => {
+        Object.values(this.steps).forEach((iteratedStep) => {
+          if (
+            iteratedStep.idx > step.idx &&
+              iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
+              iteratedStep.ability.value === ABILITY_STATE.ENABLED
+          )
+            iteratedStep.ability.next(ABILITY_STATE.DISABLED);
         });
-        this.subs.push(outerSub);
       };
 
-      subscribeOnDisableEnable();
-      this.funcCallReplaced.subscribe(() => {
-        subscribeOnDisableEnable();
-      });
+      const paramUpdates$ = step.view.funcCallReplaced.pipe(
+        switchMap(() => {
+          const params = [...step.view.funcCall.inputParams.values()];
+          const observables = params.map((param) => param.onChanged.pipe(mapTo(param)));
+          return merge(...observables);
+        }),
+      );
+      const disableSub = paramUpdates$.subscribe(disableFollowingTabs);
+      this.subs.push(disableSub);
 
-      this.isHistorical.subscribe((newValue) => {
+      const disableMutationSub = paramUpdates$.pipe(
+        filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME && param.value),
+        switchMap((param) => (param.value as DG.DataFrame).onDataChanged),
+      ).subscribe(disableFollowingTabs);
+      this.subs.push(disableMutationSub);
+
+      const enableSub = grok.functions.onAfterRunAction.pipe(
+        filter((run) => step.view.funcCall && run && step.view.funcCall.id === run.id),
+        withLatestFrom(step.visibility, step.ability),
+        filter(([, visibility, ability]) =>
+          !(visibility === VISIBILITY_STATE.HIDDEN || ability === ABILITY_STATE.DISABLED)),
+      ).subscribe(() => {
+        const findNextDisabledStep = () => {
+          if (Object.values(this.steps)
+            .find((iteratedStep) =>
+              iteratedStep.idx > step.idx &&
+              iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
+              iteratedStep.ability.value === ABILITY_STATE.ENABLED))
+            return null;
+
+          return Object.values(this.steps)
+            .find((iteratedStep) =>
+              iteratedStep.idx > step.idx &&
+              iteratedStep.visibility.value === VISIBILITY_STATE.VISIBLE &&
+              iteratedStep.ability.value === ABILITY_STATE.DISABLED);
+        };
+
+        const stepToEnable = findNextDisabledStep();
+
+        stepToEnable?.ability.next(ABILITY_STATE.ENABLED);
+      });
+      this.subs.push(enableSub);
+
+      const histSub = this.isHistorical.subscribe((newValue) => {
         if (newValue)
           Object.values(this.steps).forEach((step) => step.ability.next(ABILITY_STATE.ENABLED));
       });
+      this.subs.push(histSub);
 
       await this.onAfterStepFuncCallApply(loadedScript.nqName, scriptCall, view);
 
@@ -510,39 +494,44 @@ export class PipelineView extends ComputationView {
   public override async run(): Promise<void> {
     if (!this.funcCall) throw new Error('The correspoding function is not specified');
 
-    await this.onBeforeRun(this.funcCall);
-    const pi = DG.TaskBarProgressIndicator.create('Calculating...');
-    this.funcCall.newId();
-    await this.funcCall.call(); // mutates the funcCall field
-    pi.close();
+    ui.setUpdateIndicator(this.root, true);
+    try {
+      await this.onBeforeRun(this.funcCall);
+      this.funcCall.newId();
+      await this.funcCall.call(); // mutates the funcCall field
 
-    const stepsSaving = Object.values(this.steps)
-      .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
-      .map(async (step) => {
-        const scriptCall = step.view.lastCall;
+      const stepsSaving = Object.values(this.steps)
+        .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+        .map(async (step) => {
+          const scriptCall = step.view.lastCall;
 
-        if (!scriptCall)
-          throw Error(`${step.func.name} was not called`);
+          if (!scriptCall)
+            throw Error(`${step.func.name} was not called`);
 
-        scriptCall.options['parentCallId'] = this.funcCall.id;
-        scriptCall.newId();
+          scriptCall.options['parentCallId'] = this.funcCall.id;
+          scriptCall.newId();
 
-        this.steps[scriptCall.func.nqName].view.lastCall =
+          this.steps[scriptCall.func.nqName].view.lastCall =
           await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
 
-        return Promise.resolve();
-      });
+          return Promise.resolve();
+        });
 
-    await Promise.all(stepsSaving);
+      await Promise.all(stepsSaving);
 
-    await this.onAfterRun(this.funcCall);
+      await this.onAfterRun(this.funcCall);
 
-    this.funcCall.options['isShared'] = undefined;
-    this.funcCall.options['isFavorite'] = undefined;
-    if (this.funcCall.options['title'])
-      this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
+      this.funcCall.options['isFavorite'] = undefined;
+      if (this.funcCall.options['title'])
+        this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
 
-    this.lastCall = await this.saveRun(this.funcCall);
+      this.lastCall = await this.saveRun(this.funcCall);
+    } catch (e: any) {
+      grok.shell.error(e.toString());
+      console.log(e);
+    } finally {
+      ui.setUpdateIndicator(this.root, false);
+    }
   }
 
   /**

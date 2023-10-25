@@ -1,5 +1,17 @@
 # Peptides changelog
 
+## 1.15.1 (WIP)
+
+### Features
+
+* Color-coding Sequence space by scaled activity.
+* Optimized Mutation Cliffs calculations to use workers.
+* Hid WebLogo positions in Logo Summary Table.
+
+### Bug Fixes
+
+* Fixed Invariant Map color coding wouldn't change when changing color column.
+
 ## 1.15.0 (2023-10-12)
 
 ### Features

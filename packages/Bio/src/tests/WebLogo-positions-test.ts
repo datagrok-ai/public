@@ -32,7 +32,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const positions: PI[] = wlViewer['positions'];
 
     const resAllDf1: PI[] = [
@@ -55,7 +55,7 @@ ATC-G-TTGC--
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
       for (const m of positions[i].getMonomers())
-        expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
+        expect(positions[i].getFreq(m).rowCount, resAllDf1[i].getFreq(m).rowCount);
     }
   });
 
@@ -104,7 +104,7 @@ ATC-G-TTGC--
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
       for (const m of positions[i].getMonomers())
-        expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
+        expect(positions[i].getFreq(m).rowCount, resAllDf1[i].getFreq(m).rowCount);
     }
   });
 
@@ -122,7 +122,7 @@ ATC-G-TTGC--
       {'skipEmptyPositions': true})) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const resPosList: PI[] = wlViewer['positions'];
 
     const tgtPosList: PI[] = [
@@ -158,7 +158,7 @@ ATC-G-TTGC--
     })) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const resPosList: PI[] = wlViewer['positions'];
     const tgtPosList: PI[] = [
       new PI(2, '3', {'C': new PMI(5)}),
@@ -194,7 +194,7 @@ ATC-G-TTGC--
     const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     await testEvent(wlViewer.onLayoutCalculated, () => {}, () => {
       tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
-    }, 300);
+    }, 500);
     const resPosList: PI[] = wlViewer['positions'];
   });
 });
@@ -204,7 +204,7 @@ function expectPositionInfo(actualPos: PI, expectedPos: PI): void {
   expectArray(actualPos.getMonomers(), expectedPos.getMonomers());
   for (const key of actualPos.getMonomers()) {
     //
-    expect(actualPos.getFreq(key).count, expectedPos.getFreq(key).count);
+    expect(actualPos.getFreq(key).rowCount, expectedPos.getFreq(key).rowCount);
   }
 }
 

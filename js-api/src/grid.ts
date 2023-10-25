@@ -28,6 +28,11 @@ export class Point implements IPoint {
     this.y = y;
   }
 
+  /** Creates a point from an [x, y] array */
+  static fromXY(xy: number[]): Point {
+    return new Point(xy[0], xy[1]);
+  }
+
   /** Distance to the specified point. */
   distanceTo(p: Point): number {
     return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));

@@ -214,7 +214,6 @@ export class LogoSummaryTable extends DG.JsViewer {
     this.viewerGrid.sort([C.LST_COLUMN_NAMES.MEMBERS], [false]);
     this.updateFilter();
     const gridClustersCol = this.viewerGrid.col(C.LST_COLUMN_NAMES.CLUSTER)!;
-    // gridClustersCol.column!.name = C.LST_COLUMN_NAMES.CLUSTER;
     gridClustersCol.visible = true;
     this.viewerGrid.columns.setOrder([C.LST_COLUMN_NAMES.CLUSTER, C.LST_COLUMN_NAMES.MEMBERS,
       C.LST_COLUMN_NAMES.WEB_LOGO, C.LST_COLUMN_NAMES.DISTRIBUTION, C.LST_COLUMN_NAMES.MEAN_DIFFERENCE,
@@ -224,7 +223,7 @@ export class LogoSummaryTable extends DG.JsViewer {
 
     const webLogoCache = new DG.LruCache<number, DG.Viewer & IWebLogoViewer>();
     const distCache = new DG.LruCache<number, DG.Viewer<DG.IHistogramLookSettings>>();
-    const maxSequenceLen = this.model.splitSeqDf.columns.length;
+    const maxSequenceLen = this.model.positionColumns.toArray().length;
     const webLogoGridCol = this.viewerGrid.columns.byName(C.LST_COLUMN_NAMES.WEB_LOGO)!;
     webLogoGridCol.cellType = 'html';
     webLogoGridCol.width = 350;
@@ -270,7 +269,7 @@ export class LogoSummaryTable extends DG.JsViewer {
             const webLogoTable = this.createWebLogoDf(pepCol, clusterBitSet);
             viewer = await webLogoTable.plot
               .fromType('WebLogo', {positionHeight: this.webLogoMode, horizontalAlignment: HorizontalAlignments.LEFT,
-                maxHeight: 1000, minHeight: height, positionWidth: positionWidth});
+                maxHeight: 1000, minHeight: height, positionWidth: positionWidth, showPositionLabels: false});
             webLogoCache.set(currentRowIdx, viewer);
           }
           gridCell.element = viewer.root;

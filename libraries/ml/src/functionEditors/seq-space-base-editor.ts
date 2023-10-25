@@ -12,14 +12,17 @@ export const SEQ_COL_NAMES = {
     [DG.SEMTYPE.MACROMOLECULE]: 'Sequences'
 }
 
+export const SHOW_SCATTERPLOT_PROGRESS = 'show-scatterplot-progress';
+
 export class SequenceSpaceBaseFuncEditor {
     tableInput: DG.InputBase;
     molColInput: DG.InputBase;
     molColInputRoot: HTMLElement;
     methodInput: DG.InputBase;
-    similarityThresholdInput: DG.InputBase;
+    similarityThresholdInput!: HTMLElement;
     methodSettingsIcon: HTMLElement;
     methodSettingsDiv = ui.inputs([]);
+    similarityThresholdObj: {'Similarity threshold': number} = {'Similarity threshold': 0};
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
       [DimReductionMethods.UMAP]: new UMAPOptions(),
       [DimReductionMethods.T_SNE]: new TSNEOptions()
@@ -37,6 +40,7 @@ export class SequenceSpaceBaseFuncEditor {
     }
   
     constructor(semtype: DG.SemType){
+      
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
@@ -51,9 +55,10 @@ export class SequenceSpaceBaseFuncEditor {
         }
         this.displaySimilarityThresholdInput(semtype);
       });
-
-      this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0.5);
-      ui.tooltip.bind(this.similarityThresholdInput.root, 'Similarity threshold for sparse matrix creation.');
+      this.regenerateThresholdInput(0, 1);
+      //this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0);
+      ui.input.forProperty(DG.Property.fromOptions({type: DG.TYPE.FLOAT, name: 'Similarity threshold', min: 0, max: 1}));
+      
   
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
@@ -77,6 +82,29 @@ export class SequenceSpaceBaseFuncEditor {
       });
     }
   
+    regenerateThresholdInput(min: number, max: number): HTMLElement {
+      const prop = DG.Property.fromOptions({
+        "name": "Similarity threshold",
+        "type": DG.TYPE.FLOAT,
+        //@ts-ignore
+        "showSlider": true,
+        "min": min,
+        "max": max,
+        "nullable": false,
+      });
+      this.similarityThresholdObj['Similarity threshold'] = min;
+      const newInputForm = ui.input.form(this.similarityThresholdObj, [prop]);
+      const newInput = newInputForm.getElementsByClassName('ui-input-root')[0] as HTMLElement;
+      let root = this.similarityThresholdInput ?? null;
+      if (root) {
+        ui.empty(root);
+        root.append(newInput);
+      }
+      this.similarityThresholdInput = newInputForm;
+      ui.tooltip.bind(this.similarityThresholdInput, 'Similarity threshold for sparse matrix creation.');
+      return this.similarityThresholdInput;
+    }
+
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {
       ui.empty(paramsForm);
       Object.keys(params).forEach((it: any) => {
@@ -112,13 +140,13 @@ export class SequenceSpaceBaseFuncEditor {
 
     displaySimilarityThresholdInput(semtype: DG.SemType) {
       if(semtype === DG.SEMTYPE.MOLECULE) {
-        this.similarityThresholdInput.root.style.display = 'none';
+        this.similarityThresholdInput.style.display = 'none';
         return;
       }
       if (this.tableInput.value && (this.tableInput.value as DG.DataFrame).rowCount > 20000 && this.methodInput.value === DimReductionMethods.UMAP) {
-        this.similarityThresholdInput.root.style.display = 'block';
+        this.similarityThresholdInput.style.display = 'block';
       } else {
-        this.similarityThresholdInput.root.style.display = 'none';
+        this.similarityThresholdInput.style.display = 'none';
       }
     }
   }

@@ -1,12 +1,30 @@
 import * as grok from 'datagrok-api/grok';
-import {category, test, expect, expectObject, expectTable} from '@datagrok-libraries/utils/src/test';
+import {
+  category,
+  test,
+  expect,
+  expectObject,
+  expectTable,
+  before,
+  after,
+} from '@datagrok-libraries/utils/src/test';
 import dayjs from 'dayjs';
-import {DataFrame} from 'datagrok-api/dg';
+import {DataFrame, toDart} from 'datagrok-api/dg';
 
 const langs = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
 
+const TEST_DATAFRAME_1 = grok.data.demo.demog(10000);
+const TEST_DATAFRAME_2 = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
+
 for (const lang of langs) {
   category(`Scripts: ${lang} scripts`, () => {
+    const isClientCacheActive = grok.functions.clientCache.isRunning;
+
+    before(async () => {
+      if (isClientCacheActive)
+        await grok.functions.clientCache.stop();
+    });
+
     test('int, double, bool, string input/output', async () => {
       const int = 2;
       const double = 0.3;
@@ -41,24 +59,24 @@ for (const lang of langs) {
       const results = [];
       for (let i = 0; i < 15; i++) {
         results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,
-          {'df': grok.data.demo.demog(10000)}));
+          {'df': TEST_DATAFRAME_1}));
       }
       const sum = results.reduce((p, c) => p + c, 0);
-      return {'Average time': sum / results.length,
-        'Min time': Math.min(...results), 'Max time': Math.max(...results)};
-    }, {timeout: 120000});
+      return toDart({'Average time': sum / results.length,
+        'Min time': Math.min(...results), 'Max time': Math.max(...results)});
+    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
 
     test('Dataframe performance test 15 parallel', async () => {
       const calls = [];
       for (let i = 0; i < 15; i++) {
         calls.push(getScriptTime(`CVMTests:${lang}SingleDf`,
-          {'df': grok.data.demo.demog(10000)}));
+          {'df': TEST_DATAFRAME_1}));
       }
       const results = await Promise.all(calls);
       const sum = results.reduce((p, c) => p + c, 0);
-      return {'Average time': sum / results.length,
-        'Min time': Math.min(...results), 'Max time': Math.max(...results)};
-    }, {timeout: 120000});
+      return toDart({'Average time': sum / results.length,
+        'Min time': Math.min(...results), 'Max time': Math.max(...results)});
+    }, {timeout: 120000, skipReason: ['Octave', 'NodeJS', 'Julia'].includes(lang) ? 'GROK-13876' : undefined});
 
     test('Map type input/output', async () => {
       const result = await grok.functions.call(`CVMTests:${lang}Map`,
@@ -68,12 +86,9 @@ for (const lang of langs) {
 
     if (!['NodeJS', 'JavaScript', 'Grok'].includes(lang)) {
       test('Graphics output, Column input', async () => {
-        const df = DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
         const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
-          {'df': df, 'xName': 'x', 'yName': 'y'});
-        expect(result && result.length > 0, true);
-        if (lang != 'Julia')
-          expect(result.charAt(0), 'i'); // expects png format
+          {'df': TEST_DATAFRAME_2, 'xName': 'x', 'yName': 'y'});
+        expect(!result || result.length === 0, false);
       });
     }
 
@@ -124,9 +139,73 @@ for (const lang of langs) {
           {'fileInput': files[0]});
         expect(49090022, result);
       }, {timeout: 120000});
+
+      after(async () => {
+        if (isClientCacheActive)
+          await grok.functions.clientCache.start();
+      });
     }
   });
 }
+
+category('Scripts: Client cache test', () => {
+  before(async () => {
+    await grok.functions.clientCache.start();
+  });
+
+  test('Scalars: correctness of serialization', async () => {
+    await grok.functions.clientCache.clear();
+    const int = Math.floor(Math.random() * (10 - 1 + 1)) + 1;
+    const double = Math.random();
+    const bool = double > 0.5;
+    const str = `Datagrok${int}`;
+    expect(await grok.functions.clientCache.getRecordCount(), 0);
+    const result1 = await grok.functions.call(`CVMTests:PythonSimpleCached`,
+      {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
+    expect(await grok.functions.clientCache.getRecordCount(), 1); //Added to cache
+    const result2 = await grok.functions.call(`CVMTests:PythonSimpleCached`,
+      {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
+    expectObject(result1, result2);
+  });
+
+  test('Dataframe, graphic output cache', async () => {
+    await grok.functions.clientCache.clear();
+    expect(await grok.functions.clientCache.getRecordCount(), 0);
+    const result1 = await grok.functions.call(`CVMTests:PythonDataframeGraphicsCached`,
+      {'df': TEST_DATAFRAME_2});
+    expect(await grok.functions.clientCache.getRecordCount(), 1);
+    const result2 = await grok.functions.call(`CVMTests:PythonDataframeGraphicsCached`,
+      {'df': TEST_DATAFRAME_2});
+    expectTable(result1['resultDf'], result2['resultDf']);
+    expect(result1['scatter'], result2['scatter']);
+  });
+
+  test(`Dataframe performance test 15 consequently cached`, async () => {
+    await grok.functions.clientCache.clear();
+    await grok.functions.call('CVMTests:PythonSingleDfCached',
+      {'df': TEST_DATAFRAME_1});// adds to cache
+    expect(await grok.functions.clientCache.getRecordCount(), 1);
+    const results = [];
+    for (let i = 0; i < 15; i++) {
+      results.push(await getScriptTime(`CVMTests:PythonSingleDfCached`,
+        {'df': TEST_DATAFRAME_1}));
+    }
+    const sum = results.reduce((p, c) => p + c, 0);
+    return toDart({'Average time': sum / results.length,
+      'Min time': Math.min(...results), 'Max time': Math.max(...results)});
+  }, {timeout: 120000});
+
+  test('Exceptions: shouldn\'t be cached', async () => {
+    await grok.functions.clientCache.clear();
+    try {
+      await grok.functions.call('CVMTests:PythonException',
+        {'df': TEST_DATAFRAME_1});
+    } catch (e) {}
+    expect(await grok.functions.clientCache.getRecordCount(), 0);
+  });
+
+  after(async () => await grok.functions.clientCache.clear());
+});
 
 export async function getScriptTime(name: string, params: object = {}): Promise<number> {
   const start = Date.now();

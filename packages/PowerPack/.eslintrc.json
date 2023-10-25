@@ -37,6 +37,7 @@
         "allowSingleLine": true
       }
     ],
-    "block-spacing": 2
+    "block-spacing": 2,
+    "guard-for-in":"off"
   }
 }

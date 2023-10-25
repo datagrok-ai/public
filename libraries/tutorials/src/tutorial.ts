@@ -17,8 +17,13 @@ export abstract class Tutorial extends DG.Widget {
   prerequisites: TutorialPrerequisites = {};
   demoTable: string = 'demog.csv';
   private _t: DG.DataFrame | null = null;
+
   get t(): DG.DataFrame | null {
     return this._t;
+  }
+
+  set t(df: DG.DataFrame | null) {
+    this._t = df;
   }
 
   get url(): string {
@@ -353,8 +358,10 @@ export abstract class Tutorial extends DG.Widget {
   /** Closes all visual components that were added when working on tutorial, e.g., table views. */
   _closeAll(): void {
     // TODO: Take into account dialogs and other views
-    if (this.t?.name)
+    if (this.t?.name) {
       grok.shell.tableView(this.t.name)?.close();
+      grok.shell.closeTable(this.t);
+    }
   }
 
   _onClose: Subject<void> = new Subject();

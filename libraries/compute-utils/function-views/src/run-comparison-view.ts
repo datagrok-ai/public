@@ -2,9 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, RUN_NAME_COL_LABEL,
-  SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
+import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
 import {getDfFromRuns} from './shared/utils';
+import {RUN_NAME_COL_LABEL} from '../../shared-utils/consts';
 
 const api: any = window;
 

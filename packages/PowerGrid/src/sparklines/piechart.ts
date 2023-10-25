@@ -22,10 +22,10 @@ interface PieChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.style ??= PieChartStyle.Radius;
+  gc.settings[SparklineType.PieChart] ??= getSettingsBase(gc, SparklineType.PieChart);
+  gc.settings[SparklineType.PieChart].style ??= PieChartStyle.Radius;
 
-  return gc.settings;
+  return gc.settings[SparklineType.PieChart];
 }
 
 function getColumnsSum(cols: DG.Column[], row: number) {

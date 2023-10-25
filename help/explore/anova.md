@@ -8,7 +8,7 @@ Analysis of variance ([ANOVA](https://en.wikipedia.org/wiki/Analysis_of_variance
 ## Perform ANOVA
 
 * Open a table
-* Run **Top Menu > ML > Analysis of Variances (ANOVA)...**
+* Run **Top Menu > ML > Analyze > ANOVA...**
 * Select the source table
 * Select `Factor` and `Feature` columns
 * Set `Significance` and `Validate` check option

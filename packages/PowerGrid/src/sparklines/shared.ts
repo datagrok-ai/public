@@ -14,8 +14,9 @@ export interface SummarySettingsBase {
 }
 
 
-export function getSettingsBase<Type extends SummarySettingsBase>(gc: DG.GridColumn): Type {
-  return gc.settings ??= {
+export function getSettingsBase<Type extends SummarySettingsBase>(gc: DG.GridColumn,
+  sparklineType: SparklineType): Type {
+  return gc.settings[sparklineType] ??= {
     columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
       .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
   };

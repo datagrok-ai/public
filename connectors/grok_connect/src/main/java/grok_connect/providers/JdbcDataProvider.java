@@ -350,9 +350,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
             } else {
                 queryLogger.debug(EventType.MISC.getMarker(), "Executing batch mode");
-                String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
+                String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n", commentStart));
                 for (String currentQuery : queries)
-                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger, fetchSize); // IT WON'T WORK?
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger, fetchSize);
             }
 
             return resultSet;

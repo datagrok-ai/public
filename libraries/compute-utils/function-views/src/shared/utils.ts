@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {RUN_ID_COL_LABEL, RUN_NAME_COL_LABEL, VIEWER_PATH, viewerTypesMapping} from './consts';
+import {RUN_ID_COL_LABEL, RUN_NAME_COL_LABEL, VIEWER_PATH, viewerTypesMapping} from '../../../shared-utils/consts';
 import wu from 'wu';
 
 export const deepCopy = (call: DG.FuncCall) => {
