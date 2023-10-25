@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { RichFunctionView } from '../function-views';
+import {RichFunctionView} from '../function-views';
 
 // validation/advisory system
 export interface ActionItems {
@@ -162,19 +162,22 @@ function stylePopover(popover: HTMLElement): void {
 }
 
 function renderValidationResults(messages: ValidationResultBase) {
-  const root = ui.div('', {style: {display: 'flex', flexDirection: 'column'}});
+  const root = ui.divV([], {style: {gap: '10px'}});
   for (const category of ['errors', 'warnings', 'notifications'] as const) {
     const advices = messages[category];
     if (!advices?.length)
       continue;
     for (const advice of advices as Advice[]) {
       const icon = getAdviceIcon(category);
-      root.appendChild(ui.span([
-        icon,
-        advice.description,
+      icon!.style.marginRight = '2px';
+      root.appendChild(ui.divV([
+        ui.span([
+          icon,
+          advice.description,
+        ]),
         ...(advice.actions ?? []).map(
-          (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '10px'}})),
-      ], {style: {lineHeight: '1.2', marginBottom: '10px'}}));
+          (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '18px'}})),
+      ], {style: {lineHeight: '1.2'}}));
     }
   }
   return root;
