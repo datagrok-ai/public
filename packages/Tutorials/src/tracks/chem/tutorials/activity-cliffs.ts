@@ -52,7 +52,7 @@ export class ActivityCliffsTutorial extends Tutorial {
 
     this.describe(`<h3>Set Parameters</h3>
     In the <b>Activity Cliffs</b> dialog, you can specify parameters like the similarity
-    cutoff or the dimensionality reduction algorithm. For this tutorial, let's stick with the default settings.`);
+    cutoff or the dimensionality reduction algorithm. For this tutorial, let's continue with the default settings.`);
 
     await this.action(' Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
 
@@ -87,7 +87,8 @@ export class ActivityCliffsTutorial extends Tutorial {
     await this.action('Zoom in on the area of interest', v!.onZoomed, undefined,
       `On the scatterplot, the marker color corresponds to the activity level, and the size represents
     the maximum detected activity cliff for that molecule. The pairs with larger red markers may be
-    particularly interesting as they indicate molecules with high activity levels and significant detected activity cliffs.hey indicate molecules with high activity levels and significant detected activity cliffs.`);
+    particularly interesting as they indicate molecules with high activity levels and significant detected activity cliffs.<br>
+    Let's zoom in. Use <b>Alt</b>+<b>Mouse Drag</b>.`);
     
     // await this.action('Step 5. [Explore the pairs of molecules]');
     
