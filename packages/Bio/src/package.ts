@@ -65,7 +65,8 @@ import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-wid
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {_getEnumeratorWidget, _setPeptideColumn} from './utils/enumerator-tools';
+import {getPolyToolDialog} from './utils/poly-tool/enumerator-tools';
+import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
@@ -763,6 +764,19 @@ export function convertDialog() {
   convert(col);
 }
 
+//top-menu: Bio | Convert | PolyTool
+//name: polyTool
+//description: Perform cyclization of polymers
+export function polyTool(): void {
+  let dialog: DG.Dialog;
+  try {
+    dialog = getPolyToolDialog();
+    dialog.show();
+  } catch (err: any) {
+    grok.shell.warning('To run PolyTool, open a dataframe with macromolecules');
+  }
+}
+
 //name: monomerCellRenderer
 //tags: cellRenderer
 //meta.cellType: Monomer
@@ -1055,15 +1069,6 @@ export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG
   _setPeptideColumn(macroMolecule);
   await grok.data.detectSemanticTypes(df);
 }
-
-//name: PolyTool
-//input: column molColumn {semType: Macromolecule}
-//tags: panel, exclude-actions-panel
-//output: widget result
-export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
-  return _getEnumeratorWidget(molColumn);
-}
-
 
 //top-menu: Bio | Convert | SDF to JSON Library...
 //name: SDF to JSON Library

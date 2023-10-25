@@ -3,51 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NOTATION, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
-import {MonomerLibHelper} from '../utils/monomer-lib';
-import {_package} from '../package';
+import {MonomerLibHelper} from '../../utils/monomer-lib';
+import {_package} from '../../package';
+import {addCommonTags} from './utils';
 import * as rxjs from 'rxjs';
-
-const LEFT_HELM_WRAPPER = 'PEPTIDE1{';
-const RIGHT_HELM_WRAPPER = '}$$$$';
-const ALL_MONOMERS = '<All>';
-
-type MetaData = {
-  leftTerminal: string,
-  rightTerminal: string,
-  transformationType: TRANSFORMATION_TYPE,
-  cyclizationType: CYCLIZATION_TYPE,
-}
-
-type ConnectionData = {
-  monomerPosition: number,
-  attachmentPoint: number,
-}
-
-const enum TRANSFORMATION_TYPE {
-  CYCLIZATION = 'Cyclization',
-}
-
-const enum CYCLIZATION_TYPE {
-  NO = 'N-O',
-  NCys = 'N-Cys',
-  R3 = 'R3-R3',
-}
-
-function addCommonTags(col: DG.Column):void {
-  col.setTag('quality', DG.SEMTYPE.MACROMOLECULE);
-  col.setTag('aligned', ALIGNMENT.SEQ);
-  col.setTag('alphabet', ALPHABET.PT);
-}
-
-export function _setPeptideColumn(col: DG.Column): void {
-  addCommonTags(col);
-  col.setTag('units', NOTATION.SEPARATOR);
-  col.setTag('separator', '-');
-  // col.setTag('cell.renderer', 'sequence');
-}
+import {HELM_WRAPPER, ALL_MONOMERS, CYCLIZATION_TYPE, TRANSFORMATION_TYPE} from './const';
+import {MetaData, ConnectionData} from './types';
 
 abstract class TransformationBase {
   constructor(helmColumn: DG.Column<string>, meta: MetaData) {
@@ -80,11 +44,11 @@ class TransformationNCys extends TransformationBase {
   }
 
   protected hasTerminals(helm: string): boolean {
-    if (! helm.includes(this.rightTerminal + RIGHT_HELM_WRAPPER))
+    if (! helm.includes(this.rightTerminal + HELM_WRAPPER.RIGHT))
       return false;
     if (this.leftTerminal === ALL_MONOMERS)
       return true;
-    return helm.includes(LEFT_HELM_WRAPPER + this.leftTerminal);
+    return helm.includes(HELM_WRAPPER.LEFT + this.leftTerminal);
   }
 
   protected getLinkedPositions(helm: string): [number, number] {
@@ -107,8 +71,8 @@ class TransformationNO extends TransformationBase {
   protected hasTerminals(helm: string): boolean {
     if (this.leftTerminal === ALL_MONOMERS || this.rightTerminal === ALL_MONOMERS)
       return true;
-    return helm.includes(LEFT_HELM_WRAPPER + this.leftTerminal) &&
-      helm.includes(this.rightTerminal + RIGHT_HELM_WRAPPER);
+    return helm.includes(HELM_WRAPPER.LEFT + this.leftTerminal) &&
+      helm.includes(this.rightTerminal + HELM_WRAPPER.RIGHT);
   }
 
   protected getLinkedPositions(helm: string): [number, number] {
@@ -136,7 +100,7 @@ class TransformationR3 extends TransformationBase {
   }
 
   protected getLinkedPositions(helm: string): [number, number] {
-    const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
+    const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
     const monomers = seq.split('.');
     const start = monomers.findIndex((el) => el === this.leftTerminal);
     const end = monomers.findIndex((el, idx) => el === this.rightTerminal && idx > start);
@@ -163,12 +127,12 @@ class PolymerTransformation {
 }
 
 function getNumberOfMonomers(helm: string): number {
-  const seq = helm.replace(LEFT_HELM_WRAPPER, '').replace(RIGHT_HELM_WRAPPER, '');
+  const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
   return seq.split('.').length;
 }
 
 function getHelmCycle(helm: string, source: ConnectionData, target: ConnectionData): string {
-  return helm.replace(RIGHT_HELM_WRAPPER,
+  return helm.replace(HELM_WRAPPER.RIGHT,
     `}$PEPTIDE1,PEPTIDE1,${
       source.monomerPosition
     }:R${
@@ -200,7 +164,7 @@ async function addTransformedColumn(
   await grok.data.detectSemanticTypes(df);
 }
 
-export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
+export function getPolyToolDialog(): DG.Dialog {
   function getMonomerList(cyclizationType: CYCLIZATION_TYPE): string[] {
     if (cyclizationType === cyclizationTypes[0]) {
       return [ALL_MONOMERS].concat(
@@ -280,16 +244,34 @@ export function _getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
 
   updateMeta();
 
-  const btn = ui.bigButton('Run', async () =>
-    addTransformedColumn(molColumn, meta)
+  const targetColumns = grok.shell.t.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+  if (!targetColumns)
+    throw new Error('No dataframe with maceomolecule columns open');
+
+
+  const targetColumnInput = ui.columnInput(
+    'Column', grok.shell.t, targetColumns[0], null,
+    {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
   );
 
   const div = ui.div([
+    targetColumnInput,
     transformationChoice,
     cyclizationTypeChoice,
     terminalControls,
-    btn
   ]);
 
-  return new DG.Widget(div);
+  const dialog = ui.dialog('Poly Tool')
+    .add(div)
+    .onOK(async () => {
+      const molCol = targetColumnInput.value;
+      if (!molCol) {
+        grok.shell.warning('No marcomolecule column chosen!');
+        return;
+      }
+      addTransformedColumn(molCol!, meta);
+    }
+    );
+
+  return dialog;
 }
