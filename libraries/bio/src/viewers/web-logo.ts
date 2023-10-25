@@ -49,7 +49,9 @@ export enum FilterSources {
 export const WebLogoPropsDefault = new class {
   // -- Data --
   sequenceColumnName: string | null = null;
+  /** Aggregation function for values of {@link valueColumnName} */
   valueAggrType: DG.AggregationType = DG.AGG.TOTAL_COUNT;
+  /** Column name for values */
   valueColumnName: string = 'Activity';
   startPositionName: string | null = null;
   endPositionName: string | null = null;
