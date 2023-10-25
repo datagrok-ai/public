@@ -254,12 +254,6 @@
   /* box-sizing: content-box; */
 }
 
-.scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info,
-.scaffold-tree-normal .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info {
-  height: 80px;
-  margin: 0px 6px;
-}
-
 .mol-host {
   margin: 0 6px;
   flex-grow: 1;
@@ -275,26 +269,21 @@
   left: 55px;
 }
 
-.scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
+.scaffold-tree-normal .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
   width: 280px;
   height: 110px;
 }
 
-.scaffold-tree-extra .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
+.scaffold-tree-large .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
   min-width: 230px;
   max-width: 340px;
   height: auto;
   aspect-ratio: 3/1.25;
 }
 
-.scaffold-tree-normal .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 240px;
-  height: 100px;
-}
-
 .scaffold-tree-small .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
-  width: 230px;
-  height: 90px;
+  width: 250px;
+  height: 110px;
 }
 
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info .chem-mol-box-info-buttons {
