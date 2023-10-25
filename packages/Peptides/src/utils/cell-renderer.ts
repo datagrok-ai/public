@@ -22,7 +22,7 @@ export function setMonomerRenderer(col: DG.Column, alphabet: string): void {
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
   mutationCliffsSelection: types.Selection, substitutionsInfo: types.MutationCliffs | null = null,
-  _twoColorMode: boolean = false, renderNums: boolean = true): void {
+  renderNums: boolean = true): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal = positionStats![currentMonomer]!.pValue;
   const currentMeanDifference = positionStats![currentMonomer]!.meanDifference;
@@ -81,12 +81,16 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentMonomer: string,
   currentPosition: string, invariantMapSelection: types.Selection, cellValue: number, bound: DG.Rect,
   color: number): void {
+  //FIXME: This is a hack, because `color` value sometimes comes incomplete. E.g. we found that here `color` value is
+  // 255 and its contrast color would be black, which is not visible on blue (color code) background. The full number
+  // is actually 4278190335.
+  color = DG.Color.fromHtml(DG.Color.toHtml(color));
   canvasContext.fillStyle = DG.Color.toHtml(color);
   canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
-  canvasContext.fillStyle = '#000';
+  canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(color));
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
   const monomerSelection = invariantMapSelection[currentPosition];

@@ -76,8 +76,9 @@ export class UnitsHandler {
     const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
 
     if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
-      // Empty monomer alphabet is not allowed
-      if (Object.keys(stats.freq).length === 0) throw new Error('Alphabet is empty');
+      // Empty monomer alphabet is allowed, only if alphabet tag is annotated
+      if (!uh.column.getTag(TAGS.alphabet) && Object.keys(stats.freq).length === 0)
+        throw new Error('Alphabet is empty and not annotated.');
 
       let aligned = uh.column.getTag(TAGS.aligned);
       if (aligned === null) {
@@ -220,8 +221,10 @@ export class UnitsHandler {
 
   private _maxLength: number | null = null;
   public get maxLength(): number {
-    if (this._maxLength === null)
-      this._maxLength = Math.max(...this.splitted.map((seqS) => seqS.length));
+    if (this._maxLength === null) {
+      this._maxLength = this.splitted.length === 0 ? 0 :
+        Math.max(...this.splitted.map((seqS) => seqS.length));
+    }
     return this._maxLength!;
   }
 

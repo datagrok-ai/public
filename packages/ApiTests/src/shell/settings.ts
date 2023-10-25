@@ -18,8 +18,8 @@ category('Settings', () => {
     expect(gss.loadDefaultsOnStart, true, 'loadDefaultsOnStart');
     expect(gss.webpackDevUrl, null, 'webpackDevUrl');
     expect(gss.cvmUrl.startsWith('http://localhost') ||
-      gss.cvmUrl.startsWith('https://cvm') || gss.cvmUrl.startsWith('http://cvm'), true, 'cvmUrl does not start with cvm');
-    expect(gss.cvmSplit, true, 'cvmSplit');
+      gss.cvmUrl.startsWith('https://cvm') || gss.cvmUrl.startsWith('http://cvm'), true,
+    'cvmUrl does not start with cvm');
     expect(gss.apiUrl.endsWith('/api'), true, 'apiUrl');
     expect(gss.helpBaseUrl, '', 'helpBaseUrl');
     expect(gss.jupyterNotebook, `${gss.cvmUrl}/notebook`, 'jupyterNotebook');

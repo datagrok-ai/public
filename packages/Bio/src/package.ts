@@ -60,7 +60,7 @@ import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomer
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
@@ -69,9 +69,12 @@ import {_getEnumeratorWidget, _setPeptideColumn} from './utils/enumerator-tools'
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
+import {HelmToMolfileConverter} from './utils/helm-to-molfile';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {sequenceToMolfile} from './utils/sequence-to-mol';
+import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
 
 export const _package = new BioPackage();
 
@@ -463,8 +466,9 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Hamming", "Levenshtein", "Monomer chemical distance"] }
 //input: bool plotEmbeddings = true
-//input: double sparseMatrixThreshold = 0.8 [Similarity Threshold for sparse matrix calculation]
+//input: double sparseMatrixThreshold = 0 [Similarity Threshold for sparse matrix calculation]
 //input: object options {optional: true}
+//output: viewer result
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(
   table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
@@ -495,8 +499,11 @@ export async function sequenceSpaceTopMenu(
         embedYCol = table.columns.byName(embedColsNames[1]);
       }
 
-      embedXCol.init((i) => embeddings[i] ? embeddings[i][0] : undefined);
-      embedYCol.init((i) => embeddings[i] ? embeddings[i][1] : undefined);
+      if (options?.[SHOW_SCATTERPLOT_PROGRESS]) {
+        scatterPlot?.root && ui.setUpdateIndicator(scatterPlot!.root, false);
+        embedXCol.init((i) => embeddings[i] ? embeddings[i][0] : undefined);
+        embedYCol.init((i) => embeddings[i] ? embeddings[i][1] : undefined);
+      }
       const progress = (_nEpoch / epochsLength * 100);
       pg.update(progress, `Running sequence space ... ${progress.toFixed(0)}%`);
     }
@@ -513,7 +520,7 @@ export async function sequenceSpaceTopMenu(
         usingSparseMatrix: table.rowCount > 20000},
     };
 
-    const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 15000;
+    const allowedRowCount = methodName === DimReductionMethods.UMAP ? 500000 : 15000;
     // number of rows which will be processed relatively fast
     const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
     if (table.rowCount > allowedRowCount) {
@@ -522,6 +529,14 @@ export async function sequenceSpaceTopMenu(
     }
 
     async function getSeqSpace() {
+      table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
+      table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
+      if (plotEmbeddings) {
+        scatterPlot = grok.shell
+          .tableView(table.name)
+          .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+        ui.setUpdateIndicator(scatterPlot.root, true);
+      }
       let resolveF: Function | null = null;
 
       const sub = grok.events.onViewerClosed.subscribe((args) => {
@@ -577,6 +592,7 @@ export async function sequenceSpaceTopMenu(
             .tableView(table.name)
             .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
         }
+        ui.setUpdateIndicator(scatterPlot.root, false);
         return scatterPlot;
       }
     }
@@ -620,22 +636,11 @@ export async function sequenceSpaceTopMenu(
 //description: Converts sequences to molblocks
 //input: dataframe df [Input data table]
 //input: column macroMolecule {semType: Macromolecule}
-export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
-  if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
-    grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
-    return;
-  }
-  if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
-    return;
-  const monomerLib: IMonomerLib = (await getMonomerLibHelper()).getBioLib();
-  const atomicLevelRes = await _toAtomicLevel(df, macroMolecule, monomerLib);
-  if (atomicLevelRes.col !== null) {
-    df.columns.add(atomicLevelRes.col, true);
-    await grok.data.detectSemanticTypes(df);
-  }
-
-  if (atomicLevelRes.warnings && atomicLevelRes.warnings.length > 0)
-    grok.shell.warning(ui.list(atomicLevelRes.warnings));
+//input: bool nonlinear=false { description: Slower mode for cycling/branching HELM structures }
+export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column, nonlinear: boolean): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
+  sequenceToMolfile(df, macroMolecule, nonlinear);
+  pi.close();
 }
 
 //top-menu: Bio | Analyze | MSA...
@@ -1058,6 +1063,7 @@ export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG
 export function getEnumeratorWidget(molColumn: DG.Column): DG.Widget {
   return _getEnumeratorWidget(molColumn);
 }
+
 
 //top-menu: Bio | Convert | SDF to JSON Library...
 //name: SDF to JSON Library

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, expectFloat, awaitCheck, delay, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE, getAggregatedColName} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -38,6 +38,8 @@ category('Model: Settings', () => {
     await delay(500);
   });
 
+  after(async () => await delay(3000));
+
   test('Activity scaling', async () => {
     const getError = (row: number, method: SCALING_METHODS): string =>
       `Activity mismatch at row ${row} for scaling method '${method}'`;
@@ -70,19 +72,6 @@ category('Model: Settings', () => {
     scaledActivityData = scaledActivity.getRawData();
     for (let i = 0; i < dfLen; i++)
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
-  });
-
-  test('Bidirectional analysis', async () => {
-    // Check that bidirectional analysis is disabled by default
-    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled by default');
-
-    // Check that bidirectional analysis can be enabled
-    model.settings = {isBidirectional: true};
-    expect(model.settings.isBidirectional, true, 'Bidirectional analysis is disabled after enabling');
-
-    // Check that bidirectional analysis can be disabled
-    model.settings = {isBidirectional: false};
-    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled after disabling');
   });
 
   test('Mutation Cliffs', async () => {

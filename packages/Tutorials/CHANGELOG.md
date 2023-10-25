@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.3.14 (2023-10-23)
+
+Fixed multivariate analysis tutorial.
+
 ## 1.3.13 (2023-08-28)
 
 ### Bug fixes

@@ -1537,12 +1537,20 @@ export namespace hints {
 
     el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
-
-    const indicatorNode = el.getBoundingClientRect();
+    
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
-    hintIndicator.style.left = indicatorNode.left + 'px';
-    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    let setPosition = setInterval(function () {
+      if ($('body').has(el).length != 0) {
+        const indicatorNode = el.getBoundingClientRect();
+        hintIndicator.style.left = indicatorNode.left + 'px';
+        hintIndicator.style.top = indicatorNode.top + 'px';
+      } else {
+        hintIndicator.remove();
+        clearInterval(setPosition);
+      } 
+    }, 10);
 
     if (clickToClose) {
       $(el).on('click', () => {
@@ -1847,7 +1855,7 @@ export namespace css {
   }
 
   export enum table {
-    noraml = 'css-table',
+    normal = 'css-table',
     wide = 'css-table-wide'
   }
 

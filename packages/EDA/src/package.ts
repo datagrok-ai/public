@@ -49,10 +49,10 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //description: Uniform Manifold Approximation and Projection (UMAP).
 //input: dataframe table {category: Data}
 //input: column_list features {type: numerical; category: Data}
-//input: int components = 2 {caption: Components; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
+//input: int components = 2 {caption: Components; min: 1; max: 20; category: Hyperparameters} [The number of components (dimensions) to project the data to.]
 //input: int epochs = 100 {caption: Epochs; category: Hyperparameters} [The number of epochs to optimize embeddings.]
 //input: int neighbors = 15 {caption: Neighbors; category: Hyperparameters} [The number of nearest neighbors to construct the fuzzy manifold.]
-//input: double minDist = 0.1 {caption: Minimum distance; category: Hyperparameters} [The effective minimum distance between embedded points.]
+//input: double minDist = 0.1 {caption: Minimum distance; min: 0; max: 1; category: Hyperparameters} [The effective minimum distance between embedded points.]
 //input: double spread = 1.0 {caption: Spread; category: Hyperparameters} [The effective scale of embedded points.]
 //output: dataframe result {action:join(table)}
 export async function UMAP(table: DG.DataFrame, features: DG.ColumnList, components: number,
@@ -321,7 +321,7 @@ export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promi
   return await getPrediction(df, model); 
 }
 
-//top-menu: ML | Analysis of Variances (ANOVA)...
+//top-menu: ML | Analyze | ANOVA...
 //name: One-way ANOVA
 //description: One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the studied feature.
 //input: dataframe table

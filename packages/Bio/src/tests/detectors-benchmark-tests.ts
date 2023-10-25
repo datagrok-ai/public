@@ -25,7 +25,7 @@ category('detectorsBenchmark', () => {
   });
 
   test('fastaDnaShorts50Many1E6', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 50, 1E6);
   });
 
   test('fastaDnaLong1e6Few50', async () => {
@@ -49,7 +49,7 @@ category('detectorsBenchmark', () => {
   async function detectMacromoleculeBenchmark(
     maxET: number, notation: NOTATION, alphabet: ALPHABET, length: number, count: number, separator?: string,
   ): Promise<number> {
-    return await benchmark<DG.FuncCall, DG.Column>(10,
+    return await benchmark<DG.FuncCall, DG.Column>(maxET,
       (): DG.FuncCall => {
         const col: DG.Column = generate(notation, [...getAlphabet(alphabet)], length, count, separator);
         const funcCall: DG.FuncCall = detectFunc.prepare({col: col});

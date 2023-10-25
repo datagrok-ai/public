@@ -1,14 +1,14 @@
 --name: PostgresqlTestCacheTableWide
 --friendlyName: PostgresqlTestCacheTableWide
 --connection: PostgreSQLDBTests
---meta.cache: true
+--meta.cache: server
 SELECT * FROM Test_Wide;
 --end
 
 --name: PostgresqlTestCacheTableNormal
 --friendlyName: PostgresqlTestCacheTableNormal
 --connection: PostgreSQLDBTests
---meta.cache: true
+--meta.cache: server
 SELECT * FROM Test_Normal;
 --end
 
@@ -19,7 +19,7 @@ SELECT * FROM Test_Normal;
 --output: int count
 --output: string first_name
 --output: datetime date
---meta.cache: true
+--meta.cache: server
 --meta.batchMode: true
 SELECT pg_sleep(3);
 --batch
@@ -38,7 +38,7 @@ SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --name: PostgresqlCacheInvalidateQueryTest
 --friendlyName: PostgresqlCacheInvalidateQueryTest
 --connection: PostgreSQLDBTests
---meta.cache: true
+--meta.cache: server
 --meta.cache.invalidateOn: 0 1 * * *
 SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --end
@@ -50,7 +50,7 @@ SELECT *, pg_sleep(0.1) FROM MOCK_DATA;
 --output: int count
 --output: string first_name
 --output: datetime date
---meta.cache: true
+--meta.cache: server
 --meta.cache.invalidateOn: 0 1 * * *
 --meta.batchMode: true
 SELECT pg_sleep(3);
@@ -66,4 +66,45 @@ SELECT max(some_number) as max_value,
 --connection: PostgreSQLDBTests
 --output: datetime date
 SELECT now() as date;
+--end
+
+
+
+--name: PostgresqlScalarCacheTestClient
+--friendlyName: PostgresqlScalarCacheTestClient
+--connection: PostgreSQLDBTests
+--output: double max_value
+--output: int count
+--output: string first_name
+--output: datetime date
+--meta.cache: client
+--meta.batchMode: true
+--meta.cache.invalidateOn: * * * * *
+SELECT pg_sleep(3);
+--batch
+SELECT max(some_number) as max_value,
+       (SELECT count(*) FROM MOCK_DATA) as count,
+       (SELECT first_name FROM MOCK_DATA WHERE id = 10) as first_name,
+        (SELECT date FROM MOCK_DATA WHERE id = 10) as date FROM MOCK_DATA;
+--end
+
+
+--name: PostgresqlTestCacheTableNormalClient
+--friendlyName: PostgresqlTestCacheTableNormalClient
+--connection: PostgreSQLDBTests
+--meta.cache: client
+SELECT * FROM Test_Normal;
+--end
+
+--meta.connectFetchSize: 2000
+--meta.cache: client
+--name: CachedHeavy
+--connection: PostgreSQLDBTests
+select * from mock_json_data limit 5000;
+--end
+
+--meta.connectFetchSize: 2000
+--name: NotCachedHeavy
+--connection: PostgreSQLDBTests
+select * from mock_json_data limit 5000;
 --end

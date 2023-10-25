@@ -10,8 +10,6 @@ export class DockerImage extends Entity {
   static fromJson(map: Map<any, any>): DockerImage { return new DockerImage(api.grok_DockerImage_fromJson(toDart(map)))};
   static STATUS_READY = 'ready';
 
-  static STATUS_USED = 'used';
-
   static STATUS_ERROR = 'error';
 
   static STATUS_BUILDING = 'building';
@@ -32,6 +30,10 @@ export class DockerImage extends Entity {
   set version(x: string) {api.grok_DockerImage_Set_version(this.dart, toDart(x)); }
   get dockerfilePath(): string { return api.grok_DockerImage_Get_dockerfilePath(this.dart); };
   set dockerfilePath(x: string) {api.grok_DockerImage_Set_dockerfilePath(this.dart, toDart(x)); }
+  get updatedBy(): string { return api.grok_DockerImage_Get_updatedBy(this.dart); };
+  set updatedBy(x: string) {api.grok_DockerImage_Set_updatedBy(this.dart, toDart(x)); }
+  get logs(): string { return api.grok_DockerImage_Get_logs(this.dart); };
+  set logs(x: string) {api.grok_DockerImage_Set_logs(this.dart, toDart(x)); }
   get completed(): boolean { return api.grok_DockerImage_Get_completed(this.dart); };
 
   get iconStatus(): string { return api.grok_DockerImage_Get_iconStatus(this.dart); };

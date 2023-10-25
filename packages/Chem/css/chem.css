@@ -439,7 +439,7 @@
 .chem-filter-fp-label {
   margin-right: 5px!important;
 }
-
+arch-options-icon
 .chem-filter-sim-cutoff-label {
   width: 0px;
   margin: 0px!important;
@@ -449,15 +449,16 @@
   width: 94px;
 }
 
-.search-options-icon {
+.chem-search-options-icon {
   visibility: hidden;
   position: absolute;
   top: 12px;
   left: 10px;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: bolder
 }
 
-.chem-filter:hover .search-options-icon {
+.chem-filter:hover .chem-search-options-icon {
   visibility: visible;
 }
 

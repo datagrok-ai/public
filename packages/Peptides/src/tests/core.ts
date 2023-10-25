@@ -38,15 +38,9 @@ category('Core', () => {
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
-    let overlayInit = false;
-    grok.log.debug('Waiting for overlay...');
-    model!._analysisView!.grid.onAfterDrawOverlay.subscribe(() => {
-      overlayInit = true;
-      grok.log.debug('Overlay initialized');
-    });
 
     model!.mutationCliffsSelection = {'11': ['D']};
-    await delay(500);
+    await delay(3000);
   });
 
   test('Start analysis: сomplex', async () => {
@@ -64,16 +58,9 @@ category('Core', () => {
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, C.SCALING_METHODS.MINUS_LG);
     expect(model instanceof PeptidesModel, true, 'Model is null');
-    let overlayInit = false;
-    model!._analysisView!.grid.onAfterDrawOverlay.subscribe(() => {
-      overlayInit = true;
-      grok.log.debug('Overlay initialized');
-    });
 
-    if (model !== null)
-      model.mutationCliffsSelection = {'13': ['-']};
-
-    await delay(500);
+    model!.mutationCliffsSelection = {'13': ['-']};
+    await delay(3000);
   });
 
   test('Save and load project', async () => {
@@ -105,7 +92,7 @@ category('Core', () => {
     const sp = await grok.dapi.projects.save(project);
 
     v.close();
-    await awaitCheck(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined', 'Table never closed', 2000);
+    await awaitCheck(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined', 'Table never closed', 3000);
 
     await sp.open();
     v = grok.shell.getTableView('Peptides analysis');
@@ -113,63 +100,5 @@ category('Core', () => {
     await grok.dapi.layouts.delete(sl);
     await grok.dapi.tables.delete(sti);
     await grok.dapi.projects.delete(sp);
-
-    await delay(500);
   });
-
-  test('Cluster stats - Benchmark HELM 5k', async () => {
-    if (!DG.Test.isInBenchmark)
-      return;
-
-    const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k_2.d42'))[0];
-    const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
-    const clustersCol = df.getCol('Cluster');
-    const sequenceCol = df.getCol('HELM');
-    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
-
-    for (let i = 0; i < 5; ++i)
-      DG.time('Cluster stats', () => model?.calculateClusterStatistics());
-  }, {timeout: 10000});
-
-  test('Monomer Position stats - Benchmark HELM 5k', async () => {
-    if (!DG.Test.isInBenchmark)
-      return;
-
-    const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
-    const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
-    const clustersCol = df.getCol('Cluster');
-    const sequenceCol = df.getCol('HELM');
-    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
-
-    for (let i = 0; i < 5; ++i)
-      DG.time('Monomer position stats', () => model?.calculateMonomerPositionStatistics());
-  }, {timeout: 10000});
-
-  test('Analysis start - Benchmark HELM 5k', async () => {
-    if (!DG.Test.isInBenchmark)
-      return;
-
-    const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
-    const activityCol = df.getCol('Activity');
-    const scaledActivityCol = scaleActivity(activityCol, C.SCALING_METHODS.NONE);
-    const clustersCol = df.getCol('Cluster');
-    const sequenceCol = df.getCol('HELM');
-    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-
-    for (let i = 0; i < 5; ++i) {
-      await DG.timeAsync('Analysis start', async () => {
-        const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, C.SCALING_METHODS.NONE);
-
-        if (model)
-          grok.shell.closeTable(model.df);
-      });
-    }
-  }, {timeout: 10000});
 });

@@ -12,7 +12,6 @@ public class FuncCall {
     public Map<String, Object> aux = new HashMap<>();
     public String log;
     public boolean debugQuery;
-    public List<String> printLevels;
 
     public void setParamValues() {
         for (String paramName: parameterValues.keySet()) {

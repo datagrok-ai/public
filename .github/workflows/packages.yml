@@ -94,8 +94,8 @@ jobs:
                       MATRIX_PUBLISH_JSON+=", \"publish\": \"publish\""
                       job_name+=' and publish to NPM'
                     else
-                      echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps"
-                      echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies"
+                      echo "Package $PACKAGE version ${current_version} has unpublished dependencies: $unpublished_deps. It is not going to be published"
+                      echo "::notice title=${PACKAGE}::Version ${current_version} has unpublished dependencies and is not going to be published"
                     fi
                   else
                     MATRIX_PUBLISH_JSON+=", \"beta\": \"beta\""
@@ -108,6 +108,7 @@ jobs:
                 fi
               else
                   echo "It is an actions for PR. Publish will be skipped."
+                  echo "::notice title=${PACKAGE}::It is an actions for PR. Publish will be skipped."
               fi
           
               if ([[ $publish == "publish" ]] || [[ "${{ github.event.inputs.packages }}" != "" ]]) && [[ -d "${DIR}/dockerfiles" ]]; then
@@ -158,7 +159,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'test' }}
@@ -191,7 +192,7 @@ jobs:
           fi
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != "chem" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != "bio" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != "peptides" ]]; then
+          if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
             DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
@@ -361,7 +362,7 @@ jobs:
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
           docker logs --timestamps $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
-          echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check job output for details"
+          echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
 
       - name: Cleanup datagrok stand
@@ -431,7 +432,7 @@ jobs:
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r ".${{ github.actor }}")
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
           echo "::add-mask::$channel_id"
           echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
 

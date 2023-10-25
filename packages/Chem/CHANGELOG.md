@@ -1,5 +1,12 @@
 # Chem changelog
 
+## 1.8.1 (2023-10-16)
+
+### Bug Fixes
+
+* [#2399](https://github.com/datagrok-ai/public/issues/2399): Scaffold Tree: Coloring can't be saved to the Layout
+* [#2400](https://github.com/datagrok-ai/public/issues/2400): Molecular search: Three dots infinite loading
+
 ## 1.8.0 (2023-08-09)
 
 ### Features

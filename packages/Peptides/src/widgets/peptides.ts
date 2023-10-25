@@ -122,7 +122,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
     bitsetChanged.unsubscribe();
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value);
+        scaledCol, activityScalingMethod.value ?? C.SCALING_METHODS.NONE, targetColumnChoice.value, {addSequenceSpace: true});
       return model !== null;
     }
     return false;
@@ -155,9 +155,11 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): {h
   return {host: mainHost, callback: startAnalysisCallback};
 }
 
+type AnalysisOptions = {addSequenceSpace?: boolean};
+
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
   clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
-  targetColumn: DG.Column<string> | null = null): Promise<PeptidesModel | null> {
+  targetColumn: DG.Column<string> | null = null, options: AnalysisOptions = {}): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn.type === DG.COLUMN_TYPE.FLOAT || activityColumn.type === DG.COLUMN_TYPE.INT) {
@@ -165,15 +167,19 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     const newDf = DG.DataFrame.create(currentDf.rowCount);
     const newDfCols = newDf.columns;
     newDfCols.add(scaledCol);
-    for (const col of currentDf.columns)
-      newDfCols.add(col);
+    for (const col of currentDf.columns) {
+      if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
+        if (col.name === scaledCol.name)
+          col.name = currentDf.columns.getUnusedName(col.name);
+        newDfCols.add(col);
+      }
+    }
 
     newDf.name = 'Peptides analysis';
     const settings: type.PeptidesSettings = {
       sequenceColumnName: peptidesCol.name,
       activityColumnName: activityColumn.name,
       scaling: scaling,
-      isBidirectional: false,
       columns: {},
       maxMutations: 1,
       minActivityDelta: 0,
@@ -213,7 +219,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     await model.addMonomerPosition();
     await model.addMostPotentResidues();
 
-    model.addSequenceSpace();
+    // FIXME: enable by default for tests
+    if (options.addSequenceSpace ?? false)
+      model.addSequenceSpace();
   } else
     grok.shell.error('The activity column must be of numeric type!');
   progress.close();

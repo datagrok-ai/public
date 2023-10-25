@@ -415,7 +415,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           this.viewed = false;
         }
 
-        await this.detachPromise;
         this.updateSeqCol();
 
         if (!this.viewed) {
@@ -435,7 +434,6 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
-  private detachPromise: Promise<void> = Promise.resolve();
   private setDataInProgress: boolean = false;
   private viewSubs: Unsubscribable[] = [];
 
@@ -834,15 +832,18 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.detach(), `);
 
     const superDetach = super.detach.bind(this);
-    this.detachPromise = this.detachPromise.then(async () => { // detach
-      await this.viewPromise;
+    this.viewPromise = this.viewPromise.then(async () => { // detach
       if (this.setDataInProgress) return; // check setDataInProgress synced
       if (this.viewed) {
         await this.destroyView();
         this.viewed = false;
       }
       superDetach();
-    });
+    })
+      .catch((err: any) => {
+        const [errMsg, errStack] = errInfo(err);
+        _package.logger.error(errMsg, undefined, errStack);
+      });
   }
 
   private _onSizeChanged: Subject<void> = new Subject<void>();
@@ -910,7 +911,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   }
 
   /** Render WebLogo sensitive to changes in params of rendering
-   *@param {WlRenderLevel} recalcLevel - indicates that need to recalculate data for rendering
+   *@param {WlRenderLevel} renderLevel - indicates that need to recalculate data for rendering
    */
   protected async renderInt(renderLevel: WlRenderLevel): Promise<void> {
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( renderLevel=${renderLevel} ), ` +
@@ -958,7 +959,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     };
 
     /** Calculate layout of monomers on screen (canvas) based on freqs, required to handle mouse events */
-    const calculateLayoutInt = (dpr: number, positionLabelsHeight: number): void => {
+    const calculateLayoutInt = (firstPos: number, lastPos: number, dpr: number, positionLabelsHeight: number): void => {
       _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt(), start `);
 
       const absoluteMaxHeight = this.canvas.height - positionLabelsHeight * dpr;
@@ -967,7 +968,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         grok.shell.error('WebLogo: alphabet is undefined.');
       const alphabetSizeLog = Math.log2(alphabetSize);
 
-      for (let jPos = Math.floor(this.slider.min); jPos <= Math.floor(this.slider.max); ++jPos) {
+      for (let jPos = firstPos; jPos <= lastPos; ++jPos) {
         if (!(jPos in this.positions)) {
           console.warn(`Bio: WebLogoViewer<${this.viewerId}>.render.calculateLayoutInt() ` +
             `this.positions.length = ${this.positions.length}, jPos = ${jPos}`);
@@ -998,41 +999,48 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     const positionLabelsHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT : 0;
     if (renderLevel >= WlRenderLevel.Freqs) calculateFreqsInt();
     this.calcLayout(dpr); // after _skipEmptyPositions
-    if (this.positions.length === 0 || this.startPosition === -1 || this.endPosition === -1) return;
-    if (renderLevel >= WlRenderLevel.Layout) calculateLayoutInt(window.devicePixelRatio, positionLabelsHeight);
+    if ( /* this.positions.length === 0 || */ this.startPosition === -1 /* || this.endPosition === -1*/) return;
+    const firstPos: number = Math.max(Math.floor(this.slider.min), 0);
+    const lastPos: number = Math.min(this.positions.length - 1, Math.floor(this.slider.max));
+    if (renderLevel >= WlRenderLevel.Layout)
+      calculateLayoutInt(firstPos, lastPos, window.devicePixelRatio, positionLabelsHeight);
 
     const g = this.canvas.getContext('2d');
     if (!g) return;
+    g.save();
+    try {
+      const length: number = this.Length;
+      g.resetTransform();
+      g.fillStyle = intToHtmlA(this.backgroundColor);
+      g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      g.textBaseline = this.textBaseline;
 
-    const length: number = this.Length;
-    g.resetTransform();
-    g.fillStyle = intToHtmlA(this.backgroundColor);
-    g.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    g.textBaseline = this.textBaseline;
+      //#region Plot positionNames
+      const positionFontSize = 10 * dpr;
+      g.resetTransform();
+      g.fillStyle = 'black';
+      g.textAlign = 'center';
+      g.font = `${positionFontSize.toFixed(1)}px Roboto, Roboto Local, sans-serif`;
+      const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
+      const hScale = posNameMaxWidth < (this._positionWidth * dpr - 2) ? 1 :
+        (this._positionWidth * dpr - 2) / posNameMaxWidth;
 
-    //#region Plot positionNames
-    const positionFontSize = 10 * dpr;
-    g.resetTransform();
-    g.fillStyle = 'black';
-    g.textAlign = 'center';
-    g.font = `${positionFontSize.toFixed(1)}px Roboto, Roboto Local, sans-serif`;
-    const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
-    const hScale = posNameMaxWidth < (this._positionWidth * dpr - 2) ? 1 :
-      (this._positionWidth * dpr - 2) / posNameMaxWidth;
-
-    if (positionLabelsHeight > 0) {
-      renderPositionLabels(g, dpr, hScale, this._positionWidthWithMargin, this._positionWidth,
-        this.positions, this.slider.min, this.slider.max);
-    }
-    //#endregion Plot positionNames
-    const fontStyle = '16px Roboto, Roboto Local, sans-serif';
-    // Hacks to scale uppercase characters to target rectangle
-    const uppercaseLetterAscent = 0.25;
-    const uppercaseLetterHeight = 12.2;
-    for (let jPos = Math.floor(this.slider.min); jPos <= Math.floor(this.slider.max); jPos++) {
-      this.positions[jPos].render(g, (m) => { return this.unitsHandler!.isGap(m); },
-        fontStyle, uppercaseLetterAscent, uppercaseLetterHeight,
-        /* this._positionWidthWithMargin, firstVisiblePosIdx,*/ this.cp);
+      if (positionLabelsHeight > 0 && this.positions.length > 0) {
+        renderPositionLabels(g, dpr, hScale, this._positionWidthWithMargin, this._positionWidth,
+          this.positions, this.slider.min, this.slider.max);
+      }
+      //#endregion Plot positionNames
+      const fontStyle = '16px Roboto, Roboto Local, sans-serif';
+      // Hacks to scale uppercase characters to target rectangle
+      const uppercaseLetterAscent = 0.25;
+      const uppercaseLetterHeight = 12.2;
+      for (let jPos = firstPos; jPos <= lastPos; jPos++) {
+        this.positions[jPos].render(g, (m) => { return this.unitsHandler!.isGap(m); },
+          fontStyle, uppercaseLetterAscent, uppercaseLetterHeight,
+          /* this._positionWidthWithMargin, firstVisiblePosIdx,*/ this.cp);
+      }
+    } finally {
+      g.restore();
     }
 
     _package.logger.debug(`Bio: WebLogoViewer<${this.viewerId}>.render.renderInt( recalcLevel=${renderLevel} ), end`);

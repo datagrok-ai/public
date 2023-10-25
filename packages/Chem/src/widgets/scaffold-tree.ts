@@ -15,6 +15,7 @@ import { IColoredScaffold, ISubstruct, _addColorsToBondsAndAtoms } from '../rend
 import { hexToPercentRgb } from '../utils/chem-common';
 
 let attached = false;
+let scaffoldJson: string | null = null;
 
 export enum BitwiseOp {
   AND = 'AND',
@@ -51,6 +52,11 @@ interface Size {
 
 interface SizesMap {
   [key: string]: Size;
+}
+
+interface ScaffoldLayout {
+  viewState: string;
+  scaffoldJson: string;
 }
 
 function value(node: TreeViewNode): ITreeNode {
@@ -379,6 +385,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   molColumns: Array<DG.Column[]> = [];
   colorCodedScaffolds: IColoredScaffold[] = [];
   checkedScaffolds: IColoredScaffold[] = [];
+  scaffoldLayouts: ScaffoldLayout[] = [];
+  availableColors: number[];
   molColumnIdx: number = -1;
   tableIdx: number = -1;
   threshold: number;
@@ -480,6 +488,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
     this.allowGenerate = this.bool('allowGenerate');
     this.molColPropObserver = this.registerPropertySelectListener(document.body);
+    this.availableColors = DG.Color.categoricalPalette;
     this._initMenu();
   }
 
@@ -1252,7 +1261,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot),
       'Exclude structures containing this scaffold');
 
-    let chosenColor: string = '#2057b6';
+    let chosenColor = DG.Color.toHtml(this.availableColors[0]);
+    var first = this.availableColors.shift();
+    this.availableColors[this.availableColors.length] = first!;
+    
     const colorPicker = ui.colorInput('Color', '#2057b6', (value: string) => {
       chosenColor = value;
     });
@@ -1269,7 +1281,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }, 'Choose color to highlight');
     paletteIcon.classList.add('palette-icon');
     disablePaletteIcon(paletteIcon);
-    paletteIcon.onclick = (e) => e.stopImmediatePropagation();
+    paletteIcon.onclick = (e) => {
+      colorPicker.stringValue = (groupValue.chosenColor ?? groupValue.parentColor) ?? chosenColor;
+      e.stopImmediatePropagation()
+    };
     paletteIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const colorIcon = ui.iconFA('circle', async () => {
@@ -1469,6 +1484,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(p: DG.Property): void {
+    if (scaffoldJson)
+      return;
+    
     if (p.name === 'Table') {
       for (let n = 0; n < this.molColumns.length; ++n) {
         if (this.molColumns[n][0].dataFrame.name === this.Table) {
@@ -1522,14 +1540,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     else if (p.name === 'bitOperation') {
       this.updateFilters();
       this._bitOpInput!.value = this.bitOperation;
-    } else if (p.name === 'size') {
-      const savedTree = JSON.parse(JSON.stringify(this.serializeTrees(this.tree)));
-      this.clear();
-      this.deserializeTrees(savedTree, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
-        return this.createGroup(molStr, rootGroup, false);
-      });
-      this.updateSizes();
-      this.updateUI();
     } else if (p.name === 'size') {
       const canvases = this.tree.root.querySelectorAll('.chem-canvas');
       const molStrings = this.tree.items.map((item) => (item.value as ITreeNode).smiles);
@@ -1645,7 +1655,28 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         tooltip.innerHTML = text;
     }));
 
+    grok.events.onViewLayoutGenerated.subscribe((layout) => {
+      scaffoldJson = null;
+      this.scaffoldLayouts[this.scaffoldLayouts.length] = {
+        viewState: layout.viewState, 
+        scaffoldJson: JSON.stringify(this.serializeTrees(this.tree))
+      };
+    });
+
+    grok.events.onViewLayoutApplied.subscribe((layout) => {
+      const result = this.scaffoldLayouts.find(item => item.viewState === layout.viewState);
+      if (result) {
+        scaffoldJson = result.scaffoldJson;
+      }
+    });
+
     this.render();
+    if (scaffoldJson) {
+      this.loadTreeStr(scaffoldJson);
+      attached = true;
+      return; 
+    }
+
     if (this.allowGenerate)
       setTimeout(() => this.generateTree(), 1000);
     attached = true;
@@ -1668,6 +1699,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.molColPropObserver = null;
 
     this.clearFilters();
+    this.molColumn?.setTag(SCAFFOLD_TREE_HIGHLIGHT, '');
     super.detach();
   }
 

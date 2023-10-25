@@ -300,4 +300,34 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   setTerminateFlag(flag: boolean) {
     this._requestTerminated = flag;
   }
+
+  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): string {
+    let mols;
+    try {
+      mols = new this._rdKitModule.MolList();
+      for (let i = 0; i < molecules.length; i++) {
+        const molString = molecules[i];
+        if (!molString)
+          continue;
+        let molSafe;
+        try {
+          molSafe = getMolSafe(molString!, {}, this._rdKitModule);
+          if (molSafe.mol !== null && !molSafe.isQMol)
+            mols.append(molSafe.mol);
+        } finally {
+          molSafe?.mol?.delete();
+        }
+      }
+      let mcsSmarts: string|null = null;
+      if (mols.size() > 1) {
+        mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
+          AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
+          BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
+        }));
+      }
+      return mcsSmarts ?? '';
+    } finally {
+      mols?.delete();
+    }
+  }
 }

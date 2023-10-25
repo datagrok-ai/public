@@ -43,6 +43,8 @@ export enum TAGS {
   MULTIPLE_VIEWS = 'isMultipleViews',
   IDENTITY_TEMPLATE = 'Identity template',
   SIMILARITY_TEMPLATE = 'Similarity template',
+  ANALYSIS_COL = 'isAnalysisCol',
+  POSITION_COL = 'isPositionCol',
 }
 
 export enum SEM_TYPES {

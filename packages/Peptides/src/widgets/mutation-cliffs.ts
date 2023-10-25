@@ -147,11 +147,11 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
 
   const gridCols = model.analysisView.grid.columns;
   const originalGridColCount = gridCols.length;
-  const positionColumns = model.splitSeqDf.columns;
+  const positionColumns = model.positionColumns.toArray().map((col) => col.name);
   const columnNames: string[] = [];
   for (let colIdx = 1; colIdx < originalGridColCount; colIdx++) {
     const gridCol = gridCols.byIndex(colIdx);
-    if (gridCol?.name === model.settings.sequenceColumnName || (gridCol?.visible === true && !positionColumns.contains(gridCol.name)))
+    if (gridCol?.name === model.settings.sequenceColumnName || (gridCol?.visible === true && !positionColumns.includes(gridCol.name)))
       columnNames.push(gridCol!.name);
   }
 

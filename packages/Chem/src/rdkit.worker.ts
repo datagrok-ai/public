@@ -42,6 +42,8 @@ ctx.addEventListener('message', async (e: any) => {
       result = _rdKitServiceWorker!.mmpGetFragments(args[0]);
     else if (op === WORKER_CALL.MMP_GET_MCS)
       result = _rdKitServiceWorker!.mmpGetMcs(args[0]);
+    else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE)
+      result = _rdKitServiceWorker!.mostCommonStructure(args[0], args[1], args[2]);
 
     port.postMessage({op: op, retval: result});
   } catch (e) {

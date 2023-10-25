@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitDesignCampaign, HitDesignTemplate, HitTriageCampaignStatus} from './types';
 import {HitDesignInfoView} from './hit-design-views/info-view';
-import {CampaignIdKey, CampaignJsonName, CampaignTableName, EmptyStageCellValue, HitDesignCampaignIdKey,
+import {CampaignIdKey, CampaignJsonName, CampaignTableName, EmptyStageCellValue, HDcampaignName, HitDesignCampaignIdKey,
   HitDesignMolColName, TileCategoriesColName, ViDColName, i18n} from './consts';
 import {calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
@@ -143,6 +143,13 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
     setTimeout(async () => {
       view._onAdded();
       await new Promise((r) => setTimeout(r, 1000)); // needed for substruct filter
+      // apply layout.
+      const layout = (await grok.dapi.layouts.filter(`friendlyName = "${this._designViewName}"`).list())
+        .find((l) => l && l.getUserDataValue(HDcampaignName) === this._campaignId);
+      if (layout)
+        view.loadLayout(layout);
+
+
       if (isNew)
         grok.functions.call('Chem:editMoleculeCell', {cell: view.grid.cell(this._molColName, 0)});
 
@@ -262,6 +269,22 @@ export class HitDesignApp extends HitAppBase<HitDesignTemplate> {
       enrichedDf.columns.toList().filter((col) => !col.name.startsWith('~')),
     ).toCsv();
     await _package.files.writeAsText(`Hit Design/campaigns/${campaignId}/${CampaignTableName}`, csvDf);
+
+    const newLayout = this._designView!.saveLayout();
+    if (!newLayout) {
+      grok.shell.warning('Layout cound not be saved');
+      return;
+    }
+
+    const oldLayouts = (await grok.dapi.layouts.filter(`friendlyName = "${this._designViewName}"`).list())
+      .filter((l) => l && l.getUserDataValue(HDcampaignName) === campaignId);
+    for (const l of oldLayouts)
+      await grok.dapi.layouts.delete(l);
+    //save new layout
+    newLayout.setUserDataValue(HDcampaignName, campaignId);
+    const l = await grok.dapi.layouts.save(newLayout);
+    const allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
+    await grok.dapi.permissions.grant(l, allGroup, true);
     notify && grok.shell.info('Campaign saved successfully.');
   }
 }

@@ -33,6 +33,7 @@ export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): H
   }
   const grid = newTable.plot.grid();
   grid.props.showRowHeader = false;
+  grid.root.style.maxWidth = '100%';
 
   DG.debounce(ui.onSizeChanged(grid.root), 50).subscribe((_) => {
     const panel = grid.root.parentElement;
@@ -49,5 +50,13 @@ export function getSelectionWidget(table: DG.DataFrame, model: PeptidesModel): H
 
   const gridHost = ui.box(grid.root);
   gridHost.style.marginLeft = '0px';
+  setTimeout(() => {
+    for (let gridColIdx = 1; gridColIdx < sourceGrid.columns.length; gridColIdx++) {
+      const gridCol = sourceGrid.columns.byIndex(gridColIdx)!;
+      if (!gridCol.visible)
+        continue;
+      grid.col(gridCol.name)!.width = gridCol.width;
+    }
+  }, 500);
   return gridHost;
 }
