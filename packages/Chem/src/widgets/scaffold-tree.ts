@@ -576,9 +576,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     DG.Utils.openFile({
       accept: '.tree',
       open: async (file) => {
-        thisViewer.cancelled = false;
         await this.loadTreeStr(await file.text());
-        /**Fix for 2450 */
         this.treeEncode = await file.text();
       },
     });
@@ -700,7 +698,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.treeBuildCount > runNum || this.cancelled)
       return;
 
-    if (jsonStr != null && !this.cancelled)
+    if (jsonStr != null)
       await this.loadTreeStr(jsonStr);
 
     if (this.cancelled) {
@@ -723,7 +721,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   async loadTreeStr(jsonStr: string) {
     this.clear();
-    this.cancelled = true;
     const json = JSON.parse(jsonStr);
     if (json.length > 0 && (json.includes(BitwiseOp.AND) || json.includes(BitwiseOp.OR))) {
       this._bitOpInput!.value = json[json.length - 1];
