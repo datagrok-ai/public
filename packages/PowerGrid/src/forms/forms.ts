@@ -28,7 +28,8 @@ interface FormSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): FormSettings {
-  gc.settings ??= getSettingsBase(gc);
+  if (Object.keys(gc.settings).length === 0)
+    gc.settings = getSettingsBase(gc);
   gc.settings.colorCode ??= true;
   return gc.settings;
 }

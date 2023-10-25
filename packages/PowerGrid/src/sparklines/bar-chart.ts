@@ -17,7 +17,8 @@ interface BarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
-  gc.settings ??= getSettingsBase(gc);
+  if (Object.keys(gc.settings).length === 0)
+    gc.settings = getSettingsBase(gc);
   gc.settings.globalScale ??= false;
   gc.settings.colorCode ??= false;
   return gc.settings;

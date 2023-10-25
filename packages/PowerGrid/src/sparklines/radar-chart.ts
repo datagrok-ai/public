@@ -18,10 +18,13 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return gc.settings ??= {
-    ...getSettingsBase(gc),
-    // ...{radius: 10,},
-  };
+  if (Object.keys(gc.settings).length === 0) {
+    gc.settings = {
+      ...getSettingsBase(gc),
+      // ...{radius: 10,},
+    };
+  }
+  return gc.settings;
 }
 
 
