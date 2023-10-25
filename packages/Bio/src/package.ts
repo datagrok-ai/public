@@ -3,36 +3,52 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
+import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
+import {
+  ISequenceSpaceParams, getActivityCliffs, SequenceSpaceFunc
+} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {
+  TAGS as bioTAGS, ALPHABET, NOTATION,
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
+import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
+import {SCORE, calculateScores} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
+import {
+  createJsonMonomerLibFromSdf, IMonomerLibHelper
+} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+
+import {getMacromoleculeColumns} from './utils/ui-utils';
 import {
   MacromoleculeDifferenceCellRenderer, MacromoleculeSequenceCellRenderer,
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
-import {ISequenceSpaceResult, getEmbeddingColsNames, getSequenceSpace} from './analysis/sequence-space';
-import {ISequenceSpaceParams, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {
+  ISequenceSpaceResult, getEmbeddingColsNames, getSequenceSpace, sequenceSpaceByFingerprints
+} from './analysis/sequence-space';
 import {
   createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
 } from './analysis/sequence-activity-cliffs';
-import {convert} from './utils/convert';
-import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
-import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {SubstructureSearchDialog} from './substructure-search/substructure-search';
+import {convert} from './utils/convert';
+import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import {
-  TAGS as bioTAGS, ALPHABET, NOTATION,
-} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
-import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
   MonomerLibHelper,
   getUserLibSettings,
@@ -40,12 +56,6 @@ import {
   getLibFileNameList,
   getLibraryPanelUI
 } from './utils/monomer-lib';
-import {getMacromoleculeColumns} from './utils/ui-utils';
-import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
-import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
-import {SCORE, calculateScores} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
@@ -53,14 +63,11 @@ import {demoBio03UI} from './demo/bio03-atomic-level';
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
-import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
-import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {WebLogoApp} from './apps/web-logo-app';
 import {SplitToMonomersFunctionEditor} from './function-edtiors/split-to-monomers-editor';
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
 import {BioPackage, BioPackageProperties} from './package-types';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-widget';
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
@@ -71,11 +78,12 @@ import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {HelmToMolfileConverter} from './utils/helm-to-molfile';
+import {sequenceToMolfile} from './utils/sequence-to-mol';
+import {errInfo} from './utils/err-info';
+
+import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {Options} from '@datagrok-libraries/utils/src/type-declarations';
-import {sequenceToMolfile} from './utils/sequence-to-mol';
-import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
 
 export const _package = new BioPackage();
 
@@ -404,6 +412,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
   const ncUH = UnitsHandler.getOrCreate(macroMolecule);
   let columnDistanceMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto;
   let seqCol = macroMolecule;
+  let sequenceSpaceFunc: SequenceSpaceFunc = sequenceSpaceByFingerprints;
   if (ncUH.isFasta() || (ncUH.isSeparator() && ncUH.alphabet && ncUH.alphabet !== ALPHABET.UN)) {
     if (ncUH.isFasta()) {
       columnDistanceMetric = ncUH.getDistanceFunctionName();
@@ -413,6 +422,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
       columnDistanceMetric = uh.getDistanceFunctionName();
       tags.units = NOTATION.FASTA;
     }
+    sequenceSpaceFunc = getSequenceSpace;
   }
   const runCliffs = async () => {
     const sp = await getActivityCliffs(
@@ -427,7 +437,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
       methodName,
       DG.SEMTYPE.MACROMOLECULE,
       tags,
-      getSequenceSpace,
+      sequenceSpaceFunc,
       getChemSimilaritiesMatrix,
       createTooltipElement,
       createPropPanelElement,
@@ -443,20 +453,23 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     return;
   }
 
-  if (df.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
-    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+  return new Promise<DG.Viewer>((resolve, reject) => {
+    if (df.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
+      ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
-      .onOK(async () => {
-        const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-        const res = await runCliffs();
-        progressBar.close();
-        return res;
-      })
-      .show();
-  } else {
-    const res = await runCliffs();
-    return res;
-  }
+        .onOK(async () => {
+          const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
+          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => { progressBar.close();});
+        })
+        .show();
+    } else {
+      runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
+    }
+  }).catch((err: any) => {
+    const [errMsg, errStack] = errInfo(err);
+    _package.logger.error(errMsg, undefined, errStack);
+    throw err;
+  });
 }
 
 //top-menu: Bio | Analyze | Sequence Space...
@@ -585,7 +598,7 @@ export async function sequenceSpaceTopMenu(
           table.columns.add(embedCol);
         }
         embedCol.init((i) => listValues[i]);
-      //table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
+        //table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
       }
       if (plotEmbeddings) {
         if (!scatterPlot) {

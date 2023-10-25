@@ -29,6 +29,7 @@
 * Fix Macromolecule cell render to skip on closed grid.
 * Fix WebLogoViewer for empty column (annotated).
 * Fix WebLogoViewer and VdRegionsViewer deadlock.
+* Fix Activity Cliffs error on Helm dataset
 
 ## 2.10.0 (2023-09-06)
 
