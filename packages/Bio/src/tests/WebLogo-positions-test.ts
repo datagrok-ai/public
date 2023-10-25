@@ -55,7 +55,7 @@ ATC-G-TTGC--
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
       for (const m of positions[i].getMonomers())
-        expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
+        expect(positions[i].getFreq(m).rowCount, resAllDf1[i].getFreq(m).rowCount);
     }
   });
 
@@ -104,7 +104,7 @@ ATC-G-TTGC--
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
       for (const m of positions[i].getMonomers())
-        expect(positions[i].getFreq(m).count, resAllDf1[i].getFreq(m).count);
+        expect(positions[i].getFreq(m).rowCount, resAllDf1[i].getFreq(m).rowCount);
     }
   });
 
@@ -204,7 +204,7 @@ function expectPositionInfo(actualPos: PI, expectedPos: PI): void {
   expectArray(actualPos.getMonomers(), expectedPos.getMonomers());
   for (const key of actualPos.getMonomers()) {
     //
-    expect(actualPos.getFreq(key).count, expectedPos.getFreq(key).count);
+    expect(actualPos.getFreq(key).rowCount, expectedPos.getFreq(key).rowCount);
   }
 }
 
