@@ -26,13 +26,13 @@ export class ScatterPlotLinesRenderer {
     xAxisCol: DG.Column;
     yAxisCol: DG.Column;
     currentLineIdx = -1;
-    lines: ILineSeries;
+    lines!: ILineSeries;
     lineClicked = new Subject<number>();
     lineHover = new Subject<number>();
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     mouseOverLineId: number | null = null;
-    multipleLinesCounts: Uint8Array;
+    multipleLinesCounts!: Uint8Array;
 
     get currentLineId(): number {
         return this.currentLineIdx;
@@ -40,19 +40,21 @@ export class ScatterPlotLinesRenderer {
 
     set currentLineId(id: number) {
         this.currentLineIdx = id;
-        this.sp.render(this.canvas.getContext('2d') as CanvasRenderingContext2D);
+        this.sp.render(this.ctx);
+    }
+
+    set linesToRender(lines: ILineSeries) {
+        this.updateLines(lines);
+        this.sp.render(this.ctx);
     }
 
     constructor(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lines: ILineSeries) {
         this.sp = sp;
         this.xAxisCol = this.sp.dataFrame!.columns.byName(xAxis);
         this.yAxisCol = this.sp.dataFrame!.columns.byName(yAxis);
-        this.lines = lines;
         this.canvas = this.sp.getInfo()['canvas'];
         this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
-        this.multipleLinesCounts = new Uint8Array(this.lines.from.length);
-
-        this.createMultiLinesIndices();
+        this.updateLines(lines);
 
         this.canvas.onmousedown = () => {
             if (this.mouseOverLineId !== null)
@@ -71,6 +73,11 @@ export class ScatterPlotLinesRenderer {
             });
     }
 
+    updateLines(lines: ILineSeries) {
+        this.lines = lines;
+        this.multipleLinesCounts = new Uint8Array(this.lines.from.length);
+        this.createMultiLinesIndices();
+    }
 
     renderLines(): void {
         const spLook = this.sp.getOptions().look;
@@ -80,48 +87,51 @@ export class ScatterPlotLinesRenderer {
             this.ctx.strokeStyle = `rgba(${this.lines.color ?? '0,128,0'},${this.lines.opacity ?? 1})`;
         }
         const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
+        const filter = this.sp.dataFrame.filter;
         for (let i = 0; i < this.lines.from.length; i++) {
-            const { sizeFrom, sizeTo } = this.getMarkersSizes(spLook, markerSizeCol, i);
-            const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
-            let aX = pointFrom?.x;
-            let aY = pointFrom?.y;
-            const pointTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
-            let bX = pointTo?.x;
-            let bY = pointTo?.y;
-            this.ctx.beginPath();
-            if (aX && aY && bX && bY) {
-                if (individualLineStyles) {
-                    const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
-                    const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
-                    this.ctx.strokeStyle = `rgba(${color},${opacity})`;
-                    this.ctx.lineWidth = this.lines.widths?.[i] ? this.lines.widths?.[i] : 1;
+            if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i])) {
+                const { sizeFrom, sizeTo } = this.getMarkersSizes(spLook, markerSizeCol, i);
+                const pointFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
+                let aX = pointFrom?.x;
+                let aY = pointFrom?.y;
+                const pointTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
+                let bX = pointTo?.x;
+                let bY = pointTo?.y;
+                this.ctx.beginPath();
+                if (aX && aY && bX && bY) {
+                    if (individualLineStyles) {
+                        const color = this.lines.colors?.[i] ? this.lines.colors?.[i] : '0,128,0';
+                        const opacity = this.lines.opacities?.[i] ? this.lines.opacities?.[i] : 1;
+                        this.ctx.strokeStyle = `rgba(${color},${opacity})`;
+                        this.ctx.lineWidth = this.lines.widths?.[i] ? this.lines.widths?.[i] : 1;
+                    }
+                    const multiLines = this.multipleLinesCounts[i];
+                    let controlPoint: DG.Point | null = null;
+                    if (multiLines) {
+                        const startPointWithMarker = this.getPointOnDistance(aX, aY, bX, bY, sizeTo);
+                        const endtPointWithMarker = this.getPointOnDistance(bX, bY, aX, aY, sizeFrom);
+                        aX = startPointWithMarker.x;
+                        aY = startPointWithMarker.y;
+                        bX = endtPointWithMarker.x;
+                        bY = endtPointWithMarker.y;
+                        controlPoint = this.lines.from[i] > this.lines.to[i] ?
+                            this.findControlPoint(multiLines, aX, aY, bX, bY, i) :
+                            this.findControlPoint(multiLines, bX, bY, aX, aY, i);
+                        this.ctx.moveTo(aX!, aY!);
+                        this.ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, bX, bY);
+                    } else {
+                        this.ctx.moveTo(aX!, aY!);
+                        this.ctx.lineTo(bX, bY);
+                    }
+                    if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i)) {
+                        const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo) : null;
+                        const arrowCPX = multiLines ? controlPoint!.x : aX;
+                        const arrowCPY = multiLines ? controlPoint!.y : aY;
+                        this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
+                    }
+                    this.ctx.stroke();
+                    this.ctx.closePath();
                 }
-                const multiLines = this.multipleLinesCounts[i];
-                let controlPoint: DG.Point | null = null;
-                if (multiLines) {
-                    const startPointWithMarker = this.getPointOnDistance(aX, aY, bX, bY, sizeTo);
-                    const endtPointWithMarker = this.getPointOnDistance(bX, bY, aX, aY, sizeFrom);
-                    aX = startPointWithMarker.x;
-                    aY = startPointWithMarker.y;
-                    bX = endtPointWithMarker.x;
-                    bY = endtPointWithMarker.y;
-                    controlPoint = this.lines.from[i] > this.lines.to[i] ?
-                        this.findControlPoint(multiLines, aX, aY, bX, bY, i) :
-                        this.findControlPoint(multiLines, bX, bY, aX, aY, i);
-                    this.ctx.moveTo(aX!, aY!);
-                    this.ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, bX, bY);
-                } else {
-                    this.ctx.moveTo(aX!, aY!);
-                    this.ctx.lineTo(bX, bY);
-                }
-                if (this.lines.drawArrows ?? this.lines.drawArrowsArr?.getBit(i)) {
-                    const arrowPoint = !multiLines ? this.getPointOnDistance(aX, aY, bX, bY, sizeTo) : null;
-                    const arrowCPX = multiLines ? controlPoint!.x : aX;
-                    const arrowCPY = multiLines ? controlPoint!.y : aY;
-                    this.canvasArrow(this.ctx, arrowPoint?.x ?? bX, arrowPoint?.y ?? bY, arrowCPX, arrowCPY);
-                }
-                this.ctx.stroke();
-                this.ctx.closePath();
             }
         }
         this.fillLeftBottomRect();
@@ -180,23 +190,26 @@ export class ScatterPlotLinesRenderer {
         let dist = null;
         const spLook = this.sp.getOptions().look;
         const markerSizeCol = spLook['sizeColumnName'] ? this.sp.dataFrame.col(spLook['sizeColumnName']) : null;
+        const filter = this.sp.dataFrame.filter;
         for (let i = 0; i < this.lines.from.length; i++) {
-            const { sizeFrom, sizeTo } = this.getMarkersSizes(spLook, markerSizeCol, i);
-            const pFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
-            const pTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
-            if (this.multipleLinesCounts[i]) {
-                const fromMarker = this.getPointOnDistance(pFrom.x, pFrom.y, pTo.x, pTo.y, sizeTo);
-                const toMarker = this.getPointOnDistance(pTo.x, pTo.y, pFrom?.x, pFrom?.y, sizeFrom);
-                const controlPoint = this.lines.from[i] > this.lines.to[i] ?
-                    this.findControlPoint(this.multipleLinesCounts[i], fromMarker.x, fromMarker.y, toMarker.x, toMarker.y, i) :
-                    this.findControlPoint(this.multipleLinesCounts[i], toMarker.x, toMarker.y, fromMarker.x, fromMarker.y, i);
-                dist = this.calculateDistToCurveLine(i, x, y, fromMarker, toMarker, controlPoint);
-            } else {
-                dist = this.calculateDistToStraightLine(x, y, pFrom, pTo);
-            }
-            if ((!minDist && dist !== null && dist < 5) || minDist && dist !== null && dist < minDist) {
-                minDist = dist;
-                candidateIdx = i;
+            if (filter.get(this.lines.from[i]) && filter.get(this.lines.to[i])) {
+                const { sizeFrom, sizeTo } = this.getMarkersSizes(spLook, markerSizeCol, i);
+                const pFrom = this.sp.worldToScreen(this.xAxisCol.get(this.lines.from[i]), this.yAxisCol.get(this.lines.from[i]));
+                const pTo = this.sp.worldToScreen(this.xAxisCol.get(this.lines.to[i]), this.yAxisCol.get(this.lines.to[i]));
+                if (this.multipleLinesCounts[i]) {
+                    const fromMarker = this.getPointOnDistance(pFrom.x, pFrom.y, pTo.x, pTo.y, sizeTo);
+                    const toMarker = this.getPointOnDistance(pTo.x, pTo.y, pFrom?.x, pFrom?.y, sizeFrom);
+                    const controlPoint = this.lines.from[i] > this.lines.to[i] ?
+                        this.findControlPoint(this.multipleLinesCounts[i], fromMarker.x, fromMarker.y, toMarker.x, toMarker.y, i) :
+                        this.findControlPoint(this.multipleLinesCounts[i], toMarker.x, toMarker.y, fromMarker.x, fromMarker.y, i);
+                    dist = this.calculateDistToCurveLine(i, x, y, fromMarker, toMarker, controlPoint);
+                } else {
+                    dist = this.calculateDistToStraightLine(x, y, pFrom, pTo);
+                }
+                if ((!minDist && dist !== null && dist < 5) || minDist && dist !== null && dist < minDist) {
+                    minDist = dist;
+                    candidateIdx = i;
+                }
             }
         }
         return candidateIdx;
