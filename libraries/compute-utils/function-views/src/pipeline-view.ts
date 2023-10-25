@@ -440,9 +440,16 @@ export class PipelineView extends ComputationView {
           if (state === 'consistent') $(consistencyStateIcon).hide();
           if (state === 'inconsistent') $(consistencyStateIcon).show();
         });
-      },
-      );
+      });
     this.subs.push(...consistencySubs);
+
+    const plvConsistencySub =
+      merge(...(Object.values(this.steps).map((step) => step.view.consistencyState)))
+        .subscribe((newValue) => {
+          this.consistencyState.next(newValue);
+        });
+
+    this.subs.push(plvConsistencySub);
 
     const tabsLine = pipelineTabs.panes[0].header.parentElement!;
     tabsLine.classList.add('d4-ribbon', 'pipeline-view');

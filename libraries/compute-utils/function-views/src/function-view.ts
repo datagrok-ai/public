@@ -11,6 +11,7 @@ import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
+import {distinctUntilChanged} from 'rxjs/operators';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -342,13 +343,20 @@ export abstract class FunctionView extends DG.ViewBase {
         return null;
     });
 
-    const consistencySub = this.consistencyState.subscribe((newValue) => {
-      if (newValue === 'inconsistent')
-        $(exportBtn).addClass('d4-disabled');
-      else
-        $(exportBtn).removeClass('d4-disabled'); ;
-    });
-    this.subs.push(consistencySub);
+    if (!this.options.isTabbed) {
+      const consistencySub = this.consistencyState
+        .pipe(distinctUntilChanged())
+        .subscribe((newValue) => {
+          if (newValue === 'inconsistent') {
+            $(exportBtn).addClass('d4-disabled');
+            $(exportBtn.lastChild).css('color', 'var(--gray-2)');
+          } else {
+            $(exportBtn).removeClass('d4-disabled');
+            $(exportBtn.lastChild).css('color', 'var(--blue-1)');
+          }
+        });
+      this.subs.push(consistencySub);
+    }
 
     const newRibbonPanels: HTMLElement[][] =
       [[
