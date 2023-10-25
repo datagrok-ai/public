@@ -572,7 +572,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   /** Loads previously saved tree. See also {@link saveTree} */
   loadTree(): void {
-    const thisViewer = this;
     DG.Utils.openFile({
       accept: '.tree',
       open: async (file) => {
@@ -580,6 +579,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.treeEncode = await file.text();
       },
     });
+  }
+
+  expandAndCollapse(expand: boolean): void {
+    this.tree.items.map((item) => {
+      (item as DG.TreeViewGroup).expanded = expand;
+    })
   }
 
   async generateTree() {
@@ -1116,7 +1121,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       colorIcon!.style.cssText += ('color: ' + color + ' !important');
     } else {
       colorIcon!.classList.add('fad');
-      colorIcon!.style.cssText += ('--fa-primary-color: ' + color + '; --fa-primary-opacity: 0.4; --fa-secondary-color: ' + color + '; --fa-secondary-opacity: 1 !important');
+      colorIcon!.style.cssText += ('--fa-primary-color: transparent; --fa-primary-opacity: 0.4; --fa-secondary-color: ' + color + '; --fa-secondary-opacity: 1 !important');
       colorIcon!.style.cssText += ('margin-left: 1.5px');
     }
     paletteIcon!.classList.remove('color-is-not-set');
@@ -1788,6 +1793,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear filter'),
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
+      ui.iconFA('caret-down', () => this.expandAndCollapse(true), 'Expand all'),
+      ui.iconFA('caret-up', () => this.expandAndCollapse(false), 'Collapse all'),
       ui.divText(' '),
       this._iconDelete = ui.iconFA('trash-alt',
         () => {
