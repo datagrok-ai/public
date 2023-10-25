@@ -28,10 +28,9 @@ interface FormSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): FormSettings {
-  if (Object.keys(gc.settings).length === 0)
-    gc.settings = getSettingsBase(gc);
-  gc.settings.colorCode ??= true;
-  return gc.settings;
+  gc.settings[SparklineType.Form] ??= getSettingsBase(gc, SparklineType.Form);
+  gc.settings[SparklineType.Form].colorCode ??= true;
+  return gc.settings[SparklineType.Form];
 }
 
 let scene: Scene;
