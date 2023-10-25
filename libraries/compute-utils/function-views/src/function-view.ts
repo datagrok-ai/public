@@ -7,7 +7,7 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
-import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
+import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
 import {deepCopy} from '../../shared-utils/utils';
 import {HistoryPanel} from '../../shared-components/src/history-panel';
 import {RunComparisonView} from './run-comparison-view';
@@ -324,7 +324,7 @@ export abstract class FunctionView extends DG.ViewBase {
       this.historyBlock.showEditDialog(this.lastCall);
     }, 'Edit this run');
 
-    const ribbonSub = this.isHistorical.subscribe((newValue) => {
+    const historicalSub = this.isHistorical.subscribe((newValue) => {
       if (newValue) {
         $(exportBtn).show();
         $(editBtn).show();
@@ -333,8 +333,22 @@ export abstract class FunctionView extends DG.ViewBase {
         $(editBtn).hide();
       }
     });
+    this.subs.push(historicalSub);
 
-    this.subs.push(ribbonSub);
+    ui.tooltip.bind(exportBtn, () => {
+      if (this.consistencyState.value === 'inconsistent')
+        return 'Current run is inconsistent. Export feature is disabled.';
+      else
+        return null;
+    });
+
+    const consistencySub = this.consistencyState.subscribe((newValue) => {
+      if (newValue === 'inconsistent')
+        $(exportBtn).addClass('d4-disabled');
+      else
+        $(exportBtn).removeClass('d4-disabled'); ;
+    });
+    this.subs.push(consistencySub);
 
     const newRibbonPanels: HTMLElement[][] =
       [[
@@ -494,6 +508,8 @@ export abstract class FunctionView extends DG.ViewBase {
   public isHistorical = new BehaviorSubject<boolean>(false);
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
+
+  public consistencyState = new BehaviorSubject<VIEW_STATE>('consistent');
 
   /**
     * Default export filename generation method.

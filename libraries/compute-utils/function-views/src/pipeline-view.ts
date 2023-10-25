@@ -9,7 +9,6 @@ import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
 import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE} from '../../shared-utils/consts';
-import {deepCopy} from '../../shared-utils/utils';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
@@ -426,6 +425,24 @@ export class PipelineView extends ComputationView {
       }), {} as Record<string, HTMLElement>);
 
     const pipelineTabs = ui.tabControl(tabs);
+
+    const consistencySubs = Object.values(this.steps)
+      .map((step) => {
+        const consistencyStateIcon = ui.iconFA('exclamation-circle', null, 'This step has inconsistent inputs');
+        $(consistencyStateIcon).css({
+          'color': 'var(--orange-2)',
+          'margin-left': '3px',
+          'padding-top': '2px',
+        });
+        pipelineTabs.getPane(getVisibleStepName(step)).header.appendChild(consistencyStateIcon);
+
+        return step.view.consistencyState.subscribe((state) => {
+          if (state === 'consistent') $(consistencyStateIcon).hide();
+          if (state === 'inconsistent') $(consistencyStateIcon).show();
+        });
+      },
+      );
+    this.subs.push(...consistencySubs);
 
     const tabsLine = pipelineTabs.panes[0].header.parentElement!;
     tabsLine.classList.add('d4-ribbon', 'pipeline-view');
