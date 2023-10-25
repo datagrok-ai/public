@@ -48,6 +48,8 @@ export interface ISequenceSpaceResult {
   coordinates: DG.ColumnList;
 }
 
+export type SequenceSpaceFunc = (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>;
+
 export interface ITooltipAndPanelParams {
   cashedData: any,
   line: ILine,
@@ -83,7 +85,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number,
   similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   methodName: DimReductionMethods, semType: string, tags: {[index: string]: string},
-  seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
+  seqSpaceFunc: SequenceSpaceFunc,
   simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
     simArr: (DG.Column | null)[]) => Promise<(DG.Column | null)[]>,
   tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
