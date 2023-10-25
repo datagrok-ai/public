@@ -5,7 +5,8 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemmColumn, getClosest, stemBuffer, getEmbeddings, getMarkedStringAndCommonWordsMap, MIN_CHAR_COUNT} from './stemming-tools';
+import {stemmColumn, getClosest, stemBuffer, getEmbeddings, getMarkedStringAndCommonWordsMap, 
+  MIN_CHAR_COUNT, modifyMetric, setStemmingBuffer} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -201,15 +202,8 @@ export function similar(query: string): DG.Widget {
   const source = df.currentCol;
   const queryIdx = df.currentRowIdx;
 
-  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name)) {
-    stemBuffer.dfName = df.name;
-    stemBuffer.colName = source.name;
-
-    const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
-    stemBuffer.dictionary = stemmingRes.dict;
-    stemBuffer.indices = stemmingRes.indices;
-    stemBuffer.mostCommon = stemmingRes.mostCommon;
-  }
+  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
+    setStemmingBuffer(df, source);
 
   const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
 
@@ -223,10 +217,12 @@ export function similar(query: string): DG.Widget {
       filterWords.set(word, (filterWords.get(word) ?? 0) + res.commonWords.get(word)!);
 
     const uiElem = ui.inlineText(res.marked);
+    //@ts-ignore
+    $(uiElem).css({"cursor": "pointer"});
     uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
-    uiElements.push(uiElem);
-    uiElements.push(ui.h3(''));
+    uiElements.push(uiElem);    
     ui.tooltip.bind(uiElem, 'Click to navigate.');
+    uiElements.push(ui.divText('________________________________'));    
   }
 
   const filterWordsSorted = new Map(Array.from(filterWords).sort((a, b) => a[1] > b[1] ? 1 : -1));
@@ -412,4 +408,29 @@ export function split(table: DG.DataFrame, feature: DG.Column, limit: number) {
 
   grok.shell.addTableView(satDF);
   grok.shell.addTableView(nonSatDF);
+}
+
+//name: Distance
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function distance(query: string): DG.Widget {
+  const df = grok.shell.t;
+  const source = df.currentCol;
+  const queryIdx = df.currentRowIdx;
+
+  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
+    setStemmingBuffer(df, source);
+  
+  const uiElem = ui.label('Edit');
+  //@ts-ignore
+  $(uiElem).css({"cursor": "pointer", "color": "#3cb173"});
+  uiElem.onclick = () => { modifyMetric(df, source); };
+
+  ui.tooltip.bind(uiElem, 'Edit text similarity measure.');
+
+  const wgt = new DG.Widget(uiElem);
+
+  return wgt;
 }
