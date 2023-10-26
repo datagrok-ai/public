@@ -778,13 +778,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         const groupValue = value(group);
         const chosenColor = groupValue.chosenColor;
         const parentColor = groupValue.parentColor;
-        let finalColor;
-        if (chosenColor && groupValue.colorOn) {
-          finalColor = groupValue.chosenColor;
-        } else {
-          finalColor = groupValue.parentColor;
-        }
-        //const finalColor = chosenColor ?? parentColor;
+        const finalColor = chosenColor ?? parentColor;
         if (finalColor) {
           const substructure = chosenColor ? molStrSketcher : this.getParentSmilesIterative(group);
           molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer, false, finalColor, substructure);
@@ -892,13 +886,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           } else {
             substructure = molStrSketcher;
           }
-          let color;
-          if (parentValue.chosenColor && parentValue.colorOn) {
-            color = parentValue.chosenColor;
-          } else {
-            color = parentValue.parentColor;
-          }
-          //const color = parentValue.chosenColor ?? parentValue.parentColor;
+      
+          const color = parentValue.chosenColor ?? parentValue.parentColor;
           thisViewer.highlightCanvas(child, color!, substructure);
         
           if (color) {
@@ -1114,26 +1103,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const colorIcon = getColorIcon(group);
     const paletteIcon = getPaletteIcon(group);
     colorIcon!.classList.remove('fal');
-    colorIcon!.classList.remove('fad');
-    colorIcon!.classList.remove('fas');
-    if (value(group).chosenColor && value(group).colorOn) {
-      colorIcon!.classList.add('fas');
-      colorIcon!.style.cssText += ('color: ' + color + ' !important');
-    } else {
-      colorIcon!.classList.add('fad');
-      colorIcon!.style.cssText += ('--fa-primary-color: transparent; --fa-primary-opacity: 0.4; --fa-secondary-color: ' + color + '; --fa-secondary-opacity: 1 !important');
-      colorIcon!.style.cssText += ('margin-left: 1.5px');
-    }
+    colorIcon!.classList.add('fas');
+    colorIcon!.style.cssText += ('color: ' + color + ' !important');
     paletteIcon!.classList.remove('color-is-not-set');
     enableColorIcon(colorIcon!, true);
   }
 
-  makeColorIconInactive(group: DG.TreeViewGroup, color: string | null) {
+  makeColorIconInactive(group: DG.TreeViewGroup) {
     const paletteIcon = getPaletteIcon(group);
     const colorIcon = getColorIcon(group);
     colorIcon!.classList.remove('fas');
     colorIcon!.classList.add('fal');
-    colorIcon!.style.cssText += ('color: ' + color + ' !important');
     enableColorIcon(colorIcon!, false);
     disablePaletteIcon(paletteIcon!);
   }
@@ -1198,7 +1178,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           groupValue.parentColor = color!;
   
           if ((!groupValue.parentColor && !groupValue.chosenColor) || (groupValue.colorOn) || (!groupValue.parentColor && !groupValue.colorOn))
-            this.makeColorIconInactive(group, color);
+            this.makeColorIconInactive(group);
           else
             this.makeColorIconActive(group, color);
   
@@ -1225,20 +1205,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   resetHighlightAndColor(group: TreeViewGroup, colorIcon: HTMLElement, smiles: string, chosenColor: string) {
     const groupValue = value(group);
-    let color;
-    if (groupValue.chosenColor) {
-      color = groupValue.parentColor;
-    } else {
-      color = null;
-    }
+    const color = groupValue.parentColor;
     colorIcon!.style.cssText += ('color: ' + color + ' !important');
   
     if ((!groupValue.parentColor && !groupValue.chosenColor) || (!groupValue.parentColor) || (!groupValue.chosenColor)) {
-      this.makeColorIconInactive(group, color!);
-      if (!groupValue.chosenColor)
-        delete groupValue.chosenColor;
-      else
-        delete groupValue.parentColor;
+      this.makeColorIconInactive(group);
+      delete groupValue.chosenColor;
     }
     else
       this.makeColorIconActive(group, color!);
@@ -1352,9 +1324,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const colorIcon = ui.iconFA('circle', async () => {
       groupValue.colorOn = !groupValue.colorOn;
-      if (!groupValue.chosenColor || !groupValue.parentColor)
+      if (!groupValue.chosenColor)
         groupValue.chosenColor = chosenColor;
-      chosenColor = groupValue.chosenColor;
+      chosenColor = groupValue.chosenColor!;
       this.setColorToHighlight(group, chosenColor, groupValue.colorOn);
       this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     }, 'Assigns color to the scaffold');
