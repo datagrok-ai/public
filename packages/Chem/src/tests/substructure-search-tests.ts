@@ -6,7 +6,7 @@ import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParame
 import {before, category, test} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {chemSubstructureSearchLibrary} from '../chem-searches';
+import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import { SubstructureSearchType } from '../constants';
 import { Fingerprint } from '../utils/chem-common';
 
@@ -274,7 +274,7 @@ async function performanceTestWithConsoleLog(molCol: DG.Column, query: string) {
 async function testSearchType(query: string, searchType: SubstructureSearchType, trueIndices: number[],
   fp?: Fingerprint, similarity?: number) {
   const df = await readDataframe('tests/test_search_types.csv');
-  const res = await chemSubstructureSearchLibrary(df.col('canonical_smiles')!, query, '', false, true, searchType, similarity, fp);
+  const res = await chemSubstructureSearchLibrary(df.col('canonical_smiles')!, query, '', FILTER_TYPES.substructure, false, true, searchType, similarity, fp);
   const bitset = DG.BitSet.fromBytes(res.buffer.buffer, df.rowCount);
   checkBitSetIndices(bitset, trueIndices);
 }

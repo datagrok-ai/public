@@ -25,10 +25,18 @@ const enum FING_COL_TAGS {
   molsCreatedForVersion = '.mols.created.for.version',
 }
 
+export const enum FILTER_TYPES {
+  scaffold = 'scaffold',
+  substructure = 'substructure'
+}
+
 let lastColumnInvalidated: string = '';
 const canonicalSmilesColName = 'canonicalSmiles';
 
-const currentSearchSmiles: {[key: string]: string} = {};
+const currentSearchSmiles: {[key: string]: {[key: string]: string}} = {
+  [FILTER_TYPES.scaffold]: {},
+  [FILTER_TYPES.substructure]: {}
+};
 
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray | null)[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
@@ -247,14 +255,14 @@ will not be created along with pattern fp column
 before returning (required for compatibility)
 * */
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, columnIsCanonicalSmiles = false,
-  awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOff = 0.8,
+  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, filterType = FILTER_TYPES.substructure,
+  columnIsCanonicalSmiles = false, awaitAll = true, searchType = SubstructureSearchType.CONTAINS, similarityCutOff = 0.8,
   fp = Fingerprint.Morgan): Promise<BitArray> {
   const searchKey = `${molStringsColumn?.dataFrame?.name ?? ''}-${molStringsColumn?.name ?? ''}`;
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
-  currentSearchSmiles[searchKey] = currentSearch;
+  currentSearchSmiles[filterType][searchKey] = currentSearch;
   await chemBeginCriticalSection();
-  if (currentSearchSmiles[searchKey] !== currentSearch) {
+  if (currentSearchSmiles[filterType][searchKey] !== currentSearch) {
     chemEndCriticalSection();
     return new BitArray(molStringsColumn.length);
   }
