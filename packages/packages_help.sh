@@ -33,8 +33,7 @@ for f in $(echo -e "$targetFiles"); do
         # shellcheck disable=SC2001
         link=$(sed 's#${_package.webRoot}##g' <<<"$link")
     fi
-    echo "$dir/$(sed -rE -e 's,(.md)?\/?#.*,.md,g' -e 's,(.md)?$,.md,g' <<<"$link")"
     if ! [ -f "$dir/$(sed -rE -e 's,(.md)?\/?#.*,.md,g' -e 's,(.md)?$,.md,g' <<<"$link")" ]; then
-        echo "$file: helpUrl $dir/$link could not be found"
+        echo "$file: helpUrl $link could not be found"
     fi
 done
