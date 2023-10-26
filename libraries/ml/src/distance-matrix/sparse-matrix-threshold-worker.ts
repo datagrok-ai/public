@@ -1,11 +1,18 @@
 import {isNil} from './utils';
-import {KnownMetrics, Measure} from '../typed-metrics';
+import {KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 onmessage = async (event) => {
   const {values, startIdx, endIdx, sampleLength, fnName, opts}:
-    {values: string[], startIdx: number, endIdx: number, sampleLength: number, fnName: KnownMetrics, opts: any} = event.data;
+    {values: any[], startIdx: number, endIdx: number, sampleLength: number, fnName: KnownMetrics, opts: any} = event.data;
   let distances: Float32Array = new Float32Array(sampleLength);
   const chunkSize = endIdx - startIdx;
 
+  if (isBitArrayMetric(fnName)) {
+    for (let i = 0; i < values.length; ++i) {
+      if (isNil(values[i])) continue;
+      values[i] = new BitArray(values[i]._data, values[i]._length);
+    }
+  }
   let cnt = 0;
   const increment = Math.floor(chunkSize / sampleLength);
   const distanceFn = new Measure(fnName).getMeasure(opts);
