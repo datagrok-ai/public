@@ -352,7 +352,7 @@ export class SubstructureFilter extends DG.Filter {
    */
   async _onSketchChanged(): Promise<void> {
     const newMolFile = this.sketcher.getMolFile();
-    const newSmarts = await this.sketcher.getSmarts();
+    const newSmarts = await this.getSmartsToFilter();
     if (this.currentMolfile !== newMolFile)
       this.updateFilterUiOnSketcherChanged(newMolFile);
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
@@ -400,6 +400,11 @@ export class SubstructureFilter extends DG.Filter {
     }
   }
 
+  async getSmartsToFilter() {
+    return this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
+      _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+  }
+
   updateApplyFilterSyncTag(add = true): boolean {
     const applyFilterSyncTag: IApplyFilterSync = JSON.parse(this.column!.getTag(CHEM_APPLY_FILTER_SYNC)!);
     if (add) {
@@ -417,8 +422,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   async getFilterBitset(): Promise<BitArray> {
-    const smarts = this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
-      _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+    const smarts = await this.getSmartsToFilter();
     return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, false, false,
       this.searchType, this.similarityCutOff, this.fp);
   }
@@ -465,6 +469,10 @@ export class SubstructureFilter extends DG.Filter {
     this.searchType = this.searchTypeInput.value;
     if (this.searchType !== SubstructureSearchType.CONTAINS)
       this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'chem-search-options-icon');
+    else {
+      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()))
+        this.sketcher.root.appendChild(this.optionsIcon);
+    }
     if (this.searchType === SubstructureSearchType.IS_SIMILAR)
       this.searchOptionsDiv.append(this.similarityOptionsDiv);
     else

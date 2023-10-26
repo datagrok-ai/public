@@ -175,7 +175,7 @@ Internally, JavaScript-based applications are functions that are annotated accor
 Code snippets:
 
 * [Dynamic registering](https://public.datagrok.ai/js/samples/functions/register-function)
-* [Functions: Parameter validators](https://public.datagrok.ai/js/samples/functions/func-params-enhancement)
+* [Functions: Parameter validators](https://public.datagrok.ai/js/samples/functions/func-params-annotation)
 * [Functions: Info panels](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [Functions: Custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 

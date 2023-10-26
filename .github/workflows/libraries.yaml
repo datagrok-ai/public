@@ -135,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.WRITE_TOKEN }}
+          token: ${{ secrets.WRITE_TOKEN || github.token }}
       - name: Check library properties
         working-directory: libraries/${{ matrix.project }}
         run: |

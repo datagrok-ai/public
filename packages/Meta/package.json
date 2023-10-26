@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.5",
+  "version": "3.6.14",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1121,6 +1121,9 @@
           "datagrok-api": "^1.16.4"
         },
         "1.15.1": {
+          "datagrok-api": "^1.16.4"
+        },
+        "1.15.2": {
           "datagrok-api": "^1.16.4"
         }
       },
@@ -2455,6 +2458,21 @@
         },
         "2.10.27": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.10.28": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.29": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.0": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.1": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.2": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2911,6 +2929,9 @@
         },
         "1.0.3": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "PKPD simulations tools",
@@ -3156,6 +3177,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -3239,6 +3263,9 @@
           "datagrok-api": "^1.16.3"
         },
         "1.0.7": {
+          "datagrok-api": "^1.16.3"
+        },
+        "1.0.8": {
           "datagrok-api": "^1.16.3"
         }
       },

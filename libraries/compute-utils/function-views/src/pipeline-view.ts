@@ -494,38 +494,44 @@ export class PipelineView extends ComputationView {
   public override async run(): Promise<void> {
     if (!this.funcCall) throw new Error('The correspoding function is not specified');
 
-    await this.onBeforeRun(this.funcCall);
-    const pi = DG.TaskBarProgressIndicator.create('Calculating...');
-    this.funcCall.newId();
-    await this.funcCall.call(); // mutates the funcCall field
-    pi.close();
+    ui.setUpdateIndicator(this.root, true);
+    try {
+      await this.onBeforeRun(this.funcCall);
+      this.funcCall.newId();
+      await this.funcCall.call(); // mutates the funcCall field
 
-    const stepsSaving = Object.values(this.steps)
-      .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
-      .map(async (step) => {
-        const scriptCall = step.view.lastCall;
+      const stepsSaving = Object.values(this.steps)
+        .filter((step) => step.visibility.value === VISIBILITY_STATE.VISIBLE)
+        .map(async (step) => {
+          const scriptCall = step.view.lastCall;
 
-        if (!scriptCall)
-          throw Error(`${step.func.name} was not called`);
+          if (!scriptCall)
+            throw Error(`${step.func.name} was not called`);
 
-        scriptCall.options['parentCallId'] = this.funcCall.id;
-        scriptCall.newId();
+          scriptCall.options['parentCallId'] = this.funcCall.id;
+          scriptCall.newId();
 
-        this.steps[scriptCall.func.nqName].view.lastCall =
+          this.steps[scriptCall.func.nqName].view.lastCall =
           await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
 
-        return Promise.resolve();
-      });
+          return Promise.resolve();
+        });
 
-    await Promise.all(stepsSaving);
+      await Promise.all(stepsSaving);
 
-    await this.onAfterRun(this.funcCall);
+      await this.onAfterRun(this.funcCall);
 
-    this.funcCall.options['isFavorite'] = undefined;
-    if (this.funcCall.options['title'])
-      this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
+      this.funcCall.options['isFavorite'] = undefined;
+      if (this.funcCall.options['title'])
+        this.funcCall.options['title'] = `${this.funcCall.options['title']} (copy)`;
 
-    this.lastCall = await this.saveRun(this.funcCall);
+      this.lastCall = await this.saveRun(this.funcCall);
+    } catch (e: any) {
+      grok.shell.error(e.toString());
+      console.log(e);
+    } finally {
+      ui.setUpdateIndicator(this.root, false);
+    }
   }
 
   /**

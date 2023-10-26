@@ -26,12 +26,11 @@ export function hamming(args: Partial<mmDistanceFunctionArgs> = {}): mmDistanceF
     });
     return (a: string, b: string) => {
       return scorringArray[a.charCodeAt(0) * matrix.length + b.charCodeAt(0)];
-      //return scorringArray[a.charCodeAt(0) * matrix.length + b.charCodeAt(0)];
-      //return map2[a][b];
-      //return matrixMap.get(a)!.get(b)!;
     }
   }
   const distanceF = getDistanceF();
+
+  const threshold = args?.threshold ?? 0;
 
   return (seq1: string, seq2: string) => {
     // hamming distance should only be used with same size strings,
@@ -39,13 +38,17 @@ export function hamming(args: Partial<mmDistanceFunctionArgs> = {}): mmDistanceF
     let diff = 0;
     const s1l = seq1.length;
     const s2l = seq2.length;
+    const thresholdLimit = Math.max(s1l, s2l) * (1 - threshold);
     if (s1l !== s2l)
       diff = Math.abs(s1l - s2l);
 
     let result = 0;
     for (let i = 0; i < Math.min(s1l, s2l); i++) {
-      if (seq1[i] !== seq2[i])
+      if (seq1[i] !== seq2[i]) {
         result += distanceF(seq1[i], seq2[i]);
+        if (result > thresholdLimit)
+          return 1;
+      }
     }
     result += diff;
     result /= Math.max(s1l, s2l);

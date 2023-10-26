@@ -65,7 +65,6 @@ The goal for today is to gain experience with the platform by learning about its
    1. Read documentation:
       1. [Functions](../../datagrok/concepts/functions/functions.md)
       1. [Parameter annotation](../../datagrok/concepts/functions/func-params-annotation.md)
-      1. [Parameter enhancement](../../datagrok/concepts/functions/func-params-enhancement.md)
       1. See the list of supported [constants](../../transform/functions/constants.md) and
          [operators](../../transform/functions/operators.md). Explore the groups of functions in the table of contents
          (statistical, math, text, conversion, etc.).

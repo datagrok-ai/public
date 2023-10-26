@@ -1,11 +1,13 @@
 # Bio changelog
 
-## 2.11.0 (WIP)
+## 2.11.0 (2023-10-25)
 
 ### Features
 
 * Add VdRegionsViewer `filterSource` property.
-* Add ToAtomicLevel for non-linear HELM strcutures.
+* Add ToAtomicLevel for non-linear HELM structures.
+* Add WebLogo aggregation function.
+* Add WebLogo position tooltip with composition table (for count).
 
 ### Bug fixes
 
@@ -27,6 +29,7 @@
 * Fix Macromolecule cell render to skip on closed grid.
 * Fix WebLogoViewer for empty column (annotated).
 * Fix WebLogoViewer and VdRegionsViewer deadlock.
+* Fix Activity Cliffs error on Helm dataset
 
 ## 2.10.0 (2023-09-06)
 

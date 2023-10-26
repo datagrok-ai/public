@@ -13,12 +13,12 @@
     "directory": "packages/BiostructureViewer"
   },
   "sources": [
+    "common/ngl_viewer/ngl.js",
+    "css/additionalStyles.css",
+    "css/molstar.css",
     "css/ngl.css",
     "css/pviz-core.css",
-    "css/additionalStyles.css",
-    "css/pviz-bundle.min.js",
-    "common/ngl_viewer/ngl.js",
-    "css/molstar.css"
+    "vendor/pviz-bundle.min.js"
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "^5.38.12",

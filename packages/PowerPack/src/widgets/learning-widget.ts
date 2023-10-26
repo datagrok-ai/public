@@ -112,52 +112,56 @@ let playlists = [
 
 let help = [
   {
+    'title': 'Cheminformatics',
+    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/chem/'
+  },
+  {
+    'title': 'Bioinformatics',
+    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/bio/'
+  },
+  {
+    'title': 'Overview',
+    'url': 'https://datagrok.ai/help/datagrok/'
+  },
+  {
     'title': 'Access',
-    'url': 'https://datagrok.ai/help/access/databases'
+    'url': 'https://datagrok.ai/help/access/'
   },
   {
-    'title':'Collaborate',
-    'url': 'https://datagrok.ai/help/collaborate/chat'
+    'title': 'Transform',
+    'url': 'https://datagrok.ai/help/transform/'
   },
   {
-    'title': 'Develop',
-    'url': 'https://datagrok.ai/help/develop/onboarding/getting-started'
-  },
-  {
-    'title': 'Discover',
-    'url': 'https://datagrok.ai/help/explore/data-augmentation/'
-  },
-  {
-    'title': 'Domains',
-    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/chem/chemically-aware-viewers'
+    'title': 'Visualize',
+    'url': 'https://datagrok.ai/help/visualize/viewers/'
   },
   {
     'title': 'Explore',
     'url': 'https://datagrok.ai/help/explore/cluster-data'
   },
   {
-    'title': 'Govern',
-    'url': 'https://datagrok.ai/help/govern/audit'
+    'title':'Compute',
+    'url': 'https://datagrok.ai/help/compute/'
   },
   {
-    'title': 'Learn',
+    'title': 'Predict',
     'url': 'https://datagrok.ai/help/learn/'
   },
   {
-    'title': 'Overview',
-    'url': 'https://datagrok.ai/help/collaborate/create-project'
+    'title': 'Discover',
+    'url': 'https://datagrok.ai/help/explore/data-augmentation/'
+  },
+  // {
+  //   'title':'Collaborate',
+  //   'url': 'https://datagrok.ai/help/collaborate/chat'
+  // },
+  {
+    'title': 'Develop',
+    'url': 'https://datagrok.ai/help/develop/'
   },
   {
-    'title': 'Stories',
-    'url': 'https://datagrok.ai/help/datagrok/solutions/domains/use-cases/life-sciences'
-  },
-  {
-    'title': 'Transform',
-    'url': 'https://datagrok.ai/help/transform/add-new-column'
-  },
-  {
-    'title': 'Visualize',
-    'url': 'https://datagrok.ai/help/visualize/add-custom-form'
+    'title': 'Govern',
+    'url': 'https://datagrok.ai/help/govern/audit'
   },
   {
     'title': 'Acknowledgments',

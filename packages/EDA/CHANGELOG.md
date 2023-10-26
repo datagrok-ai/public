@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.1.5 (2023-10-23)
+
+Anova top-menu item is improved.
+
 ## 1.1.4 (2023-10-11)
 
 Implemented ANOVA.

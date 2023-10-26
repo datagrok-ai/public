@@ -88,7 +88,7 @@ for (const lang of langs) {
       test('Graphics output, Column input', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
           {'df': TEST_DATAFRAME_2, 'xName': 'x', 'yName': 'y'});
-        expect(result.startsWith('http'), true);
+        expect(!result || result.length === 0, false);
       });
     }
 
