@@ -19,7 +19,6 @@ interactive experiences that allow [validation](#validation), controlled [vocabu
 [function chaining](#function-inputs) - without writing a single line of UI code!
 
 
-
 ## Function
 
 There are general parameters common to all functions, as well as parameters specific to certain function types. Not all

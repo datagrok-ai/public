@@ -11,9 +11,9 @@ visualizations available in
 
 ## Header
 
-Each script should have a header that contains some metadata, along with the information on input and output parameters.
-See all available
-[header parameters](#header-parameters). Each line starts with a comment.
+Each script should have a [header](../datagrok/concepts/functions/func-params-annotation.md#function-annotations) 
+that contains some metadata, along with the information on input
+and output parameters. Each line starts with a comment.
 
 Let's take a look at a simple R script that returns a square of the input parameter:
 
@@ -41,7 +41,7 @@ Use [Console](../datagrok/navigation/navigation.md#console) to execute it. Simpl
 ```
 
 The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can call Grok
-Functions. See [Grok Scripting](../develop/under-the-hood//grok-script.md) for more details.
+Functions. See [Grok Scripting](../develop/under-the-hood/grok-script.md) for more details.
 
 ### Output values validation
 
@@ -93,12 +93,16 @@ registered in the platform as a
 
 ![Scripting](../uploads/gifs/scripting-visualization.gif "Scripting")
 
-When a function is invoked with no explicitly specified parameters, a dialog is shown. The UI is automatically generated
-by creating editors for each parameter. Depending on the metadata associated with the parameters, the editor can be
-enriched by [validators](#parameter-validators), [choices](#parameter-choices),
-and [suggestions](#parameter-suggestions). Validators, choices, and suggestions are
-[functions](../datagrok/concepts/functions/functions.md), that means they can be implemented in different ways (db query, script,
-etc), and reused.
+When you run a function, Datagrok generates the UI from the parameter annotations. You can build
+interactive experiences that allow
+[validation](../datagrok/concepts/functions/func-params-annotation.md#validation),
+controlled [vocabularies](../datagrok/concepts/functions/func-params-annotation.md#choices),
+[autocomplete](../datagrok/concepts/functions/func-params-annotation.md#autocomplete),
+[custom inputs](../datagrok/concepts/functions/func-params-annotation.md#inputs-for-semantic-types),
+[dynamic lookups](../datagrok/concepts/functions/func-params-annotation.md#lookup-tables),
+[referencing parameters](../datagrok/concepts/functions/func-params-annotation.md#referencing-other-parameters), and
+[function chaining](../datagrok/concepts/functions/func-params-annotation.md#function-inputs) - without writing a single line of UI code!
+
 
 Registered scripts can be called via [JavaScript API](../develop/packages/js-api.md) in the following manner:
 
@@ -288,18 +292,6 @@ Therefore, the script's author doesn't need to call
 
 We are planning to support [_renv_ lockfiles](https://rstudio.github.io/renv/articles/lockfile.html)
 shipped with packages similarly to how it works now for Conda `yaml` files.
-
-## Parameters
-
-When you run a function, Datagrok generates the UI from the parameter annotations. You can build
-interactive experiences that allow 
-[validation](../datagrok/concepts/functions/func-params-annotation.md#validation), 
-controlled [vocabularies](../datagrok/concepts/functions/func-params-annotation.md#choices),
-[autocomplete](../datagrok/concepts/functions/func-params-annotation.md#autocomplete),
-[custom inputs](../datagrok/concepts/functions/func-params-annotation.md#inputs-for-semantic-types),
-[dynamic lookups](../datagrok/concepts/functions/func-params-annotation.md#lookup-tables),
-[referencing parameters](../datagrok/concepts/functions/func-params-annotation.md#referencing-other-parameters), and
-[function chaining](../datagrok/concepts/functions/func-params-annotation.md#function-inputs) - without writing a single line of UI code!
 
 
 ## Filtering
