@@ -80,6 +80,9 @@ public class StringColumn extends Column<String> {
         if (data[o1] == null && data[o2] == null) return 0;
         if (data[o1] == null) return 1;
         if (data[o2] == null) return -1;
+        if (data[o1].equals("") && data[o2].equals("")) return 0;
+        if (data[o1].equals("")) return 1;
+        if (data[o2].equals("")) return -1;
         return data[o1].compareTo(data[o2]);
     }
 
