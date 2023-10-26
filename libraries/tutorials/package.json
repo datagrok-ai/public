@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "Tutorials",
-  "version": "1.3.8",
+  "version": "1.3.9",
   "description": "Helpers for creating tutorials",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.1.18",
