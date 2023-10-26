@@ -441,8 +441,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     return sp;
   };
 
-  const allowedRowCount = 20000;
-  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 200_000 : 20_000;
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5_000 : 2_000;
   if (df.rowCount > allowedRowCount) {
     grok.shell.warning(`Too many rows, maximum for sequence activity cliffs is ${allowedRowCount}`);
     return;
@@ -453,8 +453,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
       ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
         .onOK(async () => {
-          const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => { progressBar.close(); });
+          //const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
+          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => {});
         })
         .show();
     } else {
@@ -525,7 +525,7 @@ export async function sequenceSpaceTopMenu(
       methodName: methodName,
       similarityMetric: similarityMetric,
       embedAxesNames: embedColsNames,
-      options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.8,
+      options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.5,
         usingSparseMatrix: table.rowCount > 20000},
     };
 
