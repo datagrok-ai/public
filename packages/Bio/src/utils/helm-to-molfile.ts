@@ -50,11 +50,22 @@ export async function helm2mol(df: DG.DataFrame, helmCol: DG.Column<string>): Pr
 
 
 /** Translate HELM column into molfile column and append to the dataframe */
-export async function getMolColumnFromHelm(df: DG.DataFrame, helmCol: DG.Column<string>): Promise<DG.Column<string>> {
+export async function getMolColumnFromHelm(
+  df: DG.DataFrame, helmCol: DG.Column<string>
+): Promise<DG.Column<string>> {
   const converter = new HelmToMolfileConverter(helmCol, df);
   const molCol = await converter.convertToRdKitBeautifiedMolfileColumn();
   molCol.semType = DG.SEMTYPE.MOLECULE;
   return molCol;
+}
+
+export async function getSmilesColumnFromHelm(
+  df: DG.DataFrame, helmCol: DG.Column<string>
+): Promise<DG.Column<string>> {
+  const converter = new HelmToMolfileConverter(helmCol, df);
+  const smilesCol = await converter.convertToSmiles();
+  smilesCol.semType = DG.SEMTYPE.MOLECULE;
+  return smilesCol;
 }
 
 export class HelmToMolfileConverter {
@@ -62,9 +73,24 @@ export class HelmToMolfileConverter {
     this.helmColumn = helmColumn;
   }
 
-  async convertToRdKitBeautifiedMolfileColumn(): Promise<DG.Column<string>> {
+  async convertToSmiles(): Promise<DG.Column<string>> {
+    const smiles = await this.getSmilesList();
+    const columnName = this.df.columns.getUnusedName(`smiles(${this.helmColumn.name})`);
+    return DG.Column.fromStrings(columnName, smiles.map((molecule) => {
+      if (molecule === null)
+        return '';
+      return molecule;
+    }));
+  }
+
+  private async getSmilesList(): Promise<string[]> {
     const molfilesV2K = (await this.convertToMolfileV2KColumn()).toList();
     const smiles = molfilesV2K.map((mol) => DG.chem.convert(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles));
+    return smiles;
+  }
+
+  async convertToRdKitBeautifiedMolfileColumn(): Promise<DG.Column<string>> {
+    const smiles = await this.getSmilesList();
     const rdKitModule: RDModule = await grok.functions.call('Chem:getRdKitModule');
     const beautifiedMols = smiles.map((item) =>{
       if (item === '')
@@ -75,8 +101,7 @@ export class HelmToMolfileConverter {
       mol.normalize_depiction(1);
       mol.straighten_depiction(true);
       return mol;
-    }
-    );
+    });
     const columnName = this.df.columns.getUnusedName(`molfile(${this.helmColumn.name})`);
     return DG.Column.fromStrings(columnName, beautifiedMols.map((mol) => {
       if (mol === null)

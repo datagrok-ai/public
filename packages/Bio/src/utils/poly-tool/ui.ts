@@ -70,7 +70,7 @@ export function getPolyToolDialog(): DG.Dialog {
 
   const cyclizationTypes = [CYCLIZATION_TYPE.NO, CYCLIZATION_TYPE.R3, CYCLIZATION_TYPE.NCys];
   const cyclizationTypeChoice = ui.choiceInput(
-    'Type', cyclizationTypes[0], cyclizationTypes, () => { onCyclizationChoice.next(); }
+    'Type', cyclizationTypes[2], cyclizationTypes, () => { onCyclizationChoice.next(); }
   );
 
   const monomerLib = MonomerLibHelper.instance.getBioLib();
@@ -98,7 +98,7 @@ export function getPolyToolDialog(): DG.Dialog {
     {filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE}
   );
 
-  const generateHelmChoiceInput = ui.boolInput('Get HELM', false);
+  const generateHelmChoiceInput = ui.boolInput('Get HELM', true);
   ui.tooltip.bind(generateHelmChoiceInput.root, 'Add HELM column');
 
   const div = ui.div([

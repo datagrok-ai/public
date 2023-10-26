@@ -8,7 +8,7 @@ import {_package} from '../../package';
 import {addCommonTags} from './utils';
 import {HELM_WRAPPER, ALL_MONOMERS, CYCLIZATION_TYPE} from './const';
 import {MetaData, ConnectionData} from './types';
-import {getMolColumnFromHelm, helm2mol} from '../helm-to-molfile';
+import {getMolColumnFromHelm} from '../helm-to-molfile';
 
 abstract class TransformationBase {
   constructor(helmColumn: DG.Column<string>, meta: MetaData) {
@@ -41,15 +41,21 @@ class TransformationNCys extends TransformationBase {
   }
 
   protected hasTerminals(helm: string): boolean {
-    if (! helm.includes(this.rightTerminal + HELM_WRAPPER.RIGHT))
-      return false;
-    if (this.leftTerminal === ALL_MONOMERS)
-      return true;
-    return helm.includes(HELM_WRAPPER.LEFT + this.leftTerminal);
+    // if (! helm.includes(this.rightTerminal + HELM_WRAPPER.RIGHT))
+    //   return false;
+    // if (this.leftTerminal === ALL_MONOMERS)
+    //   return true;
+    // return helm.includes(HELM_WRAPPER.LEFT + this.leftTerminal);
+    const positions = this.getLinkedPositions(helm);
+    return positions.every((el) => el > 0);
   }
 
   protected getLinkedPositions(helm: string): [number, number] {
-    return [1, getNumberOfMonomers(helm)];
+    const seq = helm.replace(HELM_WRAPPER.LEFT, '').replace(HELM_WRAPPER.RIGHT, '');
+    const monomers = seq.split('.');
+    const start = 0;
+    const end = monomers.findIndex((el, idx) => el === this.rightTerminal && idx > start);
+    return [start + 1, end + 1];
   }
 
   protected getTransformedHelm(helm: string): string {
