@@ -1592,6 +1592,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       this.skipAutoGenerate = true;
       this.loadTreeStr(this.treeEncode);
+      this.treeEncode = JSON.stringify(this.serializeTrees(this.tree));
     } else if (p.name === 'threshold') {
       this.filterTree(this.threshold);
     } else if (p.name === 'bitOperation') {

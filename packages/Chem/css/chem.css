@@ -155,6 +155,11 @@
   align-items: center;
 }
 
+.chem-scaffold-tree-toolbar .d4-flex-row .grok-icon.fal.fa-angle-double-down,
+.chem-scaffold-tree-toolbar .d4-flex-row .grok-icon.fal.fa-angle-double-up {
+  font-size: 17px;
+}
+
 .scaffold-tree-viewer .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node .chem-mol-box-info .chem-mol-box-info-buttons > .grok-icon.fa-trash-alt {
   color: var(--red-4) !important;
 }
