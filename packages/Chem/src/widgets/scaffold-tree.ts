@@ -1522,7 +1522,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     
     this.highlightCanvas(group, color, substr);
   }
-  
+
   makeNodeActiveAndFilter(node: DG.TreeViewNode) {
     this.checkBoxesUpdateInProgress = true;
     this.selectGroup(node);
