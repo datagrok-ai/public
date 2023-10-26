@@ -1,6 +1,12 @@
 # Peptides changelog
 
-## 1.15.1 (WIP)
+## 1.15.2 (2023-10-26)
+
+### Features
+
+* Improved Sequence space default parameters (changed threshold similarity from 0.8 to 0.3)
+
+## 1.15.1 (2023-10-19)
 
 ### Features
 
