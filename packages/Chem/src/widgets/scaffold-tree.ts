@@ -7,12 +7,13 @@ import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {chem} from 'datagrok-api/grok';
 import {InputBase, SemanticValue, SEMTYPE, toJs, TreeViewGroup, TreeViewNode, UNITS} from 'datagrok-api/dg';
 import Sketcher = chem.Sketcher;
-import {chemSubstructureSearchLibrary} from '../chem-searches';
+import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {_package, getScaffoldTree, isSmarts} from '../package';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
 import { IColoredScaffold, ISubstruct, _addColorsToBondsAndAtoms } from '../rendering/rdkit-cell-renderer';
 import { hexToPercentRgb } from '../utils/chem-common';
+import { _convertMolNotation } from '../utils/convert-notation-utils';
 
 let attached = false;
 
@@ -264,7 +265,8 @@ async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes 
 
 async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
   const molStr = molColumn.length === 0 ? '' : molColumn.get(molColumn.length -1);
-  return DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, molStr, '')).buffer.buffer, molColumn.length);
+  const smarts = molStr ? _convertMolNotation(molStr, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, _rdKitModule) : '';
+  return DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, molStr, smarts, FILTER_TYPES.scaffold)).buffer.buffer, molColumn.length);
 }
 
 let offscreen : OffscreenCanvas | null = null;
@@ -368,7 +370,8 @@ function isNotBitOperation(group: TreeViewGroup) : boolean {
 async function handleMalformedStructures(molColumn: DG.Column, smiles: string): Promise<DG.BitSet> {
   let bitset;
   try {
-    bitset = DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, smiles, '')).buffer.buffer, molColumn.length);
+    const smarts = _convertMolNotation(smiles, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, _rdKitModule);
+    bitset = DG.BitSet.fromBytes((await chemSubstructureSearchLibrary(molColumn, smiles, smarts, FILTER_TYPES.scaffold)).buffer.buffer, molColumn.length);
   } catch (e) {
     console.log(e);
     bitset = DG.BitSet.create(molColumn.length).setAll(false);

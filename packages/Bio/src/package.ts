@@ -7,7 +7,6 @@ import * as DG from 'datagrok-api/dg';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
@@ -51,9 +50,6 @@ import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {
   MonomerLibHelper,
-  getUserLibSettings,
-  setUserLibSetting,
-  getLibFileNameList,
   getLibraryPanelUI
 } from './utils/monomer-lib';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
@@ -72,12 +68,11 @@ import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-wid
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {getPolyToolDialog} from './utils/poly-tool/enumerator-tools';
+import {getPolyToolDialog} from './utils/poly-tool/ui';
 import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
-import {HelmToMolfileConverter} from './utils/helm-to-molfile';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {errInfo} from './utils/err-info';
 
@@ -459,7 +454,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     Do you want to continue?`))
         .onOK(async () => {
           const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => { progressBar.close();});
+          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => { progressBar.close(); });
         })
         .show();
     } else {
