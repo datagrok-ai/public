@@ -418,7 +418,6 @@ export function split(table: DG.DataFrame, feature: DG.Column, limit: number) {
 export function distance(query: string): DG.Widget {
   const df = grok.shell.t;
   const source = df.currentCol;
-  const queryIdx = df.currentRowIdx;
 
   if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
     setStemmingBuffer(df, source);
@@ -431,6 +430,46 @@ export function distance(query: string): DG.Widget {
   ui.tooltip.bind(uiElem, 'Edit text similarity measure.');
 
   const wgt = new DG.Widget(uiElem);
+
+  return wgt;
+}
+
+//name: Similar (advanced)
+//tags: panel, widgets
+//input: string query {semType: Text}
+//output: widget result
+//condition: true
+export function similarAdvanced(query: string): DG.Widget {
+  const df = grok.shell.t;
+  const source = df.currentCol;
+  const queryIdx = df.currentRowIdx;
+
+  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
+    setStemmingBuffer(df, source);
+
+  const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
+
+  const uiElements = [] as HTMLElement[];
+  const filterWords = new Map<string, number>();
+
+  for (let i = 1; i < closest.length; ++i) {
+    const res = getMarkedStringAndCommonWordsMap(queryIdx, source.get(closest[i]));
+
+    for (const word of res.commonWords.keys())
+      filterWords.set(word, (filterWords.get(word) ?? 0) + res.commonWords.get(word)!);
+
+    const uiElem = ui.inlineText(res.marked);
+    //@ts-ignore
+    $(uiElem).css({"cursor": "pointer"});
+    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
+    uiElements.push(uiElem);    
+    ui.tooltip.bind(uiElem, 'Click to navigate.');
+    uiElements.push(ui.divText('________________________________'));    
+  }
+
+  const filterWordsSorted = new Map(Array.from(filterWords).sort((a, b) => a[1] > b[1] ? 1 : -1));
+  
+  const wgt = new DG.Widget(ui.divV(uiElements));
 
   return wgt;
 }

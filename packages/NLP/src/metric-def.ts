@@ -24,7 +24,7 @@ enum NUM_METRIC_TYPE {
 const NUM_METRIC_TYPES = [NUM_METRIC_TYPE.EQUALITY, NUM_METRIC_TYPE.ABS_DIFFERENCE];
 
 enum DEFAULT_METRIC {
-  STR = STR_METRIC_TYPE.STEMMING_BASED,
+  STR = STR_METRIC_TYPE.EQUALITY,
   NUM = NUM_METRIC_TYPE.ABS_DIFFERENCE,
   GENERAL = GENERAL_METRIC_TYPE.EQUALITY,
 };
@@ -84,7 +84,7 @@ export function getOneHotMetricsMap(df: DG.DataFrame, target: DG.Column): Map<st
   switch (target.type) {
   
     case DG.COLUMN_TYPE.STRING:
-      type = DEFAULT_METRIC.STR;
+      type = STR_METRIC_TYPE.STEMMING_BASED;
       break;
   
     case DG.COLUMN_TYPE.FLOAT:
