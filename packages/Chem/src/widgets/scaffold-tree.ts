@@ -25,7 +25,8 @@ interface INode {
   scaffold?: string;
   child_nodes?: INode[];
   chosenColor?: string;
-  parentColor?: string; 
+  parentColor?: string;
+  colorOn?: boolean; 
   checked?: boolean; 
   isNot?: boolean;
 }
@@ -736,8 +737,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.progressBar.update(50, 'Initializing Tree..: 50% completed');
 
     const thisViewer = this;
-    thisViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null, parentColor: string | null, checked: boolean, isNot: boolean) => {
-      return thisViewer.createGroup(molStr, rootGroup, false, chosenColor, parentColor, checked, isNot);
+    thisViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null, parentColor: string | null, colorOn: boolean | null, checked: boolean, isNot: boolean) => {
+      return thisViewer.createGroup(molStr, rootGroup, false, chosenColor, parentColor, colorOn, checked, isNot);
     });
 
     await updateVisibleNodesHits(this); //first visible N nodes
@@ -778,7 +779,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         const groupValue = value(group);
         const chosenColor = groupValue.chosenColor;
         const parentColor = groupValue.parentColor;
-        const finalColor = chosenColor ?? parentColor;
+        let finalColor;
+        if (chosenColor && groupValue.colorOn)
+          finalColor = chosenColor;
+        else
+          finalColor = parentColor;
         if (finalColor) {
           const substructure = chosenColor ? molStrSketcher : this.getParentSmilesIterative(group);
           molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer, false, finalColor, substructure);
@@ -886,8 +891,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           } else {
             substructure = molStrSketcher;
           }
-      
-          const color = parentValue.chosenColor ?? parentValue.parentColor;
+
+          let color;
+          if (parentValue.chosenColor && parentValue.colorOn)
+            color = parentValue.chosenColor;
+          else
+            color = parentValue.parentColor;
+          //const color = parentValue.chosenColor ?? parentValue.parentColor;
           thisViewer.highlightCanvas(child, color!, substructure);
         
           if (color) {
@@ -1402,21 +1412,26 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
 
-  private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, chosenColor: string | null = null, parentColor: string | null = null, checked: boolean = false, isNot: boolean = false) : TreeViewGroup | null {
+  private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, chosenColor: string | null = null, parentColor: string | null = null, colorOn: boolean | null = null , checked: boolean = false, isNot: boolean = false) : TreeViewGroup | null {
     if (this.molColumn === null)
       return null;
 
     const thisViewer = this;
     const bitset = DG.BitSet.create(this.molColumn.length);
-    const color = chosenColor ?? parentColor;
-    const molHost = renderMolecule(molStr, this.sizesMap[this.size].width, this.sizesMap[this.size].height, skipDraw, thisViewer, false, chosenColor);
+    const color = (chosenColor && colorOn === true) ? chosenColor : parentColor;
+    const molHost = renderMolecule(molStr, this.sizesMap[this.size].width, this.sizesMap[this.size].height, skipDraw, thisViewer, false, color);
     const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset: null, bitwiseNot: false});
     this.addIcons(molHost, group, undefined, molStr);
     this.setNotBitOperation(group, isNot);
 
-    if (chosenColor)
+    /*if (chosenColor)
       value(group).colorOn = true;
-    else 
+    else
+      value(group).colorOn = false;*/
+
+    if (colorOn)
+      value(group).colorOn = colorOn;
+    else
       value(group).colorOn = false;
 
     group.enableCheckBox(checked);
@@ -1434,8 +1449,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).chosenColor = chosenColor; 
       if (parentColor)
         value(group).parentColor = parentColor;
-      if (parentColor && !chosenColor)
-        this.highlightCanvas(group, color, this.getParentSmilesIterative(group));
+      /*if (parentColor && !chosenColor)
+        this.highlightCanvas(group, color, this.getParentSmilesIterative(group));*/
     }
 
     molHost.onclick = (e) => {
@@ -1830,6 +1845,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         jsonNode.chosenColor = rootGroupValue.chosenColor;
       if (rootGroupValue.parentColor)
         jsonNode.parentColor = rootGroupValue.parentColor;
+      if (rootGroupValue.colorOn)
+        jsonNode.colorOn = rootGroupValue.colorOn;
     }
     jsonNode.child_nodes = new Array(rootGroup.children.length);
 
@@ -1843,8 +1860,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     let countNodes = 0;
     for (let n = 0; n < json.length; ++n) {
       countNodes += this
-        .deserializeTree(json[n], treeRoot, (molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null, parentColor: string | null, checked: boolean, isNot: boolean, countNodes: number) => {
-          return createGroup(molStr, rootGroup, chosenColor, parentColor, checked, isNot, countNodes);
+        .deserializeTree(json[n], treeRoot, (molStr: string, rootGroup: TreeViewGroup, chosenColor: string | null, parentColor: string | null, colorOn: boolean | null, checked: boolean, isNot: boolean, countNodes: number) => {
+          return createGroup(molStr, rootGroup, chosenColor, parentColor, colorOn, checked, isNot, countNodes);
         }, 0);
     }
     return countNodes;
@@ -1854,13 +1871,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const molStr = json.scaffold;
     const chosenColor = json.chosenColor;
     const parentColor = json.parentColor;
+    const colorOn = json.colorOn;
     const checked = json.checked;
     const isNot = json.isNot;
     if (molStr === null || molStr === undefined) {
       return countNodes;
     }
 
-    const group: TreeViewGroup = createGroup(molStr, rootGroup, chosenColor, parentColor, checked, isNot, countNodes);
+    const group: TreeViewGroup = createGroup(molStr, rootGroup, chosenColor, parentColor, colorOn, checked, isNot, countNodes);
     if (group === null)
       return countNodes;
 
