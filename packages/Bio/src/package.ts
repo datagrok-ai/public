@@ -1084,10 +1084,10 @@ export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }
 
-//name: enumeratorColumnChoice
+//name: polyToolColumnChoice
 //input: dataframe df [Input data table]
 //input: column macroMolecule
-export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
+export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
   _setPeptideColumn(macroMolecule);
   await grok.data.detectSemanticTypes(df);
 }
