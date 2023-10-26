@@ -173,7 +173,7 @@ function renderValidationResults(messages: ValidationResultBase) {
       root.appendChild(ui.divV([
         ui.span([
           icon,
-          advice.description,
+          ui.span([advice.description], {style: {color: 'var(--grey-6)'}}),
         ]),
         ...(advice.actions ?? []).map(
           (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '18px'}})),
