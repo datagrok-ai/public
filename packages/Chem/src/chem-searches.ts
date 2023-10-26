@@ -262,7 +262,7 @@ export async function chemSubstructureSearchLibrary(
   const currentSearch = `${molBlockFailover}_${searchType}_${similarityCutOff}_${fp}`;
   currentSearchSmiles[filterType][searchKey] = currentSearch;
   await chemBeginCriticalSection();
-  if (currentSearchSmiles[filterType][searchKey] !== currentSearch) {
+  if (currentSearchSmiles[filterType][searchKey] !== currentSearch && filterType !== FILTER_TYPES.scaffold) {
     chemEndCriticalSection();
     return new BitArray(molStringsColumn.length);
   }
