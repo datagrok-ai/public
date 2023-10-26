@@ -6,7 +6,7 @@ import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
 import {stemmColumn, getClosest, stemBuffer, getEmbeddings, getMarkedStringAndCommonWordsMap, 
-  MIN_CHAR_COUNT, modifyMetric, setStemmingBuffer} from './stemming-tools';
+  MIN_CHAR_COUNT, modifyMetric, setStemmingBuffer, getClosestAdvanced} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -447,12 +447,12 @@ export function similarAdvanced(query: string): DG.Widget {
   if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
     setStemmingBuffer(df, source);
 
-  const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
+  const closest = getClosestAdvanced(df, queryIdx, 6); 
 
   const uiElements = [] as HTMLElement[];
   const filterWords = new Map<string, number>();
 
-  for (let i = 1; i < closest.length; ++i) {
+  for (let i = 0; i < closest.length; ++i) {
     const res = getMarkedStringAndCommonWordsMap(queryIdx, source.get(closest[i]));
 
     for (const word of res.commonWords.keys())

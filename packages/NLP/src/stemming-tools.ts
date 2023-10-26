@@ -6,7 +6,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {stemmer} from 'stemmer';
 import { UMAP } from 'umap-js';
-import {MetricInfo, getDefaultMetric, getChoicesList, DISTANCE_TYPE, getOneHotMetricsMap, getDefaultDistnce, DISTANCE_TYPES} from './metric-def';
+import {STR_METRIC_TYPE, MetricType, MetricInfo, getDefaultMetric, 
+  getChoicesList, DISTANCE_TYPE, getOneHotMetricsMap, getDefaultDistnce, DISTANCE_TYPES,
+  getDistanceFn, getMetricFn} from './metric-def';
 
 type WordInfo = {
   index: number,
@@ -41,6 +43,7 @@ export var stemBuffer: StemBuffer = {
 
 const RATIO = 0.05;
 const INFTY = 100000;
+const TINY = 0.000001;
 export const MIN_CHAR_COUNT = 1;
 
 const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", 
@@ -63,6 +66,15 @@ const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "
   "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"];
 
 const SEPARATORS = '[].,:;?!(){} \n\t#';
+
+enum ERR_MSG {
+  UNSUPPORTED_METRIC = 'Unsupported metric',
+};
+
+type FeatureSpecification = {
+  source: any,
+  metricFn: (a: any, b: any) => number;
+};
 
 /** Get words of input string, stop words are emoved. */
 function getWords(str: string, minCharCount: number): string[] {
@@ -446,8 +458,7 @@ export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
         map.set(key, val.metric);
     }
 
-    stemBuffer.metricDef = map; 
-    console.log(stemBuffer);
+    stemBuffer.metricDef = map;
   })
   .show({x: 300, y: 300});
 }
@@ -463,4 +474,154 @@ export function setStemmingBuffer(df: DG.DataFrame, source: DG.Column): void {
   stemBuffer.mostCommon = stemmingRes.mostCommon;
   stemBuffer.metricDef = getOneHotMetricsMap(df, source);
   stemBuffer.aggrDistance = getDefaultDistnce();
+}
+
+function getTargetColDistFn(metric: MetricInfo): (query: Uint16Array, current: Uint16Array) => number {
+  switch (metric.type) {
+    case STR_METRIC_TYPE.STEMMING_BASED:
+      return (query: Uint16Array, current: Uint16Array) => {
+        const curLen = current.length;
+        
+        if (curLen === 0) 
+          return INFTY;
+        
+        return metric.weight * ((query.length < curLen) ? 1 : curLen) / (commonItemsCountNon(query, current) + TINY);
+      }; 
+    
+    case STR_METRIC_TYPE.EQUALITY:
+      return (query: Uint16Array, current: Uint16Array) => {
+        if (query === current)
+          return metric.weight;
+
+        return 0;
+      };
+    
+    default:
+      throw new Error(ERR_MSG.UNSUPPORTED_METRIC);
+  }
+}
+
+/** 
+export function getClosestAdvanced(idx: number, count: number): Uint32Array {
+
+  console.log(stemBuffer.metricDef);
+  console.log(stemBuffer.aggrDistance);  
+
+  const indices = stemBuffer.indices!;
+  const size = indices.length;
+  const query = indices.get(idx) as Uint16Array;
+  const queryLen = query.length;
+
+  if ((size < count) || (queryLen === 0))
+    return new Uint32Array([...Array(size).keys()]);
+
+  const targetColMetricDef = stemBuffer.metricDef?.get(stemBuffer.colName!);  
+  let targetColDistFn = (query: Uint16Array, current: Uint16Array) => 0;
+  
+  if (targetColMetricDef !== undefined) 
+    if (targetColMetricDef.weight > 0)
+      targetColDistFn = getTargetColDistFn(targetColMetricDef);
+
+  const closestInds = new Uint32Array(count);
+  const closestDists = new Float32Array(count);
+    
+  for (let i = 0; i < count; ++i) {
+    const current = indices.get(i) as Uint16Array; 
+    closestInds[i] = i;
+    closestDists[i] = targetColDistFn(query, current);
+  }
+    
+  let maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
+  
+  for (let i = count; i < size; ++i) {
+    const current = indices.get(i) as Uint16Array;
+    const curRelDist = targetColDistFn(query, current);
+
+    if (curRelDist < closestDists[maxRelIdx]) {
+      closestDists[maxRelIdx] = curRelDist;
+      closestInds[maxRelIdx] = i;
+      maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
+    }    
+  }
+  
+  return closestInds.filter(i => i !== idx);
+}*/
+
+/** */
+export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number): Uint32Array {
+
+  console.log(stemBuffer.metricDef);
+  console.log(stemBuffer.aggrDistance);  
+
+  const indices = stemBuffer.indices!;
+  const size = indices.length;
+  const query = indices.get(idx) as Uint16Array;
+  const queryLen = query.length;
+
+  if ((size < count) || (queryLen === 0) || (stemBuffer.metricDef === undefined))
+    return new Uint32Array([...Array(size).keys()]);
+
+  if (stemBuffer.metricDef.size < 1)
+    return new Uint32Array([...Array(count).keys()]);
+
+  const featuresCount = stemBuffer.metricDef.size;
+  const featuresMetricVals = new Float32Array(featuresCount);
+  const featureDistance = getDistanceFn(stemBuffer.aggrDistance!, featuresCount);
+  const featureMap = new Map<string, FeatureSpecification>();
+  const queryFeatures = new Map<string, any>();
+
+  for (const [key, value] of stemBuffer.metricDef) 
+    if (key === stemBuffer.colName!) {
+      featureMap.set(key, {
+        source: indices,
+        metricFn: getTargetColDistFn(value)
+      });
+
+      queryFeatures.set(key, indices.get(idx));
+    }
+    else {
+      featureMap.set(key, {
+        source: df.col(key)?.getRawData(),
+        metricFn: getMetricFn(value)
+      });
+
+      queryFeatures.set(key, featureMap.get(key)?.source[idx]);
+    }  
+
+  console.log(queryFeatures);
+
+  const closestInds = new Uint32Array(count);
+  const closestDists = new Float32Array(count);
+    
+  for (let i = 0; i < count; ++i) {
+    let j = 0;
+
+    for (const [key, value] of featureMap) {
+      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), (key === stemBuffer.colName!) ? indices.get(i) : value.source[i]);
+      ++j;
+    }
+
+    closestInds[i] = i;
+    closestDists[i] = featureDistance(featuresMetricVals);
+  }
+    
+  let maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
+  
+  for (let i = count; i < size; ++i) {
+    let j = 0;
+
+    for (const [key, value] of featureMap) {
+      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), (key === stemBuffer.colName!) ? indices.get(i) : value.source[i]);
+      ++j;
+    }
+    const curDist = featureDistance(featuresMetricVals);
+
+    if (curDist < closestDists[maxRelIdx]) {
+      closestDists[maxRelIdx] = curDist;
+      closestInds[maxRelIdx] = i;
+      maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
+    }    
+  }
+  
+  return closestInds.filter(i => i !== idx);
 }

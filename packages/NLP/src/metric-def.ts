@@ -11,21 +11,21 @@ enum GENERAL_METRIC_TYPE {
 };
 const GENERAL_METRIC_TYPES = [GENERAL_METRIC_TYPE.EQUALITY];
 
-enum STR_METRIC_TYPE {
+export enum STR_METRIC_TYPE {
   STEMMING_BASED = 'stemming',
   EQUALITY = 'coincidence',
 };
 const STRING_METRIC_TYPES = [STR_METRIC_TYPE.EQUALITY, STR_METRIC_TYPE.STEMMING_BASED];
 
 enum NUM_METRIC_TYPE {
-  ABS_DIFFERENCE = 'difference',
+  DIFFERENCE = 'difference',
   EQUALITY = 'coincidence',
 };
-const NUM_METRIC_TYPES = [NUM_METRIC_TYPE.EQUALITY, NUM_METRIC_TYPE.ABS_DIFFERENCE];
+const NUM_METRIC_TYPES = [NUM_METRIC_TYPE.EQUALITY, NUM_METRIC_TYPE.DIFFERENCE];
 
 enum DEFAULT_METRIC {
   STR = STR_METRIC_TYPE.EQUALITY,
-  NUM = NUM_METRIC_TYPE.ABS_DIFFERENCE,
+  NUM = NUM_METRIC_TYPE.DIFFERENCE,
   GENERAL = GENERAL_METRIC_TYPE.EQUALITY,
 };
 
@@ -40,6 +40,12 @@ export enum DISTANCE_TYPE {
   EUCLIDEAN = 'Euclidian',
   MANHATTAN = 'Manhattan',
 };
+
+enum ERR_MSG {
+  WRONG_DISTNACE = 'unsupported distance',
+  WRONG_DIMENSIONALITY = 'incorrect dimensionality',
+  WRONG_METRIC = 'unsupported metric',
+}
 
 export const DISTANCE_TYPES = [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN];
 
@@ -102,3 +108,47 @@ export function getOneHotMetricsMap(df: DG.DataFrame, target: DG.Column): Map<st
 }
 
 export function getDefaultDistnce(): DISTANCE_TYPE { return DISTANCE_TYPES[0]; }
+
+export function getDistanceFn(type: DISTANCE_TYPE, dimensionality: number): (vector: Float32Array) => number {
+  if (dimensionality < 1)
+    throw new Error(ERR_MSG.WRONG_DIMENSIONALITY);
+    
+  switch (type) {
+    case DISTANCE_TYPE.EUCLIDEAN:
+      return (vector: Float32Array) => {
+        let s = 0;
+
+        for (let i = 0; i < dimensionality; ++i)
+          s += vector[i] ** 2;
+
+        return Math.sqrt(s);
+      };
+
+    case DISTANCE_TYPE.MANHATTAN:
+      return (vector: Float32Array) => {
+        let s = 0;
+
+        for (let i = 0; i < dimensionality; ++i)
+          s += Math.abs(vector[i]);
+
+        return s;
+      };
+
+    default:
+      throw new Error(ERR_MSG.WRONG_DISTNACE);
+  }
+}
+
+export function getMetricFn(info: MetricInfo): (a: any, b: any) => number {
+  switch (info.type) {    
+    case NUM_METRIC_TYPE.DIFFERENCE:
+      return (a: any, b: any) => info.weight * (a - b);
+    
+    default:
+      return (a: any, b: any) => {
+        if (a === b)
+          return 0;
+        return info.weight;
+      }    
+  }
+}
