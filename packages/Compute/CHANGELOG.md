@@ -1,5 +1,11 @@
 # Compute changelog
 
+## 1.15.2 (2023-10-26)
+
+### Fixed bugs
+
+- Removed idle pkpd.R and pop-pk.R scripts
+
 ## 1.15.1 (2023-10-21)
 
 ### Fixed bugs
