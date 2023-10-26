@@ -1793,8 +1793,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear filter'),
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
-      ui.iconFA('caret-down', () => this.expandAndCollapse(true), 'Expand all'),
-      ui.iconFA('caret-up', () => this.expandAndCollapse(false), 'Collapse all'),
+      ui.iconFA('angle-double-down', () => this.expandAndCollapse(true), 'Expand all'),
+      ui.iconFA('angle-double-up', () => this.expandAndCollapse(false), 'Collapse all'),
       ui.divText(' '),
       this._iconDelete = ui.iconFA('trash-alt',
         () => {
