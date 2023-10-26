@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TAB, APP} from './const/ui';
-import {MainTabUI} from './tabs/main';
-import {SdfTabUI} from './tabs/sdf';
-import {AxolabsTabUI} from './tabs/axolabs';
+import {TranslatorLayoutHandler} from './apps/oligo-translator';
+import {StructureLayoutHandler} from './apps/oligo-structure';
+import {PatternLayoutHandler} from './apps/oligo-pattern';
 import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
 import {_package} from '../package';
 import {tryCatch} from '../model/helpers';
@@ -158,11 +158,11 @@ class OligoTranslatorUI extends SimpleAppUIBase {
       viewMonomerLibIcon,
     ];
     this.view.setRibbonPanels([this.topPanel]);
-    this.ui = new MainTabUI();
+    this.ui = new TranslatorLayoutHandler();
   }
 
   private readonly topPanel: HTMLElement[];
-  private readonly ui: MainTabUI;
+  private readonly ui: TranslatorLayoutHandler;
 
   protected getHtml(): Promise<HTMLDivElement> {
     return this.ui.getHtmlElement();
@@ -172,9 +172,9 @@ class OligoTranslatorUI extends SimpleAppUIBase {
 class OligoPatternUI extends SimpleAppUIBase {
   constructor() {
     super(APP.PATTERN);
-    this.ui = new AxolabsTabUI();
+    this.ui = new PatternLayoutHandler();
   }
-  private readonly ui: AxolabsTabUI;
+  private readonly ui: PatternLayoutHandler;
   protected getHtml(): Promise<HTMLDivElement> {
     return Promise.resolve(this.ui.htmlDivElement);
   }
@@ -183,9 +183,9 @@ class OligoPatternUI extends SimpleAppUIBase {
 class OligoStructureUI extends SimpleAppUIBase {
   constructor() {
     super(APP.STRUCTRE)
-    this.ui = new SdfTabUI();
+    this.ui = new StructureLayoutHandler();
   }
-  private readonly ui: SdfTabUI;
+  private readonly ui: StructureLayoutHandler;
 
   protected getHtml(): Promise<HTMLDivElement> {
     return this.ui.getHtmlDivElement();

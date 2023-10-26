@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import '../css/sdf-tab.css';
+import '../style/structure-app.css';
 import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
@@ -22,7 +22,7 @@ const enum DIRECTION {
 };
 const STRANDS = ['ss', 'as', 'as2'] as const;
 
-export class SdfTabUI {
+export class StructureLayoutHandler {
   constructor() {
     this.onInput = new rxjs.Subject<string>();
     this.onInvalidInput = new rxjs.Subject<string>();
@@ -38,7 +38,7 @@ export class SdfTabUI {
       STRANDS.map((key) => [key, false])
     );
     this.moleculeImgDiv = ui.block([]);
-    $(this.moleculeImgDiv).addClass('st-sdf-mol-img');
+    $(this.moleculeImgDiv).addClass('st-structure-mol-img');
 
     DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       await this.updateMoleculeImg();
@@ -62,10 +62,10 @@ export class SdfTabUI {
     const boolInputsAndButton = this.getBoolInputsAndButton();
     await this.updateMoleculeImg();
     const bottomDiv = ui.divH([boolInputsAndButton, this.moleculeImgDiv]);
-    $(bottomDiv).addClass('st-sdf-bottom');
+    $(bottomDiv).addClass('st-structure-bottom');
 
     const sdfTabBody = ui.divV([tableLayout, bottomDiv]);
-    $(sdfTabBody).addClass('st-sdf-body');
+    $(sdfTabBody).addClass('st-structure-body');
 
     return sdfTabBody;
   }
@@ -82,7 +82,7 @@ export class SdfTabUI {
     const boolInputsAndButtonArray = [this.saveAllStrandsInput.root, this.useChiralInput.root, saveButton];
     const boolInputsAndButton = ui.divV(boolInputsAndButtonArray);
     for (const item of boolInputsAndButtonArray)
-      $(item).addClass('st-sdf-bool-button-block');
+      $(item).addClass('st-structure-bool-button-block');
     return boolInputsAndButton;
   }
 
@@ -137,16 +137,16 @@ export class SdfTabUI {
 
     for (const strand of STRANDS) {
       let element = label[strand].parentElement!;
-      element.classList.add('st-sdf-input-form');
+      element.classList.add('st-structure-input-form');
       // the following line is necessary because otherwise overridden by
       // d4-item-table class
       $(element).css('padding-top', '3px');
 
       element = directionChoiceInput[strand].root.parentElement!;
-      element.classList.add('st-sdf-input-form', 'st-sdf-direction-choice');
+      element.classList.add('st-structure-input-form', 'st-structure-direction-choice');
 
       element = this.inputBase[strand].root.parentElement!;
-      element.classList.add('st-sdf-text-input-td');
+      element.classList.add('st-structure-text-input-td');
     }
     return tableLayout;
   }

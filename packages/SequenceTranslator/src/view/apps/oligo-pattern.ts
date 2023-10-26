@@ -18,7 +18,7 @@ import $ from 'cash-dom';
 type BooleanInput = DG.InputBase<boolean | null>;
 type StringInput = DG.InputBase<string | null>;
 
-export class AxolabsTabUI {
+export class PatternLayoutHandler {
   get htmlDivElement() {
     function updateModification(strand: string) {
       modificationItems[strand].innerHTML = '';
@@ -795,18 +795,5 @@ export class AxolabsTabUI {
             asModificationDiv,
       ], {style: {overflowX: 'scroll', padding:'12px 24px'}})
     ], {}, true)
-    /*
-    return ui.splitH([
-      ui.div([
-        appAxolabsDescription,
-        mainSection!,
-      ])!,
-      ui.box(
-        ui.divH([
-          modificationSection[SS],
-          modificationSection[AS],
-        ]), {style: {maxWidth: '360px'}},
-      ),
-    ]);*/
   }
 }

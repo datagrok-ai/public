@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import '../css/main-tab.css';
+import '../style/translator-app.css';
 import $ from 'cash-dom';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
@@ -13,7 +13,7 @@ import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-util
 import {getTranslatedSequences} from '../../model/format-translation/conversion-utils';
 import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
-import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../const/main-tab';
+import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../const/oligo-translator';
 import {DEFAULT_AXOLABS_INPUT} from '../const/ui';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
@@ -21,7 +21,7 @@ import {FormatConverter} from '../../model/format-translation/format-converter';
 import {codesToHelmDictionary} from '../../model/data-loading-utils/json-loader';
 import {DEFAULT_FORMATS} from '../../model/const';
 
-export class MainTabUI {
+export class TranslatorLayoutHandler {
   constructor() {
     const INPUT_FORMATS = Object.keys(codesToHelmDictionary).concat(DEFAULT_FORMATS.HELM);
     this.moleculeImgDiv = ui.div([]);
@@ -81,7 +81,7 @@ export class MainTabUI {
     const upperBlock = ui.table(
       [inputTableRow], (item) => [item.format, item.textInput]
     );
-    upperBlock.classList.add('st-main-input-table');
+    upperBlock.classList.add('st-translator-input-table');
 
     const outputTable = ui.block([
       this.outputTableDiv,
@@ -140,7 +140,7 @@ export class MainTabUI {
     const outputTable = ui.table(tableRows, (item) => [item.format, item.sequence], ['FORMAT', 'SEQUENCE']);
 
     this.outputTableDiv.append(outputTable);
-    this.outputTableDiv.classList.add('st-main-output-table');
+    this.outputTableDiv.classList.add('st-translator-output-table');
   }
 
   private async updateMolImg(): Promise<void> {
