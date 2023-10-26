@@ -43,18 +43,18 @@ type PositionInBonds = {
 
 /** Translate HELM column into molfile column and append to the dataframe */
 export async function helm2mol(df: DG.DataFrame, helmCol: DG.Column<string>): Promise<void> {
-  // const df = await _package.files.readCsv('./samples/helm-to-molfile.csv');
-  // grok.shell.addTableView(df);
-  // const helmCol = df.col('HELM');
-  // if (!helmCol) {
-  //   grok.shell.error('HELM column not found');
-  //   return;
-  // }
+  const molCol = await getMolColumnFromHelm(df, helmCol);
+  df.columns.add(molCol, true);
+  await grok.data.detectSemanticTypes(df);
+}
+
+
+/** Translate HELM column into molfile column and append to the dataframe */
+export async function getMolColumnFromHelm(df: DG.DataFrame, helmCol: DG.Column<string>): Promise<DG.Column<string>> {
   const converter = new HelmToMolfileConverter(helmCol, df);
   const molCol = await converter.convertToRdKitBeautifiedMolfileColumn();
   molCol.semType = DG.SEMTYPE.MOLECULE;
-  df.columns.add(molCol, true);
-  await grok.data.detectSemanticTypes(df);
+  return molCol;
 }
 
 export class HelmToMolfileConverter {
