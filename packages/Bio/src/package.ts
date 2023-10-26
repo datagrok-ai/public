@@ -1097,7 +1097,6 @@ export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG
   await grok.data.detectSemanticTypes(df);
 }
 
-//top-menu: Bio | Convert | SDF to JSON Library...
 //name: SDF to JSON Library
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
