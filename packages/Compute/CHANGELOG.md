@@ -1,6 +1,6 @@
 # Compute changelog
 
-## 1.15.2 (2023-10-26)
+## 1.15.2 (WIP)
 
 ### Fixed bugs
 
