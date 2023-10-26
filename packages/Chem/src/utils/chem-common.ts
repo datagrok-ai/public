@@ -69,3 +69,9 @@ export function hexToPercentRgb(hex: string): number[] | null {
       0.3
   ] : null;
 }
+
+export function getSigFigs(n: number, sig: number) {
+  var mult = Math.pow(10, sig - Math.floor(Math.log(n) / Math.LN10) - 1);
+  return Math.round(n * mult) / mult;
+}
+

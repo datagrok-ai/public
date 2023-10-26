@@ -249,7 +249,7 @@ M  END
     substructureObj?: ISubstruct): IMolRenderingInfo {    
     const name = molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords +
-       ' || ' + JSON.stringify(details);
+       ' || ' + JSON.stringify(details) + '||' + JSON.stringify(substructureObj);
     return this.molCache.getOrCreate(name, (_: any) =>
       this._fetchMolGetOrCreate(molString, scaffolds, molRegenerateCoords, details, alignByFirstSubstructure, substructureObj));
   }
