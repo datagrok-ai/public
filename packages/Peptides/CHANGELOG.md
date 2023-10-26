@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.15.3 (2023-10-26)
+
+### Bug Fixes
+
+* Fixed docking sequence space would completely remove the viewer.
+
 ## 1.15.2 (2023-10-26)
 
 ### Features

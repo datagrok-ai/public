@@ -1138,6 +1138,5 @@ export class PeptidesModel {
     if (!(seqSpaceViewer instanceof DG.ScatterPlotViewer))
       return;
     seqSpaceViewer.props.colorColumnName = C.COLUMNS_NAMES.ACTIVITY_SCALED;
-    this.analysisView.dockManager.dock(seqSpaceViewer, DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE), 'Sequence space');
   }
 }
