@@ -309,11 +309,7 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
 
   const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
   const moleculeHost = ui.canvas(width, height);
-  let resizable;
-  if (viewer)
-    resizable = viewer.resizable;
-  else
-    resizable = false;
+  const resizable = viewer ? viewer.resizable : false;
   
   $(moleculeHost).addClass('chem-canvas');
   moleculeHost.width = (resizable && !tooltip) ? (viewer!.sizesMap['large'].width) * r : width * r;
@@ -408,7 +404,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   addOrphanFolders: boolean = true;
   resizable: boolean = false;
   smartsExist: boolean = false;
-  colorOn: boolean = false;
   current?: DG.TreeViewNode;
 
   _generateLink?: HTMLElement;
@@ -782,11 +777,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         const groupValue = value(group);
         const chosenColor = groupValue.chosenColor;
         const parentColor = groupValue.parentColor;
-        let finalColor;
-        if (chosenColor && groupValue.colorOn)
-          finalColor = chosenColor;
-        else
-          finalColor = parentColor;
+        const finalColor = chosenColor && groupValue.colorOn ? chosenColor : parentColor;
+
         if (finalColor) {
           const substructure = chosenColor ? molStrSketcher : this.getParentSmilesIterative(group);
           molHost = renderMolecule(molStrSketcher, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer, false, finalColor, substructure);
@@ -895,12 +887,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
             substructure = molStrSketcher;
           }
 
-          let color;
-          if (parentValue.chosenColor && parentValue.colorOn)
-            color = parentValue.chosenColor;
-          else
-            color = parentValue.parentColor;
-          //const color = parentValue.chosenColor ?? parentValue.parentColor;
+          const color = parentValue.chosenColor && parentValue.colorOn
+            ? parentValue.chosenColor
+            : parentValue.parentColor;
+
           thisViewer.highlightCanvas(child, color!, substructure);
         
           if (color) {
@@ -1162,11 +1152,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (group instanceof DG.TreeViewGroup && !isOrphans(group)) {
         const groupValue = value(group);
         const parent = toJs(group.parent).value as ITreeNode;
-        let parentColor;
-        if (parent.chosenColor && parent.colorOn)
-          parentColor = parent.chosenColor;
-        else
-          parentColor = parent.parentColor;
+
+        const parentColor = parent.chosenColor && parent.colorOn
+            ? parent.chosenColor
+            : parent.parentColor;
 
         groupValue.parentColor = parentColor;
         
@@ -1427,11 +1416,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.addIcons(molHost, group, undefined, molStr);
     this.setNotBitOperation(group, isNot);
 
-    /*if (chosenColor)
-      value(group).colorOn = true;
-    else
-      value(group).colorOn = false;*/
-
     if (colorOn)
       value(group).colorOn = colorOn;
     else
@@ -1452,8 +1436,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         value(group).chosenColor = chosenColor; 
       if (parentColor)
         value(group).parentColor = parentColor;
-      /*if (parentColor && !chosenColor)
-        this.highlightCanvas(group, color, this.getParentSmilesIterative(group));*/
     }
 
     molHost.onclick = (e) => {
@@ -1534,18 +1516,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   changeCanvasSize(molString: any, canvas: any, width: number, height: number): void {
-    let color;
-    let substr;
-    if (molString.chosenColor && molString.colorOn) {
-      color = molString.chosenColor;
-      substr = molString.smiles;
-    } else {
-      color = molString.parentColor;
-      substr = this.getParentSmilesIterative(molString.group);
-    }
-    this.highlightCanvas(molString.group, color, substr);
+    const { chosenColor, colorOn, parentColor, smiles, group } = molString;
+    const color = chosenColor && colorOn ? chosenColor : parentColor;
+    const substr = chosenColor && colorOn ? smiles : this.getParentSmilesIterative(group);
+    
+    this.highlightCanvas(group, color, substr);
   }
-
+  
   makeNodeActiveAndFilter(node: DG.TreeViewNode) {
     this.checkBoxesUpdateInProgress = true;
     this.selectGroup(node);
