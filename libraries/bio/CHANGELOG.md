@@ -2,6 +2,9 @@
 
 ## 5.39.0 (2023-10-25)
 
+### Bug fixes
+* Fix monomer lib handler for PolyTool
+
 ### Features
 
 * Add VdRegionsViewer `filterSource` property.
