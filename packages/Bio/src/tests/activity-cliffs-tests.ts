@@ -8,6 +8,8 @@ import {_testActivityCliffsOpen} from './activity-cliffs-utils';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 import {_package} from '../package-test';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 
 
 category('activityCliffs', async () => {
@@ -39,7 +41,7 @@ category('activityCliffs', async () => {
     const cliffsNum = DG.Test.isInBenchmark ? 6 : 3;
 
     await _testActivityCliffsOpen(actCliffsDf, DimReductionMethods.UMAP,
-      'sequence', 'Activity', 90, cliffsNum);
+      'sequence', 'Activity', 90, cliffsNum, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('activityCliffsWithEmptyRows', async () => {
@@ -49,7 +51,7 @@ category('activityCliffs', async () => {
     viewList.push(actCliffsTableViewWithEmptyRows);
 
     await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, DimReductionMethods.UMAP,
-      'sequence', 'Activity', 90, 3);
+      'sequence', 'Activity', 90, 3, MmDistanceFunctionsNames.LEVENSHTEIN);
   });
 
   test('Helm', async () => {
@@ -57,6 +59,6 @@ category('activityCliffs', async () => {
     const view = grok.shell.addTableView(df);
 
     await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
-      'HELM', 'Activity', 90, 53);
+      'HELM', 'Activity', 90, 53, BitArrayMetricsNames.Tanimoto);
   });
 });

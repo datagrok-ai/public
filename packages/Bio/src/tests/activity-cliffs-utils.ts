@@ -4,14 +4,17 @@ import * as grok from 'datagrok-api/grok';
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {activityCliffs, BYPASS_LARGE_DATA_WARNING} from '../package';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
 export async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimReductionMethods,
-  seqColName: string, activityColName: string, similarityThr: number, tgtNumberCliffs: number
+  seqColName: string, activityColName: string, similarityThr: number, tgtNumberCliffs: number,
+  similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics
 ): Promise<void> {
   await grok.data.detectSemanticTypes(df);
   const scatterPlot = await activityCliffs(
     df, df.getCol(seqColName), df.getCol(activityColName),
-    similarityThr, drMethod, {[`${BYPASS_LARGE_DATA_WARNING}`]: true});
+    similarityThr, drMethod, similarityMetric, {[`${BYPASS_LARGE_DATA_WARNING}`]: true});
   // const scatterPlot = (await grok.functions.call('Bio:activityCliffs', {
   //   table: df, molecules: df.getCol(colName), activities: df.getCol('Activity'),
   //   similarity: 50, methodName: method
