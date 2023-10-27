@@ -73,7 +73,7 @@ enum ERR_MSG {
 
 type FeatureSpecification = {
   source: any,
-  metricFn: (a: any, b: any) => number;
+  metricFn: (a: any, b: any) => number,
 };
 
 /** Get words of input string, stop words are emoved. */
@@ -555,8 +555,10 @@ export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number)
 
   const indices = stemBuffer.indices!;
   const size = indices.length;
-  const query = indices.get(idx) as Uint16Array;
-  const queryLen = query.length;
+  const queryText = indices.get(idx) as Uint16Array;
+  let targetColDistFn = (a: Uint16Array, b: Uint16Array) => 0;
+  let isTargetColUsed = false;
+  const queryLen = queryText.length;
 
   if ((size < count) || (queryLen === 0) || (stemBuffer.metricDef === undefined))
     return new Uint32Array([...Array(size).keys()]);
@@ -572,17 +574,13 @@ export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number)
 
   for (const [key, value] of stemBuffer.metricDef) 
     if (key === stemBuffer.colName!) {
-      featureMap.set(key, {
-        source: indices,
-        metricFn: getTargetColDistFn(value)
-      });
-
-      queryFeatures.set(key, indices.get(idx));
+      isTargetColUsed = true;
+      targetColDistFn = getTargetColDistFn(value);
     }
     else {
       featureMap.set(key, {
         source: df.col(key)?.getRawData(),
-        metricFn: getMetricFn(value)
+        metricFn: getMetricFn(value),
       });
 
       queryFeatures.set(key, featureMap.get(key)?.source[idx]);
@@ -597,9 +595,12 @@ export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number)
     let j = 0;
 
     for (const [key, value] of featureMap) {
-      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), (key === stemBuffer.colName!) ? indices.get(i) : value.source[i]);
+      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), value.source[i]);
       ++j;
     }
+
+    if (isTargetColUsed)
+      featuresMetricVals[j] = targetColDistFn(queryText, indices.get(i));
 
     closestInds[i] = i;
     closestDists[i] = featureDistance(featuresMetricVals);
@@ -611,9 +612,13 @@ export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number)
     let j = 0;
 
     for (const [key, value] of featureMap) {
-      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), (key === stemBuffer.colName!) ? indices.get(i) : value.source[i]);
+      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), value.source[i]);
       ++j;
     }
+
+    if (isTargetColUsed)
+      featuresMetricVals[j] = targetColDistFn(queryText, indices.get(i));
+
     const curDist = featureDistance(featuresMetricVals);
 
     if (curDist < closestDists[maxRelIdx]) {
