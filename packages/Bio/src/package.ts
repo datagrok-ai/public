@@ -75,6 +75,7 @@ import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {errInfo} from './utils/err-info';
+import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 
 import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
@@ -427,7 +428,6 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     };
   }
 
-
   const runCliffs = async () => {
     const sp = await getActivityCliffs(
       df,
@@ -457,13 +457,13 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     return;
   }
 
+  const pi = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
   return new Promise<DG.Viewer | undefined>((resolve, reject) => {
     if (df.rowCount > fastRowCount && !options?.[BYPASS_LARGE_DATA_WARNING]) {
       ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
         .onOK(async () => {
-          //const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => {});
+          runCliffs().then((res) => resolve(res)).catch((err) => reject(err));
         })
         .onCancel(() => { resolve(undefined); })
         .show();
@@ -474,7 +474,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     const [errMsg, errStack] = errInfo(err);
     _package.logger.error(errMsg, undefined, errStack);
     throw err;
-  });
+  }).finally(() => { pi.close(); });
 }
 
 //top-menu: Bio | Analyze | Sequence Space...
@@ -526,6 +526,7 @@ export async function sequenceSpaceTopMenu(
       const progress = (_nEpoch / epochsLength * 100);
       pg.update(progress, `Running sequence space ... ${progress.toFixed(0)}%`);
     }
+
     const embedColsNames = getEmbeddingColsNames(table);
     const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
     const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, macroMolecule);
@@ -1108,4 +1109,15 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
   const _jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
   const jsonMonomerLibrary = JSON.stringify(_jsonMonomerLibrary);
   DG.Utils.download(`${table.name}.json`, jsonMonomerLibrary);
+}
+
+// -- Utils --
+
+//name: detectMacromoleculeProbe
+//input: file file
+//input: string colName = ''
+//input: int probeCount = 100
+export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: string, probeCount: number): Promise<void> {
+  const csv: string = await file.readAsString();
+  await detectMacromoleculeProbeDo(csv, colName, probeCount);
 }
