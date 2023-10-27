@@ -149,7 +149,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
       observer.observe($('.grok-prop-panel').get(0)!, {subtree: true, attributes: true, childList: true, characterData: true});
     }), undefined, `<ol>
     <li>Next to <b>Molecule Properties</b>, click the column selector icon ('...').</li>
-    <li>Select these column: NumValenceElectrons.</li>
+    <li>Select this column: <b>NumValenceElectrons</b>.</li>
     <li>Click <b>OK</b>.</li></ol>`);
 
     this.title('Color-code for quick profiling', true);
