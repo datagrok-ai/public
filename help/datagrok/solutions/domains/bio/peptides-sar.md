@@ -13,7 +13,7 @@ Datagrok automatically detects peptide sequences from data and highlights hydrop
 
 You can perform SAR analysis on any dataset containing macromolecules and activities:
 
-1. Click **Bio → SAR → Peptpides...** in the top menu to prepare for the analysis. The dialog containing analysis
+1. Click **Bio > SAR > Peptides...** in the top menu to prepare for the analysis. The dialog containing analysis
 options will appear. In the dialog, you can preview the composition analysis with WebLogo.
 2. Choose the sequences column, this can be any Macromolecule column.
 3. Choose the activity column, this can be any numeric column.

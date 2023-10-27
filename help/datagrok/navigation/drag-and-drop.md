@@ -3,7 +3,7 @@ title: "Drag-and-drop"
 ---
 
 Datagrok lets almost all objects be drag-and-dropped, which makes a lot of interactions more intuitive. As soon as a
-user starts dragging an object, all possible drop zones get highlighed.
+user starts dragging an object, all possible drop zones get highlighted.
 
 Here are some of commonly used drag-and drop operations:
 

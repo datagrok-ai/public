@@ -23,10 +23,10 @@ This includes:
 * Domain-specific calculation and data processing functions
 * Custom applications built on top of Datagrok platform
 
-Out of the box Datagrok has extensive supports of chemoinformatics
+Out of the box Datagrok has extensive supports of cheminformatics
 and bioinformatics domains.
 
-For example, for chemoinformatics you can
+For example, for cheminformatics you can
 view rendered chemical structures for SMILES/SFD right in the spreadsheets,
 filter and find molecules by substructure,
 use specialized sketchers to edit chemical structures,
@@ -41,7 +41,7 @@ and more.
 
 Visit corresponding pages to explore domain-specific Datagrok capabilities:
 
-* [Chemoinformatics](chem/chem.md)
+* [Cheminformatics](chem/chem.md)
 * [Bioinformatics](bio/bio.md)
 * [Natural language processing](nlp/nlp.md)
 

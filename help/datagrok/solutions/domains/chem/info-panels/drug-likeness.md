@@ -4,7 +4,7 @@ title: "Drug likeness"
 
 From [openmolecules](https://www.openmolecules.org/properties/properties.html#druglikeness):
 _There are many approaches around that assess a compound's druglikeness partially based on topological descriptors,
-fingerprints of MDL struture keys or other properties as cLogP and molecular weights. Our approach is based on a list of
+fingerprints of MDL structure keys or other properties as cLogP and molecular weights. Our approach is based on a list of
 about 5300 distinct substructure fragments with associated druglikeness scores. The druglikeness is calculated with the
 following equation summing up score values of those fragments that are present in the molecule under investigation:._
 
@@ -13,7 +13,7 @@ following equation summing up score values of those fragments that are present i
 The occurrence frequency of every one of the fragments was determined within the collection of traded drugs and within
 the supposedly non-drug-like collection of Fluka compounds. All fragments with an overall frequency above a certain
 threshold were inverse clustered in order to remove highly redundant fragments. For the remaining fragments the
-druglikeness score was determined as the logarithm of the quotent of frequencies in traded drugs versus Fluka chemicals.
+druglikeness score was determined as the logarithm of the quotient of frequencies in traded drugs versus Fluka chemicals.
 
 ## Drug score
 

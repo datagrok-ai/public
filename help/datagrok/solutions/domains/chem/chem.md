@@ -381,7 +381,7 @@ To manually sketch or modify the scaffold tree, use these controls:
 
 * To clear the tree, in the **Toolbar**, click the **Drop all trees** (trash) icon.
 * To add a new root node,  in the **Toolbar**, click the **Add new root structure** (**+**) icon. This opens a molecular sketcher.
-* To add a new scaffold under an exising one, click the **Add new scaffold** (**+**) icon next to the scaffold.
+* To add a new scaffold under an existing one, click the **Add new scaffold** (**+**) icon next to the scaffold.
   Alternatively, right-click the molecule and select **Add New...**.
 * To delete a scaffold along with its children, right-click it and select **Remove**.
 * To edit a scaffold, click the **Edit...** icon next to the scaffold.
@@ -455,7 +455,7 @@ The Activity Cliffs tool in Datagrok detects and visualizes pairs of molecules w
    1. Select the source table, molecular column, and activity data column to analyze.
    1. Set the similarity cutoff.
    1. Select a dimensionality reduction algorithm and adjust its parameters using the **Gear** icon next to the **Method** control.
-1. Click **OK** to execute the analysis. A scatterlpot visualization is added to the view.
+1. Click **OK** to execute the analysis. A scatterplot visualization is added to the view.
 1. Optional. In the scatterplot, click the link with the detected number of cliffs to open an **Activity Cliffs** table containing all pairs of molecules identified as cliffs. The tables also has detailed information such as similarity score, activity difference score, and other data.
 
 In the scatterplot, the marker color corresponds to the level of molecule activity, and the size represents the maximum detected activity cliff for that molecule. The opacity of the line connecting molecule pairs corresponds to the size of the activity cliff.

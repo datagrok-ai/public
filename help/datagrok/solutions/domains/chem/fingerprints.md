@@ -2,9 +2,9 @@
 title: "Molecular fingerprints"
 ---
 
-Datagrok supports calculation of the following fingerprinters:
+Datagrok supports calculation of the following fingerprints:
 
-| Fingerprinter | Description |
+| Fingerprint | Description |
 |--------|-------------|
 | RDKFingerprint | RDKit topological fingerprint for a molecule |
 | MACCSKeys | SMARTS-based implementation of the 166 public MACCS keys |
