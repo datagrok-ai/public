@@ -3,6 +3,8 @@
 --input: list groups
 --input: list packages
 --connection: System:Datagrok
+--meta.cache: all
+--meta.invalidate: 0 0 0 * *
 with recursive selected_groups as (
   select id from groups
   where id = any(@groups)

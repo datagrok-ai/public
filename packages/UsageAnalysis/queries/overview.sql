@@ -2,7 +2,7 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 with recursive selected_groups as (
@@ -55,7 +55,7 @@ group by date
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 with recursive selected_groups as (

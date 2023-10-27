@@ -93,7 +93,7 @@ export class FunctionsView extends UaView {
   }
 
   async getFunctionPane(cp: DG.Accordion, filter: Filter, single: boolean = false) {
-    const df = await grok.data.query('UsageAnalysis:FunctionsContextPane', filter);
+    const df = await grok.functions.call('UsageAnalysis:FunctionsContextPane', filter);
     const data: {[key: string]: [string, any, string, string][]} = {};
     for (const r of df.rows) {
       const key = r.pid + ':' + r.function;

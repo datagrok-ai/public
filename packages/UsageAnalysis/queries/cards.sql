@@ -4,7 +4,7 @@
 --input: list packages
 --output: int count1
 --output: int count2
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: UniqueUsersCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
@@ -50,7 +50,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --input: list groups
 --output: int count1
 --output: int count2
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: NewUsersCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
@@ -83,7 +83,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --input: list groups
 --output: int count1
 --output: int count2
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: SessionsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
@@ -120,7 +120,7 @@ select (select count(distinct res.eid) as count1 from res where period = 1),
 --input: list groups
 --output: int count1
 --output: int count2
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test1: ViewsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
@@ -155,7 +155,7 @@ select (select count(distinct res.qid) as count1 from res where period = 1),
 --input: list packages
 --output: int count1
 --output: int count2
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: ConnectionsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
@@ -194,7 +194,7 @@ select (select count(distinct res.cid) as count1 from res where period = 1),
 --input: list packages
 --output: int count1
 --output: int count2
---meta.cache: true
+--meta.cache: all
 --meta.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: QueriesCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
