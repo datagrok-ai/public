@@ -45,6 +45,7 @@ function requestMembership(groupName: string) {
       }
       const group = groups[0];
 
+      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14160
       fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: "POST"})
     } catch (e: any) {
       grok.shell.error(e.toString());
@@ -247,6 +248,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
   init() {
     setTimeout(async () => {
+      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
       this.userGroups = (await (await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
 
       grok.functions.onBeforeRunAction.subscribe((fc) => {
