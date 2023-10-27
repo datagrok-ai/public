@@ -5,8 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemmColumn, getClosest, stemBuffer, getEmbeddings, getMarkedStringAndCommonWordsMap, 
-  MIN_CHAR_COUNT, modifyMetric, setStemmingBuffer, getClosestAdvanced} from './stemming-tools';
+import {stemCash, getEmbeddings, getMarkedStringAndCommonWordsMap, modifyMetric, setStemmingCash, getClosest} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -192,63 +191,15 @@ export async function initAWS() {
   //comprehendMedical = new AWS.ComprehendMedical();
 }
 
-//name: Similar
-//tags: panel, widgets
-//input: string query {semType: Text}
-//output: widget result
-//condition: true
-export function similar(query: string): DG.Widget {
-  const df = grok.shell.t;
-  const source = df.currentCol;
-  const queryIdx = df.currentRowIdx;
-
-  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
-    setStemmingBuffer(df, source);
-
-  const closest = getClosest(stemBuffer.indices!, queryIdx, 6); 
-
-  const uiElements = [] as HTMLElement[];
-  const filterWords = new Map<string, number>();
-
-  for (let i = 1; i < closest.length; ++i) {
-    const res = getMarkedStringAndCommonWordsMap(queryIdx, source.get(closest[i]));
-
-    for (const word of res.commonWords.keys())
-      filterWords.set(word, (filterWords.get(word) ?? 0) + res.commonWords.get(word)!);
-
-    const uiElem = ui.inlineText(res.marked);
-    //@ts-ignore
-    $(uiElem).css({"cursor": "pointer"});
-    uiElem.onclick = () => { df.currentCell = df.cell(closest[i], source.name) };    
-    uiElements.push(uiElem);    
-    ui.tooltip.bind(uiElem, 'Click to navigate.');
-    uiElements.push(ui.divText('________________________________'));    
-  }
-
-  const filterWordsSorted = new Map(Array.from(filterWords).sort((a, b) => a[1] > b[1] ? 1 : -1));
-  
-  const wgt = new DG.Widget(ui.divV(uiElements));
-
-  return wgt;
-}
-
 //top-menu: NLP | Get dictionary...
 //name: Compute Embeddings
 //input: dataframe table {caption: Table; category: Data}
 //input: column source {type: string; caption: Table; category: Data}
 //output: dataframe dictionary
 export function getDict(table: DG.DataFrame, source: DG.Column): DG.DataFrame {
-  if ((stemBuffer.dfName !== table.name) || (stemBuffer.colName !== source.name)) {
-    stemBuffer.dfName = table.name;
-    stemBuffer.colName = source.name;
+  setStemmingCash(table, source);
 
-    const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
-    stemBuffer.dictionary = stemmingRes.dict;
-    stemBuffer.indices = stemmingRes.indices;
-    stemBuffer.mostCommon = stemmingRes.mostCommon;
-  }
-
-  const dict = stemBuffer.dictionary;
+  const dict = stemCash.dictionary;
   const size = dict?.size ?? 0;
   const words = Array<string>(size);
   const freqs = new Int32Array(size);
@@ -419,13 +370,12 @@ export function distance(query: string): DG.Widget {
   const df = grok.shell.t;
   const source = df.currentCol;
 
-  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
-    setStemmingBuffer(df, source);
+  setStemmingCash(df, source);
   
   const uiElem = ui.label('Edit');
   //@ts-ignore
   $(uiElem).css({"cursor": "pointer", "color": "#3cb173"});
-  uiElem.onclick = () => { modifyMetric(df, source); };
+  uiElem.onclick = () => { modifyMetric(df); };
 
   ui.tooltip.bind(uiElem, 'Edit text similarity measure.');
 
@@ -434,20 +384,19 @@ export function distance(query: string): DG.Widget {
   return wgt;
 }
 
-//name: Similar (advanced)
+//name: Similar
 //tags: panel, widgets
 //input: string query {semType: Text}
 //output: widget result
 //condition: true
-export function similarAdvanced(query: string): DG.Widget {
+export function similar(query: string): DG.Widget {
   const df = grok.shell.t;
   const source = df.currentCol;
   const queryIdx = df.currentRowIdx;
 
-  if ((stemBuffer.dfName !== df.name) || (stemBuffer.colName !== source.name))
-    setStemmingBuffer(df, source);
+  setStemmingCash(df, source);
 
-  const closest = getClosestAdvanced(df, queryIdx, 6); 
+  const closest = getClosest(df, queryIdx, 6); 
 
   const uiElements = [] as HTMLElement[];
   const filterWords = new Map<string, number>();
@@ -466,8 +415,6 @@ export function similarAdvanced(query: string): DG.Widget {
     ui.tooltip.bind(uiElem, 'Click to navigate.');
     uiElements.push(ui.divText('________________________________'));    
   }
-
-  const filterWordsSorted = new Map(Array.from(filterWords).sort((a, b) => a[1] > b[1] ? 1 : -1));
   
   const wgt = new DG.Widget(ui.divV(uiElements));
 

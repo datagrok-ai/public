@@ -6,16 +6,18 @@ import * as DG from 'datagrok-api/dg';
 
 import {stemmer} from 'stemmer';
 import { UMAP } from 'umap-js';
-import {STR_METRIC_TYPE, MetricType, MetricInfo, getDefaultMetric, 
-  getChoicesList, DISTANCE_TYPE, getOneHotMetricsMap, getDefaultDistnce, DISTANCE_TYPES,
-  getDistanceFn, getMetricFn} from './metric-def';
+import {STR_METRIC_TYPE, MetricInfo, getDefaultMetric, 
+  getMetricTypesChoicesList, DISTANCE_TYPE, getSingleSourceMetricsMap, getDefaultDistnce, DIST_TYPES_ARR,
+  getDistanceFn, getMetricFn} from './metrics';
 
-type WordInfo = {
+/** Word information: index in the dictionary and frequency. */
+type WordInfo = {  
   index: number,
   frequency: number,
 };
 
-type StemBuffer = {
+/** Cash of stemmed text column type. */
+type StemCash = {
   dfName: string | undefined,
   colName: string | undefined,
   dictionary: Map<string, WordInfo> | undefined,
@@ -25,13 +27,15 @@ type StemBuffer = {
   aggrDistance: DISTANCE_TYPE | undefined,
 };
 
-type ColDataType = {
+/** Column (feature) usage specification: type, metric & use. */
+type ColUseInfo = {
   type: string, 
   metric: MetricInfo, 
   use: boolean,
 };
 
-export var stemBuffer: StemBuffer = {
+/** Cash of stemmed text column. */
+export var stemCash: StemCash = {
   dfName: undefined,
   colName: undefined,
   dictionary: undefined,
@@ -42,10 +46,17 @@ export var stemBuffer: StemBuffer = {
 };
 
 const RATIO = 0.05;
-const INFTY = 100000;
-const TINY = 0.000001;
-export const MIN_CHAR_COUNT = 1;
 
+/** A big number. */
+const INFTY = 100000;
+
+/** A small number. */
+const TINY = 0.000001;
+
+/** Minimal number of characters in a word. */
+const MIN_CHAR_COUNT = 1;
+
+/** Words that are skipped, when applying stemming-based search. */
 const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", 
   "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", 
   "could", 
@@ -65,14 +76,17 @@ const STOP_WORDS = ["a", "about", "above", "after", "again", "against", "all", "
   "was", "we", "we'd", "we'll", "we're", "we've", "were", "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with", "would", 
   "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"];
 
+/** Separator characters. */
 const SEPARATORS = '[].,:;?!(){} \n\t#';
 
+/** Error messeges. */
 enum ERR_MSG {
   UNSUPPORTED_METRIC = 'Unsupported metric',
 };
 
-type FeatureSpecification = {
-  source: any,
+/** Feature operating specification. */
+type FeatureSpecification = {  
+  data: any,
   metricFn: (a: any, b: any) => number,
 };
 
@@ -90,7 +104,7 @@ function getStemmedWords(str: string, minCharCount: number): string[] {
 }
 
 /** Return dictionary of stemmed words & a column of indices. */
-export function stemmColumn(source: DG.Column<string>, minCharCount: number): {dict: Map<string, WordInfo>, indices: DG.Column, mostCommon: Set<number>} {
+function stemmColumn(source: DG.Column<string>, minCharCount: number): {dict: Map<string, WordInfo>, indices: DG.Column, mostCommon: Set<number>} {
   const dict = new Map<string, WordInfo>();
   const size = source.length;
   const indices = DG.Column.fromType(DG.COLUMN_TYPE.OBJECT, `${source.name} (inds)`, size);
@@ -126,9 +140,9 @@ export function stemmColumn(source: DG.Column<string>, minCharCount: number): {d
       mostCommon.add(val.index);
 
   return {dict: dict, indices: indices, mostCommon: mostCommon};
-}
+} // stemmColumn
 
-/** Return number of common elements. */
+/** Return number of common elements: the most common items are skipped. */
 function commonItemsCount(arr1: Uint16Array, arr2: Uint16Array): number {
   const len1 = arr1.length;
   const len2 = arr2.length;
@@ -138,73 +152,7 @@ function commonItemsCount(arr1: Uint16Array, arr2: Uint16Array): number {
 
   while((i1 < len1) && (i2 < len2))
     if (arr1[i1] === arr2[i2]) {
-      ++count;
-      ++i1;
-      ++i2;
-    }
-    else if (arr1[i1] < arr2[i2])
-      ++i1;
-    else
-      ++i2;
-  
-  return count;
-}
-
-/** Return indices of the closest items with respect to the overlap coefficient. */
-export function getClosest(indices: DG.Column, idx: number, count: number): Uint32Array {
-  const size = indices.length;
-  const query = indices.get(idx) as Uint16Array;
-  const queryLen = query.length;
-
-  if ((size < count) || (queryLen === 0))
-    return new Uint32Array([...Array(size).keys()]);
-
-  const closestInds = new Uint32Array(count);
-  const closestDists = new Float32Array(count);
-    
-  for (let i = 0; i < count; ++i) {
-    const current = indices.get(i) as Uint16Array;
-    const curLen = current.length;
- 
-    closestInds[i] = i;
-
-    if (curLen === 0) 
-      closestDists[i] = 0;    
-    else 
-      closestDists[i] = commonItemsCountNon(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
-  }
-    
-  let minRelIdx = closestDists.reduce((r, v, i, a) => v >= a[r] ? r : i, -1);
-  
-  for (let i = count; i < size; ++i) {
-    const current = indices.get(i) as Uint16Array;
-    const curLen = current.length;
-
-    if (curLen > 0) {      
-      const curRelDist = commonItemsCountNon(query, current) / ((queryLen < curLen) ? 1 : curLen); // */((queryLen < curLen) ? queryLen : curLen);
-
-      if (curRelDist > closestDists[minRelIdx]) {
-        closestDists[minRelIdx] = curRelDist;
-        closestInds[minRelIdx] = i;
-        minRelIdx = closestDists.reduce((r, v, i, a) => v >= a[r] ? r : i, -1);
-      }
-    }
-  }
-  
-  return closestInds.filter(i => i !== idx);
-}
-
-/** Return number of common elements. */
-function commonItemsCountNon(arr1: Uint16Array, arr2: Uint16Array): number {
-  const len1 = arr1.length;
-  const len2 = arr2.length;
-  let count = 0;
-  let i1 = 0;
-  let i2 = 0;
-
-  while((i1 < len1) && (i2 < len2))
-    if (arr1[i1] === arr2[i2]) {
-      if (!stemBuffer.mostCommon?.has(arr1[i1]))
+      if (!stemCash.mostCommon?.has(arr1[i1]))
         ++count;
       ++i1;
       ++i2;
@@ -217,6 +165,7 @@ function commonItemsCountNon(arr1: Uint16Array, arr2: Uint16Array): number {
   return count;
 }
 
+/** TODO: to remove or to update! */
 function distFn(arr1: number[], arr2: number[]): number {
   const idx1 = arr1[0];
   const idx2 = arr2[0];
@@ -224,8 +173,8 @@ function distFn(arr1: number[], arr2: number[]): number {
   if (idx1 === idx2)
     return 0;
 
-  const ref1 = stemBuffer.indices?.get(idx1) as Uint16Array;
-  const ref2 = stemBuffer.indices?.get(idx2) as Uint16Array;
+  const ref1 = stemCash.indices?.get(idx1) as Uint16Array;
+  const ref2 = stemCash.indices?.get(idx2) as Uint16Array;
 
   const len1 = ref1.length;
   const len2 = ref2.length;  
@@ -233,7 +182,7 @@ function distFn(arr1: number[], arr2: number[]): number {
   if ((len1 === 0) || (len2 === 0))
     return INFTY;
 
-  const common = commonItemsCountNon(ref1, ref2);  
+  const common = commonItemsCount(ref1, ref2);  
 
   if (common < 2)
   //if (common === 0)
@@ -243,21 +192,21 @@ function distFn(arr1: number[], arr2: number[]): number {
   return ((len1 < len2) ? 1 : len2) / common - 1;
 }
 
-/** Get embeddings. */
+/** TODO: to remove or to update! */
 export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
-  if ((stemBuffer.dfName !== table.name) || (stemBuffer.colName !== source.name)) {
+  if ((stemCash.dfName !== table.name) || (stemCash.colName !== source.name)) {
     console.log('Getting buffer...');
 
-    stemBuffer.dfName = table.name;
-    stemBuffer.colName = source.name;
-    stemBuffer.indices = stemmColumn(source, 1).indices;
+    stemCash.dfName = table.name;
+    stemCash.colName = source.name;
+    stemCash.indices = stemmColumn(source, 1).indices;
   }
   else
     console.log('We have already an appropriate buffer!');  
 
   const DIM = 10;
 
-  const data = [...Array(stemBuffer.indices?.length).keys()].map(i => Array(DIM).fill(i));
+  const data = [...Array(stemCash.indices?.length).keys()].map(i => Array(DIM).fill(i));
 
   //console.log(data);
 
@@ -284,27 +233,31 @@ export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components
   return range.map(i => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
 }
 
-/**  */
+/** Return string with marked words and a dictionary of common words. */
 export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked: string): {marked: any[], commonWords: Map<string, number>}  {
   const size = strToBeMarked.length;
 
   if (size === 0)
-    return {marked: [] as any[], commonWords: new Map<string, number>()
+    return {
+      marked: [] as any[], 
+      commonWords: new Map<string, number>()
     };
 
   const marked = [] as any[];
   const commonWords = new Map<string, number>();
 
-  const wordsOfQuery = stemBuffer.indices?.get(queryIdx);
+  // stemmed words of the query text.
+  const wordsOfQuery = stemCash.indices?.get(queryIdx);
 
+  // indeces specifying the current subsequence
   let start = 0;
   let end = 0;
   
+  // subsequence type: word or not
   let isWord = !SEPARATORS.includes(strToBeMarked[start]);
 
+  // scan the string that should be marked
   while (start < size) {
-
-
     if (isWord) {
 
       while (!SEPARATORS.includes(strToBeMarked[end])) {
@@ -318,7 +271,7 @@ export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked
       const wordLow = word.toLowerCase();
 
       if (!STOP_WORDS.includes(wordLow)) {
-        const value = stemBuffer.dictionary?.get(stemmer(wordLow));
+        const value = stemCash.dictionary?.get(stemmer(wordLow));
 
         if (wordsOfQuery.includes(value?.index)) {
           let p = ui.inlineText([word]);
@@ -333,7 +286,7 @@ export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked
       }
       else
       marked.push(word);
-    }
+    } // if (isWord)
 
     else {
       while (SEPARATORS.includes(strToBeMarked[end])) {
@@ -351,15 +304,15 @@ export function getMarkedStringAndCommonWordsMap(queryIdx: number, strToBeMarked
   } // while
 
   return {marked: marked, commonWords: commonWords};
-}
+} // getMarkedStringAndCommonWordsMap
 
-/** */
-export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
-  const colsData = new Map<string, ColDataType>();
+/** Modify similarity metric. */
+export function modifyMetric(df: DG.DataFrame): void {
+  const colsData = new Map<string, ColUseInfo>();
   const colsInp = new Map<string, {metricInput: DG.InputBase, weightInput: DG.InputBase}>();
   const inputElements = new Map<string, HTMLDivElement>();
   const dlg = ui.dialog({title: 'Edit distance'});
-  const initCheckedCols = [...stemBuffer.metricDef!.keys()];
+  const initCheckedCols = [...stemCash.metricDef!.keys()];
 
   const onColumnsChanged = (columns: DG.Column[]) => {
     const names = columns.map((col) => col.name);
@@ -390,7 +343,7 @@ export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
   dlg.add(ui.h3('Source'));
   dlg.add(colsInput);  
   
-  const distInput = ui.choiceInput('Distance', stemBuffer.aggrDistance, DISTANCE_TYPES, (dist: DISTANCE_TYPE) => { stemBuffer.aggrDistance = dist;});
+  const distInput = ui.choiceInput('Distance', stemCash.aggrDistance, DIST_TYPES_ARR, (dist: DISTANCE_TYPE) => { stemCash.aggrDistance = dist;});
   distInput.setTooltip('Type of distance between elements with the specified features.');
   dlg.add(distInput);
   distInput.root.hidden = (initCheckedCols.length < 2);
@@ -399,6 +352,7 @@ export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
   dlg.add(columnsHeader);
   columnsHeader.hidden = (initCheckedCols.length < 1);
   
+  // add an appropriate inputs
   for (const col of df.columns) {
     const name = col.name;
 
@@ -408,8 +362,8 @@ export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
       use: false,
     };
 
-    if (stemBuffer.metricDef?.has(name)) {
-      const val = stemBuffer.metricDef.get(name);
+    if (stemCash.metricDef?.has(name)) {
+      const val = stemCash.metricDef.get(name);
       colData.use = true;      
       colData.metric.type = val!.type;
       colData.metric.weight = val!.weight;
@@ -417,7 +371,7 @@ export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
 
     colsData.set(name, colData);
 
-    const choices = getChoicesList(col);
+    const choices = getMetricTypesChoicesList(col);
     const metricInput = ui.choiceInput(`${name}:`, colData.metric.type as string, choices, (str: string) => {
       const val = colsData.get(name);
       //@ts-ignore
@@ -444,7 +398,7 @@ export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
     uiElem.hidden = !colData.use;
 
     dlg.add(uiElem);
-  }
+  } // for
 
   dlg  
   .onCancel(() => {})
@@ -458,25 +412,27 @@ export function modifyMetric(df: DG.DataFrame, target: DG.Column): void {
         map.set(key, val.metric);
     }
 
-    stemBuffer.metricDef = map;
+    stemCash.metricDef = map;
   })
   .show({x: 300, y: 300});
+} // modifyMetric
+
+/** Set stemming cash data. */
+export function setStemmingCash(df: DG.DataFrame, source: DG.Column): void {
+  if ((stemCash.dfName !== df.name) || (stemCash.colName !== source.name)) {
+    stemCash.dfName = df.name;
+    stemCash.colName = source.name;    
+    const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
+    stemCash.dictionary = stemmingRes.dict;
+    stemCash.indices = stemmingRes.indices;
+    stemCash.mostCommon = stemmingRes.mostCommon;
+    stemCash.metricDef = getSingleSourceMetricsMap(source);
+    stemCash.aggrDistance = getDefaultDistnce();
+  }
 }
 
-/**  */
-export function setStemmingBuffer(df: DG.DataFrame, source: DG.Column): void {
-  stemBuffer.dfName = df.name;
-  stemBuffer.colName = source.name;
-
-  const stemmingRes = stemmColumn(source, MIN_CHAR_COUNT);
-  stemBuffer.dictionary = stemmingRes.dict;
-  stemBuffer.indices = stemmingRes.indices;
-  stemBuffer.mostCommon = stemmingRes.mostCommon;
-  stemBuffer.metricDef = getOneHotMetricsMap(df, source);
-  stemBuffer.aggrDistance = getDefaultDistnce();
-}
-
-function getTargetColDistFn(metric: MetricInfo): (query: Uint16Array, current: Uint16Array) => number {
+/** Return text similarity distance function. */
+function getTextDistFn(metric: MetricInfo): (query: Uint16Array, current: Uint16Array) => number {
   switch (metric.type) {
     case STR_METRIC_TYPE.STEMMING_BASED:
       return (query: Uint16Array, current: Uint16Array) => {
@@ -485,7 +441,7 @@ function getTargetColDistFn(metric: MetricInfo): (query: Uint16Array, current: U
         if (curLen === 0) 
           return INFTY;
         
-        return metric.weight * ((query.length < curLen) ? 1 : curLen) / (commonItemsCountNon(query, current) + TINY);
+        return metric.weight * ((query.length < curLen) ? 1 : curLen) / (commonItemsCount(query, current) + TINY);
       }; 
     
     case STR_METRIC_TYPE.EQUALITY:
@@ -501,106 +457,58 @@ function getTargetColDistFn(metric: MetricInfo): (query: Uint16Array, current: U
   }
 }
 
-/** 
-export function getClosestAdvanced(idx: number, count: number): Uint32Array {
-
-  console.log(stemBuffer.metricDef);
-  console.log(stemBuffer.aggrDistance);  
-
-  const indices = stemBuffer.indices!;
-  const size = indices.length;
-  const query = indices.get(idx) as Uint16Array;
-  const queryLen = query.length;
-
-  if ((size < count) || (queryLen === 0))
-    return new Uint32Array([...Array(size).keys()]);
-
-  const targetColMetricDef = stemBuffer.metricDef?.get(stemBuffer.colName!);  
-  let targetColDistFn = (query: Uint16Array, current: Uint16Array) => 0;
-  
-  if (targetColMetricDef !== undefined) 
-    if (targetColMetricDef.weight > 0)
-      targetColDistFn = getTargetColDistFn(targetColMetricDef);
-
-  const closestInds = new Uint32Array(count);
-  const closestDists = new Float32Array(count);
-    
-  for (let i = 0; i < count; ++i) {
-    const current = indices.get(i) as Uint16Array; 
-    closestInds[i] = i;
-    closestDists[i] = targetColDistFn(query, current);
-  }
-    
-  let maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
-  
-  for (let i = count; i < size; ++i) {
-    const current = indices.get(i) as Uint16Array;
-    const curRelDist = targetColDistFn(query, current);
-
-    if (curRelDist < closestDists[maxRelIdx]) {
-      closestDists[maxRelIdx] = curRelDist;
-      closestInds[maxRelIdx] = i;
-      maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
-    }    
-  }
-  
-  return closestInds.filter(i => i !== idx);
-}*/
-
-/** */
-export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number): Uint32Array {
-
-  console.log(stemBuffer.metricDef);
-  console.log(stemBuffer.aggrDistance);  
-
-  const indices = stemBuffer.indices!;
-  const size = indices.length;
+/** Return closest elements indeces array. */
+export function getClosest(df: DG.DataFrame, idx: number, count: number): Uint32Array {  
+  const indices = stemCash.indices!;
+  const size = df.rowCount;
   const queryText = indices.get(idx) as Uint16Array;
-  let targetColDistFn = (a: Uint16Array, b: Uint16Array) => 0;
+  let textColDistFn = (a: Uint16Array, b: Uint16Array) => 0;
   let isTargetColUsed = false;
   const queryLen = queryText.length;
 
-  if ((size < count) || (queryLen === 0) || (stemBuffer.metricDef === undefined))
+  // check sizes
+  if ((size < count) || (queryLen === 0) || (stemCash.metricDef === undefined))
     return new Uint32Array([...Array(size).keys()]);
 
-  if (stemBuffer.metricDef.size < 1)
+  // check metrics specification
+  if (stemCash.metricDef.size < 1)
     return new Uint32Array([...Array(count).keys()]);
 
-  const featuresCount = stemBuffer.metricDef.size;
+  const featuresCount = stemCash.metricDef.size;
   const featuresMetricVals = new Float32Array(featuresCount);
-  const featureDistance = getDistanceFn(stemBuffer.aggrDistance!, featuresCount);
+  const featureDistance = getDistanceFn(stemCash.aggrDistance!, featuresCount);
   const featureMap = new Map<string, FeatureSpecification>();
   const queryFeatures = new Map<string, any>();
 
-  for (const [key, value] of stemBuffer.metricDef) 
-    if (key === stemBuffer.colName!) {
+  // define metrics
+  for (const [key, value] of stemCash.metricDef) 
+    if (key === stemCash.colName!) {
       isTargetColUsed = true;
-      targetColDistFn = getTargetColDistFn(value);
+      textColDistFn = getTextDistFn(value);
     }
     else {
       featureMap.set(key, {
-        source: df.col(key)?.getRawData(),
+        data: df.col(key)?.getRawData(),
         metricFn: getMetricFn(value),
       });
 
-      queryFeatures.set(key, featureMap.get(key)?.source[idx]);
+      queryFeatures.set(key, featureMap.get(key)?.data[idx]);
     }  
-
-  console.log(queryFeatures);
 
   const closestInds = new Uint32Array(count);
   const closestDists = new Float32Array(count);
-    
+  
+  // basic initialization
   for (let i = 0; i < count; ++i) {
     let j = 0;
 
     for (const [key, value] of featureMap) {
-      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), value.source[i]);
+      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), value.data[i]);
       ++j;
     }
 
     if (isTargetColUsed)
-      featuresMetricVals[j] = targetColDistFn(queryText, indices.get(i));
+      featuresMetricVals[j] = textColDistFn(queryText, indices.get(i));
 
     closestInds[i] = i;
     closestDists[i] = featureDistance(featuresMetricVals);
@@ -608,16 +516,17 @@ export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number)
     
   let maxRelIdx = closestDists.reduce((r, v, i, a) => v <= a[r] ? r : i, -1);
   
+  // search for the closest elements
   for (let i = count; i < size; ++i) {
     let j = 0;
 
     for (const [key, value] of featureMap) {
-      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), value.source[i]);
+      featuresMetricVals[j] = value.metricFn(queryFeatures.get(key), value.data[i]);
       ++j;
     }
 
     if (isTargetColUsed)
-      featuresMetricVals[j] = targetColDistFn(queryText, indices.get(i));
+      featuresMetricVals[j] = textColDistFn(queryText, indices.get(i));
 
     const curDist = featureDistance(featuresMetricVals);
 
@@ -629,4 +538,4 @@ export function getClosestAdvanced(df: DG.DataFrame, idx: number, count: number)
   }
   
   return closestInds.filter(i => i !== idx);
-}
+} // getClosest

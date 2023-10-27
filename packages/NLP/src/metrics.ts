@@ -1,68 +1,77 @@
-/** */
+/** General metrics tools */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+/** Default metric weight. */
 export const DEFAULT_WEIGHT = 1;
 
+/** General metric types. */
 enum GENERAL_METRIC_TYPE {
   EQUALITY = 'coincidence',
 };
-const GENERAL_METRIC_TYPES = [GENERAL_METRIC_TYPE.EQUALITY];
+const GEN_METRIC_TYPES_ARR = [GENERAL_METRIC_TYPE.EQUALITY];
 
+/** String metric types. */
 export enum STR_METRIC_TYPE {
   STEMMING_BASED = 'stemming',
   EQUALITY = 'coincidence',
 };
-const STRING_METRIC_TYPES = [STR_METRIC_TYPE.EQUALITY, STR_METRIC_TYPE.STEMMING_BASED];
+const STR_METRIC_TYPES_ARR = [STR_METRIC_TYPE.EQUALITY, STR_METRIC_TYPE.STEMMING_BASED];
 
+/** Numerical metric types. */
 enum NUM_METRIC_TYPE {
   DIFFERENCE = 'difference',
   EQUALITY = 'coincidence',
 };
-const NUM_METRIC_TYPES = [NUM_METRIC_TYPE.EQUALITY, NUM_METRIC_TYPE.DIFFERENCE];
+const NUM_METRIC_TYPES_ARR = [NUM_METRIC_TYPE.EQUALITY, NUM_METRIC_TYPE.DIFFERENCE];
 
+/** Default metric types. */
 enum DEFAULT_METRIC {
   STR = STR_METRIC_TYPE.EQUALITY,
   NUM = NUM_METRIC_TYPE.DIFFERENCE,
   GENERAL = GENERAL_METRIC_TYPE.EQUALITY,
 };
 
-export type MetricType = GENERAL_METRIC_TYPE | STR_METRIC_TYPE | NUM_METRIC_TYPE | DEFAULT_METRIC;
+type MetricType = GENERAL_METRIC_TYPE | STR_METRIC_TYPE | NUM_METRIC_TYPE | DEFAULT_METRIC;
 
+/** Metric specification. */
 export type MetricInfo = {
   weight: number,
   type: MetricType,
 };
 
+/** Distance types. */
 export enum DISTANCE_TYPE {
   EUCLIDEAN = 'Euclidian',
   MANHATTAN = 'Manhattan',
 };
+export const DIST_TYPES_ARR = [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN];
 
+/** Error messeges. */
 enum ERR_MSG {
   WRONG_DISTNACE = 'unsupported distance',
   WRONG_DIMENSIONALITY = 'incorrect dimensionality',
   WRONG_METRIC = 'unsupported metric',
 }
 
-export const DISTANCE_TYPES = [DISTANCE_TYPE.EUCLIDEAN, DISTANCE_TYPE.MANHATTAN];
-
-export function getChoicesList(col: DG.Column): string[] {
+/** Return choices list of metric types with respect to the column type. */
+export function getMetricTypesChoicesList(col: DG.Column): string[] {
   switch (col.type) {
     case DG.COLUMN_TYPE.STRING:
-      return STRING_METRIC_TYPES;
+      return STR_METRIC_TYPES_ARR;
 
     case DG.COLUMN_TYPE.FLOAT:
     case DG.COLUMN_TYPE.INT:
-      return NUM_METRIC_TYPES;
+      return NUM_METRIC_TYPES_ARR;
       
     default:
-      return GENERAL_METRIC_TYPES;
+      return GEN_METRIC_TYPES_ARR;
   };  
 }
 
+/** Return default metric specification with respect to the column type. */
 export function getDefaultMetric(col: DG.Column): MetricInfo {  
   let type: MetricType = DEFAULT_METRIC.GENERAL;
 
@@ -83,11 +92,12 @@ export function getDefaultMetric(col: DG.Column): MetricInfo {
   return {weight: DEFAULT_WEIGHT, type: type};
 }
 
-export function getOneHotMetricsMap(df: DG.DataFrame, target: DG.Column): Map<string, MetricInfo> {
+/** Return a map with a single metric corresponding to the input column. */
+export function getSingleSourceMetricsMap(col: DG.Column): Map<string, MetricInfo> {
   const map = new Map<string, MetricInfo>();
   let type: MetricType = DEFAULT_METRIC.GENERAL;
   
-  switch (target.type) {
+  switch (col.type) {
   
     case DG.COLUMN_TYPE.STRING:
       type = STR_METRIC_TYPE.STEMMING_BASED;
@@ -102,13 +112,17 @@ export function getOneHotMetricsMap(df: DG.DataFrame, target: DG.Column): Map<st
       break;
   };
 
-  map.set(target.name, {weight: DEFAULT_WEIGHT, type: type});
+  map.set(col.name, {weight: DEFAULT_WEIGHT, type: type});
     
   return map;
 }
 
-export function getDefaultDistnce(): DISTANCE_TYPE { return DISTANCE_TYPES[0]; }
+/** Return default type of distance between elements with the specified features. */
+export function getDefaultDistnce(): DISTANCE_TYPE { 
+  return DIST_TYPES_ARR[0];
+}
 
+/** Return a function that computes the distance between elements with the specified features (actually, norm of the input vector). */
 export function getDistanceFn(type: DISTANCE_TYPE, dimensionality: number): (vector: Float32Array) => number {
   if (dimensionality < 1)
     throw new Error(ERR_MSG.WRONG_DIMENSIONALITY);
@@ -139,6 +153,7 @@ export function getDistanceFn(type: DISTANCE_TYPE, dimensionality: number): (vec
   }
 }
 
+/** Return metric function for computing distance between elements (within a single feature). */
 export function getMetricFn(info: MetricInfo): (a: any, b: any) => number {
   switch (info.type) {    
     case NUM_METRIC_TYPE.DIFFERENCE:
