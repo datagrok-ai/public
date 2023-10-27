@@ -4,7 +4,57 @@ import * as DG from 'datagrok-api/dg';
 import wu from "wu";
 import {ModelCatalogView} from "./model-catalog-view";
 
+function addPopover(popover: HTMLElement) {
+  stylePopover(popover);
+  document.body.append(popover);
+}
+
+function displayPopover(icon: HTMLElement, popover: HTMLElement) {
+  alignPopover(icon, popover);
+  popover.showPopover();
+}
+
+function alignPopover(target: HTMLElement, popover: HTMLElement): void {
+  const bounds = target.getBoundingClientRect().toJSON();
+  popover.style.inset = 'unset';
+  popover.style.top = bounds.y + 'px';
+  popover.style.left = (bounds.x + 20) + 'px';
+}
+
+function stylePopover(popover: HTMLElement): void {
+  popover.popover = 'auto';
+  popover.style.cursor = 'default';
+  popover.style.padding = '10px';
+  popover.style.background = '#fdffe5';
+  popover.style.border = '1px solid #E4E6CE';
+  popover.style.borderRadius = '2px';
+  popover.style.boxShadow = '0 0 5px #E4E6CE';
+  popover.style.maxWidth = '500px';
+  popover.style.color = 'var(--gray-6)';
+}
+
+function requestMembership(groupName: string) {
+  return async () => {
+    try {
+      const groups = await grok.dapi.groups.filter(`friendlyName="${groupName}"`).list();
+      if (groups.length === 0) {
+        throw new Error(`group with specified name is not found`);
+      }
+      if (groups.length > 1) {
+        throw new Error(`found more than one group with specified name`);
+      }
+      const group = groups[0];
+
+      fetch(`${window.location.origin}/api/groups/${group.id}/requests/${grok.shell.user.group.id}`, {method: "POST"})
+    } catch (e: any) {
+      grok.shell.error(e.toString());
+    }
+  }
+}
+
 export class ModelHandler extends DG.ObjectHandler {
+  userGroups = [] as DG.Group[];
+
   get type() {
     return 'Model';
   }
@@ -47,9 +97,54 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderMarkup(x: DG.Func): HTMLElement {
-    let markup = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
-    markup.ondblclick = (e) => { ModelHandler.openModel(x); }
-    markup.onclick = (e) => { ModelHandler.openHelp(x); }
+    const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
+    const hasMissingMandatoryGroups = mandatoryUserGroups.filter((group) => !this.userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name)).length > 0;
+    const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
+    mandatoryGroupsIcon.classList.remove('grok-icon');
+
+    const getBulletIcon = () => {
+      const bulletIcon = ui.iconFA('times');
+      bulletIcon.style.marginRight = '6px';
+      bulletIcon.classList.remove('grok-icon');
+      return bulletIcon;
+    }
+
+    const mandatoryGroupsInfo = ui.div(ui.divV([
+      ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
+      ...mandatoryUserGroups.map((group) => ui.divV([
+        ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
+        ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
+        ui.link(`Request group membership`, requestMembership(group.name), undefined, {style: {marginLeft: '16px'}})
+      ])),
+    ], {style: {gap: '10px'}})) as HTMLElement;
+
+    if (hasMissingMandatoryGroups) {
+      addPopover(mandatoryGroupsInfo);
+
+      mandatoryGroupsIcon.addEventListener('click', () => {
+        displayPopover(mandatoryGroupsIcon, mandatoryGroupsInfo)
+      })
+      mandatoryGroupsIcon.addEventListener('mouseover', (e) => {
+        e.stopPropagation();
+      })
+    }
+
+    const label = ui.span([
+      this.renderIcon(x), 
+      ui.label(x.friendlyName)
+    ]);
+    const markup =  ui.divH([
+      label,
+      ...hasMissingMandatoryGroups ? [ui.span([mandatoryGroupsIcon])]: [],
+    ], {style: {'justify-content': 'space-between', 'width': '100%'}})
+
+    if (!hasMissingMandatoryGroups) {
+      markup.ondblclick = () => { ModelHandler.openModel(x); }
+      markup.onclick = () => { ModelHandler.openHelp(x); }
+    } else {
+      label.classList.add('d4-disabled');
+    }
+
     return markup;
   }
 
@@ -85,13 +180,12 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderTooltip(x: DG.Func) {
-    let h = this.renderMarkup(x);
+    let h = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
     h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.divV([
       ui.h2(h),
       ui.divV([ui.divText(x.description, 'ui-description')], {style: {lineHeight: '150%'}})
     ]));
-    card.ondblclick = (e) => { ModelHandler.openModel(x); }
     return card;
   }
 
@@ -99,8 +193,6 @@ export class ModelHandler extends DG.ObjectHandler {
     let h = this.renderMarkup(x);
     h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.h2(h));
-    card.ondblclick = (e) => { ModelHandler.openModel(x); }
-    card.onclick = (e) => { ModelHandler.openHelp(x); }
     return card;
   }
 
@@ -154,7 +246,9 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   init() {
-    setTimeout(() => {
+    setTimeout(async () => {
+      this.userGroups = (await (await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+
       grok.functions.onBeforeRunAction.subscribe((fc) => {
         if (fc.func.hasTag('model') || fc.func.hasTag('model-editor')) {
           ModelHandler.bindModel(fc);
