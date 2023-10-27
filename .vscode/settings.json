@@ -3,6 +3,7 @@
         "Datagrok",
         "introspectable",
         "JDBC",
+        "scatterplot",
         "scriptable"
     ]
 }
