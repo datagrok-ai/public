@@ -7,19 +7,18 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 // inner dependencies
-import '../../css/colored-text-input.css';
+import '../../style/colored-text-input.css';
 
 
 /** Class for colorizing input in the textarea of DG.InputBase.  */
 export class ColoredTextInput {
   constructor(
     private textInputBase: DG.InputBase<string>,
-    painter: (str: string) => HTMLSpanElement[],
+    /** Divide input value into an array of spans, each with its own text color, use -webkit-text-fill-color. */
+    private painter: (str: string) => HTMLSpanElement[],
     /** Resize, no scrolls  */
     resizeable: boolean = true
   ) {
-    this.textInputBase = textInputBase;
-    this.painter = painter;
     $(this.root).addClass('colored-text-input');
     if (resizeable) {
       // make input field automatically resizeable
@@ -39,12 +38,14 @@ export class ColoredTextInput {
   }
 
   private highlights: HTMLDivElement;
-  /** Divide input value into an array of spans, each with its own text color, use -webkit-text-fill-color. */
-  private painter: (str: string) => HTMLSpanElement[];
 
   get textArea() {
     return this.textInputBase.root.getElementsByTagName('textarea').item(0);
   };
+
+  get inputBase() {
+    return this.textInputBase;
+  }
 
   get root() { return this.textInputBase.root; };
 
