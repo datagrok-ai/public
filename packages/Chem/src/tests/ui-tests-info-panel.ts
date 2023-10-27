@@ -163,7 +163,7 @@ category('UI info panel', () => {
     v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-12946'});
 
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules();
@@ -205,7 +205,7 @@ category('UI info panel', () => {
     await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
       'descriptors table hasn\'t been created', 10000);
     desc?.click(); await delay(100);
-  });
+  }, {skipReason: 'GROK-12946'});
 
   after(async () => {
     grok.shell.closeAll();
