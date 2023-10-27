@@ -155,7 +155,7 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
 
   const pairsFromSmiles = new Array<string>(allCasesNumber);
   const pairsToSmiles = new Array<string>(allCasesNumber);
-  const ruleNum = new Int32Array(allCasesNumber)
+  const ruleNum = new Int32Array(allCasesNumber);
 
   const activityPairsIdxs = new BitArray(allCasesNumber);
 
@@ -234,9 +234,9 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
   const pairNumberFromCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_FROM, molNumFrom);
   const pairNumberToCol = DG.Column.fromInt32Array(MMP_COL_PAIRNUM_TO, molNumTo);
 
-  const pairsFromSmilesCol = DG.Column.fromStrings("smi1", pairsFromSmiles);
-  const pairsToSmilesCol = DG.Column.fromStrings("smi2", pairsToSmiles);
-  const ruleNumCol = DG.Column.fromInt32Array("ruleNum", ruleNum);
+  const pairsFromSmilesCol = DG.Column.fromStrings('smi1', pairsFromSmiles);
+  const pairsToSmilesCol = DG.Column.fromStrings('smi2', pairsToSmiles);
+  const ruleNumCol = DG.Column.fromInt32Array('ruleNum', ruleNum);
 
   pairsFromSmilesCol.semType = DG.SEMTYPE.MOLECULE;
   pairsToSmilesCol.semType = DG.SEMTYPE.MOLECULE;
@@ -268,10 +268,10 @@ function getMmpActivityPairsAndTransforms(molecules: DG.Column, activities: DG.C
   const lines: ILineSeries = {
     from: pointsFrom,
     to: pointsTo,
-    drawArrows: true
-  }
+    drawArrows: true,
+  };
 
-  return { maxAct, diffs, linesIdxs, allPairsGrid, casesGrid, lines };
+  return {maxAct, diffs, linesIdxs, allPairsGrid, casesGrid, lines};
 }
 
 
@@ -339,13 +339,13 @@ function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewe
     const diff = ui.tableFromMap({'Diff': getSigFigs(diffs[idx], 4)});
     diff.style.maxWidth = '150px';
     div.append(diff);
-  }
+  };
 
   const moleculesPairInfo = (line: number, vertical?: boolean): HTMLDivElement => {
     const div = ui.divV([]);
     const pairIdx = linesIdxs[line];
-    let subsrtFrom = pairsDf.get(MMP_STRUCT_DIFF_FROM_NAME, pairIdx);
-    let subsrtTo = pairsDf.get(MMP_STRUCT_DIFF_TO_NAME, pairIdx);
+    const subsrtFrom = pairsDf.get(MMP_STRUCT_DIFF_FROM_NAME, pairIdx);
+    const subsrtTo = pairsDf.get(MMP_STRUCT_DIFF_TO_NAME, pairIdx);
     const moleculeFrom = pairsDf.get(MMP_COLNAME_FROM, pairIdx);
     const moleculeTo = pairsDf.get(MMP_COLNAME_TO, pairIdx);
     if (subsrtFrom || subsrtTo)
@@ -365,9 +365,9 @@ function runMmpChemSpace(table: DG.DataFrame, molecules: DG.Column, sp: DG.Viewe
       });
     }
     return div;
-  }
+  };
 
-  spEditor.lineClicked.subscribe((event: MouseOverLineEvent) => {    
+  spEditor.lineClicked.subscribe((event: MouseOverLineEvent) => {
     spEditor.currentLineId = event.id;
     if (event.id !== -1)
       grok.shell.o = moleculesPairInfo(event.id, true);
@@ -552,13 +552,13 @@ export class MmpAnalysis {
   static async init(table: DG.DataFrame, molecules: DG.Column, activities:DG.Column) {
     //rdkit module
     const module = getRdKitModule();
-    
+
     //initial calculations
     const frags = await getMmpFrags(molecules);
     const [mmpRules, allCasesNumber] = getMmpRules(frags);
 
     //Transformations tab
-    const {maxAct, diffs, linesIdxs, allPairsGrid, casesGrid, lines} = 
+    const {maxAct, diffs, linesIdxs, allPairsGrid, casesGrid, lines} =
       getMmpActivityPairsAndTransforms(molecules, activities, mmpRules, allCasesNumber, module);
 
     //Fragments tab
@@ -568,14 +568,12 @@ export class MmpAnalysis {
     const [sp, sliderInput] = getMmpScatterPlot(table, activities, maxAct);
 
     //running internal chemspace
-    const linesEditor =  runMmpChemSpace(table, molecules, sp, lines, linesIdxs, casesGrid.dataFrame, diffs, module);
+    const linesEditor = runMmpChemSpace(table, molecules, sp, lines, linesIdxs, casesGrid.dataFrame, diffs, module);
 
     return new MmpAnalysis(table, molecules, mmpRules, diffs, linesIdxs, allPairsGrid, casesGrid,
       tp, sp, sliderInput, linesEditor, lines, module);
   }
 
-
-  
   async refreshPair(rdkitModule: RDModule) {
     const progressBarPairs = DG.TaskBarProgressIndicator.create(`Refreshing pairs...`);
     const idxParent = this.parentTable.currentRowIdx;
@@ -682,14 +680,14 @@ export class MmpAnalysis {
       this.linesMask.setAll(false, false);
       this.cutoffMask.setAll(false);
       for (let i = 0; i < this.lines.from.length; i++) {
-        if (this.diffs[i] >= cutoff) {
+        if (this.diffs[this.linesIdxs[i]] >= cutoff) {
           this.cutoffMask.set(this.lines.from[i], true, false);
           this.cutoffMask.set(this.lines.to[i], true, false);
           this.linesMask.setBit(i, true, false);
         }
       }
     }
-      this.parentTable.filter.copyFrom(this.cutoffMask);
-      this.linesRenderer!.linesVisibility = this.linesMask;
+    this.parentTable.filter.copyFrom(this.cutoffMask);
+    this.linesRenderer!.linesVisibility = this.linesMask;
   }
 }
