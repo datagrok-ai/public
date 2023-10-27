@@ -142,3 +142,82 @@ jobs:
         uses: JulienKode/pull-request-name-linter-action@v0.5.0
         with:
           configuration-path: ./commitlint.config.js
+
+  packages-links:
+    name: Packages links
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - name: Check links in packages
+        shell: bash
+        continue-on-error: true
+        timeout-minutes: 15
+        id: test-links
+        run: |
+          test_result=$(./packages_help.sh)
+          if [ -z "$test_result" ]; then
+            echo "All tests finished successfully"
+          else
+            echo -e "${test_result}"
+            echo -e "SLACK_MESSAGE_BODY=${test_result}\n\n" | sed -e '$ ! s/$/\\n/' | tr -d '\n' >> $GITHUB_ENV
+            exit 1
+          fi
+        working-directory: packages/
+      - name: Prepare Slack Message
+        id: slack-prepare
+        if: ${{ steps.test-links.outcome == 'failure' }}
+        shell: bash
+        env:
+          SLACK_ID: ${{ secrets.SLACK_ID }}
+        run: |
+          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
+          echo "::add-mask::$channel_id"
+          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
+          
+          header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> found dangling help links in packages:"
+          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
+          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
+          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+          echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
+
+      - name: Send test report to Slack
+        id: slack
+        if: ${{ steps.slack-prepare.outcome == 'success' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ env.SLACK_CHANNEL }}
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_HEADER }}"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "${{ env.SLACK_MESSAGE_BODY }}"
+                        }
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "mrkdwn",
+                                "text": "${{ env.SLACK_MESSAGE_CONTEXT }}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}

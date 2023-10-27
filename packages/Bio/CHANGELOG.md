@@ -8,6 +8,7 @@
 * Add ToAtomicLevel for non-linear HELM structures.
 * Add WebLogo aggregation function.
 * Add WebLogo position tooltip with composition table (for count).
+* Add PolyTool with Helm2Molfile support
 
 ### Bug fixes
 

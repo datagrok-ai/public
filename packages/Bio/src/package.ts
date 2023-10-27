@@ -7,7 +7,6 @@ import * as DG from 'datagrok-api/dg';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
@@ -51,9 +50,6 @@ import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {
   MonomerLibHelper,
-  getUserLibSettings,
-  setUserLibSetting,
-  getLibFileNameList,
   getLibraryPanelUI
 } from './utils/monomer-lib';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
@@ -72,12 +68,11 @@ import {PackageSettingsEditorWidget} from './widgets/package-settings-editor-wid
 import {getCompositionAnalysisWidget} from './widgets/composition-analysis-widget';
 import {MacromoleculeColumnWidget} from './utils/macromolecule-column-widget';
 import {addCopyMenuUI} from './utils/context-menu';
-import {getPolyToolDialog} from './utils/poly-tool/enumerator-tools';
+import {getPolyToolDialog} from './utils/poly-tool/ui';
 import {_setPeptideColumn} from './utils/poly-tool/utils';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
-import {HelmToMolfileConverter} from './utils/helm-to-molfile';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {errInfo} from './utils/err-info';
 
@@ -446,8 +441,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
     return sp;
   };
 
-  const allowedRowCount = 20000;
-  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
+  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 200_000 : 20_000;
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5_000 : 2_000;
   if (df.rowCount > allowedRowCount) {
     grok.shell.warning(`Too many rows, maximum for sequence activity cliffs is ${allowedRowCount}`);
     return;
@@ -458,8 +453,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column<
       ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
         .onOK(async () => {
-          const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
-          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => { progressBar.close();});
+          //const progressBar = DG.TaskBarProgressIndicator.create(`Running sequence activity cliffs ...`);
+          runCliffs().then((res) => resolve(res)).catch((err) => reject(err)).finally(() => {});
         })
         .show();
     } else {
@@ -530,7 +525,7 @@ export async function sequenceSpaceTopMenu(
       methodName: methodName,
       similarityMetric: similarityMetric,
       embedAxesNames: embedColsNames,
-      options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.8,
+      options: {...options, sparseMatrixThreshold: sparseMatrixThreshold ?? 0.5,
         usingSparseMatrix: table.rowCount > 20000},
     };
 
@@ -1089,15 +1084,14 @@ export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }
 
-//name: enumeratorColumnChoice
+//name: polyToolColumnChoice
 //input: dataframe df [Input data table]
 //input: column macroMolecule
-export async function enumeratorColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
+export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
   _setPeptideColumn(macroMolecule);
   await grok.data.detectSemanticTypes(df);
 }
 
-//top-menu: Bio | Convert | SDF to JSON Library...
 //name: SDF to JSON Library
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {

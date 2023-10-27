@@ -108,7 +108,7 @@ export const inputBaseAdditionalRenderHandler = (val: DG.FuncCallParam, t: DG.In
 };
 
 export const injectInputBaseValidation = (t: DG.InputBase) => {
-  const validationIndicator = ui.div('', {style: {display: 'flex'}});
+  const validationIndicator = ui.element('i');
   t.addOptions(validationIndicator);
   function setValidation(messages: ValidationResultBase | undefined) {
     while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
