@@ -63,8 +63,8 @@ res.uid, res.ugid, res.pid
 --input: list users
 --input: list packages
 --input: list functions
---meta.cache: all
---meta.invalidate: 0 0 0 * *
+--meta1.cache: all
+--meta1.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: FunctionsContextPane(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'], ['OpenServerFile'])
 with res AS (

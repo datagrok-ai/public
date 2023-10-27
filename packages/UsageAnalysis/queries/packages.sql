@@ -68,8 +68,8 @@ GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --input: int time_end
 --input: list users
 --input: list packages
---meta.cache: all
---meta.invalidate: 0 0 0 * *
+--meta1.cache: all
+--meta1.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneFunctions(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res AS (
@@ -102,8 +102,8 @@ group by res.package, res.id, res.name, res.pid
 --input: int time_end
 --input: list users
 --input: list packages
---meta.cache: all
---meta.invalidate: 0 0 0 * *
+--meta1.cache: all
+--meta1.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneLogs(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
@@ -133,8 +133,8 @@ group by res.source
 --input: int time_end
 --input: list users
 --input: list packages
---meta.cache: all
---meta.invalidate: 0 0 0 * *
+--meta1.cache: all
+--meta1.invalidate: 0 0 0 * *
 --connection: System:Datagrok
 --test: PackagesContextPaneAudit(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
