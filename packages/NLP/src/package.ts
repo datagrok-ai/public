@@ -5,7 +5,7 @@ import AWS from 'aws-sdk';
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
 import '../css/info-panels.css';
-import {stemCash, getEmbeddings, getMarkedStringAndCommonWordsMap, modifyMetric, setStemmingCash, getClosest} from './stemming-tools';
+import {stemCash, getEmbeddings, getMarkedStringAndCommonWordsMap, modifyMetric, setStemmingCash, getClosest, getEmbeddingsAdv} from './stemming-tools';
 
 export const _package = new DG.Package();
 
@@ -233,7 +233,7 @@ export function computeEmbds(table: DG.DataFrame, source: DG.Column, components:
   neighbors: number, minDist: number, spread: number, newView: boolean, showScatter: boolean): void 
 {
   const start = new Date().getTime();
-  const embds = getEmbeddings(table, source, components, epochs, neighbors, minDist, spread);
+  const embds = getEmbeddingsAdv(table, source, components, epochs, neighbors, minDist, spread);
   const finish = new Date().getTime();
   console.log(`${table.name}:\n${components} components, ${epochs} epochs, ${neighbors} neibs, min_dist ${minDist}\nTime is ${finish - start}`);
 

@@ -165,7 +165,7 @@ function commonItemsCount(arr1: Uint16Array, arr2: Uint16Array): number {
   return count;
 }
 
-/** TODO: to remove or to update! */
+/** TODO: to remove, old version*/
 function distFn(arr1: number[], arr2: number[]): number {
   const idx1 = arr1[0];
   const idx2 = arr2[0];
@@ -192,7 +192,7 @@ function distFn(arr1: number[], arr2: number[]): number {
   return ((len1 < len2) ? 1 : len2) / common - 1;
 }
 
-/** TODO: to remove or to update! */
+/** TODO: to remove, old version */
 export function getEmbeddings(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
   if ((stemCash.dfName !== table.name) || (stemCash.colName !== source.name)) {
     console.log('Getting buffer...');
@@ -539,3 +539,55 @@ export function getClosest(df: DG.DataFrame, idx: number, count: number): Uint32
   
   return closestInds.filter(i => i !== idx);
 } // getClosest
+
+/** Distance function fo the UMAP algorithm. */
+function umapDistFn(arr1: number[], arr2: number[]): number {
+  const df = grok.shell.table(stemCash.dfName!);
+
+  const idx1 = arr1[0];
+  const idx2 = arr2[0];
+
+  const featuresCount = stemCash.metricDef!.size;
+  const featuresMetricVals = new Float32Array(featuresCount);
+
+  let i = 0;
+
+  for (const [key, value] of stemCash.metricDef!)
+    if (key === stemCash.colName)
+      featuresMetricVals[i] = getTextDistFn(value)(stemCash.indices!.get(idx1), stemCash.indices!.get(idx2));
+    else
+      featuresMetricVals[i] = getMetricFn(value)(df.get(key, idx1), df.get(key, idx2));
+  
+  return getDistanceFn(stemCash.aggrDistance!, featuresCount)(featuresMetricVals);
+}
+
+/** Compute embeddings using the UMAP algorithm. */
+export function getEmbeddingsAdv(table: DG.DataFrame, source: DG.Column, components: number, epochs: number, neighbors: number, minDist: number, spread: number): DG.Column[] {
+  setStemmingCash(table, source);
+
+  const data = [...Array(table.rowCount).keys()].map(i => Array(10).fill(i));
+
+  console.log(data);
+
+  const umap = new UMAP({
+    nComponents: components,
+    nEpochs: epochs,
+    nNeighbors: neighbors,
+    minDist: minDist,
+    spread: spread,
+// @ts-ignore
+    distanceFn: umapDistFn,
+  });
+
+  const embeddings = umap.fit(data!);
+
+  const rowCount = embeddings.length;
+  const range = [...Array(components).keys()];
+  const umapColumnsData = range.map(_ => new Float32Array(rowCount));  
+
+  for (let i = 0; i < rowCount; ++i)
+    for (let j = 0; j < components; ++j)
+      umapColumnsData[j][i] = embeddings[i][j];  
+
+  return range.map(i => DG.Column.fromFloat32Array('UMAP' + i.toString(), umapColumnsData[i]));
+}
