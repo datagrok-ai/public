@@ -26,7 +26,7 @@ category('UI info panel', () => {
     await awaitPanel(pp, 'Gasteiger Partial Charges');
     const gpc = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Gasteiger Partial Charges') as HTMLElement;
-    if (!gpc.classList.contains('expanded')) gpc.click();
+    if (!gpc?.classList.contains('expanded')) gpc?.click();
     await awaitCheck(() => pp.querySelector('.grok-scripting-image-container-info-panel') !== null,
       'Gasteiger charges script output was not rendered in the panel', 10000);
     const pecilIcon = document.getElementsByClassName('grok-icon fal fa-pencil')[0] as HTMLElement;
@@ -40,7 +40,7 @@ category('UI info panel', () => {
       .getElementsByClassName('ui-btn ui-btn-ok')[0] as HTMLElement;
     applyBtn?.click();
     await delay(50);
-    gpc.click();
+    gpc?.click();
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
@@ -57,7 +57,7 @@ category('UI info panel', () => {
     const ih = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Identifiers') as HTMLElement;
     await delay(200);
-    if (!ih.classList.contains('expanded')) ih.click();
+    if (!ih?.classList.contains('expanded')) ih?.click();
     await awaitCheck(() => (ih.nextSibling as HTMLElement)
       .querySelector('table') !== null, 'cannot load Identifiers', 15000);
     const it = ih.nextSibling as HTMLElement;
@@ -65,7 +65,7 @@ category('UI info panel', () => {
       expect(Array.from(it.querySelectorAll('.ui-link.d4-link-external'))
         .find((el) => el.textContent === i) !== undefined, true);
     }
-    ih.click(); await delay(10);
+    ih?.click(); await delay(10);
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
@@ -80,10 +80,10 @@ category('UI info panel', () => {
     (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
     const s2d = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === '2D Structure') as HTMLElement;
-    if (!s2d.classList.contains('expanded')) s2d.click();
+    if (!s2d.classList.contains('expanded')) s2d?.click();
     await awaitCheck(() => (s2d.nextSibling as HTMLElement).querySelector('.chem-canvas') !== null,
       'canvas with structure was not rendered in the panel', 3000);
-    s2d.click(); await delay(10);
+    s2d?.click(); await delay(10);
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
@@ -118,11 +118,11 @@ category('UI info panel', () => {
     await awaitPanel(pp, 'Properties', 10000);
     const p = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Properties') as HTMLElement;
-    if (!p.classList.contains('expanded')) p.click();
+    if (!p?.classList.contains('expanded')) p?.click();
     await awaitCheck(() => (p.nextSibling as HTMLElement).querySelector('table') !== null,
       'table with properties was not rendered in the panel', 3000);
-    p.click(); await delay(100);
-    v.close();
+    p?.click(); await delay(100);
+    v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
@@ -137,10 +137,10 @@ category('UI info panel', () => {
     await awaitPanel(pp, 'Toxicity', 10000);
     const t = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Toxicity') as HTMLElement;
-    if (!t.classList.contains('expanded')) t.click();
+    if (!t?.classList.contains('expanded')) t?.click();
     await awaitCheck(() => (t.nextSibling as HTMLElement).querySelector('table') !== null,
       'table with toxicity was not rendered in the panel', 3000);
-    t.click(); await delay(10);
+    t?.click(); await delay(10);
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
@@ -156,11 +156,11 @@ category('UI info panel', () => {
     await awaitPanel(pp, 'Drug Likeness', 3000);
     const dl = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Drug Likeness') as HTMLElement;
-    if (!dl.classList.contains('expanded')) dl.click();
+    if (!dl?.classList?.contains('expanded')) dl?.click();
     await awaitCheck(() => (dl.nextSibling as HTMLElement).querySelectorAll('.d4-flex-col.ui-div').length === 50,
       'number of displayed canvases with molecules does not match the expected', 10000);
-    dl.click(); await delay(10);
-    v.close();
+    dl?.click(); await delay(10);
+    v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
   });
@@ -180,12 +180,12 @@ category('UI info panel', () => {
     await awaitPanel(pp, 'Structural Alerts', 3000);
     const sa = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Structural Alerts') as HTMLElement;
-    if (!sa.classList.contains('expanded')) sa.click();
+    if (!sa?.classList.contains('expanded')) sa?.click();
     await awaitCheck(() => {
-      return (sa.nextSibling as HTMLElement).querySelectorAll('.chem-canvas').length === 10;
+      return (sa?.nextSibling as HTMLElement).querySelectorAll('.chem-canvas').length === 10;
     },
       'number of displayed canvases with molecules does not match the expected', 10000);
-    sa.click(); await delay(10);
+    sa?.click(); await delay(10);
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = ui.div();
@@ -201,10 +201,10 @@ category('UI info panel', () => {
     await awaitPanel(pp, 'Descriptors', 3000);
     const desc = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Descriptors') as HTMLElement;
-    if (!desc.classList.contains('expanded')) desc.click();
+    if (!desc?.classList.contains('expanded')) desc?.click();
     await awaitCheck(() => (desc.nextSibling as HTMLElement).querySelector('table') !== null,
       'descriptors table hasn\'t been created', 10000);
-    desc.click(); await delay(100);
+    desc?.click(); await delay(100);
   });
 
   after(async () => {
