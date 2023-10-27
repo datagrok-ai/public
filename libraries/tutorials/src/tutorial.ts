@@ -17,7 +17,7 @@ export abstract class Tutorial extends DG.Widget {
   prerequisites: TutorialPrerequisites = {};
   demoTable: string = 'demog.csv';
   currentSection: HTMLElement | undefined;
-  manualMode: boolean = false;
+  // manualMode: boolean = false;
   private _t: DG.DataFrame | null = null;
 
   get t(): DG.DataFrame | null {
@@ -228,12 +228,12 @@ export abstract class Tutorial extends DG.Widget {
     this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
 
-    const manualMode = ui.button(ui.iconFA('forward'), () => {
-      this.manualMode = !this.manualMode;
-      $(manualMode.firstChild).toggleClass('fal fas');
-    }, 'Self-paced mode');
-    if (this.manualMode)
-      $(manualMode.firstChild).toggleClass('fal fas');
+    // const manualMode = ui.button(ui.iconFA('forward'), () => {
+    //   this.manualMode = !this.manualMode;
+    //   $(manualMode.firstChild).toggleClass('fal fas');
+    // }, 'Self-paced mode');
+    // if (this.manualMode)
+    //   $(manualMode.firstChild).toggleClass('fal fas');
     const closeTutorial = ui.button(ui.iconFA('times-circle'), () => this.close());
 
     const linkIcon = ui.button(ui.iconFA('link'), () => {
@@ -241,32 +241,36 @@ export abstract class Tutorial extends DG.Widget {
       grok.shell.info('Link copied to clipboard');
     }, `Copy the tutorial link`);
 
-    manualMode.style.minWidth = '30px';
+    // manualMode.style.minWidth = '30px';
     closeTutorial.style.minWidth = '30px';
     this.header.textContent = this.name;
     this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
-    this.headerDiv.append(ui.div([manualMode, closeTutorial]));
+    // this.headerDiv.append(ui.div([manualMode, closeTutorial]));
+    this.headerDiv.append(closeTutorial);
   }
 
-  title(text: string): void {
-    this.activity.append(ui.h3(text));
-  }
-
-  describe(text: string, startSection: boolean = false): void {
-    const div = ui.div();
-    div.innerHTML = text;
-    $(div.firstChild).css('margin-block-start', '0');
+  title(text: string, startSection: boolean = false): void {
+    const h3 = ui.h3(text);
     if (this.currentSection) {
       if (startSection) {
         this.endSection();
-        this.currentSection = ui.div(div);
+        this.currentSection = ui.div(ui.divH([h3], 'tutorials-section-header'));
         this.activity.append(this.currentSection);
       } else
-        this.currentSection.append(div);
+        this.currentSection.append(h3);
     } else if (startSection) {
-      this.currentSection = ui.div(div);
+      this.currentSection = ui.div(ui.divH([h3], 'tutorials-section-header'));
       this.activity.append(this.currentSection);
     } else
+      this.activity.append(h3);
+  }
+
+  describe(text: string): void {
+    const div = ui.div();
+    div.innerHTML = text;
+    if (this.currentSection)
+      this.currentSection.append(div);
+    else
       this.activity.append(div);
     div.scrollIntoView();
   }
@@ -276,9 +280,8 @@ export abstract class Tutorial extends DG.Widget {
     this.currentSection.classList.add('tutorials-done-section');
     const chevron = ui.iconFA('chevron-down');
     chevron.classList.add('tutorials-chevron');
-    chevron.style.float = 'left';
     const s = this.currentSection;
-    s.prepend(chevron);
+    s.children[0].append(chevron);
     $(chevron).on('click', () => {
       $(chevron).toggleClass('fa-chevron-down fa-chevron-up');
       $(s).toggleClass('tutorials-done-section tutorials-done-section-expanded');
@@ -318,7 +321,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   async action(instructions: string, completed: Observable<any> | Promise<void>,
-    hint: HTMLElement | HTMLElement[] | null = null, description: string = '', manual?: boolean): Promise<void> {
+    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
     if (this.closed)
       return;
 
@@ -365,13 +368,13 @@ export abstract class Tutorial extends DG.Widget {
       this._removeHints(hint);
     sub.unsubscribe();
 
-    if (this.manualMode && manual !== false) {
-      const nextStepIcon = ui.iconFA('forward', undefined, 'Next step');
-      nextStepIcon.className = 'grok-icon fas fa-forward tutorials-next-step';
-      entry.append(nextStepIcon);
-      await this.firstEvent(fromEvent(nextStepIcon, 'click'));
-      nextStepIcon.remove();
-    }
+    // if (this.manualMode && manual !== false) {
+    //   const nextStepIcon = ui.iconFA('forward', undefined, 'Next step');
+    //   nextStepIcon.className = 'grok-icon fas fa-forward tutorials-next-step';
+    //   entry.append(nextStepIcon);
+    //   await this.firstEvent(fromEvent(nextStepIcon, 'click'));
+    //   nextStepIcon.remove();
+    // }
 
     $(descriptionDiv).hide();
     if (description.length != 0)
