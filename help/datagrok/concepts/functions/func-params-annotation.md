@@ -422,10 +422,33 @@ result = orders.rowCount * 2;
 ### Input types
 
 Input fields such as text boxes or combo boxes get generated automatically based on
-the property attributes. You can also explicitly set the input type to one of the
-following: ``
+the property attributes. You can also explicitly set the `inputType` option. Here, we 
+set it to `Radio` to make the input appear as a radio button instead of the combo box:
 
-![img.png](input-types.png)
+```js
+//input: string fruit { choices: ["Apple", "Banana"], inputType: Radio }`
+```
+
+Input types have to match the data types (input types in bold are the default ones
+that you do not have to specify):
+
+| Input type      | Data types  | Example / description                    |
+|-----------------|-------------|------------------------------------------|
+| **Int**         | int         | { min: 0; max: 20; step: 4}              |
+| **BigInt**      | bigint      |                                          |
+| **Float**       | double      | { min: 0; max: 1; step: 0.03 }           |
+| **Bool**        | bool        |                                          |
+| **Text**        | string      |                                          |
+| **Date**        | datetime    |                                          |
+| **MultiChoice** | list        | { choices: \["A", "B"] }                 |
+| **List**        | list        | { inputType: TextArea; separators: ,}    |
+| **Column**      | column      |                                          |
+| Slider          | int, double | { min: 0; max: 20; step: 4}              |
+| Color           | string      |                                          |
+| Radio           | string      | {inputType: Radio; choices: \["A", "B"]} |
+| Molecule        | string      |                                          |
+
+![](input-types.png)
 
 Check out [interactive snippet](https://public.datagrok.ai/js/samples/ui/inputs/advanced/all-input-types)
 for more input types.  
@@ -445,7 +468,7 @@ a molecule, a molecule sketcher pops up.
 --input: string substructure = 'c1ccccc1' {semType: Molecule}
 ```
 
-![img.png](molecule-input.png)
+![](molecule-input.png)
 
 ## Examples
 
