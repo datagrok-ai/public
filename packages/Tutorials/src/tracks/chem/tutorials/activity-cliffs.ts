@@ -21,7 +21,7 @@ export class ActivityCliffsTutorial extends Tutorial {
 
   get steps() {return 12;}
   
-  helpUrl: string = '';
+  helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#activity-cliffs';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
   // manualMode = true;

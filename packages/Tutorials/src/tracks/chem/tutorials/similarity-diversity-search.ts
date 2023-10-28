@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
@@ -20,7 +20,7 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
 
   get steps() {return 12;}
   
-  helpUrl: string = '';
+  helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
   // manualMode = true;
@@ -47,12 +47,18 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
 
     let sim: DG.Viewer;
     let div: DG.Viewer;
-    await this.action('On the Top Menu, Click Chem > Search > Similarity/Diversity Search...', grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
+    await this.action('On the Top Menu, click Chem > Search > Similarity Search...',
+    grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
       if (data.args.viewer.type === 'Chem Similarity Search')
         sim = data.args.viewer;
+      return !!sim;
+    })), this.getMenuItem('Chem'));
+
+    await this.action('Next, click Chem > Search > Diversity Search...',
+    grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
       if (data.args.viewer.type === 'Chem Diversity Search')
         div = data.args.viewer;
-      return Boolean(sim && div);
+      return !!div;
     })), this.getMenuItem('Chem'));
 
     this.title('Explore the dataset using similarity and diversity viewers', true);
@@ -98,8 +104,14 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
     const d = await this.openDialog('On the reference molecule, click the Edit icon', '',
       $('.grok-icon.fal.fa-pen.similarity-search-edit.chem-mol-view-icon').get(0));
 
+    const MOL = 'RCKUZCZZUOYUBE-DHDCSXOGSA-N';
+    const copyButton = ui.button(ui.iconFA('clone'), () => {});
+    copyButton.setAttribute('onclick', `navigator.clipboard.writeText('${MOL}')`)
+    copyButton.style.height = 'initial';
+    copyButton.style.margin = '0';
     await this.action('Set new reference molecule', 
-      d.onClose, undefined, `In the sketcher, paste <b>RCKUZCZZUOYUBE-DHDCSXOGSA-N</b><br>
+      d.onClose, undefined, `In the sketcher, paste<br>
+      <b>${MOL}</b>${copyButton.outerHTML}<br>
       Press <b>Enter</b> to apply.<br>
       Then, click <b>OK</b>`);
 
@@ -140,7 +152,6 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
         mutationsList.forEach((m) => {
           //@ts-ignore
           if (m.target.innerText === '1 / 31' || m.target.innerText === '1 / 32') {
-            console.log(m);
             subscriber.next(true);
             observer.disconnect();
           }

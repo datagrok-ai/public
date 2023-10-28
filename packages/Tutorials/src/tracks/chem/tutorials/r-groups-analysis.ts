@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable} from 'rxjs';
+import {Observable, combineLatest} from 'rxjs';
 import $, {Cash} from 'cash-dom';
 
 
@@ -18,9 +18,9 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     'impact on crucial compound properties, and find gaps.';
   }
 
-  get steps() {return 12;}
+  get steps() {return 14;}
   
-  helpUrl: string = '';
+  helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#r-groups-analysis';
   prerequisites: TutorialPrerequisites = {packages: ['Chem'], jupyter: true};
   demoTable: string = '';
   // manualMode = true;
@@ -49,11 +49,11 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       this.getMenuItem('Chem'));
 
     this.title('Specify the scaffold', true);
-    this.describe(`In the sketcher, you have two options to specify the scaffold:
+    this.describe(`In the sketcher, you have two options to specify the scaffold:<br>
       <ul>
       <li>Manually draw or paste a scaffold.</li>
       <li>Click <b>MCS</b> to automatically detect the most common substructure.</li>
-      </ul>
+      </ul><br>
       For this tutorial, let’s choose <b>MCS</b>. Click it, then click <b>OK</b>`);
 
     await this.action('Click MCS', new Observable((subscriber: any) => {
@@ -99,10 +99,33 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     The <b>Context Panel</b> provides information and actions relevant to your selection.<br>
     Let’s explore.`);
 
-    await this.action('Click any segment on a bar chart', this.t.onSelectionChanged.pipe(filter(() => {
-      return grok.shell.o.constructor.name === 'RowGroup' && 
-        $('.d4-accordion-pane-header').filter((ind, el) => el.textContent === 'Distributions').length > 0;
-    })), undefined, 'Note the changes in the grid');
+    await this.action('Click any segment on a bar chart', this.t.onSelectionChanged, undefined, 'Note the changes in the grid');
+
+    await this.action('Press Escape', new Observable((subscriber: any) => {
+      document.addEventListener("keydown", ({key}) => {
+        if (key === "Escape")
+          subscriber.next(true);
+      }, {once: true});
+    }));
+
+    await this.action('In the grid, press Shift + Drag Mouse Down', combineLatest([this.t.onSelectionChanged,
+      new Observable((subscriber: any) => {
+        const observer = new MutationObserver((mutationsList, observer) => {
+          mutationsList.forEach((m) => {
+            //@ts-ignore
+            if (m.target.innerText.includes('Distributions')) {
+              subscriber.next(true);
+              observer.disconnect();
+            }
+          });
+        });
+        observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
+    })]), undefined, 'Note changes on the pie charts');
+
+    // await this.action('In the grid, press Shift + Drag Mouse Down', this.t.onSelectionChanged.pipe(filter(() => {
+    //   return grok.shell.o.constructor.name === 'RowGroup' && 
+    //     $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').length > 0;
+    // })), undefined, 'Note changes on the pie charts');
 
     let pane: Cash;
     await this.action('On the Context Panel, expand the Distributions pane',
@@ -111,16 +134,17 @@ export class RGroupsAnalysisTutorial extends Tutorial {
         if (pane.hasClass('expanded'))
           subscriber.next(true);
         pane.on('click', () => subscriber.next(true));
-        // subscriber.next(true);
       }), $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').get(0));
     
-    await this.action('In the pane, hover over line charts',
-      new Observable((subscriber: any) => {
-      const content = Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
-        .find((el) => el.textContent === 'Distributions')?.nextElementSibling;
-      content?.querySelectorAll('.d4-flex-col')[2].addEventListener('mouseover', () => subscriber.next(true));
-        $('.grok-prop-panel').one('mouseover', () => subscriber.next(true));
-      }));
+    await this.action('In the pane, hover over line charts', new Observable((subscriber: any) => {
+      const onMousemove = () => {
+        if ($('.d4-tooltip').css('display') === 'block') {
+          subscriber.next(true);
+          document.querySelector('.grok-prop-panel')!.removeEventListener('mousemove', onMousemove);
+        }
+      };
+      document.querySelector('.grok-prop-panel')!.addEventListener('mousemove', onMousemove);
+    }));
 
     this.title('Get a different view', true);
     this.describe(`The trellis plot initially shows pie charts, but you can change visualizations to

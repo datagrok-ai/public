@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable, merge} from 'rxjs';
+import {Observable, combineLatest} from 'rxjs';
 import $ from 'cash-dom';
 
 
@@ -19,7 +19,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
 
   get steps() {return 10;}
   
-  helpUrl: string = '';
+  helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#substructure-search--filtering';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
   // manualMode = true;
@@ -128,6 +128,6 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     Drag the range controls to filter.<br>
     To learn more about filters, complete our <b>Filters</b> tutorial.`);
 
-    await this.action('Interact with filters', this.t.onFilterChanged);
+    await this.action('Interact with filters', combineLatest([this.t.onSelectionChanged, this.t.onFilterChanged]));
   }
 }
