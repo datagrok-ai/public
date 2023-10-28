@@ -18,7 +18,6 @@ interactive experiences that allow [validation](#validation), controlled [vocabu
 [dynamic lookups](#lookup-tables), [referencing parameters](#referencing-other-parameters), and 
 [function chaining](#function-inputs) - without writing a single line of UI code!
 
-
 ## Function
 
 There are general parameters common to all functions, as well as parameters specific to certain function types. Not all
@@ -78,7 +77,7 @@ Datagrok supports the following types in all scripting languages:
 * Scalars: `int`, `double`, `bool`, `string`, `datetime`
 * Table: `dataframe`, `column`, `column_list`
 * Collections: `list` (typically of strings)
-* `graphics`: typically a function output. See [example]()
+* `graphics`: typically a function output. See [example](https://github.com/datagrok-ai/public/blob/9f7043dbadd9be35c6f798143642de3c9145b560/packages/Chem/scripts/gasteiger_charges.py#L4)
 * `file`: when the script is executed, contains a string with the path to a file
 * `blob`: array of bytes
 
@@ -86,13 +85,13 @@ Some of the options apply to all parameters, while other are type-specific.
 
 For all parameters:
 
-| Option      | Value  | Description                                        |
-|-------------|--------|----------------------------------------------------|
-| validators  | string | Comma-separated list of [validators](#validation) |
-| caption     | string | Custom field caption                               |
-| postfix     | string | Field postfix                                      |
-| units       | string | Value unit name                                    |
-| nullable    | bool   | Makes it an [optional parameter]()                 |
+| Option     | Value  | Description                                                               |
+|------------|--------|---------------------------------------------------------------------------|
+| validators | string | Comma-separated list of [validators](#validation)                         |
+| caption    | string | Custom field caption                                                      |
+| postfix    | string | Field postfix                                                             |
+| units      | string | Value unit name                                                           |
+| nullable   | bool   | Makes it an [optional parameter](#initial-values-and-optional-parameters) |
 
 For `dataframe` type:
 
@@ -115,7 +114,7 @@ For `string` type
 
 | Option                       | Value                                                                             | Description                                        |
 |------------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------|
-| [choices](choices)           | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
+| [choices](#choices)          | Comma-separated list of values, or a function name that returns a list of strings | Makes it a combo box                               |
 | [suggestions](#autocomplete) | Name of a function that returns a list of strings to autocomplete user input      | Autocomplete gives you options as you type |
 
 For `numeric` types
