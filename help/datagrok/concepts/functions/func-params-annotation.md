@@ -419,6 +419,18 @@ result = orders.rowCount * 2;
 ![img.png](function-input.png)
 
 
+### Input types
+
+Input fields such as text boxes or combo boxes get generated automatically based on
+the property attributes. You can also explicitly set the input type to one of the
+following: ``
+
+![img.png](input-types.png)
+
+Check out [interactive snippet](https://public.datagrok.ai/js/samples/ui/inputs/advanced/all-input-types)
+for more input types.  
+
+For developers: [DG.InputBase](https://datagrok.ai/js-api/classes/dg.InputBase)
 
 ### Inputs for semantic types
 
