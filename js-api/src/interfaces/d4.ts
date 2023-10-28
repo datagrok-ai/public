@@ -227,6 +227,8 @@ export interface IHistogramLookSettings {
 
   backColor: number;
 
+  axisFont: string;
+
   filteredBinsColor: number;
 
   selectedBinsColor: number;
@@ -246,6 +248,8 @@ export interface IHistogramLookSettings {
   filterMarginTop: number;
 
   filterMarginBottom: number;
+
+  aggTooltipColumns: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -316,8 +320,6 @@ export interface IFiltersLookSettings {
 
 export interface IScatterPlotLookSettings {
   /// Determines the rows shown on the scatter plot.
-  // Commented until we make UI for formula editor:
-  // @Prop(editor: 'editFormula')
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
@@ -333,7 +335,7 @@ export interface IScatterPlotLookSettings {
   /// * No action: they are disconnected
   /// * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out
   /// * Zoom by filter: scatter plot focuses on the filtered points as the filter changes
-  /// * Zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
+  /// * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
   zoomAndFilter: string;
 
   /// A column to use on the X axis. Could be numerical or categorical.
@@ -538,8 +540,6 @@ export interface IScatterPlotLookSettings {
 }
 
 export interface ILineChartLookSettings {
-  // Commented until we make UI for formula editor:
-  // @Prop(editor: 'editFormula')
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
@@ -732,6 +732,8 @@ export interface ILineChartLookSettings {
   /// Requires the PowerPack plugin.
   showViewerFormulaLines: boolean;
 
+  aggTooltipColumns: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -837,6 +839,8 @@ export interface IBarChartLookSettings {
 
   font: string;
 
+  axisFont: string;
+
   minTextHeight: number;
 
   backColor: number;
@@ -899,6 +903,8 @@ export interface IDensityPlotLookSettings {
 
   autoLayout: boolean;
 
+  axisFont: string;
+
   showXAxis: boolean;
 
   showYAxis: boolean;
@@ -934,8 +940,6 @@ export interface IDensityPlotLookSettings {
 
 export interface IBoxPlotLookSettings {
   /// Determines the rows shown on the box plot.
-  // Commented until we make UI for formula editor:
-  // @Prop(editor: 'editFormula')
   /// Formula that filters out rows to show.
   /// Example: "${AGE} > 20 or ${WEIGHT / 2) > 100"
   filter: string;
@@ -1112,6 +1116,8 @@ export interface IPieChartLookSettings {
 
   marginBottom: number;
 
+  aggTooltipColumns: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 
@@ -1153,6 +1159,47 @@ export interface IMatrixPlotLookSettings {
   showYAxes: boolean;
 
   backColor: number;
+
+  //StreamController _changes;
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  // Viewer description that gets shown at the *Descriptor Position*.
+  // Markup is supported.
+  description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+}
+
+export interface ISummaryLookSettings {
+  /// List of columns to show aggregations on
+  columnNames: Array<string>;
+
+  /// List of aggregations for the columns
+  aggregations: Array<string>;
+
+  visualizationType: string;
+
+  /// Numerical column to be used for color-coding.
+  /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  colorColumnName: string;
+
+  /// Color aggregation type.
+  colorAggrType: string;
+
+  invertColorScheme: boolean;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
