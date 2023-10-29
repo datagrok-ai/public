@@ -63,7 +63,7 @@ export abstract class Tutorial extends DG.Widget {
 
   async updateStatus(): Promise<void> {
     const info = await grok.dapi.userDataStorage.getValue(Tutorial.DATA_STORAGE_KEY, this.name);
-    this.status = info ? true : false;
+    this.status = !!info;
   }
 
   constructor() {
@@ -333,7 +333,7 @@ export abstract class Tutorial extends DG.Widget {
     const hints = Array.from(document.getElementsByClassName('ui-hint-blob')) as HTMLElement[];
     const sub = grok.events.onCurrentViewChanged.subscribe(() => {
       if (hint)
-        this._setHintVisibility(hints, grok.shell.v === view ? true : false);
+        this._setHintVisibility(hints, grok.shell.v === view);
     });
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
@@ -571,7 +571,7 @@ export abstract class Tutorial extends DG.Widget {
         }
         return false;
       })) : grok.shell.v.type === view.type ?
-        new Promise<void>((resolve, reject) => resolve()) :
+        new Promise<void>((resolve, _) => resolve()) :
         grok.events.onCurrentViewChanged.pipe(filter((_) => grok.shell.v.type === view.type)),
     hint, description);
 
