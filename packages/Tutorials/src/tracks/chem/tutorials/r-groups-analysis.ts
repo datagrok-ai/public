@@ -52,7 +52,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     this.describe(`In the sketcher, you have two options to specify the scaffold:<br>
       <ul>
       <li>Manually draw or paste a scaffold.</li>
-      <li>Click <b>MCS</b> to automatically detect the most common substructure.</li>
+      <li>Click <b>MCS</b> to find the most common substructure.</li>
       </ul><br>
       For this tutorial, let’s choose <b>MCS</b>. Click it, then click <b>OK</b>`);
 
@@ -72,7 +72,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       })));
     
     this.title('Set up the visualization', true);
-    this.describe(`Once the analysis is complete, the R-group columns are added to the table (grid),
+    this.describe(`Once the analysis is complete, the R-group columns are added to the table,
     along with a trellis plot for visual exploration.<br>Let’s set up the visualization.`);
 
     await this.action('In the trellis plot, click the gear icon for the embedded viewer',
@@ -95,7 +95,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     }));
 
     this.title('Analyze and explore', true);
-    this.describe(`All datagrok viewers are synchronized. This means they respond to the same filtering, selection, and so on.
+    this.describe(`All datagrok viewers are synchronized, and share the same filter and selection.
     The <b>Context Panel</b> provides information and actions relevant to your selection.<br>
     Let’s explore.`);
 
