@@ -9,10 +9,10 @@ category('UI info panel', () => {
   let v: DG.TableView;
   let smiles: DG.DataFrame;
 
-  before(async () => {
-    grok.shell.closeAll();
-    grok.shell.windows.showProperties = true;
-  });
+  // before(async () => {
+  //   grok.shell.closeAll();
+  //   grok.shell.windows.showProperties = true;
+  // });
 
 
   test('gasteiger', async () => {
@@ -207,13 +207,13 @@ category('UI info panel', () => {
     desc?.click(); await delay(100);
   });
 
-  after(async () => {
-    try {
-      grok.shell.closeAll();
-    } catch (e) {
-      console.warn(e);
-    }
-  });
+  // after(async () => {
+  //   try {
+  //     grok.shell.closeAll();
+  //   } catch (e) {
+  //     console.warn(e);
+  //   }
+  // });
 });
 
 async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Promise<void> {
