@@ -72,3 +72,5 @@ test-console-output.log
 
 # local history
 .lh
+
+_lint-check-report.md
