@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {initMatrOperApi, getInverseMatrix} from '../wasm/matrix-operations-api';
 
+import {example2, solveODEs} from './solver';
+
 export const _package = new DG.Package();
 
 //name: info
@@ -49,4 +51,10 @@ export function performance(size: number, times: number) {
 
   console.log(`Total time: ${sum} ms.`);
   console.log(`Average time: ${sum/times} ms.`);
+}
+
+//name: Solve example
+//output: dataframe df {viewer: Line chart(block: 100, sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter", autoLayout: "false") | Grid(block: 100)}
+export function solveExample(): DG.DataFrame {
+  return solveODEs(example2);
 }
