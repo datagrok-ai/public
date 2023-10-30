@@ -184,7 +184,7 @@ category('UI info panel', () => {
     await awaitCheck(() => {
       return (sa?.nextSibling as HTMLElement).querySelectorAll('.chem-canvas').length === 10;
     },
-      'number of displayed canvases with molecules does not match the expected', 10000);
+    'number of displayed canvases with molecules does not match the expected', 10000);
     sa?.click(); await delay(10);
     v?.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
@@ -208,7 +208,11 @@ category('UI info panel', () => {
   });
 
   after(async () => {
-    grok.shell.closeAll();
+    try {
+      grok.shell.closeAll();
+    } catch (e) {
+      console.warn(e);
+    }
   });
 });
 
