@@ -27,8 +27,7 @@ interface FormSettings extends SummarySettingsBase {
 
 function getSettings(gc: DG.GridColumn): FormSettings {
   gc.settings ??= {};
-  let settings = gc.settings[SparklineType.Form] as FormSettings;
-  settings ??= getSettingsBase(gc, SparklineType.Form);
+  const settings: FormSettings = gc.settings[SparklineType.Form] ??= getSettingsBase(gc, SparklineType.Form);
   settings.colorCode ??= true;
   return settings;
 }
@@ -166,7 +165,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings = (gc.settings[SparklineType.Form] as FormSettings) ??= getSettings(gc);
+    const settings: FormSettings = gc.settings[SparklineType.Form] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
@@ -177,8 +176,8 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns),
       }),
       ui.choiceInput('Show column names', settings.showColumnNames ?? 'Auto',
-        ['Auto', 'Always', 'Never'], (x: string) => {
-          settings.showColumnNames = x as ColumnNamesVisibility;
+        ['Auto', 'Always', 'Never'], (x: ColumnNamesVisibility) => {
+          settings.showColumnNames = x;
           gc.grid.invalidate();
         })
     ]);

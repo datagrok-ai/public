@@ -129,7 +129,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings = (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= getSettings(gc);
+    const settings: RadarChartSettings = gc.settings[SparklineType.Radar] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {

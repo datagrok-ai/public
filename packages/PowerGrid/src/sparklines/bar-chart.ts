@@ -17,8 +17,8 @@ interface BarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
-  let settings = gc.settings[SparklineType.BarChart] as BarChartSettings;
-  settings ??= getSettingsBase(gc, SparklineType.BarChart);
+  const settings: BarChartSettings = gc.settings[SparklineType.BarChart] ??=
+    getSettingsBase(gc, SparklineType.BarChart);
   settings.globalScale ??= false;
   settings.colorCode ??= false;
   return settings;
@@ -98,7 +98,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings = (gc.settings[SparklineType.BarChart] as BarChartSettings) ??= getSettings(gc);
+    const settings: BarChartSettings = gc.settings[SparklineType.BarChart] ??= getSettings(gc);
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
       description: 'Determines the way a value is mapped to the vertical scale.\n' +
