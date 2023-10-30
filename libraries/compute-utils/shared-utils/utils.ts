@@ -112,9 +112,11 @@ export const injectInputBaseValidation = (t: DG.InputBase) => {
   t.addOptions(validationIndicator);
   function setValidation(messages: ValidationResultBase | undefined) {
     while (validationIndicator.firstChild && validationIndicator.removeChild(validationIndicator.firstChild));
-    const icon = getValidationIcon(messages);
-    if (icon)
+    const [icon, popover] = getValidationIcon(messages);
+    if (icon && popover) {
       validationIndicator.appendChild(icon);
+      validationIndicator.appendChild(popover);
+    }
 
     t.input.classList.remove('d4-invalid');
     t.input.classList.remove('d4-partially-invalid');

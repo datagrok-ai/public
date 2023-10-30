@@ -120,14 +120,17 @@ export function getValidationIcon(messages: ValidationResultBase | undefined) {
     icon = ui.iconFA('info-circle', () => {displayValidation(messages, icon, popover);} );
     icon.style.color = 'var(--blue-1)';
   }
-  if (icon)
+  if (icon) {
+    icon.classList.remove('fal');
+    icon.classList.add('far');
     popover = addPopover(icon);
+  }
 
-  return icon;
+  return [icon, popover];
 }
 
 function addPopover(icon: HTMLElement) {
-  const popover = ui.div();
+  const popover = ui.div([], 'd4-tooltip');
   stylePopover(popover);
   icon.appendChild(popover);
   return popover;
@@ -152,13 +155,8 @@ function alignPopover(target: HTMLElement, popover: HTMLElement): void {
 
 function stylePopover(popover: HTMLElement): void {
   popover.popover = 'auto';
-  popover.style.cursor = 'default';
-  popover.style.padding = '10px';
-  popover.style.background = '#fdffe5';
-  popover.style.border = '1px solid #E4E6CE';
-  popover.style.borderRadius = '2px';
-  popover.style.boxShadow = '0 0 5px #E4E6CE';
-  popover.style.maxWidth = '500px';
+  popover.style.fontStyle = 'normal';
+  popover.style.pointerEvents = 'all';
 }
 
 function renderValidationResults(messages: ValidationResultBase) {
@@ -169,14 +167,15 @@ function renderValidationResults(messages: ValidationResultBase) {
       continue;
     for (const advice of advices as Advice[]) {
       const icon = getAdviceIcon(category);
-      icon!.style.marginRight = '2px';
+      icon!.style.marginRight = '4px';
+      icon!.style.height = '13px';
       root.appendChild(ui.divV([
-        ui.span([
-          icon,
-          ui.span([advice.description], {style: {color: 'var(--grey-6)'}}),
+        ui.divH([
+          icon!,
+          ui.span([advice.description]),
         ]),
         ...(advice.actions ?? []).map(
-          (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '18px'}})),
+          (action) => ui.link(action.actionName, action.action, undefined, {style: {paddingLeft: '20px'}})),
       ], {style: {lineHeight: '1.2'}}));
     }
   }
@@ -194,11 +193,6 @@ function getAdviceIcon(category: string) {
   } else if (category === 'notifications') {
     icon = ui.iconFA('info-circle');
     icon.style.color = 'var(--blue-1)';
-  }
-  if (icon) {
-    icon.style.cursor = 'default';
-    icon.style.display = 'inline-block';
-    icon.style.fontFamily = '"Font Awesome 5 Pro"';
   }
   return icon;
 }
