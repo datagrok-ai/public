@@ -459,11 +459,8 @@ class BioPackageDetectors extends DG.Package {
   }
 
   getSplitterWithSeparator(separator, limit) {
-    return function(seq) {
-      const seq1 = !seq ? '' :
-        (seq.startsWith('"') && seq.endsWith('"')) ? seq.slice(1, -1).replaceAll('""-""', '') :
-          seq;
-      return !seq1 ? [] : seq1.split(separator, limit);
+    return (seq) => {
+      return !seq ? [] : seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
     };
   }
 
