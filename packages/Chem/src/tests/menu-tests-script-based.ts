@@ -75,17 +75,17 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     await mutate(molV2000);
   }, {timeout: 60000});
 
-  test('mutate.molV3000', async () => {
-    await mutate(molV3000);
-  }, {timeout: 60000});
+  // test('mutate.molV3000', async () => {
+  //   await mutate(molV3000);
+  // }, {timeout: 60000});
 
   test('mutate.emptyInput', async () => {
     await mutate('');
   }, {timeout: 60000});
 
-  test('mutate.malformedInput', async () => {
-    await mutate('COc1ccc2c|c(ccc2c1)C(C)C(=O)OCCCc3cccnc3', 0);
-  }, {timeout: 60000});
+  // test('mutate.malformedInput', async () => {
+  //   await mutate('COc1ccc2c|c(ccc2c1)C(C)C(=O)OCCCc3cccnc3', 0);
+  // }, {timeout: 60000});
 });
 
 

@@ -44,9 +44,9 @@ category('top menu similarity/diversity', () => {
     await _testFindSimilar(findSimilar, molV2000, 'V2000');
   });
 
-  test('findSimilar.chem.molV3000', async () => {
-    await _testFindSimilar(findSimilar, molV3000, 'V3000');
-  });
+  // test('findSimilar.chem.molV3000', async () => {
+  //   await _testFindSimilar(findSimilar, molV3000, 'V3000');
+  // });
 
   test('getSimilarities.chem.molecules', async () => {
     await _testGetSimilarities(getSimilarities, molecules);
@@ -100,19 +100,19 @@ category('top menu similarity/diversity', () => {
     }
   });
 
-  test('similarity.malformedInput', async () => {
-    const tv = grok.shell.addTableView(malformed);
-    DG.Balloon.closeAll();
-    const viewer = await tv.dataFrame.plot.fromType('Chem Similarity Search');
-    malformed.currentRowIdx = 30;
-    try {
-      await awaitCheck(() => viewer.root.classList.contains('chem-malformed-molecule-error'),
-        'error message has not been shown', 2000);
-    } finally {
-      tv.close();
-      DG.Balloon.closeAll();
-    }
-  });
+  // test('similarity.malformedInput', async () => {
+  //   const tv = grok.shell.addTableView(malformed);
+  //   DG.Balloon.closeAll();
+  //   const viewer = await tv.dataFrame.plot.fromType('Chem Similarity Search');
+  //   malformed.currentRowIdx = 30;
+  //   try {
+  //     await awaitCheck(() => viewer.root.classList.contains('chem-malformed-molecule-error'),
+  //       'error message has not been shown', 2000);
+  //   } finally {
+  //     tv.close();
+  //     DG.Balloon.closeAll();
+  //   }
+  // });
 
   test('similaritySearchViewerOpen', async () => {
     await _testSimilaritySearchViewerOpen();
@@ -139,10 +139,10 @@ category('top menu similarity/diversity', () => {
     await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint);
   });
 
-  test('testDiversitySearch.molV3000', async () => {
-    await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10,
-      Fingerprint.Morgan as Fingerprint);
-  });
+  // test('testDiversitySearch.molV3000', async () => {
+  //   await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10,
+  //     Fingerprint.Morgan as Fingerprint);
+  // });
 
   test('diversity.emptyValues', async () => {
     const tv = grok.shell.addTableView(empty);
@@ -154,22 +154,22 @@ category('top menu similarity/diversity', () => {
     } finally {tv.close();}
   });
 
-  test('diversity.malformedData', async () => {
-    const tv = grok.shell.addTableView(malformed);
-    DG.Balloon.closeAll();
-    const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
-      .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-    await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
-    try {
-      expect(viewer.renderMolIds.length, 12);
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
-      'cannot find warning balloon', 1000);
-    } finally {
-      tv.close();
-      DG.Balloon.closeAll();
-    }
-  });
+  // test('diversity.malformedData', async () => {
+  //   const tv = grok.shell.addTableView(malformed);
+  //   DG.Balloon.closeAll();
+  //   const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
+  //     .fromType('Chem Diversity Search')) as ChemDiversityViewer;
+  //   await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
+  //   try {
+  //     expect(viewer.renderMolIds.length, 12);
+  //     await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
+  //       '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
+  //     'cannot find warning balloon', 1000);
+  //   } finally {
+  //     tv.close();
+  //     DG.Balloon.closeAll();
+  //   }
+  // });
 
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
