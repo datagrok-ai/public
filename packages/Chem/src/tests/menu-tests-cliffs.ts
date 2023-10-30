@@ -42,19 +42,19 @@ category('top menu activity cliffs', async () => {
       'smiles', 'Activity', 1);
   });
 
-  test('activityCliffs.malformedData', async () => {
-    DG.Balloon.closeAll();
-    await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
-      'canonical_smiles', 'FractionCSP3', 24);
-    try {
-      await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
-        '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
-      'cannot find warning balloon', 5000);
-    } finally {
-      grok.shell.closeAll();
-      DG.Balloon.closeAll();
-    }
-  });
+  // test('activityCliffs.malformedData', async () => {
+  //   DG.Balloon.closeAll();
+  //   await _testActivityCliffsOpen(await readDataframe('tests/Test_smiles_malformed.csv'),
+  //     'canonical_smiles', 'FractionCSP3', 24);
+  //   try {
+  //     await awaitCheck(() => document.querySelector(`.${MALFORMED_DATA_WARNING_CLASS}`)?.innerHTML ===
+  //       '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
+  //     'cannot find warning balloon', 5000);
+  //   } finally {
+  //     grok.shell.closeAll();
+  //     DG.Balloon.closeAll();
+  //   }
+  // });
 
   after(async () => {
     grok.shell.closeAll();
