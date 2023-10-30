@@ -48,6 +48,7 @@ These are the common parameters for all functions:
 * `top-menu`: Top menu path separated with pipes (`|`), such as `Chem | Gasteiger Charges`
 
 Some parameters are specific to script language and/or technology:
+
 * Script
   * `language`: script language (supported: `r`, `python`, `octave`, `julia`, `grok`, `javascript`)
   * `environment`: [script environment](../../../compute/scripting.md#environments) (Conda environment for python, etc)
@@ -190,6 +191,7 @@ as `@patternName(columnName)`, just like we did here for the "freight" column:
 --input: string freightValue = >= 10.0 {pattern: double}
 select * from Orders where @freightValue(freight)
 ```
+
 Different inputs would produce differently structured SQL (also dependent on the database). 
 
 | Input | SQL                                                                | Description                     |
@@ -390,6 +392,7 @@ FROM target_dictionary td
     AND td.organism = @organism
     AND oc.L1 = 'Bacteria'
 ```
+
 </div></details>
 
 ![](autocomplete.gif)
