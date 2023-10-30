@@ -3,6 +3,43 @@
     position: sticky;
 }
 
+.ui-input-root.rfv-restricted-input.d4-disabled {
+    pointer-events: all;
+    cursor: pointer!important;
+}
+
+/* Hide all state icons by default */
+.ui-input-root > .ui-input-options .rfv-icon-lock,
+.ui-input-root > .ui-input-options .rfv-icon-unlock,
+.ui-input-root > .ui-input-options .rfv-icon-undo,
+.ui-input-root > .ui-input-options .rfv-icon-warning {
+    display: none;
+}
+
+/* Show warning icon if input is on warning state */
+.ui-input-root.rfv-inconsistent-input > .ui-input-options .rfv-icon-warning {
+    display: inherit;
+}
+
+/* Show undo icon if input is on inconstent state and hovered */
+.ui-input-root.rfv-restricted-unlocked-input:hover .rfv-icon-undo, .ui-input-root.rfv-inconsistent-input:hover .rfv-icon-undo {
+    display: inherit;
+}
+
+/* Show/hide lock-unlock icons on input hover */
+.ui-input-root.rfv-restricted-input:hover .rfv-icon-lock {
+    display: none;
+}
+.ui-input-root.rfv-restricted-input .rfv-icon-lock {
+    display: inherit;
+}
+.ui-input-root.rfv-restricted-input .rfv-icon-unlock {
+    display: none;
+}
+.ui-input-root.rfv-restricted-input:hover .rfv-icon-unlock {
+    display: inherit;
+}
+
 .ui-form-condensed .rfv-buttons > .ui-label {
     margin-right: 0px!important;
 }

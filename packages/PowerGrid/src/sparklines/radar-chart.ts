@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit} from './shared';
+import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit, SparklineType} from './shared';
 
 
 class it {
@@ -18,8 +18,8 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return gc.settings ??= {
-    ...getSettingsBase(gc),
+  return gc.settings[SparklineType.Radar] ??= {
+    ...getSettingsBase(gc, SparklineType.Radar),
     // ...{radius: 10,},
   };
 }

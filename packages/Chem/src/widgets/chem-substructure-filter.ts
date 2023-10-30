@@ -7,7 +7,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {chemSubstructureSearchLibrary} from '../chem-searches';
+import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
 import {Subject, Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
@@ -25,6 +25,15 @@ import $ from 'cash-dom';
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
 let id = 0;
+
+const searchTypeHints  = {
+  [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
+  [SubstructureSearchType.INCLUDED_IN]: 'search structures for which sketched pattern is a superstructure',
+  [SubstructureSearchType.NOT_CONTAINS]: 'search structures which DO NOT contain sketched pattern as a substructure',
+  [SubstructureSearchType.NOT_INCLUDED_IN]: 'search structures for which sketched pattern is NOT a superstructure',
+  [SubstructureSearchType.EXACT_MATCH]: 'search structures which exactly match sketched pattern',
+  [SubstructureSearchType.IS_SIMILAR]: 'search structures similar to sketched pattern',
+}
 
 interface ISubstructureFilterState {
   bitset?: DG.BitSet;
@@ -110,6 +119,10 @@ export class SubstructureFilter extends DG.Filter {
 
     this.searchTypeInput = ui.choiceInput('', this.searchType, this.searchTypes, () => { 
       this.onSearchTypeChanged();
+    });
+    ui.tooltip.bind(this.searchTypeInput.input, () => {
+      console.log(`in tooltip`);
+      return searchTypeHints[this.searchTypeInput.value as SubstructureSearchType]
     });
 
     this.fpInput = ui.choiceInput('FP', this.fp, this.fpsTypes, () => {
@@ -235,7 +248,7 @@ export class SubstructureFilter extends DG.Filter {
     }));
 
     this.currentSearches.add('');
-    chemSubstructureSearchLibrary(this.column!, '', '', false, false)
+    chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
       .then((_) => { }); // Precalculating fingerprints
 
     let onChangedEvent: any = this.sketcher.onChanged;
@@ -339,7 +352,7 @@ export class SubstructureFilter extends DG.Filter {
    */
   async _onSketchChanged(): Promise<void> {
     const newMolFile = this.sketcher.getMolFile();
-    const newSmarts = await this.sketcher.getSmarts();
+    const newSmarts = await this.getSmartsToFilter();
     if (this.currentMolfile !== newMolFile)
       this.updateFilterUiOnSketcherChanged(newMolFile);
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
@@ -387,6 +400,11 @@ export class SubstructureFilter extends DG.Filter {
     }
   }
 
+  async getSmartsToFilter() {
+    return this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
+      _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+  }
+
   updateApplyFilterSyncTag(add = true): boolean {
     const applyFilterSyncTag: IApplyFilterSync = JSON.parse(this.column!.getTag(CHEM_APPLY_FILTER_SYNC)!);
     if (add) {
@@ -404,9 +422,8 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   async getFilterBitset(): Promise<BitArray> {
-    const smarts = this.sketcher.sketcher?.isInitialized ? await this.sketcher.getSmarts() :
-      _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
-    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, false, false,
+    const smarts = await this.getSmartsToFilter();
+    return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, FILTER_TYPES.substructure, false, false,
       this.searchType, this.similarityCutOff, this.fp);
   }
 
@@ -452,6 +469,10 @@ export class SubstructureFilter extends DG.Filter {
     this.searchType = this.searchTypeInput.value;
     if (this.searchType !== SubstructureSearchType.CONTAINS)
       this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'chem-search-options-icon');
+    else {
+      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()) && this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE)
+        this.sketcher.root.appendChild(this.optionsIcon);
+    }
     if (this.searchType === SubstructureSearchType.IS_SIMILAR)
       this.searchOptionsDiv.append(this.similarityOptionsDiv);
     else

@@ -1,6 +1,6 @@
 # PowerPack changelog
 
-## 1.0.8 (2023-06-21) (requires Datagrok ^1.6.9)
+## 1.0.8 (2023-06-21)
 
 Introduces Windows Manager, and a bunch of improvements in other areas
 

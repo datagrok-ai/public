@@ -38,10 +38,10 @@ interface SparklineSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.globalScale ??= false;
-  gc.settings.colorCode ??= true;
-  return gc.settings;
+  gc.settings[SparklineType.Sparkline] ??= getSettingsBase(gc, SparklineType.Sparkline);
+  gc.settings[SparklineType.Sparkline].globalScale ??= false;
+  gc.settings[SparklineType.Sparkline].colorCode ??= true;
+  return gc.settings[SparklineType.Sparkline];
 }
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
@@ -68,10 +68,17 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     cols: cols
   };
 
-
   const MousePoint = new DG.Point(e.offsetX, e.offsetY);
   const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) /
     b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
+  if (activeColumn >= cols.length || activeColumn === -1) {
+    return {
+      isHit: false,
+      row: -1,
+      cols: [],
+      activeColumn: -1
+    };
+  }
 
   const activePoint = getPos(activeColumn, row, getPosConstants);
   return {

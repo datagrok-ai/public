@@ -11,7 +11,8 @@ export const HitDesignMolColName = 'Molecule';
 export const EmptyStageCellValue = 'StageDefiningRow'; // Kostilj, for a while
 export const ViDColName = 'V-iD';
 export const ViDColFormat = 'V######';
-
+export const HTcampaignName = 'HTcampaignName';
+export const HDcampaignName = 'HDcampaignName';
 export const i18n = {
   startNewCampaign: 'New campaign',
   createNewCampaign: 'New campaign',

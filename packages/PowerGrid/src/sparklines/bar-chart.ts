@@ -17,10 +17,10 @@ interface BarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.globalScale ??= false;
-  gc.settings.colorCode ??= false;
-  return gc.settings;
+  gc.settings[SparklineType.BarChart] ??= getSettingsBase(gc, SparklineType.BarChart);
+  gc.settings[SparklineType.BarChart].globalScale ??= false;
+  gc.settings[SparklineType.BarChart].colorCode ??= false;
+  return gc.settings[SparklineType.BarChart];
 }
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {

@@ -16,7 +16,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Required. [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md).
 * Optional. [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer/README.md): Visualization of macromolecules in 3D.
 * Optional. [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/README.md): Rendering, editing, managing monomer libraries.
-<!--* Optional. [Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator): Translates oligonucleotide sequences between miltiple representations.-->
+<!--* Optional. [Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator): Translates oligonucleotide sequences between multiple representations.-->
 * Optional. [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides/README.md): SAR analysis for sequences.
 <!--* Optional. [Oligo Batch Calculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator/README.md): Calculators for oligonecleotide properties.-->
 
@@ -60,7 +60,7 @@ Datagrok can ingest data in [multiple file formats](../../../../access/files/sup
 and multiple notations for nucleotide and amino acid sequences, with natural and modified monomers,
 aligned and non-aligned forms.
 
-You can also create macromolecule queries against data sources using built-in quering tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
+You can also create macromolecule queries against data sources using built-in querying tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
 
 ## Exploring biological data
 
@@ -158,7 +158,7 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 
 Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take advantage of Datagrok's in-memory database, enabling seamless access to the same data across all viewers. Viewers also share a consistent design and usage patterns. Any action taken on one viewer, such as hovering, selecting, or [filtering](../../../../visualize/viewers/filters.md), is automatically applied to all other viewers, creating an interconnected system ideal for exploratory data analysis.
 
-Macromolecule-specific viewers inlude [sequence logo](../../../../visualize/viewers/aminoacids-web-logo.md), 3D structure viewers ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../../../visualize//viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
+Macromolecule-specific viewers include [sequence logo](../../../../visualize/viewers/aminoacids-web-logo.md), 3D structure viewers ([biostructure](../../../../visualize/viewers/biostructure.md) and [NGL viewer](../../../../visualize/viewers/ngl.md)), and [sequence tree viewers](../../../../visualize//viewers/dendrogram.md). Examples of general-purpose viewers that can be used to analyze biological data include a [scatterplot](../../../../visualize/viewers/scatter-plot.md), a [network diagram](../../../../visualize/viewers/network-diagram.md), a [tile viewer](../../../../visualize/viewers/tile-viewer.md),a [bar chart](../../../../visualize/viewers/bar-chart.md), a [form viewer](../../../../visualize/viewers/form.md), and [trellis plot](../../../../visualize/viewers/trellis-plot.md), and others.
 
 <details>
 <summary>Examples</summary>
@@ -269,7 +269,7 @@ To clear the filter, use the checkbox provided. To remove the filter altogether,
 To search a dataset for matching sequences, do the following:
 
 1. In the **Top Menu**, select **Bio** > **Substructure Search...** A dialog opens.
-1. In the dialog, paste or type the sequence in the field rpovided and click **OK**. A new column is added to the table.  
+1. In the dialog, paste or type the sequence in the field provided and click **OK**. A new column is added to the table.  
 
 </details>
 
@@ -412,12 +412,12 @@ or DNA sequences with measured affinity to a specific protein.
 
 To run the activity cliffs analysis, do the following:
 
-1. In the **Menu Ribbn**, select **Bio** > **Activity Cliffs...** A parameter dialog opens.
+1. In the **Menu Ribbon**, select **Bio** > **Activity Cliffs...** A parameter dialog opens.
 1. In the parameter dialog, specify the following:
    1. Select the source table, sequence column, and activity data column to analyze.
    1. Set the similarity cutoff.
    1. Select a dimensionality reduction algorithm and adjust its parameters using the **Gear** icon next to the **Method** control.
-1. Click **OK** to execute the analysis. A scatterlpot visualization is added to the view.
+1. Click **OK** to execute the analysis. A scatterplot visualization is added to the view.
 1. Optional. In the scatterplot, click the link with the detected number of cliffs to open an **Activity Cliffs** table containing all pairs of molecules identified as cliffs. The tables also has detailed information such as similarity score, activity difference score, and other data.
 
 In the scatterplot, the marker color corresponds to the level of the sequence activity, and the size represents the maximum detected activity cliff for that sequence. The opacity of the line connecting sequence pairs corresponds to the size of the activity cliff.
@@ -509,7 +509,7 @@ Use this tab to upload, modify, convert, and share modification patterns [THE FL
 <details>
 <summary>Load a pattern [CHECK]</summary>
 
-To load an existing pattern, in the **Patern options** section, select a pattern to load from the **Load Pattern** dropdown.
+To load an existing pattern, in the **Pattern options** section, select a pattern to load from the **Load Pattern** dropdown.
 
 To load a pattern from a new file, do the following:
 
@@ -607,7 +607,7 @@ This approach could be used for any given case of HELM notation
 in order to get a visually appropriate form of monomers
 in cycles etc. Structure at atomic level could be saved in available notations.
 
-![Restoring structure atomic level](../../../../uploads/macromolecules/restoreStructures.gif)<!--retake gif to compy with DG standards-->
+![Restoring structure atomic level](../../../../uploads/macromolecules/restoreStructures.gif)<!--retake gif to comply with DG standards-->
 
 <details>
 <summary>How to use</summary>

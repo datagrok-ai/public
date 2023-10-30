@@ -8,7 +8,7 @@ import {
   HELM_RGROUP_FIELDS as RGP, HELM_OPTIONAL_FIELDS as OPT
 } from '../utils/const';
 
-type RGroup = {
+export type RGroup = {
   [RGP.CAP_GROUP_SMILES]: string,
   [RGP.ALTERNATE_ID]: string,
   [RGP.CAP_GROUP_NAME]: string,

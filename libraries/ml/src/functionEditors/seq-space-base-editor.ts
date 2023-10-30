@@ -12,19 +12,23 @@ export const SEQ_COL_NAMES = {
     [DG.SEMTYPE.MACROMOLECULE]: 'Sequences'
 }
 
+export const SHOW_SCATTERPLOT_PROGRESS = 'show-scatterplot-progress';
+
 export class SequenceSpaceBaseFuncEditor {
     tableInput: DG.InputBase;
     molColInput: DG.InputBase;
     molColInputRoot: HTMLElement;
     methodInput: DG.InputBase;
-    similarityThresholdInput: DG.InputBase;
+    similarityThresholdInput!: HTMLElement;
     methodSettingsIcon: HTMLElement;
+    similarityMetricInputRoot!: HTMLElement;
     methodSettingsDiv = ui.inputs([]);
+    similarityThresholdObj: {'Similarity threshold': number} = {'Similarity threshold': 0};
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
       [DimReductionMethods.UMAP]: new UMAPOptions(),
       [DimReductionMethods.T_SNE]: new TSNEOptions()
     };
-    similarityMetricInput: DG.InputBase;
+    similarityMetricInput!: DG.InputBase;
   
     get algorithmOptions(): IUMAPOptions | ITSNEOptions {
       const algorithmParams: UMAPOptions | TSNEOptions = this.methodsParams[this.methodInput.value!];
@@ -37,6 +41,7 @@ export class SequenceSpaceBaseFuncEditor {
     }
   
     constructor(semtype: DG.SemType){
+      
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
@@ -51,9 +56,10 @@ export class SequenceSpaceBaseFuncEditor {
         }
         this.displaySimilarityThresholdInput(semtype);
       });
-
-      this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0.5);
-      ui.tooltip.bind(this.similarityThresholdInput.root, 'Similarity threshold for sparse matrix creation.');
+      this.regenerateThresholdInput(0, 1);
+      //this.similarityThresholdInput = ui.floatInput('Similarity threshold', 0);
+      ui.input.forProperty(DG.Property.fromOptions({type: DG.TYPE.FLOAT, name: 'Similarity threshold', min: 0, max: 1}));
+      this.initSimilarityMetricInput(semtype);
   
       this.methodSettingsIcon = ui.icons.settings(()=> {
         settingsOpened = !settingsOpened;
@@ -67,16 +73,35 @@ export class SequenceSpaceBaseFuncEditor {
       this.methodSettingsDiv = ui.inputs([]);
       let settingsOpened = false;
 
-      this.similarityMetricInput = semtype === DG.SEMTYPE.MOLECULE ?
-        ui.choiceInput('Similarity', BitArrayMetricsNames.Tanimoto, SEQ_SPACE_SIMILARITY_METRICS) :
-        ui.choiceInput('Similarity', MmDistanceFunctionsNames.HAMMING, MACROMOLECULE_SIMILARITY_METRICS);
-
       setTimeout(() => {
         this.displaySimilarityThresholdInput(semtype);
         this.onColumnInputChanged(semtype);
       });
     }
   
+    regenerateThresholdInput(min: number, max: number): HTMLElement {
+      const prop = DG.Property.fromOptions({
+        "name": "Similarity threshold",
+        "type": DG.TYPE.FLOAT,
+        //@ts-ignore
+        "showSlider": true,
+        "min": min,
+        "max": max,
+        "nullable": false,
+      });
+      this.similarityThresholdObj['Similarity threshold'] = min;
+      const newInputForm = ui.input.form(this.similarityThresholdObj, [prop]);
+      const newInput = newInputForm.getElementsByClassName('ui-input-root')[0] as HTMLElement;
+      let root = this.similarityThresholdInput ?? null;
+      if (root) {
+        ui.empty(root);
+        root.append(newInput);
+      }
+      this.similarityThresholdInput = newInputForm;
+      ui.tooltip.bind(this.similarityThresholdInput, 'Similarity threshold for sparse matrix creation.');
+      return this.similarityThresholdInput;
+    }
+
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {
       ui.empty(paramsForm);
       Object.keys(params).forEach((it: any) => {
@@ -99,9 +124,33 @@ export class SequenceSpaceBaseFuncEditor {
         this.onColumnInputChanged(semtype);
     }
 
+    initSimilarityMetricInput(semtype: DG.SemType) {
+      const col: DG.Column | null | undefined = this.molColInput.value;
+      if (!col) return;
+
+      if (this.similarityMetricInputRoot) {
+        ui.empty(this.similarityMetricInputRoot);
+      }
+      const similarityMetricInput = semtype === DG.SEMTYPE.MOLECULE  || col.getTag('units') === 'helm' ?
+        ui.choiceInput('Similarity', BitArrayMetricsNames.Tanimoto, SEQ_SPACE_SIMILARITY_METRICS) :
+        ui.choiceInput('Similarity', MmDistanceFunctionsNames.HAMMING, MACROMOLECULE_SIMILARITY_METRICS);
+      if (!this.similarityMetricInputRoot) {
+        this.similarityMetricInputRoot = similarityMetricInput.root;
+      }
+      if (this.similarityMetricInputRoot) {
+        Array.from(similarityMetricInput.root.children).forEach((it) => this.similarityMetricInputRoot.append(it));
+      }
+      this.similarityMetricInput = similarityMetricInput;
+      this.similarityMetricInput.value = semtype === DG.SEMTYPE.MOLECULE  || col.getTag('units') === 'helm' ?
+        BitArrayMetricsNames.Tanimoto : MmDistanceFunctionsNames.HAMMING;
+    }
+
     onColumnInputChanged(semtype: DG.SemType) {
       const col: DG.Column | null | undefined = this.molColInput.value;
-      if (!col || semtype !== DG.SEMTYPE.MACROMOLECULE) return;
+      if (!col) return;
+      this.initSimilarityMetricInput(semtype);
+
+      if (semtype !== DG.SEMTYPE.MACROMOLECULE || col.getTag('units') === 'helm') return;
       const isMSA = (col.getTag('aligned') ?? ' ').toUpperCase().includes('MSA');
       if(isMSA)
         this.similarityMetricInput.value = MmDistanceFunctionsNames.HAMMING;
@@ -112,13 +161,13 @@ export class SequenceSpaceBaseFuncEditor {
 
     displaySimilarityThresholdInput(semtype: DG.SemType) {
       if(semtype === DG.SEMTYPE.MOLECULE) {
-        this.similarityThresholdInput.root.style.display = 'none';
+        this.similarityThresholdInput.style.display = 'none';
         return;
       }
       if (this.tableInput.value && (this.tableInput.value as DG.DataFrame).rowCount > 20000 && this.methodInput.value === DimReductionMethods.UMAP) {
-        this.similarityThresholdInput.root.style.display = 'block';
+        this.similarityThresholdInput.style.display = 'block';
       } else {
-        this.similarityThresholdInput.root.style.display = 'none';
+        this.similarityThresholdInput.style.display = 'none';
       }
     }
   }

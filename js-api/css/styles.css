@@ -1,3 +1,7 @@
+/* deprecated style, is used for backward compatibility, will be removed in API version 1.18.0 */
+.sketch-link {
+}
+
 .chem-sketch-link {
     color: var(--blue-1);
     height: 25px;
@@ -36,5 +40,5 @@
 }
 
 .chem-sketcher-loader-hide {
-  display: none;
+  display: none!important;
 }

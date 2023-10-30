@@ -84,7 +84,6 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DataFrame
   for (const i in jsViewers)
     rootViewers.append(renderCard(jsViewers, i));
 
-
   const tags = ui.divV([
     ui.label('Relative tags:'),
     generateTags(),
@@ -104,9 +103,9 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DataFrame
 };
 
 function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
-  const viewerList = [];
+  let viewerList = [];
 
-  for (const [key, value] of Object.entries(DG.VIEWER)) {
+  for (const value of Object.values(DG.VIEWER)) {
     switch (String(value)) {
     case 'Globe': break;
     case 'Google map': break;
@@ -114,6 +113,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
     case 'SurfacePlot': break;
     case 'TimelinesViewer': break;
     case 'Word cloud': break;
+    case 'Scaffold Tree': break;
     default:
       viewerList.push(value);
       break;
@@ -127,6 +127,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
   viewerList.push('Info panel');
   viewerList.push('Scripting viewer');
 
+  viewerList = [...new Set(viewerList)];
   for (const i in viewerList) {
     Object.assign(viewers, {
       [i]: {
@@ -146,28 +147,28 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
 }
 
 function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }) {
-  const list = DG.Func.find({returnType: 'viewer'});
+  const skip = ['TestViewerForProperties', 'OutliersSelectionViewer'];
+  const list = DG.Func.find({tags: ['viewer']}).filter((v) => !skip.includes(v.friendlyName));
   let i = 0;
   for (const v of list) {
-    if (v.package.name != 'ApiTests') {
-      Object.assign(jsViewers, {
-        [i]: {
-          name: v.friendlyName,
-          icon: (v.options['icon'] != undefined) ? `${v.package.webRoot}${v.options['icon']}` : 'svg-project',
-          description: v.description,
-          keywords: (v.options['keywords'] != null) ? v.options['keywords'] : '',
-          group: '',
-          package: v.package.name,
-          type: 'js-viewer',
-        },
-      });
-      if (groupСomparisons.includes(v.friendlyName)) jsViewers[i]['group'] = 'Comparison';
-      else if (groupCorrelations.includes(v.friendlyName)) jsViewers[i]['group'] = 'Correlation';
-      else if (groupRelationships.includes(v.friendlyName)) jsViewers[i]['group'] = 'Relationship';
-      else if (groupTrends.includes(v.friendlyName)) jsViewers[i]['group'] = 'Trend';
-      else if (groupMaps.includes(v.friendlyName)) jsViewers[i]['group'] = 'Map';
-      else jsViewers[i]['group'] = 'Misc';
-    }
+    Object.assign(jsViewers, {
+      [i]: {
+        name: v.friendlyName,
+        icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
+          v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',
+        description: v.description,
+        keywords: (v.options['keywords'] != null) ? v.options['keywords'] : '',
+        group: '',
+        package: v.package.name,
+        type: 'js-viewer',
+      },
+    });
+    if (groupСomparisons.includes(v.friendlyName)) jsViewers[i]['group'] = 'Comparison';
+    else if (groupCorrelations.includes(v.friendlyName)) jsViewers[i]['group'] = 'Correlation';
+    else if (groupRelationships.includes(v.friendlyName)) jsViewers[i]['group'] = 'Relationship';
+    else if (groupTrends.includes(v.friendlyName)) jsViewers[i]['group'] = 'Trend';
+    else if (groupMaps.includes(v.friendlyName)) jsViewers[i]['group'] = 'Map';
+    else jsViewers[i]['group'] = 'Misc';
     i++;
   }
 }
@@ -176,7 +177,8 @@ function findViewer(value: string) {
   rootViewers.innerHTML = '';
   if (value != '') {
     for (const i in viewers) {
-      if (viewers[i].name.toLowerCase().includes(value.toLowerCase()) || viewers[i].group.toLowerCase().includes(value.toLowerCase()))
+      if (viewers[i].name.toLowerCase().includes(value.toLowerCase()) ||
+        viewers[i].group.toLowerCase().includes(value.toLowerCase()))
         rootViewers.append(renderCard(viewers, i));
     }
     for (const i in jsViewers) {
@@ -209,28 +211,30 @@ function setTabIndex(root: HTMLDivElement) {
 
 function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: string) {
   let icon: HTMLElement;
-  if (viewers[index].type == 'viewer') {
+  const viewer = viewers[index];
+
+  if (viewer.type == 'viewer') {
     icon = ui.iconFA('');
-    icon.className = 'grok-icon svg-icon ' + viewers[index].icon;
+    icon.className = 'grok-icon svg-icon ' + viewer.icon;
   }
-  if (viewers[index].type == 'js-viewer') {
-    if (viewers[index].icon != 'svg-project') {
-      icon = ui.iconImage('', viewers[index].icon);
+  if (viewer.type == 'js-viewer') {
+    if (viewer.icon != 'svg-project') {
+      icon = ui.iconImage('', viewer.icon);
       icon.classList.add('svg-icon');
     } else {
       icon = ui.iconFA('');
-      icon.className = 'grok-icon svg-icon ' + viewers[index].icon;
+      icon.className = 'grok-icon svg-icon ' + viewer.icon;
       icon.style.filter = 'grayscale(.5) invert(.5) contrast(120%)';
     }
   }
-  const name = ui.label(viewers[index].name);
+  const name = ui.label(viewer.name);
   name.classList.add('card-label');
   const card = ui.div([
     ui.divH([icon!, name]),
   ], 'd4-item-card viewer-gallery vg-card-small');
 
   card.addEventListener('click', () => {
-    dockViewers(viewers[index].name, view, table);
+    dockViewers(viewer.name, view, table);
     dlg.close();
   });
 
@@ -240,6 +244,13 @@ function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: strin
       card.click();
     }
   });
+
+  if (viewer.name.length > 18) {
+    name.addEventListener('mouseenter', () => {
+      if (name.offsetWidth < name.scrollWidth)
+        name.setAttribute('title', viewer.name);
+    }, {once: true});
+  }
 
   return card;
 }

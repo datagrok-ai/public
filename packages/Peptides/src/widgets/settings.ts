@@ -22,7 +22,6 @@ export enum SETTINGS_PANES {
 export enum GENERAL_INPUTS {
   ACTIVITY = 'Activity',
   ACTIVITY_SCALING = 'Activity scaling',
-  BIDIRECTIONAL_ANALYSIS = 'Bidirectional analysis',
 }
 
 export enum VIEWERS_INPUTS {
@@ -51,7 +50,7 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
   const accordion = ui.accordion();
   const settings = model.settings;
   const currentScaling = settings.scaling ?? C.SCALING_METHODS.NONE;
-  const currentBidirectional = settings.isBidirectional ?? false;
+  // const currentBidirectional = settings.isBidirectional ?? false;
   const currentMaxMutations = settings.maxMutations ?? 1;
   const currentMinActivityDelta = settings.minActivityDelta ?? 0;
   const currentColumns = settings.columns ?? {};
@@ -69,13 +68,9 @@ export function getSettingsDialog(model: PeptidesModel): SettingsElements {
     ui.choiceInput(GENERAL_INPUTS.ACTIVITY_SCALING, currentScaling, Object.values(C.SCALING_METHODS),
       () => result.scaling = activityScaling.value as C.SCALING_METHODS) as DG.InputBase<C.SCALING_METHODS>;
   activityScaling.setTooltip('Activity column transformation method');
-  const bidirectionalAnalysis = ui.boolInput(GENERAL_INPUTS.BIDIRECTIONAL_ANALYSIS, currentBidirectional,
-    () => result.isBidirectional = bidirectionalAnalysis.value) as DG.InputBase<boolean>;
-  bidirectionalAnalysis.setTooltip('Distinguish between positive and negative mean activity difference in ' +
-    'Monomer-Position and Most Potent Residues viewers');
 
-  accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityCol, activityScaling, bidirectionalAnalysis]), true);
-  inputs[SETTINGS_PANES.GENERAL] = [activityCol, activityScaling, bidirectionalAnalysis];
+  accordion.addPane(SETTINGS_PANES.GENERAL, () => ui.inputs([activityCol, activityScaling]), true);
+  inputs[SETTINGS_PANES.GENERAL] = [activityCol, activityScaling];
 
   // Viewers pane options
   /* FIXME: combinations of adding and deleting viewers are not working properly

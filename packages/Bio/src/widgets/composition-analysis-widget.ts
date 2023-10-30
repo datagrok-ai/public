@@ -28,33 +28,15 @@ export function getCompositionAnalysisWidget(val: DG.SemanticValue) {
       break;
   }
 
-  const counts = new Map<string, number>();
-  let max = 0;
+  const counts: { [m: string]: number } = {};
   const uh = UnitsHandler.getOrCreate(val.cell.column);
   const splitter = uh.getSplitter();
   const parts = splitter(val.value);
-  const len = parts.length;
-  wu(parts).filter((p) => !!p && p !== '').forEach((c: string) => {
-    const count = counts.get(c) || 0;
-    counts.set(c, count + 1);
-    max = Math.max(max, count + 1);
+  wu(parts).filter((p) => !!p && p !== '').forEach((m: string) => {
+    const count = counts[m] || 0;
+    counts[m] = count + 1;
   });
-  max /= len;// percentage
-  // calculate frequencies
-  const compositionMap: { [key: string]: HTMLElement } = {};
-  const valueArray = Array.from(counts.entries());
-  valueArray.sort((a, b) => b[1] - a[1]);
-  valueArray.forEach(([key, value]) => {
-    const ratio = value / len;
-    const color = palette.get(key);
-    const barDiv = ui.div('', {classes: 'macromolecule-cell-comp-analysis-bar'});
-    barDiv.style.width = `${ratio / max * 50}px`;
-    const valueDiv = ui.div((ratio * 100).toFixed(2) + '%');
-    barDiv.style.backgroundColor = color;
-    compositionMap[key] = ui.div([barDiv, valueDiv], {classes: 'macromolecule-cell-comp-analysis-value'});
-  });
-
-  const table = ui.tableFromMap(compositionMap);
+  const table = buildCompositionTable(palette, counts);
   Array.from(table.rows).forEach((row) => {
     const barCol = (row.getElementsByClassName('macromolecule-cell-comp-analysis-bar')[0] as HTMLDivElement)
       .style.backgroundColor;
@@ -63,4 +45,34 @@ export function getCompositionAnalysisWidget(val: DG.SemanticValue) {
 
   host.appendChild(table);
   return new DG.Widget(host);
+}
+
+export function buildCompositionTable(palette: SeqPalette, counts: { [m: string]: number }): HTMLTableElement {
+  let sumValue: number = 0;
+  let maxValue: number | null = null;
+  for (const value of Object.values(counts)) {
+    sumValue = sumValue + value;
+    maxValue = maxValue === null ? value : Math.max(maxValue, value);
+  }
+  const maxRatio = maxValue! / sumValue;
+  const elMap: { [m: string]: HTMLElement } = Object.assign({}, ...Array.from(Object.entries(counts))
+    .sort((a, b) => b[1] - a[1])
+    .map(([m, value]) => {
+      const ratio = value / sumValue;
+      const color = palette.get(m);
+      const barDiv = ui.div('', {classes: 'macromolecule-cell-comp-analysis-bar'});
+      barDiv.style.width = `${50 * ratio / maxRatio}px`;
+      barDiv.style.backgroundColor = color;
+      const valueDiv = ui.div(`${(100 * ratio).toFixed(2)}%`);
+      const el = ui.div([barDiv, valueDiv], {classes: 'macromolecule-cell-comp-analysis-value'});
+      return ({[m]: el});
+    }));
+
+  const table = ui.tableFromMap(elMap);
+  Array.from(table.rows).forEach((row) => {
+    const barCol = (row.getElementsByClassName('macromolecule-cell-comp-analysis-bar')[0] as HTMLDivElement)
+      .style.backgroundColor;
+    row.cells[0].style.color = barCol;
+  });
+  return table;
 }

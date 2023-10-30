@@ -38,7 +38,7 @@ export class RadarViewer extends DG.JsViewer {
       description: 'Minimum percentile value (indicated as dark blue area)' });
     this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
       description: 'Maximum percentile value (indicated as light blue area)' });
-    this.showOnlyCurrentRow = this.bool('showCurrentRow', false, {description: 'Hides max and min values'});
+    this.showOnlyCurrentRow = this.bool('showOnlyCurrentRow', false, {description: 'Hides max and min values'});
     this.showAllRows = this.bool('showAllRows', false);
     this.showTooltip = this.bool('showTooltip', true);
     this.backgroundMinColor = this.int('backgroundMinColor', 0xFFB0D7FF);

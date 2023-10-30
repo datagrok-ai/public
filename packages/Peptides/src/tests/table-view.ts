@@ -48,7 +48,7 @@ category('Table view', () => {
 
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;
-    const posCols = model.splitSeqDf.columns.names();
+    const posCols = model.positionColumns.toArray().map((col) => col.name);
     for (let colIdx = 1; colIdx < gridCols.length; colIdx++) {
       const col = gridCols.byIndex(colIdx)!;
       const tableColName = col.column!.name;

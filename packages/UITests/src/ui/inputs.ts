@@ -190,7 +190,7 @@ category('UI: Choice input', () => {
     view.root.appendChild(input.root);
 
     input.value = null;
-    expect(input.value, null);
+    expect(input.value == null);
     input.value = 'Male';
     expect(input.value, 'Male');
     input.value = 'Female';
@@ -219,7 +219,7 @@ category('UI: Choice input', () => {
     view.root.appendChild(input.root);
 
     input.value = null;
-    expect(input.value, null);
+    expect(input.value == null);
     input.value = 'points';
     expect(input.value, 'points');
     input.value = 'candlesticks';

@@ -8,7 +8,7 @@
     "email": "vdyma@datagrok.ai"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.3.49",
+  "version": "6.3.53",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.0.11",
@@ -48,6 +48,7 @@
     "debug-ml-local": "grok publish local",
     "release-ml-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix"
+    "lint-fix": "eslint src --ext .ts --fix",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   }
 }

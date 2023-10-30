@@ -1,14 +1,22 @@
 import {isNil} from './utils';
-import {KnownMetrics, Measure} from '../typed-metrics';
+import {KnownMetrics, Measure, isBitArrayMetric} from '../typed-metrics';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 onmessage = async (event) => {
   const {values, startIdx, endIdx, threshold, fnName, opts}:
-    {values: string[], startIdx: number, endIdx: number, threshold: number, fnName: KnownMetrics, opts: any} = event.data;
+    {values: any[], startIdx: number, endIdx: number, threshold: number, fnName: KnownMetrics, opts: any} = event.data;
   const i: number[] = [];
   const j: number[] = [];
   const distances: number[] = [];
   const chunkSize = endIdx - startIdx;
   //const mi = startRow;
   //const mj = startCol;
+
+  if (isBitArrayMetric(fnName)) {
+    for (let i = 0; i < values.length; ++i) {
+      if (isNil(values[i])) continue;
+      values[i] = new BitArray(values[i]._data, values[i]._length);
+    }
+  }
   let cnt = 0;
   const distanceFn = new Measure(fnName).getMeasure(opts);
   const startRow = values.length - 2 - Math.floor(

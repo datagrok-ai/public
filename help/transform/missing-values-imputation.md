@@ -19,7 +19,7 @@ where **d** is the distance to the neighbor.
 * Select source table
 * Select columns that contains missing values **"impute"**
 * Select data rows **"data"**
-* Set **"Number of nearest neighbours"**
+* Set **"Number of nearest neighbors"**
 * Run missing values imputation. Result will replace all missing values in all columns and rows.
 
 See also:

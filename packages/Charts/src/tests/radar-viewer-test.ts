@@ -34,9 +34,9 @@ category('Radar', () => {
     const standardOptions = {
       min: '5',
       max: '95',
-      showCurrentRow: false,
-      showTooltip: true,
+      showOnlyCurrentRow: false,
       showAllRows: false,
+      showTooltip: true,
       backgroundMinColor: 0xFFB0D7FF,
       backgroundMaxColor: 0xFFBCE2F5,
       showMin: true,

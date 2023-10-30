@@ -173,7 +173,7 @@ export class PackagesView extends UaView {
     const fPane = cp.addPane('Functions', () => {
       return ui.wait(async () => {
         // console.log('started query');
-        const df: DG.DataFrame = await grok.data.query('UsageAnalysis:PackagesContextPaneFunctions', filter);
+        const df: DG.DataFrame = await grok.functions.call('UsageAnalysis:PackagesContextPaneFunctions', filter);
         // console.log('ended query');
         const data: {[key: string]: number} = {};
         // console.log('started cycle');
@@ -225,7 +225,7 @@ export class PackagesView extends UaView {
     button.classList.add('ua-details-button');
     const lPane = cp.addPane('Log events summary', () => {
       return ui.wait(async () => {
-        const df = await grok.data.query('UsageAnalysis:PackagesContextPaneLogs', filter);
+        const df = await grok.functions.call('UsageAnalysis:PackagesContextPaneLogs', filter);
         const data: {[key: string]: number} = {};
         for (const r of df.rows) data[r.source] = r.count + (data[r.source] ?? 0);
         const info = lPane.root.querySelector('#info') as HTMLElement;
@@ -240,7 +240,7 @@ export class PackagesView extends UaView {
   static async getAuditPane(cp: DG.Accordion, filter: Filter): Promise<void> {
     const pane = cp.addPane('Audit summary', () => {
       return ui.wait(async () => {
-        const df = await grok.data.query('UsageAnalysis:PackagesContextPaneAudit', filter);
+        const df = await grok.functions.call('UsageAnalysis:PackagesContextPaneAudit', filter);
         const data: {[key: string]: number} = {};
         for (const r of df.rows) data[r.name] = r.count + (data[r.name] ?? 0);
         const info = pane.root.querySelector('#info') as HTMLElement;

@@ -1,5 +1,29 @@
 # Peptides changelog
 
+## 1.15.3 (2023-10-26)
+
+### Bug Fixes
+
+* Fixed docking sequence space would completely remove the viewer.
+
+## 1.15.2 (2023-10-26)
+
+### Features
+
+* Improved Sequence space default parameters (changed threshold similarity from 0.8 to 0.3)
+
+## 1.15.1 (2023-10-19)
+
+### Features
+
+* Color-coding Sequence space by scaled activity.
+* Optimized Mutation Cliffs calculations to use workers.
+* Hid WebLogo positions in Logo Summary Table.
+
+### Bug Fixes
+
+* Fixed Invariant Map color coding wouldn't change when changing color column.
+
 ## 1.15.0 (2023-10-12)
 
 ### Features

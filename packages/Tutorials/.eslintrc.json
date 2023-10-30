@@ -11,34 +11,31 @@
     "ecmaVersion": 12,
     "sourceType": "module"
   },
-  "plugins": [
-    "@typescript-eslint"
-  ],
+  "plugins": ["@typescript-eslint"],
   "rules": {
+    "no-trailing-spaces": "off",
     "indent": [
       "error",
       2
     ],
     "max-len": [
       "error",
-      120
+      140
     ],
-    // Disabled due to function annotation
-    "spaced-comment": "off",
     "require-jsdoc": "off",
+    "spaced-comment": "off",
     "linebreak-style": "off",
-    "space-infix-ops": "error",
-		"curly": [
-			"error",
-			"multi-or-nest"
-		],
-		"brace-style": [
-			"error",
-			"1tbs",
-			{
-				"allowSingleLine": true
-			}
-		],
-		"block-spacing": 2
+    "curly": [
+      "error",
+      "multi-or-nest"
+    ],
+    "brace-style": [
+      "error",
+      "1tbs",
+      {
+        "allowSingleLine": true
+      }
+    ],
+    "block-spacing": 2
   }
 }

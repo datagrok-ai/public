@@ -29,7 +29,7 @@ export function trackOverview() {
     ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
   ], 'tutorials-root');
 
-  grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
+  grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.27);
   setPath(window.location.pathname, tutorialRunners);
 }
 
@@ -131,7 +131,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
   const registry: { [propertyName: string]: Track } = {
     'dataAnalysisTrack': eda,
     'machineLearningTrack': ml,
-    //'cheminformaticsTrack': chem,
+    'cheminformaticsTrack': chem,
     'dataAccessTrack': da,
     'dataTransformation': dataTransformation,
   };

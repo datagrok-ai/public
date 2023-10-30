@@ -805,7 +805,6 @@ export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
   rebuild(id: string): Promise<boolean> {
     return api.grok_Dapi_DockerImagesDataSource_Rebuild(this.dart, id);
   }
-
 }
 
 /** Functionality to work with Dockerfiles
@@ -829,6 +828,11 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   /* Makes a request to container with dockerfileId */
   request(id: string, path: string, params: ResponseInit): Promise<string | null> {
     return api.grok_Dapi_DockerContainersDataSource_ProxyRequest(this.dart, id, path, params);
+  }
+
+  /* Get container logs */
+  getContainerLogs(id: string, limit: number = 10000): Promise<string | null> {
+    return api.grok_Dapi_DockerContainersDataSource_GetContainerLogs(this.dart, id, limit);
   }
 }
 

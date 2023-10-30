@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.6.0",
+  "version": "3.6.21",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -622,6 +622,12 @@
         },
         "1.8.1": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.8.2": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.8.3": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -774,6 +780,9 @@
           "datagrok-api": "^1.10.2"
         },
         "1.1.5": {
+          "datagrok-api": "^1.15.2"
+        },
+        "1.2.0": {
           "datagrok-api": "^1.15.2"
         }
       },
@@ -1115,6 +1124,15 @@
           "datagrok-api": "^1.16.4"
         },
         "1.15.0": {
+          "datagrok-api": "^1.16.4"
+        },
+        "1.15.1": {
+          "datagrok-api": "^1.16.4"
+        },
+        "1.15.2": {
+          "datagrok-api": "^1.16.4"
+        },
+        "1.15.3": {
           "datagrok-api": "^1.16.4"
         }
       },
@@ -2443,6 +2461,36 @@
         },
         "2.10.25": {
           "datagrok-api": "^1.16.0"
+        },
+        "2.10.26": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.27": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.28": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.10.29": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.0": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.1": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.2": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.3": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.5": {
+          "datagrok-api": "^1.16.0"
+        },
+        "2.11.6": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2899,6 +2947,9 @@
         },
         "1.0.3": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "PKPD simulations tools",
@@ -3037,6 +3088,9 @@
         },
         "1.2.20": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.2.21": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -3141,6 +3195,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.16.0"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.16.0"
         }
       },
       "description": "Exploratory Data Analysis Tools",
@@ -3225,6 +3282,9 @@
         },
         "1.0.7": {
           "datagrok-api": "^1.16.3"
+        },
+        "1.0.8": {
+          "datagrok-api": "^1.16.3"
         }
       },
       "description": "Automated UI tests",
@@ -3274,6 +3334,9 @@
           "datagrok-api": "^1.16.0"
         },
         "1.2.10": {
+          "datagrok-api": "^1.16.0"
+        },
+        "1.2.11": {
           "datagrok-api": "^1.16.0"
         }
       },

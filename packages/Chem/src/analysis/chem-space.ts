@@ -1,9 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {chemGetFingerprints} from '../chem-searches';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {Fingerprint} from '../utils/chem-common';
-import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
+import {Matrix, Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {ISequenceSpaceParams, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {malformedDataWarning, setEmptyBitArraysForMalformed} from '../utils/malformed-data-utils';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -13,6 +14,7 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
+import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams,
@@ -29,7 +31,7 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams,
     fpColumn as BitArray[],
     spaceParams.methodName,
     spaceParams.similarityMetric,
-    spaceParams.options, false, progressFunc);
+    spaceParams.options, true, progressFunc);
   emptyAndMalformedIdxs.forEach((idx: number | null) => {
     setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
     if (chemSpaceResult.distance)
@@ -59,7 +61,8 @@ export function getEmbeddingColsNames(df: DG.DataFrame) {
 
 export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
   similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean,
-  options?: IUMAPOptions | ITSNEOptions, progressF?: (percent: number) => void): Promise<DG.Viewer | undefined> {
+  options?: (IUMAPOptions | ITSNEOptions) & Options,
+  progressF?: (percent: number) => void): Promise<DG.Viewer | undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
   let scatterPlot: DG.ScatterPlotViewer | undefined = undefined;
   try {
@@ -78,9 +81,11 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
         embedXCol = table.columns.byName(embedColsNames[0]);
         embedYCol = table.columns.byName(embedColsNames[1]);
       }
-
-      embedXCol.init((i) => embeddings[i][0]);
-      embedYCol.init((i) => embeddings[i][1]);
+      if (options?.[SHOW_SCATTERPLOT_PROGRESS]) {
+        scatterPlot?.root && ui.setUpdateIndicator(scatterPlot!.root, false);
+        embedXCol.init((i) => embeddings[i][0]);
+        embedYCol.init((i) => embeddings[i][1]);
+      }
       const progress = (_nEpoch / epochsLength * 100);
       progressF && progressF(progress);
     }
@@ -94,6 +99,15 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
     // const chemSpaceRes = await chemSpace(chemSpaceParams, progressFunc);
     // const embeddings = chemSpaceRes.coordinates;
 
+
+    table.columns.add(DG.Column.float(embedColsNames[0], table.rowCount));
+    table.columns.add(DG.Column.float(embedColsNames[1], table.rowCount));
+    if (plotEmbeddings) {
+      scatterPlot = grok.shell
+        .tableView(table.name)
+        .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+      ui.setUpdateIndicator(scatterPlot.root, true);
+    }
     let resolveF: Function | null = null;
 
     const sub = grok.events.onViewerClosed.subscribe((args) => {
@@ -130,6 +144,7 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
           .tableView(table.name)
           .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
       }
+      ui.setUpdateIndicator(scatterPlot.root, false);
       return scatterPlot;
     }
   } catch (e) {

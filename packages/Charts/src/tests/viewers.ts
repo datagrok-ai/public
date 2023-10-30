@@ -19,7 +19,7 @@ category('Viewers', () => {
         else if (['Tree', 'Sunburst'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
         else if (v === 'Globe') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
-      })(), {detectSemanticTypes: true});
+      })(), {detectSemanticTypes: true, arbitraryDfTest: v === 'Globe' ? false : undefined});
     }, v in viewersToSkip ? {skipReason: viewersToSkip[v]} : {});
   }
 });

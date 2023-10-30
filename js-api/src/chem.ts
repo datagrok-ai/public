@@ -306,7 +306,7 @@ export namespace chem {
         this._mode = mode;
       this.root.style.height = '100%';
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
-      this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link');
+      this.emptySketcherLink = ui.divText('Click to edit', 'chem-sketch-link sketch-link');
       this.calculating = false;
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       ui.tooltip.bind(this.errorDiv, () => this.error);
@@ -669,7 +669,7 @@ export namespace chem {
 
   /**
    * Returns the specified number of most diverse molecules in the column.
-   * See example: {@link https://datagrok.ai/help/domains/chem/diversity-search}
+   * See example: {@link https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search}
    * @async
    * @param {Column} column - Column with molecules to search in
    * @param {Object} settings - Settings

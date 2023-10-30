@@ -5,6 +5,5 @@ Here an illustrative example provided on Datagrok capabilities to solve ODE syst
 
 See also:
 
-* [Grok API](https://datagrok.ai/help/develop/js-api)
-* [Packages](https://datagrok.ai/help/develop/develop#packages)
-* [Info Panels](https://datagrok.ai/help/discover/info-panels)
+* [Compute](https://datagrok.ai/help/compute/)
+* [PK-PD](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7348046/)
