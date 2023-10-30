@@ -22,20 +22,20 @@ category('top menu activity cliffs', async () => {
     }
   });
 
-  test('activityCliffsOpen.smiles', async () => {
-    const df = DG.Test.isInBenchmark ?
-      await grok.data.files.openTable('Demo:Files/chem/smiles_10K_with_activities.csv') :
-      await readDataframe('tests/activity_cliffs_test.csv');
-    await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2);
+  // test('activityCliffsOpen.smiles', async () => {
+  //   const df = DG.Test.isInBenchmark ?
+  //     await grok.data.files.openTable('Demo:Files/chem/smiles_10K_with_activities.csv') :
+  //     await readDataframe('tests/activity_cliffs_test.csv');
+  //   await _testActivityCliffsOpen(df, 'smiles', 'Activity', DG.Test.isInBenchmark ? 78 : 2);
+  // });
+
+  test('activityCliffsOpen.molV2000', async () => {
+    await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 1);
   });
 
-  // test('activityCliffsOpen.molV2000', async () => {
-  //   await _testActivityCliffsOpen(await readDataframe('tests/spgi-100.csv'), 'Structure', 'Chemical Space X', 1);
-  // });
-
-  // test('activityCliffsOpen.molV3000', async () => {
-  //   await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 185);
-  // });
+  test('activityCliffsOpen.molV3000', async () => {
+    await _testActivityCliffsOpen(await readDataframe('v3000_sample.csv'), 'molecule', 'Activity', 185);
+  });
 
   // test('activityCliffs.emptyValues', async () => {
   //   await _testActivityCliffsOpen(await readDataframe('tests/activity_cliffs_empty_rows.csv'),
