@@ -75,7 +75,7 @@ export class MonomerPosition extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = '/help/domains/bio/peptides.md';
+    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     this.render();
   }
 
@@ -257,7 +257,7 @@ export class MostPotentResidues extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.helpUrl = '/help/domains/bio/peptides.md';
+    this.helpUrl = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     this.render();
   }
 

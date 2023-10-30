@@ -720,7 +720,7 @@ export async function compositionAnalysis(): Promise<void> {
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
       title: 'Composition Analysis',
-      helpUrl: '/help/domains/bio/macromolecules.md#composition-analysis',
+      helpUrl: 'https://datagrok.ai/help/datagrok/solutions/domains/bio/#sequence-composition',
     })
       .add(ui.div([
         colInput,
