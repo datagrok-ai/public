@@ -38,10 +38,11 @@ interface SparklineSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
-  gc.settings[SparklineType.Sparkline] ??= getSettingsBase(gc, SparklineType.Sparkline);
-  gc.settings[SparklineType.Sparkline].globalScale ??= false;
-  gc.settings[SparklineType.Sparkline].colorCode ??= true;
-  return gc.settings[SparklineType.Sparkline];
+  let settings = gc.settings[SparklineType.Sparkline] as SparklineSettings;
+  settings ??= getSettingsBase(gc, SparklineType.Sparkline);
+  settings.globalScale ??= false;
+  settings.colorCode ??= true;
+  return settings;
 }
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {

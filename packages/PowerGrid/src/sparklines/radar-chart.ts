@@ -18,7 +18,7 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return gc.settings[SparklineType.Radar] ??= {
+  return (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= {
     ...getSettingsBase(gc, SparklineType.Radar),
     // ...{radius: 10,},
   };
