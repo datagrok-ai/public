@@ -194,5 +194,9 @@ function getAdviceIcon(category: string) {
     icon = ui.iconFA('info-circle');
     icon.style.color = 'var(--blue-1)';
   }
+  if (icon) {
+    icon.classList.remove('fal');
+    icon.classList.add('far');
+  }
   return icon;
 }
