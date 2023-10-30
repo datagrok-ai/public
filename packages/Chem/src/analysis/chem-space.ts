@@ -14,7 +14,7 @@ import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/
 import {dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
 import {DIMENSIONALITY_REDUCER_TERMINATE_EVENT}
   from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-//import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
+import {SHOW_SCATTERPLOT_PROGRESS} from '@datagrok-libraries/ml/src/functionEditors/seq-space-base-editor';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams,
@@ -31,7 +31,7 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams,
     fpColumn as BitArray[],
     spaceParams.methodName,
     spaceParams.similarityMetric,
-    spaceParams.options, false, progressFunc); //to be changed to true
+    spaceParams.options, true, progressFunc);
   emptyAndMalformedIdxs.forEach((idx: number | null) => {
     setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
     if (chemSpaceResult.distance)
@@ -81,11 +81,11 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
         embedXCol = table.columns.byName(embedColsNames[0]);
         embedYCol = table.columns.byName(embedColsNames[1]);
       }
-      //if (options?.[SHOW_SCATTERPLOT_PROGRESS]) {
+      if (options?.[SHOW_SCATTERPLOT_PROGRESS]) {
         scatterPlot?.root && ui.setUpdateIndicator(scatterPlot!.root, false);
         embedXCol.init((i) => embeddings[i][0]);
         embedYCol.init((i) => embeddings[i][1]);
-      //}
+      }
       const progress = (_nEpoch / epochsLength * 100);
       progressF && progressF(progress);
     }

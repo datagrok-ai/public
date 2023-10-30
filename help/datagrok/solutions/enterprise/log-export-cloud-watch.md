@@ -10,7 +10,7 @@ To export logs you need to create connection to AWS and configure **Log Export B
 
   1. Go to **Data** > **Databases**.
 
-  2. Right-click the **AWS** datasource and select the context action **Add new connection**.
+  2. Right-click the **AWS** data source and select the context action **Add new connection**.
 
   3. Fill the form with the region and credentials of the IAM user that has [PutLogEvents](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html) permission.
 

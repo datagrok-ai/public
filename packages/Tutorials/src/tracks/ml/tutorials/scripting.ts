@@ -34,7 +34,7 @@ export class ScriptingTutorial extends Tutorial {
       'sample dataset (press <b>F1</b> to get help on parameter format). Also, the editor lets you load ' +
       'previously saved scripts, including the samples designed to help better understand the platform.';
     const sv = await this.openViewByType(
-      'Click on "Functions | Scripts | Actions | New Python Script" to open a script editor',
+      'On the Side Panel, click Functions > Scripts > Actions > New Python Script. This opens a script editor.',
       'ScriptView', actionsPane ? [...funcPaneHints, actionsPane] : funcPaneHints, editorIntro);
 
     // UI generation delay

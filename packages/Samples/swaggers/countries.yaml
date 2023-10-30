@@ -1,8 +1,9 @@
 swagger: "2.0"
 info:
+  version: "3.1"
   title: Countries API
-host: restcountries.eu/
-basePath: rest/v2
+host: restcountries.com
+basePath: /v3.1
 schemes:
   - https
 paths:

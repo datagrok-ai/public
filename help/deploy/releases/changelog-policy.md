@@ -114,7 +114,7 @@ As a software developer, it is your responsibility to maintain a clean and clear
      Click OK to execute the analysis.
 
    **Good**:
-   * Added [Elemental Analysis](https://datagrok.ai/help/domains/chem/#elemental-analysis) to analyze the elemental composition of a molecular structure.
+   * Added [Elemental Analysis](https://datagrok.ai/help/datagrok/solutions/domains/chem/#elemental-analysis) to analyze the elemental composition of a molecular structure.
 
    </details>
 
@@ -127,7 +127,7 @@ As a software developer, it is your responsibility to maintain a clean and clear
 
 This release focuses on improving feature stability and usability.
 
-*Dependency: datgarok-api >= Y.Y.Y*
+*Dependency: datagrok-api >= Y.Y.Y*
 
 ### Features
 

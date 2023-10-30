@@ -4,7 +4,7 @@ title: "Authorization"
 
 Datagrok has built-in authorization system, based on user groups permissions. A permissions are an action that can be
 applied to an entity type. Each [entity](../datagrok/concepts/objects.md) has list of permissions, which define it's visibility
-and behaviour. Most of the entities have permissions to:
+and behavior. Most of the entities have permissions to:
 
 * View - User or group can see the entity
 * Edit - User or group can edit entity attributes

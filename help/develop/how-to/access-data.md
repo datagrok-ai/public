@@ -295,7 +295,7 @@ For a comprehensive understanding of the `files` API, see [this example](https:/
 You can also use one of the following options to open files using JavaScript:
 
 1. Define a function that takes an input of `file` type (see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317)): When you use this option, you can call `file.readAsBytes()`
-  or `file.readAsString()` methods on this function. For example, by passing a string obtained from a file to `grok.data.parseCsv(csv, options)`, you can customize the construction of a dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../../compute/scripting.md) to perform calculations and recieve the results in your application's code.
+  or `file.readAsString()` methods on this function. For example, by passing a string obtained from a file to `grok.data.parseCsv(csv, options)`, you can customize the construction of a dataframe from comma-separated values. Alternatively, you can pass a file to a [script](../../compute/scripting.md) to perform calculations and receive the results in your application's code.
 1. Use `grok.data.openTable(id)`: This method is helpful when replicating a process where you need to open a specific table by its ID. See [this example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).
 
 See also:

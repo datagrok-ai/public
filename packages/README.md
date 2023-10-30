@@ -6,7 +6,7 @@
 | [Biosensors](https://github.com/datagrok-ai/public/tree/master/packages/Biosensors) | |
 | [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy) | [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
 | [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | [Data Connection](https://datagrok.ai/help/access/access#data-connection), [Data Query](https://datagrok.ai/help/access/access#data-query), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
-| [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts) | [Scripting](https://datagrok.ai/help/compute/scripting), [Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics), [RDKit](https://www.rdkit.org/) |
+| [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts) | [Scripting](https://datagrok.ai/help/compute/scripting), [Cheminformatics](https://datagrok.ai/help/datagrok/solutions/domains/chem), [RDKit](https://www.rdkit.org/) |
 | [Covid](https://github.com/datagrok-ai/public/tree/master/packages/Covid) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/) |
 | [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo) | [Scripting](https://datagrok.ai/help/compute/scripting), [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
 | [DSP](https://github.com/datagrok-ai/public/tree/master/packages/DSP) | |

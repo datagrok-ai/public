@@ -18,7 +18,7 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return gc.settings[SparklineType.Radar] ??= {
+  return (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= {
     ...getSettingsBase(gc, SparklineType.Radar),
     // ...{radius: 10,},
   };
@@ -129,8 +129,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    gc.settings ??= getSettings(gc);
-    const settings = gc.settings;
+    const settings: RadarChartSettings = gc.settings[SparklineType.Radar] ??= getSettings(gc);
 
     return ui.inputs([
       ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {

@@ -79,7 +79,7 @@ expression (mathematical function, constants, platform objects properties and fu
 
 1. Use math functions in  *"Formula"* field (Abs(), Acos(), Min(), Max(), Log(), etc.)
 
-* Values of new column are calculated depending on entered funtions
+* Values of new column are calculated depending on entered functions
 
 1. Add columns of different types. Use different combinations of column types and entered values in formula.
 

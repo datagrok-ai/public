@@ -26,11 +26,11 @@ applied with data similar in structure to training
 
 1. Enter the following parameters:
 
-       Name: Deep_Lerning_H2o_Test
+       Name: Deep_Learning_H2o_Test
        Description: Test model with using method "Deep Learning" on H2o server
        Method: Deep Learning
        Table: "Train Data"
-       Feauchers: HEIGHT, WEIGHT (columns)
+       Features: HEIGHT, WEIGHT (columns)
        Outcome: AGE (column)
 
 1. Leave the remaining parameters as default.

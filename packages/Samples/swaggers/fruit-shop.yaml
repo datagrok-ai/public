@@ -1,6 +1,6 @@
 swagger: '2.0'
-host: 'api.predic8.de:443'
-basePath: /shop
+host: api.predic8.de
+basePath: /shop/v2/
 schemes:
   - https
 info:
@@ -14,42 +14,11 @@ info:
     url: 'http://predic8.de'
     email: bayer@predic8.de
 tags:
-  - name: categories
   - name: customers
   - name: orders
   - name: products
   - name: vendors
 paths:
-  /categories/:
-    get:
-      operationId: Lists all the product categories
-      summary: getShopCategories
-      tags:
-        - categories
-      responses:
-        '200':
-          description: List of categories
-          schema:
-            $ref: '#/definitions/CategoryList'
-            type: object
-  '/categories/{id}':
-    get:
-      operationId: Get a category by id
-      summary: getShopCategoriesId
-      parameters:
-        - type: string
-          description: Id of a category
-          name: id
-          in: path
-          required: true
-      tags:
-        - categories
-      responses:
-        '200':
-          description: Collection of products
-          schema:
-            $ref: '#/definitions/ProductList'
-            type: object
   '/customers/{id}':
     get:
       operationId: Get a customer by id

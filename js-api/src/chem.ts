@@ -645,7 +645,7 @@ export namespace chem {
 
   /**
    * Returns the specified number of most diverse molecules in the column.
-   * See example: {@link https://datagrok.ai/help/domains/chem/diversity-search}
+   * See example: {@link https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search}
    * @async
    * @param {Column} column - Column with molecules to search in
    * @param {Object} settings - Settings

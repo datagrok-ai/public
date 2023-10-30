@@ -107,12 +107,12 @@ const skip = ['Redshift', 'Athena'];
 export async function initTests() {
   const connections = await grok.dapi.connections.list();
   for (const c of connections) {
-    category(('Providers:' + c.dart.z), () => {
+    category(('Providers:' + c.dart.dataSource), () => {
       _test(c.friendlyName, async () => {
         const res = await c.test();
         if (res !== 'ok')
           throw new Error(res);
-      }, skip.includes(c.dart.z) ? {skipReason: 'SKIP'} : undefined);
+      }, skip.includes(c.dart.dataSource) ? {skipReason: 'SKIP'} : undefined);
     });
   }
 }

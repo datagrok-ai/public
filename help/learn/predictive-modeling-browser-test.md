@@ -17,7 +17,7 @@ them.
 
 * Models are applied successfully and correctly from context menu
 
-1. Edit [model](learn.md) from its context menu in broser
+1. Edit [model](learn.md) from its context menu in browser
 
 * Model edit dialog has been opened
 

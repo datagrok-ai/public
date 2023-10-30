@@ -289,26 +289,6 @@ export const TAGS = {
 
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
 }
-    
-export const InputType = {
-  Int: 'Int',
-  BigInt: 'BigInt',
-  Float: 'Float',
-  QNum: 'QNum',
-  Slider: 'Slider',
-  Bool: 'Bool',
-  TextArea: 'TextArea',
-  Text: 'Text',
-  Date: 'Date',
-  Map: 'Map',
-  List: 'List',
-  Color: 'Color',
-  Column: 'Column',
-  Radio: 'Radio',
-  Choice: 'Choice',
-  MultiChoice: 'MultiChoice',
-  Table: 'Table',
-}
 
 export const FUNC_TYPES = {
   /** An application that gets shown in the app store.

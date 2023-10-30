@@ -59,7 +59,7 @@ Example for R Caret engine:
 * Select feature columns
 * Select outcome column
 * Set checkbox to impute missing values, if required
-* Set number of nearest neighbours to predict missing values, if required
+* Set number of nearest neighbors to predict missing values, if required
 * Select modeling method. See **Available classification models** for description
 * Set percentage of train rows from table rows, 0.1..100
 * Run model training
@@ -71,7 +71,7 @@ Example for R Caret engine:
 * Select table that contains features
 * Select applicable model
 * Set checkbox to impute missing values, if required
-* Set number of nearest neighbours to predict missing values, if required
+* Set number of nearest neighbors to predict missing values, if required
 * Apply model
 
 Also apply model available through "Models Browser" (**Tools** | **Predictive modeling** | **Browse Models**)

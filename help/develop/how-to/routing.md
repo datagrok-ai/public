@@ -26,7 +26,7 @@ Depending on the `pathSegments` length, we choose to either start the applicatio
 the URI parameters. Typically, when the app starts from the Apps page, the `pathSegments` would contain 3 elements:
 `['', 'apps', 'Test']` because the `pathname` is `/apps/Test` by default for the app called `Test`.
 
-Let's say the default behaviour would be to add a couple of tables and set default paths for them.
+Let's say the default behavior would be to add a couple of tables and set default paths for them.
 
 ```javascript
 if (pathSegments.length <= 3) {

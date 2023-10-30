@@ -7,19 +7,19 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {ALPHABET, NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 const seqDna = `seq
-ACGTC
-CAGTGT
-TTCAAC`;
+ACGTCACGTC
+CAGTGTCAGTGT
+TTCAACTTCAAC`;
 
 const seqDnaMsa = `seq
-AC-GT-CT
-CAC-T-GT
-ACCGTACT`;
+AC-GT-CTAC-GT-CT
+CAC-T-GTCAC-T-GT
+ACCGTACTACCGTACT`;
 
 const seqUn = `seq
-abc-dfgg-abc1-cfr3-rty-wert
-rut12-her2-rty-wert-abc-abc1-dfgg
-rut12-rty-her2-abc-cfr3-wert-rut12`;
+abc-dfgg-abc1-cfr3-rty-wert-abc-dfgg-abc1-cfr3-rty-wert
+rut12-her2-rty-wert-abc-abc1-dfgg-rut12-her2-rty-wert-abc-abc1-dfgg
+rut12-rty-her2-abc-cfr3-wert-rut12-rut12-rty-her2-abc-cfr3-wert-rut12`;
 
 const seqHelm = `seq
 PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$

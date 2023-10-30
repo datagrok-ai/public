@@ -470,7 +470,7 @@ export class SubstructureFilter extends DG.Filter {
     if (this.searchType !== SubstructureSearchType.CONTAINS)
       this.removeChildIfExists(this.sketcher.root, this.optionsIcon, 'chem-search-options-icon');
     else {
-      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()))
+      if (!chem.Sketcher.isEmptyMolfile(this.sketcher.getMolFile()) && this.sketcher._mode !== DG.chem.SKETCHER_MODE.INPLACE)
         this.sketcher.root.appendChild(this.optionsIcon);
     }
     if (this.searchType === SubstructureSearchType.IS_SIMILAR)

@@ -1,10 +1,7 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
-
-import {category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {GapSymbols, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
@@ -17,31 +14,31 @@ category('UnitsHandler', () => {
     fasta: {
       src: {
         csv: `seq
-ACGTC
-CAGTGT
-TTCAAC`
+ACGTCACGTC
+CAGTGTCAGTGT
+TTCAACTTCAAC`
       },
       tgt: {
         splitted: [
-          'ACGTC',
-          'CAGTGT',
-          'TTCAAC',
+          'ACGTCACGTC',
+          'CAGTGTCAGTGT',
+          'TTCAACTTCAAC',
         ]
       }
     },
     fastaMsa: {
       src: {
         csv: `seq
-AC-GT-CT
-CAC-T-GT
-ACCGTACT`,
+AC-GT-CTAC-GT-CT
+CAC-T-GTCAC-T-GT
+ACCGTACTACCGTACT`,
       },
       tgt: {
         splitted: [
           //@formatter:off
-          'AC-GT-CT',
-          'CAC-T-GT',
-          'ACCGTACT',
+          'AC-GT-CTAC-GT-CT',
+          'CAC-T-GTCAC-T-GT',
+          'ACCGTACTACCGTACT',
           //@formatter:on
         ]
       }
@@ -49,15 +46,15 @@ ACCGTACT`,
     separator: {
       src: {
         csv: `seq
-abc-dfgg-abc1-cfr3-rty-wert
-rut12-her2-rty-wert-abc-abc1-dfgg
-rut12-rty-her2-abc-cfr3-wert-rut12`,
+abc-dfgg-abc1-cfr3-rty-wert-abc-dfgg-abc1-cfr3-rty-wert
+rut12-her2-rty-wert-abc-abc1-dfgg-rut12-her2-rty-wert-abc
+rut12-rty-her2-abc-cfr3-wert-rut12-rut12-rty-her2-abc-cfr3`,
       },
       tgt: {
         splitted: [
-          ['abc', 'dfgg', 'abc1', 'cfr3', 'rty', 'wert'],
-          ['rut12', 'her2', 'rty', 'wert', 'abc', 'abc1', 'dfgg'],
-          ['rut12', 'rty', 'her2', 'abc', 'cfr3', 'wert', 'rut12']
+          ['abc', 'dfgg', 'abc1', 'cfr3', 'rty', 'wert', 'abc', 'dfgg', 'abc1', 'cfr3', 'rty', 'wert'],
+          ['rut12', 'her2', 'rty', 'wert', 'abc', 'abc1', 'dfgg', 'rut12', 'her2', 'rty', 'wert', 'abc'],
+          ['rut12', 'rty', 'her2', 'abc', 'cfr3', 'wert', 'rut12', 'rut12', 'rty', 'her2', 'abc', 'cfr3']
         ]
       }
     },
@@ -65,32 +62,32 @@ rut12-rty-her2-abc-cfr3-wert-rut12`,
     separatorMsa: {
       src: {
         csv: `seq
-abc-dfgg-abc1-cfr3-rty-wert
-rut12-her2-rty--abc1-dfgg
-rut12-rty-her2---wert`
+abc-dfgg-abc1-cfr3-rty-wert-abc-dfgg-abc1-cfr3-rty-wert
+rut12-her2-rty--abc1-dfgg-rut12-her2-rty--abc1-dfgg
+rut12-rty-her2---wert-rut12-rty-her2---wert`
       },
       tgt: {
         splitted: [
-          ['abc', 'dfgg', 'abc1', 'cfr3', 'rty', 'wert'],
-          ['rut12', 'her2', 'rty', sG, 'abc1', 'dfgg'],
-          ['rut12', 'rty', 'her2', sG, sG, 'wert'],
+          ['abc', 'dfgg', 'abc1', 'cfr3', 'rty', 'wert', 'abc', 'dfgg', 'abc1', 'cfr3', 'rty', 'wert'],
+          ['rut12', 'her2', 'rty', sG, 'abc1', 'dfgg', 'rut12', 'her2', 'rty', sG, 'abc1', 'dfgg'],
+          ['rut12', 'rty', 'her2', sG, sG, 'wert', 'rut12', 'rty', 'her2', sG, sG, 'wert'],
         ]
       }
     },
     helm: {
       src: {
         csv: `seq
-PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$
-PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca}$$$$
-PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca}$$$$
-PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2}$$$$`
+PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Thr_PO3H2.Aca.D-Tyr_Et}$$$$
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.dK.Thr_PO3H2.Aca}$$$$
+PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.dK.Thr_PO3H2.Aca}$$$$
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.T.dK.Thr_PO3H2}$$$$`
       },
       tgt: {
         splitted: [
-          ['meI', 'hHis', 'Aca', 'N', 'T', 'dE', 'Thr_PO3H2', 'Aca', 'D-Tyr_Et'],
-          ['meI', 'hHis', 'Aca', 'Cys_SEt', 'T', 'dK', 'Thr_PO3H2', 'Aca'],
-          ['Lys_Boc', 'hHis', 'Aca', 'Cys_SEt', 'T', 'dK', 'Thr_PO3H2', 'Aca'],
-          ['meI', 'hHis', 'Aca', 'Cys_SEt', 'T', 'dK', 'Thr_PO3H2'],
+          ['meI', 'hHis', 'Aca', 'N', 'T', 'dE', 'Thr_PO3H2', 'Aca', 'D-Tyr_Et', 'Thr_PO3H2', 'Aca', 'D-Tyr_Et'],
+          ['meI', 'hHis', 'Aca', 'Cys_SEt', 'T', 'dK', 'Thr_PO3H2', 'Aca', 'dK', 'Thr_PO3H2', 'Aca'],
+          ['Lys_Boc', 'hHis', 'Aca', 'Cys_SEt', 'T', 'dK', 'Thr_PO3H2', 'Aca', 'dK', 'Thr_PO3H2', 'Aca'],
+          ['meI', 'hHis', 'Aca', 'Cys_SEt', 'T', 'dK', 'Thr_PO3H2', 'T', 'dK', 'Thr_PO3H2'],
         ]
       }
     }

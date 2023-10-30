@@ -197,7 +197,7 @@ progress[value]::-webkit-progress-value::after {
   user-select: text;
 }
 
-.grok-tutorial-step-description br {
+#tutorial-child-node br {
   content: "";
   margin: 2em;
   display: block;
@@ -296,7 +296,6 @@ progress[value]::-webkit-progress-value::after {
   border: 0;
   background: var(--grey-1);
   height: 1px;
-  margin-bottom: 20px;
 }
 
 .tutorials-next-step {
@@ -307,19 +306,21 @@ progress[value]::-webkit-progress-value::after {
   margin-right: 10px;
 }
 
-.tutorials-done-section {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  margin-bottom: 5px;
-  width: 80%;
-  margin: 20px 0;
+.tutorials-done-section > *:not(:first-child) {
+  display: none;
 }
 
-.tutorials-done-section-expanded {
-  margin: 20px 0;
+.tutorials-done-section-expanded > *:not(:first-child) {
+  margin-left: 15px;
+}
+
+.tutorials-section-header {
+  align-items: center;
+}
+
+.tutorials-section-header h3 {
+  margin-block: 0;
+  padding: 10px 10px 10px 0;
 }
 
 #naphthalene {
