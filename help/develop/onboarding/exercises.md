@@ -864,7 +864,7 @@ domain. Thus Datagrok provides a proxy facility in the neat `fetchProxy` wrapper
 ## Exercise 10: Enhancing Datagrok with dialog-based functions
 
 In the previous exercises we've learned how the Datagrok function inputs are offered in a dialog window automatically
-once you run the function. In this exercise we find how to expand these dialogs with the behaviour beyond simple
+once you run the function. In this exercise we find how to expand these dialogs with the behavior beyond simple
 arguments-to-inputs mapping.
 
 So, in some previous exercises we've used the files `a-h1n1.csv` and `sars-cov-2.csv` which we prepared in advance.

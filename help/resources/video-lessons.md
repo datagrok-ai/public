@@ -28,7 +28,7 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
     <h2 class="card-title">Cheminformatics overview</h2>
     <p class="card-text">This is an overview of the cheminformatics capabilities available in the Datagrok platform. During the interactive sessions, we will do the following:<br />
                          • import molecules in the SMILES format<br />
-                         • take a closer look at the molecule-specific info panels, including 3D structure, SDF, toxicity prediction, drug likeness, CHEMBL substructure and similarity, identifier conversion, PubChem integration, predictive models, as well as usuing community-produced scripts as context info panels<br />
+                         • take a closer look at the molecule-specific info panels, including 3D structure, SDF, toxicity prediction, drug likeness, CHEMBL substructure and similarity, identifier conversion, PubChem integration, predictive models, as well as using community-produced scripts as context info panels<br />
                          • sketch new molecules<br />
                          • retrieve molecules by name, or by other identifiers<br />
                          • perform in-memory substructure search<br />

@@ -421,7 +421,7 @@ available in Datagrok as user data storage — a Datagrok server storage which c
 which these entries can later be retrieved.
 
 The data resides in the storage as a set of stores, each identified by a unique name, with a key-value map placed in
-each store. There are several *asyncronous* methods for storing and retrieving data from the user storage, such
+each store. There are several *asynchronous* methods for storing and retrieving data from the user storage, such
 as `grok.dapi.userDataStorage.postValue`
 for posting a single value, or `grok.dapi.userDataStorage.get` for getting the whole map. Learn of all these
 methods [here](user-data-storage.md), also check a complete example
@@ -614,7 +614,7 @@ scheme. We can accommodate these needs by developing a customer-specific integra
 
 *References:*
 
-* [Authentification](../../govern/authentication.md)
+* [Authentication](../../govern/authentication.md)
 
 #### Obtaining groups and users info
 

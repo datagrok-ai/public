@@ -39,7 +39,7 @@ To specify the condition in the script, use the 'user' variable in the following
 ```
 # condition: user.name == "john doe" || user.name == "jack smith"
 # condition: user.hasrole("chemist")
-# condition: user.inteam("high-throuput screening")
+# condition: user.inteam("high-throughput screening")
 ```
 
 ### Dataset condition

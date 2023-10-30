@@ -10,11 +10,11 @@ title: "Who it is for"
 <!--* Curve fitting-->
 * [NLP](domains/nlp/nlp.md)
 
-#### Enterise IT
+#### Enterprise IT
 
-* [Enterise IT](enterprise/enterprise.md)
+* [Enterprise IT](enterprise/enterprise.md)
 
 #### Use cases
 
 * [Exploratory data analysis](domains/use-cases/eda.md)
-* [Sequence-activity relationship analysis for peptides](domains/use-cases/peptides-sar.md)
+* [Sequence-activity relationship analysis for peptides](domains/bio/peptides-sar.md)

@@ -38,11 +38,11 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 * First block contains items "All" (for add all attributes), "Selected" and "Filtered", which work correctly
 * Second block with "Histogram" item for add the histogram for numerical columns (for non-numeric columns cells are
   empty)
-* Third block contains standart columns stats (min, max, avg, etc.)
+* Third block contains standard columns stats (min, max, avg, etc.)
 
 1. Click on "All" item from "Add stats" submenu from the context menu
 
-* All colimns attributes are added to ["Column Manager"](column-manager.md)
+* All columns attributes are added to ["Column Manager"](column-manager.md)
 * "All" item and and all attributes in list marked with icon "✓"
 * If attribute is not available for a specific column, the corresponding cell is empty
 

@@ -9,7 +9,7 @@
 
 1. Open dataset "demog".
 
-1. Open [console](../datagrok/navigation.md#console) by clicking ```"~"``` (tilda) button on keyboard.
+1. Open [console](../datagrok/navigation.md#console) by clicking ```"~"``` (tilde) button on keyboard.
 
 1. Use menu "Select" for select rows ([Random](../explore/select-random-rows.md)
    , [Duplicates](../explore/select-duplicates.md),
