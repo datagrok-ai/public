@@ -1,5 +1,5 @@
 {
-	"name": "odes",
+	"name": "@datagrok/odes",
 	"friendlyName": "ODEs",
 	"version": "0.0.1",
 	"description": "WebAutoSolver tools for solving ODEs in a browser.",
@@ -36,6 +36,9 @@
 	"canView": [
 		"All users"
 	],
+	"sources": [
+        "wasm/matrix-operations.js"
+    ],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/datagrok-ai/public.git",
