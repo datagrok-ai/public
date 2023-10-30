@@ -35,9 +35,11 @@ general parameters are required, the list of parameters depends on the function
 #output: int count [Number of cells in table]
 count = table.shape[0] * table.shape[1]
 ```
+
 </div> </details>
 
 These are the common parameters for all functions:
+
 * `name`: shows up in the user interface
 * `description`: shows up in a function tooltip
 * `tags`: comma-separated tags that you can use in search
