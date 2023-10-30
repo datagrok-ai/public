@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.16.0 (WIP)
+
+### Bug Fixes
+
+* Fixed Logo Summary Table tooltip wouldn't show if analysis table doesn't contain column names 'Cluster'.
+
 ## 1.15.3 (2023-10-26)
 
 ### Bug Fixes

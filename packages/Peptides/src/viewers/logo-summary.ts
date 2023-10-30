@@ -449,7 +449,7 @@ export class LogoSummaryTable extends DG.JsViewer {
     const activityColData = activityCol.getRawData();
 
     if (cluster.positionOrClusterType === CLUSTER_TYPE.ORIGINAL) {
-      const origClustCol = filteredDf.getCol(C.LST_COLUMN_NAMES.CLUSTER);
+      const origClustCol = filteredDf.getCol(this.model.settings.clustersColumnName!);
       const origClustColData = origClustCol.getRawData();
       const origClustColCategories = origClustCol.categories;
       const seekValue = origClustColCategories.indexOf(cluster.monomerOrCluster);
