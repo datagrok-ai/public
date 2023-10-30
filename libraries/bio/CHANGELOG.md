@@ -4,6 +4,7 @@
 
 ### Bug fixes
 * Fix monomer lib handler for PolyTool
+* Fix splitter with separator for quoted gaps
 
 ### Features
 
