@@ -2,5 +2,5 @@
 //description: Shows that default view works (or not)
 //language: javascript
 //tags: bioreactor
-//input: string db_name = 50 {caption: DB name}
+//input: string db_name = "My DB name" {caption: DB name}
 //editor: Compute:RichFunctionViewEditor
