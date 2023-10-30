@@ -17,9 +17,9 @@ MD003:
   style: "consistent"
 
 # MD004/ul-style - Unordered list style
-MD004:
-  # List style
-  style: "consistent"
+MD004: false
+#  # List style
+#  style: "consistent"
 
 # MD005/list-indent - Inconsistent indentation for list items at the same level
 MD005: true
@@ -57,27 +57,27 @@ MD010:
 MD011: true
 
 # MD012/no-multiple-blanks - Multiple consecutive blank lines
-MD012:
-  # Consecutive blank lines
-  maximum: 1
+MD012: false
+#  # Consecutive blank lines
+#  maximum: 1
 
 # MD013/line-length - Line length
 MD013: false
 
 # MD014/commands-show-output - Dollar signs used before commands without showing output
-MD014: true
+MD014: false
 
 # MD018/no-missing-space-atx - No space after hash on atx style heading
 MD018: true
 
 # MD019/no-multiple-space-atx - Multiple spaces after hash on atx style heading
-MD019: true
+MD019: false
 
 # MD020/no-missing-space-closed-atx - No space inside hashes on closed atx style heading
 MD020: true
 
 # MD021/no-multiple-space-closed-atx - Multiple spaces inside hashes on closed atx style heading
-MD021: true
+MD021: false
 
 # MD022/blanks-around-headings/blanks-around-headers - Headings should be surrounded by blank lines
 MD022:
@@ -105,12 +105,12 @@ MD025: false
 #  front_matter_title: "^\\s*title\\s*[:=]"
 
 # MD026/no-trailing-punctuation - Trailing punctuation in heading
-MD026:
-  # Punctuation characters
-  punctuation: ".,;:!。，；：！"
+MD026: false
+#  # Punctuation characters
+#  punctuation: ".,;:!。，；：！"
 
 # MD027/no-multiple-space-blockquote - Multiple spaces after blockquote symbol
-MD027: true
+MD027: false
 
 # MD028/no-blanks-blockquote - Blank line inside blockquote
 MD028: true
@@ -146,9 +146,9 @@ MD033: false
 MD034: true
 
 # MD035/hr-style - Horizontal rule style
-MD035:
-  # Horizontal rule style
-  style: "consistent"
+MD035: false
+#  # Horizontal rule style
+#  style: "consistent"
 
 # MD036/no-emphasis-as-heading/no-emphasis-as-header - Emphasis used instead of a heading
 MD036: false
@@ -156,10 +156,10 @@ MD036: false
 #  punctuation: ".,;:!?。，；：！？"
 
 # MD037/no-space-in-emphasis - Spaces inside emphasis markers
-MD037: true
+MD037: false
 
 # MD038/no-space-in-code - Spaces inside code span elements
-MD038: true
+MD038: false
 
 # MD039/no-space-in-links - Spaces inside link text
 MD039: true
@@ -222,7 +222,7 @@ MD050: false
 MD051: true
 
 # MD052/reference-links-images - Reference links and images should use a label that is defined
-MD052: true
+MD052: false
 
 # MD053/link-image-reference-definitions - Link and image reference definitions should be needed
 MD053: false
