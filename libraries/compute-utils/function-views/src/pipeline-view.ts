@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge} from 'rxjs';
-import {debounceTime, filter, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, filter, mapTo, startWith, switchMap, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
@@ -432,7 +432,7 @@ export class PipelineView extends ComputationView {
         $(consistencyStateIcon).css({
           'color': 'var(--orange-2)',
           'margin-left': '3px',
-          'padding-top': '2px',
+          'padding-top': '1px',
         });
         pipelineTabs.getPane(getVisibleStepName(step)).header.appendChild(consistencyStateIcon);
 
@@ -443,10 +443,15 @@ export class PipelineView extends ComputationView {
       });
     this.subs.push(...consistencySubs);
 
+    const consistencyStates = Object.values(this.steps).map((step) => step.view.consistencyState);
     const plvConsistencySub =
-      merge(...(Object.values(this.steps).map((step) => step.view.consistencyState)))
-        .subscribe((newValue) => {
-          this.consistencyState.next(newValue);
+      merge(...consistencyStates)
+        .pipe(distinctUntilChanged())
+        .subscribe(() => {
+          if (consistencyStates.map((state) => state.value).some((v) => v === 'inconsistent'))
+            this.consistencyState.next('inconsistent');
+          else
+            this.consistencyState.next('consistent');
         });
 
     this.subs.push(plvConsistencySub);
@@ -469,8 +474,10 @@ export class PipelineView extends ComputationView {
     this.initialConfig.forEach((stepConfig) => {
       this.subs.push(
         this.steps[stepConfig.funcName].visibility.subscribe((newValue) => {
-          if (newValue === VISIBILITY_STATE.VISIBLE)
-            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).show();
+          if (newValue === VISIBILITY_STATE.VISIBLE) {
+            $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header)
+              .css('display', 'inherit');
+          }
 
           if (newValue === VISIBILITY_STATE.HIDDEN)
             $(this.stepTabs.getPane(getVisibleStepName(this.steps[stepConfig.funcName])).header).hide();
